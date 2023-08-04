@@ -48,6 +48,9 @@
 <li class="nav-item">
   <a class="nav-link" href="../reference/index.html">Reference</a>
 </li>
+<li class="nav-item">
+  <a class="nav-link" href="../news/index.html">Changelog</a>
+</li>
       </ul>
 <form class="form-inline my-2 my-lg-0" role="search">
         <input type="search" class="form-control me-sm-2" aria-label="Toggle navigation" name="search-input" data-search-index="../search.json" id="search-input" placeholder="Search for" autocomplete="off">
@@ -79,15 +82,10 @@
 </h2>
 <p>The goal of metabodecon is to make deconvolution and alignment of 1D
 NMR spectra as easy as possible. The deconvolution part uses the
-codebase from MetaboDecon1D (<a href="https://doi.org/10.3390/metabo11070452" class="external-link uri">https://doi.org/10.3390/metabo11070452</a>). The alignment
-of the deconvoluted spectra is done using functions from the
-<code>speaq</code> package (<a href="https://cran.r-project.org/web/packages/speaq/index.html" class="external-link uri">https://cran.r-project.org/web/packages/speaq/index.html</a>)
-that have been adapted for metabodecon. For using the speaq package
-please cite (Beirnaert C, Meysman P, Vu TN, Hermans N, Apers S, Pieters
-L, et al. (2018) speaq 2.0: A complete workflow for high-throughput 1D
-NMR spectra processing and quantification. PLoS Comput Biol 14(3):
-e1006018. <a href="https://doi.org/" class="external-link uri">https://doi.org/</a>
-10.1371/journal.pcbi.1006018).</p>
+codebase from <a href="https://doi.org/10.3390/metabo11070452" class="external-link">MetaboDecon1D</a>. The
+alignment of the deconvoluted spectra is done using functions from the
+<a href="https://CRAN.R-project.org/package=speaq" class="external-link">speaq</a> package (<a href="#beirnaert-et-al-2018">Beirnaert et al., 2018</a>) that have been
+adapted for metabodecon.</p>
 <div class="section level3">
 <h3 id="download-the-example-data">Download the example data<a class="anchor" aria-label="anchor" href="#download-the-example-data"></a>
 </h3>
@@ -221,6 +219,19 @@ in the short version all columns containing only zeros have been removed
 Furthermore, results will be written into two .csv files in your
 <code>data_path</code> directory “aligned_res_short.csv” and
 “aligned_res_long.csv”.</p>
+</div>
+<div class="section level3">
+<h3 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
+</h3>
+<div class="section level4">
+<h4 id="beirnaert-et-al-2018">Beirnaert et al 2018<a class="anchor" aria-label="anchor" href="#beirnaert-et-al-2018"></a>
+</h4>
+<p>Beirnaert C, Meysman P, Vu TN, Hermans N, Apers S, Pieters L, et
+al. (2018) speaq 2.0: A complete workflow for high-throughput 1D NMR
+spectra processing and quantification. PLoS Comput Biol 14(3): e1006018.
+<a href="https://doi.org/" class="external-link uri">https://doi.org/</a>
+10.1371/journal.pcbi.1006018</p>
+</div>
 </div>
 </div>
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>
