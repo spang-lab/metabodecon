@@ -5,7 +5,7 @@ Version: 1.0.0
 Authors@R: c(
     person(given = "Wolfram",
            family = "Gronwald",
-           role = c("aut", "cre", "cph"),
+           role = c("aut", "cph"),
            email = "wolfram.gronwald@klinik.uni-regensburg.de"),
     person(given = "Martina",
            family = "Haeckl",
@@ -13,7 +13,7 @@ Authors@R: c(
            email = "martina.haeckl@stud.uni-regensburg.de"),
     person(given = "Tobias",
            family = "Schmidt",
-           role = c("aut"),
+           role = c("aut", "cre"),
            email = "tobias.schmidt331@gmail.com"),
     person(given = "Yanren Linda",
            family = "Hu",
