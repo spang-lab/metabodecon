@@ -51,11 +51,11 @@ pkgdown::build_site() # Build website in docs folder
 After doing these steps, you can push your changes to Github and then use the following commands to release the package to CRAN:
 
 ```R
-rcmdcheck::rcmdcheck() # Slower, but more realistic test than devtools::check()
+devtools::check(remote = TRUE, manual = TRUE)# Slower, but more realistic test than plain devtools::check()
 devtools::spell_check() # Check spelling. Add false positives to inst/WORDLIST
-devtools::submit_cran() # Submits the package to CRAN
 revdepcheck::revdep_check(num_workers = 8) # Reverse dependency check
 # See https://r-pkgs.org/release.html#sec-release-revdep-checks for details
+devtools::submit_cran() # Submits the package to CRAN
 ```
 
 Above steps are based on: <https://r-pkgs.org/release.html>
