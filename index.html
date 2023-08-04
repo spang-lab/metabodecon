@@ -71,7 +71,6 @@
 <li><a href="#installation">Installation</a></li>
 <li><a href="#usage">Usage</a></li>
 <li><a href="#contribute">Contribute</a></li>
-<li><a href="#open-issues">Open Issues</a></li>
 </ul>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
@@ -79,40 +78,49 @@
 <p>Copy paste the following command in a running R session (e.g. in RStudio):</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="st">"devtools"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/utils/installed.packages.html" class="external-link">installed.packages</a></span><span class="op">(</span><span class="op">)</span><span class="op">[</span>, <span class="st">"Package"</span><span class="op">]</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span></span>
-<span>        pkgs <span class="op">=</span> <span class="st">"devtools"</span>,</span>
-<span>        repos <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>CRAN <span class="op">=</span> <span class="st">"https://cloud.r-project.org"</span><span class="op">)</span></span>
-<span>    <span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"devtools"</span>, repos <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>CRAN <span class="op">=</span> <span class="st">"https://cloud.r-project.org"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install_gitlab</span><span class="op">(</span></span>
-<span>    repo <span class="op">=</span> <span class="st">"grw28475/metabodecon"</span>,</span>
-<span>    host <span class="op">=</span> <span class="st">"https://gitlab.spang-lab.de/"</span>,</span>
-<span>    auth_token <span class="op">=</span> <span class="st">"glpat-ndxyfy5Ty7yksgy9MAFs"</span>,</span>
-<span>    build_manual <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>    build_vignettes <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"spang-lab/metabodecon"</span>, build_manual <span class="op">=</span> <span class="cn">TRUE</span>, build_vignettes <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="usage">Usage<a class="anchor" aria-label="anchor" href="#usage"></a>
 </h2>
-<p>The file <a href="vignettes/metabodecon.Rmd">vignettes/metabodecon.Rmd</a> shows an example how <code>metabodecon</code> can be used to deconvolute an existing data set, followed by alignment of the data and some additional postprocessing steps, resulting in a data matrix of aligned signal integrals. To get a nice rendering of the document, it is highly recommended to download the repository and then open <code>docs/index.html</code> in a browser of your choice. Then you will get a view like this:</p>
-<div class="figure">
-<img src="reference/figures/pkgdown_preview.png" alt=""><p class="caption">man/figures/pkgdown_preview.png</p>
-</div>
+<p>At <a href="https://spang-lab.github.io/metabodecon/articles/metabodecon.html" class="external-link">Get Started</a> you can see an example how <code>metabodecon</code> can be used to deconvolute an existing data set, followed by alignment of the data and some additional postprocessing steps, resulting in a data matrix of aligned signal integrals.</p>
+<p>At <a href="https://spang-lab.github.io/metabodecon/reference/index.html" class="external-link">Function Reference</a> you get an overview of all function provided by metabodecon.</p>
 </div>
 <div class="section level2">
 <h2 id="contribute">Contribute<a class="anchor" aria-label="anchor" href="#contribute"></a>
 </h2>
-<p>See file <a href="CONTRIBUTE.html">CONTRIBUTE.md</a> for instructions on how to contribute to this project.</p>
-</div>
-<div class="section level2">
-<h2 id="open-issues">Open Issues<a class="anchor" aria-label="anchor" href="#open-issues"></a>
-</h2>
+<p>Things you can update, are:</p>
 <ol style="list-style-type: decimal">
-<li>In function <code>generate_lorentz_curves</code> it should be possible to specify the parameters via function arguments (this makes batch execution and/or repeated execution a lot easier).</li>
-<li>Input prompting in function <code>generate_lorentz_curves</code> is broken on my Windows 11 system with R4.2.3. This should be checked.</li>
-<li>Timestamps in <code>generate_lorentz_curves</code> would be nice, so you can see how long it will take for the function to finish.</li>
+<li>Function code in folder <a href="R">R</a>
+</li>
+<li>Function documentation in folder <a href="R">R</a>
+</li>
+<li>Package documentation in folder <code>vignettes</code>
+</li>
+<li>Test cases in folder <a href="tests">tests</a>
+</li>
+<li>Dependencies in file <a href="DESCRIPTION">DESCRIPTION</a>
+</li>
+<li>Authors in file <a href="DESCRIPTION">DESCRIPTION</a>
+</li>
 </ol>
+<p>Whenever you update any of those things, you should run the below commands to check that everything is still working as expected</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">test</span><span class="op">(</span><span class="op">)</span> <span class="co"># Execute tests from tests folder</span></span>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">check</span><span class="op">(</span><span class="op">)</span> <span class="co"># Check package formalities</span></span>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">document</span><span class="op">(</span><span class="op">)</span> <span class="co"># Build files in man folder</span></span>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install</span><span class="op">(</span><span class="op">)</span> <span class="co"># Install as required by next command</span></span>
+<span><span class="fu">pkgdown</span><span class="fu">::</span><span class="fu"><a href="https://pkgdown.r-lib.org/reference/build_site.html" class="external-link">build_site</a></span><span class="op">(</span><span class="op">)</span> <span class="co"># Build website in docs folder</span></span></code></pre></div>
+<p>After doing these steps, you can push your changes to Github and then use the following commands to release the package to CRAN:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">rcmdcheck</span><span class="fu">::</span><span class="fu">rcmdcheck</span><span class="op">(</span><span class="op">)</span> <span class="co"># Slower, but more realistic test than devtools::check()</span></span>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">spell_check</span><span class="op">(</span><span class="op">)</span> <span class="co"># Check spelling. Add false positives to inst/WORDLIST</span></span>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">submit_cran</span><span class="op">(</span><span class="op">)</span> <span class="co"># Submits the package to CRAN</span></span>
+<span><span class="fu">revdepcheck</span><span class="fu">::</span><span class="fu">revdep_check</span><span class="op">(</span>num_workers <span class="op">=</span> <span class="fl">8</span><span class="op">)</span> <span class="co"># Reverse dependency check</span></span>
+<span><span class="co"># See https://r-pkgs.org/release.html#sec-release-revdep-checks for details</span></span></code></pre></div>
+<p>Above steps are based on: <a href="https://r-pkgs.org/release.html" class="external-link uri">https://r-pkgs.org/release.html</a></p>
 </div>
 </div>
 
