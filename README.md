@@ -1,8 +1,5 @@
 <!-- badges: start -->
 [![R CMD check](https://github.com/spang-lab/metabodecon/workflows/R-CMD-check/badge.svg)](https://github.com/spang-lab/metabodecon/actions)
-<!-- [![Codecov test coverage](https://codecov.io/gh/spang-lab/metabodecon/branch/master/graph/badge.svg)](https://app.codecov.io/gh/spang-lab/metabodecon?branch=master)
-[![CRAN Status Badge](https://www.r-pkg.org/badges/version/metabodecon)](https://cran.r-project.org/package=metabodecon)
-[![CRAN Downloads Badge](https://cranlogs.r-pkg.org/badges/grand-total/metabodecon)](https://cranlogs.r-pkg.org/badges/grand-total/metabodecon) -->
 <!-- badges: end -->
 
 # metabodecon <img src="man/figures/logo.svg" alt="man/figures/logo.svg" align="right" height="138" />
@@ -12,7 +9,6 @@ A package for deconvolution of 1D NMR spectra using `MetaboDecon1D` followed by 
 - [Installation](#installation)
 - [Usage](#usage)
 - [Contribute](#contribute)
-- [Open Issues](#open-issues)
 
 ## Installation
 
@@ -20,32 +16,46 @@ Copy paste the following command in a running R session (e.g. in RStudio):
 
 ```R
 if (!"devtools" %in% installed.packages()[, "Package"]) {
-    install.packages(
-        pkgs = "devtools",
-        repos = c(CRAN = "https://cloud.r-project.org")
-    )
+    install.packages("devtools", repos = c(CRAN = "https://cloud.r-project.org"))
 }
-devtools::install_gitlab(
-    repo = "grw28475/metabodecon",
-    host = "https://gitlab.spang-lab.de/",
-    auth_token = "glpat-ndxyfy5Ty7yksgy9MAFs",
-    build_manual = TRUE,
-    build_vignettes = TRUE
-)
+devtools::install_github("spang-lab/metabodecon", build_manual = TRUE, build_vignettes = TRUE)
 ```
 
 ## Usage
 
-The file [vignettes/metabodecon.Rmd](vignettes/metabodecon.Rmd) shows an example how `metabodecon` can be used to deconvolute an existing data set, followed by alignment of the data and some additional postprocessing steps, resulting in a data matrix of aligned signal integrals. To get a nice rendering of the document, it is highly recommended to download the repository and then open `docs/index.html` in a browser of your choice. Then you will get a view like this:
+At [Get Started](https://spang-lab.github.io/metabodecon/articles/metabodecon.html) you can see an example how `metabodecon` can be used to deconvolute an existing data set, followed by alignment of the data and some additional postprocessing steps, resulting in a data matrix of aligned signal integrals.
 
-![man/figures/pkgdown_preview.png](man/figures/pkgdown_preview.png)
+At [Function Reference](https://spang-lab.github.io/metabodecon/reference/index.html) you get an overview of all function provided by metabodecon.
 
 ## Contribute
 
-See file [CONTRIBUTE.md](CONTRIBUTE.md) for instructions on how to contribute to this project.
+Things you can update, are:
 
-## Open Issues
+1. Function code in folder [R](R)
+2. Function documentation in folder [R](R)
+3. Package documentation in folder `vignettes`
+4. Test cases in folder [tests](tests)
+5. Dependencies in file [DESCRIPTION](DESCRIPTION)
+6. Authors in file [DESCRIPTION](DESCRIPTION)
 
-1. In function `generate_lorentz_curves` it should be possible to specify the parameters via function arguments (this makes batch execution and/or repeated execution a lot easier).
-2. Input prompting in function `generate_lorentz_curves` is broken on my Windows 11 system with R4.2.3. This should be checked.
-3. Timestamps in `generate_lorentz_curves` would be nice, so you can see how long it will take for the function to finish.
+Whenever you update any of those things, you should run the below commands to check that everything is still working as expected
+
+```R
+devtools::test() # Execute tests from tests folder
+devtools::check() # Check package formalities
+devtools::document() # Build files in man folder
+devtools::install() # Install as required by next command
+pkgdown::build_site() # Build website in docs folder
+```
+
+After doing these steps, you can push your changes to Github and then use the following commands to release the package to CRAN:
+
+```R
+rcmdcheck::rcmdcheck() # Slower, but more realistic test than devtools::check()
+devtools::spell_check() # Check spelling. Add false positives to inst/WORDLIST
+devtools::submit_cran() # Submits the package to CRAN
+revdepcheck::revdep_check(num_workers = 8) # Reverse dependency check
+# See https://r-pkgs.org/release.html#sec-release-revdep-checks for details
+```
+
+Above steps are based on: <https://r-pkgs.org/release.html>
