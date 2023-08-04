@@ -1,0 +1,7 @@
+# To test locally:
+# 1. Start the corresponding docker image locally, using below command (adjust version):
+#    docker run -it --rm -v "$(pwd):/root/metabodecon" -w /root/metabodecon gitlab.spang-lab.de:4687/grw28475/metabodecon:1.1.0
+# 2. Copy paste the script into the terminal
+image: gitlab.spang-lab.de:4687/grw28475/metabodecon:1.1.0
+test:
+  script: Rscript check_package.R

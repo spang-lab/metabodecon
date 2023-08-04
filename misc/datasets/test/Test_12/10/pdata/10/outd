@@ -1,0 +1,16 @@
+##TITLE= Parameter file, TOPSPIN		Version 3.1
+##JCAMPDX= 5.0
+##DATATYPE= Parameter Values
+##NPOINTS= 1	$$ modification sequence number
+##ORIGIN= Bruker BioSpin GmbH
+##OWNER= wiralle
+$$ 2021-03-10 10:26:58.101 +0100  wiralle@pc58952
+$$ C:\Users\wiralle\Desktop\prozAKI/AKI_1_24_061_P_1D_22_01_2021/10/pdata/10/outd
+$$ process C:\Bruker\TopSpin3.1\prog\mod\dirdata.exe
+##$CURPLOT= <PDF Complete>
+##$CURPRIN= <$PDF Complete>
+##$DFORMAT= <normdp>
+##$LAYOUT= <+/1D_H.xwp>
+##$LFORMAT= <normlp>
+##$PFORMAT= <normpl>
+##END=

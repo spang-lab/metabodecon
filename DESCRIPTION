@@ -1,0 +1,39 @@
+Package: metabodecon
+Type: Package
+Title: Functions for deconvolution of 1D NMR spectra
+Version: 1.0.0
+Authors@R: c(
+    person(given = "Wolfram",
+           family = "Gronwald",
+           role = c("aut", "cre"),
+           email = "wolfram.gronwald@klinik.uni-regensburg.de"),
+    person(given = "Martina",
+           family = "Haeckl",
+           role = c("aut"),
+           email = "martina.haeckl@stud.uni-regensburg.de"),
+    person(given = "Tobias",
+           family = "Schmidt",
+           role = c("aut"),
+           email = "tobias.schmidt331@gmail.com"),
+    person(given = "Yanren Linda",
+           family = "Hu",
+           role = c("ctb"),
+           email = "yanren-linda.hu@klinik.uni-regensburg.de")
+    )
+Description: Functions for deconvolution of 1D NMR spectra followed by alignment of the data and some additional postprocessing resulting in an aligned data matrix of aligned signal integrals. The deconvolution part uses the codebase from MetaboDecon1D (https://doi.org/10.3390/metabo11070452). The alignment is done using functions from the `speaq` package (https://cran.r-project.org/web/packages/speaq/index.html).
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.3
+biocViews:
+Imports:
+    data.table,
+    readJDX,
+    speaq
+Suggests:
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+VignetteBuilder: knitr
