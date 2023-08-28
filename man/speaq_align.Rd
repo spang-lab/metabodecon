@@ -26,7 +26,7 @@ in your original spectra, e.g. 128k = 131072 data points}
 }
 \description{
 Alignment by speaq. The speaq package is used to perform the
-signal alinment across the individual spectra. For speaq please cite:
+signal alignment across the individual spectra. For speaq please cite:
 (Beirnaert C, Meysman P, Vu TN, Hermans N, Apers S, Pieters L, et al. (2018)
 speaq 2.0: A complete workflow for high-throughput 1D NMRspectra processing
 and quantification. PLoS Comput Biol 14(3): e1006018.
@@ -41,7 +41,7 @@ the purpose of the speaq package.
 The output of speaq_align is a data matrix of aligned integral
 values. Each row contains the data of each spectrum and each column
 corresponds to one data point. Each entry corresponds to the integral of a
-deconvoluted signal with the signal center at this specific positon after
+deconvoluted signal with the signal center at this specific position after
 alignment by speaq.
 }
 \examples{

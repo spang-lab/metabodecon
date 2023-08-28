@@ -26,7 +26,7 @@ rounding errors e.g. 1000}
 function to generate feature matrix
 }
 \details{
-The output of this function is a data frame containig a matrix of
+The output of this function is a data frame containing a matrix of
 all integral values found in your spectra (data_matrix). Here, each row
 corresponds to one spectrum and each column to one data point of the
 spectra, for example 128k data points in each spectrum correspond to 128K

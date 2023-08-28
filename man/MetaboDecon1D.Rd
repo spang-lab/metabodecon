@@ -23,7 +23,7 @@ spectra (e.g."C:/Users/Username/Desktop/spectra_from_bruker"))}
 
 \item{filename}{Name of the NMR file. (Notice for Bruker format: filename
 need to be the name of your spectrum which is also the name of the folder)
-(Default: filename = NA to analyse more spectra at once)}
+(Default: filename = NA to analyze more spectra at once)}
 
 \item{file_format}{Format (bruker or jcampdx) of the NMR file. (Default:
 file_format = "bruker")}
@@ -90,12 +90,12 @@ and x_0 to calculate the Lorentz curves.The Lorentz curves could be
 calculated by using the function calculate_lorentz_curves(). This returns a
 matrix containing the generated and approximated Lorentz curves for each
 real peak of the spectrum. Each row of the matrix depicts one Lorentz curve.
-The Lorentz curves could be visualised and saved by using the function
+The Lorentz curves could be visualized and saved by using the function
 plot_lorentz_curves_save_as_png(). The superposition of all Lorentz curves,
-which reconstructs the original spectrum, could also be visualised and saved
+which reconstructs the original spectrum, could also be visualized and saved
 with the plot_spectrum_superposition_save_as_png() function. For the
 analytical calculation of the Lorentz curves peak triplets for each peak are
-used. To visualise these peak triplets and to illustrate the impact of the
+used. To visualize these peak triplets and to illustrate the impact of the
 threshold delta the function plot_triplets() is available. The integral
 values for each generated Lorentz curves are saved in a vector.
 

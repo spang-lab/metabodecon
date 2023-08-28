@@ -9,7 +9,7 @@ combine_peaks(shifted_mat, range, lower_bound, spectrum_data, data_path)
 \arguments{
 \item{shifted_mat}{(matrix) the matrix obtained after alignment by speaq.}
 
-\item{range}{(positive integer) amount of adjecant columns which are
+\item{range}{(positive integer) amount of adjacent columns which are
 permitted to be used for improving the alignment e.g. 5}
 
 \item{lower_bound}{(positive integer) amount of columns that need to be

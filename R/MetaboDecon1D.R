@@ -150,7 +150,7 @@ deconvolution <- function(
 
 
 
-  # Check if parameters are the same for all analysed spectra
+  # Check if parameters are the same for all analyzed spectra
   if(same_parameter == FALSE){
     # Calculate signal free region
     signal_free_region_left <- (spectrum_length+1)-((ppm_highest_value-signal_free_region[1])/(ppm_range/spectrum_length))
@@ -343,7 +343,7 @@ deconvolution <- function(
 
 
 
-  # Check if parameters are the same for all analysed spectra
+  # Check if parameters are the same for all analyzed spectra
   if(same_parameter == TRUE){
     # Check if current file is the first file
     # If yes, this file is used to adjust the parameters for all spectra
@@ -1019,7 +1019,7 @@ deconvolution <- function(
 #' spectra (e.g."C:/Users/Username/Desktop/spectra_from_bruker"))
 #' @param filename Name of the NMR file. (Notice for Bruker format: filename
 #' need to be the name of your spectrum which is also the name of the folder)
-#' (Default: filename = NA to analyse more spectra at once)
+#' (Default: filename = NA to analyze more spectra at once)
 #' @param file_format Format (bruker or jcampdx) of the NMR file. (Default:
 #' file_format = "bruker")
 #' @param number_iterations Number of iterations for the approximation of the
@@ -1071,12 +1071,12 @@ deconvolution <- function(
 #' calculated by using the function calculate_lorentz_curves(). This returns a
 #' matrix containing the generated and approximated Lorentz curves for each
 #' real peak of the spectrum. Each row of the matrix depicts one Lorentz curve.
-#' The Lorentz curves could be visualised and saved by using the function
+#' The Lorentz curves could be visualized and saved by using the function
 #' plot_lorentz_curves_save_as_png(). The superposition of all Lorentz curves,
-#' which reconstructs the original spectrum, could also be visualised and saved
+#' which reconstructs the original spectrum, could also be visualized and saved
 #' with the plot_spectrum_superposition_save_as_png() function. For the
 #' analytical calculation of the Lorentz curves peak triplets for each peak are
-#' used. To visualise these peak triplets and to illustrate the impact of the
+#' used. To visualize these peak triplets and to illustrate the impact of the
 #' threshold delta the function plot_triplets() is available. The integral
 #' values for each generated Lorentz curves are saved in a vector.
 #'
@@ -1146,7 +1146,7 @@ MetaboDecon1D <- function(filepath, filename = NA, file_format = "bruker", numbe
     filepath <- getwd()
   }
 
-  # If filename is, as the default value, NA, then the all spectra of the filepath of the folder are analysed
+  # If filename is, as the default value, NA, then the all spectra of the filepath of the folder are analyzed
   if(is.na(filename)){
 
     # Check which file_format is present
@@ -1220,7 +1220,7 @@ MetaboDecon1D <- function(filepath, filename = NA, file_format = "bruker", numbe
         # Print which file the user selects
         message(paste("The selected file to adjust all parameters for all spectra is: ", files[file_number]))
 
-        # Change order of files to analyse
+        # Change order of files to analyze
         files_rearranged <- c()
         files_rearranged[1] <- files[file_number]
         files <- files[-file_number]
@@ -1365,7 +1365,7 @@ MetaboDecon1D <- function(filepath, filename = NA, file_format = "bruker", numbe
         # Print which file the user selects
         message(paste("The selected file to adjust all parameters for all spectra is: ", files[file_number]))
 
-        # Change order of files to analyse
+        # Change order of files to analyze
         files_rearranged <- c()
         files_rearranged[1] <- files[file_number]
         files <- files[-file_number]
@@ -1433,7 +1433,7 @@ MetaboDecon1D <- function(filepath, filename = NA, file_format = "bruker", numbe
 
 
 
-  # If a filename is given, thus unequal NA, only this file is analysed
+  # If a filename is given, thus unequal NA, only this file is analyzed
   }else{
     # Call deconvolution function
 
@@ -1517,7 +1517,7 @@ MetaboDecon1D <- function(filepath, filename = NA, file_format = "bruker", numbe
 plot_triplets <- function(deconv_result, x_range=c(), y_range=c()){
 
   number_in_folder <- 0
-  # Get number of analysed spectra
+  # Get number of analyzed spectra
   if("number_of_files" %in% names(deconv_result)){
     number_of_files <- deconv_result$number_of_files
   }else{
@@ -1640,7 +1640,7 @@ plot_triplets <- function(deconv_result, x_range=c(), y_range=c()){
 
 
 #' @export
-#' @title Calculate lorentz curves for each analysed spectrum
+#' @title Calculate lorentz curves for each analyzed spectrum
 #' @description The MetaboDecon1D package also comprise the additional function
 #' calculate_lorentz_curves() to calculate the lorentz curves of each
 #' investigated spectrum.
@@ -1679,7 +1679,7 @@ calculate_lorentz_curves <- function(deconv_result, number_of_files = NA){
 
   number_in_folder <- 0
   if(is.na(number_of_files)){
-    # Get number of analysed spectra
+    # Get number of analyzed spectra
     if("number_of_files" %in% names(deconv_result)){
       number_of_files <- deconv_result$number_of_files
     }else{
@@ -1693,7 +1693,7 @@ calculate_lorentz_curves <- function(deconv_result, number_of_files = NA){
     }
   }
 
-  # Check if more than one spectra was analysed
+  # Check if more than one spectra was analyzed
   if(number_of_files > 1 | number_in_folder == 1){
     # Check if user input comprise a $ sign
     if(grepl("[$]", deparse(substitute(deconv_result)))){
@@ -1785,7 +1785,7 @@ calculate_lorentz_curves <- function(deconv_result, number_of_files = NA){
 #' \code{\link{plot_spectrum_superposition_save_as_png}}
 plot_lorentz_curves_save_as_png <- function(deconv_result, x_range=c(), y_range=c()){
   number_in_folder <- 0
-  # Get number of analysed spectra
+  # Get number of analyzed spectra
   if("number_of_files" %in% names(deconv_result)){
     number_of_files <- deconv_result$number_of_files
   }else{
@@ -1948,7 +1948,7 @@ plot_lorentz_curves_save_as_png <- function(deconv_result, x_range=c(), y_range=
 #' \code{\link{plot_lorentz_curves_save_as_png}}
 plot_spectrum_superposition_save_as_png <- function(deconv_result, x_range=c(), y_range=c()){
   number_in_folder <- 0
-  # Get number of analysed spectra
+  # Get number of analyzed spectra
   if("number_of_files" %in% names(deconv_result)){
     number_of_files <- deconv_result$number_of_files
   }else{
