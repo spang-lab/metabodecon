@@ -4,7 +4,7 @@
 
 # metabodecon <img src="man/figures/logo.svg" alt="man/figures/logo.svg" align="right" height="138" />
 
-A package for deconvolution of 1D NMR spectra using `MetaboDecon1D` followed by alignment of the data by the `speaq` package and some additional postprocessing resulting in an aligned data matrix of aligned signal integrals.
+A package for deconvolution of 1D NMR spectra using `MetaboDecon1D` followed by alignment of the data using the `speaq` package and some additional post-processing, resulting in a data matrix of aligned signal integrals.
 
 - [Installation](#installation)
 - [Usage](#usage)

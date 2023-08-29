@@ -1088,7 +1088,7 @@ deconvolution <- function(
 #' @import readJDX
 #' @references
 #' Haeckl, M.; Tauber, P.; Schweda, F.; Zacharias, H.U.; Altenbuchinger, M.; Oefner, P.J.; Gronwald, W. An R-Package for the Deconvolution and Integration of 1D NMR Data: MetaboDecon1D.
-#' Metabolites 2021, 11, 452. https://doi.org/10.3390/metabo11070452
+#' Metabolites 2021, 11, 452. https://www.doi.org/10.3390/metabo11070452
 #' @examples \dontrun{
 #' # Load one spectrum (Bruker format)
 #' result <- MetaboDecon1D(filepath="load_example_path", filename="urine", file_format="bruker")

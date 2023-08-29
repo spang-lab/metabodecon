@@ -37,7 +37,7 @@ to perform the signal alignment across the individual spectra. For speaq
 please cite: (Beirnaert C, Meysman P, Vu TN, Hermans N, Apers S, Pieters L,
 et al. (2018) speaq 2.0: A complete workflow for high-throughput 1D
 NMRspectra processing and quantification. PLoS Comput Biol 14(3): e1006018.
-https://doi.org/10.1371/journal.pcbi.1006018. The spectra deconvolution
+https://www.doi.org/10.1371/journal.pcbi.1006018. The spectra deconvolution
 process yields the signals of all spectra. Due to slight changes in
 measurement conditions, e.g. pH variations, signal positions may vary
 slightly across spectra. As a consequence, prior to further analysis signals

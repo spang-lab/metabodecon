@@ -14,7 +14,7 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 
 # Introduction to metabodecon
 
-The goal of metabodecon is to make deconvolution and alignment of 1D NMR spectra as easy as possible. The deconvolution part uses the codebase from [MetaboDecon1D](https://doi.org/10.3390/metabo11070452). The alignment of the deconvoluted spectra is done using functions from the [speaq](https://CRAN.R-project.org/package=speaq) package ([Beirnaert et al., 2018](#beirnaert-et-al-2018)) that have been adapted for metabodecon.
+The goal of metabodecon is to make deconvolution and alignment of 1D NMR spectra as easy as possible. The deconvolution part uses the codebase from [MetaboDecon1D](https://www.doi.org/10.3390/metabo11070452). The alignment of the deconvoluted spectra is done using functions from the [speaq](https://CRAN.R-project.org/package=speaq) package ([Beirnaert et al., 2018](#beirnaert-et-al-2018)) that have been adapted for metabodecon.
 
 ## Download the example data
 
@@ -114,4 +114,4 @@ files in your `data_path` directory "aligned_res_short.csv" and
 
 ### Beirnaert et al 2018
 
-Beirnaert C, Meysman P, Vu TN, Hermans N, Apers S, Pieters L, et al. (2018) speaq 2.0: A complete workflow for high-throughput 1D NMR spectra processing and quantification. PLoS Comput Biol 14(3): e1006018. https://doi.org/ 10.1371/journal.pcbi.1006018
+Beirnaert C, Meysman P, Vu TN, Hermans N, Apers S, Pieters L, et al. (2018) speaq 2.0: A complete workflow for high-throughput 1D NMR spectra processing and quantification. PLoS Comput Biol 14(3): e1006018. https://www.doi.org/ 10.1371/journal.pcbi.1006018
