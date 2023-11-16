@@ -10,11 +10,13 @@
 /revdep/
 archive
 assets
+dist
+docs
+inst/doc
 RMD/figs/
 RMD/figure
 RMD/libs/
 tests/testthat_outputs
 tests/testthat/_snaps
-dist
-inst/doc
-docs
+vignettes/*.html
+vignettes/*.R

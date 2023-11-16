@@ -9,7 +9,6 @@ vignette: >
 
 ```{r knitr-setup, include = FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
-
 ```
 
 # Introduction to metabodecon
@@ -18,7 +17,7 @@ The goal of metabodecon is to make deconvolution and alignment of 1D NMR spectra
 
 ## Download the example data
 
-The [metabodecon repository](https://gitlab.spang-lab.de/grw28475/metabodecon) contains two example datasets: [test](https://gitlab.spang-lab.de/grw28475/metabodecon/-/tree/main/misc/datasets/test) and [urine](https://gitlab.spang-lab.de/grw28475/metabodecon/-/tree/main/misc/datasets/urine). The "test" dataset contains 16 1D CPMG NMR spectra of blood plasma in Bruker format. This dataset should be used to test all functions including data alignment. The "urine" dataset contains 2 1D NOESY NMR spectra of urine. These spectra are available in both Bruker and jcamp-dx format. This dataset should be used to test the deconvolution of single NMR spectra without further alignment. Due to the size constraints for R packages, these datasets are not included by default when the package is installed, but must be downloaded explicitly afterwards.
+The [metabodecon repository](https://gitlab.spang-lab.de/grw28475/metabodecon) contains two example datasets: [test](https://gitlab.spang-lab.de/grw28475/metabodecon/-/tree/main/misc/datasets/test) and [urine](https://gitlab.spang-lab.de/grw28475/metabodecon/-/tree/main/misc/datasets/urine). The _test_ dataset contains 16 1D CPMG NMR spectra of blood plasma in Bruker format. The _urine_ dataset contains two 1D NOESY NMR spectra of urine. These spectra are available in both Bruker and jcamp-dx format. Due to the size constraints for R packages, these datasets are not included by default when the package is installed, but can be easily downloaded via the following commands:
 
 ```{r download-example-datasets}
 metabodecon::download_example_datasets()
