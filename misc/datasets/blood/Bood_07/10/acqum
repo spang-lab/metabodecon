@@ -1,0 +1,41 @@
+##TITLE= Parameter file, TopSpin 3.6.2
+##JCAMPDX= 5.0
+##DATATYPE= Parameter Values
+##NPOINTS= 1	$$ modification sequence number
+##ORIGIN= Bruker BioSpin GmbH
+##OWNER= genomik
+$$ 2021-01-23 06:43:54.201 +0100  genomik@CZC0399KS1
+$$ D:/nmrdata/genomik/nmr/AKI_1_24_035_P_1D_22_01_2021/10/acqum
+$$ process C:\Bruker\TopSpin3.6.2\prog\mod\xwish3.exe
+##$COMMENT= <>
+##$ECF= 1
+##$ECHOLST= (0..15)
+1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+##$ECOLLST= (0..15)
+1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+##$FLIPA= 0
+##$FOV1= 0
+##$FOV2= 0
+##$FOV3= 0
+##$FRARE= 1
+##$HEADER= <>
+##$INSTIT= <>
+##$METHOD= <>
+##$NECHOES= 1
+##$NPROJEC= 32
+##$NSLICES= 32
+##$PATPOS= 0
+##$RUNEXAM= -1
+##$SDIST= 1
+##$SOANGLE= 0
+##$SORIENT= 0
+##$SOT= <>
+##$SPOS= 0
+##$SPOSDIR= <>
+##$STHICK= 3
+##$T2DIST= 30
+##$TINV= 50
+##$TREC= 2700
+##$TREP= 3000
+##$TSCAN= 50000
+##END=

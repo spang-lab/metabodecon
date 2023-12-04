@@ -1,0 +1,27 @@
+##TITLE= Audit trail, TopSpin 3.6.2
+##JCAMPDX= 5.01
+##ORIGIN= Bruker BioSpin GmbH
+##OWNER= genomik
+$$ Y:/data/spektrometer/data/genomik/nmr/AKI_1_24_004_P_1D_22_01_2021/10/audita.txt
+##AUDIT TRAIL=  $$ (NUMBER, WHEN, WHO, WHERE, PROCESS, VERSION, WHAT)
+(   1,<2021-01-22 18:04:31.166 +0100>,<genomik>,<CZC0399KS1>,<go4>,<TopSpin 3.6.2>,
+      <created by zg
+	started at 2021-01-22 17:49:33.690 +0100,
+	POWCHK enabled, PULCHK disabled,
+       configuration hash MD5:
+       41 0F E6 B4 96 3C 7B C3 8C 90 28 62 67 23 F4 6E
+       data hash MD5: 64K
+       7A 5D 4C 69 60 4E 0E 5E 89 88 59 84 9F 0C EA 54>)
+(   2,<2021-01-22 18:04:31.229 +0100>,<genomik>,<CZC0399KS1>,<audit>,<TopSpin 3.6.2>,
+      <user comment:
+       ICON-NMR User ID: genomik
+       data hash MD5: 64K
+       7A 5D 4C 69 60 4E 0E 5E 89 88 59 84 9F 0C EA 54>)
+(   3,<2021-01-22 18:04:32.150 +0100>,<genomik>,<CZC0399KS1>,<dirdata>,<TopSpin 3.6.2>,
+      <wrpa from 1 10 "AKI_1_24_004_P_1D_22_01_2021" "D:/nmrdata/genomik/nmr"
+       data hash MD5: 64K
+       7A 5D 4C 69 60 4E 0E 5E 89 88 59 84 9F 0C EA 54>)
+##END=
+
+$$ hash MD5
+$$ 8C B4 35 86 4C E8 11 31 FD 1A A2 61 53 9F 18 D4
