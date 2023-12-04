@@ -1,0 +1,36 @@
+##TITLE= Audit trail, TOPSPIN		Version 3.1
+##JCAMPDX= 5.01
+##ORIGIN= Bruker BioSpin GmbH
+##OWNER= wiralle
+$$ C:/Users/wiralle/Desktop/prozAKI/AKI_1_24_014_P_1D_22_01_2021/10/pdata/10/auditp.txt
+##AUDIT TRAIL=  $$ (NUMBER, WHEN, WHO, WHERE, PROCESS, VERSION, WHAT)
+(   1,<2021-01-22 22:18:01.101 +0100>,<genomik>,<CZC0399KS1>,<go4>,<TopSpin 3.6.2>,
+      <created by zg
+	started at 2021-01-22 22:03:03.703 +0100,
+	POWCHK enabled, PULCHK disabled,
+       configuration hash MD5:
+       41 0F E6 B4 96 3C 7B C3 8C 90 28 62 67 23 F4 6E
+       data hash MD5: 64K
+       B9 31 58 AF C9 B2 6E 4F 6F A3 B9 85 BA F7 5A 29>)
+(   2,<2021-01-22 22:18:01.163 +0100>,<genomik>,<CZC0399KS1>,<audit>,<TopSpin 3.6.2>,
+      <user comment:
+       ICON-NMR User ID: genomik
+       data hash MD5: 64K
+       B9 31 58 AF C9 B2 6E 4F 6F A3 B9 85 BA F7 5A 29>)
+(   3,<2021-01-22 22:18:02.085 +0100>,<genomik>,<CZC0399KS1>,<dirdata>,<TopSpin 3.6.2>,
+      <wrpa from 1 10 "AKI_1_24_014_P_1D_22_01_2021" "D:/nmrdata/genomik/nmr"
+       data hash MD5: 64K
+       B9 31 58 AF C9 B2 6E 4F 6F A3 B9 85 BA F7 5A 29>)
+(   4,<2021-03-10 08:30:36.008 +0100>,<wiralle>,<pc58952>,<proc1d>,<TOPSPIN 3.1>,
+      <Start of raw data processing
+       efp LB = 0.3 FT_mod = 6 PKNL = 1 PHC0 = 63.7273 PHC1 = 2.176563 SI = 128K 
+       data hash MD5: 128K
+       59 85 94 43 2A 97 94 00 D9 68 1A AE D4 FD 09 CF>)
+(   5,<2021-03-10 08:30:36.773 +0100>,<wiralle>,<pc58952>,<proc1d>,<TOPSPIN 3.1>,
+      <abs ABSG = 5 
+       data hash MD5: 128K
+       DA D1 4F 9A 6B D6 B9 5D 60 96 50 B1 B2 04 5F F1>)
+##END=
+
+$$ hash MD5
+$$ E1 32 13 0C 0D 5F 66 BE 4B 78 E6 41 6F 54 46 00
