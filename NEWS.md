@@ -1,3 +1,15 @@
+# metabodecon 1.0.4
+
+Currently under development in branch `batch`.
+
+* Added `urine.dx` test file to `inst` folder to be able to write easy examples without requiring the user to download the data first. Solves todo `Feature: add minimal example dataset`.
+* Added parameter `ask` to function `generate_lorentz_curves()` and parameters for all values currently obtained interactively from the user, i.e. `file_name`, `number_iterations`, `range_water_signal_ppm`, `signal_free_region`, `smoothing_param`, `delta` and, `scale_factor`
+
+Only relevant for developers:
+
+* Bumped version to 1.0.4
+* Added the following todo to `TODOS.md`: *generate_lorentz_curves should not write to input folders by default*
+
 # metabodecon 1.0.3
 
 * Improved documentation
@@ -12,7 +24,6 @@ Only relevant for developers:
 * Added lots of todos to `TODOS.md`
 * Added `TODOS.md` to `.Rbuildignore`
 * Improved `.gitignore`
-* Wrote this change log
 
 # metabodecon 1.0.2
 

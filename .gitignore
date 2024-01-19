@@ -3,6 +3,7 @@
 *.code-workspace
 *.tar.gz
 *Rproj*
+inst/urine.dx\ *
 
 .vscode/
 *_cache/

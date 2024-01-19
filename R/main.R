@@ -1,37 +1,33 @@
 #' @export
-#' @title generate_lorentz_curves
-#' @description This function starts the actual deconvolution of your spectra
-#' and generates for each detected signal a Lorentz curve
-#' @param data_path (string) path to the parent folder where the original
-#' spectra are stored. After deconvolution this folder also contains for each
-#' spectrum two .txt files which contain for each spectrum the spectrum
-#' approximated from all deconvoluted signals and a parameter file that
-#' contains all numerical values of the deconvolution
-#' @param file_format (string) default is bruker, the other supported format
-#' is jcamp-dx
-#' @param make_rds (logic) if you would like to store your results as a rds
-#' file, default is set to FALSE, should be set to true to save your results if
-#' many spectra are evaluated and therefore computing time increases
-#' @examples \dontrun{
-#' data_path=c("C:/example_data")
-#' spectrum_data <- generate_lorentz_curves(
-#'   data_path = data_path,
-#'   file_format = "bruker",
-#'   make_rds = FALSE)
-#' }
-#' @details First, an automated curvature based signal selection is performed.
-#' Each signal is represented by 3 data points to allow the determination of
-#' initial Lorentz curves. These Lorentz curves are then iteratively adjusted
-#' to optimally approximate the measured spectrum. For each spectrum two text
-#' files will be created in the parent folder i.e. the folder given in data
-#' path. The spectrum approximated from all deconvoluted signals and a
-#' parameter file that contains all numerical values of the deconvolution.
-#' Furthermore, the numerical values of the deconvolution are also stored in a
-#' data_frame.
+#' @title Generate Lorentz Curves from NMR Spectra
+#' @description Deconvolutes NMR spetra and generates a Lorentz curve for each detected signal within a spectra.
+#' @param data_path (string) Path to the folder where the original spectra are stored. After deconvolution this folder contains two additional .txt files for each spectrum which contain the spectrum approximated from all deconvoluted signals and a parameter file that contains all numerical values of the deconvolution.
+#' @param file_format (string) Format of the spectra files.
+#' @param make_rds (bool) Store results as a rds file on disk? Should be set to TRUE if many spectra are evaluated to decrease computation time.
+#' @param file_name (string) Name of the NMR file in case only one specific spectrum within `data_path` should be analyzed. Note: for Bruker format the file name is usually the same as the folder name.
+#' @param number_iterations (int) Number of iterations for the approximation of the parameters for the Lorentz curves.
+#' @param range_water_signal_ppm (float) Half width of the water artefact in ppm.
+#' @param signal_free_region (float) Row vector with two entries consisting of the ppm positions for the left and right border of the signal free region of the spectrum.
+#' @param smoothing_param (int) Row vector with two entries consisting of the number of smoothing repeats for the whole spectrum and the number of data points (uneven) for the mean calculation.
+#' @param delta (float) Threshold value to distinguish between signal and noise.
+#' @param scale_factor (int) Row vector with two entries consisting of the factor to scale the x-axis and the factor to scale the y-axis.
+#' @param ask (bool) Whether to ask for user input during the deconvolution process. If set to FALSE, the provided default values will be used.
+#' @examples
+#' spectrum_data <- generate_lorentz_curves(data_path = system.file(package = "metabodecon"), file_format = "jcampdx", file_name = "urine.dx")
+#' @details First, an automated curvature based signal selection is performed. Each signal is represented by 3 data points to allow the determination of initial Lorentz curves. These Lorentz curves are then iteratively adjusted to optimally approximate the measured spectrum. For each spectrum two text files will be created in the parent folder i.e. the folder given in data path. The spectrum approximated from all deconvoluted signals and a parameter file that contains all numerical values of the deconvolution. Furthermore, the numerical values of the deconvolution are also stored in a data_frame.
 generate_lorentz_curves <- function(data_path,
-                                    file_format = "bruker",
-                                    make_rds = FALSE) {
-  spectrum_data <- MetaboDecon1D(data_path, file_format = "bruker")
+                                    file_format = c("bruker", "jcampdx"),
+                                    make_rds = FALSE,
+                                    file_name = NULL,
+                                    number_iterations = 10,
+                                    range_water_signal_ppm = 0.1527692,
+                                    signal_free_region = c(11.44494, -1.8828),
+                                    smoothing_param = c(2, 5),
+                                    delta = 6.4,
+                                    scale_factor = c(1000, 1000000),
+                                    ask = TRUE) {
+  file_format <- match.arg(file_format)
+  spectrum_data <- MetaboDecon1D(data_path, file_name, file_format, number_iterations, range_water_signal_ppm, signal_free_region, smoothing_param, delta, scale_factor)
   if (make_rds) {
     saveRDS(object = spectrum_data, file = file.path(data_path, "spectrum_data.rds"))
   }
@@ -83,8 +79,8 @@ get_ppm_range <- function(spectrum_data) {
 #' feat <- gen_feat_mat(
 #'   data_path = data_path,
 #'   ppm_range = ppm_range,
-#'   si_size_real_spectrum=si_size_real_spectrum,
-#'   scale_factor_x=scale_factor
+#'   si_size_real_spectrum = si_size_real_spectrum,
+#'   scale_factor_x = scale_factor
 #' )
 #' }
 #' @details The output of this function is a data frame containing a matrix of
@@ -97,7 +93,6 @@ gen_feat_mat <- function(data_path,
                          ppm_range,
                          si_size_real_spectrum,
                          scale_factor_x) {
-
   # Set highest/lowest ppm value and range
   message("Loading ppm range")
   ppm_highest_value <- max(ppm_range)
@@ -421,7 +416,7 @@ dohCluster <- function(X, peakList, refInd = 0, maxShift = 100, acceptLostPeak =
 #' @param si_size_real_spectrum (positive integer) number of real data points
 #' in your original spectra, e.g. 128k = 131072 data points
 #' @examples \dontrun{
-#' after_speaq_mat<-speaq_align(feat, maxShift)
+#' after_speaq_mat <- speaq_align(feat, maxShift)
 #' }
 #' @details The output of speaq_align is a data matrix of aligned integral
 #' values. Each row contains the data of each spectrum and each column
@@ -519,7 +514,7 @@ combine_peaks <- function(shifted_mat,
                           lower_bound,
                           spectrum_data,
                           data_path) {
-  shifted_mat_no_na <-  replace(is.na(shifted_mat), 0)
+  shifted_mat_no_na <- replace(is.na(shifted_mat), 0)
   col_entries <- numeric(ncol(shifted_mat_no_na))
   for (i in 1:ncol(shifted_mat_no_na)) {
     col_entries[i] <- length(which(shifted_mat_no_na[, i] != 0))
