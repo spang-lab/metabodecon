@@ -2,7 +2,8 @@ pandoc: 2.19.2
 pkgdown: 2.0.7
 pkgdown_sha: ~
 articles:
+  FAQ: FAQ.html
   MetaboDecon1D: MetaboDecon1D.html
   metabodecon: metabodecon.html
-last_built: 2024-01-19T11:00Z
+last_built: 2024-01-19T15:29Z
 

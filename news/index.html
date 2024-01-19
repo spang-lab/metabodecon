@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">metabodecon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.3</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -27,7 +27,8 @@
 <li class="nav-item dropdown">
   <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
   <div class="dropdown-menu" aria-labelledby="dropdown-articles">
-    <a class="dropdown-item" href="../articles/MetaboDecon1D.html">UNKNOWN TITLE</a>
+    <a class="dropdown-item" href="../articles/MetaboDecon1D.html">MetaboDecon1D</a>
+    <a class="dropdown-item" href="../articles/FAQ.html">FAQ</a>
   </div>
 </li>
 <li class="active nav-item">
@@ -47,6 +48,25 @@
       
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="1.0.3" id="metabodecon-103">metabodecon 1.0.3<a class="anchor" aria-label="anchor" href="#metabodecon-103"></a></h2>
+<ul><li>Improved documentation</li>
+<li>Switched from MIT License to GPL-3 to match the license of the predecessor package <code>MetaboDecon1D</code>
+</li>
+<li>Updated <code><a href="../reference/get_data_dir.html">get_data_dir()</a></code> to accept <code>"blood"</code> as new value for parameter <code>dataset_name</code>
+</li>
+<li>Updated <code><a href="../reference/download_example_datasets.html">download_example_datasets()</a></code> to download the datasets from the github repo instead of the old spang-lab repo</li>
+</ul><p>Only relevant for developers:</p>
+<ul><li>Removed table of contents from <code>README.md</code> as it’s a bit overkill for approx. 50 lines of text</li>
+<li>Added <code>docs</code> folder to <code>.gitignore</code>. Reason: we changed all vignettes to pkgdown articles which will be displayed only at our Github Pages website and can be regenerated from folder <code>vignettes</code> upon deployment.</li>
+<li>Added lots of todos to <code>TODOS.md</code>
+</li>
+<li>Added <code>TODOS.md</code> to <code>.Rbuildignore</code>
+</li>
+<li>Improved <code>.gitignore</code>
+</li>
+<li>Wrote this change log</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.0.2" id="metabodecon-102">metabodecon 1.0.2<a class="anchor" aria-label="anchor" href="#metabodecon-102"></a></h2>
 <ul><li>Minor URL and spelling adjustments to pass CRAN checks</li>

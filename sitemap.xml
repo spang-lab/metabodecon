@@ -4,10 +4,13 @@
     <loc>/404.html</loc>
   </url>
   <url>
-    <loc>/LICENSE-text.html</loc>
+    <loc>/LICENSE.html</loc>
   </url>
   <url>
     <loc>/TODOS.html</loc>
+  </url>
+  <url>
+    <loc>/articles/FAQ.html</loc>
   </url>
   <url>
     <loc>/articles/MetaboDecon1D.html</loc>
