@@ -1,3 +1,12 @@
+---
+title: "MetaboDecon1D"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{MetaboDecon1D}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
 # Metabodecon1D Usage Example
 
 The `MetaboDecon1D` package is the predecessor of this package and can be downloaded from [uni-regensburg.de/medicine/functional-genomics/staff/prof-wolfram-gronwald/software](https://www.uni-regensburg.de/medicine/functional-genomics/staff/prof-wolfram-gronwald/software/index.html). We include this usage example in here so we can easily reference old behaviour and point out added features in `metabodecon`.
@@ -23,27 +32,26 @@ library(MetaboDecon1D)
 ## Deconvolute one spectrum in Bruker format
 
 ```R
-# Do the deconvolution
 result <- MetaboDecon1D(
     filepath = "load_example_path",
     filename = "example_human_urine_spectrum",
     file_format = "bruker"
 )
+```
+![](MetaboDecon1D/bruker/1_signal_borders.png)
+![](MetaboDecon1D/bruker/2_water_artefact.png)
+![](MetaboDecon1D/bruker/3_output.png)
 
-# Visualize results and store plots as png
+## Visualize results and store plots as png
+
+```R
 str(result)
 plot_triplets(result)
 plot_lorentz_curves_save_as_png(result)
 plot_spectrum_superposition_save_as_png(result)
 ```
 
-![](MetaboDecon1D/bruker/1_signal_borders.png)
-![](MetaboDecon1D/bruker/2_water_artefact.png)
-![](MetaboDecon1D/bruker/3_output.png)
 ![](MetaboDecon1D/bruker/4_plots.png)
-![](MetaboDecon1D/bruker/5_water_artefact_n.png)
-![](MetaboDecon1D/bruker/6_n_spectra_1.png)
-![](MetaboDecon1D/bruker/7_n_spectra_2.png)
 
 ## Deconvolute one spectrum in jcamp-dx format
 
@@ -56,7 +64,7 @@ result <- MetaboDecon1D(
 str(result)
 ```
 
-![](MetaboDecon1D_Example/jcamp_dx.png)
+<img src = "MetaboDecon1D/jcamp/1_one_jcamp_dx.png">
 
 ## Deconvolute multiple spectra in Bruker format
 
@@ -68,11 +76,12 @@ result <- MetaboDecon1D(
 str(result)
 ```
 
-<img src = "MetaboDecon1D_Example/bruker_n_spectra.png" width = "49%">
-<img src = "MetaboDecon1D_Example/bruker_n_spectra_2.png" width = "49%">
+<img src = "MetaboDecon1D/bruker/5_n_spectra_1.png" width = "49%">
+<img src = "MetaboDecon1D/bruker/6_n_spectra_2.png" width = "49%">
 
 ## Deconvolute multiple spectra in jcamp-dx format
 
+<!-- CONTINUE HERE: REDO PLOTS -->
 
 ```R
 jcamp_results <- MetaboDecon1D(
@@ -80,7 +89,9 @@ jcamp_results <- MetaboDecon1D(
     file_format = "jcampdx"
 )
 plot_triplets(jcamp_results)
+plot_lorentz_curves_save_as_png(jcamp_results)
+plot_spectrum_superposition_save_as_png(jcamp_results)
 ```
 
-<img src = "MetaboDecon1D_Example/jcamp_n_1.png" width = "49%">
-<img src = "MetaboDecon1D_Example/jcamp_n_2.png" width = "49%">
+<img src = "MetaboDecon1D/jcamp/2_many_jcamp_dxs_1.png" width = "49%">
+<img src = "MetaboDecon1D/jcamp/3_many_jcamp_dxs_2.png" width = "49%">

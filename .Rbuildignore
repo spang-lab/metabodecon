@@ -21,3 +21,4 @@
 ^revdep$
 ^submit_to_cran\.R$
 ^vignettes$
+^TODOS\.md$

@@ -12,7 +12,9 @@ constraints for R packages, these datasets are not included by default when
 the package is installed, but must be downloaded explicitly afterwards.
 }
 \examples{
-\dontrun{download_example_datasets()}
+\dontrun{
+download_example_datasets()
+}
 }
 \seealso{
 \code{\link[=get_data_dir]{get_data_dir()}}

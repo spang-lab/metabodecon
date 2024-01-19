@@ -2,7 +2,7 @@ Package: metabodecon
 Language: en-US
 Type: Package
 Title: Functions for Deconvolution of 1d NMR Spectra
-Version: 1.0.2
+Version: 1.0.3
 Authors@R: c(
     person(given = "Wolfram",
            family = "Gronwald",
@@ -22,7 +22,7 @@ Authors@R: c(
            email = "yanren-linda.hu@klinik.uni-regensburg.de")
     )
 Description: Functions for deconvolution of 1D NMR spectra followed by alignment of the data and some additional post-processing resulting in a data matrix of aligned signal integrals. The deconvolution part uses the code base of 'MetaboDecon1D' (<doi:10.3390/metabo11070452>). The alignment is done using functions from the 'speaq' package (<https://CRAN.R-project.org/package=speaq>).
-License: MIT + file LICENSE
+License: GPL (>= 3)
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)

@@ -17,24 +17,23 @@ The goal of metabodecon is to make deconvolution and alignment of 1D NMR spectra
 
 ## Download the example data
 
-The [metabodecon repository](https://gitlab.spang-lab.de/grw28475/metabodecon) contains two example datasets: [test](https://gitlab.spang-lab.de/grw28475/metabodecon/-/tree/main/misc/datasets/test) and [urine](https://gitlab.spang-lab.de/grw28475/metabodecon/-/tree/main/misc/datasets/urine). The _test_ dataset contains 16 1D CPMG NMR spectra of blood plasma in Bruker format. The _urine_ dataset contains two 1D NOESY NMR spectra of urine. These spectra are available in both Bruker and jcamp-dx format. Due to the size constraints for R packages, these datasets are not included by default when the package is installed, but can be easily downloaded via the following commands:
+The [metabodecon repository](https://github.com/spang-lab/metabodecon) contains two example datasets: [blood](https://github.com/spang-lab/metabodecon/tree/main/misc/datasets/blood)^[previously called _test_] and [urine](https://github.com/spang-lab/metabodecon/tree/main/misc/datasets/urine). The _blood_ dataset contains 16 1D CPMG NMR spectra of blood plasma in Bruker format. The _urine_ dataset contains two 1D NOESY NMR spectra of urine. These spectra are available in both Bruker and jcamp-dx format. Due to the size constraints for R packages, these datasets are not included by default when the package is installed, but must be explicitly downloaded afterwards via command `download_example_datasets()`.
 
 ```{r download-example-datasets}
-metabodecon::download_example_datasets()
-data_path <- metabodecon::get_data_dir("test")
+library(metabodecon)
+download_example_datasets()
 ```
 
-## Use MetaboDecon1D to convert a spectrum into Lorentz curves
+## Use metabodecon to convert a spectrum into Lorentz curves
 
 ```{r, eval=FALSE}
-spectrum_data <- metabodecon::generate_lorentz_curves(
-  data_path = data_path,
-  file_format = "bruker",
-  make_rds = FALSE
+spectrum_data <- generate_lorentz_curves(
+  data_path = get_data_dir("blood"),
+  file_format = "bruker"
 )
 ```
 
-After calling this function, R will request some interactive input from the user. Note that the data_path i.e. the folder where the samples with their spectra are stored is given by the data_path argument. All samples in this folder will be automatically analyzed. Therefore, you do not have to specify the individual sample names. But you have to specify which spectrum and which processing of each sample should be used. The answers you should give for the provided examples are written in bold:
+After calling function `generate_lorentz_curves()`, R will request some interactive input from the user. Note that the data path i.e. the folder where the samples with their spectra are stored is given by the `data_path` argument. All samples in this folder will be automatically analyzed. Therefore, you do not have to specify the individual sample names. But you have to specify which spectrum and which processing of each sample should be used. The answers you should give for the provided examples are written in bold:
 
 * What is the name of the subfolder of your filepath? The different spectra of a sample are specified by numbers, here you have to specify which spectrum should be used (e.g. 10 for C:/Users/Username/Desktop/spectra_folder/spectrum_name/10) **10**
 * What is the name of the subsubsubfolder of your filepath? Each spectrum can be processed with different settings, each of these computations is stored under a different number (e.g. 10 for C:/Users/Username/Desktop/spectra_folder/spectrum_name/10/pdata/10): **10**

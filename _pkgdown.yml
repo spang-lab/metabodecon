@@ -1,4 +1,9 @@
 url: ~
 template:
   bootstrap: 5
-
+articles:
+- title: Articles
+  navbar: ~
+  contents:
+  - MetaboDecon1D
+  - FAQ

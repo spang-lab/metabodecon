@@ -6,10 +6,6 @@
 
 A package for deconvolution of 1D NMR spectra using `MetaboDecon1D` followed by alignment of the data using the `speaq` package and some additional post-processing, resulting in a data matrix of aligned signal integrals.
 
-- [Installation](#installation)
-- [Usage](#usage)
-- [Contribute](#contribute)
-
 ## Installation
 
 Copy paste the following command in a running R session (e.g. in RStudio):

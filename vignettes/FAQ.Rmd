@@ -1,8 +1,19 @@
+---
+title: "FAQ"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{FAQ}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
 # FAQ
 
 ## Water Artifact
 
-__Question:__ When I choose `n` for `Water artefact fully inside red vertical lines? (y/n)`, MetaboDecon1D asks me to `Choose another half width range (in ppm) for the water artefact`, instead of left and right borders. Why is that and what should I enter here?
+__Question:__ When I choose `n` for `Water artefact fully inside red vertical lines? (y/n)`, metabodecon asks me to `Choose another half width range (in ppm) for the water artefact`, instead of left and right borders. Why is that and what should I enter here?
+
+![](faq/water_artefact_n.png)
 
 __Answer:__ the water signal is always centered by Bruker, so you only have to specify the half width range to make the water area around the midpoint wider or narrower.
 

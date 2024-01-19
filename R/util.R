@@ -3,13 +3,13 @@
 #' @title Retrieve directory path of an example dataset
 #' @description This function return the path to the directory storing the
 #' example files shipped with metabodecon.
-#' @param dataset_name Either an string, "test" or "urine".
+#' @param dataset_name Either `""`, `"test"`, `"blood"` or `"urine"`.
 #' @param warn Whether to print a warning message when the example folders do
 #' not yet exist, i.e. [download_example_datasets()] has not been called yet.
 #' @examples get_data_dir("urine")
 #' @seealso [download_example_datasets()]
-get_data_dir <- function(dataset_name = c("", "test", "urine"), warn = TRUE) {
-  dataset_name = match.arg(dataset_name)
+get_data_dir <- function(dataset_name = c("", "blood", "test", "urine"), warn = TRUE) {
+  dataset_name <- match.arg(dataset_name)
   base_data_dir <- normalizePath(
     path = tools::R_user_dir(package = "metabodecon", which = "data"),
     winslash = "/",
@@ -31,28 +31,30 @@ get_data_dir <- function(dataset_name = c("", "test", "urine"), warn = TRUE) {
 #' @description Downloads the example files shipped wit metabodecon.  Due to the size
 #' constraints for R packages, these datasets are not included by default when
 #' the package is installed, but must be downloaded explicitly afterwards.
-#' @examples \dontrun{download_example_datasets()}
+#' @examples \dontrun{
+#' download_example_datasets()
+#' }
 #' @seealso [get_data_dir()]
 download_example_datasets <- function() {
-  data_dir = get_data_dir(warn = FALSE)
+  data_dir <- get_data_dir(warn = FALSE)
   dir.create(data_dir, showWarnings = FALSE, recursive = TRUE)
-  url <- "https://gitlab.spang-lab.de/api/v4/projects/690/repository/archive.zip"
+  url <- "https://github.com/spang-lab/metabodecon/archive/refs/tags/v1.0.2.zip"
   repo_zip <- file.path(data_dir, "repo.zip")
   repo_dir <- gsub(".zip", "", repo_zip)
-  headers <- c(`PRIVATE-TOKEN` = "glpat-ndxyfy5Ty7yksgy9MAFs")
+  # headers <- c(`PRIVATE-TOKEN` = "glpat-ndxyfy5Ty7yksgy9MAFs")
   if (!file.exists(repo_zip)) {
     message(sprintf("Downloading %s as %s", url, repo_zip))
-    utils::download.file(url, repo_zip, headers = headers, quiet = TRUE)
+    utils::download.file(url, repo_zip, quiet = TRUE) # headers = headers, 
   }
   if (!dir.exists(repo_dir)) {
     message("Extracting ", repo_zip)
     utils::unzip(zipfile = repo_zip, exdir = repo_dir)
   }
-  for (dataset_name in c("urine", "test")) {
-    dataset_dir = get_data_dir(dataset_name, warn = FALSE)
+  for (dataset_name in c("urine", "blood", "test")) {
+    dataset_dir <- get_data_dir(dataset_name, warn = FALSE)
     src_dir <- Sys.glob(file.path(repo_dir, "*/misc/datasets", dataset_name))
     if (!dir.exists(dataset_dir)) {
-      message("Copying\n", src_dir, "to\n", data_dir)
+      message("Copying ", src_dir, " to ", data_dir)
       file.copy(src_dir, data_dir, recursive = TRUE)
     }
   }
