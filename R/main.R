@@ -12,8 +12,9 @@
 #' @param delta (float) Threshold value to distinguish between signal and noise.
 #' @param scale_factor (int) Row vector with two entries consisting of the factor to scale the x-axis and the factor to scale the y-axis.
 #' @param ask (bool) Whether to ask for user input during the deconvolution process. If set to FALSE, the provided default values will be used.
-#' @examples
+#' @examples \dontrun{
 #' spectrum_data <- generate_lorentz_curves(data_path = system.file(package = "metabodecon"), file_format = "jcampdx", file_name = "urine.dx")
+#' }
 #' @details First, an automated curvature based signal selection is performed. Each signal is represented by 3 data points to allow the determination of initial Lorentz curves. These Lorentz curves are then iteratively adjusted to optimally approximate the measured spectrum. For each spectrum two text files will be created in the parent folder i.e. the folder given in data path. The spectrum approximated from all deconvoluted signals and a parameter file that contains all numerical values of the deconvolution. Furthermore, the numerical values of the deconvolution are also stored in a data_frame.
 generate_lorentz_curves <- function(data_path,
                                     file_format = c("bruker", "jcampdx"),

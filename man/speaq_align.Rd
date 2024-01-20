@@ -46,6 +46,6 @@ alignment by speaq.
 }
 \examples{
 \dontrun{
-after_speaq_mat<-speaq_align(feat, maxShift)
+after_speaq_mat <- speaq_align(feat, maxShift)
 }
 }

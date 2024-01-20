@@ -38,8 +38,8 @@ and individual parameters of the signals are stored in the data structure.
 feat <- gen_feat_mat(
   data_path = data_path,
   ppm_range = ppm_range,
-  si_size_real_spectrum=si_size_real_spectrum,
-  scale_factor_x=scale_factor
+  si_size_real_spectrum = si_size_real_spectrum,
+  scale_factor_x = scale_factor
 )
 }
 }
