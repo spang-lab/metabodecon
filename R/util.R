@@ -62,6 +62,7 @@ download_example_datasets <- function(dst_dir = NULL,
         return(cached_zip)
     } else {
         dst_zip <- file.path(dst_dir, basename(cached_zip))
+        message(sprintf("Copying cached archive %s to %s", cached_zip, dst_dir))
         file.copy(cached_zip, dst_zip)
         if (extract) extract_example_datasets(dst_zip)
         return(dst_zip)
