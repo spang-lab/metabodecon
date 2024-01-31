@@ -1,3 +1,5 @@
+# Main #####
+
 #' @export
 #' @title Generate Lorentz Curves from NMR Spectra
 #' @description Deconvolutes NMR spetra and generates a Lorentz curve for each detected signal within a spectra.
@@ -12,7 +14,11 @@
 #' @param scale_factor (int) Row vector with two entries consisting of the factor to scale the x-axis and the factor to scale the y-axis.
 #' @param ask (bool) Whether to ask for user input during the deconvolution process. If set to FALSE, the provided default values will be used.
 #' @examples \dontrun{
-#' spectrum_data <- generate_lorentz_curves(data_path = system.file(package = "metabodecon"), file_format = "jcampdx", filename = "urine.dx")
+#' spectrum_data <- generate_lorentz_curves(
+#'   data_path = system.file(package = "metabodecon"),
+#'   file_format = "jcampdx",
+#'   filename = "urine.dx"
+#' )
 #' }
 #' @details First, an automated curvature based signal selection is performed. Each signal is represented by 3 data points to allow the determination of initial Lorentz curves. These Lorentz curves are then iteratively adjusted to optimally approximate the measured spectrum. For each spectrum two text files will be created in the parent folder i.e. the folder given in data path. The spectrum approximated from all deconvoluted signals and a parameter file that contains all numerical values of the deconvolution. Furthermore, the numerical values of the deconvolution are also stored in a data_frame.
 generate_lorentz_curves_v2 <- function(data_path,
@@ -56,7 +62,7 @@ generate_lorentz_curves_v2 <- function(data_path,
   }
 
   # Do actual deconvolution
-  return_list <- list()
+  spectrum_data <- list()
   for (i in 1:length(files)) {
     # Bruker Path Example
     #   fullpath:  C:\Users\tobi\.local\share\R\metabodecon\urine\urine_2\10\pdata\10\procs
@@ -72,9 +78,11 @@ generate_lorentz_curves_v2 <- function(data_path,
     #   name:                                                    urine_2
     name <- files[i] # bruker: `urine_2`, jcampdx: `urine_2.dx`
     filepath <- switch(file_format, "bruker" = paste(data_path, name, spectroscopy_value, sep="/"), "jcampdx" = data_path, stop("Invalid file format"))
-    return_list[[files[i]]] <- deconvolute_spectrum(filepath, name, file_format, same_parameter, processing_value, number_iterations, range_water_signal_ppm, signal_free_region, smoothing_param, delta, scale_factor, current_filenumber = i, number_of_files = length(files))
-    range_water_signal_ppm <- list_file$range_water_signal_ppm # Save `range_water_signal` and `signal_free_region` for next loop passage as those might have been adjusted interactively by the user
-    signal_free_region <- list_file$signal_free_region
+    x <- deconvolute_spectrum(filepath, name, file_format, same_parameter, processing_value, number_iterations, range_water_signal_ppm, signal_free_region, smoothing_param, delta, scale_factor, current_filenumber = i, number_of_files = length(files))
+    spectrum_data[[name]] <- x
+    # Save `range_water_signal` and `signal_free_region` for next loop passage as those might have been adjusted interactively by the user
+    range_water_signal_ppm <- x$range_water_signal_ppm
+    signal_free_region <- x$signal_free_region
   }
 
   # Save results
@@ -83,7 +91,6 @@ generate_lorentz_curves_v2 <- function(data_path,
   }
   return(spectrum_data)
 }
-
 
 deconvolute_spectrum <- function(filepath, name, file_format, same_parameter, processing_value, number_iterations, range_water_signal_ppm, signal_free_region, smoothing_param, delta, scale_factor, current_filenumber, number_of_files) {
   message(paste("Start deconvolution of ", name, ":", sep = ""))
@@ -110,7 +117,7 @@ deconvolute_spectrum <- function(filepath, name, file_format, same_parameter, pr
   return(y)
 }
 
-######### General Utils #######################################################
+# Helpers #####
 
 #' @title Get numeric input from user
 #' @description Prompts the user for input and checks if the input is a number between a minimum and maximum value. If the input is not valid, it keeps asking the user for input until they provide a valid response.
@@ -122,6 +129,7 @@ deconvolute_spectrum <- function(filepath, name, file_format, same_parameter, pr
 #' @examples \dontrun{
 #' get_num_input("Enter a number between 1 and 10: ", min = 1, max = 10)
 #' }
+#' @keywords internal
 get_num_input <- function(prompt, min = -Inf, max = Inf, int = FALSE) {
   pat <- if (int) "^[0-9]+$" else "^[0-9]*\\.[0-9]+$"
   typ <- if (int) "number" else "value"
@@ -142,6 +150,7 @@ get_num_input <- function(prompt, min = -Inf, max = Inf, int = FALSE) {
 #' @examples \dontrun{
 #' get_str_input("Enter a, b or c: ", c("a", "b", "c"))
 #' }
+#' @keywords internal
 get_str_input <- function(prompt, valid) {
   x <- readline(prompt = prompt)
   n <- length(valid)
@@ -161,6 +170,7 @@ get_str_input <- function(prompt, valid) {
 #' show_dir <- get_yn_input("List dir content? (y/n) ")
 #' if (show_dir) print(dir())
 #' }
+#' @keywords internal
 get_yn_input <- function(prompt) {
   if (!grepl("(y/n)", prompt, fixed = TRUE)) {
     prompt <- paste0(prompt, " (y/n) ")
@@ -175,17 +185,20 @@ get_yn_input <- function(prompt) {
 #' @param x A vector to collapse.
 #' @param sep A string to use as the separator between elements. Default is ", ".
 #' @return A single string with elements of x separated by sep.
-#' @examples
+#' @examples \dontrun{
 #' collapse(c("a", "b", "c")) # "a, b, c"
 #' collapse(1:5, sep = "-")   # "1-2-3-4-5"
+#' }
+#' @keywords internal
 collapse <- function(x, sep = ", ") {
-  paste(x, collapse = ", ")
+  paste(x, collapse = sep)
 }
 
 #' @title Check if a value is NULL or NA
 #' @description Checks if a given value is NULL or NA.
 #' @param x The value to check.
 #' @return TRUE if x is NULL or x is NA, else FALSE.
+#' @keywords internal
 is.none <- function(x) {
   return(is.null(x) || is.na(x))
 }
