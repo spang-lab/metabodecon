@@ -38,8 +38,8 @@ Whenever you update any of those things, you should run the below commands to ch
 
 ```R
 devtools::test() # Execute tests from tests folder
-devtools::check() # Check package formalities
 devtools::document() # Build files in man folder
+devtools::check() # Check package formalities
 devtools::install() # Install as required by next command
 pkgdown::build_site() # Build website in docs folder
 ```

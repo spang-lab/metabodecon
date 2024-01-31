@@ -17,3 +17,4 @@ docs/
 inst/doc/
 tests/testthat_outputs/
 tests/testthat/_snaps/
+misc/example_datasets.zip

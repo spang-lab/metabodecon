@@ -33,6 +33,7 @@ Imports:
     readJDX,
     speaq
 Suggests:
+    digest,
     knitr,
     rmarkdown,
     testthat (>= 3.0.0)
