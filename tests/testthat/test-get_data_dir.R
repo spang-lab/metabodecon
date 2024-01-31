@@ -1,38 +1,34 @@
-existing_temp_dir <- file.path(tempdir(), timestamp)
-dir.create(existing_temp_dir, recursive = TRUE)
-
-test_that("datadir returns correct persistent path", {
-  x <- datadir(persistent = TRUE, warn = FALSE)
-  y <- datadir_persistent()
-  expect_equal(x, y)
-})
-
-test_that("datadir returns correct temp path", {
-  x <- datadir(persistent = FALSE, warn = FALSE)
-  y <- datadir_temp()
-  expect_equal(x, y)
-})
-
-test_that("datadir returns correct path if '{datadir_persistent}' exists", {
-  with_mock_datadirs({
-    x <- datadir()
+test_that("1. datadir(persistent = TRUE, warn = FALSE)", {
+    x <- datadir(persistent = TRUE, warn = FALSE)
     y <- datadir_persistent()
     expect_equal(x, y)
-  })
 })
 
-test_that("datadir returns correct path if '{datadir_persistent}' does not exist", {
-  with_mock_datadirs(persistent = FALSE, {
-    x <- datadir()
+test_that("2. datadir(persistent = FALSE, warn = FALSE)", {
+    x <- datadir(persistent = FALSE, warn = FALSE)
     y <- datadir_temp()
     expect_equal(x, y)
-  })
 })
 
-test_that("datadir issues a warning when the file does not exist", {
-  expect_warning(datadir(file = "non_existent_file"))
+test_that("3. datadir() with existing <datadir_persistent> ", {
+    with(datadir_persistent = "empty", {
+        x <- datadir()
+        y <- datadir_persistent()
+    })
+    expect_equal(x, y)
 })
 
-test_that("datadir does not issue a warning when warn is FALSE", {
-  expect_silent(datadir(file = "non_existent_file", warn = FALSE))
+test_that("4. datadir() with missing <datadir_persistent> and <datadir_temp>", {
+    x <- with(datadir_persistent = "missing", datadir_temp = "missing", message = "captured", {
+        datadir(file = "non_existent_file")
+    })
+    expected_warning <- paste("Warning:", x$rv, "does not exist. Please call `download_example_datasets()` first.")
+    expect_equal(x$message$text, expected_warning)
+})
+
+test_that("5. datadir(warn = FALSE) with missing <datadir_persistent> and <datadir_temp>", {
+    x <- with(datadir_persistent = "missing", datadir_temp = "missing", message = "captured", {
+        datadir(file = "non_existent_file", warn = FALSE)
+    })
+    expect_equal(x$message$text, character())
 })

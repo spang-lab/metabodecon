@@ -5,8 +5,8 @@ test_that("pkg.file returns correct path to DESCRIPTION", {
 })
 
 test_that("pkg.file returns correct path to file in inst folder", {
-    expected <- system.file("urine.dx", package = "metabodecon")
-    actual <- pkg.file("urine.dx")
+    expected <- system.file("WORDLIST", package = "metabodecon")
+    actual <- pkg.file("WORDLIST")
     expect_equal(actual, expected)
 })
 

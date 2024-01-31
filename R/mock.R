@@ -19,6 +19,7 @@
 #' Elements `output`, `message` and `plots` are environments containing the captured output, message and plots, respectively. For further details see [redirect()].
 #' @noRd
 with <- function(expr,
+                 warn = 1,
                  testdir = NULL,
                  answers = NULL,
                  output = NULL,
@@ -30,9 +31,15 @@ with <- function(expr,
     mock_readline(answers)
     mock_datadir(type = "temp", state = datadir_temp)
     mock_datadir(type = "persistent", state = datadir_persistent)
+    push_option(warn = warn)
     x <- redirect(output = output, message = message, plots = plots)
     push_testdir(testdir)
-    x$rv <- expr
+    withCallingHandlers({
+        x$rv <- expr
+    }, warning = function(w) {
+        message("Warning: ", conditionMessage(w))
+        invokeRestart("muffleWarning")
+    })
     x
 }
 
@@ -59,6 +66,7 @@ with <- function(expr,
 #' redirects <- redirect(output = "output.txt", message = "captured", plots = "plots.pdf")
 #' print("This goes to output.txt")
 #' message("This is captured")
+#' warning("This is captured as well")
 #' plot(1:10) # This plot is saved to plots.pdf
 #' restore()
 #' cat(redirects$message$text)
@@ -134,10 +142,15 @@ mock_datadir <- function(type = c("temp", "persistent"), state = c("missing", "e
 #' @param wd Logical. If TRUE, the working directory is restored by calling [popd()] with option `all=TRUE`.
 #' @return Invisible NULL.
 #' @noRd
-restore <- function(fns = NULL, streams = c("output", "message", "plots"), wd = TRUE) {
+restore <- function(fns = NULL,
+                    streams = c("output", "message", "plots"),
+                    wd = TRUE,
+                    opts = NULL) {
     fns <- if (is.null(fns)) names(penv$fn_backups) else fns
+    opts <- if (is.null(opts)) names(penv$option_backups) else opts
     lapply(fns, restore_fn)
     lapply(streams, restore_stream)
+    lapply(opts, restore_option)
     if (wd) popd(all = TRUE)
     invisible()
 }
@@ -203,6 +216,13 @@ restore_stream <- function(stream) {
     }
 }
 
+restore_option <- function(opt) {
+    if (!is.null(penv$option_backups[[opt]])) {
+        options(opt = penv$option_backups[[opt]])
+        penv$option_backups[[opt]] <- NULL
+    }
+}
+
 #' @title Creates a mock readline function for testing
 #' @description Creates a mock readline function that returns the next element from a character vector each time it's called.
 #' Used internally by [mock_readline()].
@@ -264,10 +284,17 @@ get_datadir_mock <- function(type = c("persistent", "temp"),
 #' @return Invisible NULL.
 #' @noRd
 push_testdir <- function(testdir) {
-    if (is.null(testdir)) {
+    if (!is.null(testdir)) {
         new_wd <- file.path(testdir(), testdir)
         mkdirs(new_wd)
         pushd(new_wd)
+    }
+}
+
+push_option <- function(warn = NULL) {
+    if (!is.null(warn)) {
+        penv$option_backups$warn <- getOption("warn")
+        options(warn = warn)
     }
 }
 

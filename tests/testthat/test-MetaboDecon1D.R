@@ -1,6 +1,6 @@
 test_that("Deconvolution of 1 jcampdx works", {
   skip_if(Sys.getenv("SKIP_SLOW_TESTS") == "TRUE", "Skipped because SKIP_SLOW_TESTS=TRUE")
-  output_dir <- prepare_output_dir(
+  output_dir <- prepare_test_dir(
     fn = "MetaboDecon1D",
     tc = "1",
     inputs = c(urine.dx = "example_datasets/jcampdx/urine/urine.dx")

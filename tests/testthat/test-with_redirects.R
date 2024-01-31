@@ -1,7 +1,7 @@
 VERBOSE <- FALSE
 
 test_that("with_redirects works", {
-  output_dir <- prepare_output_dir("with_redirects", "1", verbose = VERBOSE)
+  output_dir <- prepare_test_dir("with_redirects", "1", verbose = VERBOSE)
   owd <- setwd(output_dir)
   on.exit(setwd(owd), add = TRUE)
   with_redirects(stdout = "out.txt", stderr = "err.txt", plots = "plots.pdf", expr = {

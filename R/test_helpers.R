@@ -2,11 +2,13 @@
 #' @title Environment for storing global package data
 #' @description `penv` is an environment that contains the following elements:
 #' * `fn_backups`: used by [mock()] to store original functions so that [restore()] can restore them.
+#' * `option_backups`: used by [push_option()] to store original options so that [restore()] can restore them.
 #' * `open_conns`: used by [redirect()] to store open connections so that [restore()] can close them.
 #' * `wds`: used by [pushd()] so that [popd()] and [restore()] can restore the working directory.
 #' @noRd
 penv <- as.environment(list(
     fn_backups = list(),
+    option_backups = list(),
     open_conns = list(),
     wds = list()
 ))
@@ -116,14 +118,14 @@ test <- function(all=FALSE) {
 #' @param verbose Print info messages.
 #' @return Path to the created output directory.
 #' @examples \dontrun{
-#' output_dir <- prepare_output_dir("myfunc", "1")
-#' output_dir <- prepare_output_dir("myfunc", "2", inputs = pkg.file("misc/datasets/urine"))
+#' output_dir <- prepare_test_dir("myfunc", "1")
+#' output_dir <- prepare_test_dir("myfunc", "2", inputs = pkg.file("misc/datasets/urine"))
 #' }
 #' @noRd
-prepare_output_dir <- function(fn, tc, inputs = c(), verbose = TRUE) {
+prepare_test_dir <- function(fn, tc, inputs = c(), verbose = TRUE) {
     msg <- if (verbose) cat2 else pass
     d <- tempdir()
-    p <- normalizePath(file.path(d, "outputs", fn, tc), winslash = "/", mustWork = FALSE)
+    p <- normalizePath(file.path(d, "tests", fn, tc), winslash = "/", mustWork = FALSE)
     msg("Deleting and creating:", p)
     unlink(p, recursive = TRUE)
     dir.create(p, recursive = TRUE)
