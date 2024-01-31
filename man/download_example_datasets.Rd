@@ -4,12 +4,20 @@
 \alias{download_example_datasets}
 \title{Download metabodecon example datasets}
 \usage{
-download_example_datasets()
+download_example_datasets(
+  dst_dir = NULL,
+  extract = TRUE,
+  cache_persistent = NULL,
+  ask = interactive()
+)
 }
 \description{
-Downloads the example files shipped wit metabodecon.  Due to the size
-constraints for R packages, these datasets are not included by default when
-the package is installed, but must be downloaded explicitly afterwards.
+Downloads example datasets for testing metabodecon's functionality. Due to the size constraints for R packages, these datasets are not included by default when the package is installed.
+Datasets are download and extracted to the directory returned by \code{\link[=datadir]{datadir()}}.
+By default this directory is a subdirectory of R's temporary session directory.
+If \code{persistent} is set to \code{FALSE}, the directory equals the one returned by \code{\link[=datadir_temp]{datadir_temp()}}
+If \code{persistent} is set to \code{TRUE}, the directory equals the one returned by \code{\link[=datadir_persistent]{datadir_persistent()}}.
+If \code{persistent} is set to \code{NULL} and \code{ask} is TRUE, the user is asked which one he wants to use.
 }
 \examples{
 \dontrun{
@@ -17,5 +25,5 @@ download_example_datasets()
 }
 }
 \seealso{
-\code{\link[=get_data_dir]{get_data_dir()}}
+\code{\link[=datadir]{datadir()}}
 }

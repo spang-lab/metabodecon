@@ -20,32 +20,32 @@ deconvolution(
 )
 }
 \arguments{
-\item{filepath}{TODO}
+\item{filepath}{Complete path of the file folder (Notice for Bruker format: filepath need to be the spectrum folder containing one or more different spectra (e.g."C:/Users/Username/Desktop/spectra_from_bruker"))}
 
-\item{name}{TODO}
+\item{name}{Filname in case a JCAMP-DX file is loaded (filepath is always a folder path)}
 
-\item{file_format}{TODO}
+\item{file_format}{Format (bruker or jcampdx) of the NMR file. (Default: file_format = "bruker")}
 
 \item{same_parameter}{TODO}
 
 \item{processing_value}{TODO}
 
-\item{number_iterations}{TODO}
+\item{number_iterations}{Number of iterations for the approximation of the parameters for the Lorentz curves (Default: number_iterations=10)}
 
-\item{range_water_signal_ppm}{TODO}
+\item{range_water_signal_ppm}{Half width of the water artefact in ppm (Default: range_water_signal=0.1527692 (e.g. for urine NMR spectra))}
 
-\item{signal_free_region}{TODO}
+\item{signal_free_region}{Row vector with two entries consisting of the ppm positions for the left and right border of the signal free region of the spectrum. (Default: signal_free_region=c(11.44494, -1.8828))}
 
-\item{smoothing_param}{TODO}
+\item{smoothing_param}{Row vector with two entries consisting of the number of smoothing repeats for the whole spectrum and the number of data points (uneven) for the mean calculation (Default: smoothing_param=c(2,5))}
 
-\item{delta}{TODO}
+\item{delta}{Defines the threshold value to distinguish between signal and noise (Default: delta=6.4)}
 
-\item{scale_factor}{TODO}
+\item{scale_factor}{Row vector with two entries consisting of the factor to scale the x-axis and the factor to scale the y-axis (Default: scale_factor=c(1000,1000000))}
 
-\item{current_filenumber}{TODO}
+\item{current_filenumber}{Number of current file in case multiple files are processed}
 }
 \value{
-TODO
+List with the following entries: filename, spectrum_x, spectrum_x_ppm, spectrum_y, lorentz_curves, mse_normed, spectrum_approx, index_peak_triplets_middle, index_peak_triplets_left, index_peak_triplets_right, peak_triplets_middle, peak_triplets_left, peak_triplets_right, integrals, signal_free_region, range_water_signal_ppm, A, lambda, w,
 }
 \description{
 Deconvolute one single spectrum

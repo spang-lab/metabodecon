@@ -2,12 +2,9 @@
 % Please edit documentation in R/main_v2.R
 \name{get_str_input}
 \alias{get_str_input}
-\alias{get_yn_input}
 \title{Get string input from user}
 \usage{
 get_str_input(prompt, valid)
-
-get_yn_input(prompt)
 }
 \arguments{
 \item{prompt}{The prompt to display to the user.}
@@ -25,3 +22,4 @@ Prompts the user for input and checks if the input is in a list of valid respons
 get_str_input("Enter a, b or c: ", c("a", "b", "c"))
 }
 }
+\keyword{internal}

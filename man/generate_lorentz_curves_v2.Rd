@@ -8,7 +8,6 @@ generate_lorentz_curves_v2(
   data_path,
   file_format = c("bruker", "jcampdx"),
   make_rds = FALSE,
-  filename = NULL,
   number_iterations = 10,
   range_water_signal_ppm = 0.1527692,
   signal_free_region = c(11.44494, -1.8828),
@@ -24,8 +23,6 @@ generate_lorentz_curves_v2(
 \item{file_format}{(string) Format of the spectra files.}
 
 \item{make_rds}{(bool) Store results as a rds file on disk? Should be set to TRUE if many spectra are evaluated to decrease computation time.}
-
-\item{filename}{(string) Name of the NMR file in case only one specific spectrum within \code{data_path} should be analyzed. Note: for Bruker format the file name is usually the same as the folder name.}
 
 \item{number_iterations}{(int) Number of iterations for the approximation of the parameters for the Lorentz curves.}
 
@@ -48,5 +45,11 @@ Deconvolutes NMR spetra and generates a Lorentz curve for each detected signal w
 First, an automated curvature based signal selection is performed. Each signal is represented by 3 data points to allow the determination of initial Lorentz curves. These Lorentz curves are then iteratively adjusted to optimally approximate the measured spectrum. For each spectrum two text files will be created in the parent folder i.e. the folder given in data path. The spectrum approximated from all deconvoluted signals and a parameter file that contains all numerical values of the deconvolution. Furthermore, the numerical values of the deconvolution are also stored in a data_frame.
 }
 \examples{
-\dontrun{spectrum_data <- generate_lorentz_curves(data_path = system.file(package = "metabodecon"), file_format = "jcampdx", filename = "urine.dx")}
+\dontrun{
+spectrum_data <- generate_lorentz_curves(
+  data_path = system.file(package = "metabodecon"),
+  file_format = "jcampdx",
+  filename = "urine.dx"
+)
+}
 }

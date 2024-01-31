@@ -26,3 +26,4 @@ Prompts the user for input and checks if the input is a number between a minimum
 get_num_input("Enter a number between 1 and 10: ", min = 1, max = 10)
 }
 }
+\keyword{internal}
