@@ -2,7 +2,7 @@
 % Please edit documentation in R/util.R
 \name{download_example_datasets}
 \alias{download_example_datasets}
-\title{Download metabodecon example datasets}
+\title{Download metabodecon Example Datasets}
 \usage{
 download_example_datasets(
   dst_dir = NULL,
@@ -11,17 +11,25 @@ download_example_datasets(
   overwrite = FALSE
 )
 }
+\arguments{
+\item{dst_dir}{The destination directory where the downloaded datasets will be stored. If NULL, the function will return the path to the cached zip file.}
+
+\item{extract}{Logical. If TRUE, the downloaded zip file will be extracted.}
+
+\item{cache_persistent}{Logical. If TRUE, the downloaded datasets will be cached for persistent use.}
+
+\item{overwrite}{Logical. If TRUE, existing files with the same name in the destination directory will be overwritten.}
+}
+\value{
+The path to the downloaded (and possibly extracted) datasets.
+}
 \description{
-Downloads example datasets for testing metabodecon's functionality. Due to the size constraints for R packages, these datasets are not included by default when the package is installed.
-Datasets are download and extracted to the directory returned by \code{\link[=datadir]{datadir()}}.
-By default this directory is a subdirectory of R's temporary session directory.
-If \code{persistent} is set to \code{FALSE}, the directory equals the one returned by \code{\link[=datadir_temp]{datadir_temp()}}
-If \code{persistent} is set to \code{TRUE}, the directory equals the one returned by \code{\link[=datadir_persistent]{datadir_persistent()}}.
-If \code{persistent} is set to \code{NULL} and \code{ask} is TRUE, the user is asked which one he wants to use.
+This function downloads example datasets that can be used to test the functionality of the metabodecon package.
+These datasets are not included in the package by default due to size constraints. The datasets are downloaded as a zip file.
 }
 \examples{
 \dontrun{
-download_example_datasets()
+download_example_datasets(dst_dir = ".", extract = TRUE, cache_persistent = TRUE, overwrite = TRUE)
 }
 }
 \seealso{

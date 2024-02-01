@@ -27,7 +27,7 @@ The decision to use a temporary data dir as default and a persistent one only op
 Source: \href{https://cran.r-project.org/web/packages/policies.html}{cran.r-project.org/web/packages/policies}
 }
 \examples{
-# Return path to persistent data directory if it exists, otherwise return path to temporary data directory
+# Return path to persistent data dir if it exists, else path to temp data dir
 datadir()
 
 # Return path to temporary data directory
@@ -38,7 +38,7 @@ datadir(persistent = TRUE)
 
 # Return path to "<persistent-data-dir>/bruker/urine" if it exists.
 # Else return path to "<temp-data-dir>/bruker/urine"
-datadir(path = "bruker/urine")
+datadir(file = "bruker/urine")
 }
 \seealso{
 \code{\link[=download_example_datasets]{download_example_datasets()}}

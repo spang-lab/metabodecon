@@ -6,7 +6,7 @@
 #' @param warn Print a warning message when the requested path does not yet exist?
 #' @param persistent Return the path to the persistent data directory instead of the temporary one?
 #' @examples
-#' # Return path to persistent data directory if it exists, otherwise return path to temporary data directory
+#' # Return path to persistent data dir if it exists, else path to temp data dir
 #' datadir()
 #'
 #' # Return path to temporary data directory
@@ -17,7 +17,7 @@
 #'
 #' # Return path to "<persistent-data-dir>/bruker/urine" if it exists.
 #' # Else return path to "<temp-data-dir>/bruker/urine"
-#' datadir(path = "bruker/urine")
+#' datadir(file = "bruker/urine")
 #' @seealso [download_example_datasets()]
 #' @details The decision to use a temporary data dir as default and a persistent one only optionally was made to conform to CRAN package policies, which state that:
 #' *Packages should not write in the user's home filespace (including clipboards), nor anywhere else on the file system apart from the R session's temporary directory (or during installation in the location pointed to by TMPDIR: and such usage should be cleaned up). Installing into the system's R installation (e.g., scripts to its bin directory) is not allowed.*
@@ -44,15 +44,16 @@ datadir <- function(file = "", warn = TRUE, persistent = NULL) {
 }
 
 #' @name download_example_datasets
-#' @title Download metabodecon example datasets
-#' @description Downloads example datasets for testing metabodecon's functionality. Due to the size constraints for R packages, these datasets are not included by default when the package is installed.
-#' Datasets are download and extracted to the directory returned by [datadir()].
-#' By default this directory is a subdirectory of R's temporary session directory.
-#' If `persistent` is set to `FALSE`, the directory equals the one returned by [datadir_temp()]
-#' If `persistent` is set to `TRUE`, the directory equals the one returned by [datadir_persistent()].
-#' If `persistent` is set to `NULL` and `ask` is TRUE, the user is asked which one he wants to use.
+#' @title Download metabodecon Example Datasets
+#' @description This function downloads example datasets that can be used to test the functionality of the metabodecon package.
+#' These datasets are not included in the package by default due to size constraints. The datasets are downloaded as a zip file.
+#' @param dst_dir The destination directory where the downloaded datasets will be stored. If NULL, the function will return the path to the cached zip file.
+#' @param extract Logical. If TRUE, the downloaded zip file will be extracted.
+#' @param cache_persistent Logical. If TRUE, the downloaded datasets will be cached for persistent use.
+#' @param overwrite Logical. If TRUE, existing files with the same name in the destination directory will be overwritten.
+#' @return The path to the downloaded (and possibly extracted) datasets.
 #' @examples \dontrun{
-#' download_example_datasets()
+#' download_example_datasets(dst_dir = ".", extract = TRUE, cache_persistent = TRUE, overwrite = TRUE)
 #' }
 #' @seealso [datadir()]
 #' @export

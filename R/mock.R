@@ -27,20 +27,25 @@ with <- function(expr,
                  plots = NULL,
                  datadir_temp = NULL,
                  datadir_persistent = NULL) {
-    on.exit(restore(), add = TRUE)
-    mock_readline(answers)
-    mock_datadir(type = "temp", state = datadir_temp)
-    mock_datadir(type = "persistent", state = datadir_persistent)
-    push_testdir(testdir)
-    retlist <- redirect(output = output, message = message, plots = plots)
-    withCallingHandlers({
-        retlist$rv <- expr
-    }, warning = function(w) {
+    handle_warning <- function(w) {
         message("Warning: ", conditionMessage(w))
         invokeRestart("muffleWarning")
-    })
+    }
+    on.exit(restore(), add = TRUE)
+    push_testdir(testdir)
+    retlist <- redirect(output = output, message = message, plots = plots)
+    withCallingHandlers(
+        testthat::with_mocked_bindings(
+            retlist$rv <- expr,
+            datadir_temp = get_datadir_mock(type = "temp", state = datadir_temp),
+            datadir_persistent = get_datadir_mock(type = "persistent", state = datadir_persistent),
+            readline = get_readline_mock(answers)
+        ),
+        warning = handle_warning
+    )
     retlist
 }
+
 
 #' @title Redirect output, message, and plot streams
 #' @description Redirects the output, message, and plot streams in R to either a specified file or a captured character vector.
@@ -69,6 +74,7 @@ with <- function(expr,
 #' plot(1:10) # This plot is saved to plots.pdf
 #' restore()
 #' cat(redirects$message$text)
+#' @noRd
 redirect <- function(output = "captured", message = NULL, plots = NULL) {
     streams <- c("output", "message", "plots")
     targets <- list(output = output, message = message, plots = plots)
@@ -84,7 +90,7 @@ redirect <- function(output = "captured", message = NULL, plots = NULL) {
         text <- if (target != "captured") NULL else vector("character")
         if (stream == "plots") {
             grDevices::pdf(target)
-            conn <- dev.cur()
+            conn <- grDevices::dev.cur()
         } else {
             conn <- if (target == "captured") textConnection("text", "wr", local = TRUE) else file(target, open = "wt")
             sink(conn, type = stream)
@@ -93,7 +99,7 @@ redirect <- function(output = "captured", message = NULL, plots = NULL) {
         penv$open_conns[[stream]] <- conn
         return(environment())
     })
-    redirects <- setNames(redirects, streams)
+    redirects <- stats::setNames(redirects, streams)
     redirects
 }
 
@@ -181,7 +187,7 @@ patch <- function(fn, repl) {
         stop(sprintf("Function '%s' is already patched. Call `restore()` first.", fn))
     }
     assign(fn, repl, pos = "package:metabodecon") # package:metabodecon contains the exported functions from the package, this is what is called when you enter `fn()` in the console
-    assignInNamespace(fn, repl, ns = "metabodecon") # namespace:metabodecon contains all functions defined in the package, this is what is used by other function defined in the package
+    utils::assignInNamespace(fn, repl, ns = "metabodecon") # namespace:metabodecon contains all functions defined in the package, this is what is used by other function defined in the package
 }
 
 #' @title Restore a single mocked function
@@ -240,6 +246,7 @@ restore_warnings <- function() {
 #' }
 #' @noRd
 get_readline_mock <- function(texts, env = as.environment(list())) {
+    if (is.null(texts)) return(readline)
     env$readline_called <- 0
     readline <- function(prompt = "") {
         env$readline_called <- env$readline_called + 1
@@ -272,6 +279,8 @@ get_datadir_mock <- function(type = c("persistent", "temp"),
         # Only call this on the first invocation, otherwise cache_example_datasets() might already use the mocked data dirs.
         penv$cached_zip <- cache_example_datasets()
     }
+    if (is.null(state) && type == "persistent") return(datadir_persistent)
+    if (is.null(state) && type == "temp") return(datadir_temp)
     type <- match.arg(type)
     state <- match.arg(state)
     p <- file.path(mockdir(), "datadir", type, state)
@@ -332,7 +341,7 @@ fill_with_example_datasets <- function(dst_dir, src_zip) {
     }
     if (dst_subdir_is_missing_files) {
         unlink(dst_subdir, recursive = TRUE, force = TRUE) # 0.45s
-        unzip(dst_zip, exdir = dst_dir) # 1.41s
+        utils::unzip(dst_zip, exdir = dst_dir) # 1.41s
     }
 }
 
@@ -368,4 +377,28 @@ with_redirects <- function(stdout = NULL, stderr = NULL, plots = NULL, expr) {
         on.exit(grDevices::dev.off(), add = TRUE)
     }
     expr
+}
+
+
+with_bak <- function(expr,
+                 testdir = NULL,
+                 answers = NULL,
+                 output = NULL,
+                 message = NULL,
+                 plots = NULL,
+                 datadir_temp = NULL,
+                 datadir_persistent = NULL) {
+    on.exit(restore(), add = TRUE)
+    mock_readline(answers)
+    mock_datadir(type = "temp", state = datadir_temp)
+    mock_datadir(type = "persistent", state = datadir_persistent)
+    push_testdir(testdir)
+    retlist <- redirect(output = output, message = message, plots = plots)
+    withCallingHandlers({
+        retlist$rv <- expr
+    }, warning = function(w) {
+        message("Warning: ", conditionMessage(w))
+        invokeRestart("muffleWarning")
+    })
+    retlist
 }
