@@ -36,6 +36,7 @@ ls.str(redirects$output)
 redirects <- redirect(output = "output.txt", message = "captured", plots = "plots.pdf")
 print("This goes to output.txt")
 message("This is captured")
+warning("This is captured as well")
 plot(1:10) # This plot is saved to plots.pdf
 restore()
 cat(redirects$message$text)

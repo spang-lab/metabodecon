@@ -161,3 +161,8 @@ clear <- function(dir) {
     unlink(dir, recursive = TRUE, force = TRUE)
     mkdirs(dir)
 }
+
+dir.size <- function(dir) {
+  files <- list.files(dir, recursive = TRUE, full.names = TRUE)
+  sum(file.info(files)$size)
+}

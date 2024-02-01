@@ -10,16 +10,16 @@ test_that("2. datadir(persistent = FALSE, warn = FALSE)", {
     expect_equal(x, y)
 })
 
-test_that("3. datadir() with existing <datadir_persistent> ", {
-    with(datadir_persistent = "empty", {
-        x <- datadir()
-        y <- datadir_persistent()
+test_that("3. datadir() with existing <datadir_persistent>/example_datasets.zip", {
+    x <- with(datadir_persistent = "filled", {
+        dir_returned <- datadir()
+        dir_expected <- datadir(persistent = TRUE)
     })
-    expect_equal(x, y)
+    expect_equal(dir_returned, dir_expected)
 })
 
-test_that("4. datadir() with missing <datadir_persistent> and <datadir_temp>", {
-    x <- with(datadir_persistent = "missing", datadir_temp = "missing", message = "captured", {
+test_that("4. datadir(file = 'non_existent_file')", {
+    x <- with(message = "captured", {
         datadir(file = "non_existent_file")
     })
     expected_warning <- paste("Warning:", x$rv, "does not exist. Please call `download_example_datasets()` first.")

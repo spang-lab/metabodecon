@@ -1,28 +1,45 @@
-test_that("download_example_datasets downloads and extracts files correctly", {
-    with_mocked_persistent_datadir({
-        datadir_temp <- clear(datadir_temp())
-        datadir_persistent <- clear(datadir_persistent())
-        expect_equal(dir(datadir_temp), character())
-        expect_equal(dir(datadir_persistent), character())
-        download_example_datasets()
+xds$url <- "https://github.com/spang-lab/metabodecon/releases/download/v1.0.2/example_datasets.zip"
 
+test_that("1. download_example_datasets() with example_datasets.zip missing on disk", {
+
+    skip_if(Sys.getenv("SKIP_SLOW_TESTS") == "TRUE", "Skipped because SKIP_SLOW_TESTS=TRUE")
+
+    x <- with(datadir_persistent = "missing", datadir_temp = "missing", message = "captured", {
+        download_example_datasets()
+        expected_path <- file.path(datadir(), "example_datasets.zip")
     })
+    expected_message <- paste("Downloading", xds$url, "as", expected_path)
+
+    expect_equal(file.exists(expected_path), TRUE)
+    expect_equal(file.size(expected_path), xds$zip_size)
+    expect_equal(x$message$text, expected_message)
 })
 
-test_that("download_example_datasets handles cache_persistent and ask parameters correctly", {
-    # Mock the functions to avoid actual download and extraction
-    mock_cache_example_datasets <- function(cache = NULL, ask = FALSE) {
-        return(list(cache = cache, ask = ask))
-    }
-    withr::local_mock(list(cache_example_datasets = mock_cache_example_datasets))
+test_that("2. download_example_datasets(cache_persistent = TRUE) with example_datasets.zip missing on disk", {
 
-    # Test with cache_persistent = TRUE and ask = FALSE
-    result <- download_example_datasets(cache_persistent = TRUE, ask = FALSE)
-    expect_equal(result$cache, TRUE)
-    expect_equal(result$ask, FALSE)
+    skip_if(Sys.getenv("SKIP_SLOW_TESTS") == "TRUE", "Skipped because SKIP_SLOW_TESTS=TRUE")
 
-    # Test with cache_persistent = FALSE and ask = TRUE
-    result <- download_example_datasets(cache_persistent = FALSE, ask = TRUE)
-    expect_equal(result$cache, FALSE)
-    expect_equal(result$ask, TRUE)
+    x <- with(datadir_persistent = "missing", datadir_temp = "missing", message = "captured", {
+        download_example_datasets(cache_persistent = TRUE)
+        expected_path <- file.path(datadir(), "example_datasets.zip")
+    })
+    expected_message <- paste("Downloading", xds$url, "as", expected_path)
+
+    expect_equal(file.exists(expected_path), TRUE)
+    expect_equal(file.size(expected_path), xds$zip_size)
+    expect_equal(x$message$text, expected_message)
+})
+
+test_that("3. download_example_datasets() with example_datasets.zip already cached on disk", {
+
+    skip_if(Sys.getenv("SKIP_SLOW_TESTS") == "TRUE", "Skipped because SKIP_SLOW_TESTS=TRUE")
+
+    x <- with(datadir_persistent = "filled", datadir_temp = "missing", message = "captured", {
+        download_example_datasets(cache_persistent = TRUE)
+        expected_path <- file.path(datadir(), "example_datasets.zip")
+    })
+
+    expect_true(file.exists(expected_path))
+    expect_equal(file.size(expected_path), xds$zip_size)
+    expect_equal(x$message$text, character())
 })

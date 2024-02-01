@@ -10,16 +10,16 @@
 #' @param datadir_temp State of the mocked temporary data directory. See details section.
 #' @param datadir_persistent State of the mocked persistent data directory. See details section.
 #' @details The `datadir_temp` and `datadir_persistent` arguments accept values "missing", "filled" and "empty".
-#' Functions that return paths, such as [tempdir()], [datadir()], [datadir_temp()], and [datadir_persistent()] are mocked to return paths pointing to fake directories.
+#' Setting a value unequal NULL causes the functions [datadir_temp()] and/or [datadir_persistent()] to be replaced with mocks functions pointing to fake directories. Functions depending on these functions will then use the fake directories instead of the real ones.
 #' When set to "missing" the returned mock directory does not exist.
 #' When set to "empty" it exists and is guaranteed to be empty.
 #' When set to "filled", it is populated with example datasets.
+#' Attention: the mocked functions, i.e. [datadir_temp()] and [datadir_persistent()] cannot be used directly inside the expression when called via `devtools::test()`. I'm not sure why, but it seems as if devtools and/or testthat have their own copies of the functions which are used when the expression is evaluated.
 #' @return A list with elements `rv`, `output`, `message` and `plots`.
 #' Element `rv` contains the return value of the evaluated expression.
 #' Elements `output`, `message` and `plots` are environments containing the captured output, message and plots, respectively. For further details see [redirect()].
 #' @noRd
 with <- function(expr,
-                 warn = 1,
                  testdir = NULL,
                  answers = NULL,
                  output = NULL,
@@ -31,16 +31,15 @@ with <- function(expr,
     mock_readline(answers)
     mock_datadir(type = "temp", state = datadir_temp)
     mock_datadir(type = "persistent", state = datadir_persistent)
-    push_option(warn = warn)
-    x <- redirect(output = output, message = message, plots = plots)
     push_testdir(testdir)
+    retlist <- redirect(output = output, message = message, plots = plots)
     withCallingHandlers({
-        x$rv <- expr
+        retlist$rv <- expr
     }, warning = function(w) {
         message("Warning: ", conditionMessage(w))
         invokeRestart("muffleWarning")
     })
-    x
+    retlist
 }
 
 #' @title Redirect output, message, and plot streams
@@ -223,6 +222,11 @@ restore_option <- function(opt) {
     }
 }
 
+restore_warnings <- function() {
+  restore_option("warn")
+  restore_option("warning.expression")
+}
+
 #' @title Creates a mock readline function for testing
 #' @description Creates a mock readline function that returns the next element from a character vector each time it's called.
 #' Used internally by [mock_readline()].
@@ -263,17 +267,20 @@ get_readline_mock <- function(texts, env = as.environment(list())) {
 #' @noRd
 get_datadir_mock <- function(type = c("persistent", "temp"),
                              state = c("missing", "empty", "filled")) {
+    if (is.null(penv$cached_zip)) {
+        # Make sure we now the path of the cached zip file even after mocking the original functions.
+        # Only call this on the first invocation, otherwise cache_example_datasets() might already use the mocked data dirs.
+        penv$cached_zip <- cache_example_datasets()
+    }
     type <- match.arg(type)
     state <- match.arg(state)
     p <- file.path(mockdir(), "datadir", type, state)
     p <- normalizePath(p, "/", mustWork = FALSE)
-    if (state == "missing") {
-        unlink(p, recursive = TRUE, force = TRUE)
-    } else if (state == "empty") {
-        clear(p)
-    } else if (state == "filled") {
-        download_example_datasets(p)
-    }
+    switch(state,
+        "missing" = unlink(p, recursive = TRUE, force = TRUE),
+        "empty" = clear(p),
+        "filled" = fill_with_example_datasets(dst_dir = p, src_zip = penv$cached_zip)
+    )
     function() p
 }
 
@@ -291,10 +298,41 @@ push_testdir <- function(testdir) {
     }
 }
 
-push_option <- function(warn = NULL) {
-    if (!is.null(warn)) {
-        penv$option_backups$warn <- getOption("warn")
-        options(warn = warn)
+push_option <- function(...) {
+  options_list <- list(...)
+  browser()
+  for (option in names(options_list)) {
+    penv$option_backups[[option]] <- getOption(option)
+  }
+  do.call(options, options_list)
+}
+
+warnings_as_messages <- function() {
+  warning.expression <- quote({
+    message("Warning: ", conditionMessage(w))
+    invokeRestart("muffleWarning")
+  })
+  push_option(warn = 1)
+  push_option(warning.expression = warning.expression)
+}
+
+fill_with_example_datasets <- function(dst_dir, src_zip) {
+
+    dst_zip <- file.path(dst_dir, "example_datasets.zip")
+    dst_zip_has_correct_size <- isTRUE(file.size(dst_zip) == xds$zip_size) # Implies existence.
+    dst_zip_has_wrong_size <- !dst_zip_has_correct_size
+
+    dst_subdir <- mkdirs(file.path(dst_dir, "example_datasets"))
+    dst_subdir_has_enough_files <- isTRUE(length(dir(dst_dir, recursive=TRUE)) >= 1018)
+    dst_subdir_is_missing_files <- !dst_subdir_has_enough_files
+    # Dont check size because it takes too long (3.36s on first run on Win11 with fast SSD). Listing files can be done in 0.07s.
+
+    if (dst_zip_has_wrong_size) {
+        file.copy(src_zip, dst_zip, overwrite = TRUE)
+    }
+    if (dst_subdir_is_missing_files) {
+        unlink(dst_subdir, recursive = TRUE, force = TRUE) # 0.45s
+        unzip(dst_zip, exdir = dst_dir) # 1.41s
     }
 }
 

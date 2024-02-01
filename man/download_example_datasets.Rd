@@ -6,9 +6,9 @@
 \usage{
 download_example_datasets(
   dst_dir = NULL,
-  extract = TRUE,
-  cache_persistent = NULL,
-  ask = interactive()
+  extract = FALSE,
+  cache_persistent = FALSE,
+  overwrite = FALSE
 )
 }
 \description{

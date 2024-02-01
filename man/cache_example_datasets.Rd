@@ -2,19 +2,30 @@
 % Please edit documentation in R/util.R
 \name{cache_example_datasets}
 \alias{cache_example_datasets}
-\title{Cache Example Files}
+\title{Cache Example Datasets}
 \usage{
-cache_example_datasets(persistent = FALSE, overwrite = FALSE)
+cache_example_datasets(persistent = NULL, extract = FALSE, overwrite = FALSE)
 }
 \arguments{
-\item{persistent}{Logical. If TRUE, the datasets are cached permanently. If NULL, the function prompts the user. Default is NULL.}
+\item{persistent}{If TRUE, the datasets are cached permanently.
+If FALSE, the datasets are cached temporarily.
+If NULL, the path to the permanent zip file is returned if it exists and has the correct size else the path to the temporary zip file is returned.}
+
+\item{extract}{Logical. If TRUE, the datasets are extracted after being cached. Default is TRUE.}
+
+\item{overwrite}{Logical. If TRUE and the cached file exists but has a wrong size, the file is overwritten. If FALSE, an error is thrown in this case. Default is FALSE.}
 }
 \value{
 The path to the cached datasets.
 }
 \description{
-Simpler Version of \code{\link[=cache_example_datasets]{cache_example_datasets()}} that does not prompt the user for input.
+This function caches example datasets.
+It checks if the datasets are already cached and if not, it downloads and caches them.
+If the cached file has a wrong size, it can be overwritten based on the \code{overwrite} parameter.
+The path to the cached datasets is returned.
 }
 \examples{
-cache_example_datasets(persistent = FALSE)
+\dontrun{
+cache_example_datasets(persistent = FALSE, extract = FALSE, overwrite = FALSE)
+}
 }
