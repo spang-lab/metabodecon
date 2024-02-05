@@ -1,8 +1,41 @@
 url: ~
-template: { bootstrap: 5 }
-articles: [{title: Articles, navbar: ~, contents: [MetaboDecon1D, FAQ]}]
-reference: [
-  {title: Public API, desc: Metabodecon's Public User Interface, contents: [generate_lorentz_curves]},
-  {title: Internal, desc: Internal Helper Functions. These function are not exported and should not be used directly by the user. The main reason they are documented here is so that functions from the Public API can reference them when implementation details are explained., contents: [cat2, checksum, collapse, calculate_lorentz_curves, combine_peaks, decompLines, deconvolute_spectrum, deconvolution, dohCluster, download_example_datasets, gen_feat_mat, generate_lorentz_curves_v2, get_data_dir, get_num_input, get_ppm_range, get_readline_mock, get_str_input, get_yn_input, is.none, library.dynam, library.dynam.unload, pass, pkg.file, plot_lorentz_curves_save_as_png, plot_spectrum_superposition_save_as_png, plot_triplets, prepare_output_dir, readJDX, readline, show_license, sinkall, speaq_align, splitMultiblockDX, system.file, with_redirects]},
-  {title: Deprecated, desc: Deprecated functions. These functions are no longer used by the package and are only kept for backwards compatibility. They will be removed in future versions of the package., contents: [MetaboDecon1D]}
-]
+template:
+  bootstrap: 5
+articles:
+  - title: Articles
+    navbar: ~
+    contents:
+      - MetaboDecon1D
+      - FAQ
+reference:
+- title: Public API
+  desc: Metabodecon's Public User Interface
+  contents:
+  - generate_lorentz_curves
+  - generate_lorentz_curves_v2
+  - download_example_datasets
+  - datadir
+- title: Plotting Functions
+  desc: Functions to plot the results of the deconvolution
+  contents:
+  - plot_lorentz_curves_save_as_png
+  - plot_spectrum_superposition_save_as_png
+  - plot_triplets
+- title: Internal
+  desc: Internal Helper Functions. These function are exported but should not be used directly by the user. The main reason they are documented here is so that functions from the Public API can reference them when implementation details are explained.
+  contents:
+  - datadir_persistent
+  - datadir_temp
+  - calculate_lorentz_curves
+  - combine_peaks
+  - deconvolution
+  - dohCluster
+  - gen_feat_mat
+  - get_ppm_range
+  - speaq_align
+  - tempdir
+- title: Deprecated
+  desc: Deprecated functions. These functions are no longer used by the package and are only kept for backwards compatibility. They will be removed in future versions of the package.
+  contents:
+  - MetaboDecon1D
+  - show_license

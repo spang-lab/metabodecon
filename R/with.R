@@ -15,9 +15,12 @@
 #' When set to "empty" it exists and is guaranteed to be empty.
 #' When set to "filled", it is populated with example datasets.
 #' Attention: the mocked functions, i.e. [datadir_temp()] and [datadir_persistent()] cannot be used directly inside the expression when called via `devtools::test()`. I'm not sure why, but it seems as if devtools and/or testthat have their own copies of the functions which are used when the expression is evaluated.
-#' @return A list with elements `rv`, `output`, `message` and `plots`.
+#' @return A list with elements `rv`, 'runtime`, `output`, `message`, `plots`, `testdir` and `inputs`
 #' Element `rv` contains the return value of the evaluated expression.
+#' Element `runtime` contains the runtime of the evaluated expression.
 #' Elements `output`, `message` and `plots` are environments containing the captured output, message and plots, respectively. For further details see [redirect()].
+#' Element `testdir` contains the path to the test directory.
+#' Element `inputs` equals the `inputs` argument.
 #' @noRd
 with <- function(expr,
                  testdir = NULL,
@@ -26,26 +29,23 @@ with <- function(expr,
                  message = NULL,
                  plots = NULL,
                  datadir_temp = NULL,
-                 datadir_persistent = NULL) {
-    handle_warning <- function(w) {
-        message("Warning: ", conditionMessage(w))
-        invokeRestart("muffleWarning")
-    }
+                 datadir_persistent = NULL,
+                 inputs = character()) {
     on.exit(restore(), add = TRUE)
-    push_testdir(testdir)
-    retlist <- redirect(output = output, message = message, plots = plots)
+    testdir <- push_testdir(testdir)
+    inputs <- fill_with_inputs(testdir, inputs)
+    rd <- redirect(output = output, message = message, plots = plots)
     withCallingHandlers(
         testthat::with_mocked_bindings(
-            retlist$rv <- expr,
+            code = mt <- measure_runtime(expr),
             datadir_temp = get_datadir_mock(type = "temp", state = datadir_temp),
             datadir_persistent = get_datadir_mock(type = "persistent", state = datadir_persistent),
             readline = get_readline_mock(answers)
         ),
-        warning = handle_warning
+        warning = print_warning_as_message
     )
-    retlist
+    return(c(mt, rd, list(testdir = testdir, inputs = inputs)))
 }
-
 
 #' @title Redirect output, message, and plot streams
 #' @description Redirects the output, message, and plot streams in R to either a specified file or a captured character vector.
@@ -55,7 +55,15 @@ with <- function(expr,
 #' @param output The target for the output stream. Defaults to "captured".
 #' @param message The target for the message stream. Defaults to NULL.
 #' @param plots The target for the plot stream. Defaults to NULL. If a file path is provided, plots will be saved to a PDF at that location.
-#' @return A list of environments, one for each stream, containing the redirection settings.
+#' @return A list with 3 environments with name `output`, `message` and `plots` that each have the following elements:
+#'
+#' -  conn:   e.g. `'file' int 3` or `Named int 2` (for plots)
+#' -  path:   e.g. "output.txt" or "plots.pdf"
+#' -  penv:   e.g. <environment: 0x0000019fb9fc7318>
+#' -  stream: either "output", "message" or "plots"
+#' -  target: e.g. "output.txt" or "plots.pdf" or "captured"
+#' -  text:   e.g. `c("Hello", "World")` or `NULL`
+#'
 #' @examples
 #' # Capture output
 #'
@@ -229,8 +237,8 @@ restore_option <- function(opt) {
 }
 
 restore_warnings <- function() {
-  restore_option("warn")
-  restore_option("warning.expression")
+    restore_option("warn")
+    restore_option("warning.expression")
 }
 
 #' @title Creates a mock readline function for testing
@@ -246,7 +254,9 @@ restore_warnings <- function() {
 #' }
 #' @noRd
 get_readline_mock <- function(texts, env = as.environment(list())) {
-    if (is.null(texts)) return(readline)
+    if (is.null(texts)) {
+        return(readline)
+    }
     env$readline_called <- 0
     readline <- function(prompt = "") {
         env$readline_called <- env$readline_called + 1
@@ -279,8 +289,12 @@ get_datadir_mock <- function(type = c("persistent", "temp"),
         # Only call this on the first invocation, otherwise cache_example_datasets() might already use the mocked data dirs.
         penv$cached_zip <- cache_example_datasets()
     }
-    if (is.null(state) && type == "persistent") return(datadir_persistent)
-    if (is.null(state) && type == "temp") return(datadir_temp)
+    if (is.null(state) && type == "persistent") {
+        return(datadir_persistent)
+    }
+    if (is.null(state) && type == "temp") {
+        return(datadir_temp)
+    }
     type <- match.arg(type)
     state <- match.arg(state)
     p <- file.path(mockdir(), "datadir", type, state)
@@ -297,42 +311,42 @@ get_datadir_mock <- function(type = c("persistent", "temp"),
 #' @title Push a test directory to the stack of working directories
 #' @description This function creates a new test directory and sets it as working directory using [pushd()]. Used internally by [with()].
 #' @param testdir The path of the test directory relative to [testdir()].
-#' @return Invisible NULL.
+#' @return Path to old working directory or NULL if `testdir` is NULL.
 #' @noRd
 push_testdir <- function(testdir) {
     if (!is.null(testdir)) {
-        new_wd <- file.path(testdir(), testdir)
-        mkdirs(new_wd)
-        pushd(new_wd)
+        wd <- file.path(testdir(), testdir)
+        mkdirs(wd)
+        pushd(wd)
+        wd
     }
 }
 
 push_option <- function(...) {
-  options_list <- list(...)
-  browser()
-  for (option in names(options_list)) {
-    penv$option_backups[[option]] <- getOption(option)
-  }
-  do.call(options, options_list)
+    options_list <- list(...)
+    browser()
+    for (option in names(options_list)) {
+        penv$option_backups[[option]] <- getOption(option)
+    }
+    do.call(options, options_list)
 }
 
 warnings_as_messages <- function() {
-  warning.expression <- quote({
-    message("Warning: ", conditionMessage(w))
-    invokeRestart("muffleWarning")
-  })
-  push_option(warn = 1)
-  push_option(warning.expression = warning.expression)
+    warning.expression <- quote({
+        message("Warning: ", conditionMessage(w))
+        invokeRestart("muffleWarning")
+    })
+    push_option(warn = 1)
+    push_option(warning.expression = warning.expression)
 }
 
 fill_with_example_datasets <- function(dst_dir, src_zip) {
-
     dst_zip <- file.path(dst_dir, "example_datasets.zip")
     dst_zip_has_correct_size <- isTRUE(file.size(dst_zip) == xds$zip_size) # Implies existence.
     dst_zip_has_wrong_size <- !dst_zip_has_correct_size
 
     dst_subdir <- mkdirs(file.path(dst_dir, "example_datasets"))
-    dst_subdir_has_enough_files <- isTRUE(length(dir(dst_dir, recursive=TRUE)) >= 1018)
+    dst_subdir_has_enough_files <- isTRUE(length(dir(dst_dir, recursive = TRUE)) >= 1018)
     dst_subdir_is_missing_files <- !dst_subdir_has_enough_files
     # Dont check size because it takes too long (3.36s on first run on Win11 with fast SSD). Listing files can be done in 0.07s.
 
@@ -345,60 +359,68 @@ fill_with_example_datasets <- function(dst_dir, src_zip) {
     }
 }
 
-# Deprecated #####
-
-#' @title Evaluate expression with redirected output streams
-#' @param stdout (string) path where stdout should be redirected to
-#' @param stderr (string) path where stderr should be redirected to
-#' @param plots (string) path where plots should be saved to
-#' @param expr (expression) expression to be evaluated
-#' @return The result of evaluating `expr`
-#' @examples \dontrun{
-#' with_redirects(stdout = "output.txt", plots = "plots.pdf", expr = {
-#'     print("Starting plotting")
-#'     plot(1:10)
-#'     print("Done plotting")
-#' })
-#' }
-#' @noRd
-with_redirects <- function(stdout = NULL, stderr = NULL, plots = NULL, expr) {
-    if (!is.null(stdout)) {
-        sink(stdout, type = "output")
-        on.exit(sink(file = NULL, type = "output"), add = TRUE)
-    }
-    if (!is.null(stderr)) {
-        stderr_stream <- file(stderr, open = "wt")
-        sink(stderr_stream, type = "message")
-        on.exit(sink(file = NULL, type = "message"), add = TRUE)
-        on.exit(close(stderr_stream), add = TRUE)
-    }
-    if (!is.null(plots)) {
-        grDevices::pdf(plots)
-        on.exit(grDevices::dev.off(), add = TRUE)
-    }
-    expr
+measure_runtime <- function(expr) {
+    start_time <- Sys.time()
+    rv <- expr
+    end_time <- Sys.time()
+    runtime <- end_time - start_time
+    return(list(rv = rv, runtime = runtime))
 }
 
+print_warning_as_message <- function(w) {
+    message("Warning: ", conditionMessage(w))
+    invokeRestart("muffleWarning")
+}
 
-with_bak <- function(expr,
-                 testdir = NULL,
-                 answers = NULL,
-                 output = NULL,
-                 message = NULL,
-                 plots = NULL,
-                 datadir_temp = NULL,
-                 datadir_persistent = NULL) {
-    on.exit(restore(), add = TRUE)
-    mock_readline(answers)
-    mock_datadir(type = "temp", state = datadir_temp)
-    mock_datadir(type = "persistent", state = datadir_persistent)
-    push_testdir(testdir)
-    retlist <- redirect(output = output, message = message, plots = plots)
-    withCallingHandlers({
-        retlist$rv <- expr
-    }, warning = function(w) {
-        message("Warning: ", conditionMessage(w))
-        invokeRestart("muffleWarning")
-    })
-    retlist
+#' @title Prepares the output directory for a test case
+#' @param fn The name of the function being tested.
+#' @param tc The name of the test case.
+#' @param inputs Paths to be copied to the output directory.
+#' @param verbose Print info messages.
+#' @return Path to the created output directory.
+#' @examples \dontrun{
+#' output_dir <- prepare_test_dir("myfunc", "1")
+#' output_dir <- prepare_test_dir("myfunc", "2", inputs = pkg.file("misc/datasets/urine"))
+#' }
+#' @noRd
+prepare_test_dir <- function(fn, tc, inputs = c(), verbose = TRUE) {
+    msg <- if (verbose) cat2 else pass
+    d <- tempdir()
+    p <- normalizePath(file.path(d, "tests", fn, tc), winslash = "/", mustWork = FALSE)
+    msg("Deleting and creating:", p)
+    unlink(p, recursive = TRUE)
+    dir.create(p, recursive = TRUE)
+    if (length(inputs) > 0) {
+        msg("Copying following paths:")
+        msg(collapse(inputs, "\n"))
+        file.copy(from = inputs, to = p, recursive = TRUE)
+    }
+    return(p)
+}
+
+fill_with_inputs <- function(dstdir, inputs = c()) {
+    if (!is.null(dstdir) && length(inputs) >= 0) {
+        src_zip <- cache_example_datasets(extract = TRUE)
+        src_dir <- gsub(".zip", "", src_zip, fixed = TRUE)
+        bruker_dir <- file.path(src_dir, "bruker")
+        jcampdx_dir <- file.path(src_dir, "jcampdx")
+        inputs <- gsub("bruker", bruker_dir, inputs, fixed = TRUE)
+        inputs <- gsub("jcampdx", jcampdx_dir, inputs, fixed = TRUE)
+        file.copy(from = inputs, to = dstdir, recursive = TRUE)
+    }
+    inputs
+}
+
+readline <- function(...) {
+    base::readline(...) # we must have our own copy of readline in the package namespace so we can mock it in tests
+}
+
+testdir <- function() {
+    p <- file.path(tempdir(), "tests")
+    normalizePath(p, "/", mustWork = FALSE)
+}
+
+mockdir <- function() {
+    p <- file.path(tempdir(), "mocks")
+    normalizePath(p, "/", mustWork = FALSE)
 }

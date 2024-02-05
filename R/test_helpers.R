@@ -17,13 +17,12 @@ penv <- as.environment(list(
 #' @title Push current working directory and change to new directory
 #' @description This function stores the current working directory in `penv$wds` and then changes to the specified new directory.
 #' @param newdir The new directory to switch to.
-#' @return Invisible NULL.
+#' @return Path to old working directory.
 #' @noRd
 pushd <- function(newdir) {
     olddir <- getwd()
     penv$wds <- c(olddir, penv$wds)
     setwd(newdir)
-    invisible(NULL)
 }
 
 #' @name popd
@@ -109,32 +108,6 @@ test <- function(all=FALSE) {
     Sys.setenv(SKIP_SLOW_TESTS = if (all) "FALSE" else "TRUE")
     on.exit(Sys.setenv(SKIP_SLOW_TESTS = SKIP_SLOW_TESTS_OLD), add = TRUE)
     devtools::test()
-}
-
-#' @title Prepares the output directory for a test case
-#' @param fn The name of the function being tested.
-#' @param tc The name of the test case.
-#' @param inputs Paths to be copied to the output directory.
-#' @param verbose Print info messages.
-#' @return Path to the created output directory.
-#' @examples \dontrun{
-#' output_dir <- prepare_test_dir("myfunc", "1")
-#' output_dir <- prepare_test_dir("myfunc", "2", inputs = pkg.file("misc/datasets/urine"))
-#' }
-#' @noRd
-prepare_test_dir <- function(fn, tc, inputs = c(), verbose = TRUE) {
-    msg <- if (verbose) cat2 else pass
-    d <- tempdir()
-    p <- normalizePath(file.path(d, "tests", fn, tc), winslash = "/", mustWork = FALSE)
-    msg("Deleting and creating:", p)
-    unlink(p, recursive = TRUE)
-    dir.create(p, recursive = TRUE)
-    if (length(inputs) > 0) {
-        msg("Copying following paths:")
-        msg(collapse(inputs, "\n"))
-        file.copy(from = inputs, to = p, recursive = TRUE)
-    }
-    return(p)
 }
 
 #' @title Return path to any file within this (installed) package
