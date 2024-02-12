@@ -2,7 +2,7 @@ Package: metabodecon
 Language: en-US
 Type: Package
 Title: Functions for Deconvolution of 1d NMR Spectra
-Version: 1.0.4
+Version: 1.1.0
 Authors@R: c(
     person(given = "Wolfram",
            family = "Gronwald",
