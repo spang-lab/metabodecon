@@ -1,6 +1,5 @@
 # Main #####
 
-#' @export
 #' @title Generate Lorentz Curves from NMR Spectra
 #' @description Deconvolutes NMR spetra and generates a Lorentz curve for each detected signal within a spectra.
 #' @param data_path (string) Path to the folder where the original spectra are stored. After deconvolution this folder contains two additional .txt files for each spectrum which contain the spectrum approximated from all deconvoluted signals and a parameter file that contains all numerical values of the deconvolution.
@@ -21,6 +20,7 @@
 #' )
 #' }
 #' @details First, an automated curvature based signal selection is performed. Each signal is represented by 3 data points to allow the determination of initial Lorentz curves. These Lorentz curves are then iteratively adjusted to optimally approximate the measured spectrum. For each spectrum two text files will be created in the parent folder i.e. the folder given in data path. The spectrum approximated from all deconvoluted signals and a parameter file that contains all numerical values of the deconvolution. Furthermore, the numerical values of the deconvolution are also stored in a data_frame.
+#' @noRd
 generate_lorentz_curves_v2 <- function(data_path,
                                        file_format = c("bruker", "jcampdx"),
                                        make_rds = FALSE,
@@ -31,8 +31,7 @@ generate_lorentz_curves_v2 <- function(data_path,
                                        delta = 6.4,
                                        scale_factor = c(1000, 1000000),
                                        ask = TRUE) {
-
-  # Checks arguments
+  # Check arguments
   file_format <- match.arg(file_format)
 
   # Switch to data directory
@@ -48,8 +47,8 @@ generate_lorentz_curves_v2 <- function(data_path,
     processing_value <- NULL
   } else if (file_format == "bruker") {
     files <- list.dirs(data_path, recursive = FALSE, full.names = FALSE) # folders inside `data_path`
-    spectroscopy_value <- readline(prompt="What is the name of the subfolder of your filepath: (e.g. 10 for C:/Users/Username/Desktop/spectra_folder/spectrum_name/10) ")
-    processing_value <- readline(prompt="What is the name of the subsubsubfolder of your filepath: (e.g. 10 for C:/Users/Username/Desktop/spectra_folder/spectrum_name/10/pdata/10) ")
+    spectroscopy_value <- readline(prompt = "What is the name of the subfolder of your filepath: (e.g. 10 for C:/Users/Username/Desktop/spectra_folder/spectrum_name/10) ")
+    processing_value <- readline(prompt = "What is the name of the subsubsubfolder of your filepath: (e.g. 10 for C:/Users/Username/Desktop/spectra_folder/spectrum_name/10/pdata/10) ")
   }
 
   # Reorder files in case user wants to use one spectrum to determine parameters for all spectra
@@ -64,20 +63,12 @@ generate_lorentz_curves_v2 <- function(data_path,
   # Do actual deconvolution
   spectrum_data <- list()
   for (i in 1:length(files)) {
-    # Bruker Path Example
-    #   fullpath:  C:\Users\tobi\.local\share\R\metabodecon\urine\urine_2\10\pdata\10\procs
-    #   filepath:  C:\Users\tobi\.local\share\R\metabodecon\urine\urine_2\10
-    #   data_path  C:\Users\tobi\.local\share\R\metabodecon\urine
-    #   name:                                                     urine_2
-    #   spectroscopy_value:                                               10
-    #   constant:                                                            pdata    procs
-    #   processing_value:                                                          10
-    # Jcampdx Path Example
-    #   fullpath: C:\Users\tobi\.local\share\R\metabodecon\urine\urine_2.dx
-    #   filepath: C:\Users\tobi\.local\share\R\metabodecon\urine
-    #   name:                                                    urine_2
     name <- files[i] # bruker: `urine_2`, jcampdx: `urine_2.dx`
-    filepath <- switch(file_format, "bruker" = paste(data_path, name, spectroscopy_value, sep="/"), "jcampdx" = data_path, stop("Invalid file format"))
+    filepath <- switch(file_format, # see [FAQ](../vignettes/FAQ.Rmd#file-structure) for example file structures
+      "bruker" = paste(data_path, name, spectroscopy_value, sep = "/"),
+      "jcampdx" = data_path,
+      stop("Invalid file format")
+    )
     x <- deconvolute_spectrum(filepath, name, file_format, same_parameter, processing_value, number_iterations, range_water_signal_ppm, signal_free_region, smoothing_param, delta, scale_factor, current_filenumber = i, number_of_files = length(files))
     spectrum_data[[name]] <- x
     # Save `range_water_signal` and `signal_free_region` for next loop passage as those might have been adjusted interactively by the user
@@ -129,7 +120,7 @@ deconvolute_spectrum <- function(filepath, name, file_format, same_parameter, pr
 #' @examples \dontrun{
 #' get_num_input("Enter a number between 1 and 10: ", min = 1, max = 10)
 #' }
-#' @keywords internal
+#' @noRd
 get_num_input <- function(prompt, min = -Inf, max = Inf, int = FALSE) {
   pat <- if (int) "^[0-9]+$" else "^[0-9]*\\.[0-9]+$"
   typ <- if (int) "number" else "value"
@@ -150,7 +141,7 @@ get_num_input <- function(prompt, min = -Inf, max = Inf, int = FALSE) {
 #' @examples \dontrun{
 #' get_str_input("Enter a, b or c: ", c("a", "b", "c"))
 #' }
-#' @keywords internal
+#' @noRd
 get_str_input <- function(prompt, valid) {
   x <- readline(prompt = prompt)
   n <- length(valid)
@@ -170,7 +161,7 @@ get_str_input <- function(prompt, valid) {
 #' show_dir <- get_yn_input("List dir content? (y/n) ")
 #' if (show_dir) print(dir())
 #' }
-#' @keywords internal
+#' @noRd
 get_yn_input <- function(prompt) {
   if (!grepl("(y/n)", prompt, fixed = TRUE)) {
     prompt <- paste0(prompt, " (y/n) ")
@@ -187,9 +178,9 @@ get_yn_input <- function(prompt) {
 #' @return A single string with elements of x separated by sep.
 #' @examples \dontrun{
 #' collapse(c("a", "b", "c")) # "a, b, c"
-#' collapse(1:5, sep = "-")   # "1-2-3-4-5"
+#' collapse(1:5, sep = "-") # "1-2-3-4-5"
 #' }
-#' @keywords internal
+#' @noRd
 collapse <- function(x, sep = ", ") {
   paste(x, collapse = sep)
 }
@@ -198,7 +189,7 @@ collapse <- function(x, sep = ", ") {
 #' @description Checks if a given value is NULL or NA.
 #' @param x The value to check.
 #' @return TRUE if x is NULL or x is NA, else FALSE.
-#' @keywords internal
+#' @noRd
 is.none <- function(x) {
   return(is.null(x) || is.na(x))
 }

@@ -19,7 +19,7 @@
 
 test_that("1. cache_example_datasets(persistent = FALSE) with empty datadirs", {
 
-    skip_if(Sys.getenv("SKIP_SLOW_TESTS") == "TRUE", "Skipped because SKIP_SLOW_TESTS=TRUE")
+    skip_if_not(Sys.getenv("RUN_SLOW_TESTS") == "TRUE", "Skipped because RUN_SLOW_TESTS != TRUE")
 
     x <- with(datadir_persistent = "empty", datadir_temp = "empty", message = "captured", {
         zip_returned <- cache_example_datasets(persistent = FALSE)

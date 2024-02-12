@@ -2,7 +2,7 @@ xds$url <- "https://github.com/spang-lab/metabodecon/releases/download/v1.0.2/ex
 
 test_that("1. download_example_datasets() with example_datasets.zip missing on disk", {
 
-    skip_if(Sys.getenv("SKIP_SLOW_TESTS") == "TRUE", "Skipped because SKIP_SLOW_TESTS=TRUE")
+    skip_if_not(Sys.getenv("RUN_SLOW_TESTS") == "TRUE", "Skipped because RUN_SLOW_TESTS != TRUE")
 
     x <- with(datadir_persistent = "missing", datadir_temp = "missing", message = "captured", {
         download_example_datasets()
@@ -17,7 +17,7 @@ test_that("1. download_example_datasets() with example_datasets.zip missing on d
 
 test_that("2. download_example_datasets(persistent = TRUE) with example_datasets.zip missing on disk", {
 
-    skip_if(Sys.getenv("SKIP_SLOW_TESTS") == "TRUE", "Skipped because SKIP_SLOW_TESTS=TRUE")
+    skip_if_not(Sys.getenv("RUN_SLOW_TESTS") == "TRUE", "Skipped because RUN_SLOW_TESTS != TRUE")
 
     x <- with(datadir_persistent = "missing", datadir_temp = "missing", message = "captured", {
         download_example_datasets(persistent = TRUE)
@@ -32,7 +32,7 @@ test_that("2. download_example_datasets(persistent = TRUE) with example_datasets
 
 test_that("3. download_example_datasets() with example_datasets.zip already cached on disk", {
 
-    skip_if(Sys.getenv("SKIP_SLOW_TESTS") == "TRUE", "Skipped because SKIP_SLOW_TESTS=TRUE")
+    skip_if_not(Sys.getenv("RUN_SLOW_TESTS") == "TRUE", "Skipped because RUN_SLOW_TESTS != TRUE")
 
     x <- with(datadir_persistent = "filled", datadir_temp = "missing", message = "captured", {
         download_example_datasets(persistent = TRUE)
