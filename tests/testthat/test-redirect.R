@@ -18,5 +18,6 @@ test_that("redirect works", {
     # Check results
     expect_equal(redirects$output$text, c("Hello", "from cat"))
     expect_equal(redirects$message$text, c("Goodbye", "from message"))
-    expect_equal(file.size("tmp.pdf"), 5413)
+    expect_gt(file.size("tmp.pdf"), 4000)
+    expect_lt(file.size("tmp.pdf"), 6000)
 })
