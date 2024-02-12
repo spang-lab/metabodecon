@@ -18,63 +18,67 @@ Add a minimal dataset to the package, so that the user can run the examples with
 
 Function `download_example_data` should allow users to specify a temp dir instead the usual XDG directory. This is useful to pass CRAN checks as CRAN doesn't allow writing to th user' home directory.
 
-# 6. Fix: fix name of samples in blood dataset
+# 6. Fix: generate_lorentz_curves should not write to input folders by default
+
+Function `generate_lorentz_curves` should not write to input folders by default. Instead, all generated output files should be stored inside folder `${cwd}/metabodecon_output` by default with the option to change this path.
+
+# 7. Fix: fix name of samples in blood dataset
 
 It should be `Blood` not `Bood`.
 
-# 7. Refactor: Text Output
+# 8. Refactor: Text Output
 
 The output should be improved. The License should not be printed after every function execution, unless there is a strong reason to do so. Timestamps should be added to the output, so the user automatically has a rough idea how long the function will take to finish.
 
-# 8. Refactor: Plotting defaults
+# 9. Refactor: Plotting defaults
 
 Function `plot_triplets` should not store to file by default. If we offer an option to store to a file for convenience, it shouldn't be png and we should print the file path.
 
-# 9. Refactor: Plotting speed
+# 10. Refactor: Plotting speed
 
 Function `plot_lorentz_curves_save_as_png` is suuuuper slow. We should try to make this quicker.
 
-# 10. Fix CRAN review finding 0
+# 11. Fix CRAN review finding 0
 
 Omit the redundant "Functions for" in your title.
 
-# 11. Fix CRAN review finding 1
+# 12. Fix CRAN review finding 1
 
 Do not start the description with "Functions for", "This package", package name, title or similar.
 
-# 12. Fix CRAN review finding 2
+# 13. Fix CRAN review finding 2
 
 Always explain all acronyms in the description text. e.g.: NMR
 
-# 13. Fix CRAN review finding 3
+# 14. Fix CRAN review finding 3
 
 Write references in the description of the DESCRIPTION file in the form `authors (year) <doi:...>` with no space after 'doi:' and angle brackets for auto-linking. (If you want to add a title as well please put it in quotes: "Title")
 
-# 14. Fix CRAN review finding 4
+# 15. Fix CRAN review finding 4
 
 Please add `\value` to .Rd files regarding exported methods and explain the functions results in the documentation. Please write about the structure of the output (class) and also what the output means. (If a function does not return a value, please document that too, e.g. `\value{No return value, called for side effects}` or similar). Missing Rd-tags in up to 11 .Rd files, e.g.: `combine_peaks.Rd: \value`, `dohCluster.Rd: \value`, ...
 
-# 15. Fix CRAN review finding 5
+# 16. Fix CRAN review finding 5
 
 You have examples for unexported functions. Please either omit these examples or export these functions. Examples for unexported function with example: plot_spectrum_superposition_save_as_png().
 
-# 16. Fix CRAN review finding 6
+# 17. Fix CRAN review finding 6
 
 In addition, we see: "Unexecutable code in vignettes/metabodecon.Rmd": the `#` should be before `"2)"` instead of afterwards, I guess.
 
-# 17. Fix CRAN review finding 7
+# 18. Fix CRAN review finding 7
 
 Remove `dontrun` from examples if they are executable in < 5 sec, or create additionally small toy examples to allow automatic testing in < 5 sec. Reason: `\dontrun{}` should only be used if the example really cannot be executed by the user, e.g. because of missing additional software, missing API keys, etc. That's why wrapping examples in `\dontrun{}` adds the comment ("# Not run:") as a warning for the user. Alternative: You could also replace `\dontrun{}` with `\donttest`, if it takes longer than 5 sec to be executed, but it would be preferable to have automatic checks for functions. Otherwise, you can also write some tests.
 
-# 18. Fix CRAN review finding 8
+# 19. Fix CRAN review finding 8
 
 Please ensure that your functions do not write by default or in your `examples/vignettes/tests` in the user's home filespace (including the package directory and `getwd()`). This is not allowed by CRAN policies. Please omit any default path in writing functions. In your examples/vignettes/tests you can write to `tempdir()`.
 
-# 19. Fix CRAN review finding 9
+# 20. Fix CRAN review finding 9
 
  Please make sure that you do not change the user's options, par or working directory. If you really have to do so within functions, please ensure with an *immediate* call of on.exit() that the settings are reset when the function is exited. E.g. `R/MetaboDecon1D.R`. If you're not familiar with the function, please check `?on.exit`. This function makes it possible to restore options before exiting a function even if the function breaks. Therefore it needs to be called immediately after the option change within a function.
 
-# 20. Refactor: Improve output description of Metabodecon1D
+# 21. Refactor: Improve output description of Metabodecon1D
 
 Original Teams Message from Wolfram from `2023/11/08 3:29 PM`
 
@@ -106,7 +110,7 @@ Output variables of MetaboDecon1D (These variables will be obtained for each ana
 - __Scale_factor:__ scale factor for x- and y-axis to reduce numerical instabilities, default 1000 and 1000000.
 Toy example for TSP signal (note numbers will differ for each spectrum): TSP is signal 979, index_peak_triplets_middle[979]=96955, x_0[979]=34.11715 (Note (131072-96955)/1000=34.117), peak_triplets_middle=0.000 ppm, lambda[979]=-0.00525 corresponds to 0.48 Hz. A[979]=-1.218312; A* Pi=-3.82, integrals[979]=3.82
 
-# 21. Refactor: improve output of metabodecon
+# 22. Refactor: improve output of metabodecon
 
 Original Teams Messages:
 
