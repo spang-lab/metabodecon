@@ -2,7 +2,7 @@ Package: metabodecon
 Language: en-US
 Type: Package
 Title: Functions for Deconvolution of 1d NMR Spectra
-Version: 1.0.3
+Version: 1.1.0
 Authors@R: c(
     person(given = "Wolfram",
            family = "Gronwald",
@@ -26,15 +26,17 @@ License: GPL (>= 3)
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.0
 biocViews:
 Imports:
     data.table,
     readJDX,
     speaq
 Suggests:
+    digest,
     knitr,
     rmarkdown,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    devtools
 Config/testthat/edition: 3
 URL: https://spang-lab.github.io/metabodecon/

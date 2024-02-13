@@ -21,14 +21,15 @@ The [metabodecon repository](https://github.com/spang-lab/metabodecon) contains 
 
 ```{r download-example-datasets}
 library(metabodecon)
-download_example_datasets()
+download_example_datasets(persistent = FALSE)
+# Set persistent to TRUE to keep the data after the R session ends
 ```
 
 ## Use metabodecon to convert a spectrum into Lorentz curves
 
-```{r, eval=FALSE}
+```{r}
 spectrum_data <- generate_lorentz_curves(
-  data_path = get_data_dir("blood"),
+  data_path = datadir("example_datasets/bruker/blood"),
   file_format = "bruker"
 )
 ```
@@ -88,7 +89,7 @@ after_speaq_mat <- speaq_align(
 ## Further optimize alignment by calling `combine_peaks`
 
 Even, after alignment by speaq data of some signals are spread over adjacent columns. Combination of this
-data is the purpose of the following routine. 
+data is the purpose of the following routine.
 ```{r}
 aligned_res <- combine_peaks(
   shifted_mat = after_speaq_mat,

@@ -2,8 +2,40 @@ url: ~
 template:
   bootstrap: 5
 articles:
-- title: Articles
-  navbar: ~
+  - title: Articles
+    navbar: ~
+    contents:
+      - MetaboDecon1D
+      - FAQ
+reference:
+- title: Public API
+  desc: Metabodecon's Public User Interface
+  contents:
+  - generate_lorentz_curves
+  - download_example_datasets
+  - datadir
+- title: Plotting Functions
+  desc: Functions to plot the results of the deconvolution
+  contents:
+  - plot_lorentz_curves_save_as_png
+  - plot_spectrum_superposition_save_as_png
+  - plot_triplets
+- title: Internal
+  desc: Internal Helper Functions. These function are exported but should not be used directly by the user. The main reason they are documented here is so that functions from the Public API can reference them when implementation details are explained.
+  contents:
+  - datadir_persistent
+  - datadir_temp
+  - calculate_lorentz_curves
+  - combine_peaks
+  - deconvolution
+  - dohCluster
+  - gen_feat_mat
+  - get_ppm_range
+  - speaq_align
+  - tempdir
+- title: Deprecated
+  desc: Deprecated functions. These functions are no longer used by the package and are only kept for backwards compatibility. They will be removed in future versions of the package.
   contents:
   - MetaboDecon1D
-  - FAQ
+  - show_license
+  - get_data_dir
