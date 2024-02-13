@@ -59,8 +59,8 @@ test_that("1. MetaboDecon1D with: 1 jcampdx, answers == yy", {
     expect_file_size(x$testdir, c(
         `plots.pdf` = 321364,
         `urine.dx` = 1192696,
-        `urine.dx_approximated_spectrum.txt` = 2581870,
-        `urine.dx_parameters.txt` = 72101
+        `urine.dx approximated_spectrum.txt` = 2581870,
+        `urine.dx parameters.txt` = 72101
     ))
 })
 
@@ -145,11 +145,11 @@ test_that("2. MetaboDecon1D with: 2 jcampdx, answers == y1yy", {
     expect_file_size(x$testdir, c(
         `plots.pdf` = 321364,
         `urine/urine.dx` = 1192696,
-        `urine/urine.dx_approximated_spectrum.txt` = 2581870,
-        `urine/urine.dx_parameters.txt` = 72101,
+        `urine/urine.dx approximated_spectrum.txt` = 2581870,
+        `urine/urine.dx parameters.txt` = 72101,
         `urine/urine_2.dx` = 1214431,
-        `urine/urine_2.dx_approximated_spectrum.txt` = 2571992,
-        `urine/urine_2.dx_parameters.txt` = 81481
+        `urine/urine_2.dx approximated_spectrum.txt` = 2571992,
+        `urine/urine_2.dx parameters.txt` = 81481
     ))
 })
 
@@ -236,10 +236,10 @@ test_that("3. MetaboDecon1D with: 2 jcampdx, answers == nyyn**y*n*y", {
     ## Check created files #####
     expect_file_size(x$testdir, c(
         `plots.pdf` = 961666,
-        `urine/urine.dx_approximated_spectrum.txt` = 2581870,
-        `urine/urine.dx_parameters.txt` = 72101,
-        `urine/urine_2.dx_approximated_spectrum.txt` = 2571332,
-        `urine/urine_2.dx_parameters.txt` = 82012
+        `urine/urine.dx approximated_spectrum.txt` = 2581870,
+        `urine/urine.dx parameters.txt` = 72101,
+        `urine/urine_2.dx approximated_spectrum.txt` = 2571332,
+        `urine/urine_2.dx parameters.txt` = 82012
     ))
 
     ## Check output #####
@@ -358,10 +358,10 @@ test_that("4. MetaboDecon1D with: 2 bruker, answers == nyyn**y*n*y", {
     ## Check created files #####
     expect_file_size(x$testdir, c(
         `plots.pdf` = 961664,
-        `urine/urine_approximated_spectrum.txt` = 2581865,
-        `urine/urine_parameters.txt` = 72104,
-        `urine/urine_2_approximated_spectrum.txt` = 2571332,
-        `urine/urine_2_parameters.txt` = 82012
+        `urine/urine approximated_spectrum.txt` = 2581865,
+        `urine/urine parameters.txt` = 72104,
+        `urine/urine_2 approximated_spectrum.txt` = 2571332,
+        `urine/urine_2 parameters.txt` = 82012
     ))
 
     ## Check output #####
