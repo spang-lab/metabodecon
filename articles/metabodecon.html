@@ -33,7 +33,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">metabodecon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -107,14 +107,15 @@ must be explicitly downloaded afterwards via command
 <code><a href="../reference/download_example_datasets.html">download_example_datasets()</a></code>.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://spang-lab.github.io/metabodecon/" class="external-link">metabodecon</a></span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/download_example_datasets.html">download_example_datasets</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/download_example_datasets.html">download_example_datasets</a></span><span class="op">(</span>persistent <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="co"># Set persistent to TRUE to keep the data after the R session ends</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="use-metabodecon-to-convert-a-spectrum-into-lorentz-curves">Use metabodecon to convert a spectrum into Lorentz curves<a class="anchor" aria-label="anchor" href="#use-metabodecon-to-convert-a-spectrum-into-lorentz-curves"></a>
 </h3>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">spectrum_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_lorentz_curves.html">generate_lorentz_curves</a></span><span class="op">(</span></span>
-<span>  data_path <span class="op">=</span> <span class="fu"><a href="../reference/get_data_dir.html">get_data_dir</a></span><span class="op">(</span><span class="st">"blood"</span><span class="op">)</span>,</span>
+<span>  data_path <span class="op">=</span> <span class="fu"><a href="../reference/datadir.html">datadir</a></span><span class="op">(</span><span class="st">"example_datasets/bruker/blood"</span><span class="op">)</span>,</span>
 <span>  file_format <span class="op">=</span> <span class="st">"bruker"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>After calling function <code><a href="../reference/generate_lorentz_curves.html">generate_lorentz_curves()</a></code>, R will

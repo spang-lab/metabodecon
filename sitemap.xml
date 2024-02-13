@@ -40,6 +40,15 @@
     <loc>/reference/combine_peaks.html</loc>
   </url>
   <url>
+    <loc>/reference/datadir.html</loc>
+  </url>
+  <url>
+    <loc>/reference/datadir_persistent.html</loc>
+  </url>
+  <url>
+    <loc>/reference/datadir_temp.html</loc>
+  </url>
+  <url>
     <loc>/reference/deconvolution.html</loc>
   </url>
   <url>
@@ -77,5 +86,8 @@
   </url>
   <url>
     <loc>/reference/speaq_align.html</loc>
+  </url>
+  <url>
+    <loc>/reference/tempdir.html</loc>
   </url>
 </urlset>

@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">metabodecon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -48,9 +48,9 @@
     </div>
 
     <div class="section level2">
-      <h2 id="all-functions">All functions<a class="anchor" aria-label="anchor" href="#all-functions"></a></h2>
+      <h2 id="public-api">Public API<a class="anchor" aria-label="anchor" href="#public-api"></a></h2>
       
-      
+      <p class="section-desc"></p><p>Metabodecon’s Public User Interface</p>
 
       
     </div><div id="" class="section level2">
@@ -60,9 +60,66 @@
 
       <dl><dt>
           
-          <code><a href="MetaboDecon1D.html">MetaboDecon1D()</a></code> 
+          <code><a href="generate_lorentz_curves.html">generate_lorentz_curves()</a></code> 
         </dt>
-        <dd>The MetaboDecon1D Main Function</dd>
+        <dd>generate_lorentz_curves</dd>
+      </dl><dl><dt>
+          
+          <code><a href="download_example_datasets.html">download_example_datasets()</a></code> 
+        </dt>
+        <dd>Download metabodecon Example Datasets</dd>
+      </dl><dl><dt>
+          
+          <code><a href="datadir.html">datadir()</a></code> 
+        </dt>
+        <dd>Return path to metabodecon's data directory</dd>
+      </dl></div><div class="section level2">
+      <h2 id="plotting-functions">Plotting Functions<a class="anchor" aria-label="anchor" href="#plotting-functions"></a></h2>
+      
+      <p class="section-desc"></p><p>Functions to plot the results of the deconvolution</p>
+
+      
+    </div><div id="" class="section level2">
+      
+      
+      
+
+      <dl><dt>
+          
+          <code><a href="plot_lorentz_curves_save_as_png.html">plot_lorentz_curves_save_as_png()</a></code> 
+        </dt>
+        <dd>Plot lorentz curves for variable range</dd>
+      </dl><dl><dt>
+          
+          <code><a href="plot_spectrum_superposition_save_as_png.html">plot_spectrum_superposition_save_as_png()</a></code> 
+        </dt>
+        <dd>Plot spectrum approx for variable range</dd>
+      </dl><dl><dt>
+          
+          <code><a href="plot_triplets.html">plot_triplets()</a></code> 
+        </dt>
+        <dd>Function to plot peak triplets for variable range</dd>
+      </dl></div><div class="section level2">
+      <h2 id="internal">Internal<a class="anchor" aria-label="anchor" href="#internal"></a></h2>
+      
+      <p class="section-desc"></p><p>Internal Helper Functions. These function are exported but should not be used directly by the user. The main reason they are documented here is so that functions from the Public API can reference them when implementation details are explained.</p>
+
+      
+    </div><div id="" class="section level2">
+      
+      
+      
+
+      <dl><dt>
+          
+          <code><a href="datadir_persistent.html">datadir_persistent()</a></code> 
+        </dt>
+        <dd>Persistent Data Directory</dd>
+      </dl><dl><dt>
+          
+          <code><a href="datadir_temp.html">datadir_temp()</a></code> 
+        </dt>
+        <dd>Temporary Data Directory</dd>
       </dl><dl><dt>
           
           <code><a href="calculate_lorentz_curves.html">calculate_lorentz_curves()</a></code> 
@@ -85,24 +142,9 @@
         <dd>dohCluster</dd>
       </dl><dl><dt>
           
-          <code><a href="download_example_datasets.html">download_example_datasets()</a></code> 
-        </dt>
-        <dd>Download metabodecon example datasets</dd>
-      </dl><dl><dt>
-          
           <code><a href="gen_feat_mat.html">gen_feat_mat()</a></code> 
         </dt>
         <dd>gen_feat_mat</dd>
-      </dl><dl><dt>
-          
-          <code><a href="generate_lorentz_curves.html">generate_lorentz_curves()</a></code> 
-        </dt>
-        <dd>generate_lorentz_curves</dd>
-      </dl><dl><dt>
-          
-          <code><a href="get_data_dir.html">get_data_dir()</a></code> 
-        </dt>
-        <dd>Retrieve directory path of an example dataset</dd>
       </dl><dl><dt>
           
           <code><a href="get_ppm_range.html">get_ppm_range()</a></code> 
@@ -110,19 +152,30 @@
         <dd>get_ppm_range</dd>
       </dl><dl><dt>
           
-          <code><a href="plot_lorentz_curves_save_as_png.html">plot_lorentz_curves_save_as_png()</a></code> 
+          <code><a href="speaq_align.html">speaq_align()</a></code> 
         </dt>
-        <dd>Plot lorentz curves for variable range</dd>
+        <dd>speaq_align</dd>
       </dl><dl><dt>
           
-          <code><a href="plot_spectrum_superposition_save_as_png.html">plot_spectrum_superposition_save_as_png()</a></code> 
+          <code><a href="tempdir.html">tempdir()</a></code> 
         </dt>
-        <dd>Plot spectrum approx for variable range</dd>
-      </dl><dl><dt>
+        <dd>Temporary Session Directory</dd>
+      </dl></div><div class="section level2">
+      <h2 id="deprecated">Deprecated<a class="anchor" aria-label="anchor" href="#deprecated"></a></h2>
+      
+      <p class="section-desc"></p><p>Deprecated functions. These functions are no longer used by the package and are only kept for backwards compatibility. They will be removed in future versions of the package.</p>
+
+      
+    </div><div id="" class="section level2">
+      
+      
+      
+
+      <dl><dt>
           
-          <code><a href="plot_triplets.html">plot_triplets()</a></code> 
+          <code><a href="MetaboDecon1D.html">MetaboDecon1D()</a></code> 
         </dt>
-        <dd>Function to plot peak triplets for variable range</dd>
+        <dd>The MetaboDecon1D Main Function</dd>
       </dl><dl><dt>
           
           <code><a href="show_license.html">show_license()</a></code> 
@@ -130,11 +183,12 @@
         <dd>Show terms and conditions of license</dd>
       </dl><dl><dt>
           
-          <code><a href="speaq_align.html">speaq_align()</a></code> 
+          <code><a href="get_data_dir.html">get_data_dir()</a></code> 
         </dt>
-        <dd>speaq_align</dd>
+        <dd>Retrieve directory path of an example dataset</dd>
       </dl></div>
-  </main></div>
+  </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>
+    </nav></aside></div>
 
 
     <footer><div class="pkgdown-footer-left">
