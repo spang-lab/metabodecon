@@ -23,6 +23,7 @@ Only relevant for developers:
 * Updated `NEWS.md`
 * Fixed bug in `with()` that caused `get_datadir_mock()` to be called after redirection took place causing unexpected message output
 * Fixed bug in `datadir()` that caused the resulting path to end with a slash on Unix-like systems and without a slash on Windows, if `file` was not specified
+* `RUN_SLOW_TESTS` is now set to TRUE for the CI pipeline
 
 # metabodecon 1.0.3
 
