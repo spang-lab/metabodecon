@@ -6,7 +6,7 @@
 \usage{
 download_example_datasets(
   dst_dir = NULL,
-  extract = FALSE,
+  extract = TRUE,
   persistent = NULL,
   overwrite = FALSE
 )

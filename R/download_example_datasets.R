@@ -18,7 +18,7 @@
 #' @seealso [datadir()]
 #' @export
 download_example_datasets <- function(dst_dir = NULL,
-                                      extract = FALSE,
+                                      extract = TRUE,
                                       persistent = NULL,
                                       overwrite = FALSE) {
     cached_zip <- cache_example_datasets(persistent = persistent, extract = extract)

@@ -4,7 +4,7 @@
 \alias{datadir}
 \title{Return path to metabodecon's data directory}
 \usage{
-datadir(file = "", warn = TRUE, persistent = NULL)
+datadir(file = NULL, warn = TRUE, persistent = NULL)
 }
 \arguments{
 \item{file}{Relative path to a file within the data directory.}

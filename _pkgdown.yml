@@ -12,7 +12,6 @@ reference:
   desc: Metabodecon's Public User Interface
   contents:
   - generate_lorentz_curves
-  - generate_lorentz_curves_v2
   - download_example_datasets
   - datadir
 - title: Plotting Functions
@@ -39,3 +38,4 @@ reference:
   contents:
   - MetaboDecon1D
   - show_license
+  - get_data_dir

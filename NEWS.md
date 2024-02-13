@@ -8,6 +8,7 @@ Currently under development in branch `improve_tests`.
 * Created categories for function reference in [_pkgdown.yml](_pkgdown.yml)
 * Moved `misc/datasets` to `misc/example_datasets`
 * Moved `misc/examples/usage_example.R` to `misc/code_examples/sage_example.R`
+* Function `get_data_dir()` is now deprecated in favour of `datadir()`
 
 Only relevant for developers:
 
