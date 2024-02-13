@@ -21,7 +21,7 @@ test_that("1. cache_example_datasets(persistent = FALSE) with empty datadirs", {
 test_that("2. cache_example_datasets(persistent = FALSE) with existing temporary datadir", {
     x <- with(
         datadir_persistent = "empty",
-        datadir_temp = "empty",
+        datadir_temp = "filled",
         message = "captured",
         expr = {
             zip_returned <- cache_example_datasets(persistent = FALSE)
@@ -29,7 +29,6 @@ test_that("2. cache_example_datasets(persistent = FALSE) with existing temporary
             zip_persistent <- zip_persistent()
         }
     )
-
     expect_true(file.exists(zip_temp))
     expect_false(file.exists(zip_persistent))
     expect_equal(x$message$text, character())

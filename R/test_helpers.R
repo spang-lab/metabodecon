@@ -227,17 +227,18 @@ with <- function(expr,
     push_option(...)
     testdir <- push_testdir(testdir)
     inputs <- fill_with_inputs(testdir, inputs)
+    mocked_datadir_temp = get_datadir_mock(type = "temp", state = datadir_temp)
+    mocked_datadir_persistent = get_datadir_mock(type = "persistent", state = datadir_persistent)
+    mocked_readline = get_readline_mock(answers)
     rd <- redirect(output = output, message = message, plots = plots)
     withCallingHandlers(
         {
-            if (debug) {
-                browser()
-            }
+            if (debug) browser()
             testthat::with_mocked_bindings(
                 code = mt <- measure_runtime(expr),
-                datadir_temp = get_datadir_mock(type = "temp", state = datadir_temp),
-                datadir_persistent = get_datadir_mock(type = "persistent", state = datadir_persistent),
-                readline = get_readline_mock(answers)
+                datadir_temp = mocked_datadir_temp,
+                datadir_persistent = mocked_datadir_persistent,
+                readline = mocked_readline
             )
         },
         warning = print_warning_as_message

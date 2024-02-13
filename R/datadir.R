@@ -31,7 +31,7 @@
 #' Source: [cran.r-project.org/web/packages/policies](https://cran.r-project.org/web/packages/policies.html)
 #' @seealso [datadir_persistent()], [datadir_temp()]
 #' @export
-datadir <- function(file = "", warn = TRUE, persistent = NULL) {
+datadir <- function(file = NULL, warn = TRUE, persistent = NULL) {
     datadir <- datadir_temp <- datadir_temp()
     datadir_persistent <- datadir_persistent()
     zip_peristent <- zip_persistent()
@@ -39,7 +39,7 @@ datadir <- function(file = "", warn = TRUE, persistent = NULL) {
     if (isTRUE(persistent) || (is.null(persistent) && zip_persistent_has_correct_size)) {
         datadir <- datadir_persistent
     }
-    file_path <- file.path(datadir, file, fsep = "/")
+    file_path <- if (is.null(file)) datadir else file.path(datadir, file)
     if (warn && !dir.exists(file_path)) {
         warning(file_path, " does not exist. Please call `download_example_datasets()` first.", call. = FALSE)
     }

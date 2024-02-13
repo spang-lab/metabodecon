@@ -20,6 +20,8 @@ Only relevant for developers:
 * Added function `generate_lorentz_curves_v2()` which will replace `generate_lorentz_curves()` as soon as we have new features AND 100% backwards compatibility
 * Bumped version to `1.1.0` in `DESCRIPTION`
 * Updated `NEWS.md`
+* Fixed bug in `with()` that caused `get_datadir_mock()` to be called after redirection took place causing unexpected message output
+* Fixed bug in `datadir()` that caused the resulting path to end with a slash on Unix-like systems and without a slash on Windows, if `file` was not specified
 
 # metabodecon 1.0.3
 
