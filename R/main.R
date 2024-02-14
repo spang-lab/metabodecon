@@ -31,7 +31,7 @@
 generate_lorentz_curves <- function(data_path,
                                     file_format = "bruker",
                                     make_rds = FALSE) {
-  spectrum_data <- MetaboDecon1D(data_path, file_format = "bruker")
+  spectrum_data <- MetaboDecon1D(data_path, file_format = file_format)
   if (make_rds) {
     saveRDS(object = spectrum_data, file = file.path(data_path, "spectrum_data.rds"))
   }
