@@ -4,23 +4,15 @@
 
 We should have a batch mode, that does all the above steps truly automatically and creates a pdf containing all quality control images. The pdf can be inspected later on and based on the findings the function call can be adjusted.
 
-PR1 `test_glc`
-
-1. Add test cases for `generate_lorentz_curves`. Just copy from test cases of `MetetaboDecon1D` and adjust a little bit.
-
-PR2 `batch_mode`
-
-1. Add test cases for `generate_lorentz_curves_v2`. Just copy from test cases of `generate_lorentz_curves` and fix `generate_lorentz_curves_v2` to pass these tests. (Now we have backwards compatibility)
-2. Replace `generate_lorentz_curves` with `generate_lorentz_curves_v2`
-3. Add remaining arguments of `MetaboDecon1D` to `generate_lorentz_curves` and make sure the are passed on correctly
-4. Add argument `ask` to `generate_lorentz_curves`
-5. Adjust `mock_readline` so that it throws an exception if called more often than there are answers
-6. Add test cases for `generate_lorentz_curves(..., ask = FALSE)` without answers (which should fail)
-7. Implement the ask parameter in `generate_lorentz_curves` until all tests pass
-
-PR3 `clean_up_util`
-
-1. Remove helper functions that are not used anymore
+1. [x] __PR test-glc__: Add test cases for `generate_lorentz_curves`. Just copy from test cases of `MetetaboDecon1D` and adjust a little bit.
+1. [ ] __PR batch-mode__: Add test cases for `generate_lorentz_curves_v2`. Just copy from test cases of `generate_lorentz_curves` and fix `generate_lorentz_curves_v2` to pass these tests. (Now we have backwards compatibility)
+2. [ ] __PR batch-mode__: Replace `generate_lorentz_curves` with `generate_lorentz_curves_v2`
+3. [ ] __PR batch-mode__: Add remaining arguments of `MetaboDecon1D` to `generate_lorentz_curves` and make sure the are passed on correctly
+4. [ ] __PR batch-mode__: Add argument `ask` to `generate_lorentz_curves`
+5. [ ] __PR batch-mode__: Adjust `mock_readline` so that it throws an exception if called more often than there are answers
+6. [ ] __PR batch-mode__: Add test cases for `generate_lorentz_curves(..., ask = FALSE)` without answers (which should fail)
+7. [ ] __PR batch-mode__: Implement the ask parameter in `generate_lorentz_curves` until all tests pass
+1. [ ] __PR clear-helpers__: Remove helper functions that are not used anymore
 
 ## Feature: Parallelize
 
@@ -33,10 +25,6 @@ Write test cases for every function to ensure that future updates don't break an
 ## Fix: generate_lorentz_curves should not write to input folders by default
 
 Function `generate_lorentz_curves` should not write to input folders by default. Instead, all generated output files should be stored inside folder `${cwd}/metabodecon_output` by default with the option to change this path.
-
-## Fix: fix name of samples in blood dataset
-
-It should be `Blood` not `Bood`.
 
 ## Refactor: Text Output
 
@@ -162,17 +150,25 @@ lw_hz <- function(spectrum_data, sw_hz) {
 ```
 <!-- /* cSpell:enable */ -->
 
+# In Progress
+
+## Fix: fix name of samples in blood dataset
+
+It should be `Blood` not `Bood`.
+
+Fixed in branch `test-glc`
+
 # Done
 
 ## Feature: use temp dirs for full example data
 
 Function `download_example_data` should allow users to specify a temp dir instead the usual XDG directory. This is useful to pass CRAN checks as CRAN doesn't allow writing to th user' home directory.
 
-Done with [1.1.0+d65098c](https://github.com/spang-lab/metabodecon/tree/d65098cf869e8959055b16570b5d41b5a5c9b46b).
+_Done with [1.1.0+d65098c](https://github.com/spang-lab/metabodecon/tree/d65098cf869e8959055b16570b5d41b5a5c9b46b)._
 
 
 ## Feature: add minimal example dataset
 
 Add a minimal dataset to the package, so that the user can run the examples without having to download the full example data. The minimal dataset should be smaller than 1MB. Idea: remove every second or third datapoint from two example spectra, this be enough to get below 1MB.
 
-Canceled because with [1.1.0+d65098c](https://github.com/spang-lab/metabodecon/tree/d65098cf869e8959055b16570b5d41b5a5c9b46b) we introduced caching for `download_example_data`, so there is no need for including the minimal dataset anymore.
+_Canceled because with [1.1.0+d65098c](https://github.com/spang-lab/metabodecon/tree/d65098cf869e8959055b16570b5d41b5a5c9b46b) we introduced caching for `download_example_data`, so there is no need for including the minimal dataset anymore._

@@ -184,6 +184,17 @@ expect_file_size <- function(testdir, size_exp) {
     testthat::expect_true(all(file_has_correct_size))
 }
 
+#' Test if the structure of an object matches the expected string
+#'
+#' @param obj The object to test
+#' @param expected_str The expected structure of the object as a string. Can be obtained by calling `dput(capture.output(str(obj)))`.
+#' @return A logical value indicating whether the structure of the object matches the expected string
+#' @examples
+#' expect_str(list(a = 1, b = 2), c("List of 2", " $ a: num 1", " $ b: num 2"))
+#' @noRd
+expect_str <- function(obj, expected_str) {
+    testthat::expect_identical(capture.output(str(obj)), expected_str)
+}
 
 # With #####
 
@@ -459,6 +470,10 @@ get_readline_mock <- function(texts, env = as.environment(list())) {
     env$readline_called <- 0
     readline <- function(prompt = "") {
         env$readline_called <- env$readline_called + 1
+        if (env$readline_called > length(texts)) {
+            msg <- "readline called %s times, but only %s answers were provided."
+            stop(sprintf(msg, env$readline_called, length(texts)))
+        }
         message(prompt, appendLF = FALSE)
         message(texts[env$readline_called])
         return(texts[env$readline_called])

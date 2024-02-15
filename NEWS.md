@@ -4,9 +4,22 @@ Development Branch:
 
 * `test-glc`
 
+API:
+
+* Fixed bug in `generate_lorentz_curves()` that caused the function to always use file format "bruker", even when file format "jcampdx" was specified.
+
+Datasets:
+
+* Fixed filenames of samples in blood dataset (renamed from `Bood_<nr>` to `blood_<nr>`)
+
 Documentation:
 
 * Fixed broken image in [vignettes/FAQ.Rmd](vignettes/FAQ.Rmd)
+
+Internal:
+
+* Added unit tests for `generate_lorentz_curves()`
+* Enabled parallel processing for unit tests
 
 # metabodecon 1.1.0
 
