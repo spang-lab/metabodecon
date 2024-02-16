@@ -2,7 +2,7 @@ Package: metabodecon
 Language: en-US
 Type: Package
 Title: Functions for Deconvolution of 1d NMR Spectra
-Version: 1.1.0
+Version: 1.1.1
 Authors@R: c(
     person(given = "Wolfram",
            family = "Gronwald",
@@ -39,4 +39,6 @@ Suggests:
     testthat (>= 3.0.0),
     devtools
 Config/testthat/edition: 3
+Config/testthat/start-first: MetaboDecon1D, generate_lorentz_curves
+Config/testthat/parallel: true
 URL: https://spang-lab.github.io/metabodecon/

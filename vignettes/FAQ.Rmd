@@ -5,6 +5,8 @@ vignette: >
   %\VignetteIndexEntry{FAQ}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+resource_files:
+  - vignettes/FAQ/water_artefact_n.png
 ---
 
 # FAQ
@@ -13,7 +15,7 @@ vignette: >
 
 __Question:__ When I choose `n` for `Water artefact fully inside red vertical lines? (y/n)`, metabodecon asks me to `Choose another half width range (in ppm) for the water artefact`, instead of left and right borders. Why is that and what should I enter here?
 
-![](faq/water_artefact_n.png)
+![](FAQ/water_artefact_n.png)
 
 __Answer:__ the water signal is always centered by Bruker, so you only have to specify the half width range to make the water area around the midpoint wider or narrower.
 
@@ -29,17 +31,17 @@ __Question:__ What file structure is expected for `bruker` and `jcampdx` formats
 
 __Answer:__ The expected file structure is as follows:
 
-```ini
-C:/bruker/urine           # data_path (user input)
-├── urine_1/              # name (user input)
-│   └── 10/               # spectroscopy_value (user input)
-│       └── pdata/        # processings_dir (constant)
-│           └── 10/       # processing_value (user input)
-│               └── procs # spectrum_file (constant)
+```txt
+C:/bruker/urine              # data_path (user input)
+├── urine_1/                 # name (user input)
+│   └── 10/                  # spectroscopy_value (user input)
+│       └── pdata/           # processings_dir (constant)
+│           └── 10/          # processing_value (user input)
+│               └── procs    # spectrum_file (constant)
 ├── urine_2/...
 └── ...
-C:/jcampdx/urine # data_path (user input)
-├── urine_1.dx   # spectrum_file (user input)
+C:/jcampdx/urine    # data_path (user input)
+├── urine_1.dx      # spectrum_file (user input)
 ├── urine_2.dx
 └── ...
 ```
