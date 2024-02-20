@@ -241,12 +241,18 @@ with <- function(expr,
     mocked_datadir_temp = get_datadir_mock(type = "temp", state = datadir_temp)
     mocked_datadir_persistent = get_datadir_mock(type = "persistent", state = datadir_persistent)
     mocked_readline = get_readline_mock(answers)
-    rd <- redirect(output = output, message = message, plots = plots)
+    redirect_list <- redirect(output = output, message = message, plots = plots)
+    errors <- character()
     withCallingHandlers(
         {
             if (debug) browser()
             testthat::with_mocked_bindings(
-                code = mt <- measure_runtime(expr),
+                tryCatch({
+                    rv_runtime_list <- measure_runtime(expr)
+                }, error = function(e) {
+                    restore(streams = "message")
+                    stop(e)
+                }),
                 datadir_temp = mocked_datadir_temp,
                 datadir_persistent = mocked_datadir_persistent,
                 readline = mocked_readline
@@ -254,7 +260,7 @@ with <- function(expr,
         },
         warning = print_warning_as_message
     )
-    return(c(mt, rd, list(testdir = testdir, inputs = inputs)))
+    return(c(rv_runtime_list, redirect_list, list(testdir = testdir, inputs = inputs)))
 }
 
 #' @title Redirect output, message, and plot streams

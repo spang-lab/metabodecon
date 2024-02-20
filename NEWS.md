@@ -22,6 +22,11 @@ Internal:
 * Enabled parallel processing for unit tests
 * Added function `%||%` to `R/util.R`
 * Added elements `range_water_signal_ppm` and `signal_free_region` to returned list of function `deconvolute_spectrum`
+* Function `with` now prints error messages to stderr even if the message stream is redirected
+* Fixed order of params in `deconvolution`
+* Copied function `deconvolution()` from `R/MetaboDecon1D.R` to `R/main_v2.R` as `.deconvolute_spectrum`
+* Added functions `msg()` and `msgf` to `R/util.R`
+* Created initial versions of `tests/testthat/test-generate_lorentz_curves-[1-4].R`
 
 # metabodecon 1.1.0
 
