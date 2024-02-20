@@ -27,6 +27,7 @@ Internal:
 * Copied function `deconvolution()` from `R/MetaboDecon1D.R` to `R/main_v2.R` as `.deconvolute_spectrum`
 * Added functions `msg()` and `msgf` to `R/util.R`
 * Created initial versions of `tests/testthat/test-generate_lorentz_curves-[1-4].R`
+* Added `generate_lorentz_curves_v2()` to `DESCRIPTION/Config/testthat/start-first`
 
 # metabodecon 1.1.0
 
