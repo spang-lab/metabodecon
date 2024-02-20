@@ -4,7 +4,7 @@
 # cores.
 library(testthat)
 
-test_that("4. MetaboDecon1D with: 2 bruker, answers == nyyn**y*n*y", {
+test_that("4. generate_lorentz_curves with: 2 bruker, answers == nyyn**y*n*y", {
 
     ## Skip conditions #####
     skip_on_cran()
@@ -12,7 +12,7 @@ test_that("4. MetaboDecon1D with: 2 bruker, answers == nyyn**y*n*y", {
 
     ## Call function #####
     x <- with(
-        testdir = "MetaboDecon1D/4",
+        testdir = "generate_lorentz_curves/4",
         output = "captured",
         message = "captured",
         plots = "plots.pdf",
@@ -113,7 +113,7 @@ test_that("4. MetaboDecon1D with: 2 bruker, answers == nyyn**y*n*y", {
     ))
     expect_identical(x$message$text, c(
         "",
-        "    <MetaboDecon1D>  Copyright (C) <2021>  <Martina Haeckl>",
+        "    <generate_lorentz_curves>  Copyright (C) <2021>  <Martina Haeckl>",
         "    This program comes with ABSOLUTELY NO WARRANTY.",
         "    This is free software, and you are welcome to redistribute it",
         "    under certain conditions; type `show_license()' for details.",

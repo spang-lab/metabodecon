@@ -74,7 +74,7 @@ generate_lorentz_curves_v2 <- function(data_path,
     # Save `range_water_signal` and `signal_free_region` for next loop passage as those might have been adjusted interactively by the user
     range_water_signal_ppm <- x$range_water_signal_ppm
     signal_free_region <- x$signal_free_region
-  }
+      }
 
   # Save results
   if (make_rds) {
@@ -101,9 +101,11 @@ deconvolute_spectrum <- function(filepath, name, file_format, same_parameter, pr
     "peak_triplets_left" = x$peak_triplets_left,
     "peak_triplets_right" = x$peak_triplets_right,
     "integrals" = x$integrals,
+    "range_water_signal_ppm" = x$range_water_signal_ppm %||% range_water_signal_ppm,
+    "signal_free_region" = x$range_water_signal_ppm %||% range_water_signal_ppm,
     "A" = x$A,
     "lambda" = x$lambda,
-    "x_0" = x$w # [17] rename
+    "x_0" = x$w # [19] rename
   )
   return(y)
 }

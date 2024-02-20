@@ -6,7 +6,7 @@ Development Branch:
 
 API:
 
-* Fixed bug in `generate_lorentz_curves()` that caused the function to always use file format "bruker", even when file format "jcampdx" was specified.
+* Fixed a bug in `generate_lorentz_curves()` that caused the function to always use file format "bruker", even when file format "jcampdx" was specified.
 
 Datasets:
 
@@ -20,6 +20,8 @@ Internal:
 
 * Added unit tests for `generate_lorentz_curves()`
 * Enabled parallel processing for unit tests
+* Added function `%||%` to `R/util.R`
+* Added elements `range_water_signal_ppm` and `signal_free_region` to returned list of function `deconvolute_spectrum`
 
 # metabodecon 1.1.0
 

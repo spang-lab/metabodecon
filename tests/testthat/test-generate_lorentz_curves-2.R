@@ -4,7 +4,7 @@
 # cores.
 library(testthat)
 
-test_that("2. MetaboDecon1D with: 2 jcampdx, answers == y1yy", {
+test_that("2. generate_lorentz_curves with: 2 jcampdx, answers == y1yy", {
 
     ## Skip conditions #####
     skip_on_cran()
@@ -12,7 +12,7 @@ test_that("2. MetaboDecon1D with: 2 jcampdx, answers == y1yy", {
 
     ## Call function #####
     x <- with(
-        testdir = "MetaboDecon1D/2",
+        testdir = "generate_lorentz_curves/2",
         output = "captured",
         message = "captured",
         plots = "plots.pdf",
