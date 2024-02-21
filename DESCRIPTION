@@ -39,6 +39,6 @@ Suggests:
     testthat (>= 3.0.0),
     devtools
 Config/testthat/edition: 3
-Config/testthat/start-first: MetaboDecon1D, generate_lorentz_curves
+Config/testthat/start-first: MetaboDecon1D, generate_lorentz_curves, generate_lorentz_curves_v2
 Config/testthat/parallel: true
 URL: https://spang-lab.github.io/metabodecon/

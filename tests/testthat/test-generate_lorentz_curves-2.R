@@ -4,7 +4,7 @@
 # cores.
 library(testthat)
 
-test_that("2. MetaboDecon1D with: 2 jcampdx, answers == y1yy", {
+test_that("2. generate_lorentz_curves with: 2 jcampdx, answers == y1yy", {
 
     ## Skip conditions #####
     skip_on_cran()
@@ -12,7 +12,7 @@ test_that("2. MetaboDecon1D with: 2 jcampdx, answers == y1yy", {
 
     ## Call function #####
     x <- with(
-        testdir = "MetaboDecon1D/2",
+        testdir = "generate_lorentz_curves/2",
         output = "captured",
         message = "captured",
         plots = "plots.pdf",
@@ -25,16 +25,16 @@ test_that("2. MetaboDecon1D with: 2 jcampdx, answers == y1yy", {
         ),
         expr = {
             set.seed(123)
-            # print(dir())
             generate_lorentz_curves(data_path = "urine", file_format = "jcampdx")
         }
     )
 
     ## Check return value #####
     expect_identical(capture.output(str(x$rv)), c(
-        "List of 2", " $ urine.dx  :List of 19",
+        "List of 2",
+        " $ urine_1.dx:List of 19",
         "  ..$ number_of_files           : int 2",
-        "  ..$ filename                  : chr \"urine.dx\"",
+        "  ..$ filename                  : chr \"urine_1.dx\"",
         "  ..$ x_values                  : num [1:131072] 131 131 131 131 131 ...",
         "  ..$ x_values_ppm              : num [1:131072] 14.8 14.8 14.8 14.8 14.8 ...",
         "  ..$ y_values                  : num [1:131072] 0.000831 0.000783 0.000743 0.000717 0.00065 ...",
@@ -77,9 +77,9 @@ test_that("2. MetaboDecon1D with: 2 jcampdx, answers == y1yy", {
     ## Check created files #####
     expect_file_size(x$testdir, c(
         `plots.pdf` = 321364,
-        `urine/urine.dx` = 1192696,
-        `urine/urine.dx approximated_spectrum.txt` = 2581870,
-        `urine/urine.dx parameters.txt` = 72101,
+        `urine/urine_1.dx` = 1192696,
+        `urine/urine_1.dx approximated_spectrum.txt` = 2581870,
+        `urine/urine_1.dx parameters.txt` = 72101,
         `urine/urine_2.dx` = 1214431,
         `urine/urine_2.dx approximated_spectrum.txt` = 2571992,
         `urine/urine_2.dx parameters.txt` = 81481

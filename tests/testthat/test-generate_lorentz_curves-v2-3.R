@@ -4,7 +4,7 @@
 # cores.
 library(testthat)
 
-test_that("3. generate_lorentz_curves with: 2 jcampdx, answers == nyyn**y*n*y", {
+test_that("3. generate_lorentz_curves_v2 with: 2 jcampdx, answers == nyyn**y*n*y", {
 
     ## Skip conditions #####
     skip_on_cran()
@@ -12,7 +12,7 @@ test_that("3. generate_lorentz_curves with: 2 jcampdx, answers == nyyn**y*n*y", 
 
     ## Call function #####
     x <- with(
-        testdir = "generate_lorentz_curves/3",
+        testdir = "generate_lorentz_curves_v2/3",
         output = "captured",
         message = "captured",
         plots = "plots.pdf",
@@ -32,14 +32,14 @@ test_that("3. generate_lorentz_curves with: 2 jcampdx, answers == nyyn**y*n*y", 
         ),
         expr = {
             set.seed(123)
-            generate_lorentz_curves(data_path = "urine", file_format = "jcampdx")
+            generate_lorentz_curves_v2(data_path = "urine", file_format = "jcampdx")
         }
     )
 
     ## Check return value #####
     expect_identical(capture.output(str(x$rv)), c(
         "List of 2",
-        " $ urine_1.dx:List of 17",
+        " $ urine_1.dx:List of 19",
         "  ..$ number_of_files           : int 2",
         "  ..$ filename                  : chr \"urine_1.dx\"",
         "  ..$ x_values                  : num [1:131072] 131 131 131 131 131 ...",
@@ -54,10 +54,12 @@ test_that("3. generate_lorentz_curves with: 2 jcampdx, answers == nyyn**y*n*y", 
         "  ..$ peak_triplets_left        : num [1:1227] 9.28 9.13 9.09 9.08 8.85 ...",
         "  ..$ peak_triplets_right       : num [1:1227] 9.28 9.13 9.09 9.08 8.85 ...",
         "  ..$ integrals                 : num [1, 1:1227] 0.000501 0.026496 0.000402 0.000375 0.008274 ...",
+        "  ..$ signal_free_region        : num [1:2] 11.44 -1.88",
+        "  ..$ range_water_signal_ppm    : num 0.153",
         "  ..$ A                         : num [1:1227] -0.00016 -0.008436 -0.000128 -0.000119 -0.002634 ...",
         "  ..$ lambda                    : num [1:1227] -0.00775 -0.02188 -0.00675 -0.00562 -0.01343 ...",
         "  ..$ x_0                       : num [1:1227] 94.9 93.9 93.7 93.6 92.1 ...",
-        " $ urine_2.dx:List of 17",
+        " $ urine_2.dx:List of 19",
         "  ..$ number_of_files           : int 2",
         "  ..$ filename                  : chr \"urine_2.dx\"",
         "  ..$ x_values                  : num [1:131072] 131 131 131 131 131 ...",
@@ -72,6 +74,8 @@ test_that("3. generate_lorentz_curves with: 2 jcampdx, answers == nyyn**y*n*y", 
         "  ..$ peak_triplets_left        : num [1:1402] 9.26 9.12 8.95 8.87 8.85 ...",
         "  ..$ peak_triplets_right       : num [1:1402] 9.26 9.12 8.95 8.88 8.85 ...",
         "  ..$ integrals                 : num [1, 1:1402] 0.00683 0.00504 0.00322 0.0174 0.00274 ...",
+        "  ..$ signal_free_region        : num [1:2] 11.44 -1.88",
+        "  ..$ range_water_signal_ppm    : num 0.13",
         "  ..$ A                         : num [1:1402] -0.002176 -0.001604 -0.001025 -0.005541 -0.000872 ...",
         "  ..$ lambda                    : num [1:1402] -0.0189 -0.0168 -0.014 -0.0291 -0.0146 ...",
         "  ..$ x_0                       : num [1:1402] 94.8 93.8 92.7 92.2 92 ..."
@@ -110,11 +114,6 @@ test_that("3. generate_lorentz_curves with: 2 jcampdx, answers == nyyn**y*n*y", 
         "[1] 2.870111e-11"
     ))
     expect_identical(x$message$text, c(
-        "",
-        "    <MetaboDecon1D>  Copyright (C) <2021>  <Martina Haeckl>",
-        "    This program comes with ABSOLUTELY NO WARRANTY.",
-        "    This is free software, and you are welcome to redistribute it",
-        "    under certain conditions; type `show_license()' for details.",
         "Do you want to use the same parameters (signal_free_region, range_water_signal_ppm) for all spectra? (y/n) n",
         "Start deconvolution of urine_1.dx:",
         "Signal free region borders correct selected? (Area left and right of the green lines) (y/n): y",

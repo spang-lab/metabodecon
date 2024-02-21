@@ -1,5 +1,3 @@
-xds$url <- "https://github.com/spang-lab/metabodecon/releases/download/v1.0.2/example_datasets.zip"
-
 test_that("1. download_example_datasets() with example_datasets.zip missing on disk", {
 
     skip_if_not(Sys.getenv("RUN_SLOW_TESTS") == "TRUE", "Skipped because RUN_SLOW_TESTS != TRUE")
