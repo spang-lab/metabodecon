@@ -21,7 +21,7 @@ download_example_datasets <- function(dst_dir = NULL,
                                       extract = TRUE,
                                       persistent = NULL,
                                       overwrite = FALSE) {
-    cached_zip <- cache_example_datasets(persistent = persistent, extract = extract)
+    cached_zip <- cache_example_datasets(persistent = persistent, extract = extract, overwrite = overwrite)
     if (is.null(dst_dir)) {
         return(cached_zip)
     } else {
@@ -54,8 +54,8 @@ download_example_datasets <- function(dst_dir = NULL,
 #' }
 #' @noRd
 xds <- list(
-    url = "https://github.com/spang-lab/metabodecon/releases/download/v1.0.2/example_datasets.zip",
-    zip_size = 38253468,
+    url = "https://github.com/spang-lab/metabodecon/releases/download/v1.1.0/example_datasets.zip",
+    zip_size = 38425397,
     dir_size = 56378684,
     n_files = 1018
 )
@@ -69,7 +69,7 @@ xds <- list(
 #' If FALSE, the datasets are cached temporarily.
 #' If NULL, the path to the permanent zip file is returned if it exists and has the correct size else the path to the temporary zip file is returned.
 #' @param extract Logical. If TRUE, the datasets are extracted after being cached. Default is TRUE.
-#' @param overwrite Logical. If TRUE and the cached file exists but has a wrong size, the file is overwritten. If FALSE, an error is thrown in this case. Default is FALSE.
+#' @param overwrite Logical. First effect: If TRUE and the cached file exists but has a wrong size, the file is overwritten. If FALSE, an error is thrown in this case. Second effect (only relevant if `extract` is TRUE): If `overwrite` is TRUE, the datasets are extracted even if the corresponding folder already exists. If FALSE, files are not extracted again. Default is FALSE.
 #' @return The path to the cached datasets.
 #' @examples
 #' \dontrun{
@@ -103,7 +103,17 @@ cache_example_datasets <- function(persistent = NULL, extract = FALSE, overwrite
     }
 
     zip <- if (persistent) pzip else tzip
-    if (extract) extract_example_datasets(zip)
+    dstdir <- file.path(dirname(zip), "example_datasets")
+    if (extract) {
+        if (dir.exists(dstdir) && overwrite) {
+            # msgf("Deleting existing directory %s before extracting %s", dstdir, zip)
+            unlink(dstdir, recursive = TRUE)
+        }
+        if (!dir.exists(dstdir)) {
+            # msgf("Extracting %s to %s", zip, dstdir)
+            extract_example_datasets(zip)
+        }
+    }
     zip
 }
 
@@ -121,7 +131,6 @@ extract_example_datasets <- function(path = datadir("example_datasets.zip")) {
 #' @noRd
 download_example_datasets_zip <- function(path, copyfrom = NULL) {
     mkdirs(dirname(path))
-    xds$url <- "https://github.com/spang-lab/metabodecon/releases/download/v1.0.2/example_datasets.zip"
     if (!is.null(copyfrom) && file.exists(copyfrom) && file.size(copyfrom) == xds$zip_size) {
         message(sprintf("Copying cached archive %s to %s", copyfrom, path))
         file.copy(copyfrom, path, overwrite = TRUE)
