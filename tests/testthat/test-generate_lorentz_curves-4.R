@@ -4,15 +4,14 @@
 # cores.
 library(testthat)
 
-test_that("4. MetaboDecon1D with: 2 bruker, answers == nyyn**y*n*y", {
-
+test_that("4. generate_lorentz_curves with: 2 bruker, answers == nyyn**y*n*y", {
     ## Skip conditions #####
     skip_on_cran()
     skip_if_not(Sys.getenv("RUN_SLOW_TESTS") == "TRUE", "Skipped because RUN_SLOW_TESTS != TRUE")
 
     ## Call function #####
     x <- with(
-        testdir = "MetaboDecon1D/4",
+        testdir = "generate_lorentz_curves/4",
         output = "captured",
         message = "captured",
         plots = "plots.pdf",
@@ -41,9 +40,9 @@ test_that("4. MetaboDecon1D with: 2 bruker, answers == nyyn**y*n*y", {
     ## Check return value #####
     expect_identical(capture.output(str(x$rv)), c(
         "List of 2",
-        " $ urine  :List of 17",
+        " $ urine_1:List of 17",
         "  ..$ number_of_files           : int 2",
-        "  ..$ filename                  : chr \"urine\"",
+        "  ..$ filename                  : chr \"urine_1\"",
         "  ..$ x_values                  : num [1:131072] 131 131 131 131 131 ...",
         "  ..$ x_values_ppm              : num [1:131072] 14.8 14.8 14.8 14.8 14.8 ...",
         "  ..$ y_values                  : num [1:131072] 0.000831 0.000783 0.000743 0.000717 0.00065 ...",
@@ -78,12 +77,11 @@ test_that("4. MetaboDecon1D with: 2 bruker, answers == nyyn**y*n*y", {
         "  ..$ lambda                    : num [1:1402] -0.0189 -0.0168 -0.014 -0.0291 -0.0146 ...",
         "  ..$ x_0                       : num [1:1402] 94.8 93.8 92.7 92.2 92 ..."
     ))
-
     ## Check created files #####
     expect_file_size(x$testdir, c(
         `plots.pdf` = 961664,
-        `urine/urine approximated_spectrum.txt` = 2581865,
-        `urine/urine parameters.txt` = 72104,
+        `urine/urine_1 approximated_spectrum.txt` = 2581865,
+        `urine/urine_1 parameters.txt` = 72104,
         `urine/urine_2 approximated_spectrum.txt` = 2571332,
         `urine/urine_2 parameters.txt` = 82012
     ))
@@ -122,7 +120,7 @@ test_that("4. MetaboDecon1D with: 2 bruker, answers == nyyn**y*n*y", {
         "What is the name of the subsubsubfolder of your filepath: ",
         "[e.g. 10 for C:/Users/Username/Desktop/spectra_folder/spectrum_name/10/pdata/10] 10",
         "Do you want to use the same parameters (signal_free_region, range_water_signal_ppm) for all spectra? (y/n) n",
-        "Start deconvolution of urine:",
+        "Start deconvolution of urine_1:",
         "Signal free region borders correct selected? (Area left and right of the green lines) (y/n): y",
         "Water artefact fully inside red vertical lines? (y/n): y",
         "",

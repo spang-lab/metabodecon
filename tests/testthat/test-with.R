@@ -6,7 +6,7 @@ test_that("with()", {
         testdir = "with/1",
         answers = c("y", "n"),
         output = "captured", message = "captured", plots = "plots.pdf",
-        inputs = c(urine.dx = "jcampdx/urine/urine.dx"),
+        inputs = c(urine_1.dx = "jcampdx/urine/urine_1.dx"),
         expr = {
             cat2("Helloworld!") # output is captured
             readline("Continue?") # readline is mocked
@@ -22,7 +22,7 @@ test_that("with()", {
     after_wd <- getwd()
 
     expect_true(file.exists(file.path(x$testdir, "plots.pdf")))
-    expect_true(file.exists(file.path(x$testdir, "urine.dx")))
+    expect_true(file.exists(file.path(x$testdir, "urine_1.dx")))
     expect_equal(x$rv, 2)
     expect_equal(z, 3)
     expect_true(x$runtime <= 1)

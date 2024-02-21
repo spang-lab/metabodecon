@@ -6,20 +6,37 @@ Development Branch:
 
 API:
 
-* Fixed bug in `generate_lorentz_curves()` that caused the function to always use file format "bruker", even when file format "jcampdx" was specified.
+* Fixed a bug in `generate_lorentz_curves()` that caused the function to always use file format "bruker", even when file format "jcampdx" was specified.
 
 Datasets:
 
-* Fixed filenames of samples in blood dataset (renamed from `Bood_<nr>` to `blood_<nr>`)
+* Fixed filenames of samples in blood dataset (renamed from `Bood_<nr>` to `blood_<nr>`).
+* Renamed `example_datasets/jcampdx/urine/urine.dx` to `example_datasets/jcampdx/urine/urine_1.dx` and renamed `example_datasets/bruker/urine/urine/` to `example_datasets/bruker/urine/urine_1/`. This was done because `list.files` seems to return different orderings for `urine.dx` and `urine_2.dx` in different operating systems, whereas `urine_1.dx` and `urine_2.dx` are sorted the same way everywhere. This makes it easier to write clear and concise test cases, because we don't need to check for file ordering.
 
 Documentation:
 
-* Fixed broken image in [vignettes/FAQ.Rmd](vignettes/FAQ.Rmd)
+* Fixed broken image in [vignettes/FAQ.Rmd](vignettes/FAQ.Rmd).
+
+Testing:
+
+* Added unit tests for `generate_lorentz_curves()`.
+* Enabled parallel processing for unit tests.
+* Created initial versions of `tests/testthat/test-generate_lorentz_curves-[1-4].R`.
+* Added `generate_lorentz_curves_v2()` to `DESCRIPTION/Config/testthat/start-first`.
+* Adjusted existing tests to use the updated version of `example_datasets` (sample `urine` was renamed to `urine_1`, as mentioned in above in section *Datasets*)
 
 Internal:
 
-* Added unit tests for `generate_lorentz_curves()`
-* Enabled parallel processing for unit tests
+* Added functions `%||%`, `msg()` and `msgf` to `R/util.R`.
+* Added elements `range_water_signal_ppm` and `signal_free_region` to returned list of function `deconvolute_spectrum`.
+* Function `with` now prints error messages to stderr even if the message stream is redirected.
+* Copied function `deconvolution()` from `R/MetaboDecon1D.R` to `R/main_v2.R` as `.deconvolute_spectrum`.
+* Fixed order of params in `deconvolution`.
+* Fixed `download_example_datasets()`. Argument `overwrite` is passed correctly on to `cache_example_datasets()`.
+* Changed URL of example datasets `xds$url` from `https://github.com/spang-lab/metabodecon/releases/download/v1.0.2/example_datasets.zip` to `https://github.com/spang-lab/metabodecon/releases/download/v1.1.0/example_datasets.zip`.
+* Improved `cache_example_datasets()`. Extraction now only is done if `extract == TRUE` AND the resulting folder does not yet exist (saves approx. 2-3s on each call). To overwrite a possible existing folder, argument `overwrite` can be set to TRUE.
+* Fixed formatting of `test_helpers.R`
+* Added linter config `.lintr`
 
 # metabodecon 1.1.0
 

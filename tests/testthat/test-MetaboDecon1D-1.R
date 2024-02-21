@@ -16,7 +16,7 @@ test_that("1. MetaboDecon1D with: 1 jcampdx, answers == yy", {
         output = "captured",
         message = "captured",
         plots = "plots.pdf",
-        inputs = c(urine.dx = "jcampdx/urine/urine.dx"),
+        inputs = c(urine_1.dx = "jcampdx/urine/urine_1.dx"),
         answers = c(
             "y", # Signal free region borders correct selected?
             "y" # Water artefact fully inside red vertical lines?
@@ -25,7 +25,7 @@ test_that("1. MetaboDecon1D with: 1 jcampdx, answers == yy", {
             set.seed(123)
             MetaboDecon1D(
                 filepath = ".",
-                filename = "urine.dx",
+                filename = "urine_1.dx",
                 file_format = "jcampdx",
                 number_iterations = 1
             )
@@ -36,7 +36,7 @@ test_that("1. MetaboDecon1D with: 1 jcampdx, answers == yy", {
     expect_identical(capture.output(str(x$rv)), c(
         "List of 17",
         " $ number_of_files           : num 1",
-        " $ filename                  : chr \"urine.dx\"",
+        " $ filename                  : chr \"urine_1.dx\"",
         " $ x_values                  : num [1:131072] 131 131 131 131 131 ...",
         " $ x_values_ppm              : num [1:131072] 14.8 14.8 14.8 14.8 14.8 ...",
         " $ y_values                  : num [1:131072] 0.000831 0.000783 0.000743 0.000717 0.00065 ...",
@@ -57,8 +57,8 @@ test_that("1. MetaboDecon1D with: 1 jcampdx, answers == yy", {
     ## Check created files #####
     expect_file_size(x$testdir, c(
         `plots.pdf` = 321364,
-        `urine.dx` = 1192696,
-        `urine.dx approximated_spectrum.txt` = 2581870,
-        `urine.dx parameters.txt` = 72101
+        `urine_1.dx` = 1192696,
+        `urine_1.dx approximated_spectrum.txt` = 2581870,
+        `urine_1.dx parameters.txt` = 72101
     ))
 })

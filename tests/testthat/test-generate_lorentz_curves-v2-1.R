@@ -4,7 +4,7 @@
 # cores.
 library(testthat)
 
-test_that("1. generate_lorentz_curves with: 1 jcampdx, answers == y1yy", {
+test_that("1. generate_lorentz_curves_v2 with: 1 jcampdx, answers == y1yy", {
 
     ## Skip conditions #####
     skip_on_cran()
@@ -12,7 +12,7 @@ test_that("1. generate_lorentz_curves with: 1 jcampdx, answers == y1yy", {
 
     ## Call function #####
     x <- with(
-        testdir = "generate_lorentz_curves/1",
+        testdir = "generate_lorentz_curves_v2/1",
         output = "captured",
         message = "captured",
         plots = "plots.pdf",
@@ -25,7 +25,7 @@ test_that("1. generate_lorentz_curves with: 1 jcampdx, answers == y1yy", {
         ),
         expr = {
             set.seed(123)
-            generate_lorentz_curves(data_path = ".", file_format = "jcampdx")
+            generate_lorentz_curves_v2(data_path = ".", file_format = "jcampdx")
         }
     )
 
