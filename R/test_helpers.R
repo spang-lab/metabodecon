@@ -105,7 +105,7 @@ checksum <- function(path, method = "size", ignore = c()) {
 #' @param all Logical. If TRUE, all tests are run. If FALSE, slow tests are skipped.
 #' @return The result of devtools::test()
 #' @noRd
-test <- function(all=FALSE) {
+test <- function(all = FALSE) {
     RUN_SLOW_TESTS_OLD <- Sys.getenv("RUN_SLOW_TESTS")
     Sys.setenv(RUN_SLOW_TESTS = if (all) "TRUE" else "FALSE")
     on.exit(Sys.setenv(RUN_SLOW_TESTS = RUN_SLOW_TESTS_OLD), add = TRUE)
@@ -138,21 +138,21 @@ clear <- function(dir) {
 }
 
 dir.size <- function(dir) {
-  files <- list.files(dir, recursive = TRUE, full.names = TRUE)
-  sum(file.info(files)$size)
+    files <- list.files(dir, recursive = TRUE, full.names = TRUE)
+    sum(file.info(files)$size)
 }
 
 read_spectrum_info <- function(path) {
     # Written by [MetaboDecon1D()] as follows:
     # utils::write.table(spectrum_info, path, sep=",", col.names=FALSE, append=FALSE)
-    spectrum_info <- utils::read.table(path, sep=",", header=FALSE, row.names=1)
+    spectrum_info <- utils::read.table(path, sep = ",", header = FALSE, row.names = 1)
     spectrum_info <- `colnames<-`(spectrum_info, paste0("X", seq_along(colnames(spectrum_info))))
 }
 
 read_spectrum_output <- function(path) {
     # Written by [MetaboDecon1D()] as follows:
     # utils::write.table(spectrum_output, path, sep=",", col.names=FALSE, append=FALSE)
-    spectrum_output <- utils::read.table(path, sep=",", header=FALSE, row.names=1)
+    spectrum_output <- utils::read.table(path, sep = ",", header = FALSE, row.names = 1)
     spectrum_output <- `colnames<-`(spectrum_output, paste0("X", seq_along(colnames(spectrum_output))))
 }
 
@@ -238,21 +238,24 @@ with <- function(expr,
     push_option(...)
     testdir <- push_testdir(testdir)
     inputs <- fill_with_inputs(testdir, inputs)
-    mocked_datadir_temp = get_datadir_mock(type = "temp", state = datadir_temp)
-    mocked_datadir_persistent = get_datadir_mock(type = "persistent", state = datadir_persistent)
-    mocked_readline = get_readline_mock(answers)
+    mocked_datadir_temp <- get_datadir_mock(type = "temp", state = datadir_temp)
+    mocked_datadir_persistent <- get_datadir_mock(type = "persistent", state = datadir_persistent)
+    mocked_readline <- get_readline_mock(answers)
     redirect_list <- redirect(output = output, message = message, plots = plots)
     errors <- character()
     withCallingHandlers(
         {
             if (debug) browser()
             testthat::with_mocked_bindings(
-                tryCatch({
-                    rv_runtime_list <- measure_runtime(expr)
-                }, error = function(e) {
-                    restore(streams = "message")
-                    stop(e)
-                }),
+                tryCatch(
+                    {
+                        rv_runtime_list <- measure_runtime(expr)
+                    },
+                    error = function(e) {
+                        restore(streams = "message")
+                        stop(e)
+                    }
+                ),
                 datadir_temp = mocked_datadir_temp,
                 datadir_persistent = mocked_datadir_persistent,
                 readline = mocked_readline
