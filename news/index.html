@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">metabodecon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.1</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -49,23 +49,55 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="1.1.1" id="metabodecon-111">metabodecon 1.1.1<a class="anchor" aria-label="anchor" href="#metabodecon-111"></a></h2>
+<p>Development Branch:</p>
+<ul><li><code>test-glc</code></li>
+</ul><p>API:</p>
+<ul><li>Fixed a bug in <code><a href="../reference/generate_lorentz_curves.html">generate_lorentz_curves()</a></code> that caused the function to always use file format “bruker”, even when file format “jcampdx” was specified.</li>
+</ul><p>Datasets:</p>
+<ul><li>Fixed filenames of samples in blood dataset (renamed from <code>Bood_&lt;nr&gt;</code> to <code>blood_&lt;nr&gt;</code>).</li>
+<li>Renamed <code>example_datasets/jcampdx/urine/urine.dx</code> to <code>example_datasets/jcampdx/urine/urine_1.dx</code> and renamed <code>example_datasets/bruker/urine/urine/</code> to <code>example_datasets/bruker/urine/urine_1/</code>. This was done because <code>list.files</code> seems to return different orderings for <code>urine.dx</code> and <code>urine_2.dx</code> in different operating systems, whereas <code>urine_1.dx</code> and <code>urine_2.dx</code> are sorted the same way everywhere. This makes it easier to write clear and concise test cases, because we don’t need to check for file ordering.</li>
+</ul><p>Documentation:</p>
+<ul><li>Fixed broken image in <a href="vignettes/FAQ.Rmd">vignettes/FAQ.Rmd</a>.</li>
+</ul><p>Testing:</p>
+<ul><li>Added unit tests for <code><a href="../reference/generate_lorentz_curves.html">generate_lorentz_curves()</a></code>.</li>
+<li>Enabled parallel processing for unit tests.</li>
+<li>Created initial versions of <code>tests/testthat/test-generate_lorentz_curves-[1-4].R</code>.</li>
+<li>Added <code>generate_lorentz_curves_v2()</code> to <code>DESCRIPTION/Config/testthat/start-first</code>.</li>
+<li>Adjusted existing tests to use the updated version of <code>example_datasets</code> (sample <code>urine</code> was renamed to <code>urine_1</code>, as mentioned in above in section <em>Datasets</em>)</li>
+</ul><p>Internal:</p>
+<ul><li>Added functions <code>%||%</code>, <code>msg()</code> and <code>msgf</code> to <code>R/util.R</code>.</li>
+<li>Added elements <code>range_water_signal_ppm</code> and <code>signal_free_region</code> to returned list of function <code>deconvolute_spectrum</code>.</li>
+<li>Function <code>with</code> now prints error messages to stderr even if the message stream is redirected.</li>
+<li>Copied function <code><a href="../reference/deconvolution.html">deconvolution()</a></code> from <code>R/MetaboDecon1D.R</code> to <code>R/main_v2.R</code> as <code>.deconvolute_spectrum</code>.</li>
+<li>Fixed order of params in <code>deconvolution</code>.</li>
+<li>Fixed <code><a href="../reference/download_example_datasets.html">download_example_datasets()</a></code>. Argument <code>overwrite</code> is passed correctly on to <code>cache_example_datasets()</code>.</li>
+<li>Changed URL of example datasets <code>xds$url</code> from <code>https://github.com/spang-lab/metabodecon/releases/download/v1.0.2/example_datasets.zip</code> to <code>https://github.com/spang-lab/metabodecon/releases/download/v1.1.0/example_datasets.zip</code>.</li>
+<li>Improved <code>cache_example_datasets()</code>. Extraction now only is done if <code>extract == TRUE</code> AND the resulting folder does not yet exist (saves approx. 2-3s on each call). To overwrite a possible existing folder, argument <code>overwrite</code> can be set to TRUE.</li>
+<li>Fixed formatting of <code>test_helpers.R</code>
+</li>
+<li>Added linter config <code>.lintr</code>
+</li>
+</ul></div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.1.0" id="metabodecon-110">metabodecon 1.1.0<a class="anchor" aria-label="anchor" href="#metabodecon-110"></a></h2>
-<p>Currently under development in branch <code>improve_tests</code>.</p>
-<ul><li>Improved function <code><a href="../reference/download_example_datasets.html">download_example_datasets()</a></code>
-</li>
+<p>API:</p>
+<ul><li>Improved function <code><a href="../reference/download_example_datasets.html">download_example_datasets()</a></code> by adding caching and making it more stable</li>
 <li>Replaced function <code><a href="../reference/get_data_dir.html">get_data_dir()</a></code> with <code><a href="../reference/datadir.html">datadir()</a></code> and its helper functions <code><a href="../reference/datadir_persistent.html">datadir_persistent()</a></code>, <code><a href="../reference/datadir_temp.html">datadir_temp()</a></code> and <code>tempdir</code>
-</li>
-<li>Added question about file structure to <a href="vignettes/FAQ.Rmd">vignettes/FAQ.Rmd</a>
-</li>
-<li>Created categories for function reference in <a href="_pkgdown.yml">_pkgdown.yml</a>
-</li>
-<li>Moved <code>misc/datasets</code> to <code>misc/example_datasets</code>
-</li>
-<li>Moved <code>misc/examples/usage_example.R</code> to <code>misc/code_examples/sage_example.R</code>
 </li>
 <li>Function <code><a href="../reference/get_data_dir.html">get_data_dir()</a></code> is now deprecated in favour of <code><a href="../reference/datadir.html">datadir()</a></code>
 </li>
-</ul><p>Only relevant for developers:</p>
+</ul><p>Documentation:</p>
+<ul><li>Added question about file structure to <a href="vignettes/FAQ.Rmd">vignettes/FAQ.Rmd</a>
+</li>
+<li>Created categories for function reference in <a href="_pkgdown.yml">_pkgdown.yml</a>
+</li>
+</ul><p>Datasets:</p>
+<ul><li>Moved <code>misc/datasets</code> to <code>misc/example_datasets</code>
+</li>
+<li>Moved <code>misc/examples/usage_example.R</code> to <code>misc/code_examples/sage_example.R</code>
+</li>
+</ul><p>Internal:</p>
 <ul><li>Added unit tests</li>
 <li>Removed script <code>check_package.R</code>
 </li>
@@ -74,13 +106,7 @@
 <li>Added <code>grDevices</code>, <code>stats</code> and <code>utils</code> as internal imports</li>
 <li>Added lots of test helper functions in <code>R/test_helpers.R</code>
 </li>
-<li>Added issue <code>6. Fix: generate_lorentz_curves should not write to input folders by default</code> to <code>TODOS.md</code>
-</li>
 <li>Added function <code>generate_lorentz_curves_v2()</code> which will replace <code><a href="../reference/generate_lorentz_curves.html">generate_lorentz_curves()</a></code> as soon as we have new features AND 100% backwards compatibility</li>
-<li>Bumped version to <code>1.1.0</code> in <code>DESCRIPTION</code>
-</li>
-<li>Updated <code>NEWS.md</code>
-</li>
 <li>Fixed bug in <code><a href="https://rdrr.io/r/base/with.html" class="external-link">with()</a></code> that caused <code>get_datadir_mock()</code> to be called after redirection took place causing unexpected message output</li>
 <li>Fixed bug in <code><a href="../reference/datadir.html">datadir()</a></code> that caused the resulting path to end with a slash on Unix-like systems and without a slash on Windows, if <code>file</code> was not specified</li>
 <li>
@@ -88,18 +114,18 @@
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.0.3" id="metabodecon-103">metabodecon 1.0.3<a class="anchor" aria-label="anchor" href="#metabodecon-103"></a></h2>
-<ul><li>Improved documentation</li>
-<li>Switched from MIT License to GPL-3 to match the license of the predecessor package <code>MetaboDecon1D</code>
-</li>
-<li>Updated <code><a href="../reference/get_data_dir.html">get_data_dir()</a></code> to accept <code>"blood"</code> as new value for parameter <code>dataset_name</code>
+<p>API:</p>
+<ul><li>Updated <code><a href="../reference/get_data_dir.html">get_data_dir()</a></code> to accept <code>"blood"</code> as new value for parameter <code>dataset_name</code>
 </li>
 <li>Updated <code><a href="../reference/download_example_datasets.html">download_example_datasets()</a></code> to download the datasets from the github repo instead of the old spang-lab repo</li>
-</ul><p>Only relevant for developers:</p>
+</ul><p>Documentation:</p>
 <ul><li>Removed table of contents from <code>README.md</code> as it’s a bit overkill for approx. 50 lines of text</li>
-<li>Added <code>docs</code> folder to <code>.gitignore</code>. Reason: we changed all vignettes to pkgdown articles which will be displayed only at our Github Pages website and can be regenerated from folder <code>vignettes</code> upon deployment.</li>
-<li>Added lots of todos to <code>TODOS.md</code>
+<li>Improved documentation</li>
+</ul><p>Internal:</p>
+<ul><li>Switched from MIT License to GPL-3 to match the license of the predecessor package <code>MetaboDecon1D</code>
 </li>
-<li>Added <code>TODOS.md</code> to <code>.Rbuildignore</code>
+<li>Added <code>docs</code> folder to <code>.gitignore</code>. Reason: we changed all vignettes to pkgdown articles which will be displayed only at our Github Pages website and can be regenerated from folder <code>vignettes</code> upon deployment.</li>
+<li>Created <code>TODOS.md</code> and added it to <code>.Rbuildignore</code>
 </li>
 <li>Improved <code>.gitignore</code>
 </li>
