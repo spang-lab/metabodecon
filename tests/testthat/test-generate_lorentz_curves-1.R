@@ -16,7 +16,7 @@ test_that("1. generate_lorentz_curves with: 1 jcampdx, answers == y1yy", {
         output = "captured",
         message = "captured",
         plots = "plots.pdf",
-        inputs = c(urine.dx = "jcampdx/urine/urine.dx"),
+        inputs = c(urine_1.dx = "jcampdx/urine/urine_1.dx"),
         answers = c(
             "y", # Use the same parameters for all spectra?
             "1", # Choose number of file which is used to adjust all parameters.
@@ -32,9 +32,9 @@ test_that("1. generate_lorentz_curves with: 1 jcampdx, answers == y1yy", {
     ## Check return value #####
     expect_identical(capture.output(str(x$rv)), c(
         "List of 1",
-        " $ urine.dx:List of 19",
+        " $ urine_1.dx:List of 19",
         "  ..$ number_of_files           : int 1",
-        "  ..$ filename                  : chr \"urine.dx\"",
+        "  ..$ filename                  : chr \"urine_1.dx\"",
         "  ..$ x_values                  : num [1:131072] 131 131 131 131 131 ...",
         "  ..$ x_values_ppm              : num [1:131072] 14.8 14.8 14.8 14.8 14.8 ...",
         "  ..$ y_values                  : num [1:131072] 0.000831 0.000783 0.000743 0.000717 0.00065 ...",
@@ -57,8 +57,8 @@ test_that("1. generate_lorentz_curves with: 1 jcampdx, answers == y1yy", {
     ## Check created files #####
     expect_file_size(x$testdir, c(
         `plots.pdf` = 321364,
-        `urine.dx` = 1192696,
-        `urine.dx approximated_spectrum.txt` = 2581870,
-        `urine.dx parameters.txt` = 72101
+        `urine_1.dx` = 1192696,
+        `urine_1.dx approximated_spectrum.txt` = 2581870,
+        `urine_1.dx parameters.txt` = 72101
     ))
 })

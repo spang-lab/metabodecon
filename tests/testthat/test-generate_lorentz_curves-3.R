@@ -39,9 +39,9 @@ test_that("3. generate_lorentz_curves with: 2 jcampdx, answers == nyyn**y*n*y", 
     ## Check return value #####
     expect_identical(capture.output(str(x$rv)), c(
         "List of 2",
-        " $ urine.dx  :List of 17",
+        " $ urine_1.dx:List of 17",
         "  ..$ number_of_files           : int 2",
-        "  ..$ filename                  : chr \"urine.dx\"",
+        "  ..$ filename                  : chr \"urine_1.dx\"",
         "  ..$ x_values                  : num [1:131072] 131 131 131 131 131 ...",
         "  ..$ x_values_ppm              : num [1:131072] 14.8 14.8 14.8 14.8 14.8 ...",
         "  ..$ y_values                  : num [1:131072] 0.000831 0.000783 0.000743 0.000717 0.00065 ...",
@@ -80,8 +80,8 @@ test_that("3. generate_lorentz_curves with: 2 jcampdx, answers == nyyn**y*n*y", 
     ## Check created files #####
     expect_file_size(x$testdir, c(
         `plots.pdf` = 961666,
-        `urine/urine.dx approximated_spectrum.txt` = 2581870,
-        `urine/urine.dx parameters.txt` = 72101,
+        `urine/urine_1.dx approximated_spectrum.txt` = 2581870,
+        `urine/urine_1.dx parameters.txt` = 72101,
         `urine/urine_2.dx approximated_spectrum.txt` = 2571332,
         `urine/urine_2.dx parameters.txt` = 82012
     ))
@@ -111,12 +111,12 @@ test_that("3. generate_lorentz_curves with: 2 jcampdx, answers == nyyn**y*n*y", 
     ))
     expect_identical(x$message$text, c(
         "",
-        "    <generate_lorentz_curves>  Copyright (C) <2021>  <Martina Haeckl>",
+        "    <MetaboDecon1D>  Copyright (C) <2021>  <Martina Haeckl>",
         "    This program comes with ABSOLUTELY NO WARRANTY.",
         "    This is free software, and you are welcome to redistribute it",
         "    under certain conditions; type `show_license()' for details.",
         "Do you want to use the same parameters (signal_free_region, range_water_signal_ppm) for all spectra? (y/n) n",
-        "Start deconvolution of urine.dx:",
+        "Start deconvolution of urine_1.dx:",
         "Signal free region borders correct selected? (Area left and right of the green lines) (y/n): y",
         "Water artefact fully inside red vertical lines? (y/n): y",
         "",
