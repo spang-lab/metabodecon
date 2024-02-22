@@ -21,16 +21,25 @@ download_example_datasets <- function(dst_dir = NULL,
                                       extract = TRUE,
                                       persistent = NULL,
                                       overwrite = FALSE) {
+
+    # dst_dir <- C:/Users/max/Downloads
+    # dst_zip <- C:/Users/max/Downloads/example_datasets.zip
+    # dst_xds <- C:/Users/max/Downloads/example_datasets
+    # cached_zip <- C:/Users/max/.local/share/R/metabodecon/example_datasets.zip
+    # cached_xds <- C:/Users/max/.local/share/R/metabodecon/example_datasets
     cached_zip <- cache_example_datasets(persistent = persistent, extract = extract, overwrite = overwrite)
+    cached_xds <- file.path(dirname(cached_zip), "example_datasets")
     if (is.null(dst_dir)) {
-        return(cached_zip)
+        return(if (extract) cached_xds else cached_zip)
     } else {
-        zip <- file.path(dst_dir, basename(cached_zip))
-        zip_is_missing <- !file.exists(zip)
-        zip_has_wrong_size <- isTRUE(file.size(zip) != xds$zip_size)
-        if (zip_is_missing || zip_has_wrong_size) file.copy(from = cached_zip, to = zip, overwrite = overwrite)
-        if (extract) extract_example_datasets(zip)
-        return(zip)
+        dst_zip <- normPath(file.path(dst_dir, "example_datasets.zip"))
+        dst_xds <- normPath(file.path(dst_dir, "example_datasets"))
+        if (overwrite || !file.exists(dst_zip) || isTRUE(file.size(dst_zip) != xds$zip_size)) {
+            if (!dir.exists(dst_dir)) dir.create(dst_dir, recursive = TRUE)
+            file.copy(from = cached_zip, to = dst_dir, overwrite = overwrite)
+        }
+        if (extract && (overwrite || !dir.exists(dst_xds))) extract_example_datasets(dst_zip)
+        return(if (extract) dst_xds else dst_zip)
     }
 }
 
@@ -105,14 +114,8 @@ cache_example_datasets <- function(persistent = NULL, extract = FALSE, overwrite
     zip <- if (persistent) pzip else tzip
     dstdir <- file.path(dirname(zip), "example_datasets")
     if (extract) {
-        if (dir.exists(dstdir) && overwrite) {
-            # msgf("Deleting existing directory %s before extracting %s", dstdir, zip)
-            unlink(dstdir, recursive = TRUE)
-        }
-        if (!dir.exists(dstdir)) {
-            # msgf("Extracting %s to %s", zip, dstdir)
-            extract_example_datasets(zip)
-        }
+        if (dir.exists(dstdir) && overwrite) unlink(dstdir, recursive = TRUE)
+        if (!dir.exists(dstdir)) extract_example_datasets(zip)
     }
     zip
 }

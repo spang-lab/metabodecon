@@ -5,7 +5,7 @@
 We should have a batch mode, that does all the above steps truly automatically and creates a pdf containing all quality control images. The pdf can be inspected later on and based on the findings the function call can be adjusted.
 
 1. [x] __PR test-glc__: Add test cases for `generate_lorentz_curves`. Just copy from test cases of `MetetaboDecon1D` and adjust a little bit.
-1. [ ] __PR batch-mode__: Add test cases for `generate_lorentz_curves_v2`. Just copy from test cases of `generate_lorentz_curves` and fix `generate_lorentz_curves_v2` to pass these tests. (Now we have backwards compatibility)
+1. [x] __PR batch-mode__: Add test cases for `generate_lorentz_curves_v2`. Just copy from test cases of `generate_lorentz_curves` and fix `generate_lorentz_curves_v2` to pass these tests. (Now we have backwards compatibility)
 2. [ ] __PR batch-mode__: Replace `generate_lorentz_curves` with `generate_lorentz_curves_v2`
 3. [ ] __PR batch-mode__: Add remaining arguments of `MetaboDecon1D` to `generate_lorentz_curves` and make sure the are passed on correctly
 4. [ ] __PR batch-mode__: Add argument `ask` to `generate_lorentz_curves`

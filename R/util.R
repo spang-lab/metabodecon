@@ -1,14 +1,15 @@
-`%||%` <- function (x, y)
-{
+`%||%` <- function(x, y) {
     if (is.null(x)) y else x
 }
 
-msg <- function(..., sep = " ", appendLF = TRUE)
-{
+msg <- function(..., sep = " ", appendLF = TRUE) {
     message(paste(..., sep = sep), appendLF = appendLF)
 }
 
-msgf <- function(fmt, ..., appendLF = TRUE)
-{
+msgf <- function(fmt, ..., appendLF = TRUE) {
     message(sprintf(fmt, ...), appendLF = appendLF)
+}
+
+normPath <- function(path, winslash = "/", mustWork = FALSE) {
+    normalizePath(path, winslash = winslash, mustWork = mustWork)
 }

@@ -1,8 +1,20 @@
-# metabodecon 1.1.1
+# metabodecon 1.2.0
 
 Development Branch:
 
-* `test-glc`
+* `batch-mode`
+
+API:
+
+* Changed `download_example_datasets`. If `extract=TRUE`, the path to the extracted folder is now returned, instead of the path to the zip file.
+
+Internal:
+
+* Added helper functions `load_jcampdx_spectrum` and `load_bruker_spectrum` (might be combined into one function).
+* Moved helper function `.deconvolute_spectrum` into seperate file `deconvolute_single_spectrum` for development.
+* Added util function `normPath`.
+
+# metabodecon 1.1.1
 
 API:
 
