@@ -35,8 +35,10 @@ __Answer:__ The expected file structure is as follows:
 C:/bruker/urine              # data_path (user input)
 ├── urine_1/                 # name (user input)
 │   └── 10/                  # spectroscopy_value (user input)
+│       ├── acqus            # acqus_file (constant)
 │       └── pdata/           # processings_dir (constant)
 │           └── 10/          # processing_value (user input)
+│               ├── 1r       # spec_file (constant)
 │               └── procs    # spectrum_file (constant)
 ├── urine_2/...
 └── ...
