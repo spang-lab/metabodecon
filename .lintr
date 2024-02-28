@@ -1,5 +1,6 @@
 linters: linters_with_defaults(
     line_length_linter(9999),
+    object_length_linter(9999),
     commented_code_linter = NULL
   )
 exclusions: list(
