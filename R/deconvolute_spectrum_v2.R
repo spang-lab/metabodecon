@@ -1,48 +1,69 @@
 #' @title Deconvolute one single spectrum
 #' @description Deconvolute one single spectrum
-#' @param filepath TODO
-#' @param name TODO
-#' @param file_format (string) Format of the spectra files.
-#' @param same_parameter TODO
-#' @param processing_value TODO
+#' @param path Path to file or folder containing the spectra files.
+#' @param type (string) Format of the spectra files.
+#' @param processing_value Processing value for the file. E.g. `"10"`. Called `procno` in the Bruker TopSpin Manual.
+#' @param spectroscopy_value Spectroscopy value for the file. E.g. `"10"`. Called `specno` in the Bruker TopSpin Manual.
 #' @param number_iterations (int) Number of iterations for the approximation of the parameters for the Lorentz curves.
 #' @param range_water_signal_ppm (float) Half width of the water artefact in ppm.
 #' @param signal_free_region (float) Row vector with two entries consisting of the ppm positions for the left and right border of the signal free region of the spectrum.
 #' @param smoothing_param (int) Row vector with two entries consisting of the number of smoothing repeats for the whole spectrum and the number of data points (uneven) for the mean calculation.
 #' @param delta (float) Threshold value to distinguish between signal and noise.
 #' @param scale_factor (int) Row vector with two entries consisting of the factor to scale the x-axis and the factor to scale the y-axis.
+#' @param same_parameter TODO
 #' @param current_filenumber TODO
+#' @return A list containing the deconvoluted spectrum data.
+#' @examples \dontrun{
+#' xds_path <- download_example_datasets()
+#' path <- file.path(xds_path, "jcampdx/urine/urine_1")
+#' type <- "bruker"
+#' deconvolute_spectrum_v2(path, type)
+#' }
 #' @noRd
-.deconvolute_spectrum <- function(filepath,
-                                  name,
-                                  file_format = c("bruker", "jcampdx"),
-                                  same_parameter,
-                                  processing_value,
-                                  number_iterations,
-                                  range_water_signal_ppm,
-                                  signal_free_region,
-                                  smoothing_param,
-                                  delta,
-                                  scale_factor,
-                                  current_filenumber) {
+deconvolute_spectrum_v2 <- function(path = file.path(download_example_datasets(), "bruker/urine/urine_1"),
+                                    type = c("bruker", "jcampdx"),
+                                    same_parameter = FALSE,
+                                    spectroscopy_value = 10,
+                                    processing_value = 10,
+                                    number_iterations = 10,
+                                    range_water_signal_ppm = 0.1527692,
+                                    signal_free_region = c(11.44494, -1.8828),
+                                    smoothing_param = c(2, 5),
+                                    delta = 6.4,
+                                    scale_factor = c(1000, 1000000),
+                                    current_filenumber = 1) {
 
     # Parse arguments
-    file_format <- match.arg(file_format)
+    type <- match.arg(type)
     factor_x <- scale_factor[1]
+    factor_y <- scale_factor[2]
 
     # Load spectrum
-    spectrum_data <- switch(file_format,
-                            "bruker" = load_bruker_spectrum(filepath, processing_value, scale_factor),
-                            "jcampdx" = load_jcampdx_spectrum(name, scale_factor))
-    spectrum_length <- spectrum_data$spectrum_length
-    spectrum_x <- spectrum_data$spectrum_x
-    spectrum_y <- spectrum_data$spectrum_y
-    spectrum_x_ppm <- spectrum_data$spectrum_x_ppm
-    ppm_range <- spectrum_data$ppm_range
-    ppm_highest_value <- spectrum_data$ppm_highest_value
+    spectrum <- switch(
+        type,
+        "bruker" = load_bruker_spectrum(path, scale_factor, processing_value, scale_factor),
+        "jcampdx" = load_jcampdx_spectrum(path, scale_factor)
+    )
+    spectrum_length <- spectrum$spectrum_length
+    spectrum_x <- spectrum$spectrum_x
+    spectrum_y <- spectrum$spectrum_y
+    spectrum_x_ppm <- spectrum$spectrum_x_ppm
+    ppm_range <- spectrum$ppm_range
+    ppm_highest_value <- spectrum$ppm_highest_value
 
     # Check if parameters are the same for all analyzed spectra
-    if (same_parameter == FALSE) {
+    if (same_parameter == TRUE && current_filenumber != 1) {
+        # If current file is not the first file, parameters are already adjusted and only needs to be loaded
+        signal_free_region_left <- signal_free_region[1]
+        signal_free_region_right <- signal_free_region[2]
+
+        # Recalculate ppm into data points
+        water_signal_position <- length(spectrum_x) / 2
+        water_signal_position_ppm <- spectrum_x_ppm[length(spectrum_x_ppm) / 2]
+        range_water_signal <- range_water_signal_ppm / (ppm_range / spectrum_length)
+        water_signal_left <- water_signal_position - range_water_signal
+        water_signal_right <- water_signal_position + range_water_signal
+    } else {
         # Calculate signal free region
         signal_free_region_left <- (spectrum_length + 1) - ((ppm_highest_value - signal_free_region[1]) / (ppm_range / spectrum_length))
         signal_free_region_right <- (spectrum_length + 1) - ((ppm_highest_value - signal_free_region[2]) / (ppm_range / spectrum_length))
@@ -139,6 +160,8 @@
             }
         }
 
+            # Save adjusted signal_free_region
+            signal_free_region <- c(signal_free_region_left, signal_free_region_right)
 
 
         # Remove water signal
@@ -230,211 +253,9 @@
                 }
             }
         }
-    }
 
-
-
-    # Check if parameters are the same for all analyzed spectra
-    if (same_parameter == TRUE) {
-        # Check if current file is the first file
-        # If yes, this file is used to adjust the parameters for all spectra
-        if (current_filenumber == 1) {
-            # Calculate signal free region
-            signal_free_region_left <- (spectrum_length + 1) - ((ppm_highest_value - signal_free_region[1]) / (ppm_range / spectrum_length))
-            signal_free_region_right <- (spectrum_length + 1) - ((ppm_highest_value - signal_free_region[2]) / (ppm_range / spectrum_length))
-
-            signal_free_region_left <- signal_free_region_left / factor_x
-            signal_free_region_right <- signal_free_region_right / factor_x
-
-            plot(spectrum_x_ppm, spectrum_y, type = "l", xlab = "[ppm]", ylab = "Intensity [a.u.]", xlim = rev(range(spectrum_x_ppm)))
-            graphics::abline(v = signal_free_region[1], col = "green")
-            graphics::abline(v = signal_free_region[2], col = "green")
-
-            # Check for correct range of signal free region
-            check_range_signal_free_region <- readline(prompt = "Signal free region borders correct selected? (Area left and right of the green lines) (y/n): ")
-
-            # Set parameter to TRUE or FALSE
-            if (check_range_signal_free_region == "y" | check_range_signal_free_region == "n") {
-                correct_input <- TRUE
-            } else {
-                correct_input <- FALSE
-            }
-
-            # Check if User input is correct or not
-            while (correct_input == FALSE) {
-                # Ask User if he want to use same parameters for all spectra of the folder
-                message("Error. Please type only y or n.")
-                check_range_signal_free_region <- readline(prompt = "Signal free region borders correct selected? (Area left and right of the green lines) (y/n): ")
-
-                if (check_range_signal_free_region == "y" | check_range_signal_free_region == "n") {
-                    correct_input <- TRUE
-                } else {
-                    correct_input <- FALSE
-                }
-            }
-
-            while (check_range_signal_free_region == "n") {
-                signal_free_region_left_ppm <- readline(prompt = "Choose another left border: [e.g. 12] ")
-                # Check if input is a digit
-                digit_true <- grepl("[+-]?([0-9]*[.])?[0-9]+", signal_free_region_left_ppm)
-
-                while (digit_true != TRUE) {
-                    # Ask User which of the files should be used to adjust the parameters
-                    message("Error. Please only type a digit.")
-                    signal_free_region_left_ppm <- readline(prompt = "Choose another left border: [e.g. 12] ")
-                    # Check if input is a digit
-                    digit_true <- grepl("[+-]?([0-9]*[.])?[0-9]+", signal_free_region_left_ppm)
-                }
-                # Save as numeric
-                signal_free_region_left_ppm <- as.numeric(signal_free_region_left_ppm)
-                signal_free_region_left <- ((spectrum_length + 1) - ((ppm_highest_value - signal_free_region_left_ppm) / (ppm_range / spectrum_length))) / factor_x
-
-                signal_free_region_right_ppm <- readline(prompt = "Choose another right border: [e.g. -2] ")
-                # Check if input is a digit
-                digit_true <- grepl("[+-]?([0-9]*[.])?[0-9]+", signal_free_region_right_ppm)
-
-                while (digit_true != TRUE) {
-                    # Ask User which of the files should be used to adjust the parameters
-                    message("Error. Please only type a digit.")
-                    signal_free_region_right_ppm <- readline(prompt = "Choose another right border: [e.g. -2] ")
-                    # Check if input is a digit
-                    digit_true <- grepl("[+-]?([0-9]*[.])?[0-9]+", signal_free_region_right_ppm)
-                }
-                # Save as numeric
-                signal_free_region_right_ppm <- as.numeric(signal_free_region_right_ppm)
-                signal_free_region_right <- ((spectrum_length + 1) - ((ppm_highest_value - signal_free_region_right_ppm) / (ppm_range / spectrum_length))) / factor_x
-
-                plot(spectrum_x_ppm, spectrum_y, type = "l", xlab = "[ppm]", ylab = "Intensity [a.u.]", xlim = rev(range(spectrum_x_ppm)))
-                graphics::abline(v = signal_free_region_left_ppm, col = "green")
-                graphics::abline(v = signal_free_region_right_ppm, col = "green")
-
-                check_range_signal_free_region <- readline(prompt = "Signal free region borders correct selected? (Area left and right of the green lines) (y/n): ")
-                # Set parameter to TRUE or FALSE
-                if (check_range_signal_free_region == "y" | check_range_signal_free_region == "n") {
-                    correct_input <- TRUE
-                } else {
-                    correct_input <- FALSE
-                }
-
-                # Check if User input is correct or not
-                while (correct_input == FALSE) {
-                    # Ask User if he want to use same parameters for all spectra of the folder
-                    message("Error. Please type only y or n.")
-                    check_range_signal_free_region <- readline(prompt = "Signal free region borders correct selected? (Area left and right of the green lines) (y/n): ")
-
-                    if (check_range_signal_free_region == "y" | check_range_signal_free_region == "n") {
-                        correct_input <- TRUE
-                    } else {
-                        correct_input <- FALSE
-                    }
-                }
-            }
-
-            # Save adjusted signal_free_region
-            signal_free_region <- c(signal_free_region_left, signal_free_region_right)
-
-
-            # Remove water signal
-            water_signal_position <- length(spectrum_x) / 2
-            water_signal_position_ppm <- spectrum_x_ppm[length(spectrum_x_ppm) / 2]
-            # Recalculate ppm into data points
-            range_water_signal <- range_water_signal_ppm / (ppm_range / spectrum_length)
-            water_signal_left <- water_signal_position - range_water_signal
-            water_signal_right <- water_signal_position + range_water_signal
-
-            plot(spectrum_x_ppm, spectrum_y, type = "l", xlab = "[ppm]", ylab = "Intensity [a.u.]", xlim = rev(range((water_signal_position_ppm - 2 * range_water_signal_ppm), (water_signal_position_ppm + 2 * range_water_signal_ppm))))
-            graphics::abline(v = spectrum_x_ppm[water_signal_left], col = "red")
-            graphics::abline(v = spectrum_x_ppm[water_signal_right], col = "red")
-
-
-            # Check for correct range of water artefact
-            check_range_water_signal <- readline(prompt = "Water artefact fully inside red vertical lines? (y/n): ")
-
-            # Set parameter to TRUE or FALSE
-            if (check_range_water_signal == "y" | check_range_water_signal == "n") {
-                correct_input <- TRUE
-            } else {
-                correct_input <- FALSE
-            }
-
-            # Check if User input is correct or not
-            while (correct_input == FALSE) {
-                # Ask User if he want to use same parameters for all spectra of the folder
-                message("Error. Please type only y or n.")
-                check_range_water_signal <- readline(prompt = "Water artefact fully inside red vertical lines? (y/n): ")
-
-                if (check_range_water_signal == "y" | check_range_water_signal == "n") {
-                    correct_input <- TRUE
-                } else {
-                    correct_input <- FALSE
-                }
-            }
-
-            while (check_range_water_signal == "n") {
-                range_water_signal_ppm <- readline(prompt = "Choose another half width range (in ppm) for the water artefact: [e.g. 0.1222154] ")
-
-                # Check if input is a digit
-                digit_true <- grepl("[+-]?([0-9]*[.])?[0-9]+", range_water_signal_ppm)
-
-                while (digit_true != TRUE) {
-                    # Ask User which of the files should be used to adjust the parameters
-                    message("Error. Please only type a digit.")
-                    range_water_signal_ppm <- readline(prompt = "Choose another half width range (in ppm) for the water artefact: [e.g. 0.1222154] ")
-                    # Check if input is a digit
-                    digit_true <- grepl("[+-]?([0-9]*[.])?[0-9]+", range_water_signal_ppm)
-                }
-                # Save as numeric
-                range_water_signal_ppm <- as.numeric(range_water_signal_ppm)
-
-
-                # Remove water signal
-                water_signal_position <- length(spectrum_x) / 2
-                water_signal_position_ppm <- spectrum_x_ppm[length(spectrum_x_ppm) / 2]
-                # Recalculate ppm into data points
-                range_water_signal <- range_water_signal_ppm / (ppm_range / spectrum_length)
-                water_signal_left <- water_signal_position - range_water_signal
-                water_signal_right <- water_signal_position + range_water_signal
-
-                plot(spectrum_x_ppm, spectrum_y, type = "l", xlab = "[ppm]", ylab = "Intensity [a.u.]", xlim = rev(range((water_signal_position_ppm - 2 * range_water_signal_ppm), (water_signal_position_ppm + 2 * range_water_signal_ppm))))
-                graphics::abline(v = spectrum_x_ppm[water_signal_left], col = "red")
-                graphics::abline(v = spectrum_x_ppm[water_signal_right], col = "red")
-
-                check_range_water_signal <- readline(prompt = "Water artefact fully inside red vertical lines? (y/n): ")
-                # Set parameter to TRUE or FALSE
-                if (check_range_water_signal == "y" | check_range_water_signal == "n") {
-                    correct_input <- TRUE
-                } else {
-                    correct_input <- FALSE
-                }
-
-                # Check if User input is correct or not
-                while (correct_input == FALSE) {
-                    # Ask User if he want to use same parameters for all spectra of the folder
-                    message("Error. Please type only y or n.")
-                    check_range_water_signal <- readline(prompt = "Water artefact fully inside red vertical lines? (y/n): ")
-
-                    if (check_range_water_signal == "y" | check_range_water_signal == "n") {
-                        correct_input <- TRUE
-                    } else {
-                        correct_input <- FALSE
-                    }
-                }
-            }
-
-            # Save adjusted range_water_signal
-            range_water_signal_ppm <- range_water_signal_ppm
-        } else {
-            # If current file is not the first file, parameters are already adjusted and only needs to be loaded
-            signal_free_region_left <- signal_free_region[1]
-            signal_free_region_right <- signal_free_region[2]
-
-            # Recalculate ppm into data points
-            water_signal_position <- length(spectrum_x) / 2
-            water_signal_position_ppm <- spectrum_x_ppm[length(spectrum_x_ppm) / 2]
-            range_water_signal <- range_water_signal_ppm / (ppm_range / spectrum_length)
-            water_signal_left <- water_signal_position - range_water_signal
-            water_signal_right <- water_signal_position + range_water_signal
-        }
+    # Save adjusted range_water_signal
+    range_water_signal_ppm <- range_water_signal_ppm
     }
 
 
