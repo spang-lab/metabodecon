@@ -19,6 +19,8 @@ Internal:
 * Added util function `normPath()`.
 * Added test cases for `deconvolute_spectrum()`
 * Moved helper function `.deconvolute_spectrum()` into seperate file `deconvolute_spectrum_v2` for development and renamed it to `deconvolute_spectrum_v2()`.
+* Added helper function `get_signal_free_region_in_su()`
+* Disabled `object_length_linter`
 
 # metabodecon 1.1.1
 
