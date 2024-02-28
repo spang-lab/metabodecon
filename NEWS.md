@@ -8,11 +8,17 @@ API:
 
 * Changed `download_example_datasets`. If `extract=TRUE`, the path to the extracted folder is now returned, instead of the path to the zip file.
 
+Documentation:
+
+* Added `acqus` and `1r` file to section *File Structure* of [FAQ](vignettes/FAQ.Rmd)
+* Added info about bruker namings to [FAQ](vignettes/FAQ.Rmd)
+
 Internal:
 
-* Added helper functions `load_jcampdx_spectrum` and `load_bruker_spectrum` (might be combined into one function).
-* Moved helper function `.deconvolute_spectrum` into seperate file `deconvolute_single_spectrum` for development.
-* Added util function `normPath`.
+* Added helper functions `load_jcampdx_spectrum()` and `load_bruker_spectrum()` (might be combined into one function at some point).
+* Added util function `normPath()`.
+* Added test cases for `deconvolute_spectrum()`
+* Moved helper function `.deconvolute_spectrum()` into seperate file `deconvolute_spectrum_v2` for development and renamed it to `deconvolute_spectrum_v2()`.
 
 # metabodecon 1.1.1
 

@@ -107,8 +107,7 @@ Output variables of MetaboDecon1D (These variables will be obtained for each ana
 - __A:__ -A*p area under Lorentz-curve, see also integrals, A is always provided as negative number.
 - __Lambda:__ for all identified signals half width at half height. Is provided as negative value in data points divided by scale-factor i.e., 1000. For example, a value of von 0.00525 corresponds to 5.25 data points. With a spectral width 12019 Hz (this example) and 31072 data points this corresponds to a half linewidth at half height of 0.48 Hz.
 - __X_0:__ center of all estimated Lorentz curves. Provided in data points divided by scale factor (see also x_values).
-- __Scale_factor:__ scale factor for x- and y-axis to reduce numerical instabilities, default 1000 and 1000000.
-Toy example for TSP signal (note numbers will differ for each spectrum): TSP is signal 979, index_peak_triplets_middle[979]=96955, x_0[979]=34.11715 (Note (131072-96955)/1000=34.117), peak_triplets_middle=0.000 ppm, lambda[979]=-0.00525 corresponds to 0.48 Hz. A[979]=-1.218312; A* Pi=-3.82, integrals[979]=3.82
+- __Scale_factor:__ scale factor for x- and y-axis to reduce numerical instabilities, default 1000 and 1000000. Toy example for TSP signal (note numbers will differ for each spectrum): TSP is signal 979, `index_peak_triplets_middle[979]=96955`, `x_0[979]=34.11715` (Note `(131072-96955)/1000=34.117)`, `peak_triplets_middle=0.000` ppm, `lambda[979]=-0.00525` corresponds to 0.48 Hz. `A[979]=-1.218312`; `A* Pi=-3.82`, `integrals[979]=3.82`
 
 ## Refactor: improve output of metabodecon
 
