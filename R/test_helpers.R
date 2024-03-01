@@ -173,8 +173,6 @@ read_spectrum_output <- function(path) {
 expect_file_size <- function(testdir, size_exp) {
     paths <- file.path(testdir, names(size_exp))
     size_obs <- file.info(paths)$size
-    size_min <- size_exp * 0.9
-    size_max <- size_exp * 1.1
     file_has_correct_size <- size_obs > size_exp * 0.9 & size_obs < size_exp * 1.1
     lapply(seq_along(size_exp), function(i) {
         if (!isTRUE(file_has_correct_size[i])) {
