@@ -11,7 +11,7 @@
 #' str(spectrum_data, 1)
 #' }
 #' @noRd
-load_jcampdx_spectrum <- function(path, scale_factor = c(1, 1)) {
+load_jcampdx_spectrum <- function(path, scale_factor = c(1e3, 1e6)) {
   # Import data using readJDX package
   data <- readJDX::readJDX(file = path, SOFC = TRUE, debug = 0) # reading urine_1.dx (~1MB) takes ~30s on machine r31
 
@@ -20,23 +20,24 @@ load_jcampdx_spectrum <- function(path, scale_factor = c(1, 1)) {
   factor_y <- scale_factor[2]
 
   # Get the length of the spectrum
-  spectrum_length <- length(data[[4]]$x) - 1
+  spectrum_length <- length(data[[4]]$x)
+  spectrum_length_m1 <- spectrum_length - 1
 
   # Scale the x and y axis values
-  spectrum_x <- seq((spectrum_length / factor_x), 0, -1 / factor_x)
+  spectrum_x <- seq((spectrum_length_m1 / factor_x), 0, -1 / factor_x)
   spectrum_y <- (data[[4]]$y) / factor_y
 
   # Extract spectral width in ppm
   ppm_range_index <- which(startsWith(data[[2]], "##$SW="))
-  ppm_range <- as.numeric(gsub("\\D+", "", data[[2]][ppm_range_index]))
+  ppm_range <- as.numeric(sub("\\D+", "", data[[2]][ppm_range_index]))
 
   # Extract highest and lowest ppm values
   ppm_highest_index <- which(startsWith(data[[2]], "##$OFFSET="))
-  ppm_highest_value <- as.numeric(gsub("\\D+", "", data[[2]][ppm_highest_index]))
+  ppm_highest_value <- as.numeric(sub("\\D+", "", data[[2]][ppm_highest_index]))
   ppm_lowest_value <- ppm_highest_value - ppm_range
 
   # Generate ppm sequence for x axis
-  spectrum_x_ppm <- seq(ppm_highest_value, ppm_lowest_value, (-ppm_range / spectrum_length))
+  spectrum_x_ppm <- seq(ppm_highest_value, ppm_lowest_value, (-ppm_range / spectrum_length_m1))
 
   # Return the spectrum data
   return(list(
@@ -66,7 +67,7 @@ load_jcampdx_spectrum <- function(path, scale_factor = c(1, 1)) {
 #' str(spectrum_data, 1)
 #' }
 #' @noRd
-load_bruker_spectrum <- function(path, sf = c(1, 1), spec = 10, proc = 10) {
+load_bruker_spectrum <- function(path, sf = c(1e3, 1e6), spec = 10, proc = 10) {
   # Get file paths of all necessary documents
   acqus_file <- file.path(path, spec, "acqus")
   spec_file <- file.path(path, spec, paste("pdata", proc, "1r", sep = "/"))
