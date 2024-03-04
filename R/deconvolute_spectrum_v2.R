@@ -1,17 +1,19 @@
 #' @title Deconvolute one single spectrum
 #' @description Deconvolute one single spectrum
 #' @param path Path to file or folder containing the spectra files.
-#' @param type (string) Format of the spectra files.
+#' @param type Format of the spectra files. Either `"bruker"` or `"jcampdx"`.
 #' @param processing_value Processing value for the file. E.g. `"10"`. Called `procno` in the Bruker TopSpin Manual.
 #' @param spectroscopy_value Spectroscopy value for the file. E.g. `"10"`. Called `specno` in the Bruker TopSpin Manual.
-#' @param number_iterations (int) Number of iterations for the approximation of the parameters for the Lorentz curves.
-#' @param range_water_signal_ppm (float) Half width of the water artefact in ppm.
-#' @param signal_free_region (float) Row vector with two entries consisting of the ppm positions for the left and right border of the signal free region of the spectrum.
-#' @param smoothing_param (int) Row vector with two entries consisting of the number of smoothing repeats for the whole spectrum and the number of data points (uneven) for the mean calculation.
-#' @param delta (float) Threshold value to distinguish between signal and noise.
-#' @param scale_factor (int) Row vector with two entries consisting of the factor to scale the x-axis and the factor to scale the y-axis.
+#' @param number_iterations Number of iterations for the approximation of the parameters for the Lorentz curves.
+#' @param ws$hwidth_ppm Half width of the water artefact in ppm.
+#' @param signal_free_region Row vector with two entries consisting of the ppm positions for the left and right border of the signal free region of the spectrum.
+#' @param smoothing_param Row vector with two entries consisting of the number of smoothing repeats for the whole spectrum and the number of data points (uneven) for the mean calculation.
+#' @param delta Threshold value to distinguish between signal and noise.
+#' @param scale_factor Row vector with two entries consisting of the factor to scale the x-axis and the factor to scale the y-axis.
 #' @param same_parameter TODO
 #' @param current_filenumber TODO
+#' @param number_of_files TODO
+#' @param bwc Use the old, slightly incorrect methods for calculating signal free region and water signal to maintain backwards compatibility with MetaboDecon1D results? For details see `Check: ...` issues in `TODOS.md`.
 #' @return A list containing the deconvoluted spectrum data.
 #' @examples \dontrun{
 #' xds_path <- download_example_datasets()
@@ -21,7 +23,7 @@
 #' }
 #' @noRd
 deconvolute_spectrum_v2 <- function(path = file.path(download_example_datasets(), "bruker/urine/urine_1"),
-                                    type = c("bruker", "jcampdx"),
+                                    type = "bruker",
                                     same_parameter = FALSE,
                                     spectroscopy_value = 10,
                                     processing_value = 10,
@@ -30,152 +32,39 @@ deconvolute_spectrum_v2 <- function(path = file.path(download_example_datasets()
                                     signal_free_region = c(11.44494, -1.8828),
                                     smoothing_param = c(2, 5),
                                     delta = 6.4,
-                                    scale_factor = c(1000, 1000000),
-                                    current_filenumber = 1) {
+                                    scale_factor = c(1e3, 1e6),
+                                    current_filenumber = 1,
+                                    number_of_files = 1,
+                                    bwc = TRUE) {
 
     # Parse arguments
-    type <- match.arg(type)
-    factor_x <- scale_factor[1]
-    factor_y <- scale_factor[2]
+    type <- match.arg(type, c("bruker", "jcampdx"))
+    sfx <- scale_factor[1]
+    sfy <- scale_factor[2]
+    expno <- spectroscopy_value
+    procno <- processing_value
 
     # Load spectrum
-    spectrum <- switch(
-        type,
-        "bruker" = load_bruker_spectrum(path, scale_factor, processing_value, scale_factor),
-        "jcampdx" = load_jcampdx_spectrum(path, scale_factor)
-    )
-    spectrum_length <- spectrum$spectrum_length
-    spectrum_x <- spectrum$spectrum_x
-    spectrum_y <- spectrum$spectrum_y
-    spectrum_x_ppm <- spectrum$spectrum_x_ppm
-    ppm_range <- spectrum$ppm_range
-    ppm_highest_value <- spectrum$ppm_highest_value
+    spectrum <- switch(type, "bruker" = load_bruker_spectrum_v2(path, sfx, sfy, expno, procno), "jcampdx" = load_jcampdx_spectrum_v2(path, sfx, sfy))
+    ws <- calculate_water_signal(spectrum, hwidth_ppm = range_water_signal_ppm, bwc = bwc)
+    sfr <- calculate_signal_free_region(spectrum, left_ppm = signal_free_region[1], right_ppm = signal_free_region[2], sfx = sfx, bwc = bwc)
 
-    # Check if parameters are the same for all analyzed spectra
-    if (same_parameter == TRUE && current_filenumber != 1) {
-        # If current file is not the first file, parameters are already adjusted and only needs to be loaded
-        signal_free_region_left <- signal_free_region[1]
-        signal_free_region_right <- signal_free_region[2]
+    # Ask the user to confirm/adjust the signal free region and/or water signal
+    if (isFALSE(same_parameter) || current_filenumber == 1) {
 
-        # Recalculate ppm into data points
-        water_signal_position <- length(spectrum_x) / 2
-        water_signal_position_ppm <- spectrum_x_ppm[length(spectrum_x_ppm) / 2]
-        range_water_signal <- range_water_signal_ppm / (ppm_range / spectrum_length)
-        water_signal_left <- water_signal_position - range_water_signal
-        water_signal_right <- water_signal_position + range_water_signal
-    } else {
-        # Calculate signal free region
-        signal_free_region_left <- (spectrum_length + 1) - ((ppm_highest_value - signal_free_region[1]) / (ppm_range / spectrum_length))
-        signal_free_region_right <- (spectrum_length + 1) - ((ppm_highest_value - signal_free_region[2]) / (ppm_range / spectrum_length))
-
-        signal_free_region_left <- signal_free_region_left / factor_x
-        signal_free_region_right <- signal_free_region_right / factor_x
-
-        plot(spectrum_x_ppm, spectrum_y, type = "l", xlab = "[ppm]", ylab = "Intensity [a.u.]", xlim = rev(range(spectrum_x_ppm)))
-        graphics::abline(v = signal_free_region[1], col = "green")
-        graphics::abline(v = signal_free_region[2], col = "green")
-
-
-        # Check for correct range of signal free region
-        check_range_signal_free_region <- readline(prompt = "Signal free region borders correct selected? (Area left and right of the green lines) (y/n): ")
-
-        # Set parameter to TRUE or FALSE
-        if (check_range_signal_free_region == "y" | check_range_signal_free_region == "n") {
-            correct_input <- TRUE
-        } else {
-            correct_input <- FALSE
+        # Confirm/adjust the signal free region
+        plot_sfr(spectrum, sfr)
+        sfr_ok <- get_yn_input("Signal free region borders correct selected? (Area left and right of the green lines)")
+        while (!sfr_ok) {
+            left_ppm <- get_num_input("Choose another left border: [e.g. 12] ", min = spectrum$ppm_min, max = spectrum$ppm_max)
+            right_ppm <- get_num_input("Choose another right border: [e.g. -2] ", min = spectrum$ppm_min, max = spectrum$ppm_max)
+            sfr <- calculate_signal_free_region(spectrum, left_ppm, right_ppm, sf = sfx, bwc = bwc)
+            plot_sfr(spectrum, sfr)
+            sfr_ok <- get_yn_input("Signal free region borders correct selected? (Area left and right of the green lines)")
         }
 
-        # Check if User input is correct or not
-        while (correct_input == FALSE) {
-            # Ask User if he want to use same parameters for all spectra of the folder
-            message("Error. Please type only y or n.")
-            check_range_signal_free_region <- readline(prompt = "Signal free region borders correct selected? (Area left and right of the green lines) (y/n): ")
-
-            if (check_range_signal_free_region == "y" | check_range_signal_free_region == "n") {
-                correct_input <- TRUE
-            } else {
-                correct_input <- FALSE
-            }
-        }
-
-
-        while (check_range_signal_free_region == "n") {
-            signal_free_region_left_ppm <- readline(prompt = "Choose another left border: [e.g. 12] ")
-
-            # Check if input is a digit
-            digit_true <- grepl("[+-]?([0-9]*[.])?[0-9]+", signal_free_region_left_ppm)
-
-            while (digit_true != TRUE) {
-                # Ask User which of the files should be used to adjust the parameters
-                message("Error. Please only type a digit.")
-                signal_free_region_left_ppm <- readline(prompt = "Choose another left border: [e.g. 12] ")
-                # Check if input is a digit
-                digit_true <- grepl("[+-]?([0-9]*[.])?[0-9]+", signal_free_region_left_ppm)
-            }
-            # Save as numeric
-            signal_free_region_left_ppm <- as.numeric(signal_free_region_left_ppm)
-            signal_free_region_left <- ((spectrum_length + 1) - ((ppm_highest_value - signal_free_region_left_ppm) / (ppm_range / spectrum_length))) / factor_x
-
-            signal_free_region_right_ppm <- readline(prompt = "Choose another right border: [e.g. -2] ")
-
-            # Check if input is a digit
-            digit_true <- grepl("[+-]?([0-9]*[.])?[0-9]+", signal_free_region_right_ppm)
-
-            while (digit_true != TRUE) {
-                # Ask User which of the files should be used to adjust the parameters
-                message("Error. Please only type a digit.")
-                signal_free_region_right_ppm <- readline(prompt = "Choose another right border: [e.g. -2] ")
-                # Check if input is a digit
-                digit_true <- grepl("[+-]?([0-9]*[.])?[0-9]+", signal_free_region_right_ppm)
-            }
-            # Save as numeric
-            signal_free_region_right_ppm <- as.numeric(signal_free_region_right_ppm)
-            signal_free_region_right <- ((spectrum_length + 1) - ((ppm_highest_value - signal_free_region_right_ppm) / (ppm_range / spectrum_length))) / factor_x
-
-            plot(spectrum_x_ppm, spectrum_y, type = "l", xlab = "[ppm]", ylab = "Intensity [a.u.]", xlim = rev(range(spectrum_x_ppm)))
-            graphics::abline(v = signal_free_region_left_ppm, col = "green")
-            graphics::abline(v = signal_free_region_right_ppm, col = "green")
-
-            check_range_signal_free_region <- readline(prompt = "Signal free region borders correct selected? (Area left and right of the green lines) (y/n): ")
-
-            # Set parameter to TRUE or FALSE
-            if (check_range_signal_free_region == "y" | check_range_signal_free_region == "n") {
-                correct_input <- TRUE
-            } else {
-                correct_input <- FALSE
-            }
-
-            # Check if User input is correct or not
-            while (correct_input == FALSE) {
-                # Ask User if he want to use same parameters for all spectra of the folder
-                message("Error. Please type only y or n.")
-                check_range_signal_free_region <- readline(prompt = "Signal free region borders correct selected? (Area left and right of the green lines) (y/n): ")
-
-                if (check_range_signal_free_region == "y" | check_range_signal_free_region == "n") {
-                    correct_input <- TRUE
-                } else {
-                    correct_input <- FALSE
-                }
-            }
-        }
-
-            # Save adjusted signal_free_region
-            signal_free_region <- c(signal_free_region_left, signal_free_region_right)
-
-
-        # Remove water signal
-        water_signal_position <- length(spectrum_x) / 2
-        water_signal_position_ppm <- spectrum_x_ppm[length(spectrum_x_ppm) / 2]
-        # Recalculate ppm into data points
-        range_water_signal <- range_water_signal_ppm / (ppm_range / spectrum_length)
-        water_signal_left <- water_signal_position - range_water_signal
-        water_signal_right <- water_signal_position + range_water_signal
-
-
-        plot(spectrum_x_ppm, spectrum_y, type = "l", xlab = "[ppm]", ylab = "Intensity [a.u.]", xlim = rev(range((water_signal_position_ppm - 2 * range_water_signal_ppm), (water_signal_position_ppm + 2 * range_water_signal_ppm))))
-        graphics::abline(v = spectrum_x_ppm[water_signal_left], col = "red")
-        graphics::abline(v = spectrum_x_ppm[water_signal_right], col = "red")
+        # Confirm/adjust water signal
+        plot_ws(spectrum, ws)
 
         # Check for correct range of water artefact
         check_range_water_signal <- readline(prompt = "Water artefact fully inside red vertical lines? (y/n): ")
@@ -202,34 +91,34 @@ deconvolute_spectrum_v2 <- function(path = file.path(download_example_datasets()
 
 
         while (check_range_water_signal == "n") {
-            range_water_signal_ppm <- readline(prompt = "Choose another half width range (in ppm) for the water artefact: [e.g. 0.1222154] ")
+            ws$hwidth_ppm <- readline(prompt = "Choose another half width range (in ppm) for the water artefact: [e.g. 0.1222154] ")
 
             # Check if input is a digit
-            digit_true <- grepl("[+-]?([0-9]*[.])?[0-9]+", range_water_signal_ppm)
+            digit_true <- grepl("[+-]?([0-9]*[.])?[0-9]+", ws$hwidth_ppm)
 
             while (digit_true != TRUE) {
                 # Ask User which of the files should be used to adjust the parameters
                 message("Error. Please only type a digit.")
-                range_water_signal_ppm <- readline(prompt = "Choose another half width range (in ppm) for the water artefact: [e.g. 0.1222154] ")
+                ws$hwidth_ppm <- readline(prompt = "Choose another half width range (in ppm) for the water artefact: [e.g. 0.1222154] ")
                 # Check if input is a digit
-                digit_true <- grepl("[+-]?([0-9]*[.])?[0-9]+", range_water_signal_ppm)
+                digit_true <- grepl("[+-]?([0-9]*[.])?[0-9]+", ws$hwidth_ppm)
             }
             # Save as numeric
-            range_water_signal_ppm <- as.numeric(range_water_signal_ppm)
+            ws$hwidth_ppm <- as.numeric(ws$hwidth_ppm)
 
 
 
             # Remove water signal
-            water_signal_position <- length(spectrum_x) / 2
-            water_signal_position_ppm <- spectrum_x_ppm[length(spectrum_x_ppm) / 2]
+            ws$center_dp <- length(spectrum$x) / 2
+            ws$center_ppm <- spectrum$x_ppm[length(spectrum$x_ppm) / 2]
             # Recalculate ppm into data points
-            range_water_signal <- range_water_signal_ppm / (ppm_range / spectrum_length)
-            water_signal_left <- water_signal_position - range_water_signal
-            water_signal_right <- water_signal_position + range_water_signal
+            ws$hwidth_dp <- ws$hwidth_ppm / (spectrum$ppm_nstep)
+            ws$left_dp <- ws$center_dp - ws$hwidth_dp
+            ws$right_dp <- ws$center_dp + ws$hwidth_dp
 
-            plot(spectrum_x_ppm, spectrum_y, type = "l", xlab = "[ppm]", ylab = "Intensity [a.u.]", xlim = rev(range((water_signal_position_ppm - 2 * range_water_signal_ppm), (water_signal_position_ppm + 2 * range_water_signal_ppm))))
-            graphics::abline(v = spectrum_x_ppm[water_signal_left], col = "red")
-            graphics::abline(v = spectrum_x_ppm[water_signal_right], col = "red")
+            plot(spectrum$x_ppm, spectrum$y, type = "l", xlab = "[ppm]", ylab = "Intensity [a.u.]", xlim = rev(range((ws$center_ppm - 2 * ws$hwidth_ppm), (ws$center_ppm + 2 * ws$hwidth_ppm))))
+            graphics::abline(v = spectrum$x_ppm[ws$left_dp], col = "red")
+            graphics::abline(v = spectrum$x_ppm[ws$right_dp], col = "red")
 
             check_range_water_signal <- readline(prompt = "Water artefact fully inside red vertical lines? (y/n): ")
 
@@ -254,19 +143,19 @@ deconvolute_spectrum_v2 <- function(path = file.path(download_example_datasets()
             }
         }
 
-    # Save adjusted range_water_signal
-    range_water_signal_ppm <- range_water_signal_ppm
+    # Save adjusted ws$hwidth_dp
+    ws$hwidth_ppm <- ws$hwidth_ppm
     }
 
 
     # Remove water signal
-    for (i in water_signal_right:water_signal_left) {
-        spectrum_y[i] <- 0.00000001
+    for (i in ws$right_dp:ws$left_dp) {
+        spectrum$y[i] <- 0.00000001
     }
 
     # Remove negative values of spectrum by Saving the absolut values
-    for (i in 1:length(spectrum_y)) {
-        spectrum_y[i] <- abs(spectrum_y[i])
+    for (i in 1:length(spectrum$y)) {
+        spectrum$y[i] <- abs(spectrum$y[i])
     }
 
     # Variable Mean Filter
@@ -280,7 +169,7 @@ deconvolute_spectrum_v2 <- function(path = file.path(download_example_datasets()
 
     for (j in 1:smoothing_iteration) {
         smoothed_spectrum_y <- c()
-        for (i in 1:(length(spectrum_x))) {
+        for (i in 1:(length(spectrum$x))) {
             # Calculate borders
             left_border <- i - floor(smoothing_pairs / 2)
             right_border <- i + floor(smoothing_pairs / 2)
@@ -288,17 +177,17 @@ deconvolute_spectrum_v2 <- function(path = file.path(download_example_datasets()
             # Calculate smoothed spectrum for borders
             if (left_border <= 0) {
                 left_border <- 1
-                smoothed_spectrum_y[i] <- (1 / right_border) * sum(spectrum_y[left_border:right_border])
-            } else if (right_border >= length(spectrum_x)) {
-                right_border <- length(spectrum_x)
-                smoothed_spectrum_y[i] <- (1 / (right_border - left_border + 1)) * sum(spectrum_y[left_border:right_border])
+                smoothed_spectrum_y[i] <- (1 / right_border) * sum(spectrum$y[left_border:right_border])
+            } else if (right_border >= length(spectrum$x)) {
+                right_border <- length(spectrum$x)
+                smoothed_spectrum_y[i] <- (1 / (right_border - left_border + 1)) * sum(spectrum$y[left_border:right_border])
             } else {
                 # Calculate smoothed spectrum
-                smoothed_spectrum_y[i] <- (1 / smoothing_pairs) * sum(spectrum_y[left_border:right_border])
+                smoothed_spectrum_y[i] <- (1 / smoothing_pairs) * sum(spectrum$y[left_border:right_border])
             }
         }
         # Save smoothed spectrum
-        spectrum_y <- smoothed_spectrum_y
+        spectrum$y <- smoothed_spectrum_y
     }
 
 
@@ -306,10 +195,10 @@ deconvolute_spectrum_v2 <- function(path = file.path(download_example_datasets()
     # Peak selection procedure
 
     # Calculate second derivative of spectrum
-    second_derivative <- matrix(nrow = 2, ncol = length(spectrum_x) - 2)
-    for (i in 2:length(spectrum_x) - 1) {
-        second_derivative[1, i - 1] <- spectrum_x[i]
-        second_derivative[2, i - 1] <- spectrum_y[i - 1] + spectrum_y[i + 1] - 2 * spectrum_y[i]
+    second_derivative <- matrix(nrow = 2, ncol = length(spectrum$x) - 2)
+    for (i in 2:length(spectrum$x) - 1) {
+        second_derivative[1, i - 1] <- spectrum$x[i]
+        second_derivative[2, i - 1] <- spectrum$y[i - 1] + spectrum$y[i + 1] - 2 * spectrum$y[i]
     }
 
     # Find all local minima of second derivative
@@ -319,7 +208,7 @@ deconvolute_spectrum_v2 <- function(path = file.path(download_example_datasets()
     for (i in 2:second_derivative_border) {
         if (second_derivative[2, i] < 0) {
             if ((second_derivative[2, i] <= second_derivative[2, i - 1]) & (second_derivative[2, i] < second_derivative[2, i + 1])) {
-                # if(((spectrum_y[i+1] >= spectrum_y[i]) & (spectrum_y[i+1] > spectrum_y[i+2])) | ((spectrum_y[i+1] > spectrum_y[i]) & (spectrum_y[i+1] >= spectrum_y[i+2]))){
+                # if(((spectrum$y[i+1] >= spectrum$y[i]) & (spectrum$y[i+1] > spectrum$y[i+2])) | ((spectrum$y[i+1] > spectrum$y[i]) & (spectrum$y[i+1] >= spectrum$y[i+2]))){
                 # Add local minima to peak list
                 peaks_x <- c(peaks_x, second_derivative[1, i])
                 peaks_index <- c(peaks_index, i)
@@ -401,8 +290,8 @@ deconvolute_spectrum_v2 <- function(path = file.path(download_example_datasets()
     }
 
     # Calculate mean of the score and standard deviation of the score of the signal free region R
-    index_left <- which(spectrum_x[peaks_index + 1] >= signal_free_region_left)
-    index_right <- which(spectrum_x[peaks_index + 1] <= signal_free_region_right)
+    index_left <- which(spectrum$x[peaks_index + 1] >= sfrl_sdp)
+    index_right <- which(spectrum$x[peaks_index + 1] <= sfrr_sdp)
 
     mean_score <- mean(c(scores[index_left], scores[index_right]))
     sd_score <- stats::sd(c(scores[index_left], scores[index_right]))
@@ -447,14 +336,14 @@ deconvolute_spectrum_v2 <- function(path = file.path(download_example_datasets()
     # Calculate parameters w, lambda and A for the initial lorentz curves
     for (i in 1:length(filtered_peaks)) {
         # Calculate position of peak triplets
-        w_1 <- c(w_1, spectrum_x[filtered_left_position[i] + 1])
-        w_2 <- c(w_2, spectrum_x[filtered_peaks[i] + 1])
-        w_3 <- c(w_3, spectrum_x[filtered_right_position[i] + 1])
+        w_1 <- c(w_1, spectrum$x[filtered_left_position[i] + 1])
+        w_2 <- c(w_2, spectrum$x[filtered_peaks[i] + 1])
+        w_3 <- c(w_3, spectrum$x[filtered_right_position[i] + 1])
 
         # Calculate intensity of peak triplets
-        y_1 <- c(y_1, spectrum_y[filtered_left_position[i] + 1])
-        y_2 <- c(y_2, spectrum_y[filtered_peaks[i] + 1])
-        y_3 <- c(y_3, spectrum_y[filtered_right_position[i] + 1])
+        y_1 <- c(y_1, spectrum$y[filtered_left_position[i] + 1])
+        y_2 <- c(y_2, spectrum$y[filtered_peaks[i] + 1])
+        y_3 <- c(y_3, spectrum$y[filtered_right_position[i] + 1])
 
         # Calculate mirrored points if necesccary
         # For ascending shoulders
@@ -511,13 +400,13 @@ deconvolute_spectrum_v2 <- function(path = file.path(download_example_datasets()
     }
 
     # Calculate all initial lorentz curves
-    lorentz_curves_initial <- matrix(nrow = length(filtered_peaks), ncol = length(spectrum_x))
+    lorentz_curves_initial <- matrix(nrow = length(filtered_peaks), ncol = length(spectrum$x))
     for (i in 1:length(filtered_peaks)) {
         # If A = 0, then the lorentz curve is a zero line
         if (A[i] == 0) {
             lorentz_curves_initial[i, ] <- 0
         } else {
-            lorentz_curves_initial[i, ] <- abs(A[i] * (lambda[i] / (lambda[i]^2 + (spectrum_x - w[i])^2)))
+            lorentz_curves_initial[i, ] <- abs(A[i] * (lambda[i] / (lambda[i]^2 + (spectrum$x - w[i])^2)))
         }
     }
 
@@ -550,9 +439,9 @@ deconvolute_spectrum_v2 <- function(path = file.path(download_example_datasets()
 
         for (i in 1:length(filtered_peaks)) {
             # Calculate the position of the peak triplets
-            w_1_new <- c(w_1_new, spectrum_x[filtered_left_position[i] + 1])
-            w_2_new <- c(w_2_new, spectrum_x[filtered_peaks[i] + 1])
-            w_3_new <- c(w_3_new, spectrum_x[filtered_right_position[i] + 1])
+            w_1_new <- c(w_1_new, spectrum$x[filtered_left_position[i] + 1])
+            w_2_new <- c(w_2_new, spectrum$x[filtered_peaks[i] + 1])
+            w_3_new <- c(w_3_new, spectrum$x[filtered_right_position[i] + 1])
 
             # Calculate the sum of all lorentz curves for each data point
             sum_left[i] <- sum(lorentz_curves_initial[1:length(filtered_left_position), filtered_left_position[i] + 1])
@@ -560,9 +449,9 @@ deconvolute_spectrum_v2 <- function(path = file.path(download_example_datasets()
             sum_right[i] <- sum(lorentz_curves_initial[1:length(filtered_right_position), filtered_right_position[i] + 1])
 
             # Calculate the proprotion between original spectrum an the sum of the lorentz curves for each peak triplets position
-            proportion_left[i] <- spectrum_y[filtered_left_position[i] + 1] / sum_left[i]
-            proportion_peaks[i] <- spectrum_y[filtered_peaks[i] + 1] / sum_peaks[i]
-            proportion_right[i] <- spectrum_y[filtered_right_position[i] + 1] / sum_right[i]
+            proportion_left[i] <- spectrum$y[filtered_left_position[i] + 1] / sum_left[i]
+            proportion_peaks[i] <- spectrum$y[filtered_peaks[i] + 1] / sum_peaks[i]
+            proportion_right[i] <- spectrum$y[filtered_right_position[i] + 1] / sum_right[i]
 
             # Calculate the new heights of the peak triplets
             y_1_new[i] <- lorentz_curves_initial[i, filtered_left_position[i] + 1] * proportion_left[i]
@@ -630,25 +519,25 @@ deconvolute_spectrum_v2 <- function(path = file.path(download_example_datasets()
             if ((w_new[i] == 0) | (lambda_new[i] == 0) | (A_new[i] == 0)) {
                 lorentz_curves_initial[i, ] <- 0
             } else {
-                lorentz_curves_initial[i, ] <- abs(A_new[i] * (lambda_new[i] / (lambda_new[i]^2 + (spectrum_x - w_new[i])^2)))
+                lorentz_curves_initial[i, ] <- abs(A_new[i] * (lambda_new[i] / (lambda_new[i]^2 + (spectrum$x - w_new[i])^2)))
             }
         }
 
         # Calculate sum of lorentz curves
-        spectrum_approx <- matrix(nrow = 1, ncol = length(spectrum_x))
-        for (i in 1:length(spectrum_x)) {
+        spectrum_approx <- matrix(nrow = 1, ncol = length(spectrum$x))
+        for (i in 1:length(spectrum$x)) {
             spectrum_approx[1, i] <- sum(lorentz_curves_initial[1:length(filtered_peaks), i])
         }
         # ToSc: use vectorized functions, e.g.
         # spectrum_approx <- colSums(lorentz_curves_initial[1:length(filtered_peaks), ])
 
         # Standardize the spectra so that total area equals 1
-        spectrum_y_normed <- spectrum_y / sum(spectrum_y)
+        spectrum_y_normed <- spectrum$y / sum(spectrum$y)
         spectrum_approx_normed <- spectrum_approx / sum(spectrum_approx)
 
         # Calculate the difference between normed original spectrum and normed approximated spectrum
         difference_normed <- c()
-        for (i in 1:length(spectrum_x)) {
+        for (i in 1:length(spectrum$x)) {
             difference_normed[i] <- (spectrum_y_normed[i] - spectrum_approx_normed[i])^2
         }
         mse_normed <- (1 / length(difference_normed)) * sum(difference_normed)
@@ -659,7 +548,7 @@ deconvolute_spectrum_v2 <- function(path = file.path(download_example_datasets()
     # Calculate the integrals for each lorentz curve
     integrals <- matrix(nrow = 1, ncol = length(lambda_new))
     for (i in 1:length(lambda_new)) {
-        integrals[1, i] <- A_new[i] * (atan((-w_new[i] + (spectrum_length / factor_x)) / lambda_new[i]) - atan((-w_new[i]) / lambda_new[i]))
+        integrals[1, i] <- A_new[i] * (atan((-w_new[i] + (spectrum$length / sfx)) / lambda_new[i]) - atan((-w_new[i]) / lambda_new[i]))
     }
 
 
@@ -678,9 +567,9 @@ deconvolute_spectrum_v2 <- function(path = file.path(download_example_datasets()
     peak_triplets_left <- c()
     peak_triplets_right <- c()
     for (i in 1:length(filtered_peaks)) {
-        peak_triplets_middle[i] <- spectrum_x_ppm[index_peak_triplets_middle[i]]
-        peak_triplets_left[i] <- spectrum_x_ppm[index_peak_triplets_left[i]]
-        peak_triplets_right[i] <- spectrum_x_ppm[index_peak_triplets_right[i]]
+        peak_triplets_middle[i] <- spectrum$x_ppm[index_peak_triplets_middle[i]]
+        peak_triplets_left[i] <- spectrum$x_ppm[index_peak_triplets_left[i]]
+        peak_triplets_right[i] <- spectrum$x_ppm[index_peak_triplets_right[i]]
     }
 
     # Save values A_new, lambda_new, w_new and noise_threshold to txt document
@@ -695,6 +584,87 @@ deconvolute_spectrum_v2 <- function(path = file.path(download_example_datasets()
     utils::write.table(spectrum_info, name_info_txt, sep = ",", col.names = FALSE, append = FALSE)
     utils::write.table(spectrum_output, name_output_txt, sep = ",", col.names = FALSE, append = FALSE)
 
-    return_list <- list("filename" = name, "spectrum_x" = spectrum_x, "spectrum_x_ppm" = spectrum_x_ppm, "spectrum_y" = spectrum_y, "lorentz_curves" = lorentz_curves_initial, "mse_normed" = mse_normed, "spectrum_approx" = spectrum_approx, "index_peak_triplets_middle" = index_peak_triplets_middle, "index_peak_triplets_left" = index_peak_triplets_left, "index_peak_triplets_right" = index_peak_triplets_right, "peak_triplets_middle" = peak_triplets_middle, "peak_triplets_left" = peak_triplets_left, "peak_triplets_right" = peak_triplets_right, "integrals" = integrals, "signal_free_region" = signal_free_region, "range_water_signal_ppm" = range_water_signal_ppm, "A" = A_new, "lambda" = lambda_new, "w" = w_new)
+    return_list <- list("filename" = name, "spectrum_x" = spectrum$x, "spectrum_x_ppm" = spectrum$x_ppm, "spectrum_y" = spectrum$y, "lorentz_curves" = lorentz_curves_initial, "mse_normed" = mse_normed, "spectrum_approx" = spectrum_approx, "index_peak_triplets_middle" = index_peak_triplets_middle, "index_peak_triplets_left" = index_peak_triplets_left, "index_peak_triplets_right" = index_peak_triplets_right, "peak_triplets_middle" = peak_triplets_middle, "peak_triplets_left" = peak_triplets_left, "peak_triplets_right" = peak_triplets_right, "integrals" = integrals, "signal_free_region" = c(sfrl_sdp, sfrr_sdp), "ws$hwidth_ppm" = ws$hwidth_ppm, "A" = A_new, "lambda" = lambda_new, "w" = w_new)
     return(return_list)
+}
+
+
+#' @title Calculate water signal parameters
+#' @description Calculates water signal parameters for a given spectrum.
+#' @param spectrum A list representing the spectrum.
+#' @param hwidth_ppm The half width in ppm. Default is range_water_signal_ppm.
+#' @param bwc Use the old, slightly incorrect methods for calculating water signal values to maintain backwards compatibility with MetaboDecon1D results? For details see issue `Check: water signal calculation` in `TODOS.md`.
+#' @return List of parameters including half width in dp and ppm, center line in dp and ppm and right and left borders in dp and ppm.
+calculate_water_signal <- function(spectrum, hwidth_ppm, bwc = TRUE) {
+    ws <- list()
+    if (bwc) {
+        ws$hwidth_dp <- hwidth_ppm / (spectrum$ppm_nstep) # half width in dp
+        ws$hwidth_ppm <- hwidth_ppm # half width in ppm
+        ws$center_dp <- spectrum$n / 2 # center line in dp
+        ws$center_ppm <- spectrum$x_ppm[ws$center_dp] # center in ppm
+        ws$right_dp <- ws$center_dp + ws$hwidth_dp # right border in dp
+        ws$right_ppm <- spectrum$x_ppm[ws$right_dp] # right border in ppm
+        ws$left_dp <- ws$center_dp - ws$hwidth_dp # left border in dp
+        ws$left_ppm <- spectrum$x_ppm[ws$left_dp] # left border in ppm
+    } else {
+        ws$hwidth_dp <- hwidth_ppm / (spectrum$ppm_step) # ppm_step instead of ppm_nstep
+        ws$hwidth_ppm <- hwidth_ppm
+        ws$center_dp <- (spectrum$n - 1) / 2
+        ws$center_ppm <- dp_to_ppm(ws$center_dp, spectrum)
+        ws$right_dp <- ws$center_dp + ws$hwidth_dp
+        ws$right_ppm <- dp_to_ppm(ws$right_dp, spectrum)
+        ws$left_dp <- ws$center_dp - ws$hwidth_dp
+        ws$left_ppm <- dp_to_ppm(ws$left_dp, spectrum)
+    }
+    ws
+}
+
+calculate_signal_free_region <- function(spectrum, left_ppm, right_ppm, sf = 1000, bwc = TRUE) {
+    sfr <- list()
+    sfr$left_ppm <- left_ppm
+    sfr$left_dp <- ppm_to_dp(left_ppm, spectrum, bwc)
+    sfr$left_sdp <- sfr$left_dp / sf
+    sfr$right_ppm <- right_ppm
+    sfr$right_dp <- ppm_to_dp(right_ppm, spectrum, bwc)
+    sfr$right_sdp <- sfr$right_dp / sf
+    sfr
+}
+
+#' @title Plot Signal Free Region
+#' @description Draws the signal free region as green vertical lines into the given spectrum.
+#' @param spectrum A list representing the spectrum as returned by [load_jcampdx_spectrum()] or [load_bruker_spectrum()].
+#' @param sfr A list representing the signal free region as returned by [calculate_signal_free_region()].
+#' @return NULL. Called for side effect of plotting the signal free region.
+plot_sfr <- function(spectrum, sfr) {
+    plot(
+        x = spectrum$x_ppm,
+        y = spectrum$y,
+        type = "l",
+        xlab = "[ppm]",
+        ylab = "Intensity [a.u.]",
+        xlim = c(spectrum$ppm_max, spectrum$ppm_min)
+    )
+    graphics::abline(v = sfr$left_ppm, col = "green")
+    graphics::abline(v = sfr$right_ppm, col = "green")
+}
+
+#' @title Plot Water Signal
+#' @description Draws the water signal as red vertical lines into the given spectrum.
+#' @param spectrum A list representing the spectrum as returned by [load_jcampdx_spectrum()] or [load_bruker_spectrum()].
+#' @param ws A list representing the water signal as returned by [calculate_water_signal()].
+#' @return NULL. Called for side effect of plotting the water signal.
+plot_ws <- function(spectrum, ws) {
+    plot(
+        spectrum$x_ppm,
+        spectrum$y,
+        type = "l",
+        xlab = "[ppm]",
+        ylab = "Intensity [a.u.]",
+        xlim = rev(range(
+            ws$center_ppm - 2 * ws$hwidth_ppm,
+            ws$center_ppm + 2 * ws$hwidth_ppm
+        ))
+    )
+    graphics::abline(v = spectrum$x_ppm[ws$left_dp], col = "red")
+    graphics::abline(v = spectrum$x_ppm[ws$right_dp], col = "red")
 }
