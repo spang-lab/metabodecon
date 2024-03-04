@@ -15,12 +15,20 @@ Documentation:
 
 Internal:
 
-* Added helper functions `load_jcampdx_spectrum()` and `load_bruker_spectrum()` (might be combined into one function at some point).
+* Added helper functions `load_jcampdx_spectrum()` and `load_bruker_spectrum()` and corresponding test cases. These functions are more of less directly extract from `deconvolute_spectrum()`.
+* Added improved versions of `load_jcampdx_spectrum()` and `load_bruker_spectrum()` named `load_jcampdx_spectrum_v2()` and `load_bruker_spectrum_v2()` incl. test cases
 * Added util function `normPath()`.
 * Added test cases for `deconvolute_spectrum()`
 * Moved helper function `.deconvolute_spectrum()` into seperate file `deconvolute_spectrum_v2` for development and renamed it to `deconvolute_spectrum_v2()`.
 * Added helper function `get_signal_free_region_in_su()`
 * Disabled `object_length_linter`
+* Moved `deconvolution` function `MetaboDecon1D.R` into seperate file `MetaboDecon1D_deconvolution.R`.
+* Moved `str2`, `get_num_input`, `get_str_input`, `get_yn_input`, `collapse` from `main_v2.R` into `util.R`
+* Added functions `ppm_to_dp()`, `ppm_to_sdp()`, `dp_to_ppm()` to `util.R`
+* Added `GLOSSARY.md`
+* Extracted code parts from `deconvolute_spectrum_v2()` and moved them into functions `calculate_water_signal`, `calculate_signal_free_region`, `plot_sfr` and `plot_ws`.
+* Added test cases for `calculate_water_signal` and `calculate_signal_free_region`
+* Moved function `deconvolution()` from `MetaboDecon1D.R` into `MetaboDecon1D_deconvolution.R`
 
 # metabodecon 1.1.1
 
