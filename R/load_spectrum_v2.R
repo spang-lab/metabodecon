@@ -12,7 +12,6 @@
 #' }
 #' @noRd
 load_jcampdx_spectrum_v2 <- function(path, sfx = 1e3, sfy = 1e6) {
-    data <- readJDX::readJDX(file = path, SOFC = TRUE, debug = 0) # reading urine_1.dx (~1MB) takes ~30s on machine r31
     # List of 5
     # $ dataGuide   :'data.frame':   3 obs. of  3 variables:
     # ..$ Format   : chr [1:3] "metadata" "XRR" "XII"
@@ -26,18 +25,34 @@ load_jcampdx_spectrum_v2 <- function(path, sfx = 1e3, sfy = 1e6) {
     # $ imaginary   :'data.frame':   131072 obs. of  2 variables:
     # ..$ x: num [1:131072] 12019 12019 12019 12019 12019 ...
     # ..$ y: num [1:131072] -35831 -36561 -36864 -36185 -34777 ...
+    data <- readJDX::readJDX(file = path, SOFC = TRUE, debug = 0) # reading urine_1.dx (~1MB) takes ~30s on machine r31
     real <- data$real
     meta <- data$metadata
-    n <- length(real$x) # number of data points (previously called spectrum_length)
-    x <- seq(n - 1, 0, -1) / sfx # x in sdp (scaled data points)
-    y <- real$y / sfy # y in sss (scaled signal strength)
+    
+    n <- length(real$x) # number of data points (previously called `spectrum_length`)
+    dp <- seq(n - 1, 0, -1) # data points
+    sdp <- dp / sfx # scaled data points (previously called `x`)
+    
+    ss <- real$y # signal strength
+    y <- real$y / sfy # scaled signal strength (previously called `y`)
     ppm_range <- as.numeric(sub("\\D+", "", meta[startsWith(meta, "##$SW=")]))
     ppm_max <- as.numeric(sub("\\D+", "", meta[startsWith(meta, "##$OFFSET=")]))
     ppm_min <- ppm_max - ppm_range
     ppm_step <- ppm_range / (n - 1) # Example: data points in ppm = 1.1, 2.3, 3.5, 4.7 --> ppm_step == 1.2
+    ppm_nstep <- ppm_range / n # Don't really know what this is, but it's used in later calculations
     x_ppm <- seq(ppm_max, ppm_min, - ppm_step) # x in ppm
-    return(list(x = x, y = y, x_ppm = x_ppm, length = n, ppm_range = ppm_range, ppm_highest_value = ppm_max, ppm_lowest_value = ppm_min, ppm_step = ppm_step))
-}
+    return(list(x = sdp, # keep for backwards compatiblity until access is removed everywhere
+                y = y, # keep for backwards compatiblity until access is removed everywhere
+                x_ppm = x_ppm, # keep for backwards compatiblity until access is removed everywhere
+                length = n, # keep for backwards compatiblity until access is removed everywhere
+                n = n,
+                ppm_range = ppm_range,
+                ppm_highest_value = ppm_max, # keep for backwards compatiblity until access is removed everywhere
+                ppm_max = ppm_max,
+                ppm_lowest_value = ppm_min, # keep for backwards compatiblity until access is removed everywhere
+                ppm_min = ppm_min,
+                ppm_step = ppm_step,
+                ppm_nstep = ppm_nstep))}
 
 #' @title Load single Bruker Spectrum
 #' @description Loads a single Bruker spectrum and returns the spectrum data in ppm.
@@ -62,28 +77,49 @@ load_bruker_spectrum_v2 <- function(path = file.path(download_example_datasets()
     acqus <- readLines(file.path(path, expno, "acqus"))
     procs <- readLines(file.path(path, expno, "pdata", procno, "procs"))
     ppm_range <- as.numeric(sub("\\D+", "", acqus[startsWith(acqus, "##$SW=")]))
+    y <- read_1r_file(path = path, expno = expno, procno = procno, procs = procs)
+    n <- length(y)
     ppm_max <- as.numeric(sub("\\D+", "", procs[startsWith(procs, "##$OFFSET=")]))
     ppm_min <- ppm_max - ppm_range
-    n <- as.numeric(sub("\\D+", "", procs[startsWith(procs, "##$SI=")]))
-    ppm_step <- ppm_range / (n - 1)
-    int_type <- as.numeric(sub("\\D+", "", procs[startsWith(procs, "##$DTYPP=")]))
-    int_size <- if (int_type == 0) 4 else 8
-    y <- read_1r_file(path = file.path(path, expno, "pdata", procno, "1r"), int_size, n)
-    n <- length(y) # Number of data points (previously called spectrum_length)
+    ppm_step <- ppm_range / (n - 1) # Example: data points in ppm = 1.1, 2.3, 3.5, 4.7 --> ppm_step == 1.2
+    ppm_nstep <- ppm_range / n # Don't really know what this is, but it's used in later calculations
     x_ppm <- seq(ppm_max, ppm_max - ppm_range, by = - ppm_step)
     x <- seq(n - 1, 0, -1) / sfx # x axis in sdp (scaled data points)
     y <- y / sfy # Scale y axis
-    return(list(x = x, y = y, x_ppm = x_ppm, length = n, ppm_range = ppm_range, ppm_highest_value = ppm_max, ppm_lowest_value = ppm_min, ppm_step = ppm_step))
+    return(list(x = x,
+                y = y,
+                x_ppm = x_ppm,
+                length = n, # keep for backwards compatiblity until access is removed everywhere
+                n = n,
+                ppm_range = ppm_range,
+                ppm_highest_value = ppm_max, # keep for backwards compatiblity until access is removed everywhere
+                ppm_max = ppm_max,
+                ppm_lowest_value = ppm_min, # keep for backwards compatiblity until access is removed everywhere
+                ppm_min = ppm_min,
+                ppm_step = ppm_step,
+                ppm_nstep = ppm_nstep))
 }
 
 
 #' @title Read Bruker TopSpin spectrum from 1r file
-#' @param path The path to the 1r file.
-#' @param int_size The size of the integer to read. Can be 4 or 8.
-#' @param n The number of data points to read.
+#' @param path The path of the directory holding the spectrum data. E.g. `"example_datasets/bruker/urine/urine_1/"`.
+#' @param procno The processing number for the file. E.g. `"10"`.
+#' @param expno The experiment number for the file. E.g. `"10"`.
+#' @param procs The content of the `procs` file. E.g. `readLines(file.path(path, expno, "pdata", procno, "procs"))`.
+#' @examples \dontrun{
+#' xds_path <- download_example_datasets()
+#' path <- file.path(xds_path, "bruker/urine/urine_1")
+#' procs <- readLines(file.path(path, 10, "pdata", 10, "procs"))
+#' y <- read_1r_file(path, 10, 10, procs)
+#' }
 #' @return The signals read from the file as numeric vector
-read_1r_file <- function(path, int_size, n) {
-    spec_stream <- file(path, "rb")
+read_1r_file <- function(path, expno, procno, procs) {
+    # TODO: see issue `Check: check use of DTYPP in load_spectrum` in TODOS.R
+    n <- as.numeric(sub("\\D+", "", procs[startsWith(procs, "##$SI=")]))
+    int_type <- as.numeric(sub("\\D+", "", procs[startsWith(procs, "##$DTYPP=")]))
+    int_size <- if (int_type == 0) 4 else 8
+    path_1r <- file.path(path, expno, "pdata", procno, "1r")
+    spec_stream <- file(path_1r, "rb")
     on.exit(close(spec_stream), add = TRUE)
     y <- readBin(spec_stream, what = "int", size = int_size, n = n, signed = TRUE, endian = "little")
     return(y)
