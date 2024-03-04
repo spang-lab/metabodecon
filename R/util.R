@@ -31,7 +31,7 @@ str2 <- function(...) {
 #' }
 #' @noRd
 get_num_input <- function(prompt, min = -Inf, max = Inf, int = FALSE) {
-    pat <- if (int) "^[0-9]+$" else "^[0-9]*\\.[0-9]+$"
+    pat <- if (int) "^[0-9]+$" else "^[0-9]*\\.?[0-9]+$"
     typ <- if (int) "number" else "value"
     x <- trimws(readline(prompt = prompt))
     while (!(grepl(pat, x) && as.numeric(x) >= min && as.numeric(x) <= max)) {
@@ -92,4 +92,40 @@ get_yn_input <- function(prompt) {
 #' @noRd
 collapse <- function(x, sep = ", ") {
     paste(x, collapse = sep)
+}
+
+#' @title Convert Parts per Million (ppm) to Data Points (dp)
+#' @description This function converts parts per million (ppm) to data points (dp) for a given spectrum.
+#' @param ppm A numeric vector of parts per million (ppm) values.
+#' @param spectrum A list containing the spectrum data as returned by [load_bruker_spectrum()] or [load_jcampdx_spectrum()].
+#' @param bwc Use the old, slightly incorrect method for conversion to maintain backwards compatibility with MetaboDecon1D results? For details see issue `Check: ppm to dp conversion` in TODOS.md
+#' @noRd
+ppm_to_dp <- function(ppm, spectrum, bwc = TRUE) {
+    dp <- if (bwc) {
+        (ppm - spectrum$ppm_min) / spectrum$ppm_nstep + 1
+    } else {
+        (ppm - spectrum$ppm_min) / spectrum$ppm_step
+    }
+    return(dp)
+}
+
+#' @title Convert Parts per Million (ppm) to Scaled Data Points (dp)
+#' @description This function converts parts per million (ppm) to scaled data points (sdp) for a given spectrum.
+#' @inheritParams ppm_to_dp
+#' @noRd
+ppm_to_sdp <- function(ppm, spectrum, bwc = TRUE, sf = 1000) {
+    dp <- ppm_to_dp(ppm, spectrum, bwc)
+    sdp <- dp / sf
+    return(sdp)
+}
+
+
+#' @title Convert Data Points (dp) to Parts per Million (ppm)
+#' @description This function converts data points (dp) to parts per million (ppm) for a given spectrum.
+#' @param dp A numeric vector of data point (dp) values.
+#' @param spectrum A list containing the spectrum data as returned by [load_bruker_spectrum()] or [load_jcampdx_spectrum()].
+#' @noRd
+dp_to_ppm <- function(dp, spectrum) {
+    ppm <- spectrum$ppm_min + dp * spectrum$ppm_step
+    return(ppm)
 }
