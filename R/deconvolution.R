@@ -15,22 +15,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see https://www.gnu.org/licenses/.
-
-#' @title Deconvolute one single spectrum
-#' @description Deconvolute one single spectrum
-#' @param filepath TODO
-#' @param name TODO
-#' @param file_format TODO
-#' @param same_parameter TODO
-#' @param processing_value TODO
-#' @param number_iterations TODO
-#' @param range_water_signal_ppm TODO
-#' @param signal_free_region TODO
-#' @param smoothing_param TODO
-#' @param delta TODO
-#' @param scale_factor TODO
-#' @param current_filenumber TODO
-#' @return TODO
 deconvolution <- function(
   filepath,
   name,
@@ -60,6 +44,7 @@ deconvolution <- function(
     spectrum_x <- seq((spectrum_length/factor_x), 0, -1/factor_x)
     spectrum_y <- (data[[4]]$y)/factor_y
 
+    .GlobalEnv$debugenv$spectrum_y_raw <- spectrum_y
 
     # Calculate ppm x-axis
     # Get values of ppm range from data
@@ -133,6 +118,8 @@ deconvolution <- function(
     spectrum_y <- readBin(to_read, what="int", size=size_int, n=data_points, signed=TRUE, endian="little")
     close(to_read)
 
+    .GlobalEnv$debugenv$spectrum_y_raw <- spectrum_y
+
     # Choose factor to scale axis values
     factor_x <- scale_factor[1]
     factor_y <- scale_factor[2]
@@ -148,7 +135,9 @@ deconvolution <- function(
     spectrum_y <- spectrum_y/factor_y
   }
 
-
+  .GlobalEnv$debugenv$spectrum_length <- spectrum_length
+  .GlobalEnv$debugenv$spectrum_x <- spectrum_x
+  .GlobalEnv$debugenv$spectrum_x_ppm <- spectrum_x_ppm
 
   # Check if parameters are the same for all analyzed spectra
   if(same_parameter == FALSE){
@@ -549,16 +538,25 @@ deconvolution <- function(
     }
   }
 
+  .GlobalEnv$debugenv$spectrum_y_scaled <- spectrum_y
+  .GlobalEnv$debugenv$water_signal_right <- water_signal_right
+  .GlobalEnv$debugenv$water_signal_left <- water_signal_left
+  .GlobalEnv$debugenv$signal_free_region_left <- signal_free_region_left
+  .GlobalEnv$debugenv$signal_free_region_right <- signal_free_region_right
 
   # Remove water signal
   for(i in water_signal_right:water_signal_left){
     spectrum_y[i] <- 0.00000001
   }
 
+  .GlobalEnv$debugenv$spectrum_y_no_ws <- spectrum_y
+
   # Remove negative values of spectrum by Saving the absolut values
   for(i in 1:length(spectrum_y)){
     spectrum_y[i] <- abs(spectrum_y[i])
   }
+
+  .GlobalEnv$debugenv$spectrum_y_no_ws_no_neg = spectrum_y
 
   # Variable Mean Filter
   smoothing_iteration <- smoothing_param[1]
@@ -595,6 +593,7 @@ deconvolution <- function(
   }
 
 
+  .GlobalEnv$debugenv$spectrum_y_no_ws_no_neg_smoothed <- spectrum_y
 
   # Peak selection procedure
 
@@ -660,6 +659,12 @@ deconvolution <- function(
     }
   }
 
+  .GlobalEnv$debugenv$second_derivative <- second_derivative
+  .GlobalEnv$debugenv$peaks_x <- peaks_x
+  .GlobalEnv$debugenv$peaks_index <- peaks_index
+  .GlobalEnv$debugenv$second_derivative_border <- second_derivative_border
+  .GlobalEnv$debugenv$left_position <- left_position
+  .GlobalEnv$debugenv$right_position <- right_position
 
   # Check borders of peak triplets
   # If NA values are available, remove corresponding peak triplet
