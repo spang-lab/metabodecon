@@ -42,6 +42,13 @@ get_num_input <- function(prompt, min = -Inf, max = Inf, int = FALSE) {
     return(x)
 }
 
+#' @inherit get_num_input
+#' @noRd
+get_int_input <- function(prompt, min = -Inf, max = Inf) {
+    x <- get_num_input(prompt, min, max, int = TRUE)
+    return(x)
+}
+
 #' @title Get string input from user
 #' @description Prompts the user for input and checks if the input is in a list of valid responses. If the input is not valid, it keeps asking the user for input until they provide a valid response.
 #' @param prompt The prompt to display to the user.
@@ -102,7 +109,8 @@ collapse <- function(x, sep = ", ") {
 #' @noRd
 ppm_to_dp <- function(ppm, spectrum, bwc = TRUE) {
     dp <- if (bwc) {
-        (ppm - spectrum$ppm_min) / spectrum$ppm_nstep + 1
+        # (ppm - spectrum$ppm_min) / spectrum$ppm_nstep + 1
+        (spectrum$n + 1) - (spectrum$ppm_max - ppm) / spectrum$ppm_nstep
     } else {
         (ppm - spectrum$ppm_min) / spectrum$ppm_step
     }
@@ -128,4 +136,41 @@ ppm_to_sdp <- function(ppm, spectrum, bwc = TRUE, sf = 1000) {
 dp_to_ppm <- function(dp, spectrum) {
     ppm <- spectrum$ppm_min + dp * spectrum$ppm_step
     return(ppm)
+}
+
+vcomp <- function(v1, v2) {
+    if (identical(v1, v2)) {
+        cat2("Identical")
+    } else {
+        capture.output(all_equal <- isTRUE(all.equal(v1, v2)))
+        cat2(if (all_equal) "All equal" else "Different")
+        x <- which(v1 != v2)
+        d <- v1 - v2
+        cat2("Objects:")
+        cat2("length(v1):", length(v1))
+        cat2("length(v2):", length(v2))
+        cat2("head(v1):", head(v1))
+        cat2("head(v2):", head(v2))
+        cat2("tail(v1):", tail(v1))
+        cat2("tail(v2):", tail(v2))
+        cat2("class(v1):", class(v1))
+        cat2("class(v2):", class(v2))
+        cat2("attributes(v1):", attributes(v1))
+        cat2("attributes(v2):", attributes(v2))
+        cat2()
+        cat2("Different Elements:")
+        cat2("x <- which(v1 != v2)")
+        cat2("length(x):", length(x))
+        cat2("head(x)", head(x))
+        cat2("tail(x)", tail(x))
+        cat2()
+        cat2("Differences")
+        cat2("d <- v1 - v2")
+        cat2("v1[head(x)]", v1[head(x)])
+        cat2("v2[head(x)]", v2[head(x)])
+        cat2("v1[tail(x)]", v1[tail(x)])
+        cat2("v2[tail(x)]", v2[tail(x)])
+        cat2("d[head(x)]", d[head(x)])
+        cat2("d[tail(x)]", d[tail(x)])
+    }
 }
