@@ -1,3 +1,7 @@
+#' @import grDevices
+#' @import stats
+#' @import utils
+
 `%||%` <- function(x, y) {
     if (is.null(x)) y else x
 }
