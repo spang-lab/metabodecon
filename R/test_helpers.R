@@ -546,7 +546,10 @@ push_testdir <- function(testdir) {
 push_option <- function(...) {
     newopts <- list(...)
     oldopts <- options(newopts)
-    penv$option_backups <- modifyList(penv$option_backups, oldopts)
+    for (nam in names(oldopts)) {
+        penv$option_backups[[nam]] <- oldopts[[nam]] %||% list(oldopts[[nam]])
+
+    }
     penv$option_backups
 }
 

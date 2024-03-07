@@ -1,4 +1,4 @@
-test_that("1. calculate_signal_free_region()", {
+test_that("1. determine_signal_free_region()", {
 
     # Inputs
     ppm <- c(4.7, 3.4, 2.1, 0.8, -0.5, -1.8, -3.1, -4.4)
@@ -11,7 +11,7 @@ test_that("1. calculate_signal_free_region()", {
     right_ppm <- -3.0 # i.e. 2 points right
 
     # Function call
-    sfr <- calculate_signal_free_region(spectrum, left_ppm, right_ppm, sf = 1000, bwc = TRUE)
+    sfr <- determine_signal_free_region(spectrum, left_ppm, right_ppm, sf = 1000, bwc = TRUE)
     expect_equal(sfr, list(
         left_ppm = 2, #               c(4.7,   3.4, 2.1, | 0.8, -0.5, -1.8, -3.1, -4.4)
         left_dp = 6.62637362637363, # c(7,   | 6,   5,     4,   3,    2,    1,    0)
@@ -22,7 +22,7 @@ test_that("1. calculate_signal_free_region()", {
     ))
 
     # Function call
-    sfr <- calculate_signal_free_region(spectrum, left_ppm, right_ppm, sf = 1000, bwc = FALSE)
+    sfr <- determine_signal_free_region(spectrum, left_ppm, right_ppm, sf = 1000, bwc = FALSE)
     expect_equal(sfr, list(
         left_ppm = 2, #               c(4.7, 3.4, 2.1, | 0.8, -0.5, -1.8, -3.1, -4.4)
         left_dp = 4.92307692307692, # c(7,   6,   5,   | 4,   3,    2,    1,    0)
