@@ -305,6 +305,20 @@ ws_ppm <- (max(ppm) + min(ppm)) / 2 # 0.8 and also works for odd ((n - 1) / 2)
 - Why do use "scaled data points" as x values? That's super unintuitive.
 - Why do we show large ppm values left and low values right?
 
+## Check: signal preprocessing
+
+```R
+# Remove water signal
+for (i in ws$right_dp:ws$left_dp) {
+   spectrum$y[i] <- 0.00000001 # <--- why not zero or min(spectrum$y)?
+}
+
+# Remove negative values of spectrum by Saving the absolut values
+for (i in 1:length(spectrum$y)) {
+   spectrum$y[i] <- abs(spectrum$y[i]) # # <--- why abs instead of zero or min(spectrum$y)?
+}
+```
+
 ## Refactor: combine load_xxx_spectrum functions
 
 Combine `load_jcampdx_spectrum` and `load_bruker_spectrum` into one function, which calls `read_jcampdx_spectrum` or `read_bruker_spectrum` depending on the `type` argument. The `read_*_spectrum` function should return the measured signal strengths as vector `y_ss` and the corresponding ppm values as vector `x_ppm`. All other elements returned by the `load_*_spectrum` functions can be calculated from those. This makes the code more maintainable and easier to understand.

@@ -26,8 +26,8 @@ Internal:
 * Moved `str2`, `get_num_input`, `get_str_input`, `get_yn_input`, `collapse` from `main_v2.R` into `util.R`
 * Added functions `ppm_to_dp()`, `ppm_to_sdp()`, `dp_to_ppm()` to `util.R`
 * Added `GLOSSARY.md`
-* Extracted code parts from `deconvolute_spectrum_v2()` and moved them into functions `calculate_water_signal`, `calculate_signal_free_region`, `plot_sfr` and `plot_ws`.
-* Added test cases for `calculate_water_signal` and `calculate_signal_free_region`
+* Extracted code parts from `deconvolute_spectrum_v2()` and moved them into functions `determine_water_signal`, `determine_signal_free_region`, `plot_sfr` and `plot_ws`.
+* Added test cases for `determine_water_signal` and `determine_signal_free_region`
 * Moved function `deconvolution()` from `MetaboDecon1D.R` into `MetaboDecon1D_deconvolution.R`
 
 # metabodecon 1.1.1
