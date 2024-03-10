@@ -725,15 +725,6 @@ deconvolute_spectrum_v2 <- function(path = file.path(download_example_datasets()
     spec <- find_peak_borders(spec)
     vcomp(v1 <- debugenv$left_position[1, ], v2 <- spec$left - 1)
     vcomp(v1 <- debugenv$right_position[1, ], v2 <- spec$right - 1)
-
-    spec <- find_left_positions_v0(spec)
-    spec <- find_right_positions_v0(spec)
-    vcomp(v1 <- debugenv$left_position[1, ], v2 <- spec$left - 1)
-    vcomp(v1 <- debugenv$right_position[1, ], v2 <- spec$right - 1)
-
-    spec <- find_right_positions_v1(spec)
-    vcomp(v1 <- debugenv$right_position[1, ], v2 <- spec$sdp[spec$peaks + 1])
-
     plot_peaks(spec)
 
     spec <- find_left_positions_v1(spec)
@@ -1339,37 +1330,40 @@ plot_peaks <- function(spec, ppm = c(3.402, 3.437), dp = NULL, vlines = FALSE) {
     if (is.null(dp)) dp <- which(spec$ppm > min(ppm) & spec$ppm < max(ppm))
     x <- spec$ppm[dp]
     y <- spec$Y$smooth[dp]
-    ip <- which(dp %in% spec$peaks)
-    ip_left <- which(dp %in% spec$ip_left) %||% numeric()
-    ip_right <- which(dp %in% spec$ip_right) %||% numeric()
+    l <- which(dp %in% spec$left) %||% numeric()
+    p <- which(dp %in% spec$peaks)
+    r <- which(dp %in% spec$right) %||% numeric()
     d <- spec$d[dp]
     withr::with_par(list(mfrow = c(2, 1), mar = c(0, 6, 4, 2), las = 1), {
         plot(x, y, type = "l", xlab = "ppm", ylab = "", xaxt = "n", xlim = c(max(x), min(x)))
         mtext("smoothed and scaled signal intensity", side = 2, line = 5, las = 0)
-        points(x, y, type = "p")
-        points(x[ip], y[ip], col = "red", pch = 19)
-        points(x[ip_left], y[ip_left], col = "blue", pch = 19)
-        points(x[ip_right], y[ip_right], col = "cyan4", pch = 19)
+        points(x, y, type = "p", pch = "|")
+        points(x[p], y[p], col = "red", pch = 19) # vertical line
+        points(x[l], y[l], col = "blue", , pch = 0) # open square
+        points(x[r], y[r], col = "blue", , pch = 4) # x
         if (vlines) {
-            abline(v = x[ip], col = "red", lty = 2, lwd = 0.5)
-            abline(v = x[ip_left], col = "blue", lty = 2, lwd = 0.5)
-            abline(v = x[ip_right], col = "cyan4", lty = 2, lwd = 0.5)
+            abline(v = x[p], col = "red")
+            abline(v = x[l], col = "blue")
+            abline(v = x[r], col = "blue")
+        }
+        for (i in seq_along(l)) {
+            rect(x[l[i]], par("usr")[3], x[r[i]], par("usr")[4], col = rgb(0, 0, 0, alpha = 0.1), border = rgb(0, 0, 0, alpha = 0.2))
         }
         axis(3, at = x, labels = dp)
-        legend("topright", legend = c("peaks", "left", "right"), col = c("red", "blue", "cyan4"), pch = 19)
+        legend("topright", legend = c("peaks", "left", "right"), col = c("red", "blue", "blue"), pch = c(19, 0, 4))
         withr::with_par(list(mar = c(5, 6, 0, 2)), {
             plot(x, d, type = "l", xlab = "ppm", ylab = "", xlim = c(max(x), min(x)))
             mtext("second derivative", side = 2, line = 5, las = 0)
             points(x, d, type = "p")
-            points(x[ip], d[ip], col = "red", pch = 19)
-            points(x[ip_left], d[ip_left], col = "blue", pch = 19)
-            points(x[ip_right], d[ip_right], col = "cyan4", pch = 19)
+            points(x[p], d[p], col = "red", pch = 19)
+            points(x[l], d[l], col = "blue", pch = 0) # open square
+            points(x[r], d[r], col = "blue", pch = 4) # x
             if (vlines) {
-                abline(v = x[ip], col = "red", lty = 2, lwd = 0.5)
-                abline(v = x[ip_left], col = "blue", lty = 2, lwd = 0.5)
-                abline(v = x[ip_right], col = "cyan4", lty = 2, lwd = 0.5)
+                abline(v = x[p], col = "red")
+                abline(v = x[l], col = "blue")
+                abline(v = x[r], col = "blue")
             }
-            abline(h = 0, col = "black", lty = 2, lwd = 0.5)
+            abline(h = 0, col = "black")
         })
     })
     df <- data.frame(x = x, y = y, d = d, is_ip = dp %in% spec$peaks, is_ip_left = dp %in% spec$ip_left)
