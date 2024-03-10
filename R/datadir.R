@@ -1,4 +1,4 @@
-# Exported #####
+# Exported API Functions #####
 
 #' @title Return path to metabodecon's data directory
 #' @description Returns the path to the directory where [download_example_datasets()] stores metabodecon's example data sets or any file within that directory.
@@ -46,6 +46,8 @@ datadir <- function(file = NULL, warn = TRUE, persistent = NULL) {
     normalizePath(file_path, "/", mustWork = FALSE)
 }
 
+# Exported Helpers #####
+
 #' @title Persistent Data Directory
 #' @description Returns the path to the persistent data directory where metabodecon's data sets are stored.
 #' This directory equals the data directory returned by [tools::R_user_dir()] plus additional path normalization.
@@ -78,7 +80,7 @@ tempdir <- function() {
     normalizePath(p, "/", mustWork = FALSE)
 }
 
-# Helpers #####
+# Private Helpers #####
 
 zip_temp <- function() {
     p <- file.path(datadir_temp(), "example_datasets.zip")
@@ -90,7 +92,7 @@ zip_persistent <- function() {
     normalizePath(p, "/", mustWork = FALSE)
 }
 
-# Deprecated #####
+# Exported and deprecated #####
 
 #' @export
 #' @name get_data_dir

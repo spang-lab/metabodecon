@@ -35,8 +35,9 @@ str2 <- function(...) {
 #' }
 #' @noRd
 get_num_input <- function(prompt, min = -Inf, max = Inf, int = FALSE) {
-    pat <- if (int) "^[0-9]+$" else "^[0-9]*\\.?[0-9]+$"
+    pat <- if (int) "^[+-]?[ ]*[0-9]+$" else "^[+-]?[ ]*[0-9]*\\.?[0-9]+$"
     typ <- if (int) "number" else "value"
+    if (!endsWith(prompt, " ")) prompt <- paste0(prompt, " ")
     x <- trimws(readline(prompt = prompt))
     while (!(grepl(pat, x) && as.numeric(x) >= min && as.numeric(x) <= max)) {
         message("Error. Please enter a ", typ, " between ", min, " and ", max, ".")
@@ -143,6 +144,8 @@ dp_to_ppm <- function(dp, spectrum) {
 }
 
 vcomp <- function(v1, v2) {
+    if(!is.vector(v1) || is.list(v1)) stop("v1 must be a vector, but is:", class(v1))
+    if(!is.vector(v2) || is.list(v2)) stop("v2 must be a vector, but is:", class(v2))
     if (identical(v1, v2)) {
         cat2("Identical")
     } else {
@@ -177,4 +180,14 @@ vcomp <- function(v1, v2) {
         cat2("d[head(x)]", d[head(x)])
         cat2("d[tail(x)]", d[tail(x)])
     }
+}
+
+rescale <- function(x, range = c(0, 1)) {
+    x_min <- min(x, na.rm = TRUE)
+    x_max <- max(x, na.rm = TRUE)
+    x_len <- x_max - x_min
+    y_len <- max(range) - min(range)
+    x_percent <- (x - x_min) / x_len
+    y <- min(range) + x_percent * y_len
+    y
 }

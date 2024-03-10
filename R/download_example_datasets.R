@@ -1,4 +1,4 @@
-# Exported #####
+# Exported API Functions #####
 
 #' @name download_example_datasets
 #' @title Download metabodecon Example Datasets
@@ -45,7 +45,7 @@ download_example_datasets <- function(dst_dir = NULL,
 
 
 
-# Helpers #####
+# Private Helpers #####
 
 #' @title Example Datasets Information
 #' @description This list contains information about the example datasets provided for users to try the package.

@@ -4,12 +4,12 @@
 # cores.
 library(testthat)
 
-test_that("1. load_jcampdx_spectrum_v2", {
+test_that("1. load_jcampdx_spectrum_v1", {
     x <- with(
-        testdir = "load_jcampdx_spectrum_v2/1",
+        testdir = "load_jcampdx_spectrum_v1/1",
         inputs = c(urine_1.dx = "jcampdx/urine/urine_1.dx"),
         expr = {
-            spectrum_data <- load_jcampdx_spectrum_v2("urine_1.dx")
+            spectrum_data <- load_jcampdx_spectrum_v1("urine_1.dx")
         }
     )
     expect_identical(str2(spectrum_data), c(
