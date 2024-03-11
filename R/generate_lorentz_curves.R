@@ -694,74 +694,25 @@ deconvolute_spectrum_v2 <- function(path = file.path(download_example_datasets()
                                     bwc = TRUE) {
     type <- match.arg(type, c("bruker", "jcampdx"))
     spec <- read_spectrum(path, type, sf, expno, procno)
-    # vcomp(n1 <- debugenv$spectrum_length, n <- n2 <- spec$n)
-    # vcomp(v1 <- debugenv$spectrum_x, v2 <- spec$sdp)
-    # vcomp(v1 <- debugenv$spectrum_x_ppm, v2 <- spec$ppm)
-    # vcomp(v1 <- debugenv$spectrum_y_raw, v2 <- spec$Y$raw)
-    # vcomp(v1 <- debugenv$spectrum_y_scaled, v2 <- spec$Y$scaled)
-
     spec <- determine_signal_free_region(spec, sfr, ask)
     spec <- determine_water_signal(spec, hwidth_ppm = wshw, bwc, ask)
-    # vcomp(v1 <- debugenv$signal_free_region_left, v2 <- spec$sfr$left_sdp)
-    # vcomp(v1 <- debugenv$signal_free_region_right, v2 <- spec$sfr$right_sdp)
-    # vcomp(v1 <- debugenv$water_signal_left, v2 <- spec$ws$left_dp)
-    # vcomp(v1 <- debugenv$water_signal_right, v2 <- spec$ws$right_dp)
-
     spec <- remove_water_signal(spec, bwc)
     spec <- remove_negative_signals(spec)
-    # vcomp(v1 <- debugenv$spectrum_y_no_ws, v2 <- spec$Y$nows)
-    # vcomp(v1 <- debugenv$spectrum_y_no_ws_no_neg, v2 <- spec$Y$pos)
-
     spec <- smooth_signals(spec, reps = smopts[1], k = smopts[2], bwc)
-    # vcomp(v1 <- debugenv$spectrum_y_no_ws_no_neg_smoothed, v2 <- spec$Y$smooth)
-
-    spec <- select_peaks_v2(spec, bwc)
-    vcomp(n1 <- debugenv$spectrum_length, n <- n2 <- spec$n) # nolint
-    vcomp(v1 <- debugenv$second_derivative[1, ], v2 <- spec$sdp[2:(n - 1)]) # nolint
-    vcomp(v1 <- debugenv$second_derivative[2, ], v2 <- spec$d[2:(n - 1)]) # nolint
-    vcomp(v1 <- debugenv$peaks_index, v2 <- as.integer(spec$peaks - 1)) # nolint
-    vcomp(v1 <- debugenv$peaks_x, v2 <- spec$sdp[spec$peaks]) # nolint
-
+    spec <- select_peaks_v2(spec)
     spec <- find_peak_borders(spec)
-    vcomp(v1 <- debugenv$left_position[1, ], v2 <- spec$left - 1)
-    vcomp(v1 <- debugenv$right_position[1, ], v2 <- spec$right - 1)
+    compare_spec_with_debugenv(spec)
     plot_peaks(spec)
 
-    spec <- find_left_positions_v1(spec)
-    spec <- find_right_positions_v1(spec)
-
-
+    # CONTINUE HERE
     spec <- get_peak_triplets(spec)
     spec <- get_preak_triplet_scores(spec)
     spec <- filter_peak_triplets(spec)
-    # TODO
-
     spec <- calculate_initial_lorentz_curves(spec)
     spec <- refine_lorentz_curves(spec, nfit)
     spec <- calculate_lorentz_curve_integrals(spec)
 
-    return_list <- list(
-        filename = name,
-        spectrum_x = spec$sdp,
-        spectrum_x_ppm = spec$x_ppm,
-        spectrum_y = spec$y,
-        lorentz_curves = lorentz_curves_initial,
-        mse_normed = mse_normed,
-        spectrum_approx = spectrum_approx,
-        index_peak_triplets_middle = index_peak_triplets_middle,
-        index_peak_triplets_left = index_peak_triplets_left,
-        index_peak_triplets_right = index_peak_triplets_right,
-        peak_triplets_middle = peak_triplets_middle,
-        peak_triplets_left = peak_triplets_left,
-        peak_triplets_right = peak_triplets_right,
-        integrals = integrals,
-        sfr = c(sfrl_sdp, sfrr_sdp),
-        wshwidth_ppm = ws$hwidth_ppm,
-        A = A_new,
-        lambda = lambda_new,
-        w = w_new
-    )
-    return(return_list)
+    ret <- create_return_list(spec)
 }
 
 deconvolute_spectrum <- function(filepath,
@@ -1333,12 +1284,13 @@ plot_peaks <- function(spec, ppm = c(3.402, 3.437), dp = NULL, vlines = FALSE) {
     l <- which(dp %in% spec$left) %||% numeric()
     p <- which(dp %in% spec$peaks)
     r <- which(dp %in% spec$right) %||% numeric()
+    m <- which(!(dp %in% c(spec$left, spec$peaks, spec$right)))
     d <- spec$d[dp]
     withr::with_par(list(mfrow = c(2, 1), mar = c(0, 6, 4, 2), las = 1), {
         plot(x, y, type = "l", xlab = "ppm", ylab = "", xaxt = "n", xlim = c(max(x), min(x)))
         mtext("smoothed and scaled signal intensity", side = 2, line = 5, las = 0)
-        points(x, y, type = "p", pch = "|")
-        points(x[p], y[p], col = "red", pch = 19) # vertical line
+        points(x[m], y[m], type = "p", pch =124) # vertical dash
+        points(x[p], y[p], col = "red", pch = 17) # triangle
         points(x[l], y[l], col = "blue", , pch = 0) # open square
         points(x[r], y[r], col = "blue", , pch = 4) # x
         if (vlines) {
@@ -1350,14 +1302,14 @@ plot_peaks <- function(spec, ppm = c(3.402, 3.437), dp = NULL, vlines = FALSE) {
             rect(x[l[i]], par("usr")[3], x[r[i]], par("usr")[4], col = rgb(0, 0, 0, alpha = 0.1), border = rgb(0, 0, 0, alpha = 0.2))
         }
         axis(3, at = x, labels = dp)
-        legend("topright", legend = c("peaks", "left", "right"), col = c("red", "blue", "blue"), pch = c(19, 0, 4))
+        legend("topright", legend = c("peak", "left", "right", "other"), col = c("red", "blue", "blue", "black"), pch = c(2, 0, 4, 124))
         withr::with_par(list(mar = c(5, 6, 0, 2)), {
             plot(x, d, type = "l", xlab = "ppm", ylab = "", xlim = c(max(x), min(x)))
             mtext("second derivative", side = 2, line = 5, las = 0)
-            points(x, d, type = "p")
-            points(x[p], d[p], col = "red", pch = 19)
-            points(x[l], d[l], col = "blue", pch = 0) # open square
-            points(x[r], d[r], col = "blue", pch = 4) # x
+            points(x[m], d[m], type = "p", pch = "|")
+            points(x[p], d[p], col = "red", pch = 17)
+            points(x[l], d[l], col = "blue", pch = 0)
+            points(x[r], d[r], col = "blue", pch = 4)
             if (vlines) {
                 abline(v = x[p], col = "red")
                 abline(v = x[l], col = "blue")
@@ -1367,10 +1319,10 @@ plot_peaks <- function(spec, ppm = c(3.402, 3.437), dp = NULL, vlines = FALSE) {
         })
     })
     df <- data.frame(x = x, y = y, d = d, is_ip = dp %in% spec$peaks, is_ip_left = dp %in% spec$ip_left)
-    return(df)
+    invisible(df)
 }
 
-select_peaks_v2 <- function(spec, bwc = TRUE) {
+select_peaks_v2 <- function(spec) {
     d <- calculate_second_derivative(y = spec$Y$smooth, bwc = bwc)
     m <- length(d)
     d0 <- d[1:(m - 2)]
@@ -1675,7 +1627,7 @@ calculate_initial_lorentz_curves <- function(spec) {
     }
 }
 
-refine_lorentz_curvs <- function(spec) {
+refine_lorentz_curves <- function(spec) {
     # Parameter approximation method
     w_1 <- c()
     w_2 <- c()
@@ -1882,4 +1834,71 @@ init_debug_env <- function() {
             )
         }
     )
+}
+
+create_return_list <- function(spec) {
+    return_list <- list(
+        filename = name,
+        spectrum_x = spec$sdp,
+        spectrum_x_ppm = spec$x_ppm,
+        spectrum_y = spec$y,
+        lorentz_curves = lorentz_curves_initial,
+        mse_normed = mse_normed,
+        spectrum_approx = spectrum_approx,
+        index_peak_triplets_middle = index_peak_triplets_middle,
+        index_peak_triplets_left = index_peak_triplets_left,
+        index_peak_triplets_right = index_peak_triplets_right,
+        peak_triplets_middle = peak_triplets_middle,
+        peak_triplets_left = peak_triplets_left,
+        peak_triplets_right = peak_triplets_right,
+        integrals = integrals,
+        sfr = c(sfrl_sdp, sfrr_sdp),
+        wshwidth_ppm = ws$hwidth_ppm,
+        A = A_new,
+        lambda = lambda_new,
+        w = w_new
+    )
+}
+
+compare_spec_with_debugenv <- function(spec) {
+    if (is.null(.GlobalEnv$debugenv)) {
+        cat2("init_debug_env()")
+        init_debug_env()
+    }
+    cat2("type <- match.arg(type, c('bruker', 'jcampdx'))")
+    cat2("spec <- read_spectrum(path, type, sf, expno, procno)")
+    vcomp(n1 <- debugenv$spectrum_length, n <- n2 <- spec$n) # nolint
+    vcomp(v1 <- debugenv$spectrum_x, v2 <- spec$sdp) # nolint
+    vcomp(v1 <- debugenv$spectrum_x_ppm, v2 <- spec$ppm) # nolint
+    vcomp(v1 <- debugenv$spectrum_y_raw, v2 <- spec$Y$raw) # nolint
+    vcomp(v1 <- debugenv$spectrum_y_scaled, v2 <- spec$Y$scaled) # nolint
+    cat2("spec <- determine_signal_free_region(spec, sfr, ask)")
+    cat2("spec <- determine_water_signal(spec, hwidth_ppm = wshw, bwc, ask)")
+    vcomp(v1 <- debugenv$signal_free_region_left, v2 <- spec$sfr$left_sdp) # nolint
+    vcomp(v1 <- debugenv$signal_free_region_right, v2 <- spec$sfr$right_sdp) # nolint
+    vcomp(v1 <- debugenv$water_signal_left, v2 <- spec$ws$left_dp) # nolint
+    vcomp(v1 <- debugenv$water_signal_right, v2 <- spec$ws$right_dp) # nolint
+    cat2("spec <- remove_water_signal(spec, bwc)")
+    cat2("spec <- remove_negative_signals(spec)")
+    vcomp(v1 <- debugenv$spectrum_y_no_ws, v2 <- spec$Y$nows) # nolint
+    vcomp(v1 <- debugenv$spectrum_y_no_ws_no_neg, v2 <- spec$Y$pos) # nolint
+    cat2("spec <- smooth_signals(spec, reps = smopts[1], k = smopts[2], bwc)")
+    vcomp(v1 <- debugenv$spectrum_y_no_ws_no_neg_smoothed, v2 <- spec$Y$smooth) # nolint
+    cat2("spec <- select_peaks_v2(spec, bwc)")
+    vcomp(n1 <- debugenv$spectrum_length, n <- n2 <- spec$n) # nolint
+    vcomp(v1 <- debugenv$second_derivative[1, ], v2 <- spec$sdp[2:(n - 1)]) # nolint
+    vcomp(v1 <- debugenv$second_derivative[2, ], v2 <- spec$d[2:(n - 1)]) # nolint
+    vcomp(v1 <- debugenv$peaks_index, v2 <- as.integer(spec$peaks - 1)) # nolint
+    vcomp(v1 <- debugenv$peaks_x, v2 <- spec$sdp[spec$peaks]) # nolint
+    cat2("spec <- find_peak_borders(spec)")
+    vcomp(v1 <- debugenv$left_position[1, ], v2 <- spec$left - 1) # nolint
+    vcomp(v1 <- debugenv$right_position[1, ], v2 <- spec$right - 1) # nolint
+    plot_peaks(spec)
+    cat2("spec <- get_peak_triplets(spec)")
+    cat2("spec <- get_preak_triplet_scores(spec)")
+    cat2("spec <- filter_peak_triplets(spec)")
+    cat2("spec <- calculate_initial_lorentz_curves(spec)")
+    cat2("spec <- refine_lorentz_curves(spec, nfit)")
+    cat2("spec <- calculate_lorentz_curve_integrals(spec)")
+    cat2("ret <- create_return_list(spec)")
 }
