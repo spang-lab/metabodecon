@@ -143,42 +143,46 @@ dp_to_ppm <- function(dp, spectrum) {
     return(ppm)
 }
 
-vcomp <- function(v1, v2) {
-    if(!is.vector(v1) || is.list(v1)) stop("v1 must be a vector, but is:", class(v1))
-    if(!is.vector(v2) || is.list(v2)) stop("v2 must be a vector, but is:", class(v2))
-    if (identical(v1, v2)) {
-        cat2("Identical")
+vcomp <- function(x, y) {
+    if(!is.vector(x) || is.list(x)) stop("x must be a vector, but is:", class(x))
+    if(!is.vector(y) || is.list(y)) stop("y must be a vector, but is:", class(y))
+    if (identical(x, y)) {
+        return(0)
     } else {
-        capture.output(all_equal <- isTRUE(all.equal(v1, v2)))
+        capture.output(all_equal <- isTRUE(all.equal(x, y)))
         cat2(if (all_equal) "All equal" else "Different")
-        x <- which(v1 != v2)
-        d <- v1 - v2
+        i <- which(x != y)
+        a <- x[i]
+        b <- y[i]
+        z <- a - b
         cat2("Objects:")
-        cat2("length(v1):", length(v1))
-        cat2("length(v2):", length(v2))
-        cat2("head(v1):", head(v1))
-        cat2("head(v2):", head(v2))
-        cat2("tail(v1):", tail(v1))
-        cat2("tail(v2):", tail(v2))
-        cat2("class(v1):", class(v1))
-        cat2("class(v2):", class(v2))
-        cat2("attributes(v1):", attributes(v1))
-        cat2("attributes(v2):", attributes(v2))
         cat2()
-        cat2("Different Elements:")
-        cat2("x <- which(v1 != v2)")
         cat2("length(x):", length(x))
-        cat2("head(x)", head(x))
-        cat2("tail(x)", tail(x))
+        cat2("length(y):", length(y))
+        cat2("head(x):", head(x))
+        cat2("head(y):", head(y))
+        cat2("tail(x):", tail(x))
+        cat2("tail(y):", tail(y))
+        cat2("class(x):", class(x))
+        cat2("class(y):", class(y))
+        cat2("attributes(x):", attributes(x))
+        cat2("attributes(y):", attributes(y))
         cat2()
-        cat2("Differences")
-        cat2("d <- v1 - v2")
-        cat2("v1[head(x)]", v1[head(x)])
-        cat2("v2[head(x)]", v2[head(x)])
-        cat2("v1[tail(x)]", v1[tail(x)])
-        cat2("v2[tail(x)]", v2[tail(x)])
-        cat2("d[head(x)]", d[head(x)])
-        cat2("d[tail(x)]", d[tail(x)])
+        cat2("Different Indices (i <- which(x != y)):")
+        cat2()
+        cat2("length(i):", length(i))
+        cat2("head(i)", head(i))
+        cat2("tail(i)", tail(i))
+        cat2()
+        cat2("Different Elements (a <- x[i]; b <- y[i]; z <- a - b):")
+        cat2()
+        cat2("head(a):", head(a))
+        cat2("head(b):", head(b))
+        cat2("tail(a):", head(a))
+        cat2("tail(b):", head(b))
+        cat2("head(z):", head(z))
+        cat2("tail(z):", tail(z))
+        return(if (all_equal) 1 else 2)
     }
 }
 
@@ -191,3 +195,5 @@ rescale <- function(x, range = c(0, 1)) {
     y <- min(range) + x_percent * y_len
     y
 }
+
+cat3 <- function(...) cat2(format(Sys.time()), ...)

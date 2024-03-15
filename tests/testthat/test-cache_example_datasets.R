@@ -1,7 +1,7 @@
 test_that("1. cache_example_datasets(persistent = FALSE) with empty datadirs", {
     skip_if_not(Sys.getenv("RUN_SLOW_TESTS") == "TRUE", "Skipped because RUN_SLOW_TESTS != TRUE")
 
-    x <- with(
+    x <- evalwith(
         datadir_persistent = "empty",
         datadir_temp = "empty",
         message = "captured",
@@ -19,7 +19,7 @@ test_that("1. cache_example_datasets(persistent = FALSE) with empty datadirs", {
 })
 
 test_that("2. cache_example_datasets(persistent = FALSE) with existing temporary datadir", {
-    x <- with(
+    x <- evalwith(
         datadir_persistent = "empty",
         datadir_temp = "filled",
         message = "captured",

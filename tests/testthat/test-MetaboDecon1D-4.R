@@ -11,7 +11,7 @@ test_that("4. MetaboDecon1D with: 2 bruker, answers == nyyn**y*n*y", {
     skip_if_not(Sys.getenv("RUN_SLOW_TESTS") == "TRUE", "Skipped because RUN_SLOW_TESTS != TRUE")
 
     ## Call function #####
-    x <- with(
+    x <- evalwith(
         testdir = "MetaboDecon1D/4",
         answers = c(
             "10", # What is the name of the subfolder of your filepath? [e.g. 10]

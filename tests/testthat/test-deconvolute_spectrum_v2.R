@@ -8,7 +8,7 @@
 #         1e+06), current_filenumber = 1, number_of_files = 2)`: object 'check_range_signal_free_region' not found
 # Backtrace:
 #     ▆
-#  1. └─metabodecon:::with(...) at test-deconvolute_spectrum_v2.R:25:4
+#  1. └─metabodecon:::evalwith(...) at test-deconvolute_spectrum_v2.R:25:4
 #  2.   ├─base::withCallingHandlers(...) at metabodecon/R/test_helpers.R:244:4
 #  3.   ├─testthat::with_mocked_bindings(...) at metabodecon/R/test_helpers.R:247:12
 #  4.   └─base::tryCatch(...)
@@ -42,7 +42,7 @@ exp_str <- c(
 )
 
 test_that("1. deconvolute_spectrum_v2(format = bruker, sameparam = FALSE)", {
-    x <- with(
+    x <- evalwith(
         testdir = "deconvolute_spectrum_v2/1",
         inputs = c(urine = "bruker/urine/urine_1"),
         # output = "captured", message = "captured", plots = "plots.pdf",
@@ -72,7 +72,7 @@ test_that("1. deconvolute_spectrum_v2(format = bruker, sameparam = FALSE)", {
 
 
 # test_that("2. deconvolute_spectrum_v2(format = bruker, sameparam = TRUE, nfile = 1of2)", {
-#     x <- with(
+#     x <- evalwith(
 #         testdir = "deconvolute_spectrum_v2/2",
 #         inputs = c(urine = "bruker/urine/urine_1"),
 #         output = "captured", message = "captured", plots = "plots.pdf",
@@ -100,7 +100,7 @@ test_that("1. deconvolute_spectrum_v2(format = bruker, sameparam = FALSE)", {
 # })
 
 # test_that("3. deconvolute_spectrum_v2(format = bruker, sameparam = TRUE, nfile = 2of2)", {
-#     x <- with(
+#     x <- evalwith(
 #         testdir = "deconvolute_spectrum_v2/3",
 #         inputs = c(urine = "bruker/urine/urine_1"),
 #         output = "captured", message = "captured", plots = "plots.pdf",

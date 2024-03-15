@@ -11,7 +11,7 @@ test_that("1. generate_lorentz_curves with: 1 jcampdx, answers == y1yy", {
     skip_if_not(Sys.getenv("RUN_SLOW_TESTS") == "TRUE", "Skipped because RUN_SLOW_TESTS != TRUE")
 
     ## Call function #####
-    x <- with(
+    x <- evalwith(
         testdir = "generate_lorentz_curves/1",
         output = "captured",
         message = "captured",

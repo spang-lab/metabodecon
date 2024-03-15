@@ -1,8 +1,8 @@
-test_that("with()", {
+test_that("evalwith()", {
 
     before_wd <- getwd()
 
-    x <- with(
+    x <- evalwith(
         testdir = "with/1",
         answers = c("y", "n"),
         output = "captured", message = "captured", plots = "plots.pdf",

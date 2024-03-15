@@ -5,7 +5,7 @@
 library(testthat)
 
 test_that("1. load_jcampdx_spectrum", {
-    x <- with(
+    x <- evalwith(
         testdir = "load_jcampdx_spectrum/1",
         inputs = c(urine_1.dx = "jcampdx/urine/urine_1.dx"),
         expr = {

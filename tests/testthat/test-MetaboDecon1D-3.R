@@ -11,7 +11,7 @@ test_that("3. MetaboDecon1D with: 2 jcampdx, answers == nyyn**y*n*y", {
     skip_if_not(Sys.getenv("RUN_SLOW_TESTS") == "TRUE", "Skipped because RUN_SLOW_TESTS != TRUE")
 
     ## Call function #####
-    x <- with(
+    x <- evalwith(
         testdir = "MetaboDecon1D/3",
         answers = c(
             "n", # Use the same parameters for all spectra?

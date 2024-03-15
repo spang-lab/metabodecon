@@ -25,7 +25,7 @@ exp_str <- c(
 )
 
 test_that("4. deconvolute_spectrum(format = jcampdx, sameparam = FALSE)", {
-    x <- with(
+    x <- evalwith(
         testdir = "deconvolute_spectrum/4",
         inputs = c(urine.dx = "jcampdx/urine/urine_1.dx"),
         output = "captured", message = "captured", plots = "plots.pdf",

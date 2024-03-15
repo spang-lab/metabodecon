@@ -142,9 +142,9 @@ For the "??"" values I haven't yet checked how they're calculated, so I cannot r
       - `wows_woneg` (without water signal and negative values)
       - `wows_woneg_smoothed` (without water signal, negative values and smoothed)
    - `mse` (mean squared error)
-   - `peaks` (peak triplet indices)
-      - `middle` (index of middle data point)
+   - `peak` (peak triplet indices)
       - `left` (index of left data point)
+      - `center` (index of middle data point)
       - `right` (index of right data point)
    - `sfr` (signal free region in ppm)
       - `left` (left border)
@@ -159,25 +159,24 @@ Alternative
 - `urine_1`
    - `x`
       - `ppm` (parts per million for each data point)
-      - `in_sfr` (in signal free region)
-      - `in_wsr` (in water signal region)
-      - `is_left` (is left border of a peak)
-      - `is_peak` (is peak)
-      - `is_right` (is right border of a peak)
-   - `y` (signal intensity)
-      - `raw` (raw)
+      - `in_sfr` (is in signal free region)
+      - `in_wsr` (is in water signal region)
+      - `is_plb` (is peak border left)
+      - `is_pc` (is peak center)
+      - `is_prb` (is peak border right)
+   - `y`
+      - `raw` (raw signal intensity)
       - `wows` (without water signal)
       - `wows_woneg` (without water signal and negative values)
-      - `wows_woneg_smoothed` (without water signal, negative values and smoothed)
-   - `z`
-      - `[1]` (`y$wows_woneg` after first round of smoothing)
-      - `[2]` (`y$wows_woneg` after second round of smoothing)
+      - `wows_woneg_smooth1` (without water signal and negative values after first round of smoothing)
+      - `wows_woneg_smooth2` (without water signal and negative values after second round of smoothing)
       - ...
+      - `wows_woneg_smoothed` (without water signal and negative values after last round of smoothing)
    - `mse` (mean squared error)
-   - `sfr` (signal free region in ppm)
-      - `left` (left border)
-      - `right` (right border)
-   - `ws` `water signal in ppm`
+   - `sfr` (signal free region)
+      - `left` (left border in ppm)
+      - `right` (right border in ppm)
+   - `ws` (water signal)
       - `hw` (half width)
    - `path` (absolute path to urine_1)
 - `urine_2`
@@ -433,7 +432,7 @@ ws_ppm <- (max(ppm) + min(ppm)) / 2 # 0.8 and also works for odd ((n - 1) / 2)
 
 - Why do we count data points starting from 0 instead of 1? That makes programming in R complicated, as R starts counting at 1.
 - Why do we use "scaled data points" as x values? That's unintuitive and (as far as I can see) unnecessary.
-- Why do we show large ppm values left and low values right?
+- Why do we show large ppm values left and low values right? ToSc: Convention: keep it.
 
 ## CHECK-5: signal preprocessing
 
@@ -448,6 +447,12 @@ for (i in 1:length(spectrum$y)) {
    spectrum$y[i] <- abs(spectrum$y[i]) # # <--- why abs instead of zero or min(spectrum$y)?
 }
 ```
+
+ToSc:
+
+- WS: check if other zeros. If no, use min(spectrum$y).
+- Negatives: leave as is
+
 
 ## CHECK-6: negative value removal
 

@@ -22,7 +22,7 @@ exp_str <- c(
 )
 
 test_that("1. deconvolute_spectrum(format = bruker, sameparam = FALSE)", {
-    x <- with(
+    x <- evalwith(
         testdir = "deconvolute_spectrum/1",
         inputs = c(urine = "bruker/urine/urine_1"),
         output = "captured", message = "captured", plots = "plots.pdf",
@@ -46,13 +46,12 @@ test_that("1. deconvolute_spectrum(format = bruker, sameparam = FALSE)", {
             )
         }
     )
-    exp_str[16] <- " $ signal_free_region        : num [1:2] 11.44 -1.88" # When using `same_parameter = FALSE` the calculated "signal_free_region_in_strange_units" is not returned, but instead the returned "signal_free_region" is just the input value. That's ok, because the calculated value isn't used in the following calculations (same_parameter = FALSE). But still, it's confusing and should be fixed in later versions.
+    exp_str[16] <- " $ signal_free_region        : num [1:2] 11.44 -1.88" # When using `same_parameter == FALSE` the "signal_free_region" is not returned in `scaled data points` but in `ppm` (i.e. the unchanged input). That's ok, because the calculated value isn't used in the following calculations (because `same_parameter == FALSE`). But still, it's confusing and should be fixed in later versions.
     expect_equal(capture.output(str(x$rv)), exp_str)
 })
 
-
 test_that("2. deconvolute_spectrum(format = bruker, sameparam = TRUE, nfile = 1of2)", {
-    x <- with(
+    x <- evalwith(
         testdir = "deconvolute_spectrum/2",
         inputs = c(urine = "bruker/urine/urine_1"),
         output = "captured", message = "captured", plots = "plots.pdf",
@@ -80,7 +79,7 @@ test_that("2. deconvolute_spectrum(format = bruker, sameparam = TRUE, nfile = 1o
 })
 
 test_that("3. deconvolute_spectrum(format = bruker, sameparam = TRUE, nfile = 2of2)", {
-    x <- with(
+    x <- evalwith(
         testdir = "deconvolute_spectrum/3",
         inputs = c(urine = "bruker/urine/urine_1"),
         output = "captured", message = "captured", plots = "plots.pdf",

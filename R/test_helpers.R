@@ -221,17 +221,17 @@ expect_str <- function(obj, expected_str) {
 #' Element `testdir` contains the path to the test directory.
 #' Element `inputs` equals the `inputs` argument.
 #' @noRd
-with <- function(expr,
-                 testdir = NULL,
-                 answers = NULL,
-                 output = NULL,
-                 message = NULL,
-                 plots = NULL,
-                 datadir_temp = NULL,
-                 datadir_persistent = NULL,
-                 inputs = character(),
-                 debug = FALSE,
-                 ...) {
+evalwith <- function(expr,
+                     testdir = NULL,
+                     answers = NULL,
+                     output = NULL,
+                     message = NULL,
+                     plots = NULL,
+                     datadir_temp = NULL,
+                     datadir_persistent = NULL,
+                     inputs = character(),
+                     debug = FALSE,
+                     ...) {
     on.exit(restore(), add = TRUE)
     push_option(...)
     testdir <- push_testdir(testdir)
@@ -261,7 +261,7 @@ with <- function(expr,
         },
         warning = print_warning_as_message
     )
-    return(c(rv_runtime_list, redirect_list, list(testdir = testdir, inputs = inputs)))
+    invisible(c(rv_runtime_list, redirect_list, list(testdir = testdir, inputs = inputs)))
 }
 
 #' @title Redirect output, message, and plot streams
@@ -366,7 +366,7 @@ mock_datadir <- function(type = c("temp", "persistent"), state = c("missing", "e
 #' @title Restore mocked functions, redirected streams and the working directory
 #' @description Restores all mocked functions, redirected streams and the working directory to their original state.
 #' Usually called after [redirect()], [mock_readline()] or [mock_datadir].
-#' Also used internally by [with()].
+#' Also used internally by [evalwith()].
 #' @param fns A character vector of function names to restore. If NULL, all functions are restored.
 #' @param streams A character vector of streams to restore. Can be "output", "message", and/or "plots".
 #' @param wd Logical. If TRUE, the working directory is restored by calling [popd()] with option `all=TRUE`.
@@ -530,7 +530,7 @@ get_datadir_mock <- function(type = c("persistent", "temp"),
 
 #' @name push_testdir
 #' @title Push a test directory to the stack of working directories
-#' @description This function creates a new test directory and sets it as working directory using [pushd()]. Used internally by [with()].
+#' @description This function creates a new test directory and sets it as working directory using [pushd()]. Used internally by [evalwith()].
 #' @param testdir The path of the test directory relative to [testdir()].
 #' @return Path to old working directory or NULL if `testdir` is NULL.
 #' @noRd
@@ -645,4 +645,100 @@ testdir <- function() {
 mockdir <- function() {
     p <- file.path(tempdir(), "mocks")
     normalizePath(p, "/", mustWork = FALSE)
+}
+
+#' @description The `metabodecon` package contains private copies of all functions from the precursor package `MetaboDecon1D`. The copies are functionally identical [^1] to the original versions expect for a few extra lines of code, which cause the functions to store information about intermediate calculations inside environment `debugenvs` [^2] where `debugenvs == getOption("metabodecon.debugenvs")`.
+#'
+#' This function uses this mechanism to call the original functions (e.g. [deconvolution()]) with different input parameters and stores the returned debug information as RDS files. This way, new or updated functions from `metabodecon` can be tested against the original function result to ensure correctness and/or backwards compatibility.
+#'
+#' [^1]: In fact, the functions are not 100% identical. All code parts modifying global state, such as writing to disk or changing the working directory have been altered to meet the CRAN requirements. But all calculations and the return value are completely identical.
+#' [^2]: To be precise, the information is only stored, if `getOption("metabodecon.debugenvs")` exists already and is an environment.
+#' @noRd
+store_func_results <- function(overwrite = FALSE) {
+
+    dstdir <- datadir("test_expects", warn = FALSE)
+    xpcts <- list()
+    if (!dir.exists(dstdir)) dir.create(dstdir, recursive = TRUE)
+    store_as_rds2 <- function(name, expr) store_as_rds(name, dstdir, overwrite, expr)
+    cat2("Storing test expects in:", dstdir)
+
+    name <- "deconvolution_urine1_spF_ni1_cf1_nf2"
+    xpcts[[name]] <- store_as_rds2(name, {
+        evalwith(
+            testdir = "deconvolute_spectrum/1", inputs = c(urine = "bruker/urine/urine_1"), answers = c("y", "y"),
+            output = "captured", message = "captured", plots = "plots.pdf",
+            expr = {
+                set.seed(1234)
+                deconvolute_spectrum(filepath = "urine_1/10", name = NULL, file_format = "bruker", same_parameter = FALSE, processing_value = 10, number_iterations = 1, range_water_signal_ppm = 0.1527692, signal_free_region = c(11.44494, -1.8828), smoothing_param = c(2, 5), delta = 6.4, scale_factor = c(1000, 1000000), current_filenumber = 1, number_of_files = 2, debug = TRUE)
+            }
+        )
+    })
+
+    name <- "deconvolution_urine1_spT_ni1_cf1_nf2"
+    xpcts[[name]] <- store_as_rds2(name, {
+        evalwith(
+            testdir = "deconvolute_spectrum/2", inputs = c(urine = "bruker/urine/urine_1"), answers = c("y", "y"),
+            output = "captured", message = "captured", plots = "plots.pdf",
+            expr = {
+                set.seed(1234)
+                deconvolute_spectrum(filepath = "urine_1/10", name = NULL, file_format = "bruker", same_parameter = TRUE, processing_value = 10, number_iterations = 1, range_water_signal_ppm = 0.1527692, signal_free_region = c(11.44494, -1.8828), smoothing_param = c(2, 5), delta = 6.4, scale_factor = c(1000, 1000000), current_filenumber = 1, number_of_files = 2, debug = TRUE)
+            }
+        )
+    })
+
+    name <- "deconvolution_urine1_spT_ni1_cf2_nf2"
+    xpcts[[name]] <- store_as_rds2(name, {
+        evalwith(
+            testdir = "deconvolute_spectrum/3", inputs = c(urine = "bruker/urine/urine_1"), answers = NULL,
+            output = "captured", message = "captured", plots = "plots.pdf",
+            expr = {
+                set.seed(1234)
+                deconvolute_spectrum(filepath = "urine_1/10", name = NULL, file_format = "bruker", same_parameter = TRUE, processing_value = 10, number_iterations = 1, range_water_signal_ppm = 0.1527692, signal_free_region = c(109.09458303373, 21.8529143006947), smoothing_param = c(2, 5), delta = 6.4, scale_factor = c(1000, 1000000), current_filenumber = 2, number_of_files = 2, debug = TRUE)
+            }
+        )
+    })
+
+    invisible(xpcts)
+}
+
+list_func_results <- function() {
+    dstdir <- datadir("test_expects", warn = FALSE)
+    if (!dir.exists(dstdir)) dir.create(dstdir, recursive = TRUE)
+    dir(dstdir)
+}
+
+get_func_result <- function(rds = "deconvolution_urine1_spF_ni1_cf1_nf2.rds") {
+    dstdir <- datadir("test_expects", warn = FALSE)
+    if (!dir.exists(dstdir)) dir.create(dstdir, recursive = TRUE)
+    rds <- file.path(dstdir, rds)
+    if (!file.exists(rds)) {
+        text <- "File '%s' does not exist. Valid names are:\n%s"
+        valid <- paste(list_func_results(), collapse = "\n")
+        msg <- sprintf(text, rds, valid)
+        stop(msg)
+    }
+    obj <- readRDS(rds)
+    obj
+}
+
+#' @title Store the result of an expression as an RDS file
+#' @description Evaluate an expression. Store the result as RDS file and return it. Overwrite existing files if `overwrite` is TRUE. Else skip execution of `expr` and instead read and return the RDS.
+#' @param name The name of the expression.
+#' @param dstdir The directory where the RDS file will be stored.
+#' @param overwrite Logical indicating whether to overwrite the RDS file if it already exists.
+#' @param expr The expression to evaluate and store the result of.
+#' @return The result of the expression. The result is returned invisibly.
+#' @noRd
+store_as_rds <- function(name, dstdir, overwrite, expr) {
+    rds <-  file.path(dstdir, paste0(name, ".rds"))
+    exists <- file.exists(rds)
+    status <- if (!exists) "generating" else if (overwrite) "overwriting" else "reading"
+    cat3(paste0("\033[34m", name, "\033[0m"), status)
+    if (!exists || overwrite) {
+        x <- force(expr)
+        saveRDS(x, file = rds)
+    } else {
+        x <- readRDS(rds)
+    }
+    invisible(x)
 }

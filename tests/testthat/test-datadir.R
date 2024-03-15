@@ -11,7 +11,7 @@ test_that("2. datadir(persistent = FALSE, warn = FALSE)", {
 })
 
 test_that("3. datadir() with existing <datadir_persistent>/example_datasets.zip", {
-    x <- with(datadir_persistent = "filled", {
+    x <- evalwith(datadir_persistent = "filled", {
         dir_returned <- datadir()
         dir_expected <- datadir(persistent = TRUE)
     })
@@ -19,7 +19,7 @@ test_that("3. datadir() with existing <datadir_persistent>/example_datasets.zip"
 })
 
 test_that("4. datadir(file = 'non_existent_file')", {
-    x <- with(message = "captured", {
+    x <- evalwith(message = "captured", {
         datadir(file = "non_existent_file")
     })
     expected_warning <- paste("Warning:", x$rv, "does not exist. Please call `download_example_datasets()` first.")
@@ -27,7 +27,7 @@ test_that("4. datadir(file = 'non_existent_file')", {
 })
 
 test_that("5. datadir(warn = FALSE) with missing <datadir_persistent> and <datadir_temp>", {
-    x <- with(datadir_persistent = "missing", datadir_temp = "missing", message = "captured", {
+    x <- evalwith(datadir_persistent = "missing", datadir_temp = "missing", message = "captured", {
         datadir(file = "non_existent_file", warn = FALSE)
     })
     expect_equal(x$message$text, character())

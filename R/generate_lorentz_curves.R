@@ -1,82 +1,3 @@
-# Develop API Functions #####
-
-#' @title Generate Lorentz Curves from NMR Spectra
-#' @description Deconvolutes NMR spetra and generates a Lorentz curve for each detected signal within a spectra.
-#' @param data_path (string) Path to the folder where the original spectra are stored. After deconvolution this folder contains two additional .txt files for each spectrum which contain the spectrum approximated from all deconvoluted signals and a parameter file that contains all numerical values of the deconvolution.
-#' @param file_format (string) Format of the spectra files.
-#' @param make_rds (bool) Store results as a rds file on disk? Should be set to TRUE if many spectra are evaluated to decrease computation time.
-#' @param number_iterations (int) Number of iterations for the approximation of the parameters for the Lorentz curves.
-#' @param range_water_signal_ppm (float) Half width of the water artefact in ppm.
-#' @param signal_free_region (float) Row vector with two entries consisting of the ppm positions for the left and right border of the signal free region of the spectrum.
-#' @param smoothing_param (int) Row vector with two entries consisting of the number of smoothing repeats for the whole spectrum and the number of data points (uneven) for the mean calculation.
-#' @param delta (float) Threshold value to distinguish between signal and noise.
-#' @param scale_factor (int) Row vector with two entries consisting of the factor to scale the x-axis and the factor to scale the y-axis.
-#' @param ask (bool) Whether to ask for user input during the deconvolution process. If set to FALSE, the provided default values will be used.
-#' @details First, an automated curvature based signal selection is performed. Each signal is represented by 3 data points to allow the determination of initial Lorentz curves. These Lorentz curves are then iteratively adjusted to optimally approximate the measured spectrum. For each spectrum two text files will be created in the parent folder i.e. the folder given in data path. The spectrum approximated from all deconvoluted signals and a parameter file that contains all numerical values of the deconvolution. Furthermore, the numerical values of the deconvolution are also stored in a data_frame.
-#' @details Shall replace `generate_lorentz_curves` as soon as implementation is finished.
-#' @noRd
-generate_lorentz_curves_v1 <- function(data_path,
-                                       file_format = c("bruker", "jcampdx"),
-                                       make_rds = FALSE,
-                                       number_iterations = 10,
-                                       range_water_signal_ppm = 0.1527692,
-                                       signal_free_region = c(11.44494, -1.8828),
-                                       smoothing_param = c(2, 5),
-                                       delta = 6.4,
-                                       scale_factor = c(1000, 1000000),
-                                       ask = TRUE) {
-    # Check arguments
-    file_format <- match.arg(file_format)
-
-    # Switch to data directory
-    data_path <- normalizePath(data_path)
-    owd <- getwd()
-    setwd(data_path)
-    on.exit(setwd(owd))
-
-    # Get input files
-    if (file_format == "jcampdx") {
-        files <- dir(data_path, pattern = "\\.dx$") # `.dx` files inside `data_path`
-        spectroscopy_value <- NULL
-        processing_value <- NULL
-    } else if (file_format == "bruker") {
-        files <- list.dirs(data_path, recursive = FALSE, full.names = FALSE) # folders inside `data_path`
-        spectroscopy_value <- readline(prompt = "What is the name of the subfolder of your filepath: (e.g. 10 for C:/Users/Username/Desktop/spectra_folder/spectrum_name/10) ")
-        processing_value <- readline(prompt = "What is the name of the subsubsubfolder of your filepath: (e.g. 10 for C:/Users/Username/Desktop/spectra_folder/spectrum_name/10/pdata/10) ")
-    }
-
-    # Reorder files in case user wants to use one spectrum to determine parameters for all spectra
-    same_parameter <- get_yn_input("Do you want to use the same parameters (signal_free_region, range_water_signal_ppm) for all spectra?")
-    if (same_parameter) {
-        print(files)
-        number <- get_num_input("Choose number of file which is used to adjust all parameters: [e.g. 1] ", min = 1, max = length(files), int = TRUE)
-        message(paste("The selected file to adjust all parameters for all spectra is: ", files[number]))
-        files <- c(files[number], files[-number])
-    }
-
-    # Do actual deconvolution
-    spectrum_data <- list()
-    for (i in seq_along(files)) {
-        name <- files[i] # bruker: `urine_2`, jcampdx: `urine_2.dx`
-        filepath <- switch(file_format, # see [FAQ](../vignettes/FAQ.Rmd#file-structure) for example file structures
-            "bruker" = paste(data_path, name, spectroscopy_value, sep = "/"),
-            "jcampdx" = data_path,
-            stop("Invalid file format")
-        )
-        x <- deconvolute_spectrum(filepath, name, file_format, same_parameter, processing_value, number_iterations, range_water_signal_ppm, signal_free_region, smoothing_param, delta, scale_factor, current_filenumber = i, number_of_files = length(files))
-        spectrum_data[[name]] <- x
-        # Save `range_water_signal` and `signal_free_region` for next loop passage as those might have been adjusted interactively by the user
-        range_water_signal_ppm <- x$range_water_signal_ppm
-        signal_free_region <- x$signal_free_region
-    }
-
-    # Save results
-    if (make_rds) {
-        saveRDS(object = spectrum_data, file = file.path(data_path, "spectrum_data.rds"))
-    }
-    return(spectrum_data)
-}
-
 # Exported API Functions #####
 
 #' @export
@@ -652,7 +573,88 @@ combine_peaks <- function(shifted_mat,
     return(return_list)
 }
 
-# Private Helpers: deconvolute_spectrum #####
+# Inwork API Functions #####
+
+#' @title Generate Lorentz Curves from NMR Spectra
+#' @description Deconvolutes NMR spetra and generates a Lorentz curve for each detected signal within a spectra.
+#' @param data_path (string) Path to the folder where the original spectra are stored. After deconvolution this folder contains two additional .txt files for each spectrum which contain the spectrum approximated from all deconvoluted signals and a parameter file that contains all numerical values of the deconvolution.
+#' @param file_format (string) Format of the spectra files.
+#' @param make_rds (bool) Store results as a rds file on disk? Should be set to TRUE if many spectra are evaluated to decrease computation time.
+#' @param number_iterations (int) Number of iterations for the approximation of the parameters for the Lorentz curves.
+#' @param range_water_signal_ppm (float) Half width of the water artefact in ppm.
+#' @param signal_free_region (float) Row vector with two entries consisting of the ppm positions for the left and right border of the signal free region of the spectrum.
+#' @param smoothing_param (int) Row vector with two entries consisting of the number of smoothing repeats for the whole spectrum and the number of data points (uneven) for the mean calculation.
+#' @param delta (float) Threshold value to distinguish between signal and noise.
+#' @param scale_factor (int) Row vector with two entries consisting of the factor to scale the x-axis and the factor to scale the y-axis.
+#' @param ask (bool) Whether to ask for user input during the deconvolution process. If set to FALSE, the provided default values will be used.
+#' @details First, an automated curvature based signal selection is performed. Each signal is represented by 3 data points to allow the determination of initial Lorentz curves. These Lorentz curves are then iteratively adjusted to optimally approximate the measured spectrum. For each spectrum two text files will be created in the parent folder i.e. the folder given in data path. The spectrum approximated from all deconvoluted signals and a parameter file that contains all numerical values of the deconvolution. Furthermore, the numerical values of the deconvolution are also stored in a data_frame.
+#' @details Shall replace `generate_lorentz_curves` as soon as implementation is finished.
+#' @noRd
+generate_lorentz_curves_v1 <- function(data_path,
+                                       file_format = c("bruker", "jcampdx"),
+                                       make_rds = FALSE,
+                                       number_iterations = 10,
+                                       range_water_signal_ppm = 0.1527692,
+                                       signal_free_region = c(11.44494, -1.8828),
+                                       smoothing_param = c(2, 5),
+                                       delta = 6.4,
+                                       scale_factor = c(1000, 1000000),
+                                       ask = TRUE) {
+    # Check arguments
+    file_format <- match.arg(file_format)
+
+    # Switch to data directory
+    data_path <- normalizePath(data_path)
+    owd <- getwd()
+    setwd(data_path)
+    on.exit(setwd(owd))
+
+    # Get input files
+    if (file_format == "jcampdx") {
+        files <- dir(data_path, pattern = "\\.dx$") # `.dx` files inside `data_path`
+        spectroscopy_value <- NULL
+        processing_value <- NULL
+    } else if (file_format == "bruker") {
+        files <- list.dirs(data_path, recursive = FALSE, full.names = FALSE) # folders inside `data_path`
+        spectroscopy_value <- readline(prompt = "What is the name of the subfolder of your filepath: (e.g. 10 for C:/Users/Username/Desktop/spectra_folder/spectrum_name/10) ")
+        processing_value <- readline(prompt = "What is the name of the subsubsubfolder of your filepath: (e.g. 10 for C:/Users/Username/Desktop/spectra_folder/spectrum_name/10/pdata/10) ")
+    }
+
+    # Reorder files in case user wants to use one spectrum to determine parameters for all spectra
+    same_parameter <- get_yn_input("Do you want to use the same parameters (signal_free_region, range_water_signal_ppm) for all spectra?")
+    if (same_parameter) {
+        print(files)
+        number <- get_num_input("Choose number of file which is used to adjust all parameters: [e.g. 1] ", min = 1, max = length(files), int = TRUE)
+        message(paste("The selected file to adjust all parameters for all spectra is: ", files[number]))
+        files <- c(files[number], files[-number])
+    }
+
+    # Do actual deconvolution
+    spectrum_data <- list()
+    for (i in seq_along(files)) {
+        name <- files[i] # bruker: `urine_2`, jcampdx: `urine_2.dx`
+        filepath <- switch(file_format, # see [FAQ](../vignettes/FAQ.Rmd#file-structure) for example file structures
+            "bruker" = paste(data_path, name, spectroscopy_value, sep = "/"),
+            "jcampdx" = data_path,
+            stop("Invalid file format")
+        )
+        x <- deconvolute_spectrum(filepath, name, file_format, same_parameter, processing_value, number_iterations, range_water_signal_ppm, signal_free_region, smoothing_param, delta, scale_factor, current_filenumber = i, number_of_files = length(files))
+        spectrum_data[[name]] <- x
+        # Save `range_water_signal` and `signal_free_region` for next loop passage as those might have been adjusted interactively by the user
+        range_water_signal_ppm <- x$range_water_signal_ppm
+        signal_free_region <- x$signal_free_region
+    }
+
+    # Save results
+    if (make_rds) {
+        saveRDS(object = spectrum_data, file = file.path(data_path, "spectrum_data.rds"))
+    }
+    return(spectrum_data)
+}
+
+# Private Helpers #####
+
+## deconvolute_spectrum #####
 
 #' @title Deconvolute one single spectrum
 #' @description Deconvolute one single spectrum
@@ -692,58 +694,53 @@ deconvolute_spectrum_v2 <- function(path = file.path(download_example_datasets()
                                     nfils = 1,
                                     ask = TRUE,
                                     bwc = TRUE) {
+
+    toscutil::stub(deconvolute_spectrum_v2, ask = FALSE)
     type <- match.arg(type, c("bruker", "jcampdx"))
+
+    # Implemented
     spec <- read_spectrum(path, type, sf, expno, procno)
     spec <- determine_signal_free_region(spec, sfr, ask)
     spec <- determine_water_signal(spec, hwidth_ppm = wshw, bwc, ask)
     spec <- remove_water_signal(spec, bwc)
     spec <- remove_negative_signals(spec)
     spec <- smooth_signals(spec, reps = smopts[1], k = smopts[2], bwc)
-    spec <- select_peaks_v2(spec)
-    spec <- find_peak_borders(spec)
-    compare_spec_with_debugenv(spec)
-    plot_peaks(spec)
+    # spec <- find_peak_centers(spec) # Old
+    # spec <- find_peak_borders(spec) # Old
+    # spec <- rm_peaks_without_borders(spec) # Old
+    # spec <- calc_peak_scores(spec) # Old
+    spec <- find_peaks(spec) # New
+    spec <- rm_peaks_with_low_scores(spec, delta)
+    spec <- init_lorentz_curves_v1(spec)
 
-    # CONTINUE HERE
-    spec <- get_peak_triplets(spec)
-    spec <- get_preak_triplet_scores(spec)
-    spec <- filter_peak_triplets(spec)
-    spec <- calculate_initial_lorentz_curves(spec)
-    spec <- refine_lorentz_curves(spec, nfit)
+    # In progress
+    spec <- refine_lorentz_curves_v1(spec, nfit)
+
+    # To be done
     spec <- calculate_lorentz_curve_integrals(spec)
+
+    check_spec(spec)
+    plot_peaks(spec)
 
     ret <- create_return_list(spec)
 }
 
-deconvolute_spectrum <- function(filepath,
-                                 name,
-                                 file_format,
-                                 same_parameter,
-                                 processing_value,
-                                 number_iterations,
-                                 range_water_signal_ppm,
-                                 signal_free_region,
-                                 smoothing_param,
-                                 delta,
-                                 scale_factor,
-                                 current_filenumber,
-                                 number_of_files) {
+deconvolute_spectrum <- function(filepath = "urine_1/10",
+                                 name = NULL,
+                                 file_format = "bruker",
+                                 same_parameter = FALSE,
+                                 processing_value = 10,
+                                 number_iterations = 10,
+                                 range_water_signal_ppm = 0.1527692,
+                                 signal_free_region = c(11.44494, -1.8828),
+                                 smoothing_param = c(2, 5),
+                                 delta = 6.4,
+                                 scale_factor = c(1000, 1000000),
+                                 current_filenumber = 1,
+                                 number_of_files = 1,
+                                 debug = FALSE) {
     msgf("Start deconvolution of %s:", name)
-
-    x <- deconvolution(
-        filepath,
-        name,
-        file_format,
-        same_parameter,
-        processing_value,
-        number_iterations,
-        range_water_signal_ppm,
-        signal_free_region,
-        smoothing_param,
-        delta,
-        scale_factor,
-        current_filenumber
-    )
+    x <- deconvolution(filepath, name, file_format, same_parameter, processing_value, number_iterations, range_water_signal_ppm, signal_free_region, smoothing_param, delta, scale_factor, current_filenumber, debug)
     y <- list(
         "number_of_files" = number_of_files, # [1] add entry
         "filename" = x$filename,
@@ -765,10 +762,11 @@ deconvolute_spectrum <- function(filepath,
         "lambda" = x$lambda,
         "x_0" = x$w # [19] rename
     )
+    if (debug) y$debuglist <- x$debuglist
     return(y)
 }
 
-# Private Helpers: read_spectrum #####
+## read_spectrum #####
 
 #' @title Load Spectrum
 #' @description Loads a single spectrum file and returns the spectrum data in ppm.
@@ -1050,7 +1048,7 @@ read_1r_file <- function(path, expno, procno, procs) {
     return(y)
 }
 
-# Private Helpers: signal_free_region #####
+## signal_free_region #####
 
 #' @title Determine Signal Free Region
 #' @description This function determines the signal free region (SFR) of a given spectrum. It asks the user to confirm the left and right borders of the SFR, and allows them to adjust these borders if necessary. The function returns a list containing the left and right borders in both ppm and data points (dp), as well as the scaled data points (sdp).
@@ -1102,7 +1100,7 @@ plot_sfr <- function(spec, left_ppm, right_ppm) {
     graphics::abline(v = c(left_ppm, right_ppm), col = "green")
 }
 
-# Private Helpers: water_signal #####
+## water_signal #####
 
 #' @title Calculate water signal parameters
 #' @description Calculates water signal parameters for a given spectrum.
@@ -1161,7 +1159,7 @@ plot_ws <- function(spec, hwidth_ppm) {
     center_ppm <- (spec$ppm_max + spec$ppm_min) / 2
     plot(
         spec$ppm,
-        spec$y,
+        spec$Y$scaled,
         type = "l",
         xlab = "[ppm]",
         ylab = "Intensity [a.u.]",
@@ -1171,7 +1169,7 @@ plot_ws <- function(spec, hwidth_ppm) {
     graphics::abline(v = center_ppm - hwidth_ppm, col = "red")
 }
 
-# Private Helpers: remove_negative_signals #####
+## remove_negative_signals #####
 
 remove_negative_signals <- function(spec) {
     if (is.null(spec$Y$nows)) stop("Water signal not removed yet. Please call `remove_water_signal()` first.")
@@ -1179,7 +1177,7 @@ remove_negative_signals <- function(spec) {
     spec
 }
 
-# Private Helpers: smooth #####
+## smooth #####
 
 #' @inherit smooth_signals_v1
 #' @param bwc Maintain backwards compatibility with MetaboDecon1D results by using the old and slow method for smoothing ([smooth_signals_v1()])? If FALSE, the new and fast method ([smooth_signals_v2()]) is used instead.
@@ -1259,80 +1257,185 @@ smooth_signals_v1 <- function(spec, reps = 2, k = 5) {
     spec
 }
 
-# Private Helpers: peak_selection #####
+## peak_selection #####
 
-
-#' Plot peaks of a spectrum
-#'
-#' This function plots the peaks of a spectrum, including the smoothed and scaled signal intensity and the second derivative.
-#' It also allows for the specification of peak positions and the option to draw vertical lines at these positions.
-#'
-#' @param spec A data frame containing the spectrum data. It should have columns 'ppm', 'Y', 'ip', 'ip_left', 'ip_right', and 'd'.
-#' @param ppm A vector of length 2 specifying the range of ppm values to consider for the plot. Default is c(3.402, 3.437).
-#' @param dp A vector specifying the positions of the peaks. If NULL (default), the function will determine the peak positions based on the 'ppm' range.
-#' @param vlines A logical value indicating whether to draw vertical lines at the peak positions. Default is FALSE.
-#' @return A data frame with columns 'x' (ppm values), 'y' (smoothed and scaled signal intensity), 'd' (second derivative), 'is_ip' (whether the position is a peak), and 'is_ip_left' (whether the position is to the left of a peak).
-#' @examples \dontrun{
-#' plot_peaks(spec, ppm = c(3.402, 3.437), dp = NULL, vlines = FALSE) # region from 3.402 to 3.437 ppm
-#' plot_peaks(spec, dp = 1:200, vlines = FALSE) # first 200 data points
-#' }
-#' @noRd
-plot_peaks <- function(spec, ppm = c(3.402, 3.437), dp = NULL, vlines = FALSE) {
-    if (is.null(dp)) dp <- which(spec$ppm > min(ppm) & spec$ppm < max(ppm))
-    x <- spec$ppm[dp]
-    y <- spec$Y$smooth[dp]
-    l <- which(dp %in% spec$left) %||% numeric()
-    p <- which(dp %in% spec$peaks)
-    r <- which(dp %in% spec$right) %||% numeric()
-    m <- which(!(dp %in% c(spec$left, spec$peaks, spec$right)))
-    d <- spec$d[dp]
-    withr::with_par(list(mfrow = c(2, 1), mar = c(0, 6, 4, 2), las = 1), {
-        plot(x, y, type = "l", xlab = "ppm", ylab = "", xaxt = "n", xlim = c(max(x), min(x)))
-        mtext("smoothed and scaled signal intensity", side = 2, line = 5, las = 0)
-        points(x[m], y[m], type = "p", pch =124) # vertical dash
-        points(x[p], y[p], col = "red", pch = 17) # triangle
-        points(x[l], y[l], col = "blue", , pch = 0) # open square
-        points(x[r], y[r], col = "blue", , pch = 4) # x
-        if (vlines) {
-            abline(v = x[p], col = "red")
-            abline(v = x[l], col = "blue")
-            abline(v = x[r], col = "blue")
-        }
-        for (i in seq_along(l)) {
-            rect(x[l[i]], par("usr")[3], x[r[i]], par("usr")[4], col = rgb(0, 0, 0, alpha = 0.1), border = rgb(0, 0, 0, alpha = 0.2))
-        }
-        axis(3, at = x, labels = dp)
-        legend("topright", legend = c("peak", "left", "right", "other"), col = c("red", "blue", "blue", "black"), pch = c(2, 0, 4, 124))
-        withr::with_par(list(mar = c(5, 6, 0, 2)), {
-            plot(x, d, type = "l", xlab = "ppm", ylab = "", xlim = c(max(x), min(x)))
-            mtext("second derivative", side = 2, line = 5, las = 0)
-            points(x[m], d[m], type = "p", pch = "|")
-            points(x[p], d[p], col = "red", pch = 17)
-            points(x[l], d[l], col = "blue", pch = 0)
-            points(x[r], d[r], col = "blue", pch = 4)
-            if (vlines) {
-                abline(v = x[p], col = "red")
-                abline(v = x[l], col = "blue")
-                abline(v = x[r], col = "blue")
-            }
-            abline(h = 0, col = "black")
-        })
-    })
-    df <- data.frame(x = x, y = y, d = d, is_ip = dp %in% spec$peaks, is_ip_left = dp %in% spec$ip_left)
-    invisible(df)
-}
-
-select_peaks_v2 <- function(spec) {
-    d <- calculate_second_derivative(y = spec$Y$smooth, bwc = bwc)
+#' @inherit find_peaks
+#' @param details Successor of `select_peaks_v0`, `find_left_positions_v0` and `find_right_positions_v0`. The new function `find_peaks()` is a combination of these three functions with a corrected naming convention: what was incorrectly referred to as "left" is now correctly called "right" and vice versa.
+find_peaks <- function(spec) {
+    d <- spec$d <- calc_second_derivative(y = spec$Y$smooth, bwc = bwc)
+    a <- abs(d)
     m <- length(d)
-    d0 <- d[1:(m - 2)]
-    d1 <- d[2:(m - 1)]
-    d2 <- d[3:(m - 0)]
-    spec$peaks <- which(d1 < 0 & d1 <= d0 & d1 < d2) + 1 # TODO: why <= instad of < once?
-    spec$d <- d
+    dl <- c(NA, d[-m]) # dl[i] == d[i-1]
+    dr <- c(d[-1], NA) # dr[i] == d[i+1]
+    center <- which(d < 0 & d <= dl & d < dr)
+    spec$peak <- data.frame(left = NA, center = center, right = NA, score = NA)
+    for (i in seq_along(center)) {
+        j <- center[i]
+        r <- spec$peak$right[i] <- get_right_border(j, d, m)
+        l <- spec$peak$left[i] <- get_left_border(j, d, m)
+        s <- spec$peak$score[i] <- get_peak_score(j, l, r, a)
+    }
     return(spec)
 }
 
+rm_peaks_with_low_scores <- function(spec, delta = 6.4) {
+    score <- spec$peak$score
+    l <- which(spec$sdp[spec$peak$center] >= spec$sfr$left_sdp)
+    r <- which(spec$sdp[spec$peak$center] <= spec$sfr$right_sdp)
+    mu <- mean(score[c(l, r)])
+    sigma <- sd(c(score[l], score[r]))
+    spec$peak$high <- score >= mu + delta * sigma
+    spec$peak$region <- "norm"
+    spec$peak$region[l] <- "sfrl"
+    spec$peak$region[r] <- "sfrr"
+    spec
+}
+
+### helpers #####
+
+calc_second_derivative <- function(y, bwc) {
+    n <- length(y)
+    if (bwc) {
+        x <- c(NA, y[-n]) # x[i] == y[i-1]
+        z <- c(y[-1], NA) # z[i] == y[i+1]
+        d <- x + z - 2 * y
+    } else {
+        # Using diff is almost equivalent to the above, but due to numeric instabilities, it sometimes gives slightly different results (e.g. -5.51600000000001e-05 instead of -5.51599999999998e-05). Since we do `<=` and `<` comparisons further below this is not backwards compatible. Nonetheless, we keep it here, because it would make the code slightly more readable (runtime is almost the same).
+        d <- c(NA, diff(y, differences = 2), NA)
+    }
+}
+
+get_right_border <- function(j, d, m) {
+    r <- j + 1
+    while (r < m) { # use r<m instead of r<=m because c4 requires d[r+1]
+        c1 <- d[r] > d[r - 1]
+        c2 <- d[r] >= d[r + 1]
+        c3 <- d[r] < 0
+        c4 <- d[r + 1] >= 0
+        is_right_border <- (c1 && c2) || (c1 && c3 && c4)
+        if (is_right_border) return(r)
+        r <- r + 1
+    }
+    return(NA)
+}
+
+get_left_border <- function(j, d, m) {
+    l <- j - 1
+    while (l > 1) { # use l>1 instead of l>=1 because c4 requires d[l-1]
+        c1 <- d[l] > d[l + 1]
+        c2 <- d[l] >= d[l - 1]
+        c3 <- d[l] < 0
+        c4 <- d[l - 1] >= 0
+        is_left_border <- (c1 && c2) || (c1 && c3 && c4)
+        if (is_left_border) return(l)
+        l <- l - 1
+    }
+}
+
+get_peak_score <- function(j, l, r, a) {
+    if (any(is.na(a[c(l, j, r)]))) {
+        NA
+     } else {
+        min(sum(a[l:j]), sum(a[j:r]))
+     }
+}
+
+is_right_border <- function(j, d) {
+    c1 <- d[j] > d[j - 1]
+    c2 <- d[j] >= d[j + 1]
+    c3 <- d[j] < 0
+    c4 <- d[j + 1] >= 0
+    return((c1 && c2) || (c1 && c3 && c4))
+}
+
+is_left_border <- function(j, d) {
+    c1 <- d[j] > d[j + 1]
+    c2 <- d[j] >= d[j - 1]
+    c3 <- d[j] < 0
+    c4 <- d[j - 1] >= 0
+    return((c1 && c2) || (c1 && c3 && c4))
+}
+
+### Deprecated #####
+
+rm_peaks_without_borders <- function(spec) {
+    nas <- which(is.na(spec$left) | is.na(spec$right))
+    if (length(nas) > 0) {
+        spec$left <- spec$left[-nas]
+        spec$right <- spec$right[-nas]
+        spec$peak <- spec$peak[-nas]
+    }
+    spec
+}
+
+calc_peak_scores <- function(spec) {
+    scores <- with(spec, sapply(seq_along(peaks), function(i) {
+        left_score <- sum(abs(d[peaks[i]:left[i]]))
+        right_score <- sum(abs(d[right[i]:peaks[i]]))
+        min(left_score, right_score)
+    }))
+}
+
+#' @description Find right and left borders of peaks detected by [select_peaks_v2()]. This is a combination of `find_left_positions_v0` and `find_right_positions_v0` with a corrected naming convention: what was incorrectly referred to as "left" is now correctly called "right" and vice versa.
+#' @noRd
+find_peak_borders <- function(spec) {
+    d <- spec$d
+    peaks <- spec$peak
+    spec$left <- spec$right <- rep(NA, length(peaks))
+    for (i in seq_along(peaks)) {
+        j <- peaks[i] + 1
+        while (j < length(d) && !is_right_border(j, d)) j <- j + 1
+        spec$right[i] <- j
+        j <- peaks[i] - 1
+        while (j > 1 && !is_left_border(j, d)) j <- j - 1
+        spec$left[i] <- j
+    }
+    spec
+}
+
+find_left_positions_v0 <- function(spec) {
+    # ToSc: in fact this function searches points to the right of the peak, not to the left. So I think the comments from the original `deconvolution` function from `MetaboDecon1D.R` are wrong. However, for reference we will keep the wrong naming here and combine `find_left_positions_v0` and `find_right_positions_v0` into one function called `find_peak_borders`. This makes the code more readable and as a side effect solves the naming problem.
+    d <- spec$d
+    ip <- spec$peak
+    spec$left <- rep(NA, length(ip))
+    for (i in seq_along(ip)) {
+        j <- ip[i] + 1
+        while (j < length(d)) {
+            c1 <- d[j] > d[j - 1]
+            c2 <- d[j] >= d[j + 1]
+            c3 <- d[j] < 0
+            c4 <- d[j + 1] >= 0
+            if ((c1 && c2) || (c1 && c3 && c4)) {
+                spec$left[i] <- j
+                break
+            }
+            j <- j + 1
+        }
+    }
+    spec
+}
+
+find_right_positions_v0 <- function(spec) {
+    # ToSc: in fact this function searches points to the left of the peak, not to the right. So I think the comments from the original `deconvolution` function from `MetaboDecon1D.R` are wrong. However, for reference we will keep the wrong naming here and combine `find_right_positions_v0` and `find_left_positions_v0` into one function called `find_peak_borders`. This makes the code more readable and as a side effect solves the naming problem.
+    d <- spec$d
+    ip <- spec$peak
+    spec$right <- rep(NA, length(ip))
+    for (i in seq_along(ip)) {
+        j <- ip[i] - 1
+        while (j >= 2) {
+            c1 <- d[j] > d[j + 1]
+            c2 <- d[j] >= d[j - 1]
+            c3 <- d[j] < 0
+            c4 <- d[j - 1] >= 0
+            if (((c1) && (c2)) || (c1 && c3 && c4)) {
+                spec$right[i] <- j
+                break
+            }
+            j <- j - 1
+        }
+    }
+    spec
+}
 
 #' @inherit select_peaks_v0
 #' @param details This is the same as `select_peaks_v0`, but using different variable names within the code to make it more readable.
@@ -1393,393 +1496,7 @@ select_peaks_v0 <- function(spec) {
     ))
 }
 
-
-# Combination of `find_left_positions_v0` and `find_right_positions_v0`
-find_peak_borders <- function(spec) {
-    d <- spec$d
-    peaks <- spec$peaks
-    spec$left <- spec$right <- rep(NA, length(peaks))
-    for (i in seq_along(peaks)) {
-        j <- peaks[i] + 1
-        while (j < length(d) && !is_left_border(j, d)) j <- j + 1
-        spec$left[i] <- j
-        j <- peaks[i] - 1
-        while (j > 1 && !is_right_border(j, d)) j <- j - 1
-        spec$right[i] <- j
-    }
-    spec
-}
-
-is_left_border <- function(j, d) {
-    c1 <- d[j] > d[j - 1]
-    c2 <- d[j] >= d[j + 1]
-    c3 <- d[j] < 0
-    c4 <- d[j + 1] >= 0
-    return((c1 && c2) || (c1 && c3 && c4))
-}
-
-is_right_border <- function(j, d) {
-    c1 <- d[j] > d[j + 1]
-    c2 <- d[j] >= d[j - 1]
-    c3 <- d[j] < 0
-    c4 <- d[j - 1] >= 0
-    return((c1 && c2) || (c1 && c3 && c4))
-}
-
-find_left_positions_v0 <- function(spec) {
-    # ToSc: in fact this function searches points to the right of the peak, not to the left. So I think the comments from the original `deconvolution` function from `MetaboDecon1D.R` are wrong. However, for reference we will keep the wrong naming here and combine `find_left_positions_v0` and `find_right_positions_v0` into one function called `find_peak_borders`. This makes the code more readable and as a side effect solves the naming problem.
-    d <- spec$d
-    ip <- spec$peaks
-    spec$left <- rep(NA, length(ip))
-    for (i in seq_along(ip)) {
-        j <- ip[i] + 1
-        while (j < length(d)) {
-            c1 <- d[j] > d[j - 1]
-            c2 <- d[j] >= d[j + 1]
-            c3 <- d[j] < 0
-            c4 <- d[j + 1] >= 0
-            if ((c1 && c2) || (c1 && c3 && c4)) {
-                spec$left[i] <- j
-                break
-            }
-            j <- j + 1
-        }
-    }
-    spec
-}
-
-find_right_positions_v0 <- function(spec) {
-    # ToSc: in fact this function searches points to the left of the peak, not to the right. So I think the comments from the original `deconvolution` function from `MetaboDecon1D.R` are wrong. However, for reference we will keep the wrong naming here and combine `find_right_positions_v0` and `find_left_positions_v0` into one function called `find_peak_borders`. This makes the code more readable and as a side effect solves the naming problem.
-    d <- spec$d
-    ip <- spec$peaks
-    spec$right <- rep(NA, length(ip))
-    for (i in seq_along(ip)) {
-        j <- ip[i] - 1
-        while (j >= 2) {
-            c1 <- d[j] > d[j + 1]
-            c2 <- d[j] >= d[j - 1]
-            c3 <- d[j] < 0
-            c4 <- d[j - 1] >= 0
-            if (((c1) && (c2)) || (c1 && c3 && c4)) {
-                spec$right[i] <- j
-                break
-            }
-            j <- j - 1
-        }
-    }
-    spec
-}
-
-
-calculate_second_derivative <- function(y, bwc) {
-    n <- length(y)
-    if (bwc) {
-        x <- c(NA, y[-n]) # x[i] == y[i-1]
-        z <- c(y[-1], NA) # z[i] == y[i+1]
-        d <- x + z - 2 * y
-    } else {
-        # Using diff is almost equivalent to the above, but due to numeric instabilities, it sometimes gives slightly different results (e.g. -5.51600000000001e-05 instead of -5.51599999999998e-05). Since we do `<=` and `<` comparisons further below this is not backwards compatible. Nonetheless, we keep it here, because it would make the code slightly more readable (runtime is almost the same).
-        d <- c(NA, diff(y, differences = 2), NA)
-    }
-}
-
-get_peak_triplets <- function(spec) {
-    # Check borders of peak triplets
-    # If NA values are available, remove corresponding peak triplet
-    for (i in length(left_position):1) {
-        if (is.na(left_position[i]) | (is.na(right_position[i]))) {
-            ip$sdp <- ip$sdp[-i]
-            spec$peaks <- spec$peaks[-i]
-            left_position <- left_position[-i]
-            right_position <- right_position[-i]
-        }
-    }
-}
-
-get_preak_triplet_scores <- function(spec) {
-    # Calculate peak triplet score to distinguish between signal and noise
-    scores <- matrix(nrow = 1, ncol = length(ip))
-    scores_left <- matrix(nrow = 1, ncol = length(ip))
-    scores_right <- matrix(nrow = 1, ncol = length(ip))
-    for (i in 1:length(ip)) {
-        # Calculate left score
-        left_score <- 0
-        for (j in spec$peaks[i]:left_position[i]) {
-            left_score <- sum(left_score, abs(d2[2, j]))
-        }
-        scores_left[i] <- left_score
-        # Calculate right score
-        right_score <- 0
-        for (k in right_position[i]:spec$peaks[i]) {
-            right_score <- sum(right_score, abs(d2[2, k]))
-        }
-        scores_right[i] <- right_score
-        # Save minimum score
-        scores[i] <- min(left_score, right_score)
-    }
-}
-
-filter_peak_triplets <- function(spec) {
-    index_left <- which(spec$sdp[spec$peaks + 1] >= sfrl_sdp)
-    index_right <- which(spec$sdp[spec$peaks + 1] <= sfrr_sdp)
-    mean_score <- mean(c(scores[index_left], scores[index_right]))
-    sd_score <- stats::sd(c(scores[index_left], scores[index_right]))
-    filtered_peaks <- c()
-    filtered_left_position <- c()
-    filtered_right_position <- c()
-    save_scores <- c()
-    for (i in 1:length(ip)) {
-        if (scores[i] >= mean_score + delta * sd_score) {
-            # Save peak position
-            filtered_peaks <- c(filtered_peaks, spec$peaks[i])
-            # Save left position
-            filtered_left_position <- c(filtered_left_position, left_position[i])
-            # Save right position
-            filtered_right_position <- c(filtered_right_position, right_position[i])
-            # Save value of scores of filtered peaks
-            save_scores <- c(save_scores, scores[i])
-        }
-    }
-}
-
-calculate_initial_lorentz_curves <- function(spec) {
-    # Calculate parameters w, lambda and A for the initial lorentz curves
-    for (i in 1:length(filtered_peaks)) {
-        # Calculate position of peak triplets
-        w_1 <- c(w_1, spec$sdp[filtered_left_position[i] + 1])
-        w_2 <- c(w_2, spec$sdp[filtered_peaks[i] + 1])
-        w_3 <- c(w_3, spec$sdp[filtered_right_position[i] + 1])
-
-        # Calculate intensity of peak triplets
-        y_1 <- c(y_1, spec$y[filtered_left_position[i] + 1])
-        y_2 <- c(y_2, spec$y[filtered_peaks[i] + 1])
-        y_3 <- c(y_3, spec$y[filtered_right_position[i] + 1])
-
-        # Calculate mirrored points if necesccary
-        # For ascending shoulders
-        if ((y_1[i] < y_2[i]) & (y_2[i] < y_3[i])) {
-            w_3[i] <- 2 * w_2[i] - w_1[i]
-            y_3[i] <- y_1[i]
-        }
-        # For descending shoulders
-        if ((y_1[i] > y_2[i]) & (y_2[i] > y_3[i])) {
-            w_1[i] <- 2 * w_2[i] - w_3[i]
-            y_1[i] <- y_3[i]
-        }
-
-        # Move triplet to zero position
-        w_delta[i] <- w_1[i]
-        w_1[i] <- w_1[i] - w_delta[i]
-        w_2[i] <- w_2[i] - w_delta[i]
-        w_3[i] <- w_3[i] - w_delta[i]
-
-        # Calculate difference of position of peak triplets
-        w_1_2 <- c(w_1_2, w_1[i] - w_2[i])
-        w_1_3 <- c(w_1_3, w_1[i] - w_3[i])
-        w_2_3 <- c(w_2_3, w_2[i] - w_3[i])
-
-        # Calculate difference of intensity values of peak triplets
-        y_1_2 <- c(y_1_2, y_1[i] - y_2[i])
-        y_1_3 <- c(y_1_3, y_1[i] - y_3[i])
-        y_2_3 <- c(y_2_3, y_2[i] - y_3[i])
-
-        # Calculate w for each peak triplet
-        w_result <- (w_1[i]^2 * y_1[i] * y_2_3[i] +
-            w_3[i]^2 * y_3[i] * y_1_2[i] +
-            w_2[i]^2 * y_2[i] * (-y_1_3[i])
-        ) / (
-            2 * w_1_2[i] * y_1[i] * y_2[i] -
-                2 * (w_1_3[i] * y_1[i] + (-w_2_3[i]) * y_2[i]) * y_3[i]
-        )
-        w_result <- w_result + w_delta[i]
-        w <- c(w, w_result)
-        # Wenn y Werte nach der Hoehenanpassung 0 werden, so ist w_new[i] NaN
-        if (is.nan(w[i])) {
-            w[i] <- 0
-        }
-
-        # Calculate lambda for each peak triplet
-        lambda_result <- -((sqrt(abs((-w_2[i]^4 * y_2[i]^2 * y_1_3[i]^2 - w_1[i]^4 * y_1[i]^2 * y_2_3[i]^2 - w_3[i]^4 * y_1_2[i]^2 * y_3[i]^2 + 4 * w_2[i] * w_3[i]^3 * y_2[i] * ((-y_1[i]) + y_2[i]) * y_3[i]^2 + 4 * w_2[i]^3 * w_3[i] * y_2[i]^2 * y_3[i] * ((-y_1[i]) + y_3[i]) + 4 * w_1[i]^3 * y_1[i]^2 * y_2_3[i] * (w_2[i] * y_2[i] - w_3[i] * y_3[i]) + 4 * w_1[i] * y_1[i] * (w_2[i]^3 * y_2[i]^2 * y_1_3[i] - w_2[i] * w_3[i]^2 * y_2[i] * (y_1[i] + y_2[i] - 2 * y_3[i]) * y_3[i] + w_3[i]^3 * y_1_2[i] * y_3[i]^2 - w_2[i]^2 * w_3[i] * y_2[i] * y_3[i] * (y_1[i] - 2 * y_2[i] + y_3[i])) + 2 * w_2[i]^2 * w_3[i]^2 * y_2[i] * y_3[i] * (y_1[i]^2 - 3 * y_2[i] * y_3[i] + y_1[i] * (y_2[i] + y_3[i])) + 2 * w_1[i]^2 * y_1[i] * (-2 * w_2[i] * w_3[i] * y_2[i] * y_3[i] * (-2 * y_1[i] + y_2[i] + y_3[i]) + w_3[i]^2 * y_3[i] * (y_1[i] * (y_2[i] - 3 * y_3[i]) + y_2[i] * (y_2[i] + y_3[i])) + w_2[i]^2 * y_2[i] * (y_1[i] * (-3 * y_2[i] + y_3[i]) + y_3[i] * (y_2[i] + y_3[i])))))))) / (2 * sqrt((w_1[i] * y_1[i] * y_2_3[i] + w_3[i] * y_1_2[i] * y_3[i] + w_2[i] * y_2[i] * ((-y_1[i]) + y_3[i]))^2))
-        # If y and w are 0, then 0/0=NaN
-        if (is.nan(lambda_result)) {
-            lambda_result <- 0
-        }
-        lambda <- c(lambda, lambda_result)
-
-        # Calculate scaling factor A for each peak triplet
-        A_result <- (-4 * w_1_2[i] * w_1_3[i] * w_2_3[i] * y_1[i] * y_2[i] * y_3[i] * (w_1[i] * y_1[i] * y_2_3[i] + w_3[i] * y_3[i] * y_1_2[i] + w_2[i] * y_2[i] * (-y_1_3[i])) * lambda[i]) / (w_1_2[i]^4 * y_1[i]^2 * y_2[i]^2 - 2 * w_1_2[i]^2 * y_1[i] * y_2[i] * (w_1_3[i]^2 * y_1[i] + w_2_3[i]^2 * y_2[i]) * y_3[i] + (w_1_3[i]^2 * y_1[i] - w_2_3[i]^2 * y_2[i])^2 * y_3[i]^2)
-        # If y and w are 0, then 0/0=NaN
-        if (is.nan(A_result)) {
-            A_result <- 0
-        }
-        A <- c(A, A_result)
-    }
-
-    # Calculate all initial lorentz curves
-    lorentz_curves_initial <- matrix(nrow = length(filtered_peaks), ncol = length(spec$sdp))
-    for (i in 1:length(filtered_peaks)) {
-        # If A = 0, then the lorentz curve is a zero line
-        if (A[i] == 0) {
-            lorentz_curves_initial[i, ] <- 0
-        } else {
-            lorentz_curves_initial[i, ] <- abs(A[i] * (lambda[i] / (lambda[i]^2 + (spec$sdp - w[i])^2)))
-        }
-    }
-}
-
-refine_lorentz_curves <- function(spec) {
-    # Parameter approximation method
-    w_1 <- c()
-    w_2 <- c()
-    w_3 <- c()
-    y_1 <- c()
-    y_2 <- c()
-    y_3 <- c()
-    w_1_2 <- c()
-    w_1_3 <- c()
-    w_2_3 <- c()
-    y_1_2 <- c()
-    y_1_3 <- c()
-    y_2_3 <- c()
-    w_delta <- c()
-    w <- c()
-    lambda <- c()
-    A <- c()
-
-    # Approximation of lorentz curves
-    for (b in 1:nfit) {
-        # Calculate new heights of peak triplets
-        w_1_new <- c()
-        w_2_new <- c()
-        w_3_new <- c()
-        y_1_new <- c()
-        y_2_new <- c()
-        y_3_new <- c()
-        w_1_2_new <- c()
-        w_1_3_new <- c()
-        w_2_3_new <- c()
-        y_1_2_new <- c()
-        y_1_3_new <- c()
-        y_2_3_new <- c()
-        w_delta_new <- c()
-        w_new <- c()
-        lambda_new <- c()
-        A_new <- c()
-        sum_left <- c()
-        sum_peaks <- c()
-        sum_right <- c()
-        proportion_left <- c()
-        proportion_peaks <- c()
-        proportion_right <- c()
-
-        for (i in 1:length(filtered_peaks)) {
-            # Calculate the position of the peak triplets
-            w_1_new <- c(w_1_new, spec$sdp[filtered_left_position[i] + 1])
-            w_2_new <- c(w_2_new, spec$sdp[filtered_peaks[i] + 1])
-            w_3_new <- c(w_3_new, spec$sdp[filtered_right_position[i] + 1])
-
-            # Calculate the sum of all lorentz curves for each data point
-            sum_left[i] <- sum(lorentz_curves_initial[1:length(filtered_left_position), filtered_left_position[i] + 1])
-            sum_peaks[i] <- sum(lorentz_curves_initial[1:length(filtered_peaks), filtered_peaks[i] + 1])
-            sum_right[i] <- sum(lorentz_curves_initial[1:length(filtered_right_position), filtered_right_position[i] + 1])
-
-            # Calculate the proportion between original spectrum an the sum of the lorentz curves for each peak triplets position
-            proportion_left[i] <- spec$y[filtered_left_position[i] + 1] / sum_left[i]
-            proportion_peaks[i] <- spec$y[filtered_peaks[i] + 1] / sum_peaks[i]
-            proportion_right[i] <- spec$y[filtered_right_position[i] + 1] / sum_right[i]
-
-            # Calculate the new heights of the peak triplets
-            y_1_new[i] <- lorentz_curves_initial[i, filtered_left_position[i] + 1] * proportion_left[i]
-            y_2_new[i] <- lorentz_curves_initial[i, filtered_peaks[i] + 1] * proportion_peaks[i]
-            y_3_new[i] <- lorentz_curves_initial[i, filtered_right_position[i] + 1] * proportion_right[i]
-
-            # Calculate mirrored points if necesccary
-            # For ascending shoulders
-            if ((y_1_new[i] < y_2_new[i]) & (y_2_new[i] < y_3_new[i])) {
-                w_3_new[i] <- 2 * w_2_new[i] - w_1_new[i]
-                y_3_new[i] <- y_1_new[i]
-            }
-            # For descending shoulders
-            if ((y_1_new[i] > y_2_new[i]) & (y_2_new[i] > y_3_new[i])) {
-                w_1_new[i] <- 2 * w_2_new[i] - w_3_new[i]
-                y_1_new[i] <- y_3_new[i]
-            }
-
-            # Move triplet to zero position
-            w_delta_new[i] <- w_1_new[i]
-            w_1_new[i] <- w_1_new[i] - w_delta_new[i]
-            w_2_new[i] <- w_2_new[i] - w_delta_new[i]
-            w_3_new[i] <- w_3_new[i] - w_delta_new[i]
-
-            # Calculate difference of peak triplet positions
-            w_1_2_new <- c(w_1_2_new, w_1_new[i] - w_2_new[i])
-            w_1_3_new <- c(w_1_3_new, w_1_new[i] - w_3_new[i])
-            w_2_3_new <- c(w_2_3_new, w_2_new[i] - w_3_new[i])
-
-            # Calculate difference of new intensity values of peak triplets
-            y_1_2_new <- c(y_1_2_new, y_1_new[i] - y_2_new[i])
-            y_1_3_new <- c(y_1_3_new, y_1_new[i] - y_3_new[i])
-            y_2_3_new <- c(y_2_3_new, y_2_new[i] - y_3_new[i])
-
-            # Calculate w for each peak triplet
-            w_result <- (w_1_new[i]^2 * y_1_new[i] * y_2_3_new[i] + w_3_new[i]^2 * y_3_new[i] * y_1_2_new[i] + w_2_new[i]^2 * y_2_new[i] * (-y_1_3_new[i])) / (2 * w_1_2_new[i] * y_1_new[i] * y_2_new[i] - 2 * (w_1_3_new[i] * y_1_new[i] + (-w_2_3_new[i]) * y_2_new[i]) * y_3_new[i])
-            w_result <- w_result + w_delta_new[i]
-            w_new <- c(w_new, w_result)
-
-            # If y values are getting 0 after height adjustment, then w_new[i]=NaN
-            if (is.nan(w_new[i])) {
-                w_new[i] <- 0
-            }
-
-            # Calculate lambda for each peak triplet
-            lambda_result <- -((sqrt(abs(((-w_2_new[i]^4 * y_2_new[i]^2 * y_1_3_new[i]^2 - w_1_new[i]^4 * y_1_new[i]^2 * y_2_3_new[i]^2 - w_3_new[i]^4 * y_1_2_new[i]^2 * y_3_new[i]^2 + 4 * w_2_new[i] * w_3_new[i]^3 * y_2_new[i] * ((-y_1_new[i]) + y_2_new[i]) * y_3_new[i]^2 + 4 * w_2_new[i]^3 * w_3_new[i] * y_2_new[i]^2 * y_3_new[i] * ((-y_1_new[i]) + y_3_new[i]) + 4 * w_1_new[i]^3 * y_1_new[i]^2 * y_2_3_new[i] * (w_2_new[i] * y_2_new[i] - w_3_new[i] * y_3_new[i]) + 4 * w_1_new[i] * y_1_new[i] * (w_2_new[i]^3 * y_2_new[i]^2 * y_1_3_new[i] - w_2_new[i] * w_3_new[i]^2 * y_2_new[i] * (y_1_new[i] + y_2_new[i] - 2 * y_3_new[i]) * y_3_new[i] + w_3_new[i]^3 * y_1_2_new[i] * y_3_new[i]^2 - w_2_new[i]^2 * w_3_new[i] * y_2_new[i] * y_3_new[i] * (y_1_new[i] - 2 * y_2_new[i] + y_3_new[i])) + 2 * w_2_new[i]^2 * w_3_new[i]^2 * y_2_new[i] * y_3_new[i] * (y_1_new[i]^2 - 3 * y_2_new[i] * y_3_new[i] + y_1_new[i] * (y_2_new[i] + y_3_new[i])) + 2 * w_1_new[i]^2 * y_1_new[i] * (-2 * w_2_new[i] * w_3_new[i] * y_2_new[i] * y_3_new[i] * (-2 * y_1_new[i] + y_2_new[i] + y_3_new[i]) + w_3_new[i]^2 * y_3_new[i] * (y_1_new[i] * (y_2_new[i] - 3 * y_3_new[i]) + y_2_new[i] * (y_2_new[i] + y_3_new[i])) + w_2_new[i]^2 * y_2_new[i] * (y_1_new[i] * (-3 * y_2_new[i] + y_3_new[i]) + y_3_new[i] * (y_2_new[i] + y_3_new[i]))))))))) / (2 * sqrt((w_1_new[i] * y_1_new[i] * y_2_3_new[i] + w_3_new[i] * y_1_2_new[i] * y_3_new[i] + w_2_new[i] * y_2_new[i] * ((-y_1_new[i]) + y_3_new[i]))^2))
-
-            # If y and w are 0, then 0/0=NaN
-            if (is.nan(lambda_result)) {
-                lambda_result <- 0
-            }
-            lambda_new <- c(lambda_new, lambda_result)
-
-            # Calculate scaling factor A for each peak triplet
-            A_result <- (-4 * w_1_2_new[i] * w_1_3_new[i] * w_2_3_new[i] * y_1_new[i] * y_2_new[i] * y_3_new[i] * (w_1_new[i] * y_1_new[i] * y_2_3_new[i] + w_3_new[i] * y_3_new[i] * y_1_2_new[i] + w_2_new[i] * y_2_new[i] * (-y_1_3_new[i])) * lambda_new[i]) / (w_1_2_new[i]^4 * y_1_new[i]^2 * y_2_new[i]^2 - 2 * w_1_2_new[i]^2 * y_1_new[i] * y_2_new[i] * (w_1_3_new[i]^2 * y_1_new[i] + w_2_3_new[i]^2 * y_2_new[i]) * y_3_new[i] + (w_1_3_new[i]^2 * y_1_new[i] - w_2_3_new[i]^2 * y_2_new[i])^2 * y_3_new[i]^2)
-
-            # If y and w are 0, then 0/0=NaN
-            if (is.nan(A_result)) {
-                A_result <- 0
-            }
-            A_new <- c(A_new, A_result)
-
-            # Calculate new lorentz curves
-            # If y values are zero, then lorentz curves should also be zero
-            if ((w_new[i] == 0) | (lambda_new[i] == 0) | (A_new[i] == 0)) {
-                lorentz_curves_initial[i, ] <- 0
-            } else {
-                lorentz_curves_initial[i, ] <- abs(A_new[i] * (lambda_new[i] / (lambda_new[i]^2 + (spec$sdp - w_new[i])^2)))
-            }
-        }
-
-        # Calculate sum of lorentz curves
-        spectrum_approx <- matrix(nrow = 1, ncol = length(spec$sdp))
-        for (i in 1:length(spec$sdp)) {
-            spectrum_approx[1, i] <- sum(lorentz_curves_initial[1:length(filtered_peaks), i])
-        }
-        # ToSc: use vectorized functions, e.g.
-        # spectrum_approx <- colSums(lorentz_curves_initial[1:length(filtered_peaks), ])
-
-        # Standardize the spectra so that total area equals 1
-        spectrum_y_normed <- spec$y / sum(spec$y)
-        spectrum_approx_normed <- spectrum_approx / sum(spectrum_approx)
-
-        # Calculate the difference between normed original spectrum and normed approximated spectrum
-        difference_normed <- c()
-        for (i in 1:length(spec$sdp)) {
-            difference_normed[i] <- (spectrum_y_normed[i] - spectrum_approx_normed[i])^2
-        }
-        mse_normed <- (1 / length(difference_normed)) * sum(difference_normed)
-        message(paste("\nNormed MSE value of iteration", b, "is: "))
-        print(mse_normed)
-    }
-}
+## curve fitting #####
 
 calculate_lorentz_curve_integrals <- function() {
     # Calculate the integrals for each lorentz curve
@@ -1809,32 +1526,7 @@ calculate_lorentz_curve_integrals <- function() {
     }
 }
 
-init_debug_env <- function() {
-    with(
-        testdir = "deconvolute_spectrum/1",
-        inputs = c(urine = "bruker/urine/urine_1"),
-        output = "captured", message = "captured", plots = "plots.pdf",
-        answers = c("y", "y"),
-        expr = {
-            set.seed(1234)
-            deconvolute_spectrum(
-                filepath = "urine_1/10",
-                name = NULL,
-                file_format = "bruker",
-                same_parameter = FALSE,
-                processing_value = 10,
-                number_iterations = 1,
-                range_water_signal_ppm = 0.1527692,
-                signal_free_region = c(11.44494, -1.8828),
-                smoothing_param = c(2, 5),
-                delta = 6.4,
-                scale_factor = c(1000, 1000000),
-                current_filenumber = 1,
-                number_of_files = 2
-            )
-        }
-    )
-}
+## return list #####
 
 create_return_list <- function(spec) {
     return_list <- list(
@@ -1860,45 +1552,107 @@ create_return_list <- function(spec) {
     )
 }
 
-compare_spec_with_debugenv <- function(spec) {
-    if (is.null(.GlobalEnv$debugenv)) {
-        cat2("init_debug_env()")
-        init_debug_env()
-    }
-    cat2("type <- match.arg(type, c('bruker', 'jcampdx'))")
-    cat2("spec <- read_spectrum(path, type, sf, expno, procno)")
-    vcomp(n1 <- debugenv$spectrum_length, n <- n2 <- spec$n) # nolint
-    vcomp(v1 <- debugenv$spectrum_x, v2 <- spec$sdp) # nolint
-    vcomp(v1 <- debugenv$spectrum_x_ppm, v2 <- spec$ppm) # nolint
-    vcomp(v1 <- debugenv$spectrum_y_raw, v2 <- spec$Y$raw) # nolint
-    vcomp(v1 <- debugenv$spectrum_y_scaled, v2 <- spec$Y$scaled) # nolint
-    cat2("spec <- determine_signal_free_region(spec, sfr, ask)")
-    cat2("spec <- determine_water_signal(spec, hwidth_ppm = wshw, bwc, ask)")
-    vcomp(v1 <- debugenv$signal_free_region_left, v2 <- spec$sfr$left_sdp) # nolint
-    vcomp(v1 <- debugenv$signal_free_region_right, v2 <- spec$sfr$right_sdp) # nolint
-    vcomp(v1 <- debugenv$water_signal_left, v2 <- spec$ws$left_dp) # nolint
-    vcomp(v1 <- debugenv$water_signal_right, v2 <- spec$ws$right_dp) # nolint
-    cat2("spec <- remove_water_signal(spec, bwc)")
-    cat2("spec <- remove_negative_signals(spec)")
-    vcomp(v1 <- debugenv$spectrum_y_no_ws, v2 <- spec$Y$nows) # nolint
-    vcomp(v1 <- debugenv$spectrum_y_no_ws_no_neg, v2 <- spec$Y$pos) # nolint
-    cat2("spec <- smooth_signals(spec, reps = smopts[1], k = smopts[2], bwc)")
-    vcomp(v1 <- debugenv$spectrum_y_no_ws_no_neg_smoothed, v2 <- spec$Y$smooth) # nolint
-    cat2("spec <- select_peaks_v2(spec, bwc)")
-    vcomp(n1 <- debugenv$spectrum_length, n <- n2 <- spec$n) # nolint
-    vcomp(v1 <- debugenv$second_derivative[1, ], v2 <- spec$sdp[2:(n - 1)]) # nolint
-    vcomp(v1 <- debugenv$second_derivative[2, ], v2 <- spec$d[2:(n - 1)]) # nolint
-    vcomp(v1 <- debugenv$peaks_index, v2 <- as.integer(spec$peaks - 1)) # nolint
-    vcomp(v1 <- debugenv$peaks_x, v2 <- spec$sdp[spec$peaks]) # nolint
-    cat2("spec <- find_peak_borders(spec)")
-    vcomp(v1 <- debugenv$left_position[1, ], v2 <- spec$left - 1) # nolint
-    vcomp(v1 <- debugenv$right_position[1, ], v2 <- spec$right - 1) # nolint
-    plot_peaks(spec)
-    cat2("spec <- get_peak_triplets(spec)")
-    cat2("spec <- get_preak_triplet_scores(spec)")
-    cat2("spec <- filter_peak_triplets(spec)")
-    cat2("spec <- calculate_initial_lorentz_curves(spec)")
-    cat2("spec <- refine_lorentz_curves(spec, nfit)")
-    cat2("spec <- calculate_lorentz_curve_integrals(spec)")
-    cat2("ret <- create_return_list(spec)")
+## interactive debugging #####
+
+#' list_func_results()
+#' # "deconvolution_urine1_spF_ni1_cf1_nf2.rds"
+#' # "deconvolution_urine1_spT_ni1_cf1_nf2.rds"
+#' # "deconvolution_urine1_spT_ni1_cf2_nf2.rds"
+#' spec <- deconvolute_spectrum()
+#' check_spec(spec, compare_against = "deconvolution_urine1_spF_ni1_cf1_nf2.rds")
+check_spec <- function(spec, compare_against = "deconvolution_urine1_spF_ni1_cf1_nf2.rds") {
+    func_result <- get_func_result(rds = compare_against)
+    ref <- func_result$rv$debuglist
+    x <- logical()
+
+    # type <- match.arg(type, c('bruker', 'jcampdx'))
+    # spec <- read_spectrum(path, type, sf, expno, procno)
+    x[1] <- vcomp(ref$data_read$spectrum_y_raw, spec$Y$raw)
+    x[2] <- vcomp(ref$data_read$spectrum_y, spec$Y$scaled)
+
+    # spec <- determine_signal_free_region(spec, sfr, ask)
+    # spec <- determine_water_signal(spec, hwidth_ppm = wshw, bwc, ask)
+    x[3] <- vcomp(ref$ws_rm$spectrum_length, spec$n)
+    x[4] <- vcomp(ref$ws_rm$spectrum_x, spec$sdp)
+    x[5] <- vcomp(ref$ws_rm$spectrum_x_ppm, spec$ppm)
+    x[6] <- vcomp(ref$ws_rm$signal_free_region_left, spec$sfr$left_sdp)
+    x[7] <- vcomp(ref$ws_rm$signal_free_region_right, spec$sfr$right_sdp)
+    x[8] <- vcomp(ref$ws_rm$water_signal_left, spec$ws$left_dp)
+    x[9] <- vcomp(ref$ws_rm$water_signal_right, spec$ws$right_dp)
+    x[10] <- vcomp(ref$ws_rm$spectrum_y, spec$Y$nows)
+
+    # spec <- remove_negative_signals(spec)
+    x[11] <- vcomp(ref$neg_rm$spectrum_y, spec$Y$pos)
+
+    # spec <- smooth_signals(spec, reps = smopts[1], k = smopts[2], bwc)
+    x[12] <- vcomp(ref$smoothed$spectrum_y, spec$Y$smooth)
+
+    # spec <- find_peaks(spec)
+    # previously: spec <- select_peaks_v2(spec, bwc)
+    # previously: spec <- find_peak_borders(spec)
+    # previously: spec <- rm_peaks_without_borders(spec)
+    # previously: spec <- calc_peak_scores(spec)
+    x[13] <- vcomp(ref$peaks_sel$spectrum_length, spec$n)
+    x[14] <- vcomp(ref$peaks_sel$second_derivative[1, ], spec$sdp[2:(spec$n - 1)])
+    x[15] <- vcomp(ref$peaks_sel$second_derivative[2, ], spec$d[2:(spec$n - 1)])
+    x[16] <- vcomp(ref$peaks_sel$peaks_index, as.integer(spec$peak$center - 1))
+    x[17] <- vcomp(ref$peaks_sel$peaks_x, as.integer(spec$peak$center - 1))
+    x[18] <- vcomp(ref$peaks_sel$left_position[1, ], spec$peak$right - 1)
+    x[19] <- vcomp(ref$peaks_sel$right_position[1, ], spec$peak$left - 1)
+    x[20] <- vcomp(ref$peaks_wob_rm$peaks_x, spec$sdp[spec$peak$center])
+    x[21] <- vcomp(ref$peaks_wob_rm$peaks_index, as.integer(spec$peak$center - 1))
+    x[22] <- vcomp(ref$peaks_wob_rm$left_position[1, ], spec$peak$right - 1)
+    x[23] <- vcomp(ref$peaks_wob_rm$right_position[1, ], spec$peak$left - 1)
+
+    # spec <- rm_peaks_with_low_scores(spec)
+    peaks <- spec$peak$center
+    scores <- spec$peak$score
+    region <- spec$peak$region
+    x[24] <- vcomp(ref$peak_scores_calc$mean_score, mean(scores[region %in% c("sfrl", "sfrr")]))
+    x[25] <- vcomp(ref$peak_scores_calc$sd_score, sd(scores[region %in% c("sfrl", "sfrr")]))
+    x[26] <- vcomp(ref$peak_scores_calc$scores[1,], spec$peak$score)
+    x[27] <- vcomp(ref$peak_scores_calc$index_left, which(spec$peak$region == "sfrl"))
+    x[28] <- vcomp(ref$peak_scores_calc$index_right, which(spec$peak$region == "sfrr"))
+    x[29] <- vcomp(ref$peak_scores_calc$filtered_peaks, as.integer(spec$peak$center[spec$peak$high] - 1))
+    x[30] <- vcomp(ref$peak_scores_calc$filtered_left_position, spec$peak$right[spec$peak$high] - 1)
+    x[31] <- vcomp(ref$peak_scores_calc$filtered_right_position, spec$peak$left[spec$peak$high] - 1)
+    x[32] <- vcomp(ref$peak_scores_calc$save_scores, spec$peak$score[spec$peak$high])
+
+    # spec <- init_lorentz_curves(spec)
+    x[33] <- vcomp(ref$params_init$spectrum_x, spec$sdp)
+    x[34] <- vcomp(ref$params_init$spectrum_y, spec$Y$smooth)
+    x[35] <- vcomp(ref$params_init$w, spec$lc$w)
+    x[36] <- vcomp(ref$params_init$w_delta, spec$lc$w_delta)
+    x[37] <- vcomp(ref$params_init$lambda, spec$lc$lambda)
+    x[38] <- vcomp(ref$params_init$A, spec$lc$A)
+
+    # spec <- refine_lorentz_curves(spec, nfit)
+    x[39] <- vcomp(ref$params_approx$spectrum_x, spec$sdp)
+    x[40] <- vcomp(ref$params_approx$spectrum_y, spec$lc$spectrum_y)
+    x[41] <- vcomp(ref$params_approx$w, spec$lc$w)
+    x[42] <- vcomp(ref$params_approx$w_delta, spec$lc$w_delta)
+    x[43] <- vcomp(ref$params_approx$lambda, spec$lc$lambda)
+    x[44] <- vcomp(ref$params_approx$A, spec$lc$A)
+
+    # spec <- calculate_lorentz_curve_integrals(spec)
+    ref$params_approx$integrals
+
+    # ret <- create_return_list(spec)
+    ref$params_saved$index_peak_triplets_middle
+    ref$params_saved$index_peak_triplets_left
+    ref$params_saved$index_peak_triplets_right
+    ref$params_saved$peak_triplets_middle
+    ref$params_saved$peak_triplets_left
+    ref$params_saved$peak_triplets_right
+    ref$params_saved$noise_threshold
+    ref$params_saved$noise_threshold
+    ref$params_saved$spectrum_info
+    ref$params_saved$spectrum_output
+    ref$params_saved$name_info_txt
+    ref$params_saved$name_output_txt
+
+    if (any(x == 1)) warning("Detected numerical different values at:", paste(which(x == 1), collapse = ", "))
+    if (any(x == 2)) warning("Detected hugely different values at:", paste(which(x == 2), collapse = ", "))
+
+    return(x)
 }

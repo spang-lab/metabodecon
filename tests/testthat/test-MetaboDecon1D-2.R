@@ -11,7 +11,7 @@ test_that("2. MetaboDecon1D with: 2 jcampdx, answers == y1yy", {
     skip_if_not(Sys.getenv("RUN_SLOW_TESTS") == "TRUE", "Skipped because RUN_SLOW_TESTS != TRUE")
 
     ## Call function #####
-    x <- with(
+    x <- evalwith(
         testdir = "MetaboDecon1D/2",
         output = "captured",
         message = "captured",
