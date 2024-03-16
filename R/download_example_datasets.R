@@ -63,7 +63,7 @@ download_example_datasets <- function(dst_dir = NULL,
 #' }
 #' @noRd
 xds <- list(
-    url = "https://github.com/spang-lab/metabodecon/releases/download/v1.1.0/example_datasets.zip",
+    url = "https://github.com/spang-lab/metabodecon/releases/download/v11.0/example_datasets.zip",
     zip_size = 38425397,
     dir_size = 56378684,
     n_files = 1018

@@ -24,15 +24,15 @@ exp_str <- c(
     " $ x_0                       : num [1:1227] 94.9 93.9 93.7 93.6 92.1 ..."
 )
 
-test_that("5. deconvolute_spectrum(format = jcampdx, sameparam = TRUE, nfile = 1/2)", {
+test_that("5. deconvolution_v11(format = jcampdx, sameparam = TRUE, nfile = 1/2)", {
     x <- evalwith(
-        testdir = "deconvolute_spectrum/5",
+        testdir = "deconvolution_v11/5",
         inputs = c(urine.dx = "jcampdx/urine/urine_1.dx"),
         output = "captured", message = "captured", plots = "plots.pdf",
         answers = c("y", "y"),
         expr = {
             set.seed(1234)
-            dspec <- deconvolute_spectrum(
+            dspec <- deconvolution_v11(
                 filepath = ".",
                 name = "urine_1.dx",
                 file_format = "jcampdx",

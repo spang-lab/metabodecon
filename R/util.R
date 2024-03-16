@@ -143,49 +143,6 @@ dp_to_ppm <- function(dp, spectrum) {
     return(ppm)
 }
 
-vcomp <- function(x, y) {
-    if(!is.vector(x) || is.list(x)) stop("x must be a vector, but is:", class(x))
-    if(!is.vector(y) || is.list(y)) stop("y must be a vector, but is:", class(y))
-    if (identical(x, y)) {
-        return(0)
-    } else {
-        capture.output(all_equal <- isTRUE(all.equal(x, y)))
-        cat2(if (all_equal) "All equal" else "Different")
-        i <- which(x != y)
-        a <- x[i]
-        b <- y[i]
-        z <- a - b
-        cat2("Objects:")
-        cat2()
-        cat2("length(x):", length(x))
-        cat2("length(y):", length(y))
-        cat2("head(x):", head(x))
-        cat2("head(y):", head(y))
-        cat2("tail(x):", tail(x))
-        cat2("tail(y):", tail(y))
-        cat2("class(x):", class(x))
-        cat2("class(y):", class(y))
-        cat2("attributes(x):", attributes(x))
-        cat2("attributes(y):", attributes(y))
-        cat2()
-        cat2("Different Indices (i <- which(x != y)):")
-        cat2()
-        cat2("length(i):", length(i))
-        cat2("head(i)", head(i))
-        cat2("tail(i)", tail(i))
-        cat2()
-        cat2("Different Elements (a <- x[i]; b <- y[i]; z <- a - b):")
-        cat2()
-        cat2("head(a):", head(a))
-        cat2("head(b):", head(b))
-        cat2("tail(a):", head(a))
-        cat2("tail(b):", head(b))
-        cat2("head(z):", head(z))
-        cat2("tail(z):", tail(z))
-        return(if (all_equal) 1 else 2)
-    }
-}
-
 rescale <- function(x, range = c(0, 1)) {
     x_min <- min(x, na.rm = TRUE)
     x_max <- max(x, na.rm = TRUE)
@@ -197,3 +154,4 @@ rescale <- function(x, range = c(0, 1)) {
 }
 
 cat3 <- function(...) cat2(format(Sys.time()), ...)
+

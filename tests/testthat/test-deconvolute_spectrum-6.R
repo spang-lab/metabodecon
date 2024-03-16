@@ -24,15 +24,15 @@ exp_str <- c(
     " $ x_0                       : num [1:1227] 94.9 93.9 93.7 93.6 92.1 ..."
 )
 
-test_that("6. deconvolute_spectrum(format = jcampdx, sameparam = TRUE, nfile = 2/2)", {
+test_that("6. deconvolution_v11(format = jcampdx, sameparam = TRUE, nfile = 2/2)", {
     x <- evalwith(
-        testdir = "deconvolute_spectrum/6",
+        testdir = "deconvolution_v11/6",
         inputs = c(urine.dx = "jcampdx/urine/urine_1.dx"),
         output = "captured", message = "captured", plots = "plots.pdf",
         answers = NULL,
         expr = {
             set.seed(1234)
-            dspec <- deconvolute_spectrum(
+            dspec <- deconvolution_v11(
                 filepath = ".",
                 name = "urine_1.dx",
                 file_format = "jcampdx",
@@ -40,7 +40,7 @@ test_that("6. deconvolute_spectrum(format = jcampdx, sameparam = TRUE, nfile = 2
                 processing_value = 10,
                 number_iterations = 1,
                 range_water_signal_ppm = 0.1527692,
-                signal_free_region = c(109.09458303373, 21.8529143006947), # When using the same parameters as for the last run, the signal_free_region is not interpreted as "signal free region in ppm" but as "signal free region in xxx" where "xxx" is the unit used by `deconvolute_spectrum()$signal_free_region`. From what I could see by skimming over the code, this unit is something like a "scaled rank". I.e. if signal_free_region_in_ppm[1] is 11.44 and 11.44 is the 109094th smallest value in the spectrum, then `deconvolute_spectrum()$signal_free_region[0]` will be `109094/scale_factor[1]`, which is 109.094 if scale_factor[1] is 1000.
+                signal_free_region = c(109.09458303373, 21.8529143006947), # When using the same parameters as for the last run, the signal_free_region is not interpreted as "signal free region in ppm" but as "signal free region in xxx" where "xxx" is the unit used by `deconvolution_v11()$signal_free_region`. From what I could see by skimming over the code, this unit is something like a "scaled rank". I.e. if signal_free_region_in_ppm[1] is 11.44 and 11.44 is the 109094th smallest value in the spectrum, then `deconvolution_v11()$signal_free_region[0]` will be `109094/scale_factor[1]`, which is 109.094 if scale_factor[1] is 1000.
                 smoothing_param = c(2, 5),
                 delta = 6.4,
                 scale_factor = c(1000, 1000000),

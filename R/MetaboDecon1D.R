@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see https://www.gnu.org/licenses/.
 
-#' @details For examples on how to call see `tests/testthat/test-deconvolute_spectrum-123.R`
+#' @details For examples on how to call see `tests/testthat/test-deconvolution_v11-123.R`
 #' @noRd
 deconvolution <- function(
   filepath,
@@ -863,12 +863,16 @@ deconvolution <- function(
 
   if (debug) {
     debuglist$params_init <- list(
-      w = w,
-      w_delta = w_delta,
-      lambda = lambda,
       A = A,
+      filtered_left_position = filtered_left_position,
+      filtered_peaks = filtered_peaks,
+      filtered_right_position = filtered_right_position,
+      lambda = lambda,
+      number_iterations = number_iterations,
       spectrum_x = spectrum_x,
-      spectrum_y = spectrum_y
+      spectrum_y = spectrum_y,
+      w = w,
+      w_delta = w_delta
     )
   }
 
@@ -1022,6 +1026,7 @@ deconvolution <- function(
 
   }
 
+
   # Calculate the integrals for each lorentz curve
   integrals <- matrix(nrow = 1, ncol = length(lambda_new))
   for(i in 1:length(lambda_new)){
@@ -1030,10 +1035,14 @@ deconvolution <- function(
 
   if (debug) {
     debuglist$params_approx <- list(
-      w = w,
-      lambda = lambda,
-      A = A,
-      integrals = integrals
+      A_new = A_new,
+      lambda_new = lambda_new,
+      w_new = w_new,
+      integrals = integrals,
+      spectrum_y_normed = spectrum_y_normed,
+      spectrum_approx_normed = spectrum_approx_normed,
+      difference_normed = difference_normed,
+      mse_normed = mse_normed
     )
   }
 

@@ -647,6 +647,8 @@ mockdir <- function() {
     normalizePath(p, "/", mustWork = FALSE)
 }
 
+# Interactive Testing #####
+
 #' @description The `metabodecon` package contains private copies of all functions from the precursor package `MetaboDecon1D`. The copies are functionally identical [^1] to the original versions expect for a few extra lines of code, which cause the functions to store information about intermediate calculations inside environment `debugenvs` [^2] where `debugenvs == getOption("metabodecon.debugenvs")`.
 #'
 #' This function uses this mechanism to call the original functions (e.g. [deconvolution()]) with different input parameters and stores the returned debug information as RDS files. This way, new or updated functions from `metabodecon` can be tested against the original function result to ensure correctness and/or backwards compatibility.
@@ -665,11 +667,23 @@ store_func_results <- function(overwrite = FALSE) {
     name <- "deconvolution_urine1_spF_ni1_cf1_nf2"
     xpcts[[name]] <- store_as_rds2(name, {
         evalwith(
-            testdir = "deconvolute_spectrum/1", inputs = c(urine = "bruker/urine/urine_1"), answers = c("y", "y"),
+            testdir = "deconvolution_v11/1", inputs = c(urine = "bruker/urine/urine_1"), answers = c("y", "y"),
             output = "captured", message = "captured", plots = "plots.pdf",
             expr = {
                 set.seed(1234)
-                deconvolute_spectrum(filepath = "urine_1/10", name = NULL, file_format = "bruker", same_parameter = FALSE, processing_value = 10, number_iterations = 1, range_water_signal_ppm = 0.1527692, signal_free_region = c(11.44494, -1.8828), smoothing_param = c(2, 5), delta = 6.4, scale_factor = c(1000, 1000000), current_filenumber = 1, number_of_files = 2, debug = TRUE)
+                deconvolution_v11(filepath = "urine_1/10", name = NULL, file_format = "bruker", same_parameter = FALSE, processing_value = 10, number_iterations = 1, range_water_signal_ppm = 0.1527692, signal_free_region = c(11.44494, -1.8828), smoothing_param = c(2, 5), delta = 6.4, scale_factor = c(1000, 1000000), current_filenumber = 1, number_of_files = 2, debug = TRUE)
+            }
+        )
+    })
+
+    name <- "deconvolution_urine1_spF_ni10_cf1_nf2"
+    xpcts[[name]] <- store_as_rds2(name, {
+        evalwith(
+            testdir = "deconvolution_v11/1", inputs = c(urine = "bruker/urine/urine_1"), answers = c("y", "y"),
+            output = "captured", message = "captured", plots = "plots.pdf",
+            expr = {
+                set.seed(1234)
+                deconvolution_v11(filepath = "urine_1/10", name = NULL, file_format = "bruker", same_parameter = FALSE, processing_value = 10, number_iterations = 10, range_water_signal_ppm = 0.1527692, signal_free_region = c(11.44494, -1.8828), smoothing_param = c(2, 5), delta = 6.4, scale_factor = c(1000, 1000000), current_filenumber = 1, number_of_files = 2, debug = TRUE)
             }
         )
     })
@@ -677,11 +691,11 @@ store_func_results <- function(overwrite = FALSE) {
     name <- "deconvolution_urine1_spT_ni1_cf1_nf2"
     xpcts[[name]] <- store_as_rds2(name, {
         evalwith(
-            testdir = "deconvolute_spectrum/2", inputs = c(urine = "bruker/urine/urine_1"), answers = c("y", "y"),
+            testdir = "deconvolution_v11/2", inputs = c(urine = "bruker/urine/urine_1"), answers = c("y", "y"),
             output = "captured", message = "captured", plots = "plots.pdf",
             expr = {
                 set.seed(1234)
-                deconvolute_spectrum(filepath = "urine_1/10", name = NULL, file_format = "bruker", same_parameter = TRUE, processing_value = 10, number_iterations = 1, range_water_signal_ppm = 0.1527692, signal_free_region = c(11.44494, -1.8828), smoothing_param = c(2, 5), delta = 6.4, scale_factor = c(1000, 1000000), current_filenumber = 1, number_of_files = 2, debug = TRUE)
+                deconvolution_v11(filepath = "urine_1/10", name = NULL, file_format = "bruker", same_parameter = TRUE, processing_value = 10, number_iterations = 1, range_water_signal_ppm = 0.1527692, signal_free_region = c(11.44494, -1.8828), smoothing_param = c(2, 5), delta = 6.4, scale_factor = c(1000, 1000000), current_filenumber = 1, number_of_files = 2, debug = TRUE)
             }
         )
     })
@@ -689,11 +703,11 @@ store_func_results <- function(overwrite = FALSE) {
     name <- "deconvolution_urine1_spT_ni1_cf2_nf2"
     xpcts[[name]] <- store_as_rds2(name, {
         evalwith(
-            testdir = "deconvolute_spectrum/3", inputs = c(urine = "bruker/urine/urine_1"), answers = NULL,
+            testdir = "deconvolution_v11/3", inputs = c(urine = "bruker/urine/urine_1"), answers = NULL,
             output = "captured", message = "captured", plots = "plots.pdf",
             expr = {
                 set.seed(1234)
-                deconvolute_spectrum(filepath = "urine_1/10", name = NULL, file_format = "bruker", same_parameter = TRUE, processing_value = 10, number_iterations = 1, range_water_signal_ppm = 0.1527692, signal_free_region = c(109.09458303373, 21.8529143006947), smoothing_param = c(2, 5), delta = 6.4, scale_factor = c(1000, 1000000), current_filenumber = 2, number_of_files = 2, debug = TRUE)
+                deconvolution_v11(filepath = "urine_1/10", name = NULL, file_format = "bruker", same_parameter = TRUE, processing_value = 10, number_iterations = 1, range_water_signal_ppm = 0.1527692, signal_free_region = c(109.09458303373, 21.8529143006947), smoothing_param = c(2, 5), delta = 6.4, scale_factor = c(1000, 1000000), current_filenumber = 2, number_of_files = 2, debug = TRUE)
             }
         )
     })
@@ -704,7 +718,7 @@ store_func_results <- function(overwrite = FALSE) {
 list_func_results <- function() {
     dstdir <- datadir("test_expects", warn = FALSE)
     if (!dir.exists(dstdir)) dir.create(dstdir, recursive = TRUE)
-    dir(dstdir)
+    dir(dstdir, full.names = TRUE)
 }
 
 get_func_result <- function(rds = "deconvolution_urine1_spF_ni1_cf1_nf2.rds") {
@@ -712,7 +726,7 @@ get_func_result <- function(rds = "deconvolution_urine1_spF_ni1_cf1_nf2.rds") {
     if (!dir.exists(dstdir)) dir.create(dstdir, recursive = TRUE)
     rds <- file.path(dstdir, rds)
     if (!file.exists(rds)) {
-        text <- "File '%s' does not exist. Valid names are:\n%s"
+        text <- "File '%s' does not exist. Valid names are:\n%s\nIf you believe, the file should exist, run `store_func_results()` to create it."
         valid <- paste(list_func_results(), collapse = "\n")
         msg <- sprintf(text, rds, valid)
         stop(msg)
@@ -740,5 +754,167 @@ store_as_rds <- function(name, dstdir, overwrite, expr) {
     } else {
         x <- readRDS(rds)
     }
+    invisible(x)
+}
+
+vcomp <- function(x, y) {
+    callstr <- paste(deparse(sys.call()), collapse="")
+    callstr <- gsub("\\s+", " ", callstr)
+    o <- capture.output({
+        r <- tryCatch({
+            x <- vcomp_internal(x, y)
+            m <- switch(as.character(x),
+                "0" = paste0(GREEN, "identical", RESET),
+                "1" = paste0(ORANGE, "all.equal", RESET),
+                "2" = paste0(RED, "different", RESET)
+            )
+            list(x = x, m = m)
+        }, error = function(e) {
+            x <- 3
+            m <- paste0(RED, e$message, RESET)
+            list(x = x, m = m)
+        })
+    })
+    catf("%s: %s\n", callstr, r$m)
+    cat2(o)
+    r$x
+}
+
+vcomp_internal <- function(x, y) {
+    if(!is.vector(x) || is.list(x)) stop("x must be a vector, but is: ", class(x))
+    if(!is.vector(y) || is.list(y)) stop("y must be a vector, but is: ", class(y))
+    if (identical(x, y)) {
+        return(0)
+    } else {
+        capture.output(all_equal <- isTRUE(all.equal(x, y)))
+        i <- which(x != y)
+        a <- x[i]
+        b <- y[i]
+        z <- a - b
+        cat2("Objects:")
+        cat2()
+        cat2("length(x):", length(x))
+        cat2("length(y):", length(y))
+        cat2("head(x):", head(x))
+        cat2("head(y):", head(y))
+        cat2("tail(x):", tail(x))
+        cat2("tail(y):", tail(y))
+        cat2("class(x):", class(x))
+        cat2("class(y):", class(y))
+        cat2("attributes(x):", attributes(x))
+        cat2("attributes(y):", attributes(y))
+        cat2()
+        cat2("Different Indices (i <- which(x != y)):")
+        cat2()
+        cat2("length(i):", length(i))
+        cat2("head(i)", head(i))
+        cat2("tail(i)", tail(i))
+        cat2()
+        cat2("Different Elements (a <- x[i]; b <- y[i]; z <- a - b):")
+        cat2()
+        cat2("head(a):", head(a))
+        cat2("head(b):", head(b))
+        cat2("tail(a):", head(a))
+        cat2("tail(b):", head(b))
+        cat2("head(z):", head(z))
+        cat2("tail(z):", tail(z))
+        return(if (all_equal) 1 else 2)
+    }
+}
+
+#' list_func_results()
+#' # "deconvolution_urine1_spF_ni1_cf1_nf2.rds"
+#' # "deconvolution_urine1_spT_ni1_cf1_nf2.rds"
+#' # "deconvolution_urine1_spT_ni1_cf2_nf2.rds"
+#' spec <- deconvolution_v11()
+#' check_spec(spec, compare_against = "deconvolution_urine1_spF_ni1_cf1_nf2.rds")
+check_spec <- function(spec, compare_against = "deconvolution_urine1_spF_ni10_cf1_nf2.rds") {
+    func_result <- get_func_result(rds = compare_against)
+    ref <- func_result$rv$debuglist
+    blue <- function(x) cat2("\033[34m", x, "\033[0m", sep = "")
+    x <- logical()
+
+
+    blue("read_spectrum(path, type, sf, expno, procno)")
+    x[1] <- vcomp(ref$data_read$spectrum_y_raw, spec$Y$raw)
+    x[2] <- vcomp(ref$data_read$spectrum_y, spec$Y$scaled)
+
+    blue("determine_signal_free_region(spec, sfr, ask)")
+    blue("determine_water_signal(spec, hwidth_ppm = wshw, bwc, ask)")
+    x[3] <- vcomp(ref$ws_rm$spectrum_length, spec$n)
+    x[4] <- vcomp(ref$ws_rm$spectrum_x, spec$sdp)
+    x[5] <- vcomp(ref$ws_rm$spectrum_x_ppm, spec$ppm)
+    x[6] <- vcomp(ref$ws_rm$signal_free_region_left, spec$sfr$left_sdp)
+    x[7] <- vcomp(ref$ws_rm$signal_free_region_right, spec$sfr$right_sdp)
+    x[8] <- vcomp(ref$ws_rm$water_signal_left, spec$ws$left_dp)
+    x[9] <- vcomp(ref$ws_rm$water_signal_right, spec$ws$right_dp)
+    x[10] <- vcomp(ref$ws_rm$spectrum_y, spec$Y$nows)
+
+    blue("remove_negative_signals(spec)")
+    x[11] <- vcomp(ref$neg_rm$spectrum_y, spec$Y$pos)
+
+    blue("smooth_signals(spec, reps = smopts[1], k = smopts[2], bwc)")
+    x[12] <- vcomp(ref$smoothed$spectrum_y, spec$Y$smooth)
+
+    blue("find_peaks_v12(spec)")
+    x[13] <- vcomp(ref$peaks_sel$spectrum_length, spec$n)
+    x[14] <- vcomp(ref$peaks_sel$second_derivative[1, ], spec$sdp[2:(spec$n - 1)])
+    x[15] <- vcomp(ref$peaks_sel$second_derivative[2, ], spec$d[2:(spec$n - 1)])
+    x[16] <- vcomp(ref$peaks_sel$peaks_index, as.integer(spec$peak$center - 1))
+    x[17] <- vcomp(ref$peaks_sel$peaks_x, as.integer(spec$peak$center - 1))
+    x[18] <- vcomp(ref$peaks_sel$left_position[1, ], spec$peak$right - 1)
+    x[19] <- vcomp(ref$peaks_sel$right_position[1, ], spec$peak$left - 1)
+    x[20] <- vcomp(ref$peaks_wob_rm$peaks_x, spec$sdp[spec$peak$center])
+    x[21] <- vcomp(ref$peaks_wob_rm$peaks_index, as.integer(spec$peak$center - 1))
+    x[22] <- vcomp(ref$peaks_wob_rm$left_position[1, ], spec$peak$right - 1)
+    x[23] <- vcomp(ref$peaks_wob_rm$right_position[1, ], spec$peak$left - 1)
+
+    blue("rm_peaks_with_low_scores(spec)")
+    peaks <- spec$peak$center
+    scores <- spec$peak$score
+    region <- spec$peak$region
+    x[24] <- vcomp(ref$peak_scores_calc$mean_score, mean(scores[region %in% c("sfrl", "sfrr")]))
+    x[25] <- vcomp(ref$peak_scores_calc$sd_score, sd(scores[region %in% c("sfrl", "sfrr")]))
+    x[26] <- vcomp(ref$peak_scores_calc$scores[1,], spec$peak$score)
+    x[27] <- vcomp(ref$peak_scores_calc$index_left, which(spec$peak$region == "sfrl"))
+    x[28] <- vcomp(ref$peak_scores_calc$index_right, which(spec$peak$region == "sfrr"))
+    x[29] <- vcomp(ref$peak_scores_calc$filtered_peaks, as.integer(spec$peak$center[spec$peak$high] - 1))
+    x[30] <- vcomp(ref$peak_scores_calc$filtered_left_position, spec$peak$right[spec$peak$high] - 1)
+    x[31] <- vcomp(ref$peak_scores_calc$filtered_right_position, spec$peak$left[spec$peak$high] - 1)
+    x[32] <- vcomp(ref$peak_scores_calc$save_scores, spec$peak$score[spec$peak$high])
+
+    blue("init_lorentz_curves(spec)")
+    x[33] <- vcomp(ref$params_init$spectrum_x, spec$sdp)
+    x[34] <- vcomp(ref$params_init$spectrum_y, spec$Y$smooth)
+    x[35] <- vcomp(ref$params_init$filtered_peaks, as.integer(spec$peak$center[spec$peak$high] - 1))
+    x[36] <- vcomp(ref$params_init$filtered_left_position, spec$peak$right[spec$peak$high] - 1)
+    x[37] <- vcomp(ref$params_init$filtered_right_position, spec$peak$left[spec$peak$high] - 1)
+    x[38] <- vcomp(ref$params_init$A, spec$lc$A)
+    x[39] <- vcomp(ref$params_init$lambda, spec$lc$lambda)
+    x[40] <- vcomp(ref$params_init$w, spec$lc$w)
+    x[41] <- vcomp(ref$params_init$number_iterations, nfit)
+
+    blue("refine_lorentz_curves(spec, nfit)")
+    x[42] <- vcomp(ref$params_approx$w_new, spec$lcr$w_new)
+    x[43] <- vcomp(ref$params_approx$lambda_new, spec$lcr$lambda_new)
+    x[44] <- vcomp(ref$params_approx$A_new, spec$lcr$A_new)
+    x[45] <- vcomp(ref$params_approx$integrals, spec$lcr$integrals)
+
+    # blue("create_return_list(spec)")
+    x[46] <- vcomp(ref$params_saved$index_peak_triplets_middle, NULL)
+    x[47] <- vcomp(ref$params_saved$index_peak_triplets_left, NULL)
+    x[48] <- vcomp(ref$params_saved$index_peak_triplets_right, NULL)
+    x[49] <- vcomp(ref$params_saved$peak_triplets_middle, NULL)
+    x[50] <- vcomp(ref$params_saved$peak_triplets_left, NULL)
+    x[51] <- vcomp(ref$params_saved$peak_triplets_right, NULL)
+    x[52] <- vcomp(ref$params_saved$noise_threshold, NULL)
+    x[53] <- vcomp(ref$params_saved$noise_threshold, NULL)
+    x[54] <- vcomp(ref$params_saved$spectrum_info, NULL)
+    x[55] <- vcomp(ref$params_saved$spectrum_output, NULL)
+    x[56] <- vcomp(ref$params_saved$name_info_txt, NULL)
+    x[57] <- vcomp(ref$params_saved$name_output_txt, NULL)
+
+    catf("Identical: %s, Numequal: %s, Different: %s, Error: %s", sum(x == 0), sum(x == 1), sum(x == 2), sum(x == 3))
+
     invisible(x)
 }
