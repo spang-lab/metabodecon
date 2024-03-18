@@ -155,3 +155,21 @@ rescale <- function(x, range = c(0, 1)) {
 
 cat3 <- function(...) cat2(format(Sys.time()), ...)
 
+
+is_num <- function(x, n = NULL) {
+    if (is.null(n)) {
+        is.numeric(x)
+    } else {
+        is.numeric(x) && length(x) == n
+    }
+}
+
+is_list_of_nums <- function(x, nl, nv) {
+    if (is.null(nv) && is.null(nv)) {
+        is.list(x) && all(sapply(x, is.numeric))
+    } else if (is.null(nv)) {
+        is.list(x) && length(x) == nl && all(sapply(x, is.numeric))
+    } else {
+        is.list(x) && length(x) == nl && all(sapply(x, is_num, n = nv))
+    }
+}

@@ -2,144 +2,128 @@
 
 #' @title Generate Lorentz Curves from NMR Spectra
 #' @description Deconvolutes NMR spetra and generates a Lorentz curve for each detected signal within a spectra.
-#' @param data_path (string) Path to the folder where the original spectra are stored. After deconvolution this folder contains two additional .txt files for each spectrum which contain the spectrum approximated from all deconvoluted signals and a parameter file that contains all numerical values of the deconvolution.
-#' @param file_format (string) Format of the spectra files.
-#' @param make_rds (bool) Store results as a rds file on disk? Should be set to TRUE if many spectra are evaluated to decrease computation time.
-#' @param number_iterations (int) Number of iterations for the approximation of the parameters for the Lorentz curves.
-#' @param range_water_signal_ppm (float) Half width of the water artefact in ppm.
-#' @param signal_free_region (float) Row vector with two entries consisting of the ppm positions for the left and right border of the signal free region of the spectrum.
-#' @param smoothing_param (int) Row vector with two entries consisting of the number of smoothing repeats for the whole spectrum and the number of data points (uneven) for the mean calculation.
-#' @param delta (float) Threshold value to distinguish between signal and noise.
-#' @param scale_factor (int) Row vector with two entries consisting of the factor to scale the x-axis and the factor to scale the y-axis.
-#' @param ask (bool) Whether to ask for user input during the deconvolution process. If set to FALSE, the provided default values will be used.
-#' @details First, an automated curvature based signal selection is performed. Each signal is represented by 3 data points to allow the determination of initial Lorentz curves. These Lorentz curves are then iteratively adjusted to optimally approximate the measured spectrum. For each spectrum two text files will be created in the parent folder i.e. the folder given in data path. The spectrum approximated from all deconvoluted signals and a parameter file that contains all numerical values of the deconvolution. Furthermore, the numerical values of the deconvolution are also stored in a data_frame.
-#' @details Shall replace `generate_lorentz_curves` as soon as implementation is finished.
-#' @noRd
-generate_lorentz_curves_v12 <- function(data_path,
-                                        file_format = c("bruker", "jcampdx"),
-                                        make_rds = FALSE,
-                                        number_iterations = 10,
-                                        range_water_signal_ppm = 0.1527692,
-                                        signal_free_region = c(11.44494, -1.8828),
-                                        smoothing_param = c(2, 5),
-                                        delta = 6.4,
-                                        scale_factor = c(1000, 1000000),
-                                        ask = TRUE) {
-    # Check arguments
-    file_format <- match.arg(file_format)
-
-    # Switch to data directory
-    data_path <- normalizePath(data_path)
-    owd <- getwd()
-    setwd(data_path)
-    on.exit(setwd(owd))
-
-    # Get input files
-    if (file_format == "jcampdx") {
-        files <- dir(data_path, pattern = "\\.dx$") # `.dx` files inside `data_path`
-        spectroscopy_value <- NULL
-        processing_value <- NULL
-    } else if (file_format == "bruker") {
-        files <- list.dirs(data_path, recursive = FALSE, full.names = FALSE) # folders inside `data_path`
-        spectroscopy_value <- readline(prompt = "What is the name of the subfolder of your filepath: (e.g. 10 for C:/Users/Username/Desktop/spectra_folder/spectrum_name/10) ")
-        processing_value <- readline(prompt = "What is the name of the subsubsubfolder of your filepath: (e.g. 10 for C:/Users/Username/Desktop/spectra_folder/spectrum_name/10/pdata/10) ")
-    }
-
-    # Reorder files in case user wants to use one spectrum to determine parameters for all spectra
-    same_parameter <- get_yn_input("Do you want to use the same parameters (signal_free_region, range_water_signal_ppm) for all spectra?")
-    if (same_parameter) {
-        print(files)
-        number <- get_num_input("Choose number of file which is used to adjust all parameters: [e.g. 1] ", min = 1, max = length(files), int = TRUE)
-        message(paste("The selected file to adjust all parameters for all spectra is: ", files[number]))
-        files <- c(files[number], files[-number])
-    }
-
-    # Do actual deconvolution
-    spectrum_data <- list()
-    for (i in seq_along(files)) {
-        name <- files[i] # bruker: `urine_2`, jcampdx: `urine_2.dx`
-        filepath <- switch(file_format, # see [FAQ](../vignettes/FAQ.Rmd#file-structure) for example file structures
-            "bruker" = paste(data_path, name, spectroscopy_value, sep = "/"),
-            "jcampdx" = data_path,
-            stop("Invalid file format")
-        )
-        x <- deconvolution_v12(filepath, name, file_format, same_parameter, processing_value, number_iterations, range_water_signal_ppm, signal_free_region, smoothing_param, delta, scale_factor, current_filenumber = i, number_of_files = length(files))
-        spectrum_data[[name]] <- x
-        # Save `range_water_signal` and `signal_free_region` for next loop passage as those might have been adjusted interactively by the user
-        range_water_signal_ppm <- x$range_water_signal_ppm
-        signal_free_region <- x$signal_free_region
-    }
-
-    # Save results
-    if (make_rds) {
-        saveRDS(object = spectrum_data, file = file.path(data_path, "spectrum_data.rds"))
-    }
-    return(spectrum_data)
-}
-
-#' @title Deconvolute one single spectrum
-#' @description Deconvolute one single spectrum
-#' @param path Path to file or folder containing the spectra files.
-#' @param type Format of the spectra files. Either `"bruker"` or `"jcampdx"`.
-#' @param procno Processing value for the file. E.g. `"10"`. Called `procno` in the Bruker TopSpin Manual.
-#' @param expno Spectroscopy value for the file. E.g. `"10"`. Called `expno` in the Bruker TopSpin Manual.
+#' @param data_path Either the path to an existing directory containing measured NMR spectra or a dataframe with columns `ppm` (parts per million) and `si` (signal intensity) or a list of such dataframes.
+#' @param file_format Format of the spectra files. Either `"bruker"` or `"jcampdx"`. Only relevant if `data_path` is a directory.
+#' @param make_rds Store results as a rds file on disk? Should be set to TRUE if many spectra are evaluated to decrease computation time.
+#' @param expno The experiment number for the spectra files. E.g. `"10"`. Only relevant if `data_path` is a directory and `file_format` is `"bruker"`.
+#' @param procno The processing number for the spectra. E.g. `"10"`. Only relevant if `data_path` is a directory and `file_format` is `"bruker"`.
 #' @param nfit Number of iterations for the approximation of the parameters for the Lorentz curves.
 #' @param wshw Half width of the water artefact in ppm.
 #' @param sfr Row vector with two entries consisting of the ppm positions for the left and right border of the signal free region of the spectrum.
-#' @param smopts Row vector with two entries consisting of the number of smoothing repeats for the whole spectrum and the number of data points (uneven) for the mean calculation.
-#' @param delta Threshold value to distinguish between signal and noise.
-#' @param sf Row vector with two entries consisting of the factor to scale the x-axis and the factor to scale the y-axis.
-#' @param ask Whether the function should ask the user to confirm the signal free region and the water signal. Must be TRUE if either sfr or wshw are not given.
-#' @param filno Current file number. Only used for progress prints.
-#' @param nfils Total number of files. Only used for progress prints.
-#' @return A list containing the deconvoluted spectrum data.
+#' @param smopts Vector with two entries consisting of the number of smoothing iterations and the number of data points to use for smoothing (must be uneven). TODO: add details.
+#' @param delta Threshold value to distinguish between signal and noise. TODO: add details.
+#' @param sf Vector with two entries consisting of the factor to scale the x-axis and the factor to scale the y-axis.
+#' @param ask  Whether to ask for user input during the deconvolution process. If set to FALSE, the provided default values will be used.
+#' @details First, an automated curvature based signal selection is performed. Each signal is represented by 3 data points to allow the determination of initial Lorentz curves. These Lorentz curves are then iteratively adjusted to optimally approximate the measured spectrum. TODO: add details.
 #' @examples \dontrun{
 #' xds_path <- download_example_datasets()
 #' path <- file.path(xds_path, "jcampdx/urine/urine_1")
 #' type <- "bruker"
 #' deconvolution_v12(path, type)
 #' }
-#' @details Replacement for [decovolution](R/MetaboDecon1D.R)
 #' @noRd
-deconvolution_v12 <- function(path = file.path(download_example_datasets(), "bruker/urine/urine_1"),
-                              type = "bruker",
-                              expno = 10,
-                              procno = 10,
-                              nfit = 10,
-                              wshw = 0.1527692,
-                              sfr = c(11.44494, -1.8828),
-                              smopts = c(2, 5),
-                              delta = 6.4,
-                              sf = c(1e3, 1e6),
-                              filno = 1,
-                              nfils = 1,
-                              ask = TRUE) {
-
-    type <- match.arg(type, c("bruker", "jcampdx"))
-
-    if (FALSE) { # Execute for manual testing
-        toscutil::stub(deconvolution_v12, ask = FALSE)
-        set.seed(1234)
+generate_lorentz_curves_v12 <- function(data_path = file.path(download_example_datasets(), "bruker/urine"),
+                                        file_format = "bruker",
+                                        make_rds = FALSE,
+                                        expno = 10,
+                                        procno = 10,
+                                        nfit = 10,
+                                        wshw = 0.1527692,
+                                        sfr = c(11.44494, -1.8828),
+                                        smopts = c(2, 5),
+                                        delta = 6.4,
+                                        sf = c(1000, 1000000),
+                                        ask = TRUE,
+                                        debug = FALSE) {
+    spectra <- get_spectra(data_path, file_format, expno, procno, ask, sf)
+    spectra <- determine_wsr_and_sfr(spectra, sfr, wshw, ask)
+    nfils <- length(spectra)
+    for (i in seq_along(spectra)) {
+        filno <- i
+        spec <- spectra[[i]]
+        spec <- remove_water_signal_v12(spec)
+        spec <- remove_negative_signals_v12(spec)
+        spec <- smooth_signals_v12(spec, reps = smopts[1], k = smopts[2])
+        spec <- find_peaks_v12(spec)
+        spec <- rm_peaks_with_low_scores_v12(spec, delta)
+        spec <- init_lorentz_curves_v12(spec)
+        spec <- refine_lorentz_curves_v12(spec, nfit)
+        spec <- create_return_list_v12(spec, args)
+        # check_spec(spec, compare_against = "deconvolution_urine1_spF_ni10_cf1_nf2.rds")
+        spectra[[i]] <- spec
     }
-
-    spec <- read_spectrum(path, type, sf, expno, procno)
-    spec <- determine_signal_free_region_v12(spec, sfr, ask)
-    spec <- determine_water_signal_v12(spec, hwidth_ppm = wshw, ask)
-    spec <- remove_water_signal_v12(spec)
-    spec <- remove_negative_signals_v12(spec)
-    spec <- smooth_signals_v12(spec, reps = smopts[1], k = smopts[2])
-    spec <- find_peaks_v12(spec)
-    spec <- rm_peaks_with_low_scores_v12(spec, delta)
-    spec <- init_lorentz_curves_v12(spec)
-    spec <- refine_lorentz_curves_v12(spec, nfit)
-    spec <- create_return_list(spec)
-
-    check_spec(spec, compare_against = "deconvolution_urine1_spF_ni10_cf1_nf2.rds")
-
-    return(spec$ret)
+    return(spectra)
 }
 
-# Private Helpers of deconvolution_v12 #####
+# Private helpers #####
+
+get_spectra <- function(data_path, file_format, expno, procno, ask, sf) {
+    if (!file_format %in% c("bruker", "jcampdx")) {
+        stop("Argument `file_format` should be either 'bruker' or 'jcampdx'")
+    }
+    p <- data_path
+    spectra <- if (is.character(p) && length(p) == 1 && dir.exists(p)) {
+        read_spectra(path = p, type = file_format, expno, procno, ask, sf)
+    } else if (is.data.frame(p) && all(c("ppm", "si") %in% colnames(p))) {
+        list(p)
+    } else if (is.list(p) && all(sapply(p, function(p) all(c("ppm", "si") %in% colnames(p))))) {
+        p
+    } else {
+        stop("Argument `data_path` should be either:\n- a character vector of length 1, denoting an existing directory containing measured NMR spectra or\n- a dataframe with columns `ppm` (parts per million) and `si` (signal intensity) or\n- a list of dataframes with columns `ppm` and `si`")
+    }
+}
+
+determine_wsr_and_sfr <- function(spectra, sfr, wshw, ask) {
+    # length(spectra): 1, n
+    # min(length(sfr), length(wshw)): 1, n
+    # ask: F, T
+    n <- length(spectra)
+    sfr_info <- sprintf("Argument `sfr` should be either\n- a numeric vector of length 2, giving the left and right boundaries of the signal free region in ppm or\n- a list of length %d of such vectors (one for each spectrum)", n)
+    wshw_info <- sprintf("Argument `wshw` should be either\n- a numeric value, giving the half width of the water artefact in ppm or\n- a vector of length %d of such values (one for each spectrum)", n)
+    sfr_defaults <- if (is_list_of_nums(sfr, n, 2)) sfr else if (is_num(sfr, 2)) rep(list(sfr), n) else stop(sfr_info)
+    wshw_defaults <- if (is_list_of_nums(wshw, n, 1)) wshw else if (is_num(wshw, 1)) rep(list(wshw), n) else stop(wshw_info)
+    if (isFALSE(ask)) {
+        for (i in seq_along(spectra)) {
+            spectra[[i]]$sfr <- sfr_defaults[[i]]
+            spectra[[i]]$wshw <- wshw_defaults[[i]]
+        }
+        return(spectra)
+    }
+    same_parameter <- get_yn_input("Use same parameters (sfr, wshw) for all spectra?")
+    if (same_parameter) {
+        msgf("[%d] %s\n", seq_along(spectra), names(spectra), appendLF = FALSE)
+        main_spectrum <- get_num_input("Number of spectrum for adjusting parameters (e.g. 1):", min = 1, max = length(files), int = TRUE)
+        # CONTINUE HERE
+    }
+    return(spectra)
+}
+
+create_return_list_v12 <- function(spec, number_of_files, debug = debug) {
+    # args: path, type, expno, procno, nfit, wshw, sfr, smopts, delta, sf, filno, nfils, ask
+    # spec: Y, n, sfx, sfy, dp, sdp, ppm, ppm_min, ppm_max, ppm_range, ppm_step, ppm_nstep, sfr, ws, Z, d, peak, lc, lcr
+    ret <- list(
+        number_of_files = number_of_files,
+        filename = basename(args$path),
+        x_values = spec$sdp,
+        x_values_ppm = spec$x_ppm,
+        y_values = spec$Y$smooth,
+        spectrum_superposition = spec$lcr$spectrum_approx,
+        mse_normed = spec$lcr$mse_normed,
+        index_peak_triplets_middle = as.integer(spec$peak$center[spec$peak$high] - 1),
+        index_peak_triplets_left = spec$peak$right[spec$peak$high] - 1,
+        index_peak_triplets_right = spec$peak$left[spec$peak$high] - 1,
+        peak_triplets_middle = spec$peak$peak_triplets_middle,
+        peak_triplets_left = spec$peak$peak_triplets_left,
+        peak_triplets_right = spec$peak$peak_triplets_right,
+        integrals = spec$lcr$integrals,
+        sfr = c(spec$sfr$left_sdp, spec$sfr$right_sdp),
+        wshw = spec$ws$hwidth_ppm,
+        A = spec$lcr$A_new,
+        lambda = spec$lcr$lambda_new,
+        x_0 = spec$lcr$w_new
+    )
+    spec$ret <- ret
+}
 
 #' @title Determine Signal Free Region
 #' @description This function determines the signal free region (SFR) of a given spectrum. It asks the user to confirm the left and right borders of the SFR, and allows them to adjust these borders if necessary. The function returns a list containing the left and right borders in both ppm and data points (dp), as well as the scaled data points (sdp).
@@ -393,7 +377,7 @@ refine_lorentz_curves_v12 <- function(spec, nfit) {
     A <- spec$lc$A
     lambda <- spec$lc$lambda
     w <- spec$lc$w
-    number_iterations <- nfit
+    nfit <- nfit
 
     # Calculate all initial lorentz curves
     lorentz_curves_initial <- matrix(nrow = length(filtered_peaks), ncol = length(spectrum_x))
@@ -407,7 +391,7 @@ refine_lorentz_curves_v12 <- function(spec, nfit) {
     }
 
     # Approximation of lorentz curves
-    for (b in 1:number_iterations) {
+    for (b in 1:nfit) {
         # Calculate new heights of peak triplets
         w_1_new <- c()
         w_2_new <- c()
@@ -551,40 +535,18 @@ refine_lorentz_curves_v12 <- function(spec, nfit) {
         A_new = A_new,
         lambda_new = lambda_new,
         w_new = w_new,
+        spectrum_approx = spectrum_approx,
         spectrum_y_normed = spectrum_y_normed,
         spectrum_approx_normed = spectrum_approx_normed,
         difference_normed = difference_normed,
         mse_normed = mse_normed,
-        integrals = integrals
+        integrals = integrals,
+        lorentz_curves_initial = lorentz_curves_initial
     )
     spec
 }
 
-create_return_list_v12 <- function(spec) {
-    return_list <- list(
-        filename = name,
-        spectrum_x = spec$sdp,
-        spectrum_x_ppm = spec$x_ppm,
-        spectrum_y = spec$Y$smooth,
-        lorentz_curves = lorentz_curves_initial,
-        mse_normed = mse_normed,
-        spectrum_approx = spectrum_approx,
-        index_peak_triplets_middle = index_peak_triplets_middle,
-        index_peak_triplets_left = index_peak_triplets_left,
-        index_peak_triplets_right = index_peak_triplets_right,
-        peak_triplets_middle = peak_triplets_middle,
-        peak_triplets_left = peak_triplets_left,
-        peak_triplets_right = peak_triplets_right,
-        integrals = integrals,
-        sfr = c(sfrl_sdp, sfrr_sdp),
-        wshwidth_ppm = ws$hwidth_ppm,
-        A = A_new,
-        lambda = lambda_new,
-        w = w_new
-    )
-}
-
-# Private Helpers of find_peaks_v12 #####
+# Private helpers of `find_peaks_v12` #####
 
 calc_second_derivative_v12 <- function(y) {
     n <- length(y)
@@ -601,7 +563,9 @@ get_right_border_v12 <- function(j, d, m) {
         c3 <- d[r] < 0
         c4 <- d[r + 1] >= 0
         is_right_border <- (c1 && c2) || (c1 && c3 && c4)
-        if (is_right_border) return(r)
+        if (is_right_border) {
+            return(r)
+        }
         r <- r + 1
     }
     return(NA)
@@ -615,7 +579,9 @@ get_left_border_v12 <- function(j, d, m) {
         c3 <- d[l] < 0
         c4 <- d[l - 1] >= 0
         is_left_border <- (c1 && c2) || (c1 && c3 && c4)
-        if (is_left_border) return(l)
+        if (is_left_border) {
+            return(l)
+        }
         l <- l - 1
     }
 }
@@ -623,7 +589,7 @@ get_left_border_v12 <- function(j, d, m) {
 get_peak_score_v12 <- function(j, l, r, a) {
     if (any(is.na(a[c(l, j, r)]))) {
         NA
-     } else {
+    } else {
         min(sum(a[l:j]), sum(a[j:r]))
-     }
+    }
 }
