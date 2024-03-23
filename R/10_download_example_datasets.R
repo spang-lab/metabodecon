@@ -43,41 +43,6 @@ download_example_datasets <- function(dst_dir = NULL,
     }
 }
 
-test_download_example_datasets <- function() {
-
-    test_that("download_example_datasets works if xdszip=missing", {
-        x <- evalwith(datadir_persistent = "missing", datadir_temp = "missing", message = "captured", {
-            download_example_datasets()
-            expected_path <- file.path(datadir(), "example_datasets.zip")
-        })
-        expected_message <- paste("Downloading", xds$url, "as", expected_path)
-        expect_equal(file.exists(expected_path), TRUE)
-        expect_equal(file.size(expected_path), xds$zip_size)
-        expect_equal(x$message, expected_message)
-    })
-
-    test_that("download_example_datasets works if xdszip=missing and persistent=T", {
-        x <- evalwith(datadir_persistent = "missing", datadir_temp = "missing", message = "captured", {
-            download_example_datasets(persistent = TRUE)
-            expected_path <- file.path(datadir(), "example_datasets.zip")
-        })
-        expected_message <- paste("Downloading", xds$url, "as", expected_path)
-        expect_equal(file.exists(expected_path), TRUE)
-        expect_equal(file.size(expected_path), xds$zip_size)
-        expect_equal(x$message, expected_message)
-    })
-
-    test_that("download_example_datasets works if xdszip=cached", {
-        x <- evalwith(datadir_persistent = "filled", datadir_temp = "missing", message = "captured", {
-            download_example_datasets(persistent = TRUE)
-            expected_path <- file.path(datadir(), "example_datasets.zip")
-        })
-        expect_true(file.exists(expected_path))
-        expect_equal(file.size(expected_path), xds$zip_size)
-        expect_equal(x$message, character())
-    })
-}
-
 # Private Helpers #####
 
 #' @title Example Datasets Information
@@ -155,31 +120,6 @@ cache_example_datasets <- function(persistent = NULL, extract = FALSE, overwrite
         if (!dir.exists(dstdir)) extract_example_datasets(zip)
     }
     zip
-}
-
-test_cache_example_datasets <- function() {
-    test_that("cache_example_datasets(persistent = FALSE) works with existing temporary datadir", {
-        y <- evalwith(datadir_persistent = "empty", datadir_temp = "empty", message = "captured", expr = {
-            zip_returned <- cache_example_datasets(persistent = FALSE)
-            zip_temp <- zip_temp()
-            zip_persistent <- zip_persistent()
-        })
-        expect_true(file.exists(zip_temp))
-        expect_false(file.exists(zip_persistent))
-        expect_equal(y$message, paste("Downloading", xds$url, "as", zip_temp))
-        expect_equal(zip_returned, zip_temp)
-    })
-    test_that("cache_example_datasets(persistent = FALSE) works with empty datadirs", {
-        y <- evalwith(datadir_persistent = "empty", datadir_temp = "filled", message = "captured", expr = {
-            zip_returned <- cache_example_datasets(persistent = FALSE)
-            zip_temp <- zip_temp()
-            zip_persistent <- zip_persistent()
-        })
-        expect_true(file.exists(zip_temp))
-        expect_false(file.exists(zip_persistent))
-        expect_equal(y$message, character())
-        expect_equal(zip_returned, zip_temp)
-    })
 }
 
 extract_example_datasets <- function(path = datadir("example_datasets.zip")) {

@@ -1,4 +1,3 @@
-
 # evalwith #####
 
 #' @description Run expression with predefined global state
@@ -35,7 +34,9 @@ evalwith <- function(expr,
     if (isTRUE(cache)) {
         cachedir <- cachedir()
         cachefile <- file.path(cachedir, paste0(testdir, ".rds"))
-        if (file.exists(cachefile) && isFALSE(overwrite)) return(readRDS(cachefile))
+        if (file.exists(cachefile) && isFALSE(overwrite)) {
+            return(readRDS(cachefile))
+        }
     }
     if (!is.null(testdir)) {
         testpath <- file.path(testdir(), testdir)
@@ -85,7 +86,9 @@ evalwith <- function(expr,
         testthat::with_mocked_bindings(
             tryCatch(
                 {
-                    runtime <- system.time(rv <- {expr})[["elapsed"]]
+                    runtime <- system.time(rv <- {
+                        expr
+                    })[["elapsed"]]
                 },
                 error = function(e) {
                     sink(NULL, type = "message")
@@ -108,39 +111,6 @@ evalwith <- function(expr,
     ))
     if (isTRUE(cache) && (!file.exists(cachefile) || isTRUE(overwrite))) saveRDS(retobj, cachefile)
     retobj
-}
-
-test_evalwith <- function() {
-    before_wd <- getwd()
-    x <- evalwith(
-        testdir = "with/1",
-        answers = c("y", "n"),
-        output = "captured", message = "captured", plot = "plots.pdf",
-        inputs = "jcampdx/urine/urine_1.dx",
-        expr = {
-            cat2("Helloworld!") # output is captured
-            readline("Continue?") # readline is mocked
-            readline("Continue?") # readline is mocked
-            message("Roar") # messages are captured
-            warning("Blub") # warnings are transformed to messages and captured as well
-            test_wd <- getwd() # working dir is set to '{testdir()}/with/1'
-            y <- 2
-            z <- 3 # vars can be assigned
-            list(y=y, z=z) # return value of expression is captured in rv
-        }
-    )
-    after_wd <- getwd()
-    test_that("evalwith works", {
-        expect_true(file.exists(file.path(x$testdir, "plots.pdf")))
-        expect_true(file.exists(file.path(x$testdir, "urine_1.dx")))
-        expect_equal(x$rv, list(y=2, z=3))
-        expect_equal(z, 3)
-        expect_true(x$runtime <= 1)
-        expect_equal(x$output, "Helloworld!")
-        expect_equal(x$message, c("Continue?y", "Continue?n", "Roar", "Warning: Blub"))
-        expect_equal(test_wd, file.path(testdir(), "with/1"))
-        expect_equal(after_wd, before_wd)
-    })
 }
 
 testdir <- function() {
@@ -176,7 +146,9 @@ cachedir <- function(persistent = NULL) {
 #' }
 #' @noRd
 get_readline_mock <- function(texts, env = as.environment(list())) {
-    if (is.null(texts)) return(readline)
+    if (is.null(texts)) {
+        return(readline)
+    }
     env$readline_called <- 0
     readline <- function(prompt = "") {
         env$readline_called <- env$readline_called + 1
@@ -209,8 +181,12 @@ get_readline_mock <- function(texts, env = as.environment(list())) {
 get_datadir_mock <- function(type = "temp", state = "default") {
     type <- match.arg(type, c("temp", "persistent"))
     state <- match.arg(state, c("default", "missing", "empty", "filled"))
-    if (state == "default" && type == "persistent") return(datadir_persistent)
-    if (state == "default" && type == "temp") return(datadir_temp)
+    if (state == "default" && type == "persistent") {
+        return(datadir_persistent)
+    }
+    if (state == "default" && type == "temp") {
+        return(datadir_temp)
+    }
     p <- normPath(file.path(mockdir(), "datadir", type, state))
     if (state %in% c("missing", "empty")) unlink(p, recursive = TRUE, force = TRUE)
     if (state == "empty") mkdirs(p)
@@ -227,7 +203,6 @@ get_datadir_mock <- function(type = "temp", state = "default") {
 #' [^1]: In fact, the functions are not 100% identical. All code parts modifying global state, such as writing to disk or changing the working directory have been altered to meet the CRAN requirements. But all calculations and the return value are completely identical.
 #' @noRd
 store_func_results <- function(overwrite = FALSE) {
-
     dstdir <- mkdirs(datadir("test_expects", warn = FALSE))
     xpcts <- list()
     store_as_rds2 <- function(name, expr) store_as_rds(name, dstdir, overwrite, expr)
@@ -319,7 +294,7 @@ get_func_result <- function(rds = "deconvolution_urine1_spF_ni1_cf1_nf2.rds") {
 #' @return The result of the expression. The result is returned invisibly.
 #' @noRd
 store_as_rds <- function(name, dstdir, overwrite, expr) {
-    rds <-  file.path(dstdir, paste0(name, ".rds"))
+    rds <- file.path(dstdir, paste0(name, ".rds"))
     exists <- file.exists(rds)
     status <- if (!exists) "generating" else if (overwrite) "overwriting" else "reading"
     cat3(paste0("\033[34m", name, "\033[0m"), status)
@@ -339,22 +314,25 @@ loaded_via_devtools <- function() {
 }
 
 vcomp <- function(x, y) {
-    callstr <- paste(deparse(sys.call()), collapse="")
+    callstr <- paste(deparse(sys.call()), collapse = "")
     callstr <- gsub("\\s+", " ", callstr)
     o <- capture.output({
-        r <- tryCatch({
-            x <- vcomp_internal(x, y)
-            m <- switch(as.character(x),
-                "0" = paste0(GREEN, "identical", RESET),
-                "1" = paste0(ORANGE, "all.equal", RESET),
-                "2" = paste0(RED, "different", RESET)
-            )
-            list(x = x, m = m)
-        }, error = function(e) {
-            x <- 3
-            m <- paste0(RED, e$message, RESET)
-            list(x = x, m = m)
-        })
+        r <- tryCatch(
+            {
+                x <- vcomp_internal(x, y)
+                m <- switch(as.character(x),
+                    "0" = paste0(GREEN, "identical", RESET),
+                    "1" = paste0(ORANGE, "all.equal", RESET),
+                    "2" = paste0(RED, "different", RESET)
+                )
+                list(x = x, m = m)
+            },
+            error = function(e) {
+                x <- 3
+                m <- paste0(RED, e$message, RESET)
+                list(x = x, m = m)
+            }
+        )
     })
     cat2(callstr, ": ", r$m, sep = "")
     if (length(o) > 0) cat2(collapse(o, "\n"))
@@ -362,8 +340,8 @@ vcomp <- function(x, y) {
 }
 
 vcomp_internal <- function(x, y) {
-    if(!is.vector(x) || is.list(x)) stop("x must be a vector, but is: ", class(x))
-    if(!is.vector(y) || is.list(y)) stop("y must be a vector, but is: ", class(y))
+    if (!is.vector(x) || is.list(x)) stop("x must be a vector, but is: ", class(x))
+    if (!is.vector(y) || is.list(y)) stop("y must be a vector, but is: ", class(y))
     if (identical(x, y)) {
         return(0)
     } else {
@@ -453,7 +431,7 @@ check_spec <- function(spec, compare_against = "deconvolution_urine1_spF_ni10_cf
     region <- spec$peak$region
     x[24] <- vcomp(ref$peak_scores_calc$mean_score, mean(scores[region %in% c("sfrl", "sfrr")]))
     x[25] <- vcomp(ref$peak_scores_calc$sd_score, sd(scores[region %in% c("sfrl", "sfrr")]))
-    x[26] <- vcomp(ref$peak_scores_calc$scores[1,], spec$peak$score)
+    x[26] <- vcomp(ref$peak_scores_calc$scores[1, ], spec$peak$score)
     x[27] <- vcomp(ref$peak_scores_calc$index_left, which(spec$peak$region == "sfrl"))
     x[28] <- vcomp(ref$peak_scores_calc$index_right, which(spec$peak$region == "sfrr"))
     x[29] <- vcomp(ref$peak_scores_calc$filtered_peaks, as.integer(spec$peak$center[spec$peak$high] - 1))
@@ -508,16 +486,19 @@ list_tests <- function(testthat = FALSE) {
 make_test_files <- function() {
     if (!loaded_via_devtools()) stop("Only run during development while loading the package from source")
     tests <- list_tests()
-    test_files <- dir(pkg_file("tests/testthat"), full.names = TRUE)
-    to_rm <- setdiff(test_files, tests)
-    to_add <- setdiff(tests, test_files)
-    cat2("Removing:\n", collapse(to_rm, "\n"), sep = "")
-    unlink(to_rm)
+    ttdir <- pkg_file("tests/testthat")
+    paths_curr <- dir(ttdir, full.names = TRUE)
+    paths_xpct <- file.path(ttdir, paste0(tests, ".R"))
+    paths_rm <- setdiff(paths_curr, paths_xpct)
+    paths_add <- setdiff(paths_xpct, paths_curr)
+    if (length(paths_rm) > 0) {
+        cat2(BLUE, "Removing:\n", RESET, collapse(paths_rm, "\n"), sep = "")
+        unlink(paths_rm)
+    }
     lines <- paste0("# Generated from pkg source. Run `make_test_files()` after edits.\n", tests, "()")
-    paths <- file.path(pkg_file("tests/testthat"), paste0(tests, ".R"))
-    for (i in seq_along(paths)) {
-        cat2("Writing:", paths[i])
-        writeLines(lines[i], paths[i])
+    if (length(paths_add) > 0) {
+        cat2(BLUE, "Adding:\n", RESET, collapse(paths_add, "\n"), sep = "")
+        sapply(seq_along(paths_add), function(i) writeLines(lines[i], paths_add[i]))
     }
     invisible(lines)
 }

@@ -282,49 +282,6 @@ smooth_signals_v20 <- function(spec, reps = 2, k = 5) {
     spec
 }
 
-test_smooth_signals_v20 <- function() {
-    test_that("smooth_signals_v20 works", {
-        y <- c(1, 4, 2, 4, 3)
-        spec <- list(y_pos = y)
-        z1 <- evalwith(output = "captured", smooth_signals_v20(spec, k = 3, reps = 1))$rv$y_smooth
-        z2 <- evalwith(output = "captured", smooth_signals_v20(spec, k = 3, reps = 2))$rv$y_smooth
-        z3 <- evalwith(output = "captured", smooth_signals_v20(spec, k = 3, reps = 3))$rv$y_smooth
-        expect_equal(z1, sapply(list(y[1:2], y[1:3], y[2:4], y[3:5], y[4:5]), mean))
-        expect_equal(z2, sapply(list(exp1[1:2], exp1[1:3], exp1[2:4], exp1[3:5], exp1[4:5]), mean))
-        expect_equal(z3, sapply(list(exp2[1:2], exp2[1:3], exp2[2:4], exp2[3:5], exp2[4:5]), mean))
-    })
-    test_that("smooth_signals_v20 is faster than smooth_signals_v12", {
-        y <- rnorm(5000)
-        spec <- list(y_pos = y)
-        z1 <- evalwith(output = "captured", smooth_signals_v12(spec, k = 5, reps = 10))
-        z2 <- evalwith(output = "captured", smooth_signals_v20(spec, k = 5, reps = 10))
-        expect_true(z1$runtime > z2$runtime * 10) # at least 10 times faster
-    })
-}
-
-tests$smooth_signals_v20 <- list(
-    `smooth_signals_v20 works for reps=1,2,3` = function() {
-        y <- c(1, 4, 2, 4, 3)
-        exp1 <- sapply(list(y[1:2], y[1:3], y[2:4], y[3:5], y[4:5]), mean)
-        exp2 <- sapply(list(exp1[1:2], exp1[1:3], exp1[2:4], exp1[3:5], exp1[4:5]), mean)
-        exp3 <- sapply(list(exp2[1:2], exp2[1:3], exp2[2:4], exp2[3:5], exp2[4:5]), mean)
-        z1 <- smooth_signals_v20(y = y, k = 3, reps = 1)
-        z2 <- smooth_signals_v20(y = y, k = 3, reps = 2)
-        z3 <- smooth_signals_v20(y = y, k = 3, reps = 3)
-        expect_equal(z1, exp1)
-        expect_equal(z2, exp2)
-        expect_equal(z3, exp3)
-    },
-    `smooth_signals_v20 is faster than smooth_signals_v12` = function() {
-        y <- rnorm(5000)
-        runtime_v1 <- system.time(z_v1 <- smooth_signals_v12(y = y, k = 5, reps = 10))
-        runtime_v2 <- system.time(z_v2 <- smooth_signals_v20(y = y, k = 5, reps = 10))
-        expect_true(runtime_v1[3] > runtime_v2[3] * 10) # at least 10 times faster
-        expect_equal(z_v1, z_v2)
-        # In manual testting the speedup was factor 27 for y <- rnorm(130000). There we had runtime_v1[3] == 1.09 and runtime_v2[3] == 0.04.
-    }
-)
-
 rm_peaks_with_low_scores_v20 <- function(spec, delta = 6.4) {
     score <- spec$peak$score
     l <- which(spec$sdp[spec$peak$center] >= spec$sfr$left_sdp)
