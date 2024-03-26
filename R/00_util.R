@@ -183,9 +183,11 @@ collapse <- function(x, sep = ", ") {
 #' cat2("Hello, ", "world!")
 #' }
 #' @noRd
-cat2 <- function(...) {
+cat2 <- function(..., col = NULL) {
+    if (!is.null(col)) cat(col)
     cat(...)
     cat("\n")
+    if (!is.null(col)) cat(RESET)
 }
 
 cat3 <- function(...) cat2(format(Sys.time()), ...)

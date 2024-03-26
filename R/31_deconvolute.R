@@ -136,7 +136,7 @@ deconvolute_spectrum_v20 <- function(path = file.path(download_example_datasets(
     # To be done
     spec <- calculate_lorentz_curve_integrals(spec)
 
-    check_spec(spec)
+    compare_spectra(spec)
     plot_peaks(spec)
 
     ret <- create_return_list(spec)
@@ -279,19 +279,6 @@ smooth_signals_v20 <- function(spec, reps = 2, k = 5) {
 
     spec$Z <- Z
     spec$y_smooth <- Z[[reps]]
-    spec
-}
-
-rm_peaks_with_low_scores_v20 <- function(spec, delta = 6.4) {
-    score <- spec$peak$score
-    l <- which(spec$sdp[spec$peak$center] >= spec$sfr$left_sdp)
-    r <- which(spec$sdp[spec$peak$center] <= spec$sfr$right_sdp)
-    mu <- mean(score[c(l, r)])
-    sigma <- sd(c(score[l], score[r]))
-    spec$peak$high <- score >= mu + delta * sigma
-    spec$peak$region <- "norm"
-    spec$peak$region[l] <- "sfrl"
-    spec$peak$region[r] <- "sfrr"
     spec
 }
 

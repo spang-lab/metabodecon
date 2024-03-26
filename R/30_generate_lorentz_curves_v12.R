@@ -38,7 +38,6 @@ generate_lorentz_curves_v12 <- function(data_path = file.path(download_example_d
                                         ask = TRUE,
                                         debug = FALSE,
                                         ncores = 2) {
-
     # Read spectra and ask user for parameters
     spectra <- get_spectra(data_path, file_format, expno, procno, ask, sf)
     adjno <- get_adjno(spectra, sfr, wshw, ask)
@@ -50,7 +49,8 @@ generate_lorentz_curves_v12 <- function(data_path = file.path(download_example_d
     n <- length(spectra)
     nams <- names(spectra)
     spectra <- lapply(seq_len(n), function(i) {
-        msg("Starting deconvolution of", nams[i])
+        nam <- nams[i]
+        msg("Starting deconvolution of", nam)
         spec <- spectra[[i]]
         spec <- rm_water_signal_v12(spec)
         spec <- rm_negative_signals_v12(spec)
@@ -59,7 +59,7 @@ generate_lorentz_curves_v12 <- function(data_path = file.path(download_example_d
         spec <- rm_peaks_with_low_scores_v12(spec, delta)
         spec <- init_lorentz_curves_v12(spec)
         spec <- refine_lorentz_curves_v12(spec, nfit)
-        spec <- add_return_list_v12(spec, nfils, debug)
+        spec <- add_return_list_v12(spec, n, nam, debug)
     })
     names(spectra) <- nams
 
@@ -130,7 +130,7 @@ get_adjno <- function(spectra, sfr, wshw, ask) {
     }
     namestr <- paste(seq_along(spectra), names(spectra), sep = ": ", collapse = ", ")
     prompt <- sprintf("Number of spectrum for adjusting parameters? (%s)", namestr)
-    adjno <- get_num_input(prompt, min = 1, max = n, int = TRUE)
+    adjno <- get_num_input(prompt, min = 1, max = length(spectra), int = TRUE)
 }
 
 #' @title Add signal free region to each spectrum
@@ -287,12 +287,28 @@ find_peaks_v12 <- function(spec) {
     spec$peak <- data.frame(left = NA, center = center, right = NA, score = NA)
     for (i in seq_along(center)) {
         j <- center[i]
-        l <- spec$peak$left[i] <- get_left_border_v12(j, d, m)
+        l <- spec$peak$left[i] <- get_left_border_v12(j, d)
         r <- spec$peak$right[i] <- get_right_border_v12(j, d, m)
         s <- spec$peak$score[i] <- get_peak_score_v12(j, l, r, a)
     }
     msg("Detected", length(center), "peaks")
     return(spec)
+}
+
+rm_peaks_with_low_scores_v13 <- function(ppm, # x values in ppm
+                                         pc, # peak center indices
+                                         ps, # peak scores
+                                         sfrl, # signal free region left in ppm
+                                         sfrr, # signal free region right in ppm
+                                         delta = 6.4) { # threshold parameter to distinguish between "real" peaks from noise
+    if (any(is.na(ps))) stop("Peak scores must never be NA")
+    msg("Removing peaks with low scores")
+    in_sfr <- which(ppm[pc] >= ppm || ppm[pc] <= ppm)
+    mu <- mean(ps[in_sfr]) # mean (greek letter mu)
+    sigma <- sd(ps[in_sfr]) # standard deviation (greek letter sigma)
+    gt_tau <- (ps >= mu + delta * sigma) # greater than threshold value (greek letter tau)
+    msg("Removed", sum(!gt_tau), "peaks")
+    list(in_sfr, gt_tau) # gttho
 }
 
 rm_peaks_with_low_scores_v12 <- function(spec, delta = 6.4) {
@@ -338,6 +354,99 @@ init_lorentz_curves_v12 <- function(spec) {
 
     # Calculate parameters w, lambda and A for the initial lorentz curves
     for (i in seq_along(filtered_peaks)) {
+        # Calculate position of peak triplets
+        w_1 <- c(w_1, spectrum_x[filtered_left_position[i] + 1])
+        w_2 <- c(w_2, spectrum_x[filtered_peaks[i] + 1])
+        w_3 <- c(w_3, spectrum_x[filtered_right_position[i] + 1])
+
+        # Calculate intensity of peak triplets
+        y_1 <- c(y_1, spectrum_y[filtered_left_position[i] + 1])
+        y_2 <- c(y_2, spectrum_y[filtered_peaks[i] + 1])
+        y_3 <- c(y_3, spectrum_y[filtered_right_position[i] + 1])
+
+        # Calculate mirrored points if necesccary
+        # For ascending shoulders
+        if (is.na(((y_1[i] < y_2[i]) & (y_2[i] < y_3[i])))) {
+            1
+        }
+        if ((y_1[i] < y_2[i]) & (y_2[i] < y_3[i])) {
+            w_3[i] <- 2 * w_2[i] - w_1[i]
+            y_3[i] <- y_1[i]
+        }
+        # For descending shoulders
+        if ((y_1[i] > y_2[i]) & (y_2[i] > y_3[i])) {
+            w_1[i] <- 2 * w_2[i] - w_3[i]
+            y_1[i] <- y_3[i]
+        }
+
+        # Move triplet to zero position
+        w_delta[i] <- w_1[i]
+        w_1[i] <- w_1[i] - w_delta[i]
+        w_2[i] <- w_2[i] - w_delta[i]
+        w_3[i] <- w_3[i] - w_delta[i]
+
+        # Calculate difference of position of peak triplets
+        w_1_2 <- c(w_1_2, w_1[i] - w_2[i])
+        w_1_3 <- c(w_1_3, w_1[i] - w_3[i])
+        w_2_3 <- c(w_2_3, w_2[i] - w_3[i])
+
+        # Calculate difference of intensity values of peak triplets
+        y_1_2 <- c(y_1_2, y_1[i] - y_2[i])
+        y_1_3 <- c(y_1_3, y_1[i] - y_3[i])
+        y_2_3 <- c(y_2_3, y_2[i] - y_3[i])
+
+        # Calculate w for each peak triplet
+        w_result <- (w_1[i]^2 * y_1[i] * y_2_3[i] + w_3[i]^2 * y_3[i] * y_1_2[i] + w_2[i]^2 * y_2[i] * (-y_1_3[i])) / (2 * w_1_2[i] * y_1[i] * y_2[i] - 2 * (w_1_3[i] * y_1[i] + (-w_2_3[i]) * y_2[i]) * y_3[i])
+        w_result <- w_result + w_delta[i]
+        w <- c(w, w_result)
+        # Wenn y Werte nach der H?henanpassung 0 werden, so ist w_new[i] NaN
+        if (is.nan(w[i])) {
+            w[i] <- 0
+        }
+
+        # Calculate lambda for each peak triplet
+        lambda_result <- -((sqrt(abs((-w_2[i]^4 * y_2[i]^2 * y_1_3[i]^2 - w_1[i]^4 * y_1[i]^2 * y_2_3[i]^2 - w_3[i]^4 * y_1_2[i]^2 * y_3[i]^2 + 4 * w_2[i] * w_3[i]^3 * y_2[i] * ((-y_1[i]) + y_2[i]) * y_3[i]^2 + 4 * w_2[i]^3 * w_3[i] * y_2[i]^2 * y_3[i] * ((-y_1[i]) + y_3[i]) + 4 * w_1[i]^3 * y_1[i]^2 * y_2_3[i] * (w_2[i] * y_2[i] - w_3[i] * y_3[i]) + 4 * w_1[i] * y_1[i] * (w_2[i]^3 * y_2[i]^2 * y_1_3[i] - w_2[i] * w_3[i]^2 * y_2[i] * (y_1[i] + y_2[i] - 2 * y_3[i]) * y_3[i] + w_3[i]^3 * y_1_2[i] * y_3[i]^2 - w_2[i]^2 * w_3[i] * y_2[i] * y_3[i] * (y_1[i] - 2 * y_2[i] + y_3[i])) + 2 * w_2[i]^2 * w_3[i]^2 * y_2[i] * y_3[i] * (y_1[i]^2 - 3 * y_2[i] * y_3[i] + y_1[i] * (y_2[i] + y_3[i])) + 2 * w_1[i]^2 * y_1[i] * (-2 * w_2[i] * w_3[i] * y_2[i] * y_3[i] * (-2 * y_1[i] + y_2[i] + y_3[i]) + w_3[i]^2 * y_3[i] * (y_1[i] * (y_2[i] - 3 * y_3[i]) + y_2[i] * (y_2[i] + y_3[i])) + w_2[i]^2 * y_2[i] * (y_1[i] * (-3 * y_2[i] + y_3[i]) + y_3[i] * (y_2[i] + y_3[i])))))))) / (2 * sqrt((w_1[i] * y_1[i] * y_2_3[i] + w_3[i] * y_1_2[i] * y_3[i] + w_2[i] * y_2[i] * ((-y_1[i]) + y_3[i]))^2))
+        # If y and w are 0, then 0/0=NaN
+        if (is.nan(lambda_result)) {
+            lambda_result <- 0
+        }
+        lambda <- c(lambda, lambda_result)
+
+        # Calculate scaling factor A for each peak triplet
+        A_result <- (-4 * w_1_2[i] * w_1_3[i] * w_2_3[i] * y_1[i] * y_2[i] * y_3[i] * (w_1[i] * y_1[i] * y_2_3[i] + w_3[i] * y_3[i] * y_1_2[i] + w_2[i] * y_2[i] * (-y_1_3[i])) * lambda[i]) / (w_1_2[i]^4 * y_1[i]^2 * y_2[i]^2 - 2 * w_1_2[i]^2 * y_1[i] * y_2[i] * (w_1_3[i]^2 * y_1[i] + w_2_3[i]^2 * y_2[i]) * y_3[i] + (w_1_3[i]^2 * y_1[i] - w_2_3[i]^2 * y_2[i])^2 * y_3[i]^2)
+        # If y and w are 0, then 0/0=NaN
+        if (is.nan(A_result)) {
+            A_result <- 0
+        }
+        A <- c(A, A_result)
+    }
+    spec$lc$A <- A
+    spec$lc$lambda <- lambda
+    spec$lc$w <- w
+    spec$lc$w_delta <- w_delta
+    spec
+}
+
+init_lorentz_curves_v10 <- function(spectrum_x, spectrum_y, filtered_peaks, filtered_left_position, filtered_right_position, save_scores) {
+    w_1 <- c()
+    w_2 <- c()
+    w_3 <- c()
+    y_1 <- c()
+    y_2 <- c()
+    y_3 <- c()
+    w_1_2 <- c()
+    w_1_3 <- c()
+    w_2_3 <- c()
+    y_1_2 <- c()
+    y_1_3 <- c()
+    y_2_3 <- c()
+    w_delta <- c()
+    w <- c()
+    lambda <- c()
+    A <- c()
+
+    # Calculate parameters w, lambda and A for the initial lorentz curves
+    for (i in 1:length(filtered_peaks)) {
         # Calculate position of peak triplets
         w_1 <- c(w_1, spectrum_x[filtered_left_position[i] + 1])
         w_2 <- c(w_2, spectrum_x[filtered_peaks[i] + 1])
@@ -401,11 +510,7 @@ init_lorentz_curves_v12 <- function(spec) {
         }
         A <- c(A, A_result)
     }
-    spec$lc$A <- A
-    spec$lc$lambda <- lambda
-    spec$lc$w <- w
-    spec$lc$w_delta <- w_delta
-    spec
+    lc <- list(A = A, lambda = lambda, w = w, w_delta = w_delta)
 }
 
 refine_lorentz_curves_v12 <- function(spec, nfit) {
@@ -581,32 +686,37 @@ refine_lorentz_curves_v12 <- function(spec, nfit) {
         spectrum_approx_normed = spectrum_approx_normed,
         difference_normed = difference_normed,
         mse_normed = mse_normed,
-        integrals = integrals,
-        lorentz_curves_initial = lorentz_curves_initial
+        integrals = integrals
     )
     spec
 }
 
-add_return_list_v12 <- function(spec, nfils, debug) {
-    # args: path, type, expno, procno, nfit, wshw, sfr, smopts, delta, sf, filno, nfils, ask
-    # spec: Y, n, sfx, sfy, dp, sdp, ppm, ppm_min, ppm_max, ppm_range, ppm_step, ppm_nstep, sfr, ws, Z, d, peak, lc, lcr
+#' @title create backwards compatible return list
+#' @param spec Deconvoluted spectrum as returned by [refine_lorentz_curves_v12()].
+#' @param n Number of deconvoluted spectrum.
+#' @param nam Name of current spectrum.
+#' @param debug Add debug info to the return list
+add_return_list_v12 <- function(spec = glc_urine1_yy_ni3_dbg()$rv$urine_1,
+                                n = 1,
+                                nam = "urine_1",
+                                debug = TRUE) {
     spec$ret <- list(
-        number_of_files = nfils,
-        filename = NULL,
+        number_of_files = n,
+        filename = nam,
         x_values = spec$sdp,
         x_values_ppm = spec$ppm,
         y_values = spec$y_smooth,
         spectrum_superposition = spec$lcr$spectrum_approx[1, ],
         mse_normed = spec$lcr$mse_normed,
-        index_peak_triplets_middle = as.integer(spec$peak$center[spec$peak$high] - 1),
-        index_peak_triplets_left = spec$peak$right[spec$peak$high] - 1,
-        index_peak_triplets_right = spec$peak$left[spec$peak$high] - 1,
-        peak_triplets_middle = spec$peak$peak_triplets_middle,
-        peak_triplets_left = spec$peak$peak_triplets_left,
-        peak_triplets_right = spec$peak$peak_triplets_right,
+        index_peak_triplets_middle = spec$peak$center[spec$peak$high],
+        index_peak_triplets_left = spec$peak$right[spec$peak$high],
+        index_peak_triplets_right = spec$peak$left[spec$peak$high],
+        peak_triplets_middle = spec$ppm[spec$peak$center[spec$peak$high]],
+        peak_triplets_left = spec$ppm[spec$peak$right[spec$peak$high]],
+        peak_triplets_right = spec$ppm[spec$peak$left[spec$peak$high]],
         integrals = spec$lcr$integrals[1, ],
-        sfr = c(spec$sfr$left_sdp, spec$sfr$right_sdp),
-        wshw = spec$wsr$hwidth_ppm,
+        signal_free_region = c(spec$sfr$left_sdp, spec$sfr$right_sdp),
+        range_water_signal_ppm = spec$wsr$hwidth_ppm,
         A = spec$lcr$A_new,
         lambda = spec$lcr$lambda_new,
         x_0 = spec$lcr$w_new
@@ -631,7 +741,7 @@ get_right_border_v12 <- function(j, d, m) {
         c3 <- d[r] < 0
         c4 <- d[r + 1] >= 0
         is_right_border <- (c1 && c2) || (c1 && c3 && c4)
-        if (is_right_border) {
+        if (isTRUE(is_right_border)) {
             return(r)
         }
         r <- r + 1
@@ -639,7 +749,7 @@ get_right_border_v12 <- function(j, d, m) {
     return(NA)
 }
 
-get_left_border_v12 <- function(j, d, m) {
+get_left_border_v12 <- function(j, d) {
     l <- j - 1
     while (l > 1) { # use l>1 instead of l>=1 because c4 requires d[l-1]
         c1 <- d[l] > d[l + 1]
@@ -647,16 +757,17 @@ get_left_border_v12 <- function(j, d, m) {
         c3 <- d[l] < 0
         c4 <- d[l - 1] >= 0
         is_left_border <- (c1 && c2) || (c1 && c3 && c4)
-        if (is_left_border) {
+        if (isTRUE(is_left_border)) {
             return(l)
         }
         l <- l - 1
     }
+    return(NA)
 }
 
 get_peak_score_v12 <- function(j, l, r, a) {
     if (any(is.na(a[c(l, j, r)]))) {
-        NA
+        0
     } else {
         min(sum(a[l:j]), sum(a[j:r]))
     }

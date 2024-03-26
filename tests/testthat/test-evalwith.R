@@ -18,8 +18,8 @@ test_that("evalwith works", {
         }
     )
     after_wd <- getwd()
-    expect_true(file.exists(file.path(x$testdir, "plots.pdf")))
-    expect_true(file.exists(file.path(x$testdir, "urine_1.dx")))
+    expect_true(file.exists(file.path(test_wd, "plots.pdf")))
+    expect_true(file.exists(file.path(test_wd, "urine_1.dx")))
     expect_equal(x$rv, list(y = 2, z = 3))
     expect_equal(z, 3)
     expect_true(x$runtime <= 1)

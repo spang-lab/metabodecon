@@ -21,8 +21,13 @@ test_that("read_spectrum works for bruker/urine_1", {
         inputs = "bruker/urine/urine_1",
         expr = read_spectrum("urine_1")
     )
+    y <- MetaboDecon1D_urine1_1010yy_ni3_dbg()
+    expect_identical(x$rv$y_raw, y$rv$debuglist$data_read$spectrum_y_raw)
+    expect_identical(x$rv$y_scaled, y$rv$debuglist$data_read$spectrum_y)
     expect_identical(str2(x$rv, digits.d = 12, vec.len = 1), expected_str_urine_1)
 })
+
+skip_if_slow_tests_disabled()
 
 test_that("read_spectrum works for jcampdx/urine_1.dx", {
     x <- evalwith(

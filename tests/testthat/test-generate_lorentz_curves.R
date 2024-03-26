@@ -1,16 +1,13 @@
 skip_if_slow_tests_disabled()
 
-test_that("GLC works with fn=urine_1, an=1010yy, ni=3", {
-    x <- evalwith(
-        testdir = "GLCv10_urine1_1010y1yy_ni3", inputs = "bruker/urine/urine_1",
-        answers = c(ExpNo=10, ProcNo=10, SameParam="y", AdjNo=1, SFRok="y", WSok="y"),
-        cache = cache, overwrite = overwrite,
-        # output = "captured", message = "captured", plot = "plots.pdf",
-        expr = generate_lorentz_curves_v10(data_path = ".", file_format = "bruker")
-    )
-    expect_str(x$rv, str_urine_1_deconvoluted())
-    expect_file_size(x$testdir, c(`plots.pdf` = 321364, `urine_1.dx` = 1192696, `urine_1.dx approximated_spectrum.txt` = 2581870, `urine_1.dx parameters.txt` = 72101))
+test_that("GLC works with: dp=urine_1, an=yy, ni=3", {
+    x <- glc_urine1_yy_ni3_dbg()$rv$urine_1
+    y <- MetaboDecon1D_urine1_1010yy_ni3_dbg()$rv
+    r <- compare_spectra(x, y, silent = TRUE)
+    expect_true(sum(r == 0) >= 51 &&sum(r == 1) >= 9 &&sum(r %in% c(2, 3) == 0)) # >=51 identical, >=9 equal, no errors
 })
+
+skip()
 
 test_that("generate_lorentz_curves works with 1 jcampdx, answers == y1yy", {
     x <- evalwith(

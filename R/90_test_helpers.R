@@ -2,20 +2,20 @@
 
 #' @description Run expression with predefined global state
 #' @param expr Expression to be evaluated.
-#' @param testdir ID of the test directory. E.g. `"MetaboDecon1D/2"`. Will be created and populated with `inputs`, but cleared.
+#' @param testdir ID of the test directory. E.g. `"xyz/2"`. Will be created and populated with `inputs`. To clear, use `clear(testdir("xyz/2"))`.
 #' @param answers Answers to be returned by readline().
-#' @param output Outputs to be captured. Can be "stdout" and/or "stderr".
-#' @param message Path to the file where stdout should be redirected to.
-#' @param plots Path to the pdf file where plots should be saved to.
+#' @param output Path to the file where output stream should be redirected to. Use `"captured"` to capture the output.
+#' @param message Path to the file where message stream be redirected to. Use `"captured"` to capture the messages.
+#' @param plot Path to the pdf file where plots should be saved to.
 #' @param datadir_temp State of the mocked temporary data directory. See details section.
 #' @param datadir_persistent State of the mocked persistent data directory. See details section.
-#' @param inputs Paths to be copied to the test directory. See [fill_with_inputs()] for details.
+#' @param inputs Paths to be copied to the test directory before evaluting `expr`.
 #' @param opts Named list of options to be set. See [options()].
 #' @param pars Named list of parameters to be set. See [par()].
 #' @param cache Logical indicating whether to cache the result of the expression.
 #' @param overwrite Logical indicating whether to overwrite the cache file if it already exists.
-#' @details The `datadir_temp` and `datadir_persistent` arguments accept values "missing", "filled" and "empty". Setting a value unequal NULL causes the functions [datadir_temp()] and/or [datadir_persistent()] to be replaced with mocks functions pointing to fake directories. Functions depending on these functions will then use the fake directories instead of the real ones. When set to "missing" the returned mock directory does not exist. When set to "empty" it exists and is guaranteed to be empty. When set to "filled", it is populated with example datasets.
-#' Attention: the mocked functions, i.e. [datadir_temp()] and [datadir_persistent()] cannot be used directly inside the expression when called via `devtools::test()`. I'm not sure why, but it seems as if devtools and/or testthat have their own copies of the functions which are used when the expression is evaluated.
+#' @details The `datadir_temp` and `datadir_persistent` arguments accept values "missing", "filled" and "empty". Setting a value unequal NULL causes the functions [datadir_temp()] and/or [datadir_persistent()] to be replaced with mock functions pointing to fake directories. Functions depending on these functions will then use the fake directories instead of the real ones. When set to "missing" the returned mock directory does not exist. When set to "empty" it exists and is guaranteed to be empty. When set to "filled", it is populated with example datasets.
+#' Attention: the mocked functions, i.e. [datadir_temp()] and [datadir_persistent()] cannot be used directly inside `expr` when called via `devtools::test()`. I'm not sure why, but it seems as if devtools and/or testthat have their own copies of the functions which are used when the expression is evaluated.
 #' @noRd
 evalwith <- function(expr,
                      testdir = NULL,
@@ -31,7 +31,7 @@ evalwith <- function(expr,
                      cache = FALSE,
                      overwrite = FALSE) {
     hash <- NULL
-    if (isTRUE(cache)) {
+    if (isTRUE(cache)){
         cachedir <- cachedir()
         cachefile <- file.path(cachedir, paste0(testdir, ".rds"))
         if (file.exists(cachefile) && isFALSE(overwrite)) {
@@ -78,17 +78,11 @@ evalwith <- function(expr,
         oldpars <- par(pars)
         on.exit(par(oldpars), add = TRUE)
     }
-    # readline <- get_readline_mock(answers) # (1)
-    # datadir_temp <- get_datadir_mock(type = "temp", state = datadir_temp) # (1)
-    # datadir_persistent <- get_datadir_mock(type = "persistent", state = datadir_persistent) # (1)
-    # (1) mocks must be defined before calling with_mocked_bindings to prevent problems due to R's non standard evaluation mechanism
     withCallingHandlers(
         testthat::with_mocked_bindings(
             tryCatch(
                 {
-                    runtime <- system.time(rv <- {
-                        expr
-                    })[["elapsed"]]
+                    runtime <- system.time(rv <- expr)[["elapsed"]]
                 },
                 error = function(e) {
                     sink(NULL, type = "message")
@@ -113,14 +107,13 @@ evalwith <- function(expr,
     retobj
 }
 
-testdir <- function() {
-    p <- file.path(tempdir(), "tests")
-    normalizePath(p, "/", mustWork = FALSE)
+testdir <- function(p = NULL) {
+    normPath(paste(tempdir(), "tests", p, sep = "/"))
+    # use paste instead of file.path, because it can deal with NULL
 }
 
 mockdir <- function() {
-    p <- file.path(tempdir(), "mocks")
-    normalizePath(p, "/", mustWork = FALSE)
+    normPath(file.path(tempdir(), "mocks"))
 }
 
 #' @description Create and return cache dir. If existing, the persistent cache dir is returned, else the temp cache dir. To force creation of the persistent cache dir, call once with `persistent=TRUE`.
@@ -194,313 +187,161 @@ get_datadir_mock <- function(type = "temp", state = "default") {
     function() p
 }
 
-# func results #####
-
-#' @description The `metabodecon` package contains private copies of all functions from the precursor package `MetaboDecon1D`. The copies are functionally identical [^1] to the original versions expect for a few extra lines of code, which cause the functions to return additional information about intermediate calculations if argument `debug` is TRUE.
-#'
-#' This function uses that mechanism to call the original functions [MetaboDecon1D()] and [deconvolution] with different input parameters and stores the returned debug results incl. debug info as RDS files. This way, new or updated functions from `metabodecon` can be tested against the original function result to ensure correctness and/or backwards compatibility.
-#'
-#' [^1]: In fact, the functions are not 100% identical. All code parts modifying global state, such as writing to disk or changing the working directory have been altered to meet the CRAN requirements. But all calculations and the return value are completely identical.
-#' @noRd
-store_func_results <- function(overwrite = FALSE) {
-    dstdir <- mkdirs(datadir("test_expects", warn = FALSE))
-    xpcts <- list()
-    store_as_rds2 <- function(name, expr) store_as_rds(name, dstdir, overwrite, expr)
-    cat2("Storing test expects in:", dstdir)
-
-    name <- "MetaboDecon1D__240319__urine1_1010yy_ni1"
-    xpcts[[name]] <- store_as_rds2(name, {
-        evalwith(
-            testdir = name, inputs = "bruker/urine/urine_1", answers = c(10, 10, "y", "y"),
-            output = "captured", message = "captured", plot = "plots.pdf",
-            expr = MetaboDecon1D(filepath = ".", filename = "urine_1", file_format = "bruker", number_iterations = 1)
-        )
-    })
-
-    name <- "MetaboDecon1D__240319__urine1_1010yy_ni1"
-    xpcts[[name]] <- store_as_rds2(name, {
-        evalwith(
-            testdir = name, inputs = "bruker/urine/urine_1", answers = c(10, 10, "y", "y"),
-            output = "captured", message = "captured", plot = "plots.pdf",
-            expr = MetaboDecon1D(filepath = ".", filename = "urine_1", file_format = "bruker", number_iterations = 1)
-        )
-    })
-
-    name <- "deconvolution_urine1_spF_ni10_cf1_nf2"
-    xpcts[[name]] <- store_as_rds2(name, {
-        evalwith(
-            testdir = "deconvolution_v11/1", inputs = "bruker/urine/urine_1", answers = c("y", "y"),
-            output = "captured", message = "captured", plot = "plots.pdf",
-            expr = {
-                set.seed(1234)
-                deconvolution_v11(filepath = "urine_1/10", name = NULL, file_format = "bruker", same_parameter = FALSE, processing_value = 10, number_iterations = 10, range_water_signal_ppm = 0.1527692, signal_free_region = c(11.44494, -1.8828), smoothing_param = c(2, 5), delta = 6.4, scale_factor = c(1000, 1000000), current_filenumber = 1, number_of_files = 2, debug = TRUE)
-            }
-        )
-    })
-
-    name <- "deconvolution_urine1_spT_ni1_cf1_nf2"
-    xpcts[[name]] <- store_as_rds2(name, {
-        evalwith(
-            testdir = "deconvolution_v11/2", inputs = c(urine = "bruker/urine/urine_1"), answers = c("y", "y"),
-            output = "captured", message = "captured", plot = "plots.pdf",
-            expr = {
-                set.seed(1234)
-                deconvolution_v11(filepath = "urine_1/10", name = NULL, file_format = "bruker", same_parameter = TRUE, processing_value = 10, number_iterations = 1, range_water_signal_ppm = 0.1527692, signal_free_region = c(11.44494, -1.8828), smoothing_param = c(2, 5), delta = 6.4, scale_factor = c(1000, 1000000), current_filenumber = 1, number_of_files = 2, debug = TRUE)
-            }
-        )
-    })
-
-    name <- "deconvolution_urine1_spT_ni1_cf2_nf2"
-    xpcts[[name]] <- store_as_rds2(name, {
-        evalwith(
-            testdir = "deconvolution_v11/3", inputs = c(urine = "bruker/urine/urine_1"), answers = NULL,
-            output = "captured", message = "captured", plot = "plots.pdf",
-            expr = {
-                set.seed(1234)
-                deconvolution_v11(filepath = "urine_1/10", name = NULL, file_format = "bruker", same_parameter = TRUE, processing_value = 10, number_iterations = 1, range_water_signal_ppm = 0.1527692, signal_free_region = c(109.09458303373, 21.8529143006947), smoothing_param = c(2, 5), delta = 6.4, scale_factor = c(1000, 1000000), current_filenumber = 2, number_of_files = 2, debug = TRUE)
-            }
-        )
-    })
-
-    invisible(xpcts)
-}
-
-list_func_results <- function() {
-    dstdir <- datadir("test_expects", warn = FALSE)
-    if (!dir.exists(dstdir)) dir.create(dstdir, recursive = TRUE)
-    dir(dstdir, full.names = TRUE)
-}
-
-get_func_result <- function(rds = "deconvolution_urine1_spF_ni1_cf1_nf2.rds") {
-    dstdir <- datadir("test_expects", warn = FALSE)
-    if (!dir.exists(dstdir)) dir.create(dstdir, recursive = TRUE)
-    rds <- file.path(dstdir, rds)
-    if (!file.exists(rds)) {
-        text <- "File '%s' does not exist. Valid names are:\n%s\nIf you believe, the file should exist, run `store_func_results()` to create it."
-        valid <- paste(list_func_results(), collapse = "\n")
-        msg <- sprintf(text, rds, valid)
-        stop(msg)
-    }
-    obj <- readRDS(rds)
-    obj
-}
-
-#' @title Store the result of an expression as an RDS file
-#' @description Evaluate an expression. Store the result as RDS file and return it. Overwrite existing files if `overwrite` is TRUE. Else skip execution of `expr` and instead read and return the RDS.
-#' @param name The name of the expression.
-#' @param dstdir The directory where the RDS file will be stored.
-#' @param overwrite Logical indicating whether to overwrite the RDS file if it already exists.
-#' @param expr The expression to evaluate and store the result of.
-#' @return The result of the expression. The result is returned invisibly.
-#' @noRd
-store_as_rds <- function(name, dstdir, overwrite, expr) {
-    rds <- file.path(dstdir, paste0(name, ".rds"))
-    exists <- file.exists(rds)
-    status <- if (!exists) "generating" else if (overwrite) "overwriting" else "reading"
-    cat3(paste0("\033[34m", name, "\033[0m"), status)
-    if (!exists || overwrite) {
-        x <- force(expr)
-        saveRDS(x, file = rds)
-    } else {
-        x <- readRDS(rds)
-    }
-    invisible(x)
-}
-
 # interactive testing #####
 
-loaded_via_devtools <- function() {
-    nchar(pkg_file(".gitignore")) > 0 # .gitignore is part of .Rbuildignore, i.e. after installation it is no longer present and pkg_file will return ""
-}
-
-vcomp <- function(x, y) {
+#' @title Compare two vectors
+#' @description Checks if `x` and `y` are identical, all.equal or different vectors. If different, differences are printed.
+#' @return 0==identical, 1==all.equal, 2==different, 3==error
+#' @examples
+#' x <- 1:10
+#' y1 <- 1:10
+#' y2 <- c(1:4, 5.000000000000001, 6:8, 8.99999999999999, 10)
+#' y3 <- c(1:4, 5.1, 6:8, 8.9, 10)
+#' y4 <- list("a", "b", "c")
+#' vcomp(x, y1)
+#' vcomp(x, y2)
+#' vcomp(x, y3)
+#' vcomp(x, y4)
+vcomp <- function(x, y, xpct = 0, silent = FALSE) {
+    isvec <- function(x) is.vector(x) && !is.list(x)
     callstr <- paste(deparse(sys.call()), collapse = "")
     callstr <- gsub("\\s+", " ", callstr)
-    o <- capture.output({
-        r <- tryCatch(
-            {
-                x <- vcomp_internal(x, y)
-                m <- switch(as.character(x),
-                    "0" = paste0(GREEN, "identical", RESET),
-                    "1" = paste0(ORANGE, "all.equal", RESET),
-                    "2" = paste0(RED, "different", RESET)
-                )
-                list(x = x, m = m)
-            },
-            error = function(e) {
-                x <- 3
-                m <- paste0(RED, e$message, RESET)
-                list(x = x, m = m)
-            }
-        )
-    })
-    cat2(callstr, ": ", r$m, sep = "")
-    if (length(o) > 0) cat2(collapse(o, "\n"))
-    r$x
-}
-
-vcomp_internal <- function(x, y) {
-    if (!is.vector(x) || is.list(x)) stop("x must be a vector, but is: ", class(x))
-    if (!is.vector(y) || is.list(y)) stop("y must be a vector, but is: ", class(y))
-    if (identical(x, y)) {
-        return(0)
-    } else {
-        capture.output(all_equal <- isTRUE(all.equal(x, y)))
-        i <- which(x != y)
-        a <- x[i]
-        b <- y[i]
-        z <- a - b
-        cat2("Objects:")
-        cat2("  length(x):", length(x))
-        cat2("  length(y):", length(y))
-        cat2("  head(x):", head(x))
-        cat2("  head(y):", head(y))
-        cat2("  tail(x):", tail(x))
-        cat2("  tail(y):", tail(y))
-        cat2("  class(x):", class(x))
-        cat2("  class(y):", class(y))
-        cat2("  attributes(x):", attributes(x))
-        cat2("  attributes(y):", attributes(y))
-        cat2("Differences:")
-        cat2("  i <- which(x != y)")
-        cat2("  a <- x[i]")
-        cat2("  b <- y[i]")
-        cat2("  z <- a - b")
-        cat2("  length(i):", length(i))
-        cat2("  head(i)", head(i))
-        cat2("  tail(i)", tail(i))
-        cat2("  head(a):", head(a))
-        cat2("  head(b):", head(b))
-        cat2("  tail(a):", head(a))
-        cat2("  tail(b):", head(b))
-        cat2("  head(z):", head(z))
-        cat2("  tail(z):", tail(z))
-        return(if (all_equal) 1 else 2)
+    status <- if (identical(x, y)) 0 else if (isTRUE(all.equal(x, y))) 1 else if (isvec(x) && isvec(y)) 2 else 3
+    if (!silent) {
+        msg <- c("identical", "all.equal", "different", "error")[status + 1]
+        if (status == 3) msg <- paste0(msg, ": class(x)==", class(x), ", class(y)==", class(y))
+        col <- c(GREEN, YELLOW, RED, RED)[status + 1]
+        cat2(callstr, " ", col, msg, RESET, sep = "")
+        if (status %in% 1:2 && status != xpct) {
+            i <- which(x != y)
+            a <- x[i]
+            b <- y[i]
+            z <- a - b
+            rows <- c("class", "length", "head", "tail")
+            cols <-  c("x", "y", "i", "a", "b", "z")
+            df <- as.data.frame(matrix(".", length(rows), length(cols), dimnames = list(rows, cols)))
+            df["class", c("x", "y")] <- c(class(x), class(y))
+            df["length", ] <- sapply(cols, function(col) length(get(col)))
+            df["head", ] <- sapply(cols, function(col) dput2(head(get(col))))
+            df["tail", ] <- sapply(cols, function(col) dput2(tail(get(col))))
+            print(df)
+        }
     }
+    invisible(status)
 }
 
-# list_func_results()
-# # "deconvolution_urine1_spF_ni1_cf1_nf2.rds"
-# # "deconvolution_urine1_spT_ni1_cf1_nf2.rds"
-# # "deconvolution_urine1_spT_ni1_cf2_nf2.rds"
-# spec <- deconvolution_v11()
-# check_spec(spec, compare_against = "deconvolution_urine1_spF_ni1_cf1_nf2.rds")
-check_spec <- function(spec, compare_against = "deconvolution_urine1_spF_ni10_cf1_nf2.rds") {
-    func_result <- get_func_result(rds = compare_against)
-    ref <- func_result$rv$debuglist
-    blue <- function(x) cat2("\033[34m", x, "\033[0m", sep = "")
-    x <- logical()
+#' @description Compare a spectrum deconvoluted with [generate_lorentz_curves_v12()] with a spectrum deconvoluted with [MetaboDecon1D()].
+#' @param x Result of [generate_lorentz_curves_v12()].
+#' @param y Result of [MetaboDecon1D()].
+#' @examples \donttest{
+#' new <- glc_urine1_yy_ni3_dbg(overwrite = TRUE)$rv$urine_1
+#' old <- MetaboDecon1D_urine1_1010yy_ni3_dbg()$rv
+#' compare_spectra(new, old)
+#' }
+#' @noRd
+compare_spectra <- function(new = glc_urine1_yy_ni3_dbg()$rv$urine_1,
+                            old = MetaboDecon1D_urine1_1010yy_ni3_dbg()$rv,
+                            silent = FALSE) {
+    comp <- vcomp(new, old, silent = silent)
+    r <- numeric()
+    o1 <- old$debuglist$args
+    o2 <- old$debuglist$data_read
+    o3 <- old$debuglist$ws_rm
+    o4 <- old$debuglist$neg_rm
+    o5 <- old$debuglist$smoothed
+    o6 <- old$debuglist$peaks_sel
+    o7 <- old$debuglist$peaks_wob_rm
+    o8 <- old$debuglist$peak_scores_calc
+    o9 <- old$debuglist$params_init
+    o10 <- old$debuglist$params_approx
+    o11 <- old$debuglist$params_saved
 
-    blue("read_spectrum(path, type, sf, expno, procno)")
-    x[1] <- vcomp(ref$data_read$spectrum_y_raw, spec$y_raw)
-    x[2] <- vcomp(ref$data_read$spectrum_y, spec$y_scaled)
+    # [1-5] spectra <- get_spectra(data_path, file_format, expno, procno, ask, sf)
+    # [6-7] spectra <- add_sfrs(spectra, sfr, ask, adjno)
+    # [8-9] spectra <- add_wsrs(spectra, wshw, ask, adjno)
+    # [10] spec <- rm_water_signal_v12(spec)
+    # [11] spec <- rm_negative_signals_v12(spec)
+    # [12] spec <- smooth_signals_v12(spec, reps = smopts[1], k = smopts[2])
+    r[1] <- vcomp(new$y_raw,         o2$spectrum_y_raw)
+    r[2] <- vcomp(new$y_scaled,      o2$spectrum_y)
+    r[3] <- vcomp(new$n,             o3$spectrum_length)
+    r[4] <- vcomp(new$sdp,           o3$spectrum_x)
+    r[5] <- vcomp(new$ppm,           o3$spectrum_x_ppm)
+    r[6] <- vcomp(new$sfr$left_sdp,  o3$signal_free_region_left)
+    r[7] <- vcomp(new$sfr$right_sdp, o3$signal_free_region_right)
+    r[8] <- vcomp(new$wsr$left_dp,   o3$water_signal_left)
+    r[9] <- vcomp(new$wsr$right_dp,  o3$water_signal_right)
+    r[10] <- vcomp(new$y_nows,       o3$spectrum_y)
+    r[11] <- vcomp(new$y_pos,        o4$spectrum_y)
+    r[12] <- vcomp(new$y_smooth,     o5$spectrum_y)
 
-    blue("determine_signal_free_region(spec, sfr, ask)")
-    blue("determine_water_signal(spec, hwidth_ppm = wshw, bwc, ask)")
-    x[3] <- vcomp(ref$ws_rm$spectrum_length, spec$n)
-    x[4] <- vcomp(ref$ws_rm$spectrum_x, spec$sdp)
-    x[5] <- vcomp(ref$ws_rm$spectrum_x_ppm, spec$ppm)
-    x[6] <- vcomp(ref$ws_rm$signal_free_region_left, spec$sfr$left_sdp)
-    x[7] <- vcomp(ref$ws_rm$signal_free_region_right, spec$sfr$right_sdp)
-    x[8] <- vcomp(ref$ws_rm$water_signal_left, spec$wsr$left_dp)
-    x[9] <- vcomp(ref$ws_rm$water_signal_right, spec$wsr$right_dp)
-    x[10] <- vcomp(ref$ws_rm$spectrum_y, spec$y_nows)
+    # spec <- find_peaks_v12(spec)
+    r[13] <- vcomp(new$n,           o6$spectrum_length)
+    r[14] <- vcomp(new$d,           c(NA, o6$second_derivative[2, ], NA)) # (1)
+    r[16] <- vcomp(new$peak$center, as.integer(o6$peaks_index + 1)) # (1)
+    r[17] <- vcomp(new$peak$center, as.integer(o6$peaks_x + 1)) # (1)
+    r[18] <- vcomp(new$peak$right,  as.integer(o6$left_position[1, ]) + 1) # (1)
+    r[19] <- vcomp(new$peak$left,   as.integer(o6$right_position[1, ]) + 1) # (1)
+    # (1) MetaboDecon1D did not store NAs at the border, which is bad, because you need to shift every index by one when you switch from `second_derivative` to any other vector like `x_ppm` or `y_au`.
 
-    blue("remove_negative_signals(spec)")
-    x[11] <- vcomp(ref$neg_rm$spectrum_y, spec$y_pos)
+    # spec <- rm_peaks_with_low_scores_v12(spec, delta)
+    r[20] <- vcomp(new$sdp[new$peak$center],                                     o7$peaks_x                       )
+    r[21] <- vcomp(new$peak$center,                                              as.integer(o7$peaks_index + 1)   ) # (1) see above
+    r[22] <- vcomp(new$peak$right,                                               o7$left_position[1, ] + 1        ) # (1)
+    r[23] <- vcomp(new$peak$left,                                                o7$right_position[1, ] + 1       ) # (1)
+    r[24] <- vcomp(mean(new$peak$score[new$peak$region %in% c("sfrl", "sfrr")]), o8$mean_score                    )
+    r[25] <- vcomp(sd(new$peak$score[new$peak$region %in% c("sfrl", "sfrr")]),   o8$sd_score                      )
+    r[26] <- vcomp(new$peak$score,                                               o8$scores[1, ]                   )
+    r[27] <- vcomp(which(new$peak$region == "sfrl"),                             o8$index_left                    )
+    r[28] <- vcomp(which(new$peak$region == "sfrr"),                             o8$index_right                   )
+    r[29] <- vcomp(new$peak$center[new$peak$high],                               as.integer(o8$filtered_peaks + 1)) # (1)
+    r[30] <- vcomp(new$peak$right[new$peak$high],                                o8$filtered_left_position + 1    ) # (1)
+    r[31] <- vcomp(new$peak$left[new$peak$high],                                 o8$filtered_right_position + 1   ) # (1)
+    r[32] <- vcomp(new$peak$score[new$peak$high],                                o8$save_scores                   )
 
-    blue("smooth_signals(spec, reps = smopts[1], k = smopts[2], bwc)")
-    x[12] <- vcomp(ref$smoothed$spectrum_y, spec$y_smooth)
+    # spec <- init_lorentz_curves_v12(spec)
+    r[33] <- vcomp(new$sdp,                         o9$spectrum_x,                      xpct = 0)
+    r[34] <- vcomp(new$y_smooth,                    o9$spectrum_y,                      xpct = 0)
+    r[35] <- vcomp(new$peak$center[new$peak$high],  as.integer(o9$filtered_peaks + 1),  xpct = 0) # (1)
+    r[36] <- vcomp(new$peak$right[new$peak$high] ,  o9$filtered_left_position + 1,      xpct = 0) # (1)
+    r[37] <- vcomp(new$peak$left[new$peak$high],    o9$filtered_right_position + 1,     xpct = 0) # (1)
+    r[38] <- vcomp(new$lc$A,                        o9$A,                               xpct = 1)
+    r[39] <- vcomp(new$lc$lambda,                   o9$lambda,                          xpct = 1)
+    r[40] <- vcomp(new$lc$w,                        o9$w,                               xpct = 0)
 
-    blue("find_peaks_v12(spec)")
-    x[13] <- vcomp(ref$peaks_sel$spectrum_length, spec$n)
-    x[14] <- vcomp(ref$peaks_sel$second_derivative[1, ], spec$sdp[2:(spec$n - 1)])
-    x[15] <- vcomp(ref$peaks_sel$second_derivative[2, ], spec$d[2:(spec$n - 1)])
-    x[16] <- vcomp(ref$peaks_sel$peaks_index, as.integer(spec$peak$center - 1))
-    x[17] <- vcomp(ref$peaks_sel$peaks_x, as.integer(spec$peak$center - 1))
-    x[18] <- vcomp(ref$peaks_sel$left_position[1, ], spec$peak$right - 1)
-    x[19] <- vcomp(ref$peaks_sel$right_position[1, ], spec$peak$left - 1)
-    x[20] <- vcomp(ref$peaks_wob_rm$peaks_x, spec$sdp[spec$peak$center])
-    x[21] <- vcomp(ref$peaks_wob_rm$peaks_index, as.integer(spec$peak$center - 1))
-    x[22] <- vcomp(ref$peaks_wob_rm$left_position[1, ], spec$peak$right - 1)
-    x[23] <- vcomp(ref$peaks_wob_rm$right_position[1, ], spec$peak$left - 1)
+    # spec <- refine_lorentz_curves_v12(spec, nfit)
+    r[42] <- vcomp(new$lcr$w_new,          o10$w_new,          xpct = 0)
+    r[43] <- vcomp(new$lcr$lambda_new,     o10$lambda_new,     xpct = 1)
+    r[44] <- vcomp(new$lcr$A_new,          o10$A_new,          xpct = 1)
+    r[45] <- vcomp(new$lcr$integrals[1, ], o10$integrals[1, ], xpct = 1)
 
-    blue("rm_peaks_with_low_scores(spec)")
-    peaks <- spec$peak$center
-    scores <- spec$peak$score
-    region <- spec$peak$region
-    x[24] <- vcomp(ref$peak_scores_calc$mean_score, mean(scores[region %in% c("sfrl", "sfrr")]))
-    x[25] <- vcomp(ref$peak_scores_calc$sd_score, sd(scores[region %in% c("sfrl", "sfrr")]))
-    x[26] <- vcomp(ref$peak_scores_calc$scores[1, ], spec$peak$score)
-    x[27] <- vcomp(ref$peak_scores_calc$index_left, which(spec$peak$region == "sfrl"))
-    x[28] <- vcomp(ref$peak_scores_calc$index_right, which(spec$peak$region == "sfrr"))
-    x[29] <- vcomp(ref$peak_scores_calc$filtered_peaks, as.integer(spec$peak$center[spec$peak$high] - 1))
-    x[30] <- vcomp(ref$peak_scores_calc$filtered_left_position, spec$peak$right[spec$peak$high] - 1)
-    x[31] <- vcomp(ref$peak_scores_calc$filtered_right_position, spec$peak$left[spec$peak$high] - 1)
-    x[32] <- vcomp(ref$peak_scores_calc$save_scores, spec$peak$score[spec$peak$high])
+    # spec <- add_return_list_v12(spec, n, nam, debug)
+    r[46] <- vcomp(new$ret$number_of_files, as.integer(old$number_of_files)) # int 1
+    r[47] <- vcomp(new$ret$filename, old$filename) # chr[1] "urine_1"
+    r[48] <- vcomp(new$ret$x_values, old$x_values) # num[131072] 131.071 131.070 131.069 ...
+    r[49] <- vcomp(new$ret$x_values_ppm, old$x_values_ppm) # num[131072] 14.80254 14.80239 14.80223 ...
+    r[50] <- vcomp(new$ret$y_values, old$y_values) # num[131072] 0.000831 0.000783 0.000743 ...
+    r[51] <- vcomp(new$ret$spectrum_superposition, old$spectrum_superposition[1, ], 1) # num [1:131072] 3.29e-05 3.29e-05 3.29e-05 3.29e-05 3.29e-05 ...
+    r[52] <- vcomp(new$ret$mse_normed, old$mse_normed) # num 4.1e-11
+    r[53] <- vcomp(new$ret$index_peak_triplets_middle, as.integer(old$index_peak_triplets_middle)) # int[1227] 36158 37148 37418 37434 38942 38959 39030 39046 39091 39109 ...
+    r[54] <- vcomp(new$ret$index_peak_triplets_left, old$index_peak_triplets_left) # num[1227] 36160 37159 37422 37437 38948 ...
+    r[55] <- vcomp(new$ret$index_peak_triplets_right, old$index_peak_triplets_right) # num[1227] 36155 37139 37414 37431 38937 ...
+    r[59] <- vcomp(new$ret$integrals, old$integrals[1, ], 1) # num[1227] 0.000502 0.026498 0.000396 0.000379 0.00732 ...
+    if (!is.null(old$signal_free_region)) r[60] <- vcomp(new$ret$signal_free_region, old$signal_free_region) # num[2] 109.1 21.9
+    if (!is.null(old$range_water_signal_ppm)) r[61] <- vcomp(new$ret$range_water_signal_ppm, old$range_water_signal_ppm) # num 0.153
+    r[62] <- vcomp(new$ret$A, old$A, 1) # num[1227] -0.00016 -0.008437 -0.000126 -0.000121 -0.00233 ...
+    r[63] <- vcomp(new$ret$lambda, old$lambda, 1) # num[1227] -0.00775 -0.02188 -0.00672 -0.00566 -0.01252 ...
+    r[64] <- vcomp(new$ret$x_0, old$x_0, 0) # num[1227] 94.9 93.9 93.7 93.6 92.1 ...
 
-    blue("init_lorentz_curves(spec)")
-    x[33] <- vcomp(ref$params_init$spectrum_x, spec$sdp)
-    x[34] <- vcomp(ref$params_init$spectrum_y, spec$y_smooth)
-    x[35] <- vcomp(ref$params_init$filtered_peaks, as.integer(spec$peak$center[spec$peak$high] - 1))
-    x[36] <- vcomp(ref$params_init$filtered_left_position, spec$peak$right[spec$peak$high] - 1)
-    x[37] <- vcomp(ref$params_init$filtered_right_position, spec$peak$left[spec$peak$high] - 1)
-    x[38] <- vcomp(ref$params_init$A, spec$lc$A)
-    x[39] <- vcomp(ref$params_init$lambda, spec$lc$lambda)
-    x[40] <- vcomp(ref$params_init$w, spec$lc$w)
-    x[41] <- vcomp(ref$params_init$number_iterations, nfit)
+    r[56] <- vcomp(new$ret$peak_triplets_middle, old$peak_triplets_middle) # NULL
+    r[57] <- vcomp(new$ret$peak_triplets_left, old$peak_triplets_left) # NULL
+    r[58] <- vcomp(new$ret$peak_triplets_right, old$peak_triplets_right) # NULL
 
-    blue("refine_lorentz_curves(spec, nfit)")
-    x[42] <- vcomp(ref$params_approx$w_new, spec$lcr$w_new)
-    x[43] <- vcomp(ref$params_approx$lambda_new, spec$lcr$lambda_new)
-    x[44] <- vcomp(ref$params_approx$A_new, spec$lcr$A_new)
-    x[45] <- vcomp(ref$params_approx$integrals[1, ], spec$lcr$integrals[1, ])
+    r[is.na(r)] <- 4
+    msg <- "Identical: %s, Equal: %s, Different: %s, Error: %s, Empty: %s"
+    catf(msg, sum(r == 0), sum(r == 1), sum(r == 2), sum(r == 3), sum(r == 4))
 
-    blue("create_return_list(spec)")
-    x[46] <- vcomp(ref$params_saved$index_peak_triplets_middle, spec$ret$index_peak_triplets_middle + 1)
-    x[47] <- vcomp(ref$params_saved$index_peak_triplets_left, spec$ret$index_peak_triplets_left + 1)
-    x[48] <- vcomp(ref$params_saved$index_peak_triplets_right, spec$ret$index_peak_triplets_right + 1)
-    # x[49] <- vcomp(ref$params_saved$peak_triplets_middle, spec$ret$peak_triplets_middle)
-    # x[50] <- vcomp(ref$params_saved$peak_triplets_left, spec$ret$peak_triplets_left)
-    # x[51] <- vcomp(ref$params_saved$peak_triplets_right, spec$ret$peak_triplets_right)
-    # x[52] <- vcomp(ref$params_saved$noise_threshold, spec$ret$noise_threshold)
-    # x[54] <- vcomp(ref$params_saved$spectrum_info, spec$ret$spectrum_info)
-    # x[55] <- vcomp(ref$params_saved$spectrum_output, spec$ret$spectrum_output)
-    # x[56] <- vcomp(ref$params_saved$name_info_txt, spec$ret$name_info_txt)
-    # x[57] <- vcomp(ref$params_saved$name_output_txt, spec$ret$name_output_txt)
-
-    catf("Identical: %s, Numequal: %s, Different: %s, Error: %s", sum(x == 0), sum(x == 1), sum(x == 2), sum(x == 3))
-
-    invisible(x)
-}
-
-list_tests <- function(testthat = FALSE) {
-    ns <- asNamespace("metabodecon")
-    grep("^test_", ls(ns), value = TRUE)
-    # x <- capture.output(ls.str(tests))
-    # x <- sapply(strsplit(x, ":"), function(x) x[1])
-    # x <- gsub("^([^ ].*)", paste0(MAGENTA, "\\1", RESET), x)
-    # cat2(x, sep = "\n")
-}
-
-make_test_files <- function() {
-    if (!loaded_via_devtools()) stop("Only run during development while loading the package from source")
-    tests <- list_tests()
-    ttdir <- pkg_file("tests/testthat")
-    paths_curr <- dir(ttdir, full.names = TRUE)
-    paths_xpct <- file.path(ttdir, paste0(tests, ".R"))
-    paths_rm <- setdiff(paths_curr, paths_xpct)
-    paths_add <- setdiff(paths_xpct, paths_curr)
-    if (length(paths_rm) > 0) {
-        cat2(BLUE, "Removing:\n", RESET, collapse(paths_rm, "\n"), sep = "")
-        unlink(paths_rm)
-    }
-    lines <- paste0("# Generated from pkg source. Run `make_test_files()` after edits.\n", tests, "()")
-    if (length(paths_add) > 0) {
-        cat2(BLUE, "Adding:\n", RESET, collapse(paths_add, "\n"), sep = "")
-        sapply(seq_along(paths_add), function(i) writeLines(lines[i], paths_add[i]))
-    }
-    invisible(lines)
+    invisible(r)
 }
 
 #' @title Run tests with the option to skip slow tests
@@ -517,6 +358,33 @@ run_tests <- function(all = FALSE) {
 
 skip_if_slow_tests_disabled <- function() {
     if (!Sys.getenv("RUN_SLOW_TESTS") == "TRUE") {
-        skip("Slow tests are disabled. Set environment variable RUN_SLOW_TESTS to TRUE to enable them.")
+        skip("Slow tests are disabled. Use `Sys.setenv(RUN_SLOW_TESTS=TRUE)` or `run_tests(all=TRUE)` to enable.")
     }
+}
+
+#' @description Compare a spectrum deconvoluted with [generate_lorentz_curves_v12()] with a spectrum deconvoluted with [MetaboDecon1D()].
+#' @param x Result of [generate_lorentz_curves_v12()].
+#' @param y Result of [MetaboDecon1D()].
+#' @examples \donttest{
+#' obj <- glc_urine1_yy_ni3_dbg()$rv$urine_1
+#' du(obj)
+#' }
+#' @noRd
+du <- function(obj, pname = "", level = 0, max_level = 1, max_len = 50) {
+    sizeMB <- function(x) paste(round(object.size(x) / 1e6, 2), "MB")
+    for (name in names(obj)) {
+        x <- obj[[name]]
+        indent <- collapse(rep("    ", level), "")
+        cat2(indent, name, " ", sizeMB(x), sep = "")
+        if (is.list(x) && length(x) < max_len && level < max_level) {
+            du(x, name, level + 1, max_level)
+        }
+    }
+    if (level == 0) {
+        cat2("Total:", sizeMB(obj))
+    }
+}
+
+pairwise_identical <- function(x) {
+    lapply(seq_len(length(x) - 1), function(i) identical(x[[i]], x[[i + 1]]))
 }
