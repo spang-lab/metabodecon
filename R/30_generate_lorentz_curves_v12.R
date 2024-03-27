@@ -312,191 +312,66 @@ rm_peaks_with_low_scores_v12 <- function(spec, delta = 6.4) {
     spec
 }
 
-init_lorentz_curves_v12 <- function(spec) {
+# x <- spec$sdp
+# y <- spec$y_smooth
+# pc <- spec$peak$center[spec$peak$high]
+# pl <- spec$peak$right[spec$peak$high]
+# pr <- spec$peak$left[spec$peak$high]
+init_lorentz_curves_v13 <- function(x, y, pc, pl, pr) {
+
     msg("Initializing Lorentz curves")
-    w_1 <- c()
-    w_2 <- c()
-    w_3 <- c()
-    y_1 <- c()
-    y_2 <- c()
-    y_3 <- c()
-    w_1_2 <- c()
-    w_1_3 <- c()
-    w_2_3 <- c()
-    y_1_2 <- c()
-    y_1_3 <- c()
-    y_2_3 <- c()
-    w_delta <- c()
-    w <- c()
-    lambda <- c()
-    A <- c()
 
-    spectrum_x <- spec$sdp
-    spectrum_y <- spec$y_smooth
-    filtered_peaks <- as.integer(spec$peak$center[spec$peak$high] - 1)
-    filtered_left_position <- spec$peak$right[spec$peak$high] - 1
-    filtered_right_position <- spec$peak$left[spec$peak$high] - 1
+    xl <- x[pl]
+    xc <- x[pc]
+    xr <- x[pr]
 
-    # Calculate parameters w, lambda and A for the initial lorentz curves
-    for (i in seq_along(filtered_peaks)) {
-        # Calculate position of peak triplets
-        w_1 <- c(w_1, spectrum_x[filtered_left_position[i] + 1])
-        w_2 <- c(w_2, spectrum_x[filtered_peaks[i] + 1])
-        w_3 <- c(w_3, spectrum_x[filtered_right_position[i] + 1])
+    yl <- y[pl]
+    yc <- y[pc]
+    yr <- y[pr]
 
-        # Calculate intensity of peak triplets
-        y_1 <- c(y_1, spectrum_y[filtered_left_position[i] + 1])
-        y_2 <- c(y_2, spectrum_y[filtered_peaks[i] + 1])
-        y_3 <- c(y_3, spectrum_y[filtered_right_position[i] + 1])
+    # Calculate mirrored points for ascending/descending shoulders
+    i <- which((yl < yc) & (yc < yr)) # ascending shoulders
+    j <- which((yl > yc) & (yc > yr)) # descending shoulders
+    xr[i] <- 2 * xc[i] - xl[i]
+    xl[j] <- 2 * xc[j] - xr[j]
+    yr[i] <- yl[i]
+    yl[j] <- yr[j]
 
-        # Calculate mirrored points if necesccary
-        # For ascending shoulders
-        if (is.na(((y_1[i] < y_2[i]) & (y_2[i] < y_3[i])))) {
-            1
-        }
-        if ((y_1[i] < y_2[i]) && (y_2[i] < y_3[i])) {
-            w_3[i] <- 2 * w_2[i] - w_1[i]
-            y_3[i] <- y_1[i]
-        }
-        # For descending shoulders
-        if ((y_1[i] > y_2[i]) && (y_2[i] > y_3[i])) {
-            w_1[i] <- 2 * w_2[i] - w_3[i]
-            y_1[i] <- y_3[i]
-        }
+    # Move triplet to zero position
+    xd <- xl
+    xl <- xl - xd
+    xc <- xc - xd
+    xr <- xr - xd
 
-        # Move triplet to zero position
-        w_delta[i] <- w_1[i]
-        w_1[i] <- w_1[i] - w_delta[i]
-        w_2[i] <- w_2[i] - w_delta[i]
-        w_3[i] <- w_3[i] - w_delta[i]
+    # Calculate difference of position of peak triplets
+    xlc <- xl - xc
+    xlr <- xl - xr
+    xcr <- xc - xr
 
-        # Calculate difference of position of peak triplets
-        w_1_2 <- c(w_1_2, w_1[i] - w_2[i])
-        w_1_3 <- c(w_1_3, w_1[i] - w_3[i])
-        w_2_3 <- c(w_2_3, w_2[i] - w_3[i])
+    # Calculate difference of intensity values of peak triplets
+    ylc <- yl - yc
+    ylr <- yl - yr
+    ycr <- yc - yr
 
-        # Calculate difference of intensity values of peak triplets
-        y_1_2 <- c(y_1_2, y_1[i] - y_2[i])
-        y_1_3 <- c(y_1_3, y_1[i] - y_3[i])
-        y_2_3 <- c(y_2_3, y_2[i] - y_3[i])
+    t1 <- xl^2 * yl * ycr
+    t2 <- xr^2 * yr * ylc
+    t3 <- xc^2 * yc * ylr
+    t4 <- 2 * xlc * yl * yc
+    t5 <- 2 * xcr * yc * yr
+    t6 <- 2 * xlr * yl * yr
+    w <- (t1 + t2 - t3) / (t4 + t5 - t6) + xd
+    w[is.nan(w)] <- 0 # If (t4 + t5 - t6) is 0, then w is NaN. In this case we set w to 0.
 
-        # Calculate w for each peak triplet
-        w_result <- (w_1[i]^2 * y_1[i] * y_2_3[i] + w_3[i]^2 * y_3[i] * y_1_2[i] + w_2[i]^2 * y_2[i] * (-y_1_3[i])) / (2 * w_1_2[i] * y_1[i] * y_2[i] - 2 * (w_1_3[i] * y_1[i] + (-w_2_3[i]) * y_2[i]) * y_3[i])
-        w_result <- w_result + w_delta[i]
-        w <- c(w, w_result)
-        # Wenn y Werte nach der H?henanpassung 0 werden, so ist w_new[i] NaN
-        if (is.nan(w[i])) {
-            w[i] <- 0
-        }
+    lambda <- -((sqrt(abs((-xc^4 * yc^2 * ylr^2 - xl^4 * yl^2 * ycr^2 - xr^4 * ylc^2 * yr^2 + 4 * xc * xr^3 * yc * ((-yl) + yc) * yr^2 + 4 * xc^3 * xr * yc^2 * yr * ((-yl) + yr) + 4 * xl^3 * yl^2 * ycr * (xc * yc - xr * yr) + 4 * xl * yl * (xc^3 * yc^2 * ylr - xc * xr^2 * yc * (yl + yc - 2 * yr) * yr + xr^3 * ylc * yr^2 - xc^2 * xr * yc * yr * (yl - 2 * yc + yr)) + 2 * xc^2 * xr^2 * yc * yr * (yl^2 - 3 * yc * yr + yl * (yc + yr)) + 2 * xl^2 * yl * (-2 * xc * xr * yc * yr * (-2 * yl + yc + yr) + xr^2 * yr * (yl * (yc - 3 * yr) + yc * (yc + yr)) + xc^2 * yc * (yl * (-3 * yc + yr) + yr * (yc + yr)))))))) / (2 * sqrt((xl * yl * ycr + xr * ylc * yr + xc * yc * ((-yl) + yr))^2))
+    lambda[is.nan(lambda)] <- 0 
 
-        # Calculate lambda for each peak triplet
-        lambda_result <- -((sqrt(abs((-w_2[i]^4 * y_2[i]^2 * y_1_3[i]^2 - w_1[i]^4 * y_1[i]^2 * y_2_3[i]^2 - w_3[i]^4 * y_1_2[i]^2 * y_3[i]^2 + 4 * w_2[i] * w_3[i]^3 * y_2[i] * ((-y_1[i]) + y_2[i]) * y_3[i]^2 + 4 * w_2[i]^3 * w_3[i] * y_2[i]^2 * y_3[i] * ((-y_1[i]) + y_3[i]) + 4 * w_1[i]^3 * y_1[i]^2 * y_2_3[i] * (w_2[i] * y_2[i] - w_3[i] * y_3[i]) + 4 * w_1[i] * y_1[i] * (w_2[i]^3 * y_2[i]^2 * y_1_3[i] - w_2[i] * w_3[i]^2 * y_2[i] * (y_1[i] + y_2[i] - 2 * y_3[i]) * y_3[i] + w_3[i]^3 * y_1_2[i] * y_3[i]^2 - w_2[i]^2 * w_3[i] * y_2[i] * y_3[i] * (y_1[i] - 2 * y_2[i] + y_3[i])) + 2 * w_2[i]^2 * w_3[i]^2 * y_2[i] * y_3[i] * (y_1[i]^2 - 3 * y_2[i] * y_3[i] + y_1[i] * (y_2[i] + y_3[i])) + 2 * w_1[i]^2 * y_1[i] * (-2 * w_2[i] * w_3[i] * y_2[i] * y_3[i] * (-2 * y_1[i] + y_2[i] + y_3[i]) + w_3[i]^2 * y_3[i] * (y_1[i] * (y_2[i] - 3 * y_3[i]) + y_2[i] * (y_2[i] + y_3[i])) + w_2[i]^2 * y_2[i] * (y_1[i] * (-3 * y_2[i] + y_3[i]) + y_3[i] * (y_2[i] + y_3[i])))))))) / (2 * sqrt((w_1[i] * y_1[i] * y_2_3[i] + w_3[i] * y_1_2[i] * y_3[i] + w_2[i] * y_2[i] * ((-y_1[i]) + y_3[i]))^2))
-        # If y and w are 0, then 0/0=NaN
-        if (is.nan(lambda_result)) {
-            lambda_result <- 0
-        }
-        lambda <- c(lambda, lambda_result)
+    A <- (-4 * xlc * xlr * xcr * yl * yc * yr * (xl * yl * ycr + xr * yr * ylc + xc * yc * (-ylr)) * lambda) / (xlc^4 * yl^2 * yc^2 - 2 * xlc^2 * yl * yc * (xlr^2 * yl + xcr^2 * yc) * yr + (xlr^2 * yl - xcr^2 * yc)^2 * yr^2)
+    A[is.nan(A)] <- 0
 
-        # Calculate scaling factor A for each peak triplet
-        A_result <- (-4 * w_1_2[i] * w_1_3[i] * w_2_3[i] * y_1[i] * y_2[i] * y_3[i] * (w_1[i] * y_1[i] * y_2_3[i] + w_3[i] * y_3[i] * y_1_2[i] + w_2[i] * y_2[i] * (-y_1_3[i])) * lambda[i]) / (w_1_2[i]^4 * y_1[i]^2 * y_2[i]^2 - 2 * w_1_2[i]^2 * y_1[i] * y_2[i] * (w_1_3[i]^2 * y_1[i] + w_2_3[i]^2 * y_2[i]) * y_3[i] + (w_1_3[i]^2 * y_1[i] - w_2_3[i]^2 * y_2[i])^2 * y_3[i]^2)
-        # If y and w are 0, then 0/0=NaN
-        if (is.nan(A_result)) {
-            A_result <- 0
-        }
-        A <- c(A, A_result)
-    }
-    lc <- list(w = w, lambda = lambda, A = A, w_delta = w_delta)
-    spec$lc$A <- A
-    spec$lc$lambda <- lambda
-    spec$lc$w <- w
-    spec$lc$w_delta <- w_delta
-    spec
-}
+    # TODO: break up calculation of w, lambda, and A and add explanation
 
-init_lorentz_curves_v10 <- function(spectrum_x, spectrum_y, filtered_peaks, filtered_left_position, filtered_right_position, save_scores) {
-    w_1 <- c()
-    w_2 <- c()
-    w_3 <- c()
-    y_1 <- c()
-    y_2 <- c()
-    y_3 <- c()
-    w_1_2 <- c()
-    w_1_3 <- c()
-    w_2_3 <- c()
-    y_1_2 <- c()
-    y_1_3 <- c()
-    y_2_3 <- c()
-    w_delta <- c()
-    w <- c()
-    lambda <- c()
-    A <- c()
-
-    # Calculate parameters w, lambda and A for the initial lorentz curves
-    for (i in seq_along(filtered_peaks)) {
-        # Calculate position of peak triplets
-        w_1 <- c(w_1, spectrum_x[filtered_left_position[i] + 1])
-        w_2 <- c(w_2, spectrum_x[filtered_peaks[i] + 1])
-        w_3 <- c(w_3, spectrum_x[filtered_right_position[i] + 1])
-
-        # Calculate intensity of peak triplets
-        y_1 <- c(y_1, spectrum_y[filtered_left_position[i] + 1])
-        y_2 <- c(y_2, spectrum_y[filtered_peaks[i] + 1])
-        y_3 <- c(y_3, spectrum_y[filtered_right_position[i] + 1])
-
-        # Calculate mirrored points if necesccary
-        # For ascending shoulders
-        if ((y_1[i] < y_2[i]) && (y_2[i] < y_3[i])) {
-            w_3[i] <- 2 * w_2[i] - w_1[i]
-            y_3[i] <- y_1[i]
-        }
-        # For descending shoulders
-        if ((y_1[i] > y_2[i]) && (y_2[i] > y_3[i])) {
-            w_1[i] <- 2 * w_2[i] - w_3[i]
-            y_1[i] <- y_3[i]
-        }
-
-        # Move triplet to zero position
-        w_delta[i] <- w_1[i]
-        w_1[i] <- w_1[i] - w_delta[i]
-        w_2[i] <- w_2[i] - w_delta[i]
-        w_3[i] <- w_3[i] - w_delta[i]
-
-        # Calculate difference of position of peak triplets
-        w_1_2 <- c(w_1_2, w_1[i] - w_2[i])
-        w_1_3 <- c(w_1_3, w_1[i] - w_3[i])
-        w_2_3 <- c(w_2_3, w_2[i] - w_3[i])
-
-        # Calculate difference of intensity values of peak triplets
-        y_1_2 <- c(y_1_2, y_1[i] - y_2[i])
-        y_1_3 <- c(y_1_3, y_1[i] - y_3[i])
-        y_2_3 <- c(y_2_3, y_2[i] - y_3[i])
-
-        # Calculate w for each peak triplet
-        w_result <- (w_1[i]^2 * y_1[i] * y_2_3[i] + w_3[i]^2 * y_3[i] * y_1_2[i] + w_2[i]^2 * y_2[i] * (-y_1_3[i])) / (2 * w_1_2[i] * y_1[i] * y_2[i] - 2 * (w_1_3[i] * y_1[i] + (-w_2_3[i]) * y_2[i]) * y_3[i])
-        w_result <- w_result + w_delta[i]
-        w <- c(w, w_result)
-        # Wenn y Werte nach der H?henanpassung 0 werden, so ist w_new[i] NaN
-        if (is.nan(w[i])) {
-            w[i] <- 0
-        }
-
-        # Calculate lambda for each peak triplet
-        lambda_result <- -((sqrt(abs((-w_2[i]^4 * y_2[i]^2 * y_1_3[i]^2 - w_1[i]^4 * y_1[i]^2 * y_2_3[i]^2 - w_3[i]^4 * y_1_2[i]^2 * y_3[i]^2 + 4 * w_2[i] * w_3[i]^3 * y_2[i] * ((-y_1[i]) + y_2[i]) * y_3[i]^2 + 4 * w_2[i]^3 * w_3[i] * y_2[i]^2 * y_3[i] * ((-y_1[i]) + y_3[i]) + 4 * w_1[i]^3 * y_1[i]^2 * y_2_3[i] * (w_2[i] * y_2[i] - w_3[i] * y_3[i]) + 4 * w_1[i] * y_1[i] * (w_2[i]^3 * y_2[i]^2 * y_1_3[i] - w_2[i] * w_3[i]^2 * y_2[i] * (y_1[i] + y_2[i] - 2 * y_3[i]) * y_3[i] + w_3[i]^3 * y_1_2[i] * y_3[i]^2 - w_2[i]^2 * w_3[i] * y_2[i] * y_3[i] * (y_1[i] - 2 * y_2[i] + y_3[i])) + 2 * w_2[i]^2 * w_3[i]^2 * y_2[i] * y_3[i] * (y_1[i]^2 - 3 * y_2[i] * y_3[i] + y_1[i] * (y_2[i] + y_3[i])) + 2 * w_1[i]^2 * y_1[i] * (-2 * w_2[i] * w_3[i] * y_2[i] * y_3[i] * (-2 * y_1[i] + y_2[i] + y_3[i]) + w_3[i]^2 * y_3[i] * (y_1[i] * (y_2[i] - 3 * y_3[i]) + y_2[i] * (y_2[i] + y_3[i])) + w_2[i]^2 * y_2[i] * (y_1[i] * (-3 * y_2[i] + y_3[i]) + y_3[i] * (y_2[i] + y_3[i])))))))) / (2 * sqrt((w_1[i] * y_1[i] * y_2_3[i] + w_3[i] * y_1_2[i] * y_3[i] + w_2[i] * y_2[i] * ((-y_1[i]) + y_3[i]))^2))
-        # If y and w are 0, then 0/0=NaN
-        if (is.nan(lambda_result)) {
-            lambda_result <- 0
-        }
-        lambda <- c(lambda, lambda_result)
-
-        # Calculate scaling factor A for each peak triplet
-        A_result <- (-4 * w_1_2[i] * w_1_3[i] * w_2_3[i] * y_1[i] * y_2[i] * y_3[i] * (w_1[i] * y_1[i] * y_2_3[i] + w_3[i] * y_3[i] * y_1_2[i] + w_2[i] * y_2[i] * (-y_1_3[i])) * lambda[i]) / (w_1_2[i]^4 * y_1[i]^2 * y_2[i]^2 - 2 * w_1_2[i]^2 * y_1[i] * y_2[i] * (w_1_3[i]^2 * y_1[i] + w_2_3[i]^2 * y_2[i]) * y_3[i] + (w_1_3[i]^2 * y_1[i] - w_2_3[i]^2 * y_2[i])^2 * y_3[i]^2)
-        # If y and w are 0, then 0/0=NaN
-        if (is.nan(A_result)) {
-            A_result <- 0
-        }
-        A <- c(A, A_result)
-    }
-    list(A = A, lambda = lambda, w = w, w_delta = w_delta)
+    lc <- list(A = A, lambda = lambda, w = w, w_delta = xd)
+    lc
 }
 
 refine_lorentz_curves_v12 <- function(spec, nfit) {
@@ -832,4 +707,194 @@ add_wsr <- function(spec, wshw) {
         left_ppm <- spec$ppm[left_dp] # left border in ppm # nolint: object_usage_linter.
     })
     spec
+}
+
+
+# Deprecated #####
+
+init_lorentz_curves_v12 <- function(spec) {
+    msg("Initializing Lorentz curves")
+    w_1 <- c()
+    w_2 <- c()
+    w_3 <- c()
+    y_1 <- c()
+    y_2 <- c()
+    y_3 <- c()
+    w_1_2 <- c()
+    w_1_3 <- c()
+    w_2_3 <- c()
+    y_1_2 <- c()
+    y_1_3 <- c()
+    y_2_3 <- c()
+    w_delta <- c()
+    w <- c()
+    lambda <- c()
+    A <- c()
+
+    spectrum_x <- spec$sdp
+    spectrum_y <- spec$y_smooth
+    filtered_peaks <- as.integer(spec$peak$center[spec$peak$high] - 1)
+    filtered_left_position <- spec$peak$right[spec$peak$high] - 1
+    filtered_right_position <- spec$peak$left[spec$peak$high] - 1
+
+    # Calculate parameters w, lambda and A for the initial lorentz curves
+    for (i in seq_along(filtered_peaks)) {
+        # Calculate position of peak triplets
+        w_1 <- c(w_1, spectrum_x[filtered_left_position[i] + 1])
+        w_2 <- c(w_2, spectrum_x[filtered_peaks[i] + 1])
+        w_3 <- c(w_3, spectrum_x[filtered_right_position[i] + 1])
+
+        # Calculate intensity of peak triplets
+        y_1 <- c(y_1, spectrum_y[filtered_left_position[i] + 1])
+        y_2 <- c(y_2, spectrum_y[filtered_peaks[i] + 1])
+        y_3 <- c(y_3, spectrum_y[filtered_right_position[i] + 1])
+
+        # Calculate mirrored points if necesccary
+        # For ascending shoulders
+        if (is.na(((y_1[i] < y_2[i]) & (y_2[i] < y_3[i])))) {
+            1
+        }
+        if ((y_1[i] < y_2[i]) && (y_2[i] < y_3[i])) {
+            w_3[i] <- 2 * w_2[i] - w_1[i]
+            y_3[i] <- y_1[i]
+        }
+        # For descending shoulders
+        if ((y_1[i] > y_2[i]) && (y_2[i] > y_3[i])) {
+            w_1[i] <- 2 * w_2[i] - w_3[i]
+            y_1[i] <- y_3[i]
+        }
+
+        # Move triplet to zero position
+        w_delta[i] <- w_1[i]
+        w_1[i] <- w_1[i] - w_delta[i]
+        w_2[i] <- w_2[i] - w_delta[i]
+        w_3[i] <- w_3[i] - w_delta[i]
+
+        # Calculate difference of position of peak triplets
+        w_1_2 <- c(w_1_2, w_1[i] - w_2[i])
+        w_1_3 <- c(w_1_3, w_1[i] - w_3[i])
+        w_2_3 <- c(w_2_3, w_2[i] - w_3[i])
+
+        # Calculate difference of intensity values of peak triplets
+        y_1_2 <- c(y_1_2, y_1[i] - y_2[i])
+        y_1_3 <- c(y_1_3, y_1[i] - y_3[i])
+        y_2_3 <- c(y_2_3, y_2[i] - y_3[i])
+
+        # Calculate w for each peak triplet
+        w_result <- (w_1[i]^2 * y_1[i] * y_2_3[i] + w_3[i]^2 * y_3[i] * y_1_2[i] + w_2[i]^2 * y_2[i] * (-y_1_3[i])) / (2 * w_1_2[i] * y_1[i] * y_2[i] - 2 * (w_1_3[i] * y_1[i] + (-w_2_3[i]) * y_2[i]) * y_3[i])
+        w_result <- w_result + w_delta[i]
+        w <- c(w, w_result)
+        # Wenn y Werte nach der H?henanpassung 0 werden, so ist w_new[i] NaN
+        if (is.nan(w[i])) {
+            w[i] <- 0
+        }
+
+        # Calculate lambda for each peak triplet
+        lambda_result <- -((sqrt(abs((-w_2[i]^4 * y_2[i]^2 * y_1_3[i]^2 - w_1[i]^4 * y_1[i]^2 * y_2_3[i]^2 - w_3[i]^4 * y_1_2[i]^2 * y_3[i]^2 + 4 * w_2[i] * w_3[i]^3 * y_2[i] * ((-y_1[i]) + y_2[i]) * y_3[i]^2 + 4 * w_2[i]^3 * w_3[i] * y_2[i]^2 * y_3[i] * ((-y_1[i]) + y_3[i]) + 4 * w_1[i]^3 * y_1[i]^2 * y_2_3[i] * (w_2[i] * y_2[i] - w_3[i] * y_3[i]) + 4 * w_1[i] * y_1[i] * (w_2[i]^3 * y_2[i]^2 * y_1_3[i] - w_2[i] * w_3[i]^2 * y_2[i] * (y_1[i] + y_2[i] - 2 * y_3[i]) * y_3[i] + w_3[i]^3 * y_1_2[i] * y_3[i]^2 - w_2[i]^2 * w_3[i] * y_2[i] * y_3[i] * (y_1[i] - 2 * y_2[i] + y_3[i])) + 2 * w_2[i]^2 * w_3[i]^2 * y_2[i] * y_3[i] * (y_1[i]^2 - 3 * y_2[i] * y_3[i] + y_1[i] * (y_2[i] + y_3[i])) + 2 * w_1[i]^2 * y_1[i] * (-2 * w_2[i] * w_3[i] * y_2[i] * y_3[i] * (-2 * y_1[i] + y_2[i] + y_3[i]) + w_3[i]^2 * y_3[i] * (y_1[i] * (y_2[i] - 3 * y_3[i]) + y_2[i] * (y_2[i] + y_3[i])) + w_2[i]^2 * y_2[i] * (y_1[i] * (-3 * y_2[i] + y_3[i]) + y_3[i] * (y_2[i] + y_3[i])))))))) / (2 * sqrt((w_1[i] * y_1[i] * y_2_3[i] + w_3[i] * y_1_2[i] * y_3[i] + w_2[i] * y_2[i] * ((-y_1[i]) + y_3[i]))^2))
+        # If y and w are 0, then 0/0=NaN
+        if (is.nan(lambda_result)) {
+            lambda_result <- 0
+        }
+        lambda <- c(lambda, lambda_result)
+
+        # Calculate scaling factor A for each peak triplet
+        A_result <- (-4 * w_1_2[i] * w_1_3[i] * w_2_3[i] * y_1[i] * y_2[i] * y_3[i] * (w_1[i] * y_1[i] * y_2_3[i] + w_3[i] * y_3[i] * y_1_2[i] + w_2[i] * y_2[i] * (-y_1_3[i])) * lambda[i]) / (w_1_2[i]^4 * y_1[i]^2 * y_2[i]^2 - 2 * w_1_2[i]^2 * y_1[i] * y_2[i] * (w_1_3[i]^2 * y_1[i] + w_2_3[i]^2 * y_2[i]) * y_3[i] + (w_1_3[i]^2 * y_1[i] - w_2_3[i]^2 * y_2[i])^2 * y_3[i]^2)
+        # If y and w are 0, then 0/0=NaN
+        if (is.nan(A_result)) {
+            A_result <- 0
+        }
+        A <- c(A, A_result)
+    }
+    spec$lc$A <- A
+    spec$lc$lambda <- lambda
+    spec$lc$w <- w
+    spec$lc$w_delta <- w_delta
+    spec
+}
+
+init_lorentz_curves_v10 <- function(spectrum_x, spectrum_y, filtered_peaks, filtered_left_position, filtered_right_position, save_scores) {
+
+    w_1 <- c()
+    w_2 <- c()
+    w_3 <- c()
+    y_1 <- c()
+    y_2 <- c()
+    y_3 <- c()
+    w_1_2 <- c()
+    w_1_3 <- c()
+    w_2_3 <- c()
+    y_1_2 <- c()
+    y_1_3 <- c()
+    y_2_3 <- c()
+    w_delta <- c()
+    w <- c()
+    lambda <- c()
+    A <- c()
+
+    # Calculate parameters w, lambda and A for the initial lorentz curves
+    for (i in seq_along(filtered_peaks)) {
+        # Calculate position of peak triplets
+        w_1 <- c(w_1, spectrum_x[filtered_left_position[i] + 1])
+        w_2 <- c(w_2, spectrum_x[filtered_peaks[i] + 1])
+        w_3 <- c(w_3, spectrum_x[filtered_right_position[i] + 1])
+
+        # Calculate intensity of peak triplets
+        y_1 <- c(y_1, spectrum_y[filtered_left_position[i] + 1])
+        y_2 <- c(y_2, spectrum_y[filtered_peaks[i] + 1])
+        y_3 <- c(y_3, spectrum_y[filtered_right_position[i] + 1])
+
+        # Calculate mirrored points if necesccary
+        # For ascending shoulders
+        if ((y_1[i] < y_2[i]) && (y_2[i] < y_3[i])) {
+            w_3[i] <- 2 * w_2[i] - w_1[i]
+            y_3[i] <- y_1[i]
+        }
+        # For descending shoulders
+        if ((y_1[i] > y_2[i]) && (y_2[i] > y_3[i])) {
+            w_1[i] <- 2 * w_2[i] - w_3[i]
+            y_1[i] <- y_3[i]
+        }
+
+        # Move triplet to zero position
+        w_delta[i] <- w_1[i]
+        w_1[i] <- w_1[i] - w_delta[i]
+        w_2[i] <- w_2[i] - w_delta[i]
+        w_3[i] <- w_3[i] - w_delta[i]
+
+        # Calculate difference of position of peak triplets
+        w_1_2 <- c(w_1_2, w_1[i] - w_2[i])
+        w_1_3 <- c(w_1_3, w_1[i] - w_3[i])
+        w_2_3 <- c(w_2_3, w_2[i] - w_3[i])
+
+        # Calculate difference of intensity values of peak triplets
+        y_1_2 <- c(y_1_2, y_1[i] - y_2[i])
+        y_1_3 <- c(y_1_3, y_1[i] - y_3[i])
+        y_2_3 <- c(y_2_3, y_2[i] - y_3[i])
+
+        # Calculate w for each peak triplet
+        w_result <- (w_1[i]^2 * y_1[i] * y_2_3[i] + w_3[i]^2 * y_3[i] * y_1_2[i] + w_2[i]^2 * y_2[i] * (-y_1_3[i])) / (2 * w_1_2[i] * y_1[i] * y_2[i] - 2 * (w_1_3[i] * y_1[i] + (-w_2_3[i]) * y_2[i]) * y_3[i])
+        w_result <- w_result + w_delta[i]
+        w <- c(w, w_result)
+        # Wenn y Werte nach der H?henanpassung 0 werden, so ist w_new[i] NaN
+        if (is.nan(w[i])) {
+            w[i] <- 0
+        }
+
+        # Calculate lambda for each peak triplet
+        lambda_result <- -((sqrt(abs((-w_2[i]^4 * y_2[i]^2 * y_1_3[i]^2 - w_1[i]^4 * y_1[i]^2 * y_2_3[i]^2 - w_3[i]^4 * y_1_2[i]^2 * y_3[i]^2 + 4 * w_2[i] * w_3[i]^3 * y_2[i] * ((-y_1[i]) + y_2[i]) * y_3[i]^2 + 4 * w_2[i]^3 * w_3[i] * y_2[i]^2 * y_3[i] * ((-y_1[i]) + y_3[i]) + 4 * w_1[i]^3 * y_1[i]^2 * y_2_3[i] * (w_2[i] * y_2[i] - w_3[i] * y_3[i]) + 4 * w_1[i] * y_1[i] * (w_2[i]^3 * y_2[i]^2 * y_1_3[i] - w_2[i] * w_3[i]^2 * y_2[i] * (y_1[i] + y_2[i] - 2 * y_3[i]) * y_3[i] + w_3[i]^3 * y_1_2[i] * y_3[i]^2 - w_2[i]^2 * w_3[i] * y_2[i] * y_3[i] * (y_1[i] - 2 * y_2[i] + y_3[i])) + 2 * w_2[i]^2 * w_3[i]^2 * y_2[i] * y_3[i] * (y_1[i]^2 - 3 * y_2[i] * y_3[i] + y_1[i] * (y_2[i] + y_3[i])) + 2 * w_1[i]^2 * y_1[i] * (-2 * w_2[i] * w_3[i] * y_2[i] * y_3[i] * (-2 * y_1[i] + y_2[i] + y_3[i]) + w_3[i]^2 * y_3[i] * (y_1[i] * (y_2[i] - 3 * y_3[i]) + y_2[i] * (y_2[i] + y_3[i])) + w_2[i]^2 * y_2[i] * (y_1[i] * (-3 * y_2[i] + y_3[i]) + y_3[i] * (y_2[i] + y_3[i])))))))) / (2 * sqrt((w_1[i] * y_1[i] * y_2_3[i] + w_3[i] * y_1_2[i] * y_3[i] + w_2[i] * y_2[i] * ((-y_1[i]) + y_3[i]))^2))
+        # If y and w are 0, then 0/0=NaN
+        if (is.nan(lambda_result)) {
+            lambda_result <- 0
+        }
+        lambda <- c(lambda, lambda_result)
+
+        # Calculate scaling factor A for each peak triplet
+        A_result <- (-4 * w_1_2[i] * w_1_3[i] * w_2_3[i] * y_1[i] * y_2[i] * y_3[i] * (w_1[i] * y_1[i] * y_2_3[i] + w_3[i] * y_3[i] * y_1_2[i] + w_2[i] * y_2[i] * (-y_1_3[i])) * lambda[i]) / (w_1_2[i]^4 * y_1[i]^2 * y_2[i]^2 - 2 * w_1_2[i]^2 * y_1[i] * y_2[i] * (w_1_3[i]^2 * y_1[i] + w_2_3[i]^2 * y_2[i]) * y_3[i] + (w_1_3[i]^2 * y_1[i] - w_2_3[i]^2 * y_2[i])^2 * y_3[i]^2)
+        # If y and w are 0, then 0/0=NaN
+        if (is.nan(A_result)) {
+            A_result <- 0
+        }
+        A <- c(A, A_result)
+    }
+    list(A = A, lambda = lambda, w = w, w_delta = w_delta)
 }

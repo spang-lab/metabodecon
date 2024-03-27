@@ -16,7 +16,8 @@ test_that("init_lorentz_curves_v10 works", {
     expect_equal(y$A, x$debuglist$params_init$A)
     expect_equal(y$lambda, x$debuglist$params_init$lambda)
     expect_equal(y$w, x$debuglist$params_init$w)
-    # For a super strange reason, `MetaboDecon1D()` sometimes produces slightly different results (e.g. when called for the first time after package loading) on Windows.
+
+    # For a super strange reason, `MetaboDecon1D()` sometimes produces slightly different results (e.g. when called for the first time after package loading).
     # The first difference occurs in entry `x1$debuglist$params_init$lambda`, which is a vector of length 1227.
     # Element 273 is sometimes `2.168404e-19` larger than in normal runs.
     # This difference then carries over to all following calculations.
@@ -31,4 +32,7 @@ test_that("init_lorentz_curves_v10 works", {
     # Workaround: use `all.equal` instead of `identical`.
     # We wanted to do that for later versions anyway.
     # But still it's very unsatisfying that we can't find the source of the differences and we cannot use identical anymore.
+    #
+    # Things to check: OS dependence? --> test on WSL, Ubuntu, etc.
+    # Things to check: CPU dependence? --> test on R4, R31 etc
 })
