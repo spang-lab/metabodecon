@@ -120,178 +120,60 @@ str_urine_deconvoluted <- function(nf = 2, dx = FALSE, nested = TRUE, ni = 10) {
 
 # MetaboDecon1D #####
 
-cache_MetaboDecon1D_results <- function(overwrite = FALSE) {
-    ns <- asNamespace("metabodecon")
-    fsall <- ls(ns)
-    fs <- fsall[grep("^MetaboDecon1D_", fsall)]
-    for (f in fs) {
-        callstr <- sprintf("%s(overwrite = %s)", f, overwrite)
-        cat(callstr, "...", sep="")
-        tryCatch(
-            expr = {
-                eval(parse(text = callstr))
-                cat2(GREEN, "ok", RESET, sep = "")
-            },
-            error = function(e) {
-                cat2(RED, e$message, RESET, sep = "")
-            }
-        )
+testmatrix <- local({
+    df <- expand.grid(dp = c("urine_1", "urine_2", "urine"), ff = c("bruker", "jcampdx"), nfit = c(1, 3, 10), simple = c(TRUE, FALSE), skip = TRUE, stringsAsFactors = FALSE)
+    df$skip[df$ff == "bruker" | (df$ff == "jcampdx" & df$nfit == 3 & df$simple == TRUE)] <- FALSE
+    x <- df$dp %in% c("urine_1", "urine_2") & df$ff == "jcampdx"
+    df$dp[x] <- paste0(df$dp[x], ".dx")
+    df
+})
+
+#' @description Generate a unique identifier for a test of `generate_lorentz_curves_v12` or `MetaboDecon1D`
+#' @noRd
+get_tid <- function(func, dp, ff, nfit, simple) {
+    paste(func, dp, ff, nfit, simple, sep = "-")
+}
+
+#' @description Calls `func` for each row in `testmatrix` and caches the results
+#' @param func Either "glc" or "MD1D"
+#' @param overwrite Logical indicating whether to overwrite cached results if they already exist
+#' @noRd
+cache_func_results <- function(func = "glc", overwrite = FALSE) {
+    df <- testmatrix
+    cdir <- cachedir()
+    tid <- get_tid(func, df$dp, df$ff, df$nfit, df$simple)
+    rds <- file.path(cdir, paste0(tid, ".rds"))
+    status <- ifelse(file.exists(rds), "cached", "todo")
+    status[df$skip] <- "skip"
+    callstr <- sprintf("%s(dp='%s', ff='%s', nfit=%d, simple=%s, overwrite=%s)", func, df$dp, df$ff, df$nfit, df$simple, overwrite)
+    col <- ifelse(status == "cached", GREEN,  YELLOW)
+    col[df$skip] <- BLUE
+    df[, c("rds", "status", "col", "callstr")] <- list(rds, status, col, callstr)
+    idxtodo <- which(status == "todo")
+    idxdone <- which(status != "todo")
+    process_row <- function(i) {
+        row <- as.list(df[i, colnames(df)])
+        cat2(row$callstr, " ", row$col, row$status, RESET, sep = "")
+        x <- if (row$status == "todo") try(eval(parse(text = row$callstr))) else 0
+        return(if (inherits(x, "try-error")) x else 0)
     }
+    x <- lapply(idxdone, process_row) # dont spawn new processes for cached or skipped function calls
+    y <- parallel::mclapply(idxtodo, process_row, mc.cores = ceiling(parallel::detectCores() / 2))
+    return(unlist(c(x, y)))
 }
 
-MetaboDecon1D_urine1_1010yy_ni1 <- function(cache = TRUE, overwrite = FALSE) {
-    # Fastest possible way of running MetaboDecon1D
-    x <- evalwith(
-        testdir = "MetaboDecon1D_urine1_1010yy_ni1", inputs = "bruker/urine/urine_1",
-        answers = c(ExpNo=10, ProcNo=10, SFRok="y", WSok="y"),
-        cache = cache, overwrite = overwrite,
-        plot = "plots.pdf", output = "captured", message = "captured",
-        expr = MetaboDecon1D(filepath = ".", filename = "urine_1", file_format = "bruker", number_iterations = 1)
-    )
-}
+cache_glc_results <- function(overwrite = FALSE) cache_func_results("glc", overwrite = FALSE)
 
-MetaboDecon1D_dot_urine1_1010y1yy_ni3 <- function(cache = TRUE, overwrite = FALSE) {
-    x <- evalwith(
-        testdir = "MetaboDecon1D_dot_urine1_1010y1yy_ni3", inputs = "bruker/urine/urine_1",
-        answers = c(ExpNo=10, ProcNo=10, SameParam="y", AdjNo=1, SFRok="y", WSok="y"),
-        cache = cache, overwrite = overwrite,
-        plot = "plots.pdf", output = "captured", message = "captured",
-        expr = MetaboDecon1D(filepath = ".", file_format = "bruker")
-    )
-}
-
-MetaboDecon1D_dot_urine1_1010y1yy_ni10_dbg <- function(cache = TRUE, overwrite = FALSE) {
-    x <- evalwith(
-        testdir = "MetaboDecon1D_dot_urine1_1010y1yy_ni10_dbg", inputs = "bruker/urine/urine_1",
-        answers = c(ExpNo=10, ProcNo=10, SameParam="y", AdjNo=1, SFRok="y", WSok="y"),
-        cache = cache, overwrite = overwrite,
-        plot = "plots.pdf", output = "captured", message = "captured",
-        expr = MetaboDecon1D(filepath = ".", file_format = "bruker", debug = TRUE)
-    )
-}
-
-MetaboDecon1D_urine1_1010yy_ni1_run2 <- function(cache = TRUE, overwrite = FALSE) {
-    # To test independence of seed. Should give same result as MetaboDecon1D_urine1_1010yy_ni1.
-    x <- evalwith(
-        testdir = "MetaboDecon1D_urine1_1010yy_ni1_run2", inputs = "bruker/urine/urine_1",
-        answers = c(ExpNo=10, ProcNo=10, SFRok="y", WSok="y"),
-        cache = cache, overwrite = overwrite,
-        plot = "plots.pdf", output = "captured", message = "captured",
-        expr = MetaboDecon1D(filepath = ".", filename = "urine_1", file_format = "bruker", number_iterations = 1)
-    )
-}
-
-MetaboDecon1D_urine1_1010yy_ni1_run3 <- function(cache = TRUE, overwrite = FALSE) {
-    # To test independence of seed. Should give same result as MetaboDecon1D_urine1_1010yy_ni1.
-    x <- evalwith(
-        testdir = "MetaboDecon1D_urine1_1010yy_ni1_run3", inputs = "bruker/urine/urine_1",
-        answers = c(ExpNo=10, ProcNo=10, SFRok="y", WSok="y"),
-        cache = cache, overwrite = overwrite,
-        plot = "plots.pdf", output = "captured", message = "captured",
-        expr = MetaboDecon1D(filepath = ".", filename = "urine_1", file_format = "bruker", number_iterations = 1)
-    )
-}
-
-MetaboDecon1D_urine1_1010yy_ni1_dbg <- function(cache = TRUE, overwrite = FALSE) {
-    # Test that debug doesnt change result. Should give same result as MetaboDecon1D_urine1_1010yy_ni1 except for additional debuglist element in the returned list.
-    x <- evalwith(
-        testdir = "MetaboDecon1D_urine1_1010yy_ni1_dbg", inputs = "bruker/urine/urine_1",
-        answers = c(ExpNo=10, ProcNo=10, SFRok="y", WSok="y"),
-        cache = cache, overwrite = overwrite,
-        plot = "plots.pdf", # output = "captured", message = "captured",
-        expr = MetaboDecon1D(filepath = ".", filename = "urine_1", file_format = "bruker", number_iterations = 1, debug = TRUE)
-    )
-}
-
-MetaboDecon1D_urine1_1010yy_ni3_dbg <- function(cache = TRUE, overwrite = FALSE) {
-    # Deconvolution of a single bruker file with only 3 iterations instead of 10 to speed things up.
-    x <- evalwith(
-        testdir = "MetaboDecon1D_urine1_1010yy_ni3_dbg", inputs = "bruker/urine/urine_1",
-        answers = c(ExpNo=10, ProcNo=10, SFRok="y", WSok="y"),
-        cache = cache, overwrite = overwrite,
-        plot = "plots.pdf", output = "captured", message = "captured",
-        expr = MetaboDecon1D(filepath = ".", filename = "urine_1", file_format = "bruker", number_iterations = 3, debug = TRUE)
-    )
-}
-
-MetaboDecon1D_urine1dx_yy_ni3_dbg <- function(cache = TRUE, overwrite = FALSE) {
-    # Deconvolution of a single jcampdx file with only 3 iterations instead of 10 to speed things up.
-    x <- evalwith(
-        testdir = "MetaboDecon1D_urine1dx_yy_ni3_dbg", inputs = "jcampdx/urine/urine_1.dx",
-        answers = c(SFRok="y", WSok="y"),
-        cache = cache, overwrite = overwrite,
-        plot = "plots.pdf", output = "captured", message = "captured",
-        expr = MetaboDecon1D(filepath = ".", filename = "urine_1.dx", file_format = "jcampdx", number_iterations = 3, debug = TRUE)
-    )
-}
-
-MetaboDecon1D_urine_1010y1yy_ni3_dbg <- function(cache = TRUE, overwrite = FALSE) {
-    # Deconvolution of multiple bruker files with only 3 iterations instead of 10 to speed things up.
-    x <- evalwith(
-        testdir = "MetaboDecon1D_urine_1010y1yy_ni3_dbg", inputs = "bruker/urine",
-        answers = c(ExpNo = "10", ProcNo = "10", SameParam = "y", AdjNo="1", SFRok = "y", WSok = "y"),
-        cache = cache, overwrite = overwrite,
-        plot = "plots.pdf", output = "captured", message = "captured",
-        expr = MetaboDecon1D(filepath = "urine", file_format = "bruker", number_iterations = 3, debug = TRUE)
-    )
-}
-
-MetaboDecon1D_urinedx_y1yy_ni3_dbg <- function(cache = TRUE, overwrite = FALSE) {
-    # Deconvolution of multiple jcampdxs file with only 3 iterations instead of 10 to speed things up.
-    x <- evalwith(
-        testdir = "MetaboDecon1D_urinedx_y1yy_ni3_dbg", inputs = "jcampdx/urine",
-        answers = c(SameParam = "y", AdjNo="1", SFRok = "y", WSok = "y"),
-        cache = cache, overwrite = overwrite,
-        plot = "plots.pdf", output = "captured", message = "captured",
-        expr = MetaboDecon1D(filepath = "urine", file_format = "jcampdx", number_iterations = 3, debug = TRUE)
-    )
-}
-
-MetaboDecon1D_urine_1010y1yy_dbg <- function(cache = TRUE, overwrite = FALSE) {
-    # Deconvolution of multiple bruker files with default args.
-    x <- evalwith(
-        testdir = "MetaboDecon1D_urine_1010y1yy_ni3_dbg", inputs = "bruker/urine",
-        answers = c(ExpNo = "10", ProcNo = "10", SameParam = "y", AdjNo="1", SFRok = "y", WSok = "y"),
-        cache = cache, overwrite = overwrite,
-        plot = "plots.pdf", output = "captured", message = "captured",
-        expr = MetaboDecon1D(filepath = "urine", file_format = "bruker", debug = TRUE)
-    )
-}
-
-MetaboDecon1D_urinedx_y1yy_dbg <- function(cache = TRUE, overwrite = FALSE) {
-    # Deconvolution of multiple jcampdx files with default args.
-    x <- evalwith(
-        testdir = "MetaboDecon1D_urinedx_y1yy_dbg", inputs = "jcampdx/urine",
-        answers = c(SameParam = "y", AdjNo="1", SFRok = "y", WSok = "y"),
-        cache = cache, overwrite = overwrite,
-        plot = "plots.pdf", output = "captured", message = "captured",
-        expr = MetaboDecon1D(filepath = "urine", file_format = "jcampdx", debug = TRUE)
-    )
-}
-
-MetaboDecon1D_urine_1010nyyn11m1yXn013y_ni3_dbg <- function(cache = TRUE, overwrite = FALSE) {
-    # Deconvolution of multiple bruker files with complicated args.
-    x <- evalwith(
-        testdir = "MetaboDecon1D_urine_1010nyyn11m1yXn013y_ni3_dbg", inputs = "bruker/urine",
-        answers = c(ExpNo = "10", ProcNo = "10", SameParam = "n", SFRok = "y", WSok = "y", SFRok = "n", Left = "11", Right = "-1", SFRok = "y", WSok = "asdf", WSok = "n", WSHW = "0.13", WSok = "y"),
-        cache = cache, overwrite = overwrite,
-        plot = "plots.pdf", output = "captured", message = "captured",
-        expr = MetaboDecon1D(filepath = "urine", file_format = "bruker", number_iterations = 3, debug = TRUE)
-    )
-}
-
-# Generate Lorentz Curves #####
-
-glc_testid <- function(dp, ff, nfit) paste("glc", dp, ff, nfit, sep = "-")
+cache_MD1D_results <- function(overwrite = FALSE) cache_func_results("MD1D", overwrite = FALSE)
 
 glc <- function(dp = "urine_1", ff = "bruker", nfit = 3, simple = TRUE, overwrite = FALSE, cout = TRUE, cplot = TRUE, cache = TRUE, debug = TRUE) {
+    tid <- get_tid("glc", dp, ff, nfit, simple)
     inputs <- file.path(ff, "urine")
-    answers <- c(SFRok="y", WSok="y")
-    if (dp == "urine") answers <- c(SameParam = "y", AdjNo="1", answers)
     if (dp != "urine") inputs <- file.path(ff, "urine", dp)
-    if (dp %in% c("urine_1", "urine_2") && ff == "jcampdx") dp <- paste0(dp, ".dx")
-    x <- evalwith(
-        testdir = glc_testid(dp, ff, nfit),
+    answers <- c(SFRok = "y", WSok = "y")
+    if (dp == "urine") answers <- c(SameParam = "y", AdjNo = "1", answers)
+    invisible(evalwith(
+        testdir = tid,
         inputs = inputs,
         answers = answers,
         cache = cache,
@@ -300,80 +182,28 @@ glc <- function(dp = "urine_1", ff = "bruker", nfit = 3, simple = TRUE, overwrit
         output = if (cout) "captured" else NULL,
         message = if (cout) "captured" else NULL,
         expr = generate_lorentz_curves_v12(data_path = dp, file_format = ff, nfit = nfit, debug = debug)
-    )
+    ))
 }
 
-cache_glc_results <- function(overwrite = FALSE) {
-    df <- expand.grid(dp = c("urine_1", "urine_2", "urine"), ff = c("bruker", "jcampdx"), nfit = c(1, 3, 10), simple = c(TRUE, FALSE), skip = TRUE, stringsAsFactors = FALSE)
-    df$skip[df$ff == "bruker" | (df$ff == "jcampdx" & df$nfit == 3 & df$simple == TRUE)] <- FALSE
-    x <- df$dp %in% c("urine_1", "urine_2") & df$ff == "jcampdx"
-    df$dp[x] <- paste0(df$dp[x], ".dx")
-    cdir <- cachedir()
-    process_row <- function(i) {
-    row <- as.list(df[i, colnames(df)])
-    rds <- file.path(cdir, paste0(glc_testid(row$dp, row$ff, row$nfit), ".rds"))
-    status <- if (row$skip) "skip" else if (file.exists(rds)) "cached" else "..."
-    callstr <- sprintf("glc(dp='%s', ff='%s', nfit=%d, simple=%s, overwrite=%s)", row$dp, row$ff, row$nfit, row$simple, overwrite)
-    col <- if (status == "skip") BLUE else if (status == "cached") GREEN else YELLOW
-    cat2(callstr, " ", col, status, RESET, sep = "")
-    if (status != "skip") eval(parse(text = callstr))
-    }
-    mclapply(seq_len(nrow(df)), process_row, mc.cores = 8)
-}
-
-glc_urine2_yy_ni1_dbg <- function(cache = TRUE, overwrite = FALSE) {
-    # Deconvolution of a single bruker file with only 3 iterations instead of 10 to speed things up.
-    x <- evalwith(
-        testdir = "glc_urine2_yy_ni1_dbg", inputs = "bruker/urine/urine_2",
-        answers = c(SFRok="y", WSok="y"),
-        cache = cache, overwrite = overwrite,
-        plot = "plots.pdf", output = "captured", message = "captured",
-        expr = generate_lorentz_curves_v12(data_path = "urine_2", file_format = "bruker", nfit = 1, debug = TRUE)
-    )
-}
-
-glc_urine1_yy_ni3_dbg <- function(cache = TRUE, overwrite = FALSE) {
-    # Deconvolution of a single bruker file with only 3 iterations instead of 10 to speed things up.
-    x <- evalwith(
-        testdir = "glc_urine1_yy_ni3_dbg", inputs = "bruker/urine/urine_1",
-        answers = c(SFRok="y", WSok="y"),
-        cache = cache, overwrite = overwrite,
-        plot = "plots.pdf", output = "captured", message = "captured",
-        expr = generate_lorentz_curves_v12(data_path = "urine_1", file_format = "bruker", nfit = 3, debug = TRUE)
-    )
-}
-
-glc_urine1dx_yy_ni3_dbg <- function(cache = TRUE, overwrite = FALSE) {
-    # Deconvolution of a single bruker file with only 3 iterations instead of 10 to speed things up.
-    x <- evalwith(
-        testdir = "glc_urine1dx_yy_ni3_dbg", inputs = "jcampdx/urine/urine_1.dx",
-        answers = c(SFRok="y", WSok="y"),
-        cache = cache, overwrite = overwrite,
-        plot = "plots.pdf", output = "captured", message = "captured",
-        expr = {
-            generate_lorentz_curves_v12(data_path = "urine_1.dx", file_format = "jcampdx", nfit = 3, debug = TRUE)
-        }
-    )
-}
-
-glc_urine_y1yy_ni3_dbg <- function(cache = TRUE, overwrite = FALSE) {
-    # Deconvolution of multiple bruker files with default args.
-    x <- evalwith(
-        testdir = "glc_urine_y1yy_ni3_dbg", inputs = "bruker/urine",
-        answers = c(SameParam = "y", AdjNo="1", SFRok = "y", WSok = "y"),
-        cache = cache, overwrite = overwrite,
-        plot = "plots.pdf", # output = "captured", message = "captured",
-        expr = generate_lorentz_curves_v12(data_path = "urine", file_format = "bruker", nfit = 3, debug = TRUE)
-    )
-}
-
-glc_urinedx_y1yy_ni3_dbg <- function(cache = TRUE, overwrite = FALSE) {
-    # Deconvolution of multiple bruker files with default args.
-    x <- evalwith(
-        testdir = "glc_urinedx_y1yy_ni3_dbg", inputs = "jcampdx/urine",
-        answers = c(SameParam = "y", AdjNo="1", SFRok = "y", WSok = "y"),
-        cache = cache, overwrite = overwrite,
-        plot = "plots.pdf", # output = "captured", message = "captured",
-        expr = generate_lorentz_curves_v12(data_path = "urine", file_format = "jcampdx", nfit = 3, debug = TRUE)
-    )
+MD1D <- function(dp = "urine_1", ff = "bruker", nfit = 3, simple = TRUE, overwrite = FALSE, cout = TRUE, cplot = TRUE, cache = TRUE, debug = TRUE) { # nolint: object_usage_linter.
+    tid <- get_tid("MD1D", dp, ff, nfit, simple)
+    fn <- if (dp == "urine") NA else dp
+    inputs <- if (dp == "urine") file.path(ff, "urine") else file.path(ff, "urine", fn)
+    fp <- if (dp == "urine") "urine" else "."
+    if (simple && !is.na(fn))  answers <- c(SFRok = "y", WSok = "y")
+    if (simple && is.na(fn))   answers <- c(SameParam = "y", AdjNo = "1", SFRok = "y", WSok = "y")
+    if (!simple && !is.na(fn)) answers <- c(SFRok = "n", Left = "11", Right = "-1", SFRok = "y", WSok = "asdf", WSok = "n", WSHW = "0.13", WSok = "y")
+    if (!simple && is.na(fn))  answers <- c(SameParam = "n", answers, answers)
+    if (ff == "bruker") answers <- c(ExpNo = "10", ProcNo = "10", answers)
+    invisible(evalwith(
+        testdir = tid,
+        inputs = inputs,
+        answers = answers,
+        cache = cache,
+        overwrite = overwrite,
+        plot = if (cplot) "plots.pdf" else NULL,
+        output = if (cout) "captured" else NULL,
+        message = if (cout) "captured" else NULL,
+        expr = MetaboDecon1D(filepath = fp, filename = fn, file_format = ff, number_iterations = nfit, debug = debug)
+    ))
 }

@@ -16,24 +16,19 @@ expected_str_urine_1 <- c( # for str(x$rv, digits.d=12, vec.len=1)
 )
 
 test_that("read_spectrum works for bruker/urine_1", {
-    x <- evalwith(
-        testdir = "read_spectrum_urine1",
-        inputs = "bruker/urine/urine_1",
-        expr = read_spectrum("urine_1")
-    )
-    y <- MetaboDecon1D_urine1_1010yy_ni3_dbg()
-    expect_identical(x$rv$y_raw, y$rv$debuglist$data_read$spectrum_y_raw)
-    expect_identical(x$rv$y_scaled, y$rv$debuglist$data_read$spectrum_y)
+    x <- evalwith(testdir = "read_spectrum_urine1", inputs = "bruker/urine/urine_1", expr = read_spectrum("urine_1"))
+    y <- MD1D()
+    expect_equal(x$rv$y_raw, y$rv$debuglist$data_read$spectrum_y_raw)
+    expect_equal(x$rv$y_scaled, y$rv$debuglist$data_read$spectrum_y)
     expect_identical(str2(x$rv, digits.d = 12, vec.len = 1), expected_str_urine_1)
 })
 
 skip_if_slow_tests_disabled()
 
 test_that("read_spectrum works for jcampdx/urine_1.dx", {
-    x <- evalwith(
-        testdir = "read_spectrum_urine1dx",
-        inputs = "jcampdx/urine/urine_1.dx",
-        expr = read_spectrum("urine_1.dx", type = "jcampdx")
-    )
+    x <- evalwith(testdir = "read_spectrum_urine1dx", inputs = "jcampdx/urine/urine_1.dx", expr = read_spectrum("urine_1.dx", type = "jcampdx"))
+    y <- MD1D(dp = "urine_1.dx", ff = "jcampdx")
+    expect_equal(x$rv$y_raw, y$rv$debuglist$data_read$spectrum_y_raw)
+    expect_equal(x$rv$y_scaled, y$rv$debuglist$data_read$spectrum_y)
     expect_identical(str2(x$rv, digits.d = 12, vec.len = 1), expected_str_urine_1)
 })

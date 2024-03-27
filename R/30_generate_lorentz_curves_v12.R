@@ -43,7 +43,6 @@ generate_lorentz_curves_v12 <- function(data_path = file.path(download_example_d
     adjno <- get_adjno(spectra, sfr, wshw, ask)
     spectra <- add_sfrs(spectra, sfr, ask, adjno)
     spectra <- add_wsrs(spectra, wshw, ask, adjno)
-    nfils <- length(spectra)
 
     # Deconvolute spectra
     n <- length(spectra)
@@ -91,8 +90,8 @@ get_spectra <- function(data_path, file_format, expno, procno, ask, sf) {
         files <- basename(dp)
         paths <- dp
     } else if (jcampdx) {
-        files <- dir(path, pattern = "\\.dx$") # `.dx` files inside `path`
-        paths <- dir(path, pattern = "\\.dx$", full.names = TRUE)
+        files <- dir(dp, pattern = "\\.dx$") # `.dx` files inside `path`
+        paths <- dir(dp, pattern = "\\.dx$", full.names = TRUE)
     } else if (bruker) {
         files <- list.dirs(dp, recursive = FALSE, full.names = FALSE)
         paths <- list.dirs(dp, recursive = FALSE, full.names = TRUE) # folders inside `path`
@@ -130,7 +129,7 @@ get_adjno <- function(spectra, sfr, wshw, ask) {
     }
     namestr <- paste(seq_along(spectra), names(spectra), sep = ": ", collapse = ", ")
     prompt <- sprintf("Number of spectrum for adjusting parameters? (%s)", namestr)
-    adjno <- get_num_input(prompt, min = 1, max = length(spectra), int = TRUE)
+    get_num_input(prompt, min = 1, max = length(spectra), int = TRUE)
 }
 
 #' @title Add signal free region to each spectrum
@@ -260,19 +259,6 @@ smooth_signals_v12 <- function(spec, reps = 2, k = 5) {
     spec
 }
 
-test_smooth_signals_v12 <- function() {
-    test_that("smooth_signals_v12 works", {
-        y <- c(1, 4, 2, 4, 3)
-        spec <- list(y_pos = y)
-        z1 <- evalwith(output = "captured", smooth_signals_v12(spec, k = 3, reps = 1))$rv$y_smooth
-        z2 <- evalwith(output = "captured", smooth_signals_v12(spec, k = 3, reps = 2))$rv$y_smooth
-        z3 <- evalwith(output = "captured", smooth_signals_v12(spec, k = 3, reps = 3))$rv$y_smooth
-        expect_equal(z1, sapply(list(y[1:2], y[1:3], y[2:4], y[3:5], y[4:5]), mean))
-        expect_equal(z2, sapply(list(z1[1:2], z1[1:3], z1[2:4], z1[3:5], z1[4:5]), mean))
-        expect_equal(z3, sapply(list(z2[1:2], z2[1:3], z2[2:4], z2[3:5], z2[4:5]), mean))
-    })
-}
-
 #' @inherit find_peaks_v12
 #' @param details Successor of `select_peaks_v0`, `find_left_positions_v0` and `find_right_positions_v0`. The new function `find_peaks_v12()` is a combination of these three functions with a corrected naming convention: what was incorrectly referred to as "left" is now correctly called "right" and vice versa.
 #' @noRd
@@ -289,7 +275,7 @@ find_peaks_v12 <- function(spec) {
         j <- center[i]
         l <- spec$peak$left[i] <- get_left_border_v12(j, d)
         r <- spec$peak$right[i] <- get_right_border_v12(j, d, m)
-        s <- spec$peak$score[i] <- get_peak_score_v12(j, l, r, a)
+        spec$peak$score[i] <- get_peak_score_v12(j, l, r, a)
     }
     msg("Detected", length(center), "peaks")
     return(spec)
@@ -350,7 +336,6 @@ init_lorentz_curves_v12 <- function(spec) {
     filtered_peaks <- as.integer(spec$peak$center[spec$peak$high] - 1)
     filtered_left_position <- spec$peak$right[spec$peak$high] - 1
     filtered_right_position <- spec$peak$left[spec$peak$high] - 1
-    save_scores <- spec$peak$score[spec$peak$high]
 
     # Calculate parameters w, lambda and A for the initial lorentz curves
     for (i in seq_along(filtered_peaks)) {
@@ -369,12 +354,12 @@ init_lorentz_curves_v12 <- function(spec) {
         if (is.na(((y_1[i] < y_2[i]) & (y_2[i] < y_3[i])))) {
             1
         }
-        if ((y_1[i] < y_2[i]) & (y_2[i] < y_3[i])) {
+        if ((y_1[i] < y_2[i]) && (y_2[i] < y_3[i])) {
             w_3[i] <- 2 * w_2[i] - w_1[i]
             y_3[i] <- y_1[i]
         }
         # For descending shoulders
-        if ((y_1[i] > y_2[i]) & (y_2[i] > y_3[i])) {
+        if ((y_1[i] > y_2[i]) && (y_2[i] > y_3[i])) {
             w_1[i] <- 2 * w_2[i] - w_3[i]
             y_1[i] <- y_3[i]
         }
@@ -420,6 +405,7 @@ init_lorentz_curves_v12 <- function(spec) {
         }
         A <- c(A, A_result)
     }
+    lc <- list(w = w, lambda = lambda, A = A, w_delta = w_delta)
     spec$lc$A <- A
     spec$lc$lambda <- lambda
     spec$lc$w <- w
@@ -446,7 +432,7 @@ init_lorentz_curves_v10 <- function(spectrum_x, spectrum_y, filtered_peaks, filt
     A <- c()
 
     # Calculate parameters w, lambda and A for the initial lorentz curves
-    for (i in 1:length(filtered_peaks)) {
+    for (i in seq_along(filtered_peaks)) {
         # Calculate position of peak triplets
         w_1 <- c(w_1, spectrum_x[filtered_left_position[i] + 1])
         w_2 <- c(w_2, spectrum_x[filtered_peaks[i] + 1])
@@ -459,12 +445,12 @@ init_lorentz_curves_v10 <- function(spectrum_x, spectrum_y, filtered_peaks, filt
 
         # Calculate mirrored points if necesccary
         # For ascending shoulders
-        if ((y_1[i] < y_2[i]) & (y_2[i] < y_3[i])) {
+        if ((y_1[i] < y_2[i]) && (y_2[i] < y_3[i])) {
             w_3[i] <- 2 * w_2[i] - w_1[i]
             y_3[i] <- y_1[i]
         }
         # For descending shoulders
-        if ((y_1[i] > y_2[i]) & (y_2[i] > y_3[i])) {
+        if ((y_1[i] > y_2[i]) && (y_2[i] > y_3[i])) {
             w_1[i] <- 2 * w_2[i] - w_3[i]
             y_1[i] <- y_3[i]
         }
@@ -510,7 +496,7 @@ init_lorentz_curves_v10 <- function(spectrum_x, spectrum_y, filtered_peaks, filt
         }
         A <- c(A, A_result)
     }
-    lc <- list(A = A, lambda = lambda, w = w, w_delta = w_delta)
+    list(A = A, lambda = lambda, w = w, w_delta = w_delta)
 }
 
 refine_lorentz_curves_v12 <- function(spec, nfit) {
@@ -527,7 +513,7 @@ refine_lorentz_curves_v12 <- function(spec, nfit) {
 
     # Calculate all initial lorentz curves
     lorentz_curves_initial <- matrix(nrow = length(filtered_peaks), ncol = length(spectrum_x))
-    for (i in 1:length(filtered_peaks)) {
+    for (i in seq_along(filtered_peaks)) {
         # If A = 0, then the lorentz curve is a zero line
         if (A[i] == 0) {
             lorentz_curves_initial[i, ] <- 0
@@ -562,16 +548,16 @@ refine_lorentz_curves_v12 <- function(spec, nfit) {
         proportion_peaks <- c()
         proportion_right <- c()
 
-        for (i in 1:length(filtered_peaks)) {
+        for (i in seq_along(filtered_peaks)) {
             # Calculate the position of the peak triplets
             w_1_new <- c(w_1_new, spectrum_x[filtered_left_position[i] + 1])
             w_2_new <- c(w_2_new, spectrum_x[filtered_peaks[i] + 1])
             w_3_new <- c(w_3_new, spectrum_x[filtered_right_position[i] + 1])
 
             # Calculate the sum of all lorentz curves for each data point
-            sum_left[i] <- sum(lorentz_curves_initial[1:length(filtered_left_position), filtered_left_position[i] + 1])
-            sum_peaks[i] <- sum(lorentz_curves_initial[1:length(filtered_peaks), filtered_peaks[i] + 1])
-            sum_right[i] <- sum(lorentz_curves_initial[1:length(filtered_right_position), filtered_right_position[i] + 1])
+            sum_left[i] <- sum(lorentz_curves_initial[seq_along(filtered_left_position), filtered_left_position[i] + 1])
+            sum_peaks[i] <- sum(lorentz_curves_initial[seq_along(filtered_peaks), filtered_peaks[i] + 1])
+            sum_right[i] <- sum(lorentz_curves_initial[seq_along(filtered_right_position), filtered_right_position[i] + 1])
 
             # Calculate the proprotion between original spectrum an the sum of the lorentz curves for each peak triplets position
             proportion_left[i] <- spectrum_y[filtered_left_position[i] + 1] / sum_left[i]
@@ -585,12 +571,12 @@ refine_lorentz_curves_v12 <- function(spec, nfit) {
 
             # Calculate mirrored points if necesccary
             # For ascending shoulders
-            if ((y_1_new[i] < y_2_new[i]) & (y_2_new[i] < y_3_new[i])) {
+            if ((y_1_new[i] < y_2_new[i]) && (y_2_new[i] < y_3_new[i])) {
                 w_3_new[i] <- 2 * w_2_new[i] - w_1_new[i]
                 y_3_new[i] <- y_1_new[i]
             }
             # For descending shoulders
-            if ((y_1_new[i] > y_2_new[i]) & (y_2_new[i] > y_3_new[i])) {
+            if ((y_1_new[i] > y_2_new[i]) && (y_2_new[i] > y_3_new[i])) {
                 w_1_new[i] <- 2 * w_2_new[i] - w_3_new[i]
                 y_1_new[i] <- y_3_new[i]
             }
@@ -641,7 +627,7 @@ refine_lorentz_curves_v12 <- function(spec, nfit) {
 
             # Calculate new lorentz curves
             # If y values are zero, then lorentz curves should also be zero
-            if ((w_new[i] == 0) | (lambda_new[i] == 0) | (A_new[i] == 0)) {
+            if ((w_new[i] == 0) || (lambda_new[i] == 0) || (A_new[i] == 0)) {
                 lorentz_curves_initial[i, ] <- 0
             } else {
                 lorentz_curves_initial[i, ] <- abs(A_new[i] * (lambda_new[i] / (lambda_new[i]^2 + (spectrum_x - w_new[i])^2)))
@@ -650,8 +636,8 @@ refine_lorentz_curves_v12 <- function(spec, nfit) {
 
         # Calculate sum of lorentz curves
         spectrum_approx <- matrix(nrow = 1, ncol = length(spectrum_x))
-        for (i in 1:length(spectrum_x)) {
-            spectrum_approx[1, i] <- sum(lorentz_curves_initial[1:length(filtered_peaks), i])
+        for (i in seq_along(spectrum_x)) {
+            spectrum_approx[1, i] <- sum(lorentz_curves_initial[seq_along(filtered_peaks), i])
         }
 
         # Standardization of spectra so that total area equals 1
@@ -664,7 +650,7 @@ refine_lorentz_curves_v12 <- function(spec, nfit) {
 
         # Calculate the difference between normed original spectrum and normed approximated spectrum
         difference_normed <- c()
-        for (i in 1:length(spectrum_x)) {
+        for (i in seq_along(spectrum_x)) {
             difference_normed[i] <- (spectrum_y_normed[i] - spectrum_approx_normed[i])^2
         }
         mse_normed <- (1 / length(difference_normed)) * sum(difference_normed)
@@ -673,7 +659,7 @@ refine_lorentz_curves_v12 <- function(spec, nfit) {
 
     # Calculate the integrals for each lorentz curve
     integrals <- matrix(nrow = 1, ncol = length(lambda_new))
-    for (i in 1:length(lambda_new)) {
+    for (i in seq_along(lambda_new)) {
         integrals[1, i] <- A_new[i] * (atan((-w_new[i] + (spec$n / spec$sfx)) / lambda_new[i]) - atan((-w_new[i]) / lambda_new[i]))
     }
 
@@ -731,6 +717,7 @@ calc_second_derivative_v12 <- function(y) {
     x <- c(NA, y[-n]) # x[i] == y[i-1]
     z <- c(y[-1], NA) # z[i] == y[i+1]
     d <- x + z - 2 * y
+    d
 }
 
 get_right_border_v12 <- function(j, d, m) {
@@ -820,9 +807,9 @@ add_sfr <- function(spec, sfr) {
         left_ppm <- sfr[1]
         right_ppm <- sfr[2]
         left_dp <- (spec$n + 1) - (spec$ppm_max - left_ppm) / spec$ppm_nstep
-        left_sdp <- left_dp / spec$sfx
+        left_sdp <- left_dp / spec$sfx # nolint: object_usage_linter
         right_dp <- (spec$n + 1) - (spec$ppm_max - right_ppm) / spec$ppm_nstep
-        right_sdp <- right_dp / spec$sfx
+        right_sdp <- right_dp / spec$sfx # nolint: object_usage_linter
     })
     spec
 }
@@ -840,9 +827,9 @@ add_wsr <- function(spec, wshw) {
         center_dp <- spec$n / 2 # center line in dp
         right_dp <- center_dp + hwidth_dp # right border in dp
         left_dp <- center_dp - hwidth_dp # left border in dp
-        center_ppm <- spec$ppm[center_dp] # center in ppm
-        right_ppm <- spec$ppm[right_dp] # right border in ppm
-        left_ppm <- spec$ppm[left_dp] # left border in ppm
+        center_ppm <- spec$ppm[center_dp] # center in ppm # nolint: object_usage_linter.
+        right_ppm <- spec$ppm[right_dp] # right border in ppm # nolint: object_usage_linter.
+        left_ppm <- spec$ppm[left_dp] # left border in ppm # nolint: object_usage_linter.
     })
     spec
 }

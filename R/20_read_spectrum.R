@@ -132,7 +132,7 @@ read_bruker_spectrum <- function(path = file.path(download_example_datasets(), "
     dp <- seq(n - 1, 0, -1) # data points
     sdp <- seq((n - 1) / sfx, 0, -1 / sfx) # scaled data points (previously called `x`). Same as `dp / sfx`, but with slight numeric differences, so we stick with the old calculation method for backwards compatibility.
     return(list(
-        y_raw = y, y_scaled = y / sfy, # y-axis
+        y_raw = as.numeric(y), y_scaled = y / sfy, # y-axis
         n = n, sfx = sfx, sfy = sfy, # misc
         dp = dp, sdp = sdp, ppm = ppm, # x-axis
         ppm_min = ppm_min, ppm_max = ppm_max, ppm_range = ppm_range, ppm_step = ppm_step, ppm_nstep = ppm_nstep # additional ppm info
@@ -160,5 +160,5 @@ read_1r_file <- function(path, expno, procno, procs) {
     path_1r <- file.path(path, expno, "pdata", procno, "1r")
     spec_stream <- file(path_1r, "rb")
     on.exit(close(spec_stream), add = TRUE)
-    y <- readBin(spec_stream, what = "integer", size = int_size, n = n, signed = TRUE, endian = "little")
+    readBin(spec_stream, what = "integer", size = int_size, n = n, signed = TRUE, endian = "little")
 }

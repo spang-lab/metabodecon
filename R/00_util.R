@@ -155,7 +155,23 @@ get_yn_input <- function(prompt) {
     return(y)
 }
 
-# Format #####
+# Print #####
+
+capture.output2 <- function(..., collapse = "\n", trim = FALSE) {
+    x <- utils::capture.output(...)
+    if (trim) {
+        x <- sapply(x, trimws)
+    }
+    if (!(identical(collapse, FALSE))) {
+        x <- paste(x, collapse = collapse)
+    }
+    return(x)
+}
+
+dput2 <- function(..., collapse = " ", trim = TRUE) {
+    x <- capture.output2(dput(...), collapse = collapse, trim = trim)
+    return(x)
+}
 
 str2 <- function(...) {
     capture.output(str(...))
@@ -175,8 +191,6 @@ collapse <- function(x, sep = ", ") {
     paste(x, collapse = sep)
 }
 
-# Print #####
-
 #' @title Concatenate and print with newline
 #' @param ... Arguments to be concatenated and printed.
 #' @examples \dontrun{
@@ -192,8 +206,7 @@ cat2 <- function(..., col = NULL) {
 
 cat3 <- function(...) cat2(format(Sys.time()), ...)
 
-catf <- function (fmt, ..., end = "", file = "", sep = " ", fill = FALSE, labels = NULL, append = FALSE)
-{
+catf <- function(fmt, ..., end = "", file = "", sep = " ", fill = FALSE, labels = NULL, append = FALSE) {
     cat(sprintf(fmt, ...), end = end, file = file, sep = sep, fill = fill, labels = labels, append = append)
 }
 
