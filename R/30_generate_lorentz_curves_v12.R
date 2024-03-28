@@ -38,6 +38,7 @@ generate_lorentz_curves_v12 <- function(data_path = file.path(download_example_d
                                         ask = TRUE,
                                         debug = FALSE,
                                         ncores = 2) {
+
     # Read spectra and ask user for parameters
     spectra <- get_spectra(data_path, file_format, expno, procno, ask, sf)
     adjno <- get_adjno(spectra, sfr, wshw, ask)
@@ -56,8 +57,11 @@ generate_lorentz_curves_v12 <- function(data_path = file.path(download_example_d
         spec <- smooth_signals_v12(spec, reps = smopts[1], k = smopts[2])
         spec <- find_peaks_v12(spec)
         spec <- rm_peaks_with_low_scores_v12(spec, delta)
+        lc2 <- init_lorentz_curves_v13(x = spec$sdp, y = spec$y_smooth, pc = spec$peak$center[spec$peak$high], pl = spec$peak$right[spec$peak$high], pr = spec$peak$left[spec$peak$high])
         spec <- init_lorentz_curves_v12(spec)
+        lc1 <- spec$lc
         spec <- refine_lorentz_curves_v12(spec, nfit)
+        lcr1 <- spec$lcr
         spec <- add_return_list_v12(spec, n, nam, debug)
     })
     names(spectra) <- nams
@@ -376,6 +380,7 @@ init_lorentz_curves_v13 <- function(x, y, pc, pl, pr) {
 
 refine_lorentz_curves_v12 <- function(spec, nfit) {
     msg("Refining Lorentz curves")
+
     spectrum_x <- spec$sdp
     spectrum_y <- spec$y_smooth
     filtered_peaks <- as.integer(spec$peak$center[spec$peak$high] - 1)

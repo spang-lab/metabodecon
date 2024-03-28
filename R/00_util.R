@@ -4,6 +4,7 @@
 #' @import parallel
 #' @import stats
 #' @import grDevices
+#' @useDynLib metabodecon
 
 # Package envs #####
 

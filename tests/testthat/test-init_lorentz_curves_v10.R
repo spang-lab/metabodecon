@@ -26,7 +26,7 @@ test_that("init_lorentz_curves_v10 works", {
     # >>> xs <- lapply(1:10, function(x) MetaboDecon1D_urine1_1010yy_ni1_dbg(overwrite = TRUE)$rv)
     # >>> pairwise_identical(xs)"
     #
-    # The isolated calculations done in `init_lorentz_curves_v10` have the same problem. I.e., sometimes they produce `y$lambda[273] == -0.01896324208858969975755` an sometimes they produce `y$lambda[273] == -0.018963242088589703227`.
+    # The isolated calculations done in `init_lorentz_curves_v10` have the same problem. I.e., sometimes they produce `y$lambda[273] == -0.01896324208858969975755` and sometimes they produce `y$lambda[273] == -0.018963242088589703227`.
     # This makes testing very difficult, because we cannot use `identical` anymore.
     #
     # Workaround: use `all.equal` instead of `identical`.
