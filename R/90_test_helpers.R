@@ -257,7 +257,7 @@ compare_spectra <- function(new = glc_urine1_yy_ni3_dbg()$rv$urine_1,
     o10 <- old$debuglist$params_approx
     # o11 <- old$debuglist$params_saved
 
-    # [1-5] spectra <- get_spectra(data_path, file_format, expno, procno, ask, sf)
+    # [1-5] spectra <- read_spectra(data_path, file_format, expno, procno, ask, sf)
     # [6-7] spectra <- add_sfrs(spectra, sfr, ask, adjno)
     # [8-9] spectra <- add_wsrs(spectra, wshw, ask, adjno)
     # [10] spec <- rm_water_signal_v12(spec)

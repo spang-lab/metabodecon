@@ -50,7 +50,7 @@ refine_lorentz_curves_v13 <- function(x, y, pc, pl, pr, A, lambda, w, nfit = 3) 
 
         for (i in seq_along(pc)) {
             # Calculate the position of the peak triplets
-            w_1_new <- c(xl, x[pl[i] + 1])
+            xl <- c(xl, x[pl[i] + 1])
             xc <- c(xc, x[pc[i] + 1])
             xr <- c(xr, x[pr[i] + 1])
 
@@ -72,24 +72,24 @@ refine_lorentz_curves_v13 <- function(x, y, pc, pl, pr, A, lambda, w, nfit = 3) 
             # Calculate mirrored points if necesccary
             # For ascending shoulders
             if ((yl[i] < yc[i]) && (yc[i] < yr[i])) {
-                xr[i] <- 2 * xc[i] - w_1_new[i]
+                xr[i] <- 2 * xc[i] - xl[i]
                 yr[i] <- yl[i]
             }
             # For descending shoulders
             if ((yl[i] > yc[i]) && (yc[i] > yr[i])) {
-                w_1_new[i] <- 2 * xc[i] - xr[i]
+                xl[i] <- 2 * xc[i] - xr[i]
                 yl[i] <- yr[i]
             }
 
             # Move triplet to zero position
-            wd[i] <- w_1_new[i]
-            w_1_new[i] <- w_1_new[i] - wd[i]
+            wd[i] <- xl[i]
+            xl[i] <- xl[i] - wd[i]
             xc[i] <- xc[i] - wd[i]
             xr[i] <- xr[i] - wd[i]
 
             # Calculate difference of peak triplet positions
-            xlc <- c(xlc, w_1_new[i] - xc[i])
-            xlr <- c(xlr, w_1_new[i] - xr[i])
+            xlc <- c(xlc, xl[i] - xc[i])
+            xlr <- c(xlr, xl[i] - xr[i])
             xcr <- c(xcr, xc[i] - xr[i])
 
             # Calculate difference of new intensity values of peak triplets
@@ -98,7 +98,7 @@ refine_lorentz_curves_v13 <- function(x, y, pc, pl, pr, A, lambda, w, nfit = 3) 
             ycr <- c(ycr, yc[i] - yr[i])
 
             # Calculate w for each peak triplet
-            w_result <- (w_1_new[i]^2 * yl[i] * ycr[i] + xr[i]^2 * yr[i] * ylc[i] + xc[i]^2 * yc[i] * (-ylr[i])) / (2 * xlc[i] * yl[i] * yc[i] - 2 * (xlr[i] * yl[i] + (-xcr[i]) * yc[i]) * yr[i])
+            w_result <- (xl[i]^2 * yl[i] * ycr[i] + xr[i]^2 * yr[i] * ylc[i] + xc[i]^2 * yc[i] * (-ylr[i])) / (2 * xlc[i] * yl[i] * yc[i] - 2 * (xlr[i] * yl[i] + (-xcr[i]) * yc[i]) * yr[i])
             w_result <- w_result + wd[i]
             w <- c(w, w_result)
 
@@ -108,7 +108,7 @@ refine_lorentz_curves_v13 <- function(x, y, pc, pl, pr, A, lambda, w, nfit = 3) 
             }
 
             # Calculate lambda for each peak triplet
-            lambda_result <- -((sqrt(abs(((-xc[i]^4 * yc[i]^2 * ylr[i]^2 - w_1_new[i]^4 * yl[i]^2 * ycr[i]^2 - xr[i]^4 * ylc[i]^2 * yr[i]^2 + 4 * xc[i] * xr[i]^3 * yc[i] * ((-yl[i]) + yc[i]) * yr[i]^2 + 4 * xc[i]^3 * xr[i] * yc[i]^2 * yr[i] * ((-yl[i]) + yr[i]) + 4 * w_1_new[i]^3 * yl[i]^2 * ycr[i] * (xc[i] * yc[i] - xr[i] * yr[i]) + 4 * w_1_new[i] * yl[i] * (xc[i]^3 * yc[i]^2 * ylr[i] - xc[i] * xr[i]^2 * yc[i] * (yl[i] + yc[i] - 2 * yr[i]) * yr[i] + xr[i]^3 * ylc[i] * yr[i]^2 - xc[i]^2 * xr[i] * yc[i] * yr[i] * (yl[i] - 2 * yc[i] + yr[i])) + 2 * xc[i]^2 * xr[i]^2 * yc[i] * yr[i] * (yl[i]^2 - 3 * yc[i] * yr[i] + yl[i] * (yc[i] + yr[i])) + 2 * w_1_new[i]^2 * yl[i] * (-2 * xc[i] * xr[i] * yc[i] * yr[i] * (-2 * yl[i] + yc[i] + yr[i]) + xr[i]^2 * yr[i] * (yl[i] * (yc[i] - 3 * yr[i]) + yc[i] * (yc[i] + yr[i])) + xc[i]^2 * yc[i] * (yl[i] * (-3 * yc[i] + yr[i]) + yr[i] * (yc[i] + yr[i]))))))))) / (2 * sqrt((w_1_new[i] * yl[i] * ycr[i] + xr[i] * ylc[i] * yr[i] + xc[i] * yc[i] * ((-yl[i]) + yr[i]))^2))
+            lambda_result <- -((sqrt(abs(((-xc[i]^4 * yc[i]^2 * ylr[i]^2 - xl[i]^4 * yl[i]^2 * ycr[i]^2 - xr[i]^4 * ylc[i]^2 * yr[i]^2 + 4 * xc[i] * xr[i]^3 * yc[i] * ((-yl[i]) + yc[i]) * yr[i]^2 + 4 * xc[i]^3 * xr[i] * yc[i]^2 * yr[i] * ((-yl[i]) + yr[i]) + 4 * xl[i]^3 * yl[i]^2 * ycr[i] * (xc[i] * yc[i] - xr[i] * yr[i]) + 4 * xl[i] * yl[i] * (xc[i]^3 * yc[i]^2 * ylr[i] - xc[i] * xr[i]^2 * yc[i] * (yl[i] + yc[i] - 2 * yr[i]) * yr[i] + xr[i]^3 * ylc[i] * yr[i]^2 - xc[i]^2 * xr[i] * yc[i] * yr[i] * (yl[i] - 2 * yc[i] + yr[i])) + 2 * xc[i]^2 * xr[i]^2 * yc[i] * yr[i] * (yl[i]^2 - 3 * yc[i] * yr[i] + yl[i] * (yc[i] + yr[i])) + 2 * xl[i]^2 * yl[i] * (-2 * xc[i] * xr[i] * yc[i] * yr[i] * (-2 * yl[i] + yc[i] + yr[i]) + xr[i]^2 * yr[i] * (yl[i] * (yc[i] - 3 * yr[i]) + yc[i] * (yc[i] + yr[i])) + xc[i]^2 * yc[i] * (yl[i] * (-3 * yc[i] + yr[i]) + yr[i] * (yc[i] + yr[i]))))))))) / (2 * sqrt((xl[i] * yl[i] * ycr[i] + xr[i] * ylc[i] * yr[i] + xc[i] * yc[i] * ((-yl[i]) + yr[i]))^2))
 
             # If y and w are 0, then 0/0=NaN
             if (is.nan(lambda_result)) {
@@ -117,7 +117,7 @@ refine_lorentz_curves_v13 <- function(x, y, pc, pl, pr, A, lambda, w, nfit = 3) 
             l <- c(l, lambda_result)
 
             # Calculate scaling factor A for each peak triplet
-            A_result <- (-4 * xlc[i] * xlr[i] * xcr[i] * yl[i] * yc[i] * yr[i] * (w_1_new[i] * yl[i] * ycr[i] + xr[i] * yr[i] * ylc[i] + xc[i] * yc[i] * (-ylr[i])) * l[i]) / (xlc[i]^4 * yl[i]^2 * yc[i]^2 - 2 * xlc[i]^2 * yl[i] * yc[i] * (xlr[i]^2 * yl[i] + xcr[i]^2 * yc[i]) * yr[i] + (xlr[i]^2 * yl[i] - xcr[i]^2 * yc[i])^2 * yr[i]^2)
+            A_result <- (-4 * xlc[i] * xlr[i] * xcr[i] * yl[i] * yc[i] * yr[i] * (xl[i] * yl[i] * ycr[i] + xr[i] * yr[i] * ylc[i] + xc[i] * yc[i] * (-ylr[i])) * l[i]) / (xlc[i]^4 * yl[i]^2 * yc[i]^2 - 2 * xlc[i]^2 * yl[i] * yc[i] * (xlr[i]^2 * yl[i] + xcr[i]^2 * yc[i]) * yr[i] + (xlr[i]^2 * yl[i] - xcr[i]^2 * yc[i])^2 * yr[i]^2)
 
             # If y and w are 0, then 0/0=NaN
             if (is.nan(A_result)) {
@@ -171,94 +171,6 @@ refine_lorentz_curves_v13 <- function(x, y, pc, pl, pr, A, lambda, w, nfit = 3) 
         integrals = integrals
     )
     spec
-}
-
-refine_lc_internal <- function() {
-    for (i in seq_along(pc)) {
-        # Calculate the position of the peak triplets
-        w_1_new <- c(xl, x[pl[i] + 1])
-        xc <- c(xc, x[pc[i] + 1])
-        xr <- c(xr, x[pr[i] + 1])
-
-        # Calculate the sum of all lorentz curves for each data point
-        sum_left[i] <- sum(lc[seq_along(pl), pl[i] + 1])
-        sum_peaks[i] <- sum(lc[seq_along(pc), pc[i] + 1])
-        sum_right[i] <- sum(lc[seq_along(pr), pr[i] + 1])
-
-        # Calculate the proprotion between original spectrum an the sum of the lorentz curves for each peak triplets position
-        proportion_left[i] <- y[pl[i] + 1] / sum_left[i]
-        proportion_peaks[i] <- y[pc[i] + 1] / sum_peaks[i]
-        proportion_right[i] <- y[pr[i] + 1] / sum_right[i]
-
-        # Calculate the new heights of the peak triplets
-        yl[i] <- lc[i, pl[i] + 1] * proportion_left[i]
-        yc[i] <- lc[i, pc[i] + 1] * proportion_peaks[i]
-        yr[i] <- lc[i, pr[i] + 1] * proportion_right[i]
-
-        # Calculate mirrored points if necesccary
-        # For ascending shoulders
-        if ((yl[i] < yc[i]) && (yc[i] < yr[i])) {
-            xr[i] <- 2 * xc[i] - w_1_new[i]
-            yr[i] <- yl[i]
-        }
-        # For descending shoulders
-        if ((yl[i] > yc[i]) && (yc[i] > yr[i])) {
-            w_1_new[i] <- 2 * xc[i] - xr[i]
-            yl[i] <- yr[i]
-        }
-
-        # Move triplet to zero position
-        wd[i] <- w_1_new[i]
-        w_1_new[i] <- w_1_new[i] - wd[i]
-        xc[i] <- xc[i] - wd[i]
-        xr[i] <- xr[i] - wd[i]
-
-        # Calculate difference of peak triplet positions
-        xlc <- c(xlc, w_1_new[i] - xc[i])
-        xlr <- c(xlr, w_1_new[i] - xr[i])
-        xcr <- c(xcr, xc[i] - xr[i])
-
-        # Calculate difference of new intensity values of peak triplets
-        ylc <- c(ylc, yl[i] - yc[i])
-        ylr <- c(ylr, yl[i] - yr[i])
-        ycr <- c(ycr, yc[i] - yr[i])
-
-        # Calculate w for each peak triplet
-        w_result <- (w_1_new[i]^2 * yl[i] * ycr[i] + xr[i]^2 * yr[i] * ylc[i] + xc[i]^2 * yc[i] * (-ylr[i])) / (2 * xlc[i] * yl[i] * yc[i] - 2 * (xlr[i] * yl[i] + (-xcr[i]) * yc[i]) * yr[i])
-        w_result <- w_result + wd[i]
-        w <- c(w, w_result)
-
-        # If y values are getting 0 after height adjustment, then w[i]=NaN
-        if (is.nan(w[i])) {
-            w[i] <- 0
-        }
-
-        # Calculate lambda for each peak triplet
-        lambda_result <- -((sqrt(abs(((-xc[i]^4 * yc[i]^2 * ylr[i]^2 - w_1_new[i]^4 * yl[i]^2 * ycr[i]^2 - xr[i]^4 * ylc[i]^2 * yr[i]^2 + 4 * xc[i] * xr[i]^3 * yc[i] * ((-yl[i]) + yc[i]) * yr[i]^2 + 4 * xc[i]^3 * xr[i] * yc[i]^2 * yr[i] * ((-yl[i]) + yr[i]) + 4 * w_1_new[i]^3 * yl[i]^2 * ycr[i] * (xc[i] * yc[i] - xr[i] * yr[i]) + 4 * w_1_new[i] * yl[i] * (xc[i]^3 * yc[i]^2 * ylr[i] - xc[i] * xr[i]^2 * yc[i] * (yl[i] + yc[i] - 2 * yr[i]) * yr[i] + xr[i]^3 * ylc[i] * yr[i]^2 - xc[i]^2 * xr[i] * yc[i] * yr[i] * (yl[i] - 2 * yc[i] + yr[i])) + 2 * xc[i]^2 * xr[i]^2 * yc[i] * yr[i] * (yl[i]^2 - 3 * yc[i] * yr[i] + yl[i] * (yc[i] + yr[i])) + 2 * w_1_new[i]^2 * yl[i] * (-2 * xc[i] * xr[i] * yc[i] * yr[i] * (-2 * yl[i] + yc[i] + yr[i]) + xr[i]^2 * yr[i] * (yl[i] * (yc[i] - 3 * yr[i]) + yc[i] * (yc[i] + yr[i])) + xc[i]^2 * yc[i] * (yl[i] * (-3 * yc[i] + yr[i]) + yr[i] * (yc[i] + yr[i]))))))))) / (2 * sqrt((w_1_new[i] * yl[i] * ycr[i] + xr[i] * ylc[i] * yr[i] + xc[i] * yc[i] * ((-yl[i]) + yr[i]))^2))
-
-        # If y and w are 0, then 0/0=NaN
-        if (is.nan(lambda_result)) {
-            lambda_result <- 0
-        }
-        l <- c(l, lambda_result)
-
-        # Calculate scaling factor A for each peak triplet
-        A_result <- (-4 * xlc[i] * xlr[i] * xcr[i] * yl[i] * yc[i] * yr[i] * (w_1_new[i] * yl[i] * ycr[i] + xr[i] * yr[i] * ylc[i] + xc[i] * yc[i] * (-ylr[i])) * l[i]) / (xlc[i]^4 * yl[i]^2 * yc[i]^2 - 2 * xlc[i]^2 * yl[i] * yc[i] * (xlr[i]^2 * yl[i] + xcr[i]^2 * yc[i]) * yr[i] + (xlr[i]^2 * yl[i] - xcr[i]^2 * yc[i])^2 * yr[i]^2)
-
-        # If y and w are 0, then 0/0=NaN
-        if (is.nan(A_result)) {
-            A_result <- 0
-        }
-        A_new <- c(A_new, A_result)
-
-        # Calculate new lorentz curves
-        # If y values are zero, then lorentz curves should also be zero
-        if ((w[i] == 0) || (l[i] == 0) || (A_new[i] == 0)) {
-            lc[i, ] <- 0
-        } else {
-            lc[i, ] <- abs(A_new[i] * (l[i] / (l[i]^2 + (x - w[i])^2)))
-        }
-    }
 }
 
 # Helpers #####

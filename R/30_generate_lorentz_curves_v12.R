@@ -40,7 +40,7 @@ generate_lorentz_curves_v12 <- function(data_path = file.path(download_example_d
                                         ncores = 2) {
 
     # Read spectra and ask user for parameters
-    spectra <- get_spectra(data_path, file_format, expno, procno, ask, sf)
+    spectra <- read_spectra(data_path, file_format, expno, procno, ask, sf)
     adjno <- get_adjno(spectra, sfr, wshw, ask)
     spectra <- add_sfrs(spectra, sfr, ask, adjno)
     spectra <- add_wsrs(spectra, wshw, ask, adjno)
@@ -77,43 +77,6 @@ generate_lorentz_curves_v12 <- function(data_path = file.path(download_example_d
 }
 
 # Helpers for generate_lorentz_curves_v12 #####
-
-#' @description Get spectra from the user specified data path.
-#' @noRd
-get_spectra <- function(data_path, file_format, expno, procno, ask, sf) {
-    if (!file_format %in% c("bruker", "jcampdx")) {
-        stop("Argument `file_format` should be either 'bruker' or 'jcampdx'")
-    }
-    dp <- normPath(data_path)
-    jcampdx <- file_format == "jcampdx"
-    bruker <- file_format == "bruker"
-    r1_path <- file.path(dp, expno, "pdata", procno, "1r")
-    r1_path_exists <- file.exists(r1_path)
-    ends_with_dx <- grepl("\\.dx$", dp)
-    if (jcampdx && ends_with_dx || bruker && r1_path_exists) {
-        files <- basename(dp)
-        paths <- dp
-    } else if (jcampdx) {
-        files <- dir(dp, pattern = "\\.dx$") # `.dx` files inside `path`
-        paths <- dir(dp, pattern = "\\.dx$", full.names = TRUE)
-    } else if (bruker) {
-        files <- list.dirs(dp, recursive = FALSE, full.names = FALSE)
-        paths <- list.dirs(dp, recursive = FALSE, full.names = TRUE) # folders inside `path`
-        r1_paths <- file.path(paths, expno, "pdata", procno, "1r")
-        r1_paths_exists <- file.exists(r1_paths)
-        paths <- paths[r1_paths_exists]
-        files <- files[r1_paths_exists]
-    }
-    if (length(files) == 0) {
-        stop("No spectra found in directory", data_path)
-    }
-    spectra <- lapply(paths, function(path) {
-        msgf("Reading spectrum '%s'", path)
-        read_spectrum(path, file_format, sf, expno, procno)
-    })
-    names(spectra) <- files
-    invisible(spectra)
-}
 
 #' @title Get the spectrum number for adjusting parameters
 #' @description Asks the user which spectrum should be used for adjusting signal free region (SFR) and water signal half width (WSHW) and returns the corresponding spectrum number. If `ask` is `FALSE` or the user chooses to use different parameters for each spectrum, 0 is returned.
@@ -314,68 +277,6 @@ rm_peaks_with_low_scores_v12 <- function(spec, delta = 6.4) {
     spec$peak$region[r] <- "sfrr"
     msg("Removed", sum(!spec$peak$high), "peaks")
     spec
-}
-
-# x <- spec$sdp
-# y <- spec$y_smooth
-# pc <- spec$peak$center[spec$peak$high]
-# pl <- spec$peak$right[spec$peak$high]
-# pr <- spec$peak$left[spec$peak$high]
-init_lorentz_curves_v13 <- function(x, y, pc, pl, pr) {
-
-    msg("Initializing Lorentz curves")
-
-    xl <- x[pl]
-    xc <- x[pc]
-    xr <- x[pr]
-
-    yl <- y[pl]
-    yc <- y[pc]
-    yr <- y[pr]
-
-    # Calculate mirrored points for ascending/descending shoulders
-    i <- which((yl < yc) & (yc < yr)) # ascending shoulders
-    j <- which((yl > yc) & (yc > yr)) # descending shoulders
-    xr[i] <- 2 * xc[i] - xl[i]
-    xl[j] <- 2 * xc[j] - xr[j]
-    yr[i] <- yl[i]
-    yl[j] <- yr[j]
-
-    # Move triplet to zero position
-    xd <- xl
-    xl <- xl - xd
-    xc <- xc - xd
-    xr <- xr - xd
-
-    # Calculate difference of position of peak triplets
-    xlc <- xl - xc
-    xlr <- xl - xr
-    xcr <- xc - xr
-
-    # Calculate difference of intensity values of peak triplets
-    ylc <- yl - yc
-    ylr <- yl - yr
-    ycr <- yc - yr
-
-    t1 <- xl^2 * yl * ycr
-    t2 <- xr^2 * yr * ylc
-    t3 <- xc^2 * yc * ylr
-    t4 <- 2 * xlc * yl * yc
-    t5 <- 2 * xcr * yc * yr
-    t6 <- 2 * xlr * yl * yr
-    w <- (t1 + t2 - t3) / (t4 + t5 - t6) + xd
-    w[is.nan(w)] <- 0 # If (t4 + t5 - t6) is 0, then w is NaN. In this case we set w to 0.
-
-    lambda <- -((sqrt(abs((-xc^4 * yc^2 * ylr^2 - xl^4 * yl^2 * ycr^2 - xr^4 * ylc^2 * yr^2 + 4 * xc * xr^3 * yc * ((-yl) + yc) * yr^2 + 4 * xc^3 * xr * yc^2 * yr * ((-yl) + yr) + 4 * xl^3 * yl^2 * ycr * (xc * yc - xr * yr) + 4 * xl * yl * (xc^3 * yc^2 * ylr - xc * xr^2 * yc * (yl + yc - 2 * yr) * yr + xr^3 * ylc * yr^2 - xc^2 * xr * yc * yr * (yl - 2 * yc + yr)) + 2 * xc^2 * xr^2 * yc * yr * (yl^2 - 3 * yc * yr + yl * (yc + yr)) + 2 * xl^2 * yl * (-2 * xc * xr * yc * yr * (-2 * yl + yc + yr) + xr^2 * yr * (yl * (yc - 3 * yr) + yc * (yc + yr)) + xc^2 * yc * (yl * (-3 * yc + yr) + yr * (yc + yr)))))))) / (2 * sqrt((xl * yl * ycr + xr * ylc * yr + xc * yc * ((-yl) + yr))^2))
-    lambda[is.nan(lambda)] <- 0 
-
-    A <- (-4 * xlc * xlr * xcr * yl * yc * yr * (xl * yl * ycr + xr * yr * ylc + xc * yc * (-ylr)) * lambda) / (xlc^4 * yl^2 * yc^2 - 2 * xlc^2 * yl * yc * (xlr^2 * yl + xcr^2 * yc) * yr + (xlr^2 * yl - xcr^2 * yc)^2 * yr^2)
-    A[is.nan(A)] <- 0
-
-    # TODO: break up calculation of w, lambda, and A and add explanation
-
-    lc <- list(A = A, lambda = lambda, w = w, w_delta = xd)
-    lc
 }
 
 refine_lorentz_curves_v12 <- function(spec, nfit) {

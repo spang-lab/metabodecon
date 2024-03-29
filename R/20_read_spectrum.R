@@ -1,5 +1,47 @@
 # Private API #####
 
+#' @description Get spectra from the user specified data path.
+#' @noRd
+read_spectra <- function(data_path = file.path(download_example_datasets(), "bruker/urine"),
+                         file_format = "bruker",
+                         expno = 10,
+                         procno = 10,
+                         ask = FALSE,
+                         sf = c(1e3, 1e6)) {
+    if (!file_format %in% c("bruker", "jcampdx")) {
+        stop("Argument `file_format` should be either 'bruker' or 'jcampdx'")
+    }
+    dp <- normPath(data_path)
+    jcampdx <- file_format == "jcampdx"
+    bruker <- file_format == "bruker"
+    r1_path <- file.path(dp, expno, "pdata", procno, "1r")
+    r1_path_exists <- file.exists(r1_path)
+    ends_with_dx <- grepl("\\.dx$", dp)
+    if (jcampdx && ends_with_dx || bruker && r1_path_exists) {
+        files <- basename(dp)
+        paths <- dp
+    } else if (jcampdx) {
+        files <- dir(dp, pattern = "\\.dx$") # `.dx` files inside `path`
+        paths <- dir(dp, pattern = "\\.dx$", full.names = TRUE)
+    } else if (bruker) {
+        files <- list.dirs(dp, recursive = FALSE, full.names = FALSE)
+        paths <- list.dirs(dp, recursive = FALSE, full.names = TRUE) # folders inside `path`
+        r1_paths <- file.path(paths, expno, "pdata", procno, "1r")
+        r1_paths_exists <- file.exists(r1_paths)
+        paths <- paths[r1_paths_exists]
+        files <- files[r1_paths_exists]
+    }
+    if (length(files) == 0) {
+        stop("No spectra found in directory", data_path)
+    }
+    spectra <- lapply(paths, function(path) {
+        msgf("Reading spectrum '%s'", path)
+        read_spectrum(path, file_format, sf, expno, procno)
+    })
+    names(spectra) <- files
+    invisible(spectra)
+}
+
 #' @title Read Spectrum
 #' @description Reads a single spectrum file or folder and returns the spectrum data as list.
 #' @param path The path of the file/folder containing the spectrum data. E.g. `"example_datasets/jcampdx/urine/urine_1.dx"` or `"example_datasets/bruker/urine/urine"`.
