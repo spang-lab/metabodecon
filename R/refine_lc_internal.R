@@ -1,6 +1,6 @@
 refine_lc_internal_example <- function() {
 
-    # Prepare inputs
+    # Prepare Inputs
     spectra <- read_spectra()
     spectra <- add_sfrs(spectra, sfr = c(11.44494, -1.8828), ask = FALSE, adjno = 1)
     spectra <- add_wsrs(spectra, wshw = 0.1527692, ask = FALSE, adjno = 1)
@@ -13,25 +13,28 @@ refine_lc_internal_example <- function() {
     s <- spec; p <- spec$peak; h <- p$high; # styler: off
     x <- s$sdp; y <- s$y_smooth; pc <- p$center[h]; pl <- p$right[h]; pr <- p$left[h] # styler: off
 
-    # Init lorentz curves
+    # Init Lorentz Curves
     specv12 <- init_lorentz_curves_v12(spec)
     lciv12 <- specv12$lc
     lci <- init_lorentz_curves_v13(x, y, pc, pl, pr)
     cat2("all.equal(lci, lcv12):", all.equal(lci, lciv12))
 
-    # Refine lorentz curves
+    # Refine Lorentz Curves
+
     p <- length(pc); n <- length(x) # styler: off
     A <- lci$A; lambda <- lci$lambda; w <- lci$w # styler: off
     Y <- matrix(nrow = n, ncol = p) # 131072 x 1227 for urine_1
     for (j in seq_along(pc)) {
         Y[, j] <- if (A[j] == 0) 0 else abs(A[j] * (lambda[j] / (lambda[j]^2 + (x - w[j])^2)))
     }
+
+    # Refine Lorentz Curves Internal
     lcr1 <- refine_lc_internal(x, y, pc, pl, pr, Y)
     lcr2 <- refine_lc_internal(x, y, pc, pl, pr, Y)
     lcr3 <- refine_lc_internal(x, y, pc, pl, pr, Y)
     lcr <- list(lcr1, lcr2, lcr3)
 
-    # Compare against old result
+    # Compare against old Result
     lcrv12 <- refine_lorentz_curves_v12(specv12, nfit = 3)
     cat2("all.equal(lcr, lcrv12)", all.equal(lcr, lcrv12))
 
@@ -107,9 +110,9 @@ refine_lc_internal <- function(x, y, pc, pl, pr, Y) {
         # Calculate the proportion between original spectrum an the sum of the lorentz curves for each peak triplets position
         ql <- yl / sl; qc <- yc / sc; qr <- yr / sr # proportion_left, proportion_peaks, proportion_right
         # Calculate new heights of peak triplets
-        yl <- yl * ql; yc <- yc * qc; yr <- yr * qr
+        yl <- diag(Y[pl, ]) * ql; yc <- diag(Y[pc, ]) * qc; yr <- diag(Y[pr, ]) * qr
         xl2 <- xl; xc2 <- xc; xr2 <- xr # backup
-        yl2 <- yl; yc2 <- yc; yr2 <- yr # backup
+        yl2 <- yl; yc2 <- yc; yr2 <- yr # backup # Mean Diff: 0.03, 0.0000046, 0.02
         # Calculate mirrored points if necesccary
         ia <- which((yl < yc) & (yc < yr)) # ascending_shoulders
         xr[ia] <- 2 * xc[ia] - xl[ia] # example: xl==7, xc==10, xr==12 ==> xr==2*10-7==13
@@ -121,8 +124,8 @@ refine_lc_internal <- function(x, y, pc, pl, pr, Y) {
     # styler: on
 
     # Check
-    all.equal(xl1, x_left_1); all.equal(xc1, x_center_1); all.equal(xr, x_right_1)
-    all.equal(yl1, y_left_1); all.equal(yc1, y_center_1); all.equal(yr, y_right_1)
+    all.equal(xl1, x_left_1); all.equal(xc1, x_center_1); all.equal(xr1, x_right_1)
+    all.equal(yl1, y_left_1); all.equal(yc1, y_center_1); all.equal(yr1, y_right_1)
     all.equal(sl, sum_left); all.equal(sc, sum_peaks); all.equal(sr, sum_right)
     all.equal(ql, proportion_left); all.equal(qc, proportion_peaks); all.equal(qr, proportion_right)
     all.equal(xl2, x_left_2); all.equal(xc2, x_center_2); all.equal(xr2, x_right_2)
