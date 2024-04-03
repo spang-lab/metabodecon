@@ -223,8 +223,8 @@ vcomp <- function(x, y, xpct = 0, silent = FALSE) {
             df <- as.data.frame(matrix(".", length(rows), length(cols), dimnames = list(rows, cols)))
             df["class", c("x", "y")] <- c(class(x), class(y))
             df["length", ] <- sapply(cols, function(col) length(get(col)))
-            df["head", ] <- sapply(objs, function(obj) dput2(head(obj)))
-            df["tail", ] <- sapply(objs, function(obj) dput2(tail(obj)))
+            df["head", ] <- sapply(objs, function(obj) dput2(head(obj, 1)))
+            df["tail", ] <- sapply(objs, function(obj) dput2(tail(obj, 1)))
             print(df)
         }
     }
@@ -317,6 +317,127 @@ compare_spectra <- function(new = glc_urine1_yy_ni3_dbg()$rv$urine_1,
     r[43] <- comp(new$lcr$lambda_new, o10$lambda_new, xpct = 1)
     r[44] <- comp(new$lcr$A_new, o10$A_new, xpct = 1)
     r[45] <- comp(new$lcr$integrals[1, ], o10$integrals[1, ], xpct = 1)
+
+    # spec <- add_return_list_v12(spec, n, nam, debug)
+    r[46] <- comp(new$ret$number_of_files, as.integer(old$number_of_files)) # int 1
+    r[47] <- comp(new$ret$filename, old$filename) # chr[1] "urine_1"
+    r[48] <- comp(new$ret$x_values, old$x_values) # num[131072] 131.071 131.070 131.069 ...
+    r[49] <- comp(new$ret$x_values_ppm, old$x_values_ppm) # num[131072] 14.80254 14.80239 14.80223 ...
+    r[50] <- comp(new$ret$y_values, old$y_values) # num[131072] 0.000831 0.000783 0.000743 ...
+    r[51] <- comp(new$ret$spectrum_superposition, old$spectrum_superposition[1, ], 1) # num [1:131072] 3.29e-05 3.29e-05 3.29e-05 3.29e-05 3.29e-05 ...
+    r[52] <- comp(new$ret$mse_normed, old$mse_normed) # num 4.1e-11
+    r[53] <- comp(new$ret$index_peak_triplets_middle, as.integer(old$index_peak_triplets_middle)) # int[1227] 36158 37148 37418 37434 38942 38959 39030 39046 39091 39109 ...
+    r[54] <- comp(new$ret$index_peak_triplets_left, old$index_peak_triplets_left) # num[1227] 36160 37159 37422 37437 38948 ...
+    r[55] <- comp(new$ret$index_peak_triplets_right, old$index_peak_triplets_right) # num[1227] 36155 37139 37414 37431 38937 ...
+    r[59] <- comp(new$ret$integrals, old$integrals[1, ], 1) # num[1227] 0.000502 0.026498 0.000396 0.000379 0.00732 ...
+    if (!is.null(old$signal_free_region)) r[60] <- comp(new$ret$signal_free_region, old$signal_free_region) # num[2] 109.1 21.9
+    if (!is.null(old$range_water_signal_ppm)) r[61] <- comp(new$ret$range_water_signal_ppm, old$range_water_signal_ppm) # num 0.153
+    r[62] <- comp(new$ret$A, old$A, 1) # num[1227] -0.00016 -0.008437 -0.000126 -0.000121 -0.00233 ...
+    r[63] <- comp(new$ret$lambda, old$lambda, 1) # num[1227] -0.00775 -0.02188 -0.00672 -0.00566 -0.01252 ...
+    r[64] <- comp(new$ret$x_0, old$x_0, 0) # num[1227] 94.9 93.9 93.7 93.6 92.1 ...
+
+    r[56] <- comp(new$ret$peak_triplets_middle, old$peak_triplets_middle) # NULL
+    r[57] <- comp(new$ret$peak_triplets_left, old$peak_triplets_left) # NULL
+    r[58] <- comp(new$ret$peak_triplets_right, old$peak_triplets_right) # NULL
+
+    r[is.na(r)] <- 4
+    msg <- "Identical: %s, Equal: %s, Different: %s, Error: %s, Empty: %s"
+    if (!silent) {
+        catf(msg, sum(r == 0), sum(r == 1), sum(r == 2), sum(r == 3), sum(r == 4))
+    }
+
+    invisible(r)
+}
+
+#' @description Compare a spectrum deconvoluted with [generate_lorentz_curves_v12()] with a spectrum deconvoluted with [MetaboDecon1D()].
+#' @param x Result of [generate_lorentz_curves_v12()].
+#' @param y Result of [MetaboDecon1D()].
+#' @examples \donttest{
+#' new <- glc_urine1_yy_ni3_dbg(overwrite = TRUE)$rv$urine_1
+#' old <- MetaboDecon1D_urine1_1010yy_ni3_dbg()$rv
+#' compare_spectra(new, old)
+#' }
+#' @noRd
+compare_spectra_v13 <- function(new = glc13()$rv$urine_1,
+                                old = MD1D()$rv,
+                                silent = FALSE) {
+    comp <- vcomp
+    arglist <- formals(comp)
+    arglist$silent <- silent
+    formals(comp) <- arglist
+    r <- numeric()
+    # o1 <- old$debuglist$args
+    o2 <- old$debuglist$data_read
+    o3 <- old$debuglist$ws_rm
+    o4 <- old$debuglist$neg_rm
+    o5 <- old$debuglist$smoothed
+    o6 <- old$debuglist$peaks_sel
+    o7 <- old$debuglist$peaks_wob_rm
+    o8 <- old$debuglist$peak_scores_calc
+    o9 <- old$debuglist$params_init
+    o10 <- old$debuglist$params_approx
+    # o11 <- old$debuglist$params_saved
+
+    # [1-5] spectra <- read_spectra(data_path, file_format, expno, procno, ask, sf)
+    # [6-7] spectra <- add_sfrs(spectra, sfr, ask, adjno)
+    # [8-9] spectra <- add_wsrs(spectra, wshw, ask, adjno)
+    # [10] spec <- rm_water_signal_v12(spec)
+    # [11] spec <- rm_negative_signals_v12(spec)
+    # [12] spec <- smooth_signals_v12(spec, reps = smopts[1], k = smopts[2])
+    r[1] <- comp(new$y_raw, as.numeric(o2$spectrum_y_raw))
+    r[2] <- comp(new$y_scaled, o2$spectrum_y)
+    r[3] <- comp(new$n, o3$spectrum_length)
+    r[4] <- comp(new$sdp, o3$spectrum_x)
+    r[5] <- comp(new$ppm, o3$spectrum_x_ppm)
+    r[6] <- comp(new$sfr$left_sdp, o3$signal_free_region_left)
+    r[7] <- comp(new$sfr$right_sdp, o3$signal_free_region_right)
+    r[8] <- comp(new$wsr$left_dp, o3$water_signal_left)
+    r[9] <- comp(new$wsr$right_dp, o3$water_signal_right)
+    r[10] <- comp(new$y_nows, o3$spectrum_y)
+    r[11] <- comp(new$y_pos, o4$spectrum_y)
+    r[12] <- comp(new$y_smooth, o5$spectrum_y)
+
+    # spec <- find_peaks_v12(spec)
+    r[13] <- comp(new$n, o6$spectrum_length)
+    r[14] <- comp(new$d, c(NA, o6$second_derivative[2, ], NA)) # (1)
+    r[16] <- comp(new$peak$center, as.integer(o6$peaks_index + 1)) # (1)
+    r[17] <- comp(new$peak$center, as.integer(o6$peaks_x + 1)) # (1)
+    r[18] <- comp(new$peak$right, as.integer(o6$left_position[1, ]) + 1) # (1)
+    r[19] <- comp(new$peak$left, as.integer(o6$right_position[1, ]) + 1) # (1)
+    # (1) MetaboDecon1D did not store NAs at the border, which is bad, because you need to shift every index by one when you switch from `second_derivative` to any other vector like `x_ppm` or `y_au`.
+
+    # spec <- rm_peaks_with_low_scores_v12(spec, delta)
+    border_is_na <- which(is.na(new$peak$left) | is.na(new$peak$right)) # the original MetaboDecon1D implementation throws away NAs, so for comparsion we need to do the same
+    new_peak2 <- if (length(border_is_na) > 0) new$peak[-border_is_na, ] else new$peak
+    r[20] <- comp(new_peak2$center, as.integer(o7$peaks_index + 1)) # (1) see above
+    r[21] <- comp(new_peak2$right, as.integer(o7$left_position) + 1) # (1)
+    r[22] <- comp(new_peak2$left, as.integer(o7$right_position) + 1) # (1)
+    r[23] <- comp(new$sdp[new_peak2$center], o7$peaks_x)
+    r[24] <- comp(mean(new_peak2$score[new_peak2$region %in% c("sfrl", "sfrr")]), o8$mean_score)
+    r[25] <- comp(sd(new_peak2$score[new_peak2$region %in% c("sfrl", "sfrr")]), o8$sd_score)
+    r[26] <- comp(new_peak2$score, o8$scores[1, ])
+    r[27] <- comp(which(new_peak2$region == "sfrl"), o8$index_left)
+    r[28] <- comp(which(new_peak2$region == "sfrr"), o8$index_right)
+    r[29] <- comp(new$peak$center[new$peak$high], as.integer(o8$filtered_peaks + 1)) # (1)
+    r[30] <- comp(new$peak$right[new$peak$high], o8$filtered_left_position + 1) # (1)
+    r[31] <- comp(new$peak$left[new$peak$high], o8$filtered_right_position + 1) # (1)
+    r[32] <- comp(new$peak$score[new$peak$high], o8$save_scores)
+
+    # spec <- init_lorentz_curves_v12(spec)
+    r[33] <- comp(new$sdp, o9$spectrum_x, xpct = 0)
+    r[34] <- comp(new$y_smooth, o9$spectrum_y, xpct = 0)
+    r[35] <- comp(new$peak$center[new$peak$high], as.integer(o9$filtered_peaks + 1), xpct = 0) # (1)
+    r[36] <- comp(new$peak$right[new$peak$high], o9$filtered_left_position + 1, xpct = 0) # (1)
+    r[37] <- comp(new$peak$left[new$peak$high], o9$filtered_right_position + 1, xpct = 0) # (1)
+    r[38] <- comp(new$lci$A, o9$A, xpct = 1)
+    r[39] <- comp(new$lci$lambda, o9$lambda, xpct = 1)
+    r[40] <- comp(new$lci$w, o9$w, xpct = 1)
+
+    # spec <- refine_lorentz_curves_v12(spec, nfit)
+    r[42] <- comp(new$lcr$w, o10$w_new, xpct = 0)
+    r[43] <- comp(new$lcr$lambda, o10$lambda_new, xpct = 1)
+    r[44] <- comp(new$lcr$A, o10$A_new, xpct = 1)
+    r[45] <- comp(new$lcr$integrals, o10$integrals[1, ], xpct = 1)
 
     # spec <- add_return_list_v12(spec, n, nam, debug)
     r[46] <- comp(new$ret$number_of_files, as.integer(old$number_of_files)) # int 1

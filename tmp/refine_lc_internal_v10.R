@@ -1,5 +1,7 @@
 refine_lc_internal_v10 <- function(x, y, pl, pc, pr, Yt) {
 
+    cat3("Refining Lorentz Curves")
+
     spectrum_x <- x
     spectrum_y <- y
     filtered_left_position <- pl - 1

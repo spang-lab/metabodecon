@@ -7,6 +7,13 @@ test_that("GLC works for 1 bruker", {
     expect_true(sum(r %in% 0:1) >= 60 && sum(r %in% 2:3) == 0) # >=60 identical/equal && no diffs/errors
 })
 
+test_that("GLC works for 1 bruker", {
+    new <- glc13(dp = "urine_1", ff = "bruker", nfit = 3, simple = TRUE)$rv$urine_1
+    old <- MD1D(dp = "urine_1", ff = "bruker", nfit = 3, simple = TRUE)$rv
+    r <- compare_spectra(new, old, silent = TRUE)
+    expect_true(sum(r %in% 0:1) >= 60 && sum(r %in% 2:3) == 0) # >=60 identical/equal && no diffs/errors
+})
+
 test_that("GLC work for n bruker", {
     x <- glc(dp = "urine_2", ff = "bruker", nfit = 3, simple = TRUE)$rv$urine_2
     y <- MD1D(dp = "urine_2", ff = "bruker", nfit = 3, simple = TRUE)$rv

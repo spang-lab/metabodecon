@@ -3,25 +3,32 @@
 # pc <- spec$peak$center[spec$peak$high]
 # pl <- spec$peak$right[spec$peak$high]
 # pr <- spec$peak$left[spec$peak$high]
-init_lorentz_curves_v13 <- function(x, y, pc, pl, pr) {
+init_lorentz_curves_v13 <- function(spec) {
+
+    x <- spec$sdp; y <- spec$y_smooth; p <- spec$peak
+    pl <- p$right[p$high]; pc <- p$center[p$high]; pr <- p$left[p$high];
 
     cat3("Initializing Lorentz curves")
 
     p <- length(pc); n <- length(x)
     wl <- x[pl]; wc <- x[pc]; wr <- x[pr] # position of peak triplets
     yl <- y[pl]; yc <- y[pc]; yr <- y[pr] # intensity of peak triplets
+    P1 <- data.frame(pl = pl, pc = pc, pr = pr, wl = wl, wc = wc, wr = wr, yl = yl, yc = yc, yr = yr)
 
     # Replace ascending/descending shoulders (i/j) with mirrored points
-    i <- which((yl < yc) & (yc < yr)); j <- which((yl > yc) & (yc > yr))
-    wr[i] <- 2 * wc[i] - wl[i]; wl[j] <- 2 * wc[j] - wr[j]
-    yr[i] <- yl[i]; yl[j] <- yr[j]
+    i <- (yl < yc) & (yc < yr)
+    j <- (yl > yc) & (yc > yr)
+    wr[i] <- 2 * wc[i] - wl[i]
+    wl[j] <- 2 * wc[j] - wr[j]
+    yr[i] <- yl[i];
+    yl[j] <- yr[j]
+    P2 <- data.frame(pl = pl, pc = pc, pr = pr, wl = wl, wc = wc, wr = wr, yl = yl, yc = yc, yr = yr, i = i, j = j)
 
-    # Express wl/wc/wr as "distance to left border"
+    # Express wr/wc/wl as "distance to right border" and calculate x and y distances between triplet positions
     wd <- wl; wl <- wl - wd; wc <- wc - wd; wr <- wr - wd
     xlc <- wl - wc; xlr <- wl - wr; xcr <- wc - wr
-
-    # Calculate difference of intensity values of peak triplets
     ylc <- yl - yc; ylr <- yl - yr; ycr <- yc - yr
+    P3 <- data.frame(pl = pl, pc = pc, pr = pr, wl = wl, wc = wc, wr = wr, yl = yl, yc = yc, yr = yr, i = i, j = j, xlc = xlc, xlr = xlr, xcr = xcr, ylc = ylc, ylr = ylr, ycr = ycr, wd = wd)
 
     # Calculate parameters of Lorentz Curves from peak triplets
     w <- calc_w(wl, wc, wr, yl, yc, yr, xlc, xlr, xcr, ylc, ylr, ycr, wd)
@@ -29,11 +36,10 @@ init_lorentz_curves_v13 <- function(x, y, pc, pl, pr) {
     A <- calc_A(wl, wc, wr, yl, yc, yr, xlc, xlr, xcr, ylc, ylr, ycr, lambda, w, wd)
     Y <- matrix(nrow = n, ncol = p) # 131072 x 1227 for urine_1
     for (j in seq_along(pc)) Y[, j] <- if (A[j] == 0) 0 else abs(A[j] * (lambda[j] / (lambda[j]^2 + (x - w[j])^2)))
-    lci <- list(A = A, lambda = lambda, w = w, w_delta = wd, Y = Y)
 
     cat3("Done")
 
-    lci
+    list(P1 = P1, P2 = P2, P3 = P3, A = A, lambda = lambda, w = w, w_delta = wd, Y = Y)
 }
 
 calc_w <- function(wl, wc, wr, yl, yc, yr, xlc, xlr, xcr, ylc, ylr, ycr, wd) {

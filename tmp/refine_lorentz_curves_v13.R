@@ -13,8 +13,6 @@ refine_lorentz_curves_v13_example <- function(spec, nfit = 3) {
 refine_lorentz_curves_v13 <- function(x, y, pc, pl, pr, A, lambda, w, nfit = 3) {
     msg("Refining Lorentz curves")
 
-    nfit <- nfit
-
     p <- length(pc)
     n <- length(x)
     lc <- matrix(nrow = n, ncol = p) # 131072 x 1227 for urine_1
@@ -23,6 +21,7 @@ refine_lorentz_curves_v13 <- function(x, y, pc, pl, pr, A, lambda, w, nfit = 3) 
     }
 
     # Approximation of lorentz curves
+    
     for (b in 1:nfit) {
         # Calculate new heights of peak triplets
         xl <- c()

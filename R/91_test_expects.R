@@ -166,6 +166,25 @@ cache_glc_results <- function(overwrite = FALSE) cache_func_results("glc", overw
 
 cache_MD1D_results <- function(overwrite = FALSE) cache_func_results("MD1D", overwrite = FALSE)
 
+glc13 <- function(dp = "urine_1", ff = "bruker", nfit = 3, simple = TRUE, overwrite = FALSE, cout = TRUE, cplot = TRUE, cache = TRUE, debug = TRUE) {
+    tid <- get_tid("glc13", dp, ff, nfit, simple)
+    inputs <- file.path(ff, "urine")
+    if (dp != "urine") inputs <- file.path(ff, "urine", dp)
+    answers <- c(SFRok = "y", WSok = "y")
+    if (dp == "urine") answers <- c(SameParam = "y", AdjNo = "1", answers)
+    invisible(evalwith(
+        testdir = tid,
+        inputs = inputs,
+        answers = answers,
+        cache = cache,
+        overwrite = overwrite,
+        plot = if (cplot) "plots.pdf" else NULL,
+        output = if (cout) "captured" else NULL,
+        message = if (cout) "captured" else NULL,
+        expr = generate_lorentz_curves_v13(data_path = dp, file_format = ff, nfit = nfit, debug = debug)
+    ))
+}
+
 glc <- function(dp = "urine_1", ff = "bruker", nfit = 3, simple = TRUE, overwrite = FALSE, cout = TRUE, cplot = TRUE, cache = TRUE, debug = TRUE) {
     tid <- get_tid("glc", dp, ff, nfit, simple)
     inputs <- file.path(ff, "urine")
