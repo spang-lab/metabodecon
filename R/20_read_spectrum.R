@@ -1,4 +1,4 @@
-# Private API #####
+# Private Main #####
 
 #' @description Get spectra from the user specified data path.
 #' @noRd
@@ -35,7 +35,7 @@ read_spectra <- function(data_path = file.path(download_example_datasets(), "bru
         stop("No spectra found in directory", data_path)
     }
     spectra <- lapply(paths, function(path) {
-        msgf("Reading spectrum '%s'", path)
+        cat3("Reading spectrum", path)
         read_spectrum(path, file_format, sf, expno, procno)
     })
     names(spectra) <- files
@@ -68,7 +68,7 @@ read_spectrum <- function(path, type = "bruker", sf = c(1e3, 1e6), expno = 10, p
     )
 }
 
-# Helpers for read_spectrum #####
+# Private Helpers #####
 
 #' @title Read single JCAMPDX Spectrum
 #' @description Reads a single JCAMPDX spectrum file and returns the spectrum data in ppm.

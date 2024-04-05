@@ -166,8 +166,8 @@ cache_glc_results <- function(overwrite = FALSE) cache_func_results("glc", overw
 
 cache_MD1D_results <- function(overwrite = FALSE) cache_func_results("MD1D", overwrite = FALSE)
 
-glc13 <- function(dp = "urine_1", ff = "bruker", nfit = 3, simple = TRUE, overwrite = FALSE, cout = TRUE, cplot = TRUE, cache = TRUE, debug = TRUE) {
-    tid <- get_tid("glc13", dp, ff, nfit, simple)
+glc_v13 <- function(dp = "urine_1", ff = "bruker", nfit = 3, simple = TRUE, overwrite = FALSE, cout = TRUE, cplot = TRUE, cache = TRUE, debug = TRUE) {
+    tid <- get_tid("glc_v13", dp, ff, nfit, simple)
     inputs <- file.path(ff, "urine")
     if (dp != "urine") inputs <- file.path(ff, "urine", dp)
     answers <- c(SFRok = "y", WSok = "y")

@@ -1,4 +1,4 @@
-# Exported API Functions #####
+# Exported Main #####
 
 #' @title Return path to metabodecon's data directory
 #' @description Returns the path to the directory where [download_example_datasets()] stores metabodecon's example data sets or any file within that directory.
@@ -72,7 +72,7 @@ datadir_temp <- function() {
 
 #' @title Temporary Session Directory
 #' @description Returns the path to metabodecon's temporary session directory.
-#' This directory equals subdirectory `"metabodecon"` of R's temporary session directory `[tempdir()]` plus additional path normalization.
+#' This directory equals subdirectory `"metabodecon"` of R's temporary session directory `[base::tempdir()]` plus additional path normalization.
 #' @return Returns the path to the temporary session directory.
 #' @export
 tempdir <- function() {
@@ -92,9 +92,8 @@ zip_persistent <- function() {
     normalizePath(p, "/", mustWork = FALSE)
 }
 
-# Exported and deprecated #####
+# Exported Deprecated #####
 
-#' @export
 #' @name get_data_dir
 #' @title Retrieve directory path of an example dataset
 #' @description Returns the path to the directory storing the example files
@@ -109,6 +108,7 @@ zip_persistent <- function() {
 #' x <- get_data_dir("urine")                     # Deprecated
 #' y <- datadir("example_datasets/bruker/urine")  # Preferred
 #' @seealso [download_example_datasets()]
+#' @export
 get_data_dir <- function(dataset_name = c("", "blood", "test", "urine"), warn = TRUE) {
   dataset_name <- match.arg(dataset_name)
   base_data_dir <- datadir()

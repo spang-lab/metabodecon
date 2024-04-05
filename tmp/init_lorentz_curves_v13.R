@@ -37,8 +37,6 @@ init_lorentz_curves_v13 <- function(spec) {
     Y <- matrix(nrow = n, ncol = p) # 131072 x 1227 for urine_1
     for (j in seq_along(pc)) Y[, j] <- if (A[j] == 0) 0 else abs(A[j] * (lambda[j] / (lambda[j]^2 + (x - w[j])^2)))
 
-    cat3("Done")
-
     list(P1 = P1, P2 = P2, P3 = P3, A = A, lambda = lambda, w = w, w_delta = wd, Y = Y)
 }
 

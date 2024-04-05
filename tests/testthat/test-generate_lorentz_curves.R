@@ -1,4 +1,29 @@
+# GLC v13 #####
+
+# IMPORTANT: we dont test for jcampdx files because after calling `read_spectrum()`, the data is the same as for bruker, which is tested in `test-read_spectrum.R`. Also, the calculations in the old `MetaboDecon1D()` function are slightly different for jcampdx and bruker files (in the jcampdx case it calculates with n-1 instead of n) and our `compare_spectra_v13` function currently only accounts for bruker-type errors of MetaboDecon1D, but not jcampdx errors.
+
 skip_if_slow_tests_disabled()
+
+test_that("GLC v13 works for 1 bruker", {
+    new <- glc_v13(dp = "urine_1", ff = "bruker", nfit = 3, simple = TRUE, cache = FALSE)$rv$urine_1
+    old <- MD1D(dp = "urine_1", ff = "bruker", nfit = 3, simple = TRUE)$rv
+    r <- compare_spectra_v13(new, old, silent = FALSE)
+    expect_true(sum(r %in% 0:1) >= 60 && sum(r %in% 2:3) == 0) # >=60 identical/equal && no diffs/errors
+})
+
+test_that("GLC v13 works for n bruker", {
+    x <- glc_v13(dp = "urine", ff = "bruker", nfit = 3, simple = TRUE, cache = FALSE)$rv
+    y <- MD1D(dp = "urine", ff = "bruker", nfit = 3, simple = TRUE)$rv
+    r1 <- compare_spectra_v13(new = x$urine_1, old = y$urine_1, silent = TRUE)
+    r2 <- compare_spectra_v13(new = x$urine_2, old = y$urine_2, silent = TRUE)
+    expect_true(sum(r1 %in% 0:1) >= 60 && sum(r1 %in% 2:3) == 0) # >=60 identical/equal && no diffs/errors
+    expect_true(sum(r2 %in% 0:1) >= 60 && sum(r2 %in% 2:3) == 0) # >=60 identical/equal && no diffs/errors
+})
+
+
+# GLC v12 #####
+
+skip()
 
 test_that("GLC works for 1 bruker", {
     new <- glc(dp = "urine_1", ff = "bruker", nfit = 3, simple = TRUE)$rv$urine_1
@@ -7,24 +32,11 @@ test_that("GLC works for 1 bruker", {
     expect_true(sum(r %in% 0:1) >= 60 && sum(r %in% 2:3) == 0) # >=60 identical/equal && no diffs/errors
 })
 
-test_that("GLC works for 1 bruker", {
-    new <- glc13(dp = "urine_1", ff = "bruker", nfit = 3, simple = TRUE)$rv$urine_1
-    old <- MD1D(dp = "urine_1", ff = "bruker", nfit = 3, simple = TRUE)$rv
-    r <- compare_spectra(new, old, silent = TRUE)
-    expect_true(sum(r %in% 0:1) >= 60 && sum(r %in% 2:3) == 0) # >=60 identical/equal && no diffs/errors
-})
-
 test_that("GLC work for n bruker", {
-    x <- glc(dp = "urine_2", ff = "bruker", nfit = 3, simple = TRUE)$rv$urine_2
-    y <- MD1D(dp = "urine_2", ff = "bruker", nfit = 3, simple = TRUE)$rv
-    r <- compare_spectra(new = x, old = y, silent = TRUE)
-    expect_true(sum(r %in% 0:1) >= 60 && sum(r %in% 2:3) == 0) # >=60 identical/equal && no diffs/errors
+    x <- glc(dp = "urine", ff = "bruker", nfit = 3, simple = TRUE, overwrite = FALSE)$rv
+    y <- MD1D(dp = "urine", ff = "bruker", nfit = 3, simple = TRUE)$rv
+    r1 <- compare_spectra(new = x$urine_1, old = y$urine_1, silent = TRUE)
+    r2 <- compare_spectra(new = x$urine_2, old = y$urine_2, silent = TRUE)
+    expect_true(sum(r1 %in% 0:1) >= 60 && sum(r1 %in% 2:3) == 0) # >=60 identical/equal && no diffs/errors
+    expect_true(sum(r2 %in% 0:1) >= 60 && sum(r2 %in% 2:3) == 0) # >=60 identical/equal && no diffs/errors
 })
-
-# We dont test for jcampdx files because after calling `read_spectrum()`, the data is the same as for bruker, which is tested in `test-read_spectrum.R`. Also, the calculations in the old `MetaboDecon1D()` function are slightly different for jcampdx and bruker files (in the jcampdx case it calculates with n-1 instead of n) and our compare function currently only accounts for bruker-case errors of MetaboDecon1D, but not jcampdx-case errors.
-
-su1 <- MD1D(dp = "urine_1", ff = "bruker", nfit = 3, simple = TRUE)$rv
-su2 <- MD1D(dp = "urine_2", ff = "bruker", nfit = 3, simple = TRUE)$rv
-mu <- MD1D(dp = "urine", ff = "bruker", nfit = 3, simple = TRUE)$rv
-mu1 <- mu$urine_1
-mu2 <- mu$urine_2

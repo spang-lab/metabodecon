@@ -11,7 +11,7 @@ refine_lorentz_curves_v13_example <- function(spec, nfit = 3) {
 }
 
 refine_lorentz_curves_v13 <- function(x, y, pc, pl, pr, A, lambda, w, nfit = 3) {
-    msg("Refining Lorentz curves")
+    cat3("Refining Lorentz curves")
 
     p <- length(pc)
     n <- length(x)
@@ -149,7 +149,7 @@ refine_lorentz_curves_v13 <- function(x, y, pc, pl, pr, A, lambda, w, nfit = 3) 
             difference_normed[i] <- (y_normed[i] - spectrum_approx_normed[i])^2
         }
         mse_normed <- (1 / length(difference_normed)) * sum(difference_normed)
-        msgf("Normed MSE after iteration %d: %.22f", b, mse_normed)
+        cat3(sprintf("Normed MSE after iteration %d: %.22f", b, mse_normed))
     }
 
     # Calculate the integrals for each lorentz curve

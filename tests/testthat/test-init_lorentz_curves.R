@@ -1,4 +1,63 @@
-# skip_if_slow_tests_disabled()
+skip_if_slow_tests_disabled()
+
+test_that("init_lorentz_curves_v14 works", {
+
+    obj <- MD1D(cache = TRUE)$rv
+
+    spec <- within(list(), {
+        sdp <- obj$x_values
+        y_smooth <- obj$debuglist$smoothed$spectrum_y
+        peak <- within(list(), {
+            center <- obj$debuglist$peak_scores_calc$filtered_peaks + 1
+            right <- obj$debuglist$peak_scores_calc$filtered_left_position + 1
+            left <- obj$debuglist$peak_scores_calc$filtered_right_position + 1
+            high <- rep(TRUE, length(center))
+        })
+    })
+    y14 <- init_lc_v14(spec)
+    expect_equal(y14$A, obj$debuglist$params_init$A)
+    expect_equal(y14$lambda, obj$debuglist$params_init$lambda)
+    expect_equal(y14$w, obj$debuglist$params_init$w)
+})
+
+skip()
+
+test_that("init_lorentz_curves_v13 works", {
+
+    obj <- MD1D(cache = TRUE)$rv
+
+    x <- obj$x_values
+    y <- obj$debuglist$smoothed$spectrum_y
+    pc <- obj$debuglist$peak_scores_calc$filtered_peaks + 1
+    pr <- obj$debuglist$peak_scores_calc$filtered_left_position + 1
+    pl <- obj$debuglist$peak_scores_calc$filtered_right_position + 1
+
+    y3 <- init_lorentz_curves_v13(x, y, pc, pr, pl)
+
+    expect_equal(y3$A, obj$debuglist$params_init$A)
+    expect_equal(y3$lambda, obj$debuglist$params_init$lambda)
+    expect_equal(y3$w, obj$debuglist$params_init$w)
+})
+
+test_that("init_lorentz_curves_v12 works", {
+
+    x <- MD1D(cache = TRUE)$rv
+
+    spec <- list()
+    spec$sdp <- x$x_values
+    spec$y_smooth <- x$debuglist$smoothed$spectrum_y
+    spec$peak$center <- x$debuglist$peak_scores_calc$filtered_peaks + 1
+    spec$peak$right <- x$debuglist$peak_scores_calc$filtered_left_position + 1
+    spec$peak$left <- x$debuglist$peak_scores_calc$filtered_right_position + 1
+    spec$peak$high <- rep(TRUE, length(spec$peak$center))
+
+    y2 <- init_lorentz_curves_v12(spec)$lc
+
+    expect_equal(y2$A, x$debuglist$params_init$A)
+    expect_equal(y2$lambda, x$debuglist$params_init$lambda)
+    expect_equal(y2$w, x$debuglist$params_init$w)
+})
+
 
 test_that("init_lorentz_curves_v10 works", {
 

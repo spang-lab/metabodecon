@@ -205,7 +205,13 @@ cat2 <- function(..., col = NULL) {
     if (!is.null(col)) cat(RESET)
 }
 
-cat3 <- function(...) cat2(format(Sys.time(), "%Y-%m-%d %H:%M:%OS2"), ...)
+cat3 <- function(..., prefix = NULL, suffix = "\n") {
+    prefix <- prefix %||% .Options$metabodecon.cat3_prefix %||% ""
+    cat(format(Sys.time(), "%Y-%m-%d %H:%M:%OS2 "))
+    cat(prefix)
+    cat(...)
+    cat(suffix)
+}
 
 catf <- function(fmt, ..., end = "", file = "", sep = " ", fill = FALSE, labels = NULL, append = FALSE) {
     cat(sprintf(fmt, ...), end = end, file = file, sep = sep, fill = fill, labels = labels, append = append)

@@ -3,14 +3,14 @@ test_refine_lc_internal <- function() {
 
     # Prepare Inputs
     spectra <- read_spectra()
-    spectra <- add_sfrs(spectra, sfr = c(11.44494, -1.8828), ask = FALSE, adjno = 1)
-    spectra <- add_wsrs(spectra, wshw = 0.1527692, ask = FALSE, adjno = 1)
+    spectra <- get_sfrs(spectra, sfr = c(11.44494, -1.8828), ask = FALSE, adjno = 1)
+    spectra <- get_wsrs(spectra, wshw = 0.1527692, ask = FALSE, adjno = 1)
     spec <- spectra[[1]]
     spec <- rm_water_signal_v12(spec)
     spec <- rm_negative_signals_v12(spec)
     spec <- smooth_signals_v12(spec, reps = 2, k = 5)
     spec <- find_peaks_v12(spec)
-    spec <- rm_peaks_with_low_scores_v12(spec, delta = 6.4)
+    spec <- filter_peaks_v12(spec, delta = 6.4)
 
     lci_v13 <- init_lorentz_curves_v13(spec)
     lci_v14 <- init_lorentz_curves_v14(spec)

@@ -84,6 +84,5 @@ refine_lc_internal_v14 <- function(spec, Y, Z) {
     # Create return list
     P <- data.frame(il, ic, ir, rl, rc, rr, xl, xc, xr, yl, yc, yr, sl, sc, sr, ql, qc, qr)
     D <- data.frame(wl, wc, wr, wrc, wrl, wcl, yrc, yrl, ycl)
-    cat3("Done")
     named_list(A, lambda, w, Z, D, P) # nolint: object_usage_linter
 }
