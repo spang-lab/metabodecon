@@ -4,7 +4,7 @@
 \alias{confirm_wshw}
 \title{Confirm water signal half width (WSHW)}
 \usage{
-confirm_wshw(spec, wshw, ask = TRUE)
+confirm_wshw(spec, wshw)
 }
 \arguments{
 \item{spec}{A list representing the spectrum.}

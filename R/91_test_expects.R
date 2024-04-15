@@ -7,7 +7,7 @@
 #' @param size_exp A named numeric vector where the names are filenames and the values are the expected file sizes.
 #' @examples
 #' \dontrun{
-#' testdir <- tempdir()
+#' testdir <- tmpdir()
 #' file.create(file.path(testdir, "file1.txt"))
 #' file.create(file.path(testdir, "file2.txt"))
 #' size_exp <- c(file1.txt = 100, file2.txt = 200)
@@ -166,12 +166,15 @@ cache_glc_results <- function(overwrite = FALSE) cache_func_results("glc", overw
 
 cache_MD1D_results <- function(overwrite = FALSE) cache_func_results("MD1D", overwrite = FALSE)
 
-glc_v13 <- function(dp = "urine_1", ff = "bruker", nfit = 3, simple = TRUE, overwrite = FALSE, cout = TRUE, cplot = TRUE, cache = TRUE, debug = TRUE) {
+glc_v13 <- function(dp = "urine_1", ff = "bruker", nfit = 3, simple = TRUE, overwrite = FALSE, cout = TRUE, cplot = TRUE, cache = TRUE, debug = TRUE, ncores = "auto") {
     tid <- get_tid("glc_v13", dp, ff, nfit, simple)
-    inputs <- file.path(ff, "urine")
-    if (dp != "urine") inputs <- file.path(ff, "urine", dp)
-    answers <- c(SFRok = "y", WSok = "y")
-    if (dp == "urine") answers <- c(SameParam = "y", AdjNo = "1", answers)
+    if (dp %in% c("urine", "blood")) {
+        answers <- c(SameParam = "y", AdjNo = "1", SFRok = "y", WSok = "y")
+        inputs <- file.path(ff, dp)
+    } else {
+        answers <- c(SFRok = "y", WSok = "y")
+        inputs <- file.path(ff, strsplit(dp, "_")[[1]][1], dp)
+    }
     invisible(evalwith(
         testdir = tid,
         inputs = inputs,
@@ -181,7 +184,7 @@ glc_v13 <- function(dp = "urine_1", ff = "bruker", nfit = 3, simple = TRUE, over
         plot = if (cplot) "plots.pdf" else NULL,
         output = if (cout) "captured" else NULL,
         message = if (cout) "captured" else NULL,
-        expr = generate_lorentz_curves_v13(data_path = dp, file_format = ff, nfit = nfit, debug = debug)
+        expr = generate_lorentz_curves_v13(data_path = dp, file_format = ff, nfit = nfit, debug = debug, ncores = ncores)
     ))
 }
 
@@ -206,9 +209,28 @@ glc <- function(dp = "urine_1", ff = "bruker", nfit = 3, simple = TRUE, overwrit
 
 MD1D <- function(dp = "urine_1", ff = "bruker", nfit = 3, simple = TRUE, overwrite = FALSE, cout = TRUE, cplot = TRUE, cache = TRUE, debug = TRUE) { # nolint: object_usage_linter.
     tid <- get_tid("MD1D", dp, ff, nfit, simple)
-    fn <- if (dp == "urine") NA else dp
-    inputs <- if (dp == "urine") file.path(ff, "urine") else file.path(ff, "urine", fn)
-    fp <- if (dp == "urine") "urine" else "."
+    if (dp %in% c("urine", "blood")) {
+        # DATADIR/example_datasets
+        #       {bruker|jcampdx} === ff (file format, input)
+        #           {urine|blood} == dp (data path, input)
+        # TESTDIR
+        #       urine ============== fp (file path, MetaboDecon1D arg)
+        inputs <- file.path(ff, dp)
+        fp <- dp
+        fn <- NA
+    } else {
+        # DATADIR/example_datasets
+        #   {bruker|jcampdx} ====================== ff (file format, input)
+        #       {urine|blood} ===================== pp (parent path, new variable)
+        #           {blood_n|urine_n|urine_n.dx} == dp (data path, input)
+        # TESTDIR
+        #   . ===================================== fp (file path, MetaboDecon1D arg)
+        #       {blood_n|urine_n|urine_n.dx} ====== fn (file name, MetaboDecon1D arg))
+        pp <- strsplit(dp, "_")[[1]][1]
+        inputs <- file.path(ff, pp, dp)
+        fp <- "."
+        fn <- dp
+    }
     if (simple && !is.na(fn))  answers <- c(SFRok = "y", WSok = "y")
     if (simple && is.na(fn))   answers <- c(SameParam = "y", AdjNo = "1", SFRok = "y", WSok = "y")
     if (!simple && !is.na(fn)) answers <- c(SFRok = "n", Left = "11", Right = "-1", SFRok = "y", WSok = "asdf", WSok = "n", WSHW = "0.13", WSok = "y")

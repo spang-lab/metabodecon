@@ -61,12 +61,12 @@ datadir_persistent <- function() {
 
 #' @title Temporary Data Directory
 #' @description Returns the path to the temporary data directory where metabodecon's data sets are stored.
-#' This directory equals subdirectory `"data"` of metabodecons temporary session directory `[tempdir()]` plus additional path normalization.
+#' This directory equals subdirectory `"data"` of metabodecons temporary session directory `[tmpdir()]` plus additional path normalization.
 #' @return Returns the path to the temporary data directory.
 #' @export
-#' @seealso [tempdir()], [datadir()], [datadir_persistent()]
+#' @seealso [tmpdir()], [datadir()], [datadir_persistent()]
 datadir_temp <- function() {
-    p <- file.path(tempdir(), "data")
+    p <- file.path(tmpdir(), "data")
     normalizePath(p, "/", mustWork = FALSE)
 }
 
@@ -75,7 +75,7 @@ datadir_temp <- function() {
 #' This directory equals subdirectory `"metabodecon"` of R's temporary session directory `[base::tempdir()]` plus additional path normalization.
 #' @return Returns the path to the temporary session directory.
 #' @export
-tempdir <- function() {
+tmpdir <- function() {
     p <- file.path(base::tempdir(), "metabodecon")
     normalizePath(p, "/", mustWork = FALSE)
 }

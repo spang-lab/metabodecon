@@ -20,6 +20,20 @@ test_that("GLC v13 works for n bruker", {
     expect_true(sum(r2 %in% 0:1) >= 60 && sum(r2 %in% 2:3) == 0) # >=60 identical/equal && no diffs/errors
 })
 
+test_that("GLC v13 works for 16 bruker blood samples", {
+    x1 <- glc_v13(dp = "blood", nfit = 10, cache = FALSE, ncores = 1) # 56s on R4
+    x2 <- glc_v13(dp = "blood", nfit = 10, cache = FALSE, ncores = 2) # 40s on R4
+    x4 <- glc_v13(dp = "blood", nfit = 10, cache = FALSE, ncores = 4) # 28s on R4
+    x8 <- glc_v13(dp = "blood", nfit = 10, cache = FALSE, ncores = 8) # 18s on R4
+    x16 <- glc_v13(dp = "blood", nfit = 10, cache = FALSE, ncores = 16) # 15s on R4
+    xa <- glc_v13(dp = "blood", nfit = 10, cache = FALSE)
+    y <- MD1D(dp = "blood", nfit = 10) # 490s on R4
+    r <- lapply(1:16, function(i) compare_spectra_v13(new = xa$rv[[i]], old = y$rv[[i]], silent = TRUE))
+    for (i in 1:16) {
+        expect_true(sum(r[[i]] %in% 0:1) >= 60 && sum(r[[i]] %in% 2:3) == 0)
+        # >=60 identical/equal && no diffs/errors
+    }
+})
 
 # GLC v12 #####
 

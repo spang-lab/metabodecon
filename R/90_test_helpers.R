@@ -108,18 +108,18 @@ evalwith <- function(expr, # nolint: cyclocomp_linter.
 }
 
 testdir <- function(p = NULL) {
-    normPath(paste(tempdir(), "tests", p, sep = "/"))
+    normPath(paste(tmpdir(), "tests", p, sep = "/"))
     # use paste instead of file.path, because it can deal with NULL
 }
 
 mockdir <- function() {
-    normPath(file.path(tempdir(), "mocks"))
+    normPath(file.path(tmpdir(), "mocks"))
 }
 
 #' @description Create and return cache dir. If existing, the persistent cache dir is returned, else the temp cache dir. To force creation of the persistent cache dir, call once with `persistent=TRUE`.
 #' @noRd
 cachedir <- function(persistent = NULL) {
-    tcd <- file.path(tempdir(), "cache") # temporary cache dir
+    tcd <- file.path(tmpdir(), "cache") # temporary cache dir
     pcd <- file.path(tools::R_user_dir("metabodecon", "cache")) # persistent cache dir
     cd <- if (isTRUE(persistent) || (is.null(persistent) && dir.exists(pcd))) pcd else tcd
     ncd <- normalizePath(cd, "/", mustWork = FALSE)
