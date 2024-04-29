@@ -195,7 +195,7 @@ filter_peaks_v13 <- function(ppm, # x values in ppm
 #' @param nam Name of current spectrum.
 #' @param debug Add debug info to the return list
 #' @noRd
-add_return_list_v13 <- function(spec = glc(), n = 1, nam = "urine_1", debug = TRUE) {
+add_return_list_v13 <- function(spec = glc_v13(), n = 1, nam = "urine_1", debug = TRUE) {
     A <- spec$lcr$A
     lambda <- spec$lcr$lambda
     w <- spec$lcr$w
@@ -326,7 +326,7 @@ filter_peaks_v12 <- function(spec, delta = 6.4) {
 #' @param nam Name of current spectrum.
 #' @param debug Add debug info to the return list
 #' @noRd
-add_return_list_v12 <- function(spec = glc()$rv, n = 1, nam = "urine_1", debug = TRUE) {
+add_return_list_v12 <- function(spec = glc_v13()$rv, n = 1, nam = "urine_1", debug = TRUE) {
     spec$ret <- list(
         number_of_files = n,
         filename = nam,
