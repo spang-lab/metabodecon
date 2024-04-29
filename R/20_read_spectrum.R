@@ -55,7 +55,7 @@ read_spectra <- function(data_path = file.path(download_example_datasets(), "bru
 #' \dontrun{
 #' xds_path <- download_example_datasets()
 #' path <- file.path(xds_path, "jcampdx/urine/urine_1.dx")
-#' spectrum_data <- load_spectrum(path, type = "jcampdx")
+#' spectrum_data <- read_spectrum(path, type = "jcampdx")
 #' str(spectrum_data, 1)
 #' }
 #' @noRd
@@ -79,7 +79,7 @@ read_spectrum <- function(path, type = "bruker", sf = c(1e3, 1e6), expno = 10, p
 #' # Example Usage (took 30s on the development machine)
 #' xds_path <- download_example_datasets()
 #' path <- file.path(xds_path, "jcampdx/urine/urine_1.dx")
-#' spectrum_data <- load_jcampdx_spectrum_v10(path)
+#' spectrum_data <- read_jcampdx_spectrum(path)
 #' str(spectrum_data, 1)
 #' }
 #' @noRd
@@ -194,6 +194,7 @@ read_bruker_spectrum <- function(path = file.path(download_example_datasets(), "
 #' y <- read_1r_file(path, 10, 10, procs)
 #' }
 #' @return The signals read from the file as numeric vector
+#' @noRd
 read_1r_file <- function(path, expno, procno, procs) {
     # TODO: see issue `Check: check use of DTYPP in load_spectrum` in TODOS.R
     n <- as.numeric(sub("\\D+", "", procs[startsWith(procs, "##$SI=")]))

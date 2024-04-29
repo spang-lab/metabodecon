@@ -24,5 +24,9 @@ Even after alignment of spectra, alignment of individual signals is not always p
 As result two .csv files will be generated. One that contain all columns for each data point in the original spectrum one column (aligned_res_long.csv) and one where all columns that contain only zeros (aligned_res_short.csv) are omitted. Both files will be stored in the directory specified by data_path.
 }
 \examples{
-\dontrun{aligned_res <- combine_peaks(after_speaq_mat, range, lower_bound, spectrum_data, data_path)}
+\dontrun{
+aligned_res <- combine_peaks(
+    after_speaq_mat, range, lower_bound, spectrum_data, data_path
+)
+}
 }

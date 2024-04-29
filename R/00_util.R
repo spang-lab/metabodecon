@@ -3,8 +3,8 @@
 #' @import utils
 #' @import parallel
 #' @import stats
+#' @import graphics
 #' @import grDevices
-#' @useDynLib metabodecon
 
 # Package envs #####
 

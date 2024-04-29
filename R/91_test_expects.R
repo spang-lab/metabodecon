@@ -184,11 +184,11 @@ glc_v13 <- function(dp = "urine_1", ff = "bruker", nfit = 3, simple = TRUE, over
         plot = if (cplot) "plots.pdf" else NULL,
         output = if (cout) "captured" else NULL,
         message = if (cout) "captured" else NULL,
-        expr = generate_lorentz_curves_v13(data_path = dp, file_format = ff, nfit = nfit, debug = debug, ncores = ncores)
+        expr = generate_lorentz_curves(data_path = dp, file_format = ff, nfit = nfit, debug = debug, ncores = ncores)
     ))
 }
 
-glc <- function(dp = "urine_1", ff = "bruker", nfit = 3, simple = TRUE, overwrite = FALSE, cout = TRUE, cplot = TRUE, cache = TRUE, debug = TRUE) {
+glc_v12 <- function(dp = "urine_1", ff = "bruker", nfit = 3, simple = TRUE, overwrite = FALSE, cout = TRUE, cplot = TRUE, cache = TRUE, debug = TRUE) {
     tid <- get_tid("glc", dp, ff, nfit, simple)
     inputs <- file.path(ff, "urine")
     if (dp != "urine") inputs <- file.path(ff, "urine", dp)

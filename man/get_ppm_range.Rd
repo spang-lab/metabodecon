@@ -16,5 +16,11 @@ Get ppm range of your spectra
 determines after deconvolution the signal with the highest and the signal with the lowest ppm value.
 }
 \examples{
-\donttest{ppm_range <- get_ppm_range(spectrum_data = spectrum_data)}
+\donttest{
+xp <- download_example_datasets()
+dp <- file.path(xp, "bruker/urine")
+ff <- "bruker"
+x <- generate_lorentz_curves(dp, ff, ask = FALSE, nfit = 3)
+ppm_range <- get_ppm_range(spectrum_data = x)
+}
 }

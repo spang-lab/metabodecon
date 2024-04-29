@@ -199,7 +199,7 @@ skip_if_slow_tests_disabled <- function() {
 
 #' @description Print size obj recursively. Like `du` (disk usage) in Unix.
 #' @examples \donttest{
-#' obj <- glc()$rv$urine_1
+#' obj <- glc_v13()$rv$urine_1
 #' du(obj)
 #' }
 #' @noRd
@@ -259,6 +259,7 @@ pairwise_identical <- function(x) {
 #' vcomp(x, y2)
 #' vcomp(x, y3)
 #' vcomp(x, y4)
+#' @noRd
 vcomp <- function(x, y, xpct = 0, silent = FALSE) {
     isvec <- function(x) is.vector(x) && !is.list(x)
     callstr <- paste(deparse(sys.call()), collapse = "")
@@ -292,12 +293,12 @@ vcomp <- function(x, y, xpct = 0, silent = FALSE) {
 #' @param x Result of [generate_lorentz_curves_v12()].
 #' @param y Result of [MetaboDecon1D()].
 #' @examples \donttest{
-#' new <- glc_urine1_yy_ni3_dbg(overwrite = TRUE)$rv$urine_1
+#' new <- glc_v13()$rv
 #' old <- MetaboDecon1D_urine1_1010yy_ni3_dbg()$rv
 #' compare_spectra(new, old)
 #' }
 #' @noRd
-compare_spectra <- function(new = glc_urine1_yy_ni3_dbg()$rv$urine_1,
+compare_spectra <- function(new = glc_v13()$rv,
                             old = MD1D()$rv,
                             silent = FALSE) {
 
@@ -416,11 +417,10 @@ compare_spectra <- function(new = glc_urine1_yy_ni3_dbg()$rv$urine_1,
 #' @description Compare a spectrum deconvoluted with [generate_lorentz_curves_v12()] with a spectrum deconvoluted with [MetaboDecon1D()].
 #' @param x Result of [generate_lorentz_curves_v12()].
 #' @param y Result of [MetaboDecon1D()].
-#' @examples \donttest{
-#' new <- glc_urine1_yy_ni3_dbg(overwrite = TRUE)$rv$urine_1
+#' @examples
+#' new <- glc()$rv
 #' old <- MetaboDecon1D_urine1_1010yy_ni3_dbg()$rv
 #' compare_spectra(new, old)
-#' }
 #' @noRd
 compare_spectra_v13 <- function(new = glc_v13()$rv$urine_1,
                                 old = MD1D()$rv,

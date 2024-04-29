@@ -420,6 +420,7 @@ init_lorentz_curves_v13 <- function(x, y, pc, pl, pr) {
     lc
 }
 
+#' @noRd
 refine_lorentz_curves_v12 <- function(spec, nfit) {
     cat3("Refining Lorentz curves")
 

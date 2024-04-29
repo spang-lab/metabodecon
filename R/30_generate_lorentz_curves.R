@@ -14,29 +14,31 @@
 #' @param delta Threshold value to distinguish between signal and noise. TODO: add details.
 #' @param sf Vector with two entries consisting of the factor to scale the x-axis and the factor to scale the y-axis.
 #' @param ask  Whether to ask for user input during the deconvolution process. If set to FALSE, the provided default values will be used.
+#' @param debug Whether to return additional intermediate results for debugging purposes.
+#' @param ncores Number of cores to use for parallel processing. If set to `"auto"`, the number of cores will be determined automatically. If set to a number greater than 1, the number of cores will be limited to the number of spectra or 1 if the operating system is Windows.
 #' @details First, an automated curvature based signal selection is performed. Each signal is represented by 3 data points to allow the determination of initial Lorentz curves. These Lorentz curves are then iteratively adjusted to optimally approximate the measured spectrum. TODO: add details.
 #' @examples \donttest{
 #' xp <- download_example_datasets()
 #' dp <- file.path(xp, "bruker/urine")
 #' ff <- "bruker"
-#' x <- generate_lorentz_curves_v13(dp, ff, ask = FALSE, nfit = 3, ncores = 1)
-#' x2 <- generate_lorentz_curves_v13(dp, ff, ask = FALSE, nfit = 3)
+#' x <- generate_lorentz_curves(dp, ff, ask = FALSE, nfit = 3, ncores = 1)
+#' x2 <- generate_lorentz_curves(dp, ff, ask = FALSE, nfit = 3)
 #' }
-#' @noRd
-generate_lorentz_curves_v13 <- function(data_path = file.path(download_example_datasets(), "bruker/urine"),
-                                        file_format = "bruker",
-                                        make_rds = FALSE,
-                                        expno = 10,
-                                        procno = 10,
-                                        nfit = 10,
-                                        wshw = 0.1527692,
-                                        sfr = c(11.44494, -1.8828),
-                                        smopts = c(2, 5),
-                                        delta = 6.4,
-                                        sf = c(1000, 1000000),
-                                        ask = TRUE,
-                                        debug = FALSE,
-                                        ncores = "auto") {
+#' @export
+generate_lorentz_curves <- function(data_path = file.path(download_example_datasets(), "bruker/urine"),
+                                    file_format = "bruker",
+                                    make_rds = FALSE,
+                                    expno = 10,
+                                    procno = 10,
+                                    nfit = 10,
+                                    wshw = 0.1527692,
+                                    sfr = c(11.44494, -1.8828),
+                                    smopts = c(2, 5),
+                                    delta = 6.4,
+                                    sf = c(1000, 1000000),
+                                    ask = TRUE,
+                                    debug = FALSE,
+                                    ncores = "auto") {
 
     # Read spectra and ask user for parameters
     spectra <- read_spectra(data_path, file_format, expno, procno, ask, sf)
@@ -192,10 +194,8 @@ filter_peaks_v13 <- function(ppm, # x values in ppm
 #' @param n Number of deconvoluted spectrum.
 #' @param nam Name of current spectrum.
 #' @param debug Add debug info to the return list
-add_return_list_v13 <- function(spec = glc_urine1_yy_ni3_dbg()$rv$urine_1,
-                                n = 1,
-                                nam = "urine_1",
-                                debug = TRUE) {
+#' @noRd
+add_return_list_v13 <- function(spec = glc(), n = 1, nam = "urine_1", debug = TRUE) {
     A <- spec$lcr$A
     lambda <- spec$lcr$lambda
     w <- spec$lcr$w
@@ -325,10 +325,8 @@ filter_peaks_v12 <- function(spec, delta = 6.4) {
 #' @param n Number of deconvoluted spectrum.
 #' @param nam Name of current spectrum.
 #' @param debug Add debug info to the return list
-add_return_list_v12 <- function(spec = glc_urine1_yy_ni3_dbg()$rv$urine_1,
-                                n = 1,
-                                nam = "urine_1",
-                                debug = TRUE) {
+#' @noRd
+add_return_list_v12 <- function(spec = glc()$rv, n = 1, nam = "urine_1", debug = TRUE) {
     spec$ret <- list(
         number_of_files = n,
         filename = nam,

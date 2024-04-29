@@ -80,7 +80,7 @@ plot_spectrum <- function(spec, focus) {
 
 #' @title Plot Signal Free Region
 #' @description Draws the signal free region as green vertical lines into the given spectrum.
-#' @param spec A list representing the spectrum as returned by [load_jcampdx_spectrum()] or [load_bruker_spectrum()].
+#' @param spec A list representing the spectrum as returned by [read_spectrum()] or [load_bruker_spectrum()].
 #' @param left_ppm The left border of the signal free region in ppm.
 #' @param right_ppm The right border of the signal free region in ppm.
 #' @return NULL. Called for side effect of plotting the signal free region.
@@ -100,9 +100,10 @@ plot_sfr <- function(spec, left_ppm, right_ppm) {
 
 #' @title Plot Water Signal
 #' @description Draws the water signal as red vertical lines into the given spectrum.
-#' @param spec A list representing the spec as returned by [load_jcampdx_spectrum()] or [load_bruker_spectrum()].
+#' @param spec A list representing the spec as returned by [read_spectrum()] or [read_bruker_spectrum()].
 #' @param hwidth_ppm The half width of the water signal in ppm.
 #' @return NULL. Called for side effect of plotting the water signal.
+#' @noRd
 plot_ws <- function(spec, hwidth_ppm) {
     center_ppm <- (spec$ppm_max + spec$ppm_min) / 2
     plot(

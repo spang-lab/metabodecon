@@ -40,14 +40,14 @@ test_that("GLC v13 works for 16 bruker blood samples", {
 skip()
 
 test_that("GLC works for 1 bruker", {
-    new <- glc(dp = "urine_1", ff = "bruker", nfit = 3, simple = TRUE)$rv$urine_1
+    new <- glc_v12(dp = "urine_1", ff = "bruker", nfit = 3, simple = TRUE)$rv$urine_1
     old <- MD1D(dp = "urine_1", ff = "bruker", nfit = 3, simple = TRUE)$rv
     r <- compare_spectra(new, old, silent = TRUE)
     expect_true(sum(r %in% 0:1) >= 60 && sum(r %in% 2:3) == 0) # >=60 identical/equal && no diffs/errors
 })
 
 test_that("GLC work for n bruker", {
-    x <- glc(dp = "urine", ff = "bruker", nfit = 3, simple = TRUE, overwrite = FALSE)$rv
+    x <- glc_v12(dp = "urine", ff = "bruker", nfit = 3, simple = TRUE, overwrite = FALSE)$rv
     y <- MD1D(dp = "urine", ff = "bruker", nfit = 3, simple = TRUE)$rv
     r1 <- compare_spectra(new = x$urine_1, old = y$urine_1, silent = TRUE)
     r2 <- compare_spectra(new = x$urine_2, old = y$urine_2, silent = TRUE)
