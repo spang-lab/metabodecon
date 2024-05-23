@@ -5,8 +5,12 @@ articles:
   - title: Articles
     navbar: ~
     contents:
-      - MetaboDecon1D
+      - Get_Started
+      - NMR_Basics
+      - Deconvolution_Details
+      - Alignment_Details
       - FAQ
+      - MetaboDecon1D
 reference:
 - title: Public API
   desc: Metabodecon's Public User Interface
@@ -29,13 +33,11 @@ reference:
   - gen_feat_mat # generate_lorentz_curves helper
   - get_ppm_range # generate_lorentz_curves helper
   - speaq_align # generate_lorentz_curves helper
-  - tempdir # generate_lorentz_curves helper
 - title: Deprecated
   desc: Deprecated functions. These functions are no longer used by the package and are only kept for backwards compatibility. They will be removed in future versions of the package.
   contents:
   - MetaboDecon1D # Public API Function
   - calculate_lorentz_curves # MetaboDecon1D helper
   - combine_peaks # MetaboDecon1D helper
-  - deconvolution # MetaboDecon1D helper
   - show_license # MetaboDecon1D helper
   - get_data_dir # Public API Function

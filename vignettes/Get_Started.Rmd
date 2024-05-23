@@ -1,8 +1,8 @@
 ---
-title: "metabodecon"
+title: "Get Started"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{metabodecon}
+  %\VignetteIndexEntry{Get Started}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

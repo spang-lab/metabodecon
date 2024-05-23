@@ -2,7 +2,7 @@
 title: "Deconvolution Details"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{metabodecon}
+  %\VignetteIndexEntry{Deconvolution Details}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -21,9 +21,9 @@ As you can see, the peaks of ethanol and lactate overlap, making it hard to iden
 
 E.g. the spectrum above could be written as:
 
-$$
+```
 TODO
-$$
+```
 
 where $A_i$ is the amplitude of the $i$-th peak, $f_i$ is the frequency of the $i$-th peak, $w_i$ is the width of the $i$-th peak and $c$ is a constant offset.
 
@@ -40,4 +40,8 @@ TODO
 
 # Koh-et-al-Peak-Selection
 
+TODO
+
 # Koh-et-al-Parameter-Approximation
+
+TODO

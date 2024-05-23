@@ -2,7 +2,7 @@
 title: "NMR Basics"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{metabodecon}
+  %\VignetteIndexEntry{NMR Basics}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

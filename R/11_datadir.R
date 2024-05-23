@@ -74,7 +74,7 @@ datadir_temp <- function() {
 #' @description Returns the path to metabodecon's temporary session directory.
 #' This directory equals subdirectory `"metabodecon"` of R's temporary session directory `[base::tempdir()]` plus additional path normalization.
 #' @return Returns the path to the temporary session directory.
-#' @export
+#' @noRd
 tmpdir <- function() {
     p <- file.path(base::tempdir(), "metabodecon")
     normalizePath(p, "/", mustWork = FALSE)

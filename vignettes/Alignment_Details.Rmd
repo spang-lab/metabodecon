@@ -2,7 +2,7 @@
 title: "Alignment Details"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{metabodecon}
+  %\VignetteIndexEntry{Alignment Details}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

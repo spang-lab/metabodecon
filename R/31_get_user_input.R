@@ -132,6 +132,7 @@ confirm_sfr <- function(spec, sfr = c(11.44494, -1.8828)) {
 #' @param spec A list representing the spectrum.
 #' @param wshw The initial half width in ppm.
 #' @return The confirmed half width of the water artefact in ppm units.
+#' @noRd
 confirm_wshw <- function(spec, wshw) {
     plot_ws(spec, wshw)
     ws_ok <- get_yn_input("Water artefact fully inside red vertical lines?")
