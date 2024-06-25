@@ -2,7 +2,7 @@ Package: metabodecon
 Language: en-US
 Type: Package
 Title: Functions for Deconvolution of 1d NMR Spectra
-Version: 1.1.1
+Version: 1.2.0
 Authors@R: c(
     person(given = "Wolfram",
            family = "Gronwald",
@@ -26,12 +26,14 @@ License: GPL (>= 3)
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.0
+RoxygenNote: 7.3.1
 biocViews:
+SystemRequirements: C++11
 Imports:
     data.table,
     readJDX,
-    speaq
+    speaq,
+    withr
 Suggests:
     digest,
     knitr,

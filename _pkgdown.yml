@@ -5,8 +5,12 @@ articles:
   - title: Articles
     navbar: ~
     contents:
-      - MetaboDecon1D
+      - Get_Started
+      - NMR_Basics
+      - Deconvolution_Details
+      - Alignment_Details
       - FAQ
+      - MetaboDecon1D
 reference:
 - title: Public API
   desc: Metabodecon's Public User Interface
@@ -23,19 +27,17 @@ reference:
 - title: Internal
   desc: Internal Helper Functions. These function are exported but should not be used directly by the user. The main reason they are documented here is so that functions from the Public API can reference them when implementation details are explained.
   contents:
-  - datadir_persistent
-  - datadir_temp
-  - calculate_lorentz_curves
-  - combine_peaks
-  - deconvolution
-  - dohCluster
-  - gen_feat_mat
-  - get_ppm_range
-  - speaq_align
-  - tempdir
+  - datadir_persistent # datadir helper
+  - datadir_temp # datadir helper
+  - dohCluster # generate_lorentz_curves helper
+  - gen_feat_mat # generate_lorentz_curves helper
+  - get_ppm_range # generate_lorentz_curves helper
+  - speaq_align # generate_lorentz_curves helper
 - title: Deprecated
   desc: Deprecated functions. These functions are no longer used by the package and are only kept for backwards compatibility. They will be removed in future versions of the package.
   contents:
-  - MetaboDecon1D
-  - show_license
-  - get_data_dir
+  - MetaboDecon1D # Public API Function
+  - calculate_lorentz_curves # MetaboDecon1D helper
+  - combine_peaks # MetaboDecon1D helper
+  - show_license # MetaboDecon1D helper
+  - get_data_dir # Public API Function

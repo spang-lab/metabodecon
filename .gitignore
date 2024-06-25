@@ -3,7 +3,7 @@
 *.code-workspace
 *.tar.gz
 *Rproj*
-
+*.pdf
 .vscode/
 *_cache/
 *_files/

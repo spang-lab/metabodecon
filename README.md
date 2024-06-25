@@ -21,7 +21,7 @@ devtools::install_github("spang-lab/metabodecon", build_manual = TRUE, build_vig
 
 At [Get Started](https://spang-lab.github.io/metabodecon/articles/metabodecon.html) you can see an example how `metabodecon` can be used to deconvolute an existing data set, followed by alignment of the data and some additional postprocessing steps, resulting in a data matrix of aligned signal integrals.
 
-At [Function Reference](https://spang-lab.github.io/metabodecon/reference/index.html) you get an overview of all function provided by metabodecon.
+At [Function Reference](https://spang-lab.github.io/metabodecon/reference/index.html) you get an overview of all functions provided by metabodecon.
 
 ## Contribute
 

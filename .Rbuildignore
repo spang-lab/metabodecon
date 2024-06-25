@@ -3,7 +3,9 @@
 ^.*\.tar\.gz$
 ^\.git$
 ^\.github$
+^\.gitignore$
 ^\.gitlab-ci\.yml$
+^\.lintr$
 ^\.vscode$
 ^CHANGELOG\.md$
 ^check_package\.R$
@@ -20,5 +22,6 @@
 ^README\.md$
 ^revdep$
 ^submit_to_cran\.R$
-^vignettes$
+^tmp$
 ^TODOS\.md$
+^vignettes$
