@@ -68,7 +68,6 @@ refine_lc_v14 <- function(spec, Z) {
     x <- spec$sdp; y <- spec$y_smooth # x and y value for each data point
 
     # Init peak related variables
-    # TODO: include this info directly inside spec$peak, so we dont have to calculate over and over again
     p <- spec$peak
     ir <- p$right[p$high]; ic <- p$center[p$high]; il <- p$left[p$high] # index of each peak triplet position (PTP)
     lmr <- sort(unique(c(il, ic, ir))) # combined PTP indices
@@ -413,8 +412,6 @@ init_lorentz_curves_v13 <- function(x, y, pc, pl, pr) {
 
     A <- (-4 * xlc * xlr * xcr * yl * yc * yr * (xl * yl * ycr + xr * yr * ylc + xc * yc * (-ylr)) * lambda) / (xlc^4 * yl^2 * yc^2 - 2 * xlc^2 * yl * yc * (xlr^2 * yl + xcr^2 * yc) * yr + (xlr^2 * yl - xcr^2 * yc)^2 * yr^2)
     A[is.nan(A)] <- 0
-
-    # TODO: break up calculation of w, lambda, and A and add explanation
 
     lc <- list(A = A, lambda = lambda, w = w, w_delta = xd)
     lc

@@ -78,7 +78,7 @@ generate_lorentz_curves_v20 <- function(data_path,
 }
 
 #' @title Deconvolute one single spectrum
-#' @description Deconvolute one single spectrum
+#' @description Deconvolutes one single spectrum
 #' @param path Path to file or folder containing the spectra files.
 #' @param type Format of the spectra files. Either `"bruker"` or `"jcampdx"`.
 #' @param procno Processing value for the file. E.g. `"10"`. Called `procno` in the Bruker TopSpin Manual.
@@ -145,7 +145,7 @@ deconvolute_spectrum_v20 <- function(path = file.path(download_example_datasets(
 # Private Helpers #####
 
 #' @title Determine Signal Free Region
-#' @description This function determines the signal free region (SFR) of a given spectrum. It asks the user to confirm the left and right borders of the SFR, and allows them to adjust these borders if necessary. The function returns a list containing the left and right borders in both ppm and data points (dp), as well as the scaled data points (sdp).
+#' @description Determines the signal free region (SFR) of a given spectrum. It asks the user to confirm the left and right borders of the SFR, and allows them to adjust these borders if necessary. The function returns a list containing the left and right borders in both ppm and data points (dp), as well as the scaled data points (sdp).
 #' @param spec A list representing the spectrum, which should include the minimum and maximum ppm (`$ppm_min` and `$ppm_max`), and the scaling factor (`$sfx`).
 #' @param sfr Initial values for the left and right borders of the SFR in ppm. If not provided, the function will ask the user to select the borders.
 #' @param ask Logical. If TRUE, the function will ask the user to confirm or adjust the borders of the SFR. Default is TRUE.
@@ -646,7 +646,7 @@ get_peak_score_v20 <- function(j, l, r, a) {
 # Misc #####
 
 #' @title Convert Parts per Million (ppm) to Data Points (dp)
-#' @description This function converts parts per million (ppm) to data points (dp) for a given spectrum.
+#' @description Converts parts per million (ppm) to data points (dp) for a given spectrum.
 #' @param ppm A numeric vector of parts per million (ppm) values.
 #' @param spectrum A list containing the spectrum data as returned by [load_bruker_spectrum()] or [read_spectrum()].
 #' @param bwc Use the old, slightly incorrect method for conversion to maintain backwards compatibility with MetaboDecon1D results? For details see issue `Check: ppm to dp conversion` in TODOS.md
@@ -662,7 +662,7 @@ ppm_to_dp <- function(ppm, spectrum, bwc = TRUE) {
 }
 
 #' @title Convert Parts per Million (ppm) to Scaled Data Points (dp)
-#' @description This function converts parts per million (ppm) to scaled data points (sdp) for a given spectrum.
+#' @description Converts parts per million (ppm) to scaled data points (sdp) for a given spectrum.
 #' @inheritParams ppm_to_dp
 #' @noRd
 ppm_to_sdp <- function(ppm, spectrum, bwc = TRUE, sf = 1000) {
@@ -672,7 +672,7 @@ ppm_to_sdp <- function(ppm, spectrum, bwc = TRUE, sf = 1000) {
 }
 
 #' @title Convert Data Points (dp) to Parts per Million (ppm)
-#' @description This function converts data points (dp) to parts per million (ppm) for a given spectrum.
+#' @description Converts data points (dp) to parts per million (ppm) for a given spectrum.
 #' @param dp A numeric vector of data point (dp) values.
 #' @param spectrum A list containing the spectrum data as returned by [load_bruker_spectrum()] or [read_spectrum()].
 #' @noRd

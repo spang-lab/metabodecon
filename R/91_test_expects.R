@@ -1,7 +1,7 @@
 # Expect #####
 
 #' @title Check if the size of each file in a directory is within a certain range
-#' @description This function checks if the size of each file in a directory is within 90% to 110% of the expected size.
+#' @description Check if the size of each file in a directory is within 90% to 110% of the expected size.
 #' If a file size is not within this range, a message is printed and an error is thrown.
 #' @param testdir A character string specifying the directory to check.
 #' @param size_exp A named numeric vector where the names are filenames and the values are the expected file sizes.
@@ -27,7 +27,7 @@ expect_file_size <- function(testdir, size_exp) {
 }
 
 #' @title Expect Structure
-#' @description Test if the structure of an object matches the expected string
+#' @description Tests if the structure of an object matches the expected string
 #' @param obj The object to test
 #' @param expected_str The expected structure of the object as a string. Can be obtained by calling `dput(capture.output(str(obj)))`.
 #' @return A logical value indicating whether the structure of the object matches the expected string
@@ -128,7 +128,7 @@ testmatrix <- local({
     df
 })
 
-#' @description Generate a unique identifier for a test of `generate_lorentz_curves_v12` or `MetaboDecon1D`
+#' @description Generates a unique identifier for a test of `generate_lorentz_curves_v12` or `MetaboDecon1D`
 #' @noRd
 get_tid <- function(func, dp, ff, nfit, simple) {
     paste(func, dp, ff, nfit, simple, sep = "-")

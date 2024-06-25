@@ -156,8 +156,7 @@ get_readline_mock <- function(texts, env = as.environment(list())) {
 }
 
 #' @title Get a mock for the datadir functions
-#' @description This function returns a function that when called, returns a path to a mock data directory.
-#' The type and state of the mock data directory can be specified.
+#' @description Returns a function that when called, returns a path to a mock data directory. The type and state of the mock data directory can be specified.
 #' Used internally by [mock_datadir()].
 #' @param type The type of data directory to mock. Can be "persistent" or "temp".
 #' @param state The state of the data directory to mock. Can be "missing", "empty", or "filled".
@@ -219,7 +218,7 @@ du <- function(obj, pname = "", level = 0, max_level = 1, max_len = 50) {
 }
 
 #' @title Run tests with the option to skip slow tests
-#' @description This function runs the tests in the current R package. If `all` is TRUE, it well set environment variable `RUN_SLOW_TESTS` to "TRUE" so that all tests are run. If `all` is FALSE, it will set `RUN_SLOW_TESTS` to "FALSE" so that slow tests are skipped.
+#' @description Runs the tests in the current R package. If `all` is TRUE, it well set environment variable `RUN_SLOW_TESTS` to "TRUE" so that all tests are run. If `all` is FALSE, it will set `RUN_SLOW_TESTS` to "FALSE" so that slow tests are skipped.
 #' @param all Logical. If TRUE, all tests are run. If FALSE, slow tests are skipped.
 #' @return The result of devtools::test()
 #' @noRd
@@ -289,7 +288,7 @@ vcomp <- function(x, y, xpct = 0, silent = FALSE) {
     invisible(status)
 }
 
-#' @description Compare a spectrum deconvoluted with [generate_lorentz_curves_v12()] with a spectrum deconvoluted with [MetaboDecon1D()].
+#' @description Compares a spectrum deconvoluted with [generate_lorentz_curves_v12()] with a spectrum deconvoluted with [MetaboDecon1D()].
 #' @param x Result of [generate_lorentz_curves_v12()].
 #' @param y Result of [MetaboDecon1D()].
 #' @examples \donttest{
@@ -414,7 +413,7 @@ compare_spectra <- function(new = glc_v13()$rv,
     invisible(r)
 }
 
-#' @description Compare a spectrum deconvoluted with [generate_lorentz_curves_v12()] with a spectrum deconvoluted with [MetaboDecon1D()].
+#' @description Compares a spectrum deconvoluted with [generate_lorentz_curves_v12()] with a spectrum deconvoluted with [MetaboDecon1D()].
 #' @param x Result of [generate_lorentz_curves_v12()].
 #' @param y Result of [MetaboDecon1D()].
 #' @examples

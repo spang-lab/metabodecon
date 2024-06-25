@@ -1,36 +1,19 @@
 # Exported Main #####
 
+#' @export
 #' @title Return path to metabodecon's data directory
-#' @description Returns the path to the directory where [download_example_datasets()] stores metabodecon's example data sets or any file within that directory.
-#' By default this directory is a subdirectory of R's temporary session directory.
-#' If `persistent` is set to `TRUE`, the directory equals the data directory returned by [tools::R_user_dir()] instead.
+#' @description Returns the path to the directory where [download_example_datasets()] stores metabodecon's example data sets or any file within that directory. By default this directory is a subdirectory of R's temporary session directory. If `persistent` is set to `TRUE`, the directory equals the data directory returned by [tools::R_user_dir()] instead.
 #' @param file Relative path to a file within the data directory.
 #' @param warn Print a warning message when the requested path does not yet exist?
 #' @param persistent Return the path to the persistent data directory instead of the temporary one?
 #' @examples
-#' # Return path to persistent data dir if it exists, else path to temp data dir
-#' datadir()
-#'
-#' # Return path to temporary data directory
-#' datadir(persistent = FALSE)
-#'
-#' # Return path to persistent data directory
-#' datadir(persistent = TRUE)
-#'
-#' # Return path to "<persistent-data-dir>/bruker/urine" if it exists.
-#' # Else return path to "<temp-data-dir>/bruker/urine"
+#' datadir(persistent = FALSE) # Returns path to temporary data directory
+#' datadir() # Returns persistent datadir if it exists, else temp datadir
+#' datadir(persistent = TRUE) # Return path to persistent data directory
 #' datadir(file = "bruker/urine")
-#' @seealso [download_example_datasets()]
-#' @details The decision to use a temporary data dir as default and a persistent one only optionally was made to conform to CRAN package policies, which state that:
-#' *Packages should not write in the user's home filespace (including clipboards), nor anywhere else on the file system apart from the R session's temporary directory (or during installation in the location pointed to by TMPDIR: and such usage should be cleaned up). Installing into the system's R installation (e.g., scripts to its bin directory) is not allowed.*
-#'
-#' *Limited exceptions may be allowed in interactive sessions if the package obtains confirmation from the user.*
-#'
-#' *For R version 4.0 or later (hence a version dependency is required or only conditional use is possible), packages may store user-specific data, configuration and cache files in their respective user directories obtained from tools::R_user_dir(), provided that by default sizes are kept as small as possible and the contents are actively managed (including removing outdated material).*
-#'
-#' Source: [cran.r-project.org/web/packages/policies](https://cran.r-project.org/web/packages/policies.html)
-#' @seealso [datadir_persistent()], [datadir_temp()]
-#' @export
+#' # "PERSISTENT_DATADIR/bruker/urine" if it exists else "TEMP_DATADIR/bruker/urine"
+#' @details The decision to use a temporary data dir as default and a persistent one only optionally was made to conform to CRAN package policies, which state that: *Packages should not write in the user's home filespace (including clipboards), nor anywhere else on the file system apart from the R session's temporary directory \[...\] Limited exceptions may be allowed in interactive sessions if the package obtains confirmation from the user. For R version 4.0 or later \[...\] packages may store user-specific data, configuration and cache files in their respective user directories obtained from [tools::R_user_dir()] \[...\]*. Source: [cran.r-project.org/web/packages/policies](https://cran.r-project.org/web/packages/policies.html).
+#' @seealso [download_example_datasets()], [datadir_persistent()], [datadir_temp()]
 datadir <- function(file = NULL, warn = TRUE, persistent = NULL) {
     datadir <- datadir_temp <- datadir_temp()
     datadir_persistent <- datadir_persistent()
@@ -48,22 +31,20 @@ datadir <- function(file = NULL, warn = TRUE, persistent = NULL) {
 
 # Exported Helpers #####
 
-#' @title Persistent Data Directory
-#' @description Returns the path to the persistent data directory where metabodecon's data sets are stored.
-#' This directory equals the data directory returned by [tools::R_user_dir()] plus additional path normalization.
-#' @return Returns the path to the persistent data directory.
-#' @seealso [datadir()], [datadir_temp()]
 #' @export
+#' @title Persistent Data Directory
+#' @description Returns the path to the persistent data directory where metabodecon's data sets are stored. This directory equals the data directory returned by [tools::R_user_dir()] plus additional path normalization.
+#' @return Path to the persistent data directory.
+#' @seealso [datadir()], [datadir_temp()]
 datadir_persistent <- function() {
     p <- tools::R_user_dir("metabodecon", "data")
     normalizePath(p, "/", mustWork = FALSE)
 }
 
-#' @title Temporary Data Directory
-#' @description Returns the path to the temporary data directory where metabodecon's data sets are stored.
-#' This directory equals subdirectory `"data"` of metabodecons temporary session directory `[tmpdir()]` plus additional path normalization.
-#' @return Returns the path to the temporary data directory.
 #' @export
+#' @title Temporary Data Directory
+#' @description Returns the path to the temporary data directory where metabodecon's data sets are stored. This directory equals subdirectory `"data"` of metabodecons temporary session directory `[tmpdir()]` plus additional path normalization.
+#' @return Returns the path to the temporary data directory.
 #' @seealso [tmpdir()], [datadir()], [datadir_persistent()]
 datadir_temp <- function() {
     p <- file.path(tmpdir(), "data")
@@ -94,21 +75,21 @@ zip_persistent <- function() {
 
 # Exported Deprecated #####
 
-#' @name get_data_dir
+#' @export
 #' @title Retrieve directory path of an example dataset
-#' @description Returns the path to the directory storing the example files
-#' shipped with metabodecon.
+#' @description
+#' Returns the path to the directory storing the example files shipped with metabodecon.
 #'
-#' Deprecated. Please use [datadir()] instead. See examples below for usage.
-#' ``
+#' Deprecated since metabodecon v1.2.0. Please use [datadir()] instead. See examples below for usage.
+#'
+#' `r lifecycle::badge("deprecated")`
 #' @param dataset_name Either `""`, `"test"`, `"blood"` or `"urine"`.
-#' @param warn Whether to print a warning message when the example folders do
-#' not yet exist, i.e. [download_example_datasets()] has not been called yet.
+#' @param warn Whether to print a warning message when the example folders do not yet exist, i.e. [download_example_datasets()] has not been called yet.
 #' @examples
 #' x <- get_data_dir("urine")                     # Deprecated
 #' y <- datadir("example_datasets/bruker/urine")  # Preferred
+#' cat(x, y, sep = "\n")
 #' @seealso [download_example_datasets()]
-#' @export
 get_data_dir <- function(dataset_name = c("", "blood", "test", "urine"), warn = TRUE) {
   dataset_name <- match.arg(dataset_name)
   base_data_dir <- datadir()

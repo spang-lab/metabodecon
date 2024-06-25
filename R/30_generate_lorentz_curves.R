@@ -1,30 +1,29 @@
-# Exported TODO #####
+# Exported #####
 
+#' @export
 #' @title Generate Lorentz Curves from NMR Spectra
 #' @description Deconvolutes NMR spetra and generates a Lorentz curve for each detected signal within a spectra.
 #' @param data_path Either the path to an existing directory containing measured NMR spectra or a dataframe with columns `ppm` (parts per million) and `si` (signal intensity) or a list of such dataframes.
 #' @param file_format Format of the spectra files. Either `"bruker"` or `"jcampdx"`. Only relevant if `data_path` is a directory.
-#' @param make_rds Store results as rds file on disk? Should be set to TRUE if many spectra are evaluated to decrease computation time. TODO.
+#' @param make_rds Store results as rds file on disk? Should be set to TRUE if many spectra are evaluated to decrease computation time.
 #' @param expno The experiment number for the spectra files. E.g. `"10"`. Only relevant if `data_path` is a directory and `file_format` is `"bruker"`.
 #' @param procno The processing number for the spectra. E.g. `"10"`. Only relevant if `data_path` is a directory and `file_format` is `"bruker"`.
 #' @param nfit Number of iterations for the approximation of the parameters for the Lorentz curves.
 #' @param wshw Half width of the water artefact in ppm.
 #' @param sfr Row vector with two entries consisting of the ppm positions for the left and right border of the signal free region of the spectrum.
-#' @param smopts Vector with two entries consisting of the number of smoothing iterations and the number of data points to use for smoothing (must be uneven). TODO: add details.
-#' @param delta Threshold value to distinguish between signal and noise. TODO: add details.
+#' @param smopts Vector with two entries consisting of the number of smoothing iterations and the number of data points to use for smoothing (must be uneven).
+#' @param delta Threshold value to distinguish between signal and noise.
 #' @param sf Vector with two entries consisting of the factor to scale the x-axis and the factor to scale the y-axis.
 #' @param ask  Whether to ask for user input during the deconvolution process. If set to FALSE, the provided default values will be used.
 #' @param debug Whether to return additional intermediate results for debugging purposes.
 #' @param ncores Number of cores to use for parallel processing. If set to `"auto"`, the number of cores will be determined automatically. If set to a number greater than 1, the number of cores will be limited to the number of spectra or 1 if the operating system is Windows.
-#' @details First, an automated curvature based signal selection is performed. Each signal is represented by 3 data points to allow the determination of initial Lorentz curves. These Lorentz curves are then iteratively adjusted to optimally approximate the measured spectrum. TODO: add details.
+#' @details First, an automated curvature based signal selection is performed. Each signal is represented by 3 data points to allow the determination of initial Lorentz curves. These Lorentz curves are then iteratively adjusted to optimally approximate the measured spectrum.
 #' @examples \donttest{
 #' xp <- download_example_datasets()
 #' dp <- file.path(xp, "bruker/urine")
 #' ff <- "bruker"
 #' x <- generate_lorentz_curves(dp, ff, ask = FALSE, nfit = 3, ncores = 1)
-#' x2 <- generate_lorentz_curves(dp, ff, ask = FALSE, nfit = 3)
 #' }
-#' @export
 generate_lorentz_curves <- function(data_path = file.path(download_example_datasets(), "bruker/urine"),
                                     file_format = "bruker",
                                     make_rds = FALSE,
@@ -138,7 +137,7 @@ smooth_signals_v20 <- function(spec, reps = 2, k = 5) {
 }
 
 #' @title Smooth signal intensities using a moving average
-#' @description This function smooths signal intensities by applying a [moving average](https://en.wikipedia.org/wiki/Moving_average) filter with a window size of k.
+#' @description Smoothes signal intensities by applying a [moving average](https://en.wikipedia.org/wiki/Moving_average) filter with a window size of k.
 #' @param spec A list representing the spectrum, which should include the scaled signal intensities, after removal of the water artefact and negative values (`spec$y_pos`).
 #' @param reps The number of times to apply the moving average.
 #' @param k The number of points within the moving average window. Must be odd, so the smoothed point is in the middle of the window.
@@ -242,11 +241,11 @@ add_return_list_v13 <- function(spec = glc_v13(), n = 1, nam = "urine_1", debug 
 #' @param nfit Number of iterations for the approximation of the parameters for the Lorentz curves.
 #' @param wshw Half width of the water artefact in ppm.
 #' @param sfr Row vector with two entries consisting of the ppm positions for the left and right border of the signal free region of the spectrum.
-#' @param smopts Vector with two entries consisting of the number of smoothing iterations and the number of data points to use for smoothing (must be uneven). TODO: add details.
-#' @param delta Threshold value to distinguish between signal and noise. TODO: add details.
+#' @param smopts Vector with two entries consisting of the number of smoothing iterations and the number of data points to use for smoothing (must be uneven).
+#' @param delta Threshold value to distinguish between signal and noise.
 #' @param sf Vector with two entries consisting of the factor to scale the x-axis and the factor to scale the y-axis.
 #' @param ask  Whether to ask for user input during the deconvolution process. If set to FALSE, the provided default values will be used.
-#' @details First, an automated curvature based signal selection is performed. Each signal is represented by 3 data points to allow the determination of initial Lorentz curves. These Lorentz curves are then iteratively adjusted to optimally approximate the measured spectrum. TODO: add details.
+#' @details First, an automated curvature based signal selection is performed. Each signal is represented by 3 data points to allow the determination of initial Lorentz curves. These Lorentz curves are then iteratively adjusted to optimally approximate the measured spectrum.
 #' @examples \dontrun{
 #' xds_path <- download_example_datasets()
 #' data_path <- file.path(xds_path, "bruker/urine")

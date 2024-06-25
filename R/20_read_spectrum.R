@@ -1,6 +1,6 @@
 # Private Main #####
 
-#' @description Get spectra from the user specified data path.
+#' @description Reads spectra from the user specified data path.
 #' @noRd
 read_spectra <- function(data_path = file.path(download_example_datasets(), "bruker/urine"),
                          file_format = "bruker",
@@ -116,13 +116,6 @@ read_jcampdx_spectrum <- function(path, sfx = 1e3, sfy = 1e6) {
         ppm_min = ppm_min, ppm_max = ppm_max, ppm_range = ppm_range, ppm_step = ppm_step, ppm_nstep = ppm_nstep # additional ppm info
         # , length = n, x_ppm = ppm, x = sdp, ppm_highest_value = ppm_max, ppm_lowest_value = ppm_min # backwards compatible names
     ))
-
-    # TODO: return as few values as possible, e.g.
-    # >>> return(list(ppm = ppm, si = ss))
-    # This should be sufficient to calculate everything else with super simple functions like
-    # >>> max(ppm)
-    # >>> seq(length(ppm) - 1, 0, -1)
-    # etc.
 }
 
 #' @description Reads a single spectrum exported from bruker Topspin v3
@@ -196,7 +189,6 @@ read_bruker_spectrum <- function(path = file.path(download_example_datasets(), "
 #' @return The signals read from the file as numeric vector
 #' @noRd
 read_1r_file <- function(path, expno, procno, procs) {
-    # TODO: see issue `Check: check use of DTYPP in load_spectrum` in TODOS.R
     n <- as.numeric(sub("\\D+", "", procs[startsWith(procs, "##$SI=")]))
     int_type <- as.numeric(sub("\\D+", "", procs[startsWith(procs, "##$DTYPP=")]))
     int_size <- if (int_type == 0) 4 else 8

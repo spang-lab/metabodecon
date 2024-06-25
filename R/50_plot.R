@@ -86,7 +86,6 @@ plot_spectrum <- function(spec, focus) {
 #' @return NULL. Called for side effect of plotting the signal free region.
 #' @noRd
 plot_sfr <- function(spec, left_ppm, right_ppm) {
-    # TODO: instead of lines used coloured rectangles and add a legend
     plot(
         x = spec$ppm,
         y = spec$y_scaled,

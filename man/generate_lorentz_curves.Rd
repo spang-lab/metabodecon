@@ -26,7 +26,7 @@ generate_lorentz_curves(
 
 \item{file_format}{Format of the spectra files. Either \code{"bruker"} or \code{"jcampdx"}. Only relevant if \code{data_path} is a directory.}
 
-\item{make_rds}{Store results as rds file on disk? Should be set to TRUE if many spectra are evaluated to decrease computation time. TODO.}
+\item{make_rds}{Store results as rds file on disk? Should be set to TRUE if many spectra are evaluated to decrease computation time.}
 
 \item{expno}{The experiment number for the spectra files. E.g. \code{"10"}. Only relevant if \code{data_path} is a directory and \code{file_format} is \code{"bruker"}.}
 
@@ -38,9 +38,9 @@ generate_lorentz_curves(
 
 \item{sfr}{Row vector with two entries consisting of the ppm positions for the left and right border of the signal free region of the spectrum.}
 
-\item{smopts}{Vector with two entries consisting of the number of smoothing iterations and the number of data points to use for smoothing (must be uneven). TODO: add details.}
+\item{smopts}{Vector with two entries consisting of the number of smoothing iterations and the number of data points to use for smoothing (must be uneven).}
 
-\item{delta}{Threshold value to distinguish between signal and noise. TODO: add details.}
+\item{delta}{Threshold value to distinguish between signal and noise.}
 
 \item{sf}{Vector with two entries consisting of the factor to scale the x-axis and the factor to scale the y-axis.}
 
@@ -54,7 +54,7 @@ generate_lorentz_curves(
 Deconvolutes NMR spetra and generates a Lorentz curve for each detected signal within a spectra.
 }
 \details{
-First, an automated curvature based signal selection is performed. Each signal is represented by 3 data points to allow the determination of initial Lorentz curves. These Lorentz curves are then iteratively adjusted to optimally approximate the measured spectrum. TODO: add details.
+First, an automated curvature based signal selection is performed. Each signal is represented by 3 data points to allow the determination of initial Lorentz curves. These Lorentz curves are then iteratively adjusted to optimally approximate the measured spectrum.
 }
 \examples{
 \donttest{

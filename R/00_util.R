@@ -14,16 +14,14 @@ penv <- as.environment(list())
 # File Handling #####
 
 #' @title Calculate a checksum for all files in a directory or a single file
-#' @description This function calculates a checksum for each file in a specified directory or a single file. If the input is a directory, the checksums are calculated recursively, meaning that it includes files in all subdirectories. The results are returned as a named vector, where the names are the relative file paths and the values are checksums.
+#' @description Calculates a checksum for each file in a specified directory or a single file. If the input is a directory, the checksums are calculated recursively, meaning that it includes files in all subdirectories. The results are returned as a named vector, where the names are the relative file paths and the values are checksums.
 #' @param path The directory or file to calculate checksums for.
 #' @param method The method to use for calculating the checksum. Can be "size" (default) or "md5". If "size", the function returns the file sizes. If "md5", the function returns the MD5 hashes of the files.
 #' @param ignore A character vector of regular expressions. Files matching any of these regular expressions will be ignored.
 #' @return A named vector with file paths as names and hashes as values. If the input is a directory, the names will be the file paths relative to the directory. If the input is a file, the name will be the file name.
-#' @examples \dontrun{
-#' checksum(system.file(package = "metabodecon")) # directory example
-#' checksum(system.file("DESCRIPTION", package = "metabodecon"))
-#' checksum(system.file("DESCRIPTION", package = "metabodecon"), method = "md5")
-#' }
+#' @examples
+#' checksum(pkg_file("R"))
+#' checksum(pkg_file("R"), method = "md5")
 #' @details By default, the "checksum" calculated for each file is just its size. This method was chosen because it is the fastest available and typically sufficient for our needs. Traditional checksum methods, such as MD5, can present issues. For instance, PDF files may yield different checksums every time they are recreated, likely due to the inclusion of timestamps or similar metadata within the file.
 #' @noRd
 checksum <- function(path, method = "size", ignore = c()) {
@@ -45,7 +43,7 @@ checksum <- function(path, method = "size", ignore = c()) {
     structure(calc_checksum(paths), names = nams)
 }
 
-#' @description Create and a return a directory path recursively without warnings.
+#' @description Recursively create a dirctory without warnings and return its path.
 #' @noRd
 mkdirs <- function(path) {
     if (!dir.exists(path)) {

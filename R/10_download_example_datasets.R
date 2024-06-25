@@ -1,22 +1,18 @@
 # Exported #####
 
-#' @name download_example_datasets
+#' @export
 #' @title Download metabodecon Example Datasets
-#' @description This function downloads example datasets that can be used to test the functionality of the metabodecon package.
-#' These datasets are not included in the package by default due to size constraints.
-#' The datasets are downloaded as a zip file.
+#' @description Downloads example datasets that can be used to test the functionality of the metabodecon package. These datasets are not included in the package by default due to size constraints. The datasets are downloaded as zip file and extracted automatically, unless extraction is disabled by the user.
 #' @param dst_dir The destination directory where the downloaded datasets will be stored. If NULL, the function will return the path to the cached zip file.
 #' @param extract Logical. If TRUE, the downloaded zip file will be extracted.
-#' @param persistent Logical. If TRUE, the downloaded datasets will be cached at [datadir_persistent()] to speed up future calls to download_example_datasets().
-#' If FALSE, the datasets will be cached at [datadir_temp()].
-#' If NULL, the function will check both paths for the cached datasets but will use [datadir_temp()] if the cached file does not yet exist.
+#' @param persistent Logical. If TRUE, the downloaded datasets will be cached at [datadir_persistent()] to speed up future calls to download_example_datasets(). If FALSE, the datasets will be cached at [datadir_temp()]. If NULL, the function will check both paths for the cached datasets but will use [datadir_temp()] if the cached file does not yet exist.
 #' @param overwrite Logical. If TRUE, existing files with the same name in the destination directory will be overwritten.
 #' @return The path to the downloaded (and possibly extracted) datasets.
-#' @examples \dontrun{
-#' download_example_datasets(dst_dir = ".", extract = TRUE, persistent = TRUE, overwrite = TRUE)
+#' @examples \donttest{
+#' zip_path <- download_example_datasets(extract = FALSE, persistent = FALSE)
+#' dir_path <- download_example_datasets(extract = TRUE)
 #' }
 #' @seealso [datadir()]
-#' @export
 download_example_datasets <- function(dst_dir = NULL,
                                       extract = TRUE,
                                       persistent = NULL,

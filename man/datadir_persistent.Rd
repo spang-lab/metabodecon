@@ -7,11 +7,10 @@
 datadir_persistent()
 }
 \value{
-Returns the path to the persistent data directory.
+Path to the persistent data directory.
 }
 \description{
-Returns the path to the persistent data directory where metabodecon's data sets are stored.
-This directory equals the data directory returned by \code{\link[tools:userdir]{tools::R_user_dir()}} plus additional path normalization.
+Returns the path to the persistent data directory where metabodecon's data sets are stored. This directory equals the data directory returned by \code{\link[tools:userdir]{tools::R_user_dir()}} plus additional path normalization.
 }
 \seealso{
 \code{\link[=datadir]{datadir()}}, \code{\link[=datadir_temp]{datadir_temp()}}

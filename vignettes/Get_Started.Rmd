@@ -21,7 +21,7 @@ The [metabodecon repository](https://github.com/spang-lab/metabodecon) contains 
 
 ```{r download-example-datasets}
 library(metabodecon)
-download_example_datasets(persistent = FALSE)
+xdspath <- download_example_datasets(persistent = FALSE)
 # Set persistent to TRUE to keep the data after the R session ends
 ```
 
@@ -29,7 +29,7 @@ download_example_datasets(persistent = FALSE)
 
 ```{r}
 spectrum_data <- generate_lorentz_curves(
-  data_path = datadir("example_datasets/bruker/blood"),
+  data_path = file.path(xdspath, "bruker/urine"),
   file_format = "bruker"
 )
 ```

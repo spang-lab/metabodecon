@@ -6,7 +6,6 @@ refine_lc_internal_v14 <- function(spec, Y, Z) {
     x <- spec$sdp; y <- spec$y_smooth # x and y value for each data point
 
     # Init peak related variables
-    # TODO: include this info directly inside spec$peak, so we dont have to calculate over and over again
     p <- spec$peak
     ir <- p$right[p$high]; ic <- p$center[p$high]; il <- p$left[p$high] # index of each peak triplet position (PTP)
     rr <- match(ir, lmr);  rc <- match(ic, lmr);   rl <- match(il, lmr) # rank  of each PTP

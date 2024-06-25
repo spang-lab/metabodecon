@@ -1130,34 +1130,18 @@ deconvolution <- function(
 
 
 #' @export
+#' @title Deconvolute 1D NMR spectrum
+#' @description Automatic deconvolution of a 1D NMR spectrum into several Lorentz curves and the integration of them. The NMR file need to be in Bruker format or jcamp-dx format.
 #' @author Martina Haeckl
-#' @title The MetaboDecon1D Main Function
-#' @description MetaboDecon1D enables the automatic deconvolution of a 1D NMR
-#' spectrum into several Lorentz curves and the integration of them. The NMR
-#' file need to be in Bruker format or jcamp-dx format.
-#' @param filepath Complete path of the file folder (Notice for Bruker format:
-#' filepath need to be the spectrum folder containing one or more different
-#' spectra (e.g."C:/Users/Username/Desktop/spectra_from_bruker"))
-#' @param filename Name of the NMR file. (Notice for Bruker format: filename
-#' need to be the name of your spectrum which is also the name of the folder)
-#' (Default: filename = NA to analyse more spectra at once)
-#' @param file_format Format (bruker or jcampdx) of the NMR file. (Default:
-#' file_format = "bruker")
-#' @param number_iterations Number of iterations for the approximation of the
-#' parameters for the Lorentz curves (Default: number_iterations=10)
-#' @param range_water_signal_ppm Half width of the water artefact in ppm
-#' (Default: range_water_signal=0.1527692 (e.g. for urine NMR spectra))
-#' @param signal_free_region Row vector with two entries consisting of the ppm
-#' positions for the left and right border of the signal free region of the
-#' spectrum. (Default: signal_free_region=c(11.44494, -1.8828))
-#' @param smoothing_param Row vector with two entries consisting of the number
-#' of smoothing repeats for the whole spectrum and the number of data points
-#' (uneven) for the mean calculation (Default: smoothing_param=c(2,5))
-#' @param delta Defines the threshold value to distinguish between signal and
-#' noise (Default: delta=6.4)
-#' @param scale_factor Row vector with two entries consisting of the factor to
-#' scale the x-axis and the factor to scale the y-axis (Default:
-#' scale_factor=c(1000,1000000))
+#' @param filepath Complete path of the file folder (Notice for Bruker format: filepath need to be the spectrum folder containing one or more different spectra (e.g."C:/Users/Username/Desktop/spectra_from_bruker"))
+#' @param filename Name of the NMR file. (Notice for Bruker format: filename need to be the name of your spectrum which is also the name of the folder) (Default: filename = NA to analyse more spectra at once)
+#' @param file_format Format (bruker or jcampdx) of the NMR file. (Default: file_format = "bruker")
+#' @param number_iterations Number of iterations for the approximation of the parameters for the Lorentz curves (Default: number_iterations=10)
+#' @param range_water_signal_ppm Half width of the water artefact in ppm (Default: range_water_signal=0.1527692 (e.g. for urine NMR spectra))
+#' @param signal_free_region Row vector with two entries consisting of the ppm positions for the left and right border of the signal free region of the spectrum. (Default: signal_free_region=c(11.44494, -1.8828))
+#' @param smoothing_param Row vector with two entries consisting of the number of smoothing repeats for the whole spectrum and the number of data points (uneven) for the mean calculation (Default: smoothing_param=c(2,5))
+#' @param delta Defines the threshold value to distinguish between signal and noise (Default: delta=6.4)
+#' @param scale_factor Row vector with two entries consisting of the factor to scale the x-axis and the factor to scale the y-axis (Default: scale_factor=c(1000,1000000))
 #' @param debug Logical value to activate the debug mode (Default: debug=FALSE)
 #' @return List containing
 #' \itemize{
@@ -1165,11 +1149,8 @@ deconvolution <- function(
 #'  \item{\bold{x_values} (in datapoints)}
 #'  \item{\bold{x_values_ppm} (in ppm)}
 #'  \item{\bold{y_values} of the original spectrum}
-#'  \item{\bold{spectrum_superposition} y_values of the superposition of all
-#'  generated Lorentz curves}
-#'  \item{\bold{mse_normed} is the mse value between the superposition of the
-#'  Lorentz curves and the original spectrum which are standardized according
-#'  to get a total area of 1}
+#'  \item{\bold{spectrum_superposition} y_values of the superposition of all generated Lorentz curves}
+#'  \item{\bold{mse_normed} is the mse value between the superposition of the Lorentz curves and the original spectrum which are standardized according to get a total area of 1}
 #'  \item{\bold{peak_triplets_left} (ppm x_values)}
 #'  \item{\bold{peak_triplets_middle} (ppm x_values)}
 #'  \item{\bold{peak_triplets_right} (ppm x_values)}
@@ -1184,33 +1165,13 @@ deconvolution <- function(
 #'  \item{\bold{x_0} values of each Lorentz curve}
 #' }
 #'
-#'\bold{Notice:} The parameters A, lambda and x_0 to calculate the Lorentz
-#'curves are saved in parameters.txt and the approximated spectrum is saved in
-#'approximated_spectrum.txt under the file path.
-#' @details
-#' The MetaboDecon1D package returns a list with i.a. the parameters A, lambda
-#' and x_0 to calculate the Lorentz curves.The Lorentz curves could be
-#' calculated by using the function calculate_lorentz_curves(). This returns a
-#' matrix containing the generated and approximated Lorentz curves for each
-#' real peak of the spectrum. Each row of the matrix depicts one Lorentz curve.
-#' The Lorentz curves could be visualised and saved by using the function
-#' plot_lorentz_curves_save_as_png(). The superposition of all Lorentz curves,
-#' which reconstructs the original spectrum, could also be visualised and saved
-#' with the plot_spectrum_superposition_save_as_png() function. For the
-#' analytical calculation of the Lorentz curves peak triplets for each peak are
-#' used. To visualise these peak triplets and to illustrate the impact of the
-#' threshold delta the function plot_triplets() is available. The integral
-#' values for each generated Lorentz curves are saved in a vector.
+#'\bold{Notice:} The parameters A, lambda and x_0 to calculate the Lorentz curves are saved in parameters.txt and the approximated spectrum is saved in approximated_spectrum.txt under the file path.
+#' @details The MetaboDecon1D package returns a list with i.a. the parameters A, lambda and x_0 to calculate the Lorentz curves.The Lorentz curves could be calculated by using the function calculate_lorentz_curves(). This returns a matrix containing the generated and approximated Lorentz curves for each real peak of the spectrum. Each row of the matrix depicts one Lorentz curve. The Lorentz curves could be visualised and saved by using the function plot_lorentz_curves_save_as_png(). The superposition of all Lorentz curves, which reconstructs the original spectrum, could also be visualised and saved with the plot_spectrum_superposition_save_as_png() function. For the analytical calculation of the Lorentz curves peak triplets for each peak are used. To visualise these peak triplets and to illustrate the impact of the threshold delta the function plot_triplets() is available. The integral values for each generated Lorentz curves are saved in a vector.
 #'
-#' \bold{Notice}: It is feasible to load all spectra of a folder at once. Here
-#' the filename need to be "NA" which is the default value. One selected
-#' spectrum could then be used to adjust the parameters (signal_free_region and
-#' range_water_signal_ppm) for the analysis of all spectra. Furthermore it is
-#' possible to adjust these parameters for each spectrum separate.
+#' \bold{Notice}: It is feasible to load all spectra of a folder at once. Here the filename need to be "NA" which is the default value. One selected spectrum could then be used to adjust the parameters (signal_free_region and range_water_signal_ppm) for the analysis of all spectra. Furthermore it is possible to adjust these parameters for each spectrum separate.
 #' @import readJDX
 #' @references
-#' Haeckl, M.; Tauber, P.; Schweda, F.; Zacharias, H.U.; Altenbuchinger, M.; Oefner, P.J.; Gronwald, W. An R-Package for the Deconvolution and Integration of 1D NMR Data: MetaboDecon1D.
-#' Metabolites 2021, 11, 452. https://doi.org/10.3390/metabo11070452
+#' Haeckl, M.; Tauber, P.; Schweda, F.; Zacharias, H.U.; Altenbuchinger, M.; Oefner, P.J.; Gronwald, W. An R-Package for the Deconvolution and Integration of 1D NMR Data: MetaboDecon1D. Metabolites 2021, 11, 452. https://doi.org/10.3390/metabo11070452
 #' @examples \dontrun{
 #' # Load one spectrum (Bruker format)
 #' result <- MetaboDecon1D(filepath="load_example_path", filename="urine", file_format="bruker")
@@ -1654,13 +1615,12 @@ MetaboDecon1D <- function(filepath, filename = NA, file_format = "bruker", numbe
 }
 
 #' @export
-#' @title Function to plot peak triplets for variable range
-#' @description The MetaboDecon1D package also comprise the additional function
-#' plot_triplets() to plot the peak triplets for each peak.
+#' @title Plot peak triplets for variable range
+#' @description Plots the peak triplets for each peak detected by [MetaboDecon1D()].
 #' @param deconv_result Saved result of the MetaboDecon1D() function
 #' @param x_range Row vector with two entries consisting of the ppm start and the ppm end value to scale the range of the x-axis (optional)
 #' @param y_range Row vector with two entries consisting of the ppm start and the ppm end value to scale the range of the y-axis (optional)
-#' @return NULL
+#' @return No return value, called for side effect of plotting.
 #' @examples \dontrun{
 #' # Load one spectrum (Bruker format)
 #' result <- MetaboDecon1D(filepath="load_example_path", filename="urine", file_format="bruker")
@@ -1807,9 +1767,7 @@ plot_triplets <- function(deconv_result, x_range=c(), y_range=c()){
 
 #' @export
 #' @title Calculate lorentz curves for each analysed spectrum
-#' @description The MetaboDecon1D package also comprise the additional function
-#' calculate_lorentz_curves() to calculate the lorentz curves of each
-#' investigated spectrum.
+#' @description Calculates the lorentz curves of each investigated spectrum.
 #' @param deconv_result Saved result of the MetaboDecon1D() function
 #' @param number_of_files Number of spectra to analyze
 #' @return \bold{One spectrum:} matrix containing the generated Lorentz curves.
@@ -1827,10 +1785,13 @@ plot_triplets <- function(deconv_result, x_range=c(), y_range=c()){
 #'
 #' # Load all spectra (Bruker format) of choosen folder
 #' result <- MetaboDecon1D(filepath="load_example_path", file_format="bruker")
+#'
 #' # Calculate Lorentz curves of all investigated spectra
 #' lorentz_curves <- calculate_lorentz_curves(result)
+#'
 #' # Save matrix containing all Lorentz curves of first spectrum
 #' lorentz_curves_first_spectrum <- lorentz_curves[[1]]
+#'
 #' # Calculate Lorentz curves of one certain investigated spectrum
 #' lorentz_curves_spectrum1 <- calculate_lorentz_curves(
 #'   result$urine
@@ -1924,9 +1885,7 @@ calculate_lorentz_curves <- function(deconv_result, number_of_files = NA){
 
 #' @export
 #' @title Plot lorentz curves for variable range
-#' @description The MetaboDecon1D package also comprise the additional function
-#' plot_lorentz_curves_save_as_png() to plot the original spectrum and all
-#' generated Lorentz curves and save the result as png under the filepath.
+#' @description Plots the original spectrum and all generated Lorentz curves and save the result as png under the filepath.
 #' @param deconv_result Saved result of the MetaboDecon1D() function
 #' @param x_range Row vector with two entries consisting of the ppm start and
 #' the ppm end value to scale the range of the x-axis (optional)
@@ -2080,7 +2039,7 @@ plot_lorentz_curves_save_as_png <- function(deconv_result, x_range=c(), y_range=
 
 
 
-#' @title  Plot spectrum approx for variable range
+#' @title Plot spectrum approx for variable range
 #' @description The MetaboDecon1D package also comprise the additional function
 #' plot_spectrum_superposition_save_as_png() to plot the original spectrum and
 #' the superposition of all generated Lorentz curves and save the result as png
