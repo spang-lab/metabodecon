@@ -167,7 +167,7 @@ read_bruker_spectrum <- function(path = file.path(download_example_datasets(), "
     dp <- seq(n - 1, 0, -1) # data points
     sdp <- seq((n - 1) / sfx, 0, -1 / sfx) # scaled data points (previously called `x`). Same as `dp / sfx`, but with slight numeric differences, so we stick with the old calculation method for backwards compatibility.
     return(list(
-        y_raw = as.numeric(y), y_scaled = y / sfy, # y-axis
+        y_raw = y, y_scaled = y / sfy, # y-axis
         n = n, sfx = sfx, sfy = sfy, # misc
         dp = dp, sdp = sdp, ppm = ppm, # x-axis
         ppm_min = ppm_min, ppm_max = ppm_max, ppm_range = ppm_range, ppm_step = ppm_step, ppm_nstep = ppm_nstep # additional ppm info

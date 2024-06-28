@@ -73,7 +73,7 @@ generate_lorentz_curves <- function(data_path = file.path(download_example_datas
     if (ncores == "auto") {
         ncores <- min(ceiling(parallel::detectCores() / 2), length(spectra), if (os == "Windows") 1 else Inf)
     } else if (ncores > 1 && os == "Windows") {
-        warning("Multiprocessing is not supported on Windows. Only 1 core will be used instead of ", ncores)
+        warning("Multiprocessing is not supported on Windows. Only 1 core will be used instead of ", ncores, immediate. = TRUE)
         ncores <- 1
     }
     cat3("Starting deconvolution of", n, "spectra with", ncores, if (ncores > 1) "cores" else "core")
@@ -92,23 +92,19 @@ generate_lorentz_curves <- function(data_path = file.path(download_example_datas
 
     # Prepare, store and return results
     ret <- if (debug) spectra else lapply(spectra, function(s) s$ret)
-
     if (isTRUE(make_rds)) {
         rdspath <- file.path(data_path, "spectrum_data.rds")
-        if (interactive) {
+        if (interactive()) {
             yes <- get_yn_input(sprintf("Save results as '%s'?", rdspath))
             if (yes) saveRDS(ret, rdspath)
         } else {
-            cat3(
-                "Skipping saving of results as RDS because cannot for confirmation in interactive mode. For details see `help('generate_lorentz_curves')`.")
+            cat3("Skipping RDS save: confirmation required but not in interactive mode. For details see `help('generate_lorentz_curves')`.")
         }
     } else if (is.character(make_rds)) {
-        cat3("Saving results as", make_rds)
+        cat("Saving results as", make_rds, "\n")
         saveRDS(ret, make_rds)
     }
-
     ret
-
 }
 
 # Private Helpers #####

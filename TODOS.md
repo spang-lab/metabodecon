@@ -65,7 +65,6 @@ ToSc: affected functions are:
 - `generate_lorentz_curves`
 - `plot_triplets`
 
-
 ## FEATURE-6: Return lambda in hertz
 
 Original Teams Messages:
