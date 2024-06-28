@@ -1639,11 +1639,8 @@ plot_triplets <- function(deconv_result, x_range = c(), y_range = c()) {
   } else {
     if ("number_of_files" %in% names(deconv_result[[1]])) {
       number_of_files <- deconv_result[[1]]$number_of_files
-
       # Check if only one spectrum is inside whole folder
-      if (number_of_files == 1) {
-        number_in_folder <- 1
-      }
+      if (number_of_files == 1) number_in_folder <- 1
     }
   }
 
@@ -1664,23 +1661,23 @@ plot_triplets <- function(deconv_result, x_range = c(), y_range = c()) {
       if (is.null(x_range)) {
         filename <- paste(name, "_peak_triplets.png", sep = "")
         # Save plot as png
-        grDevices::png(file = filename, width = 825, height = 525)
+        # grDevices::png(file = filename, width = 825, height = 525)
         plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = rev(range(spectrum_x_ppm)), ylim = y_range)
         graphics::points(spectrum_x_ppm[index_peaks_triplets], spectrum_y[index_peaks_triplets], col = "red", cex = 1.3)
         graphics::points(spectrum_x_ppm[index_right_position], spectrum_y[index_right_position], col = "green", cex = 1.3)
         graphics::points(spectrum_x_ppm[index_left_position], spectrum_y[index_left_position], col = "blue", cex = 1.3)
         graphics::legend("topright", legend = c("x_left", "x_middle", "x_right"), col = c("green", "red", "blue"), pch = 1, bty = "n", cex = 1.3)
-        grDevices::dev.off()
+        # grDevices::dev.off()
       } else {
         filename <- paste(name, "_peak_triplets.png", sep = "")
         # Save plot as png
-        grDevices::png(file = filename, width = 825, height = 525)
+        # grDevices::png(file = filename, width = 825, height = 525)
         plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = x_range, ylim = y_range)
         graphics::points(spectrum_x_ppm[index_peaks_triplets], spectrum_y[index_peaks_triplets], col = "red", cex = 1.3)
         graphics::points(spectrum_x_ppm[index_right_position], spectrum_y[index_right_position], col = "green", cex = 1.3)
         graphics::points(spectrum_x_ppm[index_left_position], spectrum_y[index_left_position], col = "blue", cex = 1.3)
         graphics::legend("topright", legend = c("x_left", "x_middle", "x_right"), col = c("green", "red", "blue"), pch = 1, bty = "n", cex = 1.3)
-        grDevices::dev.off()
+        # grDevices::dev.off()
       }
     } else {
       for (l in 1:number_of_files) {
@@ -1698,23 +1695,23 @@ plot_triplets <- function(deconv_result, x_range = c(), y_range = c()) {
         if (is.null(x_range)) {
           filename <- paste(name, "_peak_triplets.png", sep = "")
           # Save plot as png
-          grDevices::png(file = filename, width = 825, height = 525)
+          # grDevices::png(file = filename, width = 825, height = 525)
           plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = rev(range(spectrum_x_ppm)), ylim = y_range)
           graphics::points(spectrum_x_ppm[index_peaks_triplets], spectrum_y[index_peaks_triplets], col = "red", cex = 1.3)
           graphics::points(spectrum_x_ppm[index_right_position], spectrum_y[index_right_position], col = "green", cex = 1.3)
           graphics::points(spectrum_x_ppm[index_left_position], spectrum_y[index_left_position], col = "blue", cex = 1.3)
           graphics::legend("topright", legend = c("x_left", "x_middle", "x_right"), col = c("green", "red", "blue"), pch = 1, bty = "n", cex = 1.3)
-          grDevices::dev.off()
+          # grDevices::dev.off()
         } else {
           filename <- paste(name, "_peak_triplets.png", sep = "")
           # Save plot as png
-          grDevices::png(file = filename, width = 825, height = 525)
+          # grDevices::png(file = filename, width = 825, height = 525)
           plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = x_range, ylim = y_range)
           graphics::points(spectrum_x_ppm[index_peaks_triplets], spectrum_y[index_peaks_triplets], col = "red", cex = 1.3)
           graphics::points(spectrum_x_ppm[index_right_position], spectrum_y[index_right_position], col = "green", cex = 1.3)
           graphics::points(spectrum_x_ppm[index_left_position], spectrum_y[index_left_position], col = "blue", cex = 1.3)
           graphics::legend("topright", legend = c("x_left", "x_middle", "x_right"), col = c("green", "red", "blue"), pch = 1, bty = "n", cex = 1.3)
-          grDevices::dev.off()
+          # grDevices::dev.off()
         }
       }
     }
@@ -1732,23 +1729,23 @@ plot_triplets <- function(deconv_result, x_range = c(), y_range = c()) {
     if (is.null(x_range)) {
       filename <- paste(name, "_peak_triplets.png", sep = "")
       # Save plot as png
-      grDevices::png(file = filename, width = 825, height = 525)
+      # grDevices::png(file = filename, width = 825, height = 525)
       plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = rev(range(spectrum_x_ppm)), ylim = y_range)
       graphics::points(spectrum_x_ppm[index_peaks_triplets], spectrum_y[index_peaks_triplets], col = "red", cex = 1.3)
       graphics::points(spectrum_x_ppm[index_right_position], spectrum_y[index_right_position], col = "green", cex = 1.3)
       graphics::points(spectrum_x_ppm[index_left_position], spectrum_y[index_left_position], col = "blue", cex = 1.3)
       graphics::legend("topright", legend = c("x_left", "x_middle", "x_right"), col = c("green", "red", "blue"), pch = 1, bty = "n", cex = 1.3)
-      grDevices::dev.off()
+      # grDevices::dev.off()
     } else {
       filename <- paste(name, "_peak_triplets.png", sep = "")
       # Save plot as png
-      grDevices::png(file = filename, width = 825, height = 525)
+      # grDevices::png(file = filename, width = 825, height = 525)
       plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = x_range, ylim = y_range)
       graphics::points(spectrum_x_ppm[index_peaks_triplets], spectrum_y[index_peaks_triplets], col = "red", cex = 1.3)
       graphics::points(spectrum_x_ppm[index_right_position], spectrum_y[index_right_position], col = "green", cex = 1.3)
       graphics::points(spectrum_x_ppm[index_left_position], spectrum_y[index_left_position], col = "blue", cex = 1.3)
       graphics::legend("topright", legend = c("x_left", "x_middle", "x_right"), col = c("green", "red", "blue"), pch = 1, bty = "n", cex = 1.3)
-      grDevices::dev.off()
+      # grDevices::dev.off()
     }
   }
 }
