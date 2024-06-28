@@ -2,15 +2,18 @@
 % Please edit documentation in R/40_alignment.R
 \name{get_ppm_range}
 \alias{get_ppm_range}
-\title{get_ppm_range}
+\title{Get ppm range}
 \usage{
 get_ppm_range(spectrum_data)
 }
 \arguments{
 \item{spectrum_data}{Output of \code{\link[=generate_lorentz_curves]{generate_lorentz_curves()}}}
 }
+\value{
+A vector containing the lowest and highest ppm value of the provided spectrum.
+}
 \description{
-Get ppm range of your spectra
+Returns the ppm range of the provided spectrum.
 }
 \details{
 determines after deconvolution the signal with the highest and the signal with the lowest ppm value.

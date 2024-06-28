@@ -2,7 +2,7 @@
 % Please edit documentation in R/80_old_metabodecon1d.R
 \name{plot_triplets}
 \alias{plot_triplets}
-\title{Function to plot peak triplets for variable range}
+\title{Plot peak triplets for variable range}
 \usage{
 plot_triplets(deconv_result, x_range = c(), y_range = c())
 }
@@ -13,20 +13,22 @@ plot_triplets(deconv_result, x_range = c(), y_range = c())
 
 \item{y_range}{Row vector with two entries consisting of the ppm start and the ppm end value to scale the range of the y-axis (optional)}
 }
+\value{
+No return value, called for side effect of plotting.
+}
 \description{
-The MetaboDecon1D package also comprise the additional function
-plot_triplets() to plot the peak triplets for each peak.
+Plots the peak triplets for each peak detected by \code{\link[=MetaboDecon1D]{MetaboDecon1D()}}.
 }
 \examples{
 \dontrun{
 # Load one spectrum (Bruker format)
-result <- MetaboDecon1D(filepath="load_example_path", filename="urine", file_format="bruker")
+result <- MetaboDecon1D(filepath = "load_example_path", filename = "urine", file_format = "bruker")
 plot_triplets(result)
 # Plot part of spectrum
-plot_triplets(result, c(1.4,1.3), c(0,20))
+plot_triplets(result, c(1.4, 1.3), c(0, 20))
 
 # Load all spectra (Bruker format) of choosen folder
-result <- MetaboDecon1D(filepath="load_example_path", file_format="bruker")
+result <- MetaboDecon1D(filepath = "load_example_path", file_format = "bruker")
 # Plot triplets of all investigated spectra
 plot_triplets(result)
 # Plot triplets of one certain investigated spectrum

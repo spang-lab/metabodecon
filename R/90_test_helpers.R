@@ -1,5 +1,6 @@
-# evalwith and helpers #####
+# evalwith #####
 
+#' @noRd
 #' @description Run expression with predefined global state
 #' @param expr Expression to be evaluated.
 #' @param testdir ID of the test directory. E.g. `"xyz/2"`. Will be created and populated with `inputs`. To clear, use `clear(testdir("xyz/2"))`.
@@ -16,7 +17,24 @@
 #' @param overwrite Logical indicating whether to overwrite the cache file if it already exists.
 #' @details The `datadir_temp` and `datadir_persistent` arguments accept values "missing", "filled" and "empty". Setting a value unequal NULL causes the functions [datadir_temp()] and/or [datadir_persistent()] to be replaced with mock functions pointing to fake directories. Functions depending on these functions will then use the fake directories instead of the real ones. When set to "missing" the returned mock directory does not exist. When set to "empty" it exists and is guaranteed to be empty. When set to "filled", it is populated with example datasets.
 #' Attention: the mocked functions, i.e. [datadir_temp()] and [datadir_persistent()] cannot be used directly inside `expr` when called via `devtools::test()`. I'm not sure why, but it seems as if devtools and/or testthat have their own copies of the functions which are used when the expression is evaluated.
-#' @noRd
+#' @return A list containing with following elements:
+#' - `rv`: The return value of the expression.
+#' - `runtime`: The "elapsed" runtime of the expression in seconds. Measured with [system.time()].
+#' - `output`: The captured output.
+#' - `message`: The captured messages.
+#' - `plot`: The path to the saved plot.
+#' - `testdir`: The path to the test directory.
+#' - `inputs`: The paths to the copied input files.
+#' - `hash`: The hash of the test directory.
+#' @examples
+#' x1 <- evalwith(output = "captured", cat("Helloworld\n"))
+#' x2 <- evalwith(datadir_persistent = "missing", datadir())
+#' x3 <- evalwith(testdir = "dummy", inputs = "bruker/urine/urine_1", dir())
+#' x4 <- evalwith(Sys.sleep(0.02))
+#' cat(sprintf("x1$output: '%s'", x1$output))
+#' cat(sprintf("x2$rv: '%s'", x2$rv))
+#' cat(sprintf("x3$rv: '%s'", x3$rv))
+#' cat(sprintf("x4$runtime: '%s'", x4$runtime))
 evalwith <- function(expr, # nolint: cyclocomp_linter.
                      testdir = NULL,
                      answers = NULL,
@@ -116,8 +134,8 @@ mockdir <- function() {
     normPath(file.path(tmpdir(), "mocks"))
 }
 
-#' @description Create and return cache dir. If existing, the persistent cache dir is returned, else the temp cache dir. To force creation of the persistent cache dir, call once with `persistent=TRUE`.
 #' @noRd
+#' @description Create and return cache dir. If existing, the persistent cache dir is returned, else the temp cache dir. To force creation of the persistent cache dir, call once with `persistent=TRUE`.
 cachedir <- function(persistent = NULL) {
     tcd <- file.path(tmpdir(), "cache") # temporary cache dir
     pcd <- file.path(tools::R_user_dir("metabodecon", "cache")) # persistent cache dir
@@ -126,18 +144,18 @@ cachedir <- function(persistent = NULL) {
     mkdirs(ncd)
 }
 
+#' @noRd
 #' @title Creates a mock readline function for testing
 #' @description Creates a mock readline function that returns the next element from a character vector each time it's called.
 #' Used internally by [mock_readline()].
 #' @param texts A character vector of responses to be returned by the readline function.
 #' @return A function that mimics the readline function, returning the next element from `texts` each time it's called.
-#' @examples \dontrun{
+#' @examples
 #' readline_mock <- get_readline_mock(c("yes", "no", "maybe"))
-#' readline_mock("Continue? ") # Returns "yes"
-#' readline_mock("Continue? ") # Returns "no"
-#' readline_mock("Continue? ") # Returns "maybe"
-#' }
-#' @noRd
+#' readline_mock("Continue? ")      # Returns "yes"
+#' readline_mock("Continue? ")      # Returns "no"
+#' readline_mock("Continue? ")      # Returns "maybe"
+#' try(readline_mock("Continue? ")) # Throws error "readline called 4 times, but only 3 answers were provided"
 get_readline_mock <- function(texts, env = as.environment(list())) {
     if (is.null(texts)) {
         return(readline)
@@ -155,6 +173,7 @@ get_readline_mock <- function(texts, env = as.environment(list())) {
     }
 }
 
+#' @noRd
 #' @title Get a mock for the datadir functions
 #' @description Returns a function that when called, returns a path to a mock data directory. The type and state of the mock data directory can be specified.
 #' Used internally by [mock_datadir()].
@@ -164,12 +183,8 @@ get_readline_mock <- function(texts, env = as.environment(list())) {
 #' @examples
 #' datadir_persistent_mock <- get_datadir_mock(type = "persistent", state = "missing")
 #' datadir_temp_mock <- get_datadir_mock(type = "temp", state = "empty")
-#' patch("datadir_persistent", datadir_persistent_mock)
-#' patch("datadir_temp", datadir_temp_mock)
-#' datadir_persistent()
-#' datadir_temp()
-#' popgs()
-#' @noRd
+#' datadir_persistent_mock()
+#' datadir_temp_mock()
 get_datadir_mock <- function(type = "temp", state = "default") {
     type <- match.arg(type, c("temp", "persistent"))
     state <- match.arg(state, c("default", "missing", "empty", "filled"))
@@ -186,6 +201,34 @@ get_datadir_mock <- function(type = "temp", state = "default") {
     function() p
 }
 
+# simulate #####
+
+quote({
+    p <- pkg_file("bruker/blood/blood_01")
+    d <- generate_lorentz_curves(p, ask = FALSE)[[1]]
+    idx <- d$x_values_ppm < 3.7 & d$x_values_ppm > 3.5
+    x <- d$x_values_ppm[idx]
+    y <- d$y_values[idx]
+    plot(x, y, type = "l", xlim = c(max(x), min(x)))
+    A <- d$A; lambda <- d$lambda; x0 <- d$x0
+})
+
+simulate_spectrum <- function(A,
+                              lambda,
+                              x0,
+                              lb,
+                              rb,
+                              n = 1024,
+                              noise = 0.01,
+                              seed = 42,
+                              globshift = function(i) 0,
+                              peakshift = function(i) 0) {
+    x <- seq(lb, rb, length.out = n)
+    y <- A / (1 + ((x - x0) / lambda)^2)
+    y <- y + rnorm(n, 0, noise)
+    list(x = x, y = y)
+}
+
 # testing #####
 
 skip_if_slow_tests_disabled <- function() {
@@ -196,32 +239,57 @@ skip_if_slow_tests_disabled <- function() {
 
 # interactive #####
 
-#' @description Print size obj recursively. Like `du` (disk usage) in Unix.
-#' @examples \donttest{
-#' obj <- glc_v13()$rv$urine_1
-#' du(obj)
-#' }
 #' @noRd
-du <- function(obj, pname = "", level = 0, max_level = 1, max_len = 50) {
-    sizeMB <- function(x) paste(round(object.size(x) / 1e6, 2), "MB")
+#' @title Recursive Object Size Printer
+#' @description Prints the size of an object and its subcomponents recursively, similar to the `du` command in Unix. This function is useful for understanding the memory footprint of complex objects in R.
+#' @param obj The object to analyze.
+#' @param pname Internal parameter for recursive calls, representing the parent name of the current object. Should not be used directly.
+#' @param level Internal parameter for recursive calls, indicating the current depth of recursion. Should not be used directly.
+#' @param max_level The maximum depth of recursion. Default is 1. Increase this to explore deeper into nested structures.
+#' @param max_len The maximum number of elements in a list to recurse into. Default is 50. Lists with more elements will not be explored further.
+#' @param unit The unit of measurement for object sizes. Can be "GB", "MB", "KB", or "B". Default is "MB".
+#' @return The total size of the object, including its subcomponents, as a character string with the specified unit.
+#' @examples
+#' obj <- list(
+#'      a = rnorm(1000),
+#'      b = list(
+#'          c = rnorm(2000),
+#'          d = list(
+#'              e = rnorm(3000),
+#'              f = rnorm(4000)
+#'          )
+#'      )
+#' )
+#' du(obj)
+#' du(obj, max_level = Inf, unit = "KB")
+du <- function(obj, pname = "", level = 0, max_level = 1, max_len = 50, unit = "MB") {
+    match.arg(unit, c("GB", "MB", "KB", "B"))
+    denom <- switch(unit, "GB" = 1e9, "MB" = 1e6, "KB" = 1e3, "B" = 1)
+    size <- function(x) paste(round(object.size(x) / denom, 2), unit)
     for (name in names(obj)) {
         x <- obj[[name]]
         indent <- collapse(rep("    ", level), "")
-        cat2(indent, name, " ", sizeMB(x), sep = "")
+        cat2(indent, name, " ", size(x), sep = "")
         if (is.list(x) && length(x) < max_len && level < max_level) {
-            du(x, name, level + 1, max_level)
+            du(x, name, level + 1, max_level, unit = unit)
         }
     }
     if (level == 0) {
-        cat2("Total:", sizeMB(obj))
+        total <- size(obj)
+        cat2("Total:", total)
+        invisible(total)
     }
 }
 
+#' @noRd
 #' @title Run tests with the option to skip slow tests
 #' @description Runs the tests in the current R package. If `all` is TRUE, it well set environment variable `RUN_SLOW_TESTS` to "TRUE" so that all tests are run. If `all` is FALSE, it will set `RUN_SLOW_TESTS` to "FALSE" so that slow tests are skipped.
 #' @param all Logical. If TRUE, all tests are run. If FALSE, slow tests are skipped.
 #' @return The result of devtools::test()
-#' @noRd
+#' @examples
+#' if (interactive()) {
+#' run_tests(all = FALSE)
+#' }
 run_tests <- function(all = FALSE) {
     RUN_SLOW_TESTS_OLD <- Sys.getenv("RUN_SLOW_TESTS")
     Sys.setenv(RUN_SLOW_TESTS = if (all) "TRUE" else "FALSE")
@@ -245,9 +313,31 @@ pairwise_identical <- function(x) {
     lapply(seq_len(length(x) - 1), function(i) identical(x[[i]], x[[i + 1]]))
 }
 
+#' @noRd
 #' @title Compare two vectors
-#' @description Checks if `x` and `y` are identical, all.equal or different vectors. If different, differences are printed.
+#' @description Checks if `x` and `y` are identical, all.equal or different vectors. If differences are greated than expected, the differing elements are printed.
+#' @param x First vector.
+#' @param y Second vector.
+#' @param xpct Expected result. 0==identical, 1==all.equal, 2==different, 3==error.
+#' @param silent Logical indicating whether to print the results.
 #' @return 0==identical, 1==all.equal, 2==different, 3==error
+#' @details The function compares the vectors `x` and `y` and prints the results. If the vectors are different, the differing elements are printed as follows:
+#'
+#' ```R
+#'              x       y  i  a                b                     z
+#' class  integer numeric  .  .                .                     .
+#' length      10      10  2  2                2                     2
+#' head        1L       1 5L 5L                5 -8.88178419700125e-16
+#' tail       10L      10 9L 9L 8.99999999999999  1.06581410364015e-14
+#' ```
+#'
+#' Where
+#'
+#' - `i` == the indices of the differing elements
+#' - `a` == the differing elements from `x`
+#' - `b` == the differing elements from `y`
+#' - `z` == the difference between `a` and `b`
+#'
 #' @examples
 #' x <- 1:10
 #' y1 <- 1:10
@@ -258,7 +348,6 @@ pairwise_identical <- function(x) {
 #' vcomp(x, y2)
 #' vcomp(x, y3)
 #' vcomp(x, y4)
-#' @noRd
 vcomp <- function(x, y, xpct = 0, silent = FALSE) {
     isvec <- function(x) is.vector(x) && !is.list(x)
     callstr <- paste(deparse(sys.call()), collapse = "")
@@ -270,6 +359,8 @@ vcomp <- function(x, y, xpct = 0, silent = FALSE) {
         col <- c(GREEN, YELLOW, RED, RED)[status + 1]
         cat2(callstr, " ", col, msg, RESET, sep = "")
         if (status %in% 1:2 && status != xpct) {
+            line <- "----------------------------------------"
+            cat2(col, line, RESET, sep = "")
             i <- which(x != y)
             a <- x[i]
             b <- y[i]
@@ -279,15 +370,18 @@ vcomp <- function(x, y, xpct = 0, silent = FALSE) {
             objs <- list(x = x, y = y, i = i, a = a, b = b, z = z)
             df <- as.data.frame(matrix(".", length(rows), length(cols), dimnames = list(rows, cols)))
             df["class", c("x", "y")] <- c(class(x), class(y))
-            df["length", ] <- sapply(cols, function(col) length(get(col)))
+            df["length", c("x", "y", "i")] <- c(length(x), length(y), length(i))
+            df["length", c("a", "b", "z")] <- c(".", ".", ".")
             df["head", ] <- sapply(objs, function(obj) dput2(head(obj, 1)))
             df["tail", ] <- sapply(objs, function(obj) dput2(tail(obj, 1)))
             print(df)
+            cat2(col, line, RESET, sep = "")
         }
     }
     invisible(status)
 }
 
+#' @noRd
 #' @description Compares a spectrum deconvoluted with [generate_lorentz_curves_v12()] with a spectrum deconvoluted with [MetaboDecon1D()].
 #' @param x Result of [generate_lorentz_curves_v12()].
 #' @param y Result of [MetaboDecon1D()].
@@ -296,7 +390,6 @@ vcomp <- function(x, y, xpct = 0, silent = FALSE) {
 #' old <- MetaboDecon1D_urine1_1010yy_ni3_dbg()$rv
 #' compare_spectra(new, old)
 #' }
-#' @noRd
 compare_spectra <- function(new = glc_v13()$rv,
                             old = MD1D()$rv,
                             silent = FALSE) {
@@ -413,14 +506,14 @@ compare_spectra <- function(new = glc_v13()$rv,
     invisible(r)
 }
 
+#' @noRd
 #' @description Compares a spectrum deconvoluted with [generate_lorentz_curves_v12()] with a spectrum deconvoluted with [MetaboDecon1D()].
 #' @param x Result of [generate_lorentz_curves_v12()].
 #' @param y Result of [MetaboDecon1D()].
 #' @examples
-#' new <- glc()$rv
-#' old <- MetaboDecon1D_urine1_1010yy_ni3_dbg()$rv
-#' compare_spectra(new, old)
-#' @noRd
+#' new <- glc_v13(dp = "urine_1", ff = "bruker", nfit = 3, simple = TRUE, cache = FALSE)$rv$urine_1
+#' old <- MD1D(dp = "urine_1", ff = "bruker", nfit = 3, simple = TRUE)$rv
+#' r <- compare_spectra_v13(new, old, silent = FALSE)
 compare_spectra_v13 <- function(new = glc_v13()$rv$urine_1,
                                 old = MD1D()$rv,
                                 silent = FALSE) {

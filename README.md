@@ -23,35 +23,10 @@ At [Get Started](https://spang-lab.github.io/metabodecon/articles/metabodecon.ht
 
 At [Function Reference](https://spang-lab.github.io/metabodecon/reference/index.html) you get an overview of all functions provided by metabodecon.
 
-## Contribute
+## Documentation
 
-Things you can update, are:
+MetaboDecon1D's documentation is available at [spang-lab.github.io/MetaboDecon1D](https://spang-lab.github.io/MetaboDecon1D/). It includes pages about
 
-1. Function code in folder [R](R)
-2. Function documentation in folder [R](R)
-3. Package documentation in folder `vignettes`
-4. Test cases in folder [tests](tests)
-5. Dependencies in file [DESCRIPTION](DESCRIPTION)
-6. Authors in file [DESCRIPTION](DESCRIPTION)
-
-Whenever you update any of those things, you should run the below commands to check that everything is still working as expected
-
-```R
-devtools::test() # Execute tests from tests folder
-devtools::document() # Build files in man folder
-devtools::check() # Check package formalities
-devtools::install() # Install as required by next command
-pkgdown::build_site() # Build website in docs folder
-```
-
-After doing these steps, you can push your changes to Github and then use the following commands to release the package to CRAN:
-
-```R
-devtools::check(remote = TRUE, manual = TRUE)# Slower, but more realistic test than plain devtools::check()
-devtools::spell_check() # Check spelling. Add false positives to inst/WORDLIST
-revdepcheck::revdep_check(num_workers = 8) # Reverse dependency check
-# See https://r-pkgs.org/release.html#sec-release-revdep-checks for details
-devtools::submit_cran() # Submits the package to CRAN
-```
-
-Above steps are based on: <https://r-pkgs.org/release.html>
+- [Getting Started](https://spang-lab.github.io/metabodecon/articles/metabodecon.html)
+- [Contribution Guidelines](https://spang-lab.github.io/MetaboDecon1D/articles/Contributing.html)
+- [Function Reference](https://spang-lab.github.io/MetaboDecon1D/reference/index.html)

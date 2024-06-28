@@ -2,12 +2,12 @@
 % Please edit documentation in R/40_alignment.R
 \name{gen_feat_mat}
 \alias{gen_feat_mat}
-\title{gen_feat_mat}
+\title{Generate Feature Matrix.}
 \usage{
 gen_feat_mat(data_path, ppm_range, size_real_spectrum, scale_factor_x)
 }
 \arguments{
-\item{data_path}{(string): path to the parent folder of where the original spectra are stored. After deconvolution this folder also contains for each spectrum two .txt files which contain for each spectrum the spectrum approximated from all deconvoluted signals and a parameter file that contains all numerical values of the deconvolution}
+\item{data_path}{Path to the parent folder of where the original spectra are stored. After deconvolution this folder also contains for each spectrum two .txt files which contain for each spectrum the spectrum approximated from all deconvoluted signals and a parameter file that contains all numerical values of the deconvolution}
 
 \item{ppm_range}{(numeric) this is the result from the function \code{\link[=get_ppm_range]{get_ppm_range()}} i.e the ppm range over which your signals are distributed.}
 
@@ -15,9 +15,17 @@ gen_feat_mat(data_path, ppm_range, size_real_spectrum, scale_factor_x)
 
 \item{scale_factor_x}{(positive integer): A factor which is used to avoid rounding errors e.g. 1000}
 }
+\value{
+A list containing the data matrix, the peakList, the w, A and lambda values.
+}
 \description{
-function to generate feature matrix
+Generate a feature matrix.
 }
 \details{
 The output of this function is a data frame containing a matrix of all integral values found in your spectra (data_matrix). Here, each row corresponds to one spectrum and each column to one data point of the spectra, for example 128k data points in each spectrum correspond to 128K columns in the data matrix. Furthermore, a list of all signals(peakList), and individual parameters of the signals are stored in the data structure.
+}
+\examples{
+\dontrun{
+res <- gen_feat_mat(data_path, ppm_range, size_real_spectrum, scale_factor_x)
+}
 }

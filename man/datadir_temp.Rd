@@ -12,6 +12,9 @@ Returns the path to the temporary data directory.
 \description{
 Returns the path to the temporary data directory where metabodecon's data sets are stored. This directory equals subdirectory \code{"data"} of metabodecons temporary session directory \verb{[tmpdir()]} plus additional path normalization.
 }
+\examples{
+datadir_temp()
+}
 \seealso{
 \code{\link[=tmpdir]{tmpdir()}}, \code{\link[=datadir]{datadir()}}, \code{\link[=datadir_persistent]{datadir_persistent()}}
 }

@@ -1,5 +1,3 @@
-# nolint start⁠
-
 # <The package MetaboDecon1D enables the automatic deconvolution of a 1D NMR
 # spectrum into several Lorentz curves and the integration of them.>
 #
@@ -20,22 +18,19 @@
 
 #' @details For examples on how to call see `tests/testthat/test-deconvolution_v11-123.R`
 #' @noRd
-deconvolution <- function(
-  filepath,
-  name,
-  file_format,
-  same_parameter,
-  processing_value,
-  number_iterations,
-  range_water_signal_ppm,
-  signal_free_region,
-  smoothing_param,
-  delta,
-  scale_factor,
-  current_filenumber,
-  debug = FALSE
-){
-
+deconvolution <- function(filepath,
+                          name,
+                          file_format,
+                          same_parameter,
+                          processing_value,
+                          number_iterations,
+                          range_water_signal_ppm,
+                          signal_free_region,
+                          smoothing_param,
+                          delta,
+                          scale_factor,
+                          current_filenumber,
+                          debug = FALSE) {
   if (debug) {
     cat3("Starting deconvolution")
     args <- list(
@@ -56,7 +51,8 @@ deconvolution <- function(
   }
 
   # If loaded name is in JCAMP-DX format
-  if(file_format == "jcampdx"){
+  if (file_format == "jcampdx") {
+
     # Import data and install necessary package readJDX automatically
     data <- readJDX::readJDX(file = name, SOFC = TRUE, debug = 0)
 
@@ -65,9 +61,9 @@ deconvolution <- function(
     factor_y <- scale_factor[2]
 
     # Save data
-    spectrum_length <- length(data[[4]]$x)-1
-    spectrum_x <- seq((spectrum_length/factor_x), 0, -1/factor_x)
-    spectrum_y <- (data[[4]]$y)/factor_y
+    spectrum_length <- length(data[[4]]$x) - 1
+    spectrum_x <- seq((spectrum_length / factor_x), 0, -1 / factor_x)
+    spectrum_y <- (data[[4]]$y) / factor_y
     if (debug) {
       cat3("Read raw data from", name)
       debuglist$data_read <- list(
@@ -79,30 +75,29 @@ deconvolution <- function(
     # Calculate ppm x-axis
     # Get values of ppm range from data
     # Get spectral width
-    for(i in 1:length(data[[2]])){
-      if(startsWith(data[[2]][i], "##$SW=")){
-        ppm_range_index <- i;
+    for (i in 1:length(data[[2]])) {
+      if (startsWith(data[[2]][i], "##$SW=")) {
+        ppm_range_index <- i
       }
     }
-    ppm_range <- as.numeric(sub("\\D+","",data[[2]][ppm_range_index]))
-    for(j in 1:length(data[[2]])){
-      if(startsWith(data[[2]][j], "##$OFFSET=")){
-        ppm_highest_index <- j;
+    ppm_range <- as.numeric(sub("\\D+", "", data[[2]][ppm_range_index]))
+    for (j in 1:length(data[[2]])) {
+      if (startsWith(data[[2]][j], "##$OFFSET=")) {
+        ppm_highest_index <- j
       }
     }
-    ppm_highest_value <- as.numeric(sub("\\D+","",data[[2]][ppm_highest_index]))
-    ppm_lowest_value <- ppm_highest_value-ppm_range
-    spectrum_x_ppm <- seq(ppm_highest_value, ppm_lowest_value, (-ppm_range/spectrum_length))
+    ppm_highest_value <- as.numeric(sub("\\D+", "", data[[2]][ppm_highest_index]))
+    ppm_lowest_value <- ppm_highest_value - ppm_range
+    spectrum_x_ppm <- seq(ppm_highest_value, ppm_lowest_value, (-ppm_range / spectrum_length))
   }
 
   # If loaded name is in Bruker format
-  if(file_format == "bruker"){
-
+  if (file_format == "bruker") {
     # Get file paths of all necessary documents
     acqus_file <- file.path(filepath, "acqus")
-    file_folders_spec <- paste("pdata", processing_value, "1r", sep="/")
+    file_folders_spec <- paste("pdata", processing_value, "1r", sep = "/")
     spec_file <- file.path(filepath, file_folders_spec)
-    file_folders_procs <- paste("pdata", processing_value, "procs", sep="/")
+    file_folders_procs <- paste("pdata", processing_value, "procs", sep = "/")
     procs_file <- file.path(filepath, file_folders_procs)
 
     # Read content of files
@@ -110,30 +105,31 @@ deconvolution <- function(
     procs_content <- readLines(procs_file)
 
     # Load necessary meta data of acqa content
-    for(i in 1:length(acqs_content)){
-      if(startsWith(acqs_content[i], "##$SW=")){
+    for (i in 1:length(acqs_content)) {
+      if (startsWith(acqs_content[i], "##$SW=")) {
         index_spectral_width <- i
       }
     }
+
     # Save digit value
-    ppm_range <- as.numeric(sub("\\D+","", acqs_content[index_spectral_width]))
+    ppm_range <- as.numeric(sub("\\D+", "", acqs_content[index_spectral_width]))
 
     # Load necessary meta data of procs content
-    for(i in 1:length(procs_content)){
-      if(startsWith(procs_content[i], "##$DTYPP=")){
+    for (i in 1:length(procs_content)) {
+      if (startsWith(procs_content[i], "##$DTYPP=")) {
         index_integer_type <- i
       }
-      if(startsWith(procs_content[i], "##$OFFSET=")){
+      if (startsWith(procs_content[i], "##$OFFSET=")) {
         index_highest_ppm <- i
       }
-      if(startsWith(procs_content[i], "##$SI=")){
+      if (startsWith(procs_content[i], "##$SI=")) {
         index_data_points <- i
       }
     }
     # Save digit value
-    ppm_highest_value <- as.numeric(sub("\\D+","", procs_content[index_highest_ppm]))
-    data_points <- as.numeric(sub("\\D+","", procs_content[index_data_points]))
-    integer_type <- as.numeric(sub("\\D+","", procs_content[index_integer_type]))
+    ppm_highest_value <- as.numeric(sub("\\D+", "", procs_content[index_highest_ppm]))
+    data_points <- as.numeric(sub("\\D+", "", procs_content[index_data_points]))
+    integer_type <- as.numeric(sub("\\D+", "", procs_content[index_integer_type]))
 
     # Establish connection , rb = read binary
     to_read <- file(spec_file, "rb")
@@ -142,10 +138,10 @@ deconvolution <- function(
     size_int <- ifelse(integer_type == 0, 4, 8)
 
     # Calculate lowest ppm value
-    ppm_lowest_value <- ppm_highest_value-ppm_range
+    ppm_lowest_value <- ppm_highest_value - ppm_range
 
     # Read binary spectrum
-    spectrum_y <- readBin(to_read, what="int", size=size_int, n=data_points, signed=TRUE, endian="little")
+    spectrum_y <- readBin(to_read, what = "int", size = size_int, n = data_points, signed = TRUE, endian = "little")
     close(to_read)
 
     # Choose factor to scale axis values
@@ -156,164 +152,165 @@ deconvolution <- function(
     spectrum_length <- length(spectrum_y)
 
     # Calculate x axis
-    spectrum_x_ppm <- seq(ppm_highest_value, ppm_highest_value-ppm_range, by = -(ppm_range/(spectrum_length-1)))
+    spectrum_x_ppm <- seq(ppm_highest_value, ppm_highest_value - ppm_range, by = -(ppm_range / (spectrum_length - 1)))
 
     # Calculate spectrum_x and recalculate spectum_y
-    spectrum_x <- seq((spectrum_length-1)/factor_x, 0, -0.001)
+    spectrum_x <- seq((spectrum_length - 1) / factor_x, 0, -0.001)
     if (debug) {
       cat3("Read raw data from", spec_file)
       debuglist$data_read <- list(
         spectrum_y_raw = spectrum_y,
-        spectrum_y = spectrum_y/factor_y
+        spectrum_y = spectrum_y / factor_y
       )
     }
-    spectrum_y <- spectrum_y/factor_y
+    spectrum_y <- spectrum_y / factor_y
   }
 
   # Check if parameters are the same for all analysed spectra
-  if(same_parameter == FALSE){
+  if (same_parameter == FALSE) {
     # Calculate signal free region
-    signal_free_region_left <- (spectrum_length+1)-((ppm_highest_value-signal_free_region[1])/(ppm_range/spectrum_length))
-    signal_free_region_right <- (spectrum_length+1)-((ppm_highest_value-signal_free_region[2])/(ppm_range/spectrum_length))
+    signal_free_region_left <- (spectrum_length + 1) - ((ppm_highest_value - signal_free_region[1]) / (ppm_range / spectrum_length))
+    signal_free_region_right <- (spectrum_length + 1) - ((ppm_highest_value - signal_free_region[2]) / (ppm_range / spectrum_length))
 
-    signal_free_region_left <- signal_free_region_left/factor_x
-    signal_free_region_right <- signal_free_region_right/factor_x
+    signal_free_region_left <- signal_free_region_left / factor_x
+    signal_free_region_right <- signal_free_region_right / factor_x
 
-    plot(spectrum_x_ppm, spectrum_y, type = "l", xlab="[ppm]", ylab="Intensity [a.u.]", xlim=rev(range(spectrum_x_ppm)))
-    graphics::abline(v=signal_free_region[1], col="green")
-    graphics::abline(v=signal_free_region[2], col="green")
+    plot(spectrum_x_ppm, spectrum_y, type = "l", xlab = "[ppm]", ylab = "Intensity [a.u.]", xlim = rev(range(spectrum_x_ppm)))
+    graphics::abline(v = signal_free_region[1], col = "green")
+    graphics::abline(v = signal_free_region[2], col = "green")
 
 
     # Check for correct range of signal free region
-    check_range_signal_free_region <- readline(prompt="Signal free region borders correct selected? (Area left and right of the green lines) (y/n): ")
+    check_range_signal_free_region <- readline(prompt = "Signal free region borders correct selected? (Area left and right of the green lines) (y/n): ")
 
     # Set parameter to TRUE or FALSE
-    if(check_range_signal_free_region == "y" | check_range_signal_free_region == "n"){
+    if (check_range_signal_free_region == "y" | check_range_signal_free_region == "n") {
       correct_input <- TRUE
-    }else{
+    } else {
       correct_input <- FALSE
     }
 
     # Check if User input is correct or not
-    while(correct_input == FALSE){
+    while (correct_input == FALSE) {
       # Ask User if he want to use same parameters for all spectra of the folder
       message("Error. Please type only y or n.")
-      check_range_signal_free_region <- readline(prompt="Signal free region borders correct selected? (Area left and right of the green lines) (y/n): ")
+      check_range_signal_free_region <- readline(prompt = "Signal free region borders correct selected? (Area left and right of the green lines) (y/n): ")
 
-      if(check_range_signal_free_region == "y" | check_range_signal_free_region == "n"){
+      if (check_range_signal_free_region == "y" | check_range_signal_free_region == "n") {
         correct_input <- TRUE
-      }else{
+      } else {
         correct_input <- FALSE
       }
     }
 
 
     while (check_range_signal_free_region == "n") {
-      signal_free_region_left_ppm <- readline(prompt="Choose another left border: [e.g. 12] ")
+      signal_free_region_left_ppm <- readline(prompt = "Choose another left border: [e.g. 12] ")
 
       # Check if input is a digit
       digit_true <- grepl("[+-]?([0-9]*[.])?[0-9]+", signal_free_region_left_ppm)
 
-      while(digit_true != TRUE){
+      while (digit_true != TRUE) {
         # Ask User which of the files should be used to adjust the parameters
         message("Error. Please only type a digit.")
-        signal_free_region_left_ppm <- readline(prompt="Choose another left border: [e.g. 12] ")
+        signal_free_region_left_ppm <- readline(prompt = "Choose another left border: [e.g. 12] ")
         # Check if input is a digit
         digit_true <- grepl("[+-]?([0-9]*[.])?[0-9]+", signal_free_region_left_ppm)
       }
       # Save as numeric
       signal_free_region_left_ppm <- as.numeric(signal_free_region_left_ppm)
-      signal_free_region_left <- ((spectrum_length+1)-((ppm_highest_value-signal_free_region_left_ppm)/(ppm_range/spectrum_length)))/factor_x
+      signal_free_region_left <- ((spectrum_length + 1) - ((ppm_highest_value - signal_free_region_left_ppm) / (ppm_range / spectrum_length))) / factor_x
 
-      signal_free_region_right_ppm <- readline(prompt="Choose another right border: [e.g. -2] ")
+      signal_free_region_right_ppm <- readline(prompt = "Choose another right border: [e.g. -2] ")
 
       # Check if input is a digit
       digit_true <- grepl("[+-]?([0-9]*[.])?[0-9]+", signal_free_region_right_ppm)
 
-      while(digit_true != TRUE){
+      while (digit_true != TRUE) {
         # Ask User which of the files should be used to adjust the parameters
         message("Error. Please only type a digit.")
-        signal_free_region_right_ppm <- readline(prompt="Choose another right border: [e.g. -2] ")
+        signal_free_region_right_ppm <- readline(prompt = "Choose another right border: [e.g. -2] ")
         # Check if input is a digit
         digit_true <- grepl("[+-]?([0-9]*[.])?[0-9]+", signal_free_region_right_ppm)
       }
       # Save as numeric
       signal_free_region_right_ppm <- as.numeric(signal_free_region_right_ppm)
-      signal_free_region_right <- ((spectrum_length+1)-((ppm_highest_value-signal_free_region_right_ppm)/(ppm_range/spectrum_length)))/factor_x
+      signal_free_region_right <- ((spectrum_length + 1) - ((ppm_highest_value - signal_free_region_right_ppm) / (ppm_range / spectrum_length))) / factor_x
 
-      plot(spectrum_x_ppm, spectrum_y, type = "l", xlab="[ppm]", ylab="Intensity [a.u.]", xlim=rev(range(spectrum_x_ppm)))
-      graphics::abline(v=signal_free_region_left_ppm, col="green")
-      graphics::abline(v=signal_free_region_right_ppm, col="green")
+      plot(spectrum_x_ppm, spectrum_y, type = "l", xlab = "[ppm]", ylab = "Intensity [a.u.]", xlim = rev(range(spectrum_x_ppm)))
+      graphics::abline(v = signal_free_region_left_ppm, col = "green")
+      graphics::abline(v = signal_free_region_right_ppm, col = "green")
 
-      check_range_signal_free_region <- readline(prompt="Signal free region borders correct selected? (Area left and right of the green lines) (y/n): ")
+      check_range_signal_free_region <- readline(prompt = "Signal free region borders correct selected? (Area left and right of the green lines) (y/n): ")
 
       # Set parameter to TRUE or FALSE
-      if(check_range_signal_free_region == "y" | check_range_signal_free_region == "n"){
+      if (check_range_signal_free_region == "y" | check_range_signal_free_region == "n") {
         correct_input <- TRUE
-      }else{
+      } else {
         correct_input <- FALSE
       }
 
       # Check if User input is correct or not
-      while(correct_input == FALSE){
+      while (correct_input == FALSE) {
         # Ask User if he want to use same parameters for all spectra of the folder
         message("Error. Please type only y or n.")
-        check_range_signal_free_region <- readline(prompt="Signal free region borders correct selected? (Area left and right of the green lines) (y/n): ")
+        check_range_signal_free_region <- readline(prompt = "Signal free region borders correct selected? (Area left and right of the green lines) (y/n): ")
 
-        if(check_range_signal_free_region == "y" | check_range_signal_free_region == "n"){
+        if (check_range_signal_free_region == "y" | check_range_signal_free_region == "n") {
           correct_input <- TRUE
-        }else{
+        } else {
           correct_input <- FALSE
         }
       }
     }
 
     # Remove water signal
-    water_signal_position <- length(spectrum_x)/2
-    water_signal_position_ppm <- spectrum_x_ppm[length(spectrum_x_ppm)/2]
+    water_signal_position <- length(spectrum_x) / 2
+    water_signal_position_ppm <- spectrum_x_ppm[length(spectrum_x_ppm) / 2]
+
     # Recalculate ppm into data points
-    range_water_signal <- range_water_signal_ppm/(ppm_range/spectrum_length)
+    range_water_signal <- range_water_signal_ppm / (ppm_range / spectrum_length)
     water_signal_left <- water_signal_position - range_water_signal
     water_signal_right <- water_signal_position + range_water_signal
 
-    plot(spectrum_x_ppm, spectrum_y, type = "l", xlab="[ppm]", ylab="Intensity [a.u.]", xlim=rev(range((water_signal_position_ppm-2*range_water_signal_ppm), (water_signal_position_ppm+2*range_water_signal_ppm))))
-    graphics::abline(v=spectrum_x_ppm[water_signal_left], col="red")
-    graphics::abline(v=spectrum_x_ppm[water_signal_right], col="red")
+    plot(spectrum_x_ppm, spectrum_y, type = "l", xlab = "[ppm]", ylab = "Intensity [a.u.]", xlim = rev(range((water_signal_position_ppm - 2 * range_water_signal_ppm), (water_signal_position_ppm + 2 * range_water_signal_ppm))))
+    graphics::abline(v = spectrum_x_ppm[water_signal_left], col = "red")
+    graphics::abline(v = spectrum_x_ppm[water_signal_right], col = "red")
 
     # Check for correct range of water artefact
-    check_range_water_signal <- readline(prompt="Water artefact fully inside red vertical lines? (y/n): ")
+    check_range_water_signal <- readline(prompt = "Water artefact fully inside red vertical lines? (y/n): ")
 
     # Set parameter to TRUE or FALSE
-    if(check_range_water_signal == "y" | check_range_water_signal == "n"){
+    if (check_range_water_signal == "y" | check_range_water_signal == "n") {
       correct_input <- TRUE
-    }else{
+    } else {
       correct_input <- FALSE
     }
 
     # Check if User input is correct or not
-    while(correct_input == FALSE){
+    while (correct_input == FALSE) {
       # Ask User if he want to use same parameters for all spectra of the folder
       message("Error. Please type only y or n.")
-      check_range_water_signal <- readline(prompt="Water artefact fully inside red vertical lines? (y/n): ")
+      check_range_water_signal <- readline(prompt = "Water artefact fully inside red vertical lines? (y/n): ")
 
-      if(check_range_water_signal == "y" | check_range_water_signal == "n"){
+      if (check_range_water_signal == "y" | check_range_water_signal == "n") {
         correct_input <- TRUE
-      }else{
+      } else {
         correct_input <- FALSE
       }
     }
 
 
     while (check_range_water_signal == "n") {
-      range_water_signal_ppm <- readline(prompt="Choose another half width range (in ppm) for the water artefact: [e.g. 0.1222154] ")
+      range_water_signal_ppm <- readline(prompt = "Choose another half width range (in ppm) for the water artefact: [e.g. 0.1222154] ")
 
       # Check if input is a digit
       digit_true <- grepl("[+-]?([0-9]*[.])?[0-9]+", range_water_signal_ppm)
 
-      while(digit_true != TRUE){
+      while (digit_true != TRUE) {
         # Ask User which of the files should be used to adjust the parameters
         message("Error. Please only type a digit.")
-        range_water_signal_ppm <- readline(prompt="Choose another half width range (in ppm) for the water artefact: [e.g. 0.1222154] ")
+        range_water_signal_ppm <- readline(prompt = "Choose another half width range (in ppm) for the water artefact: [e.g. 0.1222154] ")
         # Check if input is a digit
         digit_true <- grepl("[+-]?([0-9]*[.])?[0-9]+", range_water_signal_ppm)
       }
@@ -323,35 +320,35 @@ deconvolution <- function(
 
 
       # Remove water signal
-      water_signal_position <- length(spectrum_x)/2
-      water_signal_position_ppm <- spectrum_x_ppm[length(spectrum_x_ppm)/2]
+      water_signal_position <- length(spectrum_x) / 2
+      water_signal_position_ppm <- spectrum_x_ppm[length(spectrum_x_ppm) / 2]
       # Recalculate ppm into data points
-      range_water_signal<- range_water_signal_ppm/(ppm_range/spectrum_length)
+      range_water_signal <- range_water_signal_ppm / (ppm_range / spectrum_length)
       water_signal_left <- water_signal_position - range_water_signal
       water_signal_right <- water_signal_position + range_water_signal
 
-      plot(spectrum_x_ppm, spectrum_y, type = "l", xlab="[ppm]", ylab="Intensity [a.u.]", xlim=rev(range((water_signal_position_ppm-2*range_water_signal_ppm), (water_signal_position_ppm+2*range_water_signal_ppm))))
-      graphics::abline(v=spectrum_x_ppm[water_signal_left], col="red")
-      graphics::abline(v=spectrum_x_ppm[water_signal_right], col="red")
+      plot(spectrum_x_ppm, spectrum_y, type = "l", xlab = "[ppm]", ylab = "Intensity [a.u.]", xlim = rev(range((water_signal_position_ppm - 2 * range_water_signal_ppm), (water_signal_position_ppm + 2 * range_water_signal_ppm))))
+      graphics::abline(v = spectrum_x_ppm[water_signal_left], col = "red")
+      graphics::abline(v = spectrum_x_ppm[water_signal_right], col = "red")
 
-      check_range_water_signal <- readline(prompt="Water artefact fully inside red vertical lines? (y/n): ")
+      check_range_water_signal <- readline(prompt = "Water artefact fully inside red vertical lines? (y/n): ")
 
       # Set parameter to TRUE or FALSE
-      if(check_range_water_signal == "y" | check_range_water_signal == "n"){
+      if (check_range_water_signal == "y" | check_range_water_signal == "n") {
         correct_input <- TRUE
-      }else{
+      } else {
         correct_input <- FALSE
       }
 
       # Check if User input is correct or not
-      while(correct_input == FALSE){
+      while (correct_input == FALSE) {
         # Ask User if he want to use same parameters for all spectra of the folder
         message("Error. Please type only y or n.")
-        check_range_water_signal <- readline(prompt="Water artefact fully inside red vertical lines? (y/n): ")
+        check_range_water_signal <- readline(prompt = "Water artefact fully inside red vertical lines? (y/n): ")
 
-        if(check_range_water_signal == "y" | check_range_water_signal == "n"){
+        if (check_range_water_signal == "y" | check_range_water_signal == "n") {
           correct_input <- TRUE
-        }else{
+        } else {
           correct_input <- FALSE
         }
       }
@@ -359,96 +356,96 @@ deconvolution <- function(
   }
 
   # Check if parameters are the same for all analysed spectra
-  if(same_parameter == TRUE){
+  if (same_parameter == TRUE) {
     # Check if current file is the first file
     # If yes, this file is used to adjust the parameters for all spectra
-    if(current_filenumber == 1){
+    if (current_filenumber == 1) {
       # Calculate signal free region
-      signal_free_region_left <- (spectrum_length+1)-((ppm_highest_value-signal_free_region[1])/(ppm_range/spectrum_length))
-      signal_free_region_right <- (spectrum_length+1)-((ppm_highest_value-signal_free_region[2])/(ppm_range/spectrum_length))
+      signal_free_region_left <- (spectrum_length + 1) - ((ppm_highest_value - signal_free_region[1]) / (ppm_range / spectrum_length))
+      signal_free_region_right <- (spectrum_length + 1) - ((ppm_highest_value - signal_free_region[2]) / (ppm_range / spectrum_length))
 
-      signal_free_region_left <- signal_free_region_left/factor_x
-      signal_free_region_right <- signal_free_region_right/factor_x
+      signal_free_region_left <- signal_free_region_left / factor_x
+      signal_free_region_right <- signal_free_region_right / factor_x
 
-      plot(spectrum_x_ppm, spectrum_y, type = "l", xlab="[ppm]", ylab="Intensity [a.u.]", xlim=rev(range(spectrum_x_ppm)))
-      graphics::abline(v=signal_free_region[1], col="green")
-      graphics::abline(v=signal_free_region[2], col="green")
+      plot(spectrum_x_ppm, spectrum_y, type = "l", xlab = "[ppm]", ylab = "Intensity [a.u.]", xlim = rev(range(spectrum_x_ppm)))
+      graphics::abline(v = signal_free_region[1], col = "green")
+      graphics::abline(v = signal_free_region[2], col = "green")
 
       # Check for correct range of signal free region
-      check_range_signal_free_region <- readline(prompt="Signal free region borders correct selected? (Area left and right of the green lines) (y/n): ")
+      check_range_signal_free_region <- readline(prompt = "Signal free region borders correct selected? (Area left and right of the green lines) (y/n): ")
 
       # Set parameter to TRUE or FALSE
-      if(check_range_signal_free_region == "y" | check_range_signal_free_region == "n"){
+      if (check_range_signal_free_region == "y" | check_range_signal_free_region == "n") {
         correct_input <- TRUE
-      }else{
+      } else {
         correct_input <- FALSE
       }
 
       # Check if User input is correct or not
-      while(correct_input == FALSE){
+      while (correct_input == FALSE) {
         # Ask User if he want to use same parameters for all spectra of the folder
         message("Error. Please type only y or n.")
-        check_range_signal_free_region <- readline(prompt="Signal free region borders correct selected? (Area left and right of the green lines) (y/n): ")
+        check_range_signal_free_region <- readline(prompt = "Signal free region borders correct selected? (Area left and right of the green lines) (y/n): ")
 
-        if(check_range_signal_free_region == "y" | check_range_signal_free_region == "n"){
+        if (check_range_signal_free_region == "y" | check_range_signal_free_region == "n") {
           correct_input <- TRUE
-        }else{
+        } else {
           correct_input <- FALSE
         }
       }
 
       while (check_range_signal_free_region == "n") {
-        signal_free_region_left_ppm <- readline(prompt="Choose another left border: [e.g. 12] ")
+        signal_free_region_left_ppm <- readline(prompt = "Choose another left border: [e.g. 12] ")
         # Check if input is a digit
         digit_true <- grepl("[+-]?([0-9]*[.])?[0-9]+", signal_free_region_left_ppm)
 
-        while(digit_true != TRUE){
+        while (digit_true != TRUE) {
           # Ask User which of the files should be used to adjust the parameters
           message("Error. Please only type a digit.")
-          signal_free_region_left_ppm <- readline(prompt="Choose another left border: [e.g. 12] ")
+          signal_free_region_left_ppm <- readline(prompt = "Choose another left border: [e.g. 12] ")
           # Check if input is a digit
           digit_true <- grepl("[+-]?([0-9]*[.])?[0-9]+", signal_free_region_left_ppm)
         }
         # Save as numeric
         signal_free_region_left_ppm <- as.numeric(signal_free_region_left_ppm)
-        signal_free_region_left <- ((spectrum_length+1)-((ppm_highest_value-signal_free_region_left_ppm)/(ppm_range/spectrum_length)))/factor_x
+        signal_free_region_left <- ((spectrum_length + 1) - ((ppm_highest_value - signal_free_region_left_ppm) / (ppm_range / spectrum_length))) / factor_x
 
-        signal_free_region_right_ppm <- readline(prompt="Choose another right border: [e.g. -2] ")
+        signal_free_region_right_ppm <- readline(prompt = "Choose another right border: [e.g. -2] ")
         # Check if input is a digit
         digit_true <- grepl("[+-]?([0-9]*[.])?[0-9]+", signal_free_region_right_ppm)
 
-        while(digit_true != TRUE){
+        while (digit_true != TRUE) {
           # Ask User which of the files should be used to adjust the parameters
           message("Error. Please only type a digit.")
-          signal_free_region_right_ppm <- readline(prompt="Choose another right border: [e.g. -2] ")
+          signal_free_region_right_ppm <- readline(prompt = "Choose another right border: [e.g. -2] ")
           # Check if input is a digit
           digit_true <- grepl("[+-]?([0-9]*[.])?[0-9]+", signal_free_region_right_ppm)
         }
         # Save as numeric
         signal_free_region_right_ppm <- as.numeric(signal_free_region_right_ppm)
-        signal_free_region_right <- ((spectrum_length+1)-((ppm_highest_value-signal_free_region_right_ppm)/(ppm_range/spectrum_length)))/factor_x
+        signal_free_region_right <- ((spectrum_length + 1) - ((ppm_highest_value - signal_free_region_right_ppm) / (ppm_range / spectrum_length))) / factor_x
 
-        plot(spectrum_x_ppm, spectrum_y, type = "l", xlab="[ppm]", ylab="Intensity [a.u.]", xlim=rev(range(spectrum_x_ppm)))
-        graphics::abline(v=signal_free_region_left_ppm, col="green")
-        graphics::abline(v=signal_free_region_right_ppm, col="green")
+        plot(spectrum_x_ppm, spectrum_y, type = "l", xlab = "[ppm]", ylab = "Intensity [a.u.]", xlim = rev(range(spectrum_x_ppm)))
+        graphics::abline(v = signal_free_region_left_ppm, col = "green")
+        graphics::abline(v = signal_free_region_right_ppm, col = "green")
 
-        check_range_signal_free_region <- readline(prompt="Signal free region borders correct selected? (Area left and right of the green lines) (y/n): ")
+        check_range_signal_free_region <- readline(prompt = "Signal free region borders correct selected? (Area left and right of the green lines) (y/n): ")
         # Set parameter to TRUE or FALSE
-        if(check_range_signal_free_region == "y" | check_range_signal_free_region == "n"){
+        if (check_range_signal_free_region == "y" | check_range_signal_free_region == "n") {
           correct_input <- TRUE
-        }else{
+        } else {
           correct_input <- FALSE
         }
 
         # Check if User input is correct or not
-        while(correct_input == FALSE){
+        while (correct_input == FALSE) {
           # Ask User if he want to use same parameters for all spectra of the folder
           message("Error. Please type only y or n.")
-          check_range_signal_free_region <- readline(prompt="Signal free region borders correct selected? (Area left and right of the green lines) (y/n): ")
+          check_range_signal_free_region <- readline(prompt = "Signal free region borders correct selected? (Area left and right of the green lines) (y/n): ")
 
-          if(check_range_signal_free_region == "y" | check_range_signal_free_region == "n"){
+          if (check_range_signal_free_region == "y" | check_range_signal_free_region == "n") {
             correct_input <- TRUE
-          }else{
+          } else {
             correct_input <- FALSE
           }
         }
@@ -459,51 +456,51 @@ deconvolution <- function(
 
 
       # Remove water signal
-      water_signal_position <- length(spectrum_x)/2
-      water_signal_position_ppm <- spectrum_x_ppm[length(spectrum_x_ppm)/2]
+      water_signal_position <- length(spectrum_x) / 2
+      water_signal_position_ppm <- spectrum_x_ppm[length(spectrum_x_ppm) / 2]
       # Recalculate ppm into data points
-      range_water_signal<- range_water_signal_ppm/(ppm_range/spectrum_length)
+      range_water_signal <- range_water_signal_ppm / (ppm_range / spectrum_length)
       water_signal_left <- water_signal_position - range_water_signal
       water_signal_right <- water_signal_position + range_water_signal
 
-      plot(spectrum_x_ppm, spectrum_y, type = "l", xlab="[ppm]", ylab="Intensity [a.u.]", xlim=rev(range((water_signal_position_ppm-2*range_water_signal_ppm), (water_signal_position_ppm+2*range_water_signal_ppm))))
-      graphics::abline(v=spectrum_x_ppm[water_signal_left], col="red")
-      graphics::abline(v=spectrum_x_ppm[water_signal_right], col="red")
+      plot(spectrum_x_ppm, spectrum_y, type = "l", xlab = "[ppm]", ylab = "Intensity [a.u.]", xlim = rev(range((water_signal_position_ppm - 2 * range_water_signal_ppm), (water_signal_position_ppm + 2 * range_water_signal_ppm))))
+      graphics::abline(v = spectrum_x_ppm[water_signal_left], col = "red")
+      graphics::abline(v = spectrum_x_ppm[water_signal_right], col = "red")
 
 
       # Check for correct range of water artefact
-      check_range_water_signal <- readline(prompt="Water artefact fully inside red vertical lines? (y/n): ")
+      check_range_water_signal <- readline(prompt = "Water artefact fully inside red vertical lines? (y/n): ")
 
       # Set parameter to TRUE or FALSE
-      if(check_range_water_signal == "y" | check_range_water_signal == "n"){
+      if (check_range_water_signal == "y" | check_range_water_signal == "n") {
         correct_input <- TRUE
-      }else{
+      } else {
         correct_input <- FALSE
       }
 
       # Check if User input is correct or not
-      while(correct_input == FALSE){
+      while (correct_input == FALSE) {
         # Ask User if he want to use same parameters for all spectra of the folder
         message("Error. Please type only y or n.")
-        check_range_water_signal <- readline(prompt="Water artefact fully inside red vertical lines? (y/n): ")
+        check_range_water_signal <- readline(prompt = "Water artefact fully inside red vertical lines? (y/n): ")
 
-        if(check_range_water_signal == "y" | check_range_water_signal == "n"){
+        if (check_range_water_signal == "y" | check_range_water_signal == "n") {
           correct_input <- TRUE
-        }else{
+        } else {
           correct_input <- FALSE
         }
       }
 
       while (check_range_water_signal == "n") {
-        range_water_signal_ppm <- readline(prompt="Choose another half width range (in ppm) for the water artefact: [e.g. 0.1222154] ")
+        range_water_signal_ppm <- readline(prompt = "Choose another half width range (in ppm) for the water artefact: [e.g. 0.1222154] ")
 
         # Check if input is a digit
         digit_true <- grepl("[+-]?([0-9]*[.])?[0-9]+", range_water_signal_ppm)
 
-        while(digit_true != TRUE){
+        while (digit_true != TRUE) {
           # Ask User which of the files should be used to adjust the parameters
           message("Error. Please only type a digit.")
-          range_water_signal_ppm <- readline(prompt="Choose another half width range (in ppm) for the water artefact: [e.g. 0.1222154] ")
+          range_water_signal_ppm <- readline(prompt = "Choose another half width range (in ppm) for the water artefact: [e.g. 0.1222154] ")
           # Check if input is a digit
           digit_true <- grepl("[+-]?([0-9]*[.])?[0-9]+", range_water_signal_ppm)
         }
@@ -512,34 +509,34 @@ deconvolution <- function(
 
 
         # Remove water signal
-        water_signal_position <- length(spectrum_x)/2
-        water_signal_position_ppm <- spectrum_x_ppm[length(spectrum_x_ppm)/2]
+        water_signal_position <- length(spectrum_x) / 2
+        water_signal_position_ppm <- spectrum_x_ppm[length(spectrum_x_ppm) / 2]
         # Recalculate ppm into data points
-        range_water_signal<- range_water_signal_ppm/(ppm_range/spectrum_length)
+        range_water_signal <- range_water_signal_ppm / (ppm_range / spectrum_length)
         water_signal_left <- water_signal_position - range_water_signal
         water_signal_right <- water_signal_position + range_water_signal
 
-        plot(spectrum_x_ppm, spectrum_y, type = "l", xlab="[ppm]", ylab="Intensity [a.u.]", xlim=rev(range((water_signal_position_ppm-2*range_water_signal_ppm), (water_signal_position_ppm+2*range_water_signal_ppm))))
-        graphics::abline(v=spectrum_x_ppm[water_signal_left], col="red")
-        graphics::abline(v=spectrum_x_ppm[water_signal_right], col="red")
+        plot(spectrum_x_ppm, spectrum_y, type = "l", xlab = "[ppm]", ylab = "Intensity [a.u.]", xlim = rev(range((water_signal_position_ppm - 2 * range_water_signal_ppm), (water_signal_position_ppm + 2 * range_water_signal_ppm))))
+        graphics::abline(v = spectrum_x_ppm[water_signal_left], col = "red")
+        graphics::abline(v = spectrum_x_ppm[water_signal_right], col = "red")
 
-        check_range_water_signal <- readline(prompt="Water artefact fully inside red vertical lines? (y/n): ")
+        check_range_water_signal <- readline(prompt = "Water artefact fully inside red vertical lines? (y/n): ")
         # Set parameter to TRUE or FALSE
-        if(check_range_water_signal == "y" | check_range_water_signal == "n"){
+        if (check_range_water_signal == "y" | check_range_water_signal == "n") {
           correct_input <- TRUE
-        }else{
+        } else {
           correct_input <- FALSE
         }
 
         # Check if User input is correct or not
-        while(correct_input == FALSE){
+        while (correct_input == FALSE) {
           # Ask User if he want to use same parameters for all spectra of the folder
           message("Error. Please type only y or n.")
-          check_range_water_signal <- readline(prompt="Water artefact fully inside red vertical lines? (y/n): ")
+          check_range_water_signal <- readline(prompt = "Water artefact fully inside red vertical lines? (y/n): ")
 
-          if(check_range_water_signal == "y" | check_range_water_signal == "n"){
+          if (check_range_water_signal == "y" | check_range_water_signal == "n") {
             correct_input <- TRUE
-          }else{
+          } else {
             correct_input <- FALSE
           }
         }
@@ -547,25 +544,25 @@ deconvolution <- function(
 
       # Save adjusted range_water_signal
       range_water_signal_ppm <- range_water_signal_ppm
-
-    }else{
+    } else {
       # If current file is not the first file, parameters are already adjusted and only needs to be loaded
       signal_free_region_left <- signal_free_region[1]
       signal_free_region_right <- signal_free_region[2]
 
       # Recalculate ppm into data points
-      water_signal_position <- length(spectrum_x)/2
-      water_signal_position_ppm <- spectrum_x_ppm[length(spectrum_x_ppm)/2]
-      range_water_signal<- range_water_signal_ppm/(ppm_range/spectrum_length)
+      water_signal_position <- length(spectrum_x) / 2
+      water_signal_position_ppm <- spectrum_x_ppm[length(spectrum_x_ppm) / 2]
+      range_water_signal <- range_water_signal_ppm / (ppm_range / spectrum_length)
       water_signal_left <- water_signal_position - range_water_signal
       water_signal_right <- water_signal_position + range_water_signal
     }
   }
 
   # Remove water signal
-  for(i in water_signal_right:water_signal_left){
+  for (i in water_signal_right:water_signal_left) {
     spectrum_y[i] <- 0.00000001
   }
+
   if (debug) {
     cat3("Removed water signal")
     debuglist$ws_rm <- list(
@@ -582,42 +579,42 @@ deconvolution <- function(
       water_signal_right = water_signal_right
     )
   }
+
   # Remove negative values of spectrum by Saving the absolut values
-  for(i in 1:length(spectrum_y)){
+  for (i in 1:length(spectrum_y)) {
     spectrum_y[i] <- abs(spectrum_y[i])
   }
   if (debug) {
     cat3("Removed negative values")
     debuglist$neg_rm <- list(spectrum_y = spectrum_y)
   }
+
   # Variable Mean Filter
   smoothing_iteration <- smoothing_param[1]
   smoothing_pairs <- smoothing_param[2]
 
   # Check if number of smoothing pairs is uneven
-  while(smoothing_pairs%%2 == "0"){
-    smoothing_pairs <- as.numeric(readline(prompt="Number of smoothing pairs is even. Please choose uneven number: "))
+  while (smoothing_pairs %% 2 == "0") {
+    smoothing_pairs <- as.numeric(readline(prompt = "Number of smoothing pairs is even. Please choose uneven number: "))
   }
 
-  for(j in 1:smoothing_iteration){
+  for (j in 1:smoothing_iteration) {
     smoothed_spectrum_y <- c()
-    for(i in 1:(length(spectrum_x))){
+    for (i in 1:(length(spectrum_x))) {
       # Calculate borders
-      left_border <- i-floor(smoothing_pairs/2)
-      right_border <- i+floor(smoothing_pairs/2)
+      left_border <- i - floor(smoothing_pairs / 2)
+      right_border <- i + floor(smoothing_pairs / 2)
 
       # Calculate smoothed spectrum for borders
-      if(left_border <= 0){
+      if (left_border <= 0) {
         left_border <- 1
-        smoothed_spectrum_y[i] <- (1/right_border)*sum(spectrum_y[left_border:right_border])
-      }
-      else if(right_border >= length(spectrum_x)){
+        smoothed_spectrum_y[i] <- (1 / right_border) * sum(spectrum_y[left_border:right_border])
+      } else if (right_border >= length(spectrum_x)) {
         right_border <- length(spectrum_x)
-        smoothed_spectrum_y[i] <- (1/(right_border-left_border+1))*sum(spectrum_y[left_border:right_border])
-      }
-      else{
+        smoothed_spectrum_y[i] <- (1 / (right_border - left_border + 1)) * sum(spectrum_y[left_border:right_border])
+      } else {
         # Calculate smoothed spectrum
-        smoothed_spectrum_y[i] <- (1/smoothing_pairs)*sum(spectrum_y[left_border:right_border])
+        smoothed_spectrum_y[i] <- (1 / smoothing_pairs) * sum(spectrum_y[left_border:right_border])
       }
     }
     # Save smoothed spectrum
@@ -626,68 +623,67 @@ deconvolution <- function(
 
   if (debug) {
     cat3("Smoothed spectrum")
-    debuglist$smoothed = list(spectrum_y = spectrum_y)
+    debuglist$smoothed <- list(spectrum_y = spectrum_y)
   }
+
   # Peak selection procedure
 
   # Calculate second derivative of spectrum
-  second_derivative <- matrix(nrow = 2, ncol = length(spectrum_x)-2)
-  for(i in 2:length(spectrum_x)-1){
-    second_derivative[1,i-1] <- spectrum_x[i]
-    second_derivative[2,i-1] <- spectrum_y[i-1] + spectrum_y[i+1] -2*spectrum_y[i]
+  second_derivative <- matrix(nrow = 2, ncol = length(spectrum_x) - 2)
+  for (i in 2:length(spectrum_x) - 1) {
+    second_derivative[1, i - 1] <- spectrum_x[i]
+    second_derivative[2, i - 1] <- spectrum_y[i - 1] + spectrum_y[i + 1] - 2 * spectrum_y[i]
   }
 
   # Find all local minima of second derivative
   peaks_x <- c()
   peaks_index <- c()
-  second_derivative_border <- ncol(second_derivative)-1
-  for(i in 2:second_derivative_border){
-    if(second_derivative[2,i] < 0){
-      if((second_derivative[2,i] <= second_derivative[2,i-1]) & (second_derivative[2,i] < second_derivative[2,i+1])){
-        #if(((spectrum_y[i+1] >= spectrum_y[i]) & (spectrum_y[i+1] > spectrum_y[i+2])) | ((spectrum_y[i+1] > spectrum_y[i]) & (spectrum_y[i+1] >= spectrum_y[i+2]))){
+  second_derivative_border <- ncol(second_derivative) - 1
+  for (i in 2:second_derivative_border) {
+    if (second_derivative[2, i] < 0) {
+      if ((second_derivative[2, i] <= second_derivative[2, i - 1]) & (second_derivative[2, i] < second_derivative[2, i + 1])) {
+        # if(((spectrum_y[i+1] >= spectrum_y[i]) & (spectrum_y[i+1] > spectrum_y[i+2])) | ((spectrum_y[i+1] > spectrum_y[i]) & (spectrum_y[i+1] >= spectrum_y[i+2]))){
         # Add local minima to peak list
-        peaks_x <- c(peaks_x, second_derivative[1,i])
+        peaks_x <- c(peaks_x, second_derivative[1, i])
         peaks_index <- c(peaks_index, i)
       }
     }
   }
 
-
-
   # Find all left positions of all local minima of second derivative
   left_position <- matrix(nrow = 1, ncol = length(peaks_x))
-  for(i in 1:length(peaks_x)){
+  for (i in 1:length(peaks_x)) {
     # Save next left position of current local minima
-    next_left <- peaks_index[i]+1
-    while((peaks_index[i] < next_left) & (next_left < ncol(second_derivative))){
-      if(second_derivative[2,next_left-1] < second_derivative[2,next_left]){
-        if(((second_derivative[2,next_left-1] < second_derivative[2,next_left]) & (second_derivative[2,next_left+1] <= second_derivative[2,next_left])) | ((second_derivative[2,next_left] < 0) & (second_derivative[2,next_left+1] >= 0))){
+    next_left <- peaks_index[i] + 1
+    while ((peaks_index[i] < next_left) & (next_left < ncol(second_derivative))) {
+      if (second_derivative[2, next_left - 1] < second_derivative[2, next_left]) {
+        if (((second_derivative[2, next_left - 1] < second_derivative[2, next_left]) & (second_derivative[2, next_left + 1] <= second_derivative[2, next_left])) | ((second_derivative[2, next_left] < 0) & (second_derivative[2, next_left + 1] >= 0))) {
           left_position[i] <- next_left
           break
-        }else{
-          next_left <- next_left+1
+        } else {
+          next_left <- next_left + 1
         }
-      }else{
-        next_left <- next_left+1
+      } else {
+        next_left <- next_left + 1
       }
     }
   }
 
   # Find all right positions of all local minima of second derivative
   right_position <- matrix(nrow = 1, ncol = length(peaks_x))
-  for(i in 1:length(peaks_x)){
+  for (i in 1:length(peaks_x)) {
     # Save next right position of current local minima
-    next_right <- peaks_index[i]-1
-    while((next_right < peaks_index[i]) & (next_right >= 2)){
-      if(second_derivative[2,next_right+1] < second_derivative[2,next_right]){
-        if(((second_derivative[2,next_right+1] < second_derivative[2,next_right]) & (second_derivative[2,next_right-1] <= second_derivative[2,next_right])) | ((second_derivative[2,next_right] < 0) & (second_derivative[2,next_right-1] >= 0))){
+    next_right <- peaks_index[i] - 1
+    while ((next_right < peaks_index[i]) & (next_right >= 2)) {
+      if (second_derivative[2, next_right + 1] < second_derivative[2, next_right]) {
+        if (((second_derivative[2, next_right + 1] < second_derivative[2, next_right]) & (second_derivative[2, next_right - 1] <= second_derivative[2, next_right])) | ((second_derivative[2, next_right] < 0) & (second_derivative[2, next_right - 1] >= 0))) {
           right_position[i] <- next_right
           break
-        }else{
-          next_right <- next_right-1
+        } else {
+          next_right <- next_right - 1
         }
-      }else{
-        next_right <- next_right-1
+      } else {
+        next_right <- next_right - 1
       }
     }
   }
@@ -706,8 +702,8 @@ deconvolution <- function(
 
   # Check borders of peak triplets
   # If NA values are available, remove corresponding peak triplet
-  for(i in length(left_position):1){
-    if(is.na(left_position[i]) | (is.na(right_position[i]))){
+  for (i in length(left_position):1) {
+    if (is.na(left_position[i]) | (is.na(right_position[i]))) {
       peaks_x <- peaks_x[-i]
       peaks_index <- peaks_index[-i]
       left_position <- left_position[-i]
@@ -728,17 +724,17 @@ deconvolution <- function(
   scores <- matrix(nrow = 1, ncol = length(peaks_x))
   scores_left <- matrix(nrow = 1, ncol = length(peaks_x))
   scores_right <- matrix(nrow = 1, ncol = length(peaks_x))
-  for(i in 1:length(peaks_x)){
+  for (i in 1:length(peaks_x)) {
     # Calculate left score
     left_score <- 0
-    for(j in peaks_index[i]:left_position[i]){
-      left_score <- sum(left_score, abs(second_derivative[2,j]))
+    for (j in peaks_index[i]:left_position[i]) {
+      left_score <- sum(left_score, abs(second_derivative[2, j]))
     }
     scores_left[i] <- left_score
     # Calculate right score
     right_score <- 0
-    for(k in right_position[i]:peaks_index[i]){
-      right_score <- sum(right_score, abs(second_derivative[2,k]))
+    for (k in right_position[i]:peaks_index[i]) {
+      right_score <- sum(right_score, abs(second_derivative[2, k]))
     }
     scores_right[i] <- right_score
     # Save minimum score
@@ -746,8 +742,8 @@ deconvolution <- function(
   }
 
   # Calculate mean of the score and standard deviation of the score of the signal free region R
-  index_left <- which(spectrum_x[peaks_index+1] >= signal_free_region_left)
-  index_right <- which(spectrum_x[peaks_index+1] <= signal_free_region_right)
+  index_left <- which(spectrum_x[peaks_index + 1] >= signal_free_region_left)
+  index_right <- which(spectrum_x[peaks_index + 1] <= signal_free_region_right)
 
   mean_score <- mean(c(scores[index_left], scores[index_right]))
   sd_score <- stats::sd(c(scores[index_left], scores[index_right]))
@@ -757,8 +753,8 @@ deconvolution <- function(
   filtered_left_position <- c()
   filtered_right_position <- c()
   save_scores <- c()
-  for(i in 1:length(peaks_x)){
-    if(scores[i] >= mean_score + delta*sd_score){
+  for (i in 1:length(peaks_x)) {
+    if (scores[i] >= mean_score + delta * sd_score) {
       # Save peak position
       filtered_peaks <- c(filtered_peaks, peaks_index[i])
       # Save left position
@@ -787,44 +783,44 @@ deconvolution <- function(
   }
 
   # Parameter approximation method
-  w_1<-c()
-  w_2<-c()
-  w_3<-c()
-  y_1<-c()
-  y_2<-c()
-  y_3<-c()
-  w_1_2<-c()
-  w_1_3<-c()
-  w_2_3<-c()
-  y_1_2<-c()
-  y_1_3<-c()
-  y_2_3<-c()
+  w_1 <- c()
+  w_2 <- c()
+  w_3 <- c()
+  y_1 <- c()
+  y_2 <- c()
+  y_3 <- c()
+  w_1_2 <- c()
+  w_1_3 <- c()
+  w_2_3 <- c()
+  y_1_2 <- c()
+  y_1_3 <- c()
+  y_2_3 <- c()
   w_delta <- c()
-  w<-c()
-  lambda<-c()
-  A<-c()
+  w <- c()
+  lambda <- c()
+  A <- c()
 
   # Calculate parameters w, lambda and A for the initial lorentz curves
-  for(i in 1:length(filtered_peaks)){
+  for (i in 1:length(filtered_peaks)) {
     # Calculate position of peak triplets
-    w_1 <- c(w_1,spectrum_x[filtered_left_position[i]+1])
-    w_2 <- c(w_2,spectrum_x[filtered_peaks[i]+1])
-    w_3 <- c(w_3,spectrum_x[filtered_right_position[i]+1])
+    w_1 <- c(w_1, spectrum_x[filtered_left_position[i] + 1])
+    w_2 <- c(w_2, spectrum_x[filtered_peaks[i] + 1])
+    w_3 <- c(w_3, spectrum_x[filtered_right_position[i] + 1])
 
     # Calculate intensity of peak triplets
-    y_1 <- c(y_1,spectrum_y[filtered_left_position[i]+1])
-    y_2 <- c(y_2,spectrum_y[filtered_peaks[i]+1])
-    y_3 <- c(y_3,spectrum_y[filtered_right_position[i]+1])
+    y_1 <- c(y_1, spectrum_y[filtered_left_position[i] + 1])
+    y_2 <- c(y_2, spectrum_y[filtered_peaks[i] + 1])
+    y_3 <- c(y_3, spectrum_y[filtered_right_position[i] + 1])
 
     # Calculate mirrored points if necesccary
     # For ascending shoulders
-    if((y_1[i] < y_2[i]) & (y_2[i] < y_3[i])){
-      w_3[i] <- 2*w_2[i] - w_1[i]
+    if ((y_1[i] < y_2[i]) & (y_2[i] < y_3[i])) {
+      w_3[i] <- 2 * w_2[i] - w_1[i]
       y_3[i] <- y_1[i]
     }
     # For descending shoulders
-    if((y_1[i] > y_2[i]) & (y_2[i] > y_3[i])){
-      w_1[i] <- 2*w_2[i] - w_3[i]
+    if ((y_1[i] > y_2[i]) & (y_2[i] > y_3[i])) {
+      w_1[i] <- 2 * w_2[i] - w_3[i]
       y_1[i] <- y_3[i]
     }
 
@@ -835,36 +831,36 @@ deconvolution <- function(
     w_3[i] <- w_3[i] - w_delta[i]
 
     # Calculate difference of position of peak triplets
-    w_1_2 <- c(w_1_2,w_1[i] - w_2[i])
-    w_1_3 <- c(w_1_3,w_1[i] - w_3[i])
-    w_2_3 <- c(w_2_3,w_2[i] - w_3[i])
+    w_1_2 <- c(w_1_2, w_1[i] - w_2[i])
+    w_1_3 <- c(w_1_3, w_1[i] - w_3[i])
+    w_2_3 <- c(w_2_3, w_2[i] - w_3[i])
 
     # Calculate difference of intensity values of peak triplets
-    y_1_2 <- c(y_1_2,y_1[i] - y_2[i])
-    y_1_3 <- c(y_1_3,y_1[i] - y_3[i])
-    y_2_3 <- c(y_2_3,y_2[i] - y_3[i])
+    y_1_2 <- c(y_1_2, y_1[i] - y_2[i])
+    y_1_3 <- c(y_1_3, y_1[i] - y_3[i])
+    y_2_3 <- c(y_2_3, y_2[i] - y_3[i])
 
     # Calculate w for each peak triplet
-    w_result <- (w_1[i]^2*y_1[i]*y_2_3[i] + w_3[i]^2*y_3[i]*y_1_2[i] + w_2[i]^2*y_2[i]*(-y_1_3[i]))/(2*w_1_2[i]*y_1[i]*y_2[i] - 2*(w_1_3[i]*y_1[i] + (-w_2_3[i])*y_2[i])*y_3[i])
+    w_result <- (w_1[i]^2 * y_1[i] * y_2_3[i] + w_3[i]^2 * y_3[i] * y_1_2[i] + w_2[i]^2 * y_2[i] * (-y_1_3[i])) / (2 * w_1_2[i] * y_1[i] * y_2[i] - 2 * (w_1_3[i] * y_1[i] + (-w_2_3[i]) * y_2[i]) * y_3[i])
     w_result <- w_result + w_delta[i]
     w <- c(w, w_result)
     # Wenn y Werte nach der H?henanpassung 0 werden, so ist w_new[i] NaN
-    if(is.nan(w[i])){
+    if (is.nan(w[i])) {
       w[i] <- 0
     }
 
-    #Calculate lambda for each peak triplet
-    lambda_result <- -((sqrt(abs((-w_2[i]^4*y_2[i]^2*y_1_3[i]^2-w_1[i]^4*y_1[i]^2*y_2_3[i]^2-w_3[i]^4*y_1_2[i]^2*y_3[i]^2+4*w_2[i]*w_3[i]^3*y_2[i]*((-y_1[i])+y_2[i])*y_3[i]^2+4*w_2[i]^3*w_3[i]*y_2[i]^2*y_3[i]*((-y_1[i])+y_3[i])+4*w_1[i]^3*y_1[i]^2*y_2_3[i]*(w_2[i]*y_2[i]-w_3[i]*y_3[i])+4*w_1[i]*y_1[i]*(w_2[i]^3*y_2[i]^2*y_1_3[i]-w_2[i]*w_3[i]^2*y_2[i]*(y_1[i]+y_2[i]-2*y_3[i])*y_3[i]+w_3[i]^3*y_1_2[i]*y_3[i]^2-w_2[i]^2*w_3[i]*y_2[i]*y_3[i]*(y_1[i]-2*y_2[i]+y_3[i]))+2*w_2[i]^2*w_3[i]^2*y_2[i]*y_3[i]*(y_1[i]^2-3*y_2[i]*y_3[i]+y_1[i]*(y_2[i]+y_3[i]))+2*w_1[i]^2*y_1[i]*(-2*w_2[i]*w_3[i]*y_2[i]*y_3[i]*(-2*y_1[i]+y_2[i]+y_3[i])+w_3[i]^2*y_3[i]*(y_1[i]*(y_2[i]-3*y_3[i])+y_2[i]*(y_2[i]+y_3[i]))+w_2[i]^2*y_2[i]*(y_1[i]*(-3*y_2[i]+y_3[i])+y_3[i]*(y_2[i]+y_3[i]))))))))/(2*sqrt((w_1[i]*y_1[i]*y_2_3[i]+w_3[i]*y_1_2[i]*y_3[i]+w_2[i]*y_2[i]*((-y_1[i])+y_3[i]))^2))
+    # Calculate lambda for each peak triplet
+    lambda_result <- -((sqrt(abs((-w_2[i]^4 * y_2[i]^2 * y_1_3[i]^2 - w_1[i]^4 * y_1[i]^2 * y_2_3[i]^2 - w_3[i]^4 * y_1_2[i]^2 * y_3[i]^2 + 4 * w_2[i] * w_3[i]^3 * y_2[i] * ((-y_1[i]) + y_2[i]) * y_3[i]^2 + 4 * w_2[i]^3 * w_3[i] * y_2[i]^2 * y_3[i] * ((-y_1[i]) + y_3[i]) + 4 * w_1[i]^3 * y_1[i]^2 * y_2_3[i] * (w_2[i] * y_2[i] - w_3[i] * y_3[i]) + 4 * w_1[i] * y_1[i] * (w_2[i]^3 * y_2[i]^2 * y_1_3[i] - w_2[i] * w_3[i]^2 * y_2[i] * (y_1[i] + y_2[i] - 2 * y_3[i]) * y_3[i] + w_3[i]^3 * y_1_2[i] * y_3[i]^2 - w_2[i]^2 * w_3[i] * y_2[i] * y_3[i] * (y_1[i] - 2 * y_2[i] + y_3[i])) + 2 * w_2[i]^2 * w_3[i]^2 * y_2[i] * y_3[i] * (y_1[i]^2 - 3 * y_2[i] * y_3[i] + y_1[i] * (y_2[i] + y_3[i])) + 2 * w_1[i]^2 * y_1[i] * (-2 * w_2[i] * w_3[i] * y_2[i] * y_3[i] * (-2 * y_1[i] + y_2[i] + y_3[i]) + w_3[i]^2 * y_3[i] * (y_1[i] * (y_2[i] - 3 * y_3[i]) + y_2[i] * (y_2[i] + y_3[i])) + w_2[i]^2 * y_2[i] * (y_1[i] * (-3 * y_2[i] + y_3[i]) + y_3[i] * (y_2[i] + y_3[i])))))))) / (2 * sqrt((w_1[i] * y_1[i] * y_2_3[i] + w_3[i] * y_1_2[i] * y_3[i] + w_2[i] * y_2[i] * ((-y_1[i]) + y_3[i]))^2))
     # If y and w are 0, then 0/0=NaN
-    if(is.nan(lambda_result)){
+    if (is.nan(lambda_result)) {
       lambda_result <- 0
     }
     lambda <- c(lambda, lambda_result)
 
     # Calculate scaling factor A for each peak triplet
-    A_result <-(-4*w_1_2[i]*w_1_3[i]*w_2_3[i]*y_1[i]*y_2[i]*y_3[i]*(w_1[i]*y_1[i]*y_2_3[i] + w_3[i]*y_3[i]*y_1_2[i] + w_2[i]*y_2[i]*(-y_1_3[i]))*lambda[i])/(w_1_2[i]^4*y_1[i]^2*y_2[i]^2 - 2*w_1_2[i]^2*y_1[i]*y_2[i]*(w_1_3[i]^2*y_1[i] + w_2_3[i]^2*y_2[i])*y_3[i] + (w_1_3[i]^2*y_1[i] - w_2_3[i]^2*y_2[i])^2*y_3[i]^2)
+    A_result <- (-4 * w_1_2[i] * w_1_3[i] * w_2_3[i] * y_1[i] * y_2[i] * y_3[i] * (w_1[i] * y_1[i] * y_2_3[i] + w_3[i] * y_3[i] * y_1_2[i] + w_2[i] * y_2[i] * (-y_1_3[i])) * lambda[i]) / (w_1_2[i]^4 * y_1[i]^2 * y_2[i]^2 - 2 * w_1_2[i]^2 * y_1[i] * y_2[i] * (w_1_3[i]^2 * y_1[i] + w_2_3[i]^2 * y_2[i]) * y_3[i] + (w_1_3[i]^2 * y_1[i] - w_2_3[i]^2 * y_2[i])^2 * y_3[i]^2)
     # If y and w are 0, then 0/0=NaN
-    if(is.nan(A_result)){
+    if (is.nan(A_result)) {
       A_result <- 0
     }
     A <- c(A, A_result)
@@ -872,12 +868,12 @@ deconvolution <- function(
 
   # Calculate all initial lorentz curves
   lorentz_curves_initial <- matrix(nrow = length(filtered_peaks), ncol = length(spectrum_x))
-  for(i in 1:length(filtered_peaks)){
+  for (i in 1:length(filtered_peaks)) {
     # If A = 0, then the lorentz curve is a zero line
-    if(A[i] == 0){
-      lorentz_curves_initial[i,] <- 0
-    }else{
-      lorentz_curves_initial[i,] <- abs(A[i]*(lambda[i]/(lambda[i]^2 + (spectrum_x-w[i])^2)))
+    if (A[i] == 0) {
+      lorentz_curves_initial[i, ] <- 0
+    } else {
+      lorentz_curves_initial[i, ] <- abs(A[i] * (lambda[i] / (lambda[i]^2 + (spectrum_x - w[i])^2)))
     }
   }
 
@@ -898,63 +894,61 @@ deconvolution <- function(
   }
 
   # Approximation of lorentz curves
-  for(b in 1:number_iterations){
-
+  for (b in 1:number_iterations) {
     # Calculate new heights of peak triplets
-    w_1_new<-c()
-    w_2_new<-c()
-    w_3_new<-c()
-    y_1_new<-c()
-    y_2_new<-c()
-    y_3_new<-c()
-    w_1_2_new<-c()
-    w_1_3_new<-c()
-    w_2_3_new<-c()
-    y_1_2_new<-c()
-    y_1_3_new<-c()
-    y_2_3_new<-c()
+    w_1_new <- c()
+    w_2_new <- c()
+    w_3_new <- c()
+    y_1_new <- c()
+    y_2_new <- c()
+    y_3_new <- c()
+    w_1_2_new <- c()
+    w_1_3_new <- c()
+    w_2_3_new <- c()
+    y_1_2_new <- c()
+    y_1_3_new <- c()
+    y_2_3_new <- c()
     w_delta_new <- c()
-    w_new<-c()
-    lambda_new<-c()
-    A_new<-c()
-    sum_left<-c()
-    sum_peaks<-c()
-    sum_right<-c()
+    w_new <- c()
+    lambda_new <- c()
+    A_new <- c()
+    sum_left <- c()
+    sum_peaks <- c()
+    sum_right <- c()
     proportion_left <- c()
     proportion_peaks <- c()
     proportion_right <- c()
 
-    for(i in 1:length(filtered_peaks)){
-
+    for (i in 1:length(filtered_peaks)) {
       # Calculate the position of the peak triplets
-      w_1_new <- c(w_1_new,spectrum_x[filtered_left_position[i]+1])
-      w_2_new <- c(w_2_new,spectrum_x[filtered_peaks[i]+1])
-      w_3_new <- c(w_3_new,spectrum_x[filtered_right_position[i]+1])
+      w_1_new <- c(w_1_new, spectrum_x[filtered_left_position[i] + 1])
+      w_2_new <- c(w_2_new, spectrum_x[filtered_peaks[i] + 1])
+      w_3_new <- c(w_3_new, spectrum_x[filtered_right_position[i] + 1])
 
       # Calculate the sum of all lorentz curves for each data point
-      sum_left[i] <- sum(lorentz_curves_initial[1:length(filtered_left_position),filtered_left_position[i]+1])
-      sum_peaks[i] <- sum(lorentz_curves_initial[1:length(filtered_peaks), filtered_peaks[i]+1])
-      sum_right[i] <- sum(lorentz_curves_initial[1:length(filtered_right_position), filtered_right_position[i]+1])
+      sum_left[i] <- sum(lorentz_curves_initial[1:length(filtered_left_position), filtered_left_position[i] + 1])
+      sum_peaks[i] <- sum(lorentz_curves_initial[1:length(filtered_peaks), filtered_peaks[i] + 1])
+      sum_right[i] <- sum(lorentz_curves_initial[1:length(filtered_right_position), filtered_right_position[i] + 1])
 
       # Calculate the proprotion between original spectrum an the sum of the lorentz curves for each peak triplets position
-      proportion_left[i] <- spectrum_y[filtered_left_position[i]+1]/sum_left[i]
-      proportion_peaks[i] <- spectrum_y[filtered_peaks[i]+1]/sum_peaks[i]
-      proportion_right[i] <- spectrum_y[filtered_right_position[i]+1]/sum_right[i]
+      proportion_left[i] <- spectrum_y[filtered_left_position[i] + 1] / sum_left[i]
+      proportion_peaks[i] <- spectrum_y[filtered_peaks[i] + 1] / sum_peaks[i]
+      proportion_right[i] <- spectrum_y[filtered_right_position[i] + 1] / sum_right[i]
 
       # Calculate the new heights of the peak triplets
-      y_1_new[i] <- lorentz_curves_initial[i,filtered_left_position[i]+1]*proportion_left[i]
-      y_2_new[i] <- lorentz_curves_initial[i,filtered_peaks[i]+1]*proportion_peaks[i]
-      y_3_new[i] <- lorentz_curves_initial[i,filtered_right_position[i]+1]*proportion_right[i]
+      y_1_new[i] <- lorentz_curves_initial[i, filtered_left_position[i] + 1] * proportion_left[i]
+      y_2_new[i] <- lorentz_curves_initial[i, filtered_peaks[i] + 1] * proportion_peaks[i]
+      y_3_new[i] <- lorentz_curves_initial[i, filtered_right_position[i] + 1] * proportion_right[i]
 
       # Calculate mirrored points if necesccary
       # For ascending shoulders
-      if((y_1_new[i] < y_2_new[i]) & (y_2_new[i] < y_3_new[i])){
-        w_3_new[i] <- 2*w_2_new[i] - w_1_new[i]
+      if ((y_1_new[i] < y_2_new[i]) & (y_2_new[i] < y_3_new[i])) {
+        w_3_new[i] <- 2 * w_2_new[i] - w_1_new[i]
         y_3_new[i] <- y_1_new[i]
       }
       # For descending shoulders
-      if((y_1_new[i] > y_2_new[i]) & (y_2_new[i] > y_3_new[i])){
-        w_1_new[i] <- 2*w_2_new[i] - w_3_new[i]
+      if ((y_1_new[i] > y_2_new[i]) & (y_2_new[i] > y_3_new[i])) {
+        w_1_new[i] <- 2 * w_2_new[i] - w_3_new[i]
         y_1_new[i] <- y_3_new[i]
       }
 
@@ -965,56 +959,56 @@ deconvolution <- function(
       w_3_new[i] <- w_3_new[i] - w_delta_new[i]
 
       # Calculate difference of peak triplet positions
-      w_1_2_new <- c(w_1_2_new,w_1_new[i] - w_2_new[i])
-      w_1_3_new <- c(w_1_3_new,w_1_new[i] - w_3_new[i])
-      w_2_3_new <- c(w_2_3_new,w_2_new[i] - w_3_new[i])
+      w_1_2_new <- c(w_1_2_new, w_1_new[i] - w_2_new[i])
+      w_1_3_new <- c(w_1_3_new, w_1_new[i] - w_3_new[i])
+      w_2_3_new <- c(w_2_3_new, w_2_new[i] - w_3_new[i])
 
       # Calculate difference of new intensity values of peak triplets
-      y_1_2_new <- c(y_1_2_new,y_1_new[i] - y_2_new[i])
-      y_1_3_new <- c(y_1_3_new,y_1_new[i] - y_3_new[i])
-      y_2_3_new <- c(y_2_3_new,y_2_new[i] - y_3_new[i])
+      y_1_2_new <- c(y_1_2_new, y_1_new[i] - y_2_new[i])
+      y_1_3_new <- c(y_1_3_new, y_1_new[i] - y_3_new[i])
+      y_2_3_new <- c(y_2_3_new, y_2_new[i] - y_3_new[i])
 
       # Calculate w for each peak triplet
-      w_result <- (w_1_new[i]^2*y_1_new[i]*y_2_3_new[i] + w_3_new[i]^2*y_3_new[i]*y_1_2_new[i] + w_2_new[i]^2*y_2_new[i]*(-y_1_3_new[i]))/(2*w_1_2_new[i]*y_1_new[i]*y_2_new[i] - 2*(w_1_3_new[i]*y_1_new[i] + (-w_2_3_new[i])*y_2_new[i])*y_3_new[i])
+      w_result <- (w_1_new[i]^2 * y_1_new[i] * y_2_3_new[i] + w_3_new[i]^2 * y_3_new[i] * y_1_2_new[i] + w_2_new[i]^2 * y_2_new[i] * (-y_1_3_new[i])) / (2 * w_1_2_new[i] * y_1_new[i] * y_2_new[i] - 2 * (w_1_3_new[i] * y_1_new[i] + (-w_2_3_new[i]) * y_2_new[i]) * y_3_new[i])
       w_result <- w_result + w_delta_new[i]
       w_new <- c(w_new, w_result)
 
       # If y values are getting 0 after height adjustment, then w_new[i]=NaN
-      if(is.nan(w_new[i])){
+      if (is.nan(w_new[i])) {
         w_new[i] <- 0
       }
 
       # Calculate lambda for each peak triplet
-      lambda_result <- -((sqrt(abs(((-w_2_new[i]^4*y_2_new[i]^2*y_1_3_new[i]^2-w_1_new[i]^4*y_1_new[i]^2*y_2_3_new[i]^2-w_3_new[i]^4*y_1_2_new[i]^2*y_3_new[i]^2+4*w_2_new[i]*w_3_new[i]^3*y_2_new[i]*((-y_1_new[i])+y_2_new[i])*y_3_new[i]^2+4*w_2_new[i]^3*w_3_new[i]*y_2_new[i]^2*y_3_new[i]*((-y_1_new[i])+y_3_new[i])+4*w_1_new[i]^3*y_1_new[i]^2*y_2_3_new[i]*(w_2_new[i]*y_2_new[i]-w_3_new[i]*y_3_new[i])+4*w_1_new[i]*y_1_new[i]*(w_2_new[i]^3*y_2_new[i]^2*y_1_3_new[i]-w_2_new[i]*w_3_new[i]^2*y_2_new[i]*(y_1_new[i]+y_2_new[i]-2*y_3_new[i])*y_3_new[i]+w_3_new[i]^3*y_1_2_new[i]*y_3_new[i]^2-w_2_new[i]^2*w_3_new[i]*y_2_new[i]*y_3_new[i]*(y_1_new[i]-2*y_2_new[i]+y_3_new[i]))+2*w_2_new[i]^2*w_3_new[i]^2*y_2_new[i]*y_3_new[i]*(y_1_new[i]^2-3*y_2_new[i]*y_3_new[i]+y_1_new[i]*(y_2_new[i]+y_3_new[i]))+2*w_1_new[i]^2*y_1_new[i]*(-2*w_2_new[i]*w_3_new[i]*y_2_new[i]*y_3_new[i]*(-2*y_1_new[i]+y_2_new[i]+y_3_new[i])+w_3_new[i]^2*y_3_new[i]*(y_1_new[i]*(y_2_new[i]-3*y_3_new[i])+y_2_new[i]*(y_2_new[i]+y_3_new[i]))+w_2_new[i]^2*y_2_new[i]*(y_1_new[i]*(-3*y_2_new[i]+y_3_new[i])+y_3_new[i]*(y_2_new[i]+y_3_new[i])))))))))/(2*sqrt((w_1_new[i]*y_1_new[i]*y_2_3_new[i]+w_3_new[i]*y_1_2_new[i]*y_3_new[i]+w_2_new[i]*y_2_new[i]*((-y_1_new[i])+y_3_new[i]))^2))
+      lambda_result <- -((sqrt(abs(((-w_2_new[i]^4 * y_2_new[i]^2 * y_1_3_new[i]^2 - w_1_new[i]^4 * y_1_new[i]^2 * y_2_3_new[i]^2 - w_3_new[i]^4 * y_1_2_new[i]^2 * y_3_new[i]^2 + 4 * w_2_new[i] * w_3_new[i]^3 * y_2_new[i] * ((-y_1_new[i]) + y_2_new[i]) * y_3_new[i]^2 + 4 * w_2_new[i]^3 * w_3_new[i] * y_2_new[i]^2 * y_3_new[i] * ((-y_1_new[i]) + y_3_new[i]) + 4 * w_1_new[i]^3 * y_1_new[i]^2 * y_2_3_new[i] * (w_2_new[i] * y_2_new[i] - w_3_new[i] * y_3_new[i]) + 4 * w_1_new[i] * y_1_new[i] * (w_2_new[i]^3 * y_2_new[i]^2 * y_1_3_new[i] - w_2_new[i] * w_3_new[i]^2 * y_2_new[i] * (y_1_new[i] + y_2_new[i] - 2 * y_3_new[i]) * y_3_new[i] + w_3_new[i]^3 * y_1_2_new[i] * y_3_new[i]^2 - w_2_new[i]^2 * w_3_new[i] * y_2_new[i] * y_3_new[i] * (y_1_new[i] - 2 * y_2_new[i] + y_3_new[i])) + 2 * w_2_new[i]^2 * w_3_new[i]^2 * y_2_new[i] * y_3_new[i] * (y_1_new[i]^2 - 3 * y_2_new[i] * y_3_new[i] + y_1_new[i] * (y_2_new[i] + y_3_new[i])) + 2 * w_1_new[i]^2 * y_1_new[i] * (-2 * w_2_new[i] * w_3_new[i] * y_2_new[i] * y_3_new[i] * (-2 * y_1_new[i] + y_2_new[i] + y_3_new[i]) + w_3_new[i]^2 * y_3_new[i] * (y_1_new[i] * (y_2_new[i] - 3 * y_3_new[i]) + y_2_new[i] * (y_2_new[i] + y_3_new[i])) + w_2_new[i]^2 * y_2_new[i] * (y_1_new[i] * (-3 * y_2_new[i] + y_3_new[i]) + y_3_new[i] * (y_2_new[i] + y_3_new[i]))))))))) / (2 * sqrt((w_1_new[i] * y_1_new[i] * y_2_3_new[i] + w_3_new[i] * y_1_2_new[i] * y_3_new[i] + w_2_new[i] * y_2_new[i] * ((-y_1_new[i]) + y_3_new[i]))^2))
 
       # If y and w are 0, then 0/0=NaN
-      if(is.nan(lambda_result)){
+      if (is.nan(lambda_result)) {
         lambda_result <- 0
       }
       lambda_new <- c(lambda_new, lambda_result)
 
       # Calculate scaling factor A for each peak triplet
-      A_result <-(-4*w_1_2_new[i]*w_1_3_new[i]*w_2_3_new[i]*y_1_new[i]*y_2_new[i]*y_3_new[i]*(w_1_new[i]*y_1_new[i]*y_2_3_new[i] + w_3_new[i]*y_3_new[i]*y_1_2_new[i] + w_2_new[i]*y_2_new[i]*(-y_1_3_new[i]))*lambda_new[i])/(w_1_2_new[i]^4*y_1_new[i]^2*y_2_new[i]^2 - 2*w_1_2_new[i]^2*y_1_new[i]*y_2_new[i]*(w_1_3_new[i]^2*y_1_new[i] + w_2_3_new[i]^2*y_2_new[i])*y_3_new[i] + (w_1_3_new[i]^2*y_1_new[i] - w_2_3_new[i]^2*y_2_new[i])^2*y_3_new[i]^2)
+      A_result <- (-4 * w_1_2_new[i] * w_1_3_new[i] * w_2_3_new[i] * y_1_new[i] * y_2_new[i] * y_3_new[i] * (w_1_new[i] * y_1_new[i] * y_2_3_new[i] + w_3_new[i] * y_3_new[i] * y_1_2_new[i] + w_2_new[i] * y_2_new[i] * (-y_1_3_new[i])) * lambda_new[i]) / (w_1_2_new[i]^4 * y_1_new[i]^2 * y_2_new[i]^2 - 2 * w_1_2_new[i]^2 * y_1_new[i] * y_2_new[i] * (w_1_3_new[i]^2 * y_1_new[i] + w_2_3_new[i]^2 * y_2_new[i]) * y_3_new[i] + (w_1_3_new[i]^2 * y_1_new[i] - w_2_3_new[i]^2 * y_2_new[i])^2 * y_3_new[i]^2)
 
       # If y and w are 0, then 0/0=NaN
-      if(is.nan(A_result)){
+      if (is.nan(A_result)) {
         A_result <- 0
       }
       A_new <- c(A_new, A_result)
 
       # Calculate new lorentz curves
       # If y values are zero, then lorentz curves should also be zero
-      if((w_new[i] == 0) | (lambda_new[i] == 0) | (A_new[i] == 0)){
-        lorentz_curves_initial[i,] <- 0
-      }else{
-        lorentz_curves_initial[i,] <- abs(A_new[i]*(lambda_new[i]/(lambda_new[i]^2 + (spectrum_x-w_new[i])^2)))
+      if ((w_new[i] == 0) | (lambda_new[i] == 0) | (A_new[i] == 0)) {
+        lorentz_curves_initial[i, ] <- 0
+      } else {
+        lorentz_curves_initial[i, ] <- abs(A_new[i] * (lambda_new[i] / (lambda_new[i]^2 + (spectrum_x - w_new[i])^2)))
       }
     }
 
     # Calculate sum of lorentz curves
     spectrum_approx <- matrix(nrow = 1, ncol = length(spectrum_x))
-    for(i in 1:length(spectrum_x)){
-      spectrum_approx[1,i] <- sum(lorentz_curves_initial[1:length(filtered_peaks),i])
+    for (i in 1:length(spectrum_x)) {
+      spectrum_approx[1, i] <- sum(lorentz_curves_initial[1:length(filtered_peaks), i])
     }
 
     # # Calculate the difference between original spectrum and height corrections
@@ -1033,25 +1027,23 @@ deconvolution <- function(
     spectrum_approx_normed <- c()
 
     # Standardize the spectra
-    spectrum_y_normed <- spectrum_y/sum(spectrum_y)
-    spectrum_approx_normed <- spectrum_approx/sum(spectrum_approx)
+    spectrum_y_normed <- spectrum_y / sum(spectrum_y)
+    spectrum_approx_normed <- spectrum_approx / sum(spectrum_approx)
 
     # Calculate the difference between normed original spectrum and normed approximated spectrum
     difference_normed <- c()
-    for(i in 1:length(spectrum_x)){
+    for (i in 1:length(spectrum_x)) {
       difference_normed[i] <- (spectrum_y_normed[i] - spectrum_approx_normed[i])^2
     }
-    mse_normed <- (1/length(difference_normed))*sum(difference_normed)
+    mse_normed <- (1 / length(difference_normed)) * sum(difference_normed)
     message(paste("\nNormed MSE value of iteration", b, "is: "))
     print(mse_normed)
-
   }
-
 
   # Calculate the integrals for each lorentz curve
   integrals <- matrix(nrow = 1, ncol = length(lambda_new))
-  for(i in 1:length(lambda_new)){
-    integrals[1,i] <- A_new[i]*(atan((-w_new[i]+(spectrum_length/factor_x))/lambda_new[i]) - atan((-w_new[i])/lambda_new[i]))
+  for (i in 1:length(lambda_new)) {
+    integrals[1, i] <- A_new[i] * (atan((-w_new[i] + (spectrum_length / factor_x)) / lambda_new[i]) - atan((-w_new[i]) / lambda_new[i]))
   }
 
   if (debug) {
@@ -1072,33 +1064,39 @@ deconvolution <- function(
   index_peak_triplets_middle <- c()
   index_peak_triplets_left <- c()
   index_peak_triplets_right <- c()
-  for(i in 1:length(filtered_peaks)){
-    index_peak_triplets_middle[i] <- filtered_peaks[i]+1
-    index_peak_triplets_left[i] <- filtered_left_position[i]+1
-    index_peak_triplets_right[i] <- filtered_right_position[i]+1
+  for (i in 1:length(filtered_peaks)) {
+    index_peak_triplets_middle[i] <- filtered_peaks[i] + 1
+    index_peak_triplets_left[i] <- filtered_left_position[i] + 1
+    index_peak_triplets_right[i] <- filtered_right_position[i] + 1
   }
 
   # Save ppm x position of peak triplets
   peak_triplets_middle <- c()
   peak_triplets_left <- c()
   peak_triplets_right <- c()
-  for(i in 1:length(filtered_peaks)){
+  for (i in 1:length(filtered_peaks)) {
     peak_triplets_middle[i] <- spectrum_x_ppm[index_peak_triplets_middle[i]]
     peak_triplets_left[i] <- spectrum_x_ppm[index_peak_triplets_left[i]]
     peak_triplets_right[i] <- spectrum_x_ppm[index_peak_triplets_right[i]]
   }
 
   # Save values A_new, lambda_new, w_new and noise_threshold to txt document
-  noise_threshold <- replicate(length(w_new),0)
-  noise_threshold[1] <- mean_score + delta*sd_score;
+  noise_threshold <- replicate(length(w_new), 0)
+  noise_threshold[1] <- mean_score + delta * sd_score
   spectrum_info <- data.frame(rbind(w_new, lambda_new, A_new, noise_threshold))
   spectrum_output <- data.frame(spectrum_approx)
   name_info_txt <- paste(name, "parameters.txt")
   name_output_txt <- paste(name, "approximated_spectrum.txt")
 
-  # message(paste("\nSaving parameters to txt documents..."))
-  # utils::write.table(spectrum_info, name_info_txt, sep=",", col.names=FALSE, append=FALSE)
-  # utils::write.table(spectrum_output, name_output_txt, sep=",", col.names=FALSE, append=FALSE)
+  store_results <- get_yn_input(sprintf("Save results as text documents at %s?", getwd()))
+  if (store_results) {
+    message(sprintf("Writing %s", norm_path(name_info_txt)))
+    utils::write.table(spectrum_info, name_info_txt, sep=",", col.names=FALSE, append=FALSE)
+    message(sprintf("Writing %s", norm_path(name_output_txt)))
+    utils::write.table(spectrum_output, name_output_txt, sep=",", col.names=FALSE, append=FALSE)
+  } else {
+    message("Skipping saving of results.")
+  }
 
   if (debug) {
     cat3("Reached point where parameters were saved to txt documents previously")
@@ -1117,7 +1115,7 @@ deconvolution <- function(
     )
   }
 
-  return_list <- list("filename" = name,"spectrum_x" = spectrum_x, "spectrum_x_ppm" = spectrum_x_ppm, "spectrum_y" = spectrum_y, "lorentz_curves" = lorentz_curves_initial, "mse_normed"=mse_normed, "spectrum_approx" = spectrum_approx, "index_peak_triplets_middle" = index_peak_triplets_middle, "index_peak_triplets_left" = index_peak_triplets_left, "index_peak_triplets_right" = index_peak_triplets_right, "peak_triplets_middle" = peak_triplets_middle, "peak_triplets_left" = peak_triplets_left, "peak_triplets_right" = peak_triplets_right, "integrals" = integrals, "signal_free_region" = signal_free_region, "range_water_signal_ppm" = range_water_signal_ppm, "A" = A_new, "lambda" = lambda_new, "w" = w_new)
+  return_list <- list("filename" = name, "spectrum_x" = spectrum_x, "spectrum_x_ppm" = spectrum_x_ppm, "spectrum_y" = spectrum_y, "lorentz_curves" = lorentz_curves_initial, "mse_normed" = mse_normed, "spectrum_approx" = spectrum_approx, "index_peak_triplets_middle" = index_peak_triplets_middle, "index_peak_triplets_left" = index_peak_triplets_left, "index_peak_triplets_right" = index_peak_triplets_right, "peak_triplets_middle" = peak_triplets_middle, "peak_triplets_left" = peak_triplets_left, "peak_triplets_right" = peak_triplets_right, "integrals" = integrals, "signal_free_region" = signal_free_region, "range_water_signal_ppm" = range_water_signal_ppm, "A" = A_new, "lambda" = lambda_new, "w" = w_new)
 
   if (debug) {
     return_list$debuglist <- debuglist
@@ -1127,11 +1125,13 @@ deconvolution <- function(
   return(return_list)
 }
 
-
-
 #' @export
 #' @title Deconvolute 1D NMR spectrum
 #' @description Automatic deconvolution of a 1D NMR spectrum into several Lorentz curves and the integration of them. The NMR file need to be in Bruker format or jcamp-dx format.
+#'
+#' Deprecated since metabodecon v1.2.0. Please use [generate_lorentz_curves()] instead. See examples below for usage.
+#'
+#' `r lifecycle::badge("deprecated")`
 #' @author Martina Haeckl
 #' @param filepath Complete path of the file folder (Notice for Bruker format: filepath need to be the spectrum folder containing one or more different spectra (e.g."C:/Users/Username/Desktop/spectra_from_bruker"))
 #' @param filename Name of the NMR file. (Notice for Bruker format: filename need to be the name of your spectrum which is also the name of the folder) (Default: filename = NA to analyse more spectra at once)
@@ -1165,41 +1165,40 @@ deconvolution <- function(
 #'  \item{\bold{x_0} values of each Lorentz curve}
 #' }
 #'
-#'\bold{Notice:} The parameters A, lambda and x_0 to calculate the Lorentz curves are saved in parameters.txt and the approximated spectrum is saved in approximated_spectrum.txt under the file path.
+#' \bold{Notice:} The parameters A, lambda and x_0 to calculate the Lorentz curves are saved in parameters.txt and the approximated spectrum is saved in approximated_spectrum.txt under the file path.
 #' @details The MetaboDecon1D package returns a list with i.a. the parameters A, lambda and x_0 to calculate the Lorentz curves.The Lorentz curves could be calculated by using the function calculate_lorentz_curves(). This returns a matrix containing the generated and approximated Lorentz curves for each real peak of the spectrum. Each row of the matrix depicts one Lorentz curve. The Lorentz curves could be visualised and saved by using the function plot_lorentz_curves_save_as_png(). The superposition of all Lorentz curves, which reconstructs the original spectrum, could also be visualised and saved with the plot_spectrum_superposition_save_as_png() function. For the analytical calculation of the Lorentz curves peak triplets for each peak are used. To visualise these peak triplets and to illustrate the impact of the threshold delta the function plot_triplets() is available. The integral values for each generated Lorentz curves are saved in a vector.
 #'
 #' \bold{Notice}: It is feasible to load all spectra of a folder at once. Here the filename need to be "NA" which is the default value. One selected spectrum could then be used to adjust the parameters (signal_free_region and range_water_signal_ppm) for the analysis of all spectra. Furthermore it is possible to adjust these parameters for each spectrum separate.
 #' @import readJDX
+#' @seealso [calculate_lorentz_curves()], [plot_triplets()], [plot_lorentz_curves_save_as_png()], [plot_spectrum_superposition_save_as_png()]
 #' @references
 #' Haeckl, M.; Tauber, P.; Schweda, F.; Zacharias, H.U.; Altenbuchinger, M.; Oefner, P.J.; Gronwald, W. An R-Package for the Deconvolution and Integration of 1D NMR Data: MetaboDecon1D. Metabolites 2021, 11, 452. https://doi.org/10.3390/metabo11070452
-#' @examples \dontrun{
-#' # Load one spectrum (Bruker format)
-#' result <- MetaboDecon1D(filepath="load_example_path", filename="urine", file_format="bruker")
-#' result$mse_normed
-#' result$integrals
+#' @examples
+#' \donttest{
+#' xds_path <- download_example_datasets()
+#' urine <- file.path(xds_path, "bruker/urine")
+#' urine_1 <- file.path(urine, "urine_1")
 #'
-#' # Load all spectra (Bruker format) of choosen folder
-#' result <- MetaboDecon1D(filepath="load_example_path", file_format="bruker")
-#' result$urine$mse_normed
-#' result$urine2$mse_normed
-#'
-#' # Load one spectrum (jcamp-dx format)
-#' result <- MetaboDecon1D(filepath="load_example_path", filename="urine.dx", file_format="jcampdx")
-#' result$mse_normed
-#' result$integrals
-#'
-#' # Load all spectra (jcamp-dx format) of choosen folder
-#' result <- MetaboDecon1D(filepath="load_example_path", file_format="jcampdx")
-#' result$urine.dx$mse_normed
-#' result$urine2.dx$mse_normed
+#' \dontrun{
+#' # Deprecated since metabodecon v1.2.0. Please use generate_lorentz_curves()
+#' # instead. Shown below.
+#' urine_1_deconv <- MetaboDecon1D(urine, "urine_1")
+#' urine_all_deconv <- MetaboDecon1D(urine)
 #' }
-#' @seealso
-#' \code{\link{calculate_lorentz_curves}},
-#' \code{\link{plot_triplets}},
-#' \code{\link{plot_lorentz_curves_save_as_png}},
-#' \code{\link{plot_spectrum_superposition_save_as_png}}
-MetaboDecon1D <- function(filepath, filename = NA, file_format = "bruker", number_iterations = 10, range_water_signal_ppm = 0.1527692, signal_free_region=c(11.44494, -1.8828), smoothing_param=c(2,5), delta=6.4, scale_factor=c(1000,1000000), debug=FALSE){
-
+#'
+#' urine_1_deconv <- generate_lorentz_curves(urine_1, ask = FALSE)
+#' urine_all_deconv <- generate_lorentz_curves(urine, ask = FALSE)
+#' }
+MetaboDecon1D <- function(filepath,
+                          filename = NA,
+                          file_format = "bruker",
+                          number_iterations = 10,
+                          range_water_signal_ppm = 0.1527692,
+                          signal_free_region = c(11.44494, -1.8828),
+                          smoothing_param = c(2, 5),
+                          delta = 6.4,
+                          scale_factor = c(1000, 1000000),
+                          debug = FALSE) {
   cat3("Starting MetaboDecon1D")
 
   # Print license message to console
@@ -1211,8 +1210,8 @@ MetaboDecon1D <- function(filepath, filename = NA, file_format = "bruker", numbe
 
   example <- FALSE
   # Load example path
-  if(filepath == "load_example_path"){
-    filepath <- system.file("extdata", package="MetaboDecon1D", mustWork=TRUE)
+  if (filepath == "load_example_path") {
+    filepath <- system.file("extdata", package = "MetaboDecon1D", mustWork = TRUE)
     # Set status wheter example is loaded to TRUE
     example <- TRUE
 
@@ -1222,11 +1221,11 @@ MetaboDecon1D <- function(filepath, filename = NA, file_format = "bruker", numbe
   }
 
   # Check if filepath is a global file path (e.g. C:/) or local
-  if(grepl("[ABCDEFGHIJKLMNOPQRSTUVWXYZ]+:+/", filepath)){
+  if (grepl("[ABCDEFGHIJKLMNOPQRSTUVWXYZ]+:+/", filepath)) {
     # filepath is a global file
     owd <- setwd(filepath)
     on.exit(setwd(owd), add = TRUE)
-  }else{
+  } else {
     # Get current working directory and concat with current filepath and save as new working directory
     owd <- setwd(file.path(getwd(), filepath))
     on.exit(setwd(owd), add = TRUE)
@@ -1235,18 +1234,16 @@ MetaboDecon1D <- function(filepath, filename = NA, file_format = "bruker", numbe
   }
 
   # If filename is, as the default value, NA, then the all spectra of the filepath of the folder are analysed
-  if(is.na(filename)){
-
+  if (is.na(filename)) {
     # Check which file_format is present
-    if(file_format == "jcampdx"){
-
+    if (file_format == "jcampdx") {
       # List files of filepath
       files_list <- list.files(filepath)
 
       # Save only file with .dx format
       files <- c()
-      for(i in 1:length(files_list)){
-        if(endsWith(files_list[i], ".dx")){
+      for (i in 1:length(files_list)) {
+        if (endsWith(files_list[i], ".dx")) {
           files <- c(files, files_list[i])
         }
       }
@@ -1255,30 +1252,30 @@ MetaboDecon1D <- function(filepath, filename = NA, file_format = "bruker", numbe
       number_of_files <- length(files)
 
       # Ask User if he want to use same parameters for all spectra of the folder
-      parameter_request <- readline(prompt="Do you want to use the same parameters (signal_free_region, range_water_signal_ppm) for all spectra? (y/n) ")
+      parameter_request <- readline(prompt = "Do you want to use the same parameters (signal_free_region, range_water_signal_ppm) for all spectra? (y/n) ")
 
       # Set parameter to TRUE or FALSE
-      if(parameter_request == "y" | parameter_request == "n"){
+      if (parameter_request == "y" | parameter_request == "n") {
         correct_input <- TRUE
-      }else{
+      } else {
         correct_input <- FALSE
       }
 
       # Check if User input is correct or not
-      while(correct_input == FALSE){
+      while (correct_input == FALSE) {
         # Ask User if he want to use same parameters for all spectra of the folder
         message("Error. Please type only y or n.")
-        parameter_request <- readline(prompt="Do you want to use the same parameters (signal_free_region, range_water_signal_ppm) for all spectra? (y/n) ")
+        parameter_request <- readline(prompt = "Do you want to use the same parameters (signal_free_region, range_water_signal_ppm) for all spectra? (y/n) ")
 
-        if(parameter_request == "y" | parameter_request == "n"){
+        if (parameter_request == "y" | parameter_request == "n") {
           correct_input <- TRUE
-        }else{
+        } else {
           correct_input <- FALSE
         }
       }
 
 
-      if(parameter_request == "y"){
+      if (parameter_request == "y") {
         # Show User all files
         print(files)
 
@@ -1286,18 +1283,18 @@ MetaboDecon1D <- function(filepath, filename = NA, file_format = "bruker", numbe
         same_parameter <- TRUE
 
         # Ask User which of the files should be used to adjust the parameters
-        file_number <- readline(prompt="Choose number of file which is used to adjust all parameters: [e.g. 1] ")
+        file_number <- readline(prompt = "Choose number of file which is used to adjust all parameters: [e.g. 1] ")
 
         number_of_files <- length(files)
-        pattern <- paste("^[1-", number_of_files, "]", sep="")
+        pattern <- paste("^[1-", number_of_files, "]", sep = "")
 
         # Check if input is a digit and smaller than number of files
         digit_true <- grepl(pattern, file_number)
 
-        while(digit_true != TRUE){
+        while (digit_true != TRUE) {
           # Ask User which of the files should be used to adjust the parameters
           message("Error. Please type only a digit which is smaller than number of available files.")
-          file_number <- readline(prompt="Choose number of file which is used to adjust all parameters: [e.g. 1] ")
+          file_number <- readline(prompt = "Choose number of file which is used to adjust all parameters: [e.g. 1] ")
           # Check if input is a digit
           digit_true <- grepl(pattern, file_number)
         }
@@ -1316,18 +1313,18 @@ MetaboDecon1D <- function(filepath, filename = NA, file_format = "bruker", numbe
 
         # Start deconvolution for each file
         return_list <- list()
-        for(i in 1:length(files_rearranged)){
+        for (i in 1:length(files_rearranged)) {
           name <- files_rearranged[i]
           current_filenumber <- i
 
           print_text_1 <- "Start deconvolution of "
           print_text_2 <- ":"
-          message(paste(print_text_1, files_rearranged[i], print_text_2, sep=""))
+          message(paste(print_text_1, files_rearranged[i], print_text_2, sep = ""))
 
           deconv_result <- deconvolution(filepath, name, file_format, same_parameter, processing_value, number_iterations, range_water_signal_ppm, signal_free_region, smoothing_param, delta, scale_factor, current_filenumber, debug = debug)
 
           # Save return values in a list and return the list
-          list_file <- list("number_of_files"=number_of_files, "filename"=deconv_result$filename, "x_values"=deconv_result$spectrum_x, "x_values_ppm" = deconv_result$spectrum_x_ppm, "y_values"=deconv_result$spectrum_y, "spectrum_superposition"=deconv_result$spectrum_approx, "mse_normed"=deconv_result$mse_normed, "index_peak_triplets_middle"=deconv_result$index_peak_triplets_middle, "index_peak_triplets_left"=deconv_result$index_peak_triplets_left, "index_peak_triplets_right"=deconv_result$index_peak_triplets_right, "peak_triplets_middle"=deconv_result$peak_triplets_middle, "peak_triplets_left"=deconv_result$peak_triplets_left, "peak_triplets_right"=deconv_result$peak_triplets_right, "integrals"=deconv_result$integrals, "signal_free_region"=deconv_result$signal_free_region, "range_water_signal_ppm"=deconv_result$range_water_signal_ppm, "A"=deconv_result$A, "lambda"=deconv_result$lambda, "x_0"=deconv_result$w)
+          list_file <- list("number_of_files" = number_of_files, "filename" = deconv_result$filename, "x_values" = deconv_result$spectrum_x, "x_values_ppm" = deconv_result$spectrum_x_ppm, "y_values" = deconv_result$spectrum_y, "spectrum_superposition" = deconv_result$spectrum_approx, "mse_normed" = deconv_result$mse_normed, "index_peak_triplets_middle" = deconv_result$index_peak_triplets_middle, "index_peak_triplets_left" = deconv_result$index_peak_triplets_left, "index_peak_triplets_right" = deconv_result$index_peak_triplets_right, "peak_triplets_middle" = deconv_result$peak_triplets_middle, "peak_triplets_left" = deconv_result$peak_triplets_left, "peak_triplets_right" = deconv_result$peak_triplets_right, "integrals" = deconv_result$integrals, "signal_free_region" = deconv_result$signal_free_region, "range_water_signal_ppm" = deconv_result$range_water_signal_ppm, "A" = deconv_result$A, "lambda" = deconv_result$lambda, "x_0" = deconv_result$w)
           # "lorentz_curves"=deconv_result$lorentz_curves,
 
           if (debug) {
@@ -1342,10 +1339,8 @@ MetaboDecon1D <- function(filepath, filename = NA, file_format = "bruker", numbe
           signal_free_region <- list_file$signal_free_region
         }
         return(return_list)
-
-
       }
-      if(parameter_request == "n"){
+      if (parameter_request == "n") {
         # User want to adjust parameters for each spectrum separately
 
         # Set variable to false
@@ -1353,17 +1348,17 @@ MetaboDecon1D <- function(filepath, filename = NA, file_format = "bruker", numbe
 
         # Start deconvolution for each file
         return_list <- list()
-        for(i in 1:length(files)){
+        for (i in 1:length(files)) {
           name <- files[i]
 
           print_text_1 <- "Start deconvolution of "
           print_text_2 <- ":"
-          message(paste(print_text_1, files[i], print_text_2, sep=""))
+          message(paste(print_text_1, files[i], print_text_2, sep = ""))
 
           deconv_result <- deconvolution(filepath, name, file_format, same_parameter, processing_value, number_iterations, range_water_signal_ppm, signal_free_region, smoothing_param, delta, scale_factor, debug = debug)
 
           # Save return values in a list and return the list
-          list_file <- list("number_of_files"=number_of_files, "filename"=deconv_result$filename, "x_values"=deconv_result$spectrum_x, "x_values_ppm" = deconv_result$spectrum_x_ppm, "y_values"=deconv_result$spectrum_y, "spectrum_superposition"=deconv_result$spectrum_approx, "mse_normed"=deconv_result$mse_normed, "index_peak_triplets_middle"=deconv_result$index_peak_triplets_middle, "index_peak_triplets_left"=deconv_result$index_peak_triplets_left, "index_peak_triplets_right"=deconv_result$index_peak_triplets_right, "peak_triplets_middle"=deconv_result$peak_triplets_middle, "peak_triplets_left"=deconv_result$peak_triplets_left, "peak_triplets_right"=deconv_result$peak_triplets_right, "integrals"=deconv_result$integrals, "A"=deconv_result$A, "lambda"=deconv_result$lambda, "x_0"=deconv_result$w)
+          list_file <- list("number_of_files" = number_of_files, "filename" = deconv_result$filename, "x_values" = deconv_result$spectrum_x, "x_values_ppm" = deconv_result$spectrum_x_ppm, "y_values" = deconv_result$spectrum_y, "spectrum_superposition" = deconv_result$spectrum_approx, "mse_normed" = deconv_result$mse_normed, "index_peak_triplets_middle" = deconv_result$index_peak_triplets_middle, "index_peak_triplets_left" = deconv_result$index_peak_triplets_left, "index_peak_triplets_right" = deconv_result$index_peak_triplets_right, "peak_triplets_middle" = deconv_result$peak_triplets_middle, "peak_triplets_left" = deconv_result$peak_triplets_left, "peak_triplets_right" = deconv_result$peak_triplets_right, "integrals" = deconv_result$integrals, "A" = deconv_result$A, "lambda" = deconv_result$lambda, "x_0" = deconv_result$w)
           # "lorentz_curves"=deconv_result$lorentz_curves,
 
           if (debug) {
@@ -1371,7 +1366,7 @@ MetaboDecon1D <- function(filepath, filename = NA, file_format = "bruker", numbe
           }
 
           # Save result list of current spectrum in a return list
-          #return_list[[paste0("element", i)]] <- list_file
+          # return_list[[paste0("element", i)]] <- list_file
           return_list[[paste0(files[i])]] <- list_file
         }
         return(return_list)
@@ -1379,8 +1374,7 @@ MetaboDecon1D <- function(filepath, filename = NA, file_format = "bruker", numbe
     }
 
     # Check which file_format is present
-    if(file_format == "bruker"){
-
+    if (file_format == "bruker") {
       # List files of filepath
       files_list <- list.files(filepath)
 
@@ -1389,8 +1383,8 @@ MetaboDecon1D <- function(filepath, filename = NA, file_format = "bruker", numbe
 
       # Delete file if it is not a folder
       files <- c()
-      for(i in 1:length(check_files)){
-        if(check_files[i] == TRUE){
+      for (i in 1:length(check_files)) {
+        if (check_files[i] == TRUE) {
           files <- c(files, files_list[i])
         }
       }
@@ -1399,40 +1393,40 @@ MetaboDecon1D <- function(filepath, filename = NA, file_format = "bruker", numbe
       number_of_files <- length(files)
 
       # If example is loaded use predefined values, else get some values from the user
-      if(example == TRUE){
+      if (example == TRUE) {
         spectroscopy_value <- 10
         processing_value <- 10
-      }else{
-        spectroscopy_value <- readline(prompt="What is the name of the subfolder of your filepath: \n[e.g. 10 for C:/Users/Username/Desktop/spectra_folder/spectrum_name/10] ")
-        processing_value <- readline(prompt="What is the name of the subsubsubfolder of your filepath: \n[e.g. 10 for C:/Users/Username/Desktop/spectra_folder/spectrum_name/10/pdata/10] ")
+      } else {
+        spectroscopy_value <- readline(prompt = "What is the name of the subfolder of your filepath: \n[e.g. 10 for C:/Users/Username/Desktop/spectra_folder/spectrum_name/10] ")
+        processing_value <- readline(prompt = "What is the name of the subsubsubfolder of your filepath: \n[e.g. 10 for C:/Users/Username/Desktop/spectra_folder/spectrum_name/10/pdata/10] ")
       }
 
       # Ask User if he want to use same parameters for all spectra of the folder
-      parameter_request <- readline(prompt="Do you want to use the same parameters (signal_free_region, range_water_signal_ppm) for all spectra? (y/n) ")
+      parameter_request <- readline(prompt = "Do you want to use the same parameters (signal_free_region, range_water_signal_ppm) for all spectra? (y/n) ")
 
       # Set parameter to TRUE or FALSE
-      if(parameter_request == "y" | parameter_request == "n"){
+      if (parameter_request == "y" | parameter_request == "n") {
         correct_input <- TRUE
-      }else{
+      } else {
         correct_input <- FALSE
       }
 
       # Check if User input is correct or not
-      while(correct_input == FALSE){
+      while (correct_input == FALSE) {
         # Ask User if he want to use same parameters for all spectra of the folder
         message("Error. Please type only y or n.")
-        parameter_request <- readline(prompt="Do you want to use the same parameters (signal_free_region, range_water_signal_ppm) for all spectra? (y/n) ")
+        parameter_request <- readline(prompt = "Do you want to use the same parameters (signal_free_region, range_water_signal_ppm) for all spectra? (y/n) ")
 
-        if(parameter_request == "y" | parameter_request == "n"){
+        if (parameter_request == "y" | parameter_request == "n") {
           correct_input <- TRUE
-        }else{
+        } else {
           correct_input <- FALSE
         }
       }
 
 
 
-      if(parameter_request == "y"){
+      if (parameter_request == "y") {
         # Show User all files
         print(files)
 
@@ -1440,18 +1434,18 @@ MetaboDecon1D <- function(filepath, filename = NA, file_format = "bruker", numbe
         same_parameter <- TRUE
 
         # Ask User which of the files should be used to adjust the parameters
-        file_number <- readline(prompt="Choose number of file which is used to adjust all parameters: [e.g. 1] ")
+        file_number <- readline(prompt = "Choose number of file which is used to adjust all parameters: [e.g. 1] ")
 
         number_of_files <- length(files)
-        pattern <- paste("^[1-", number_of_files, "]", sep="")
+        pattern <- paste("^[1-", number_of_files, "]", sep = "")
 
         # Check if input is a digit and smaller than number of files
         digit_true <- grepl(pattern, file_number)
 
-        while(digit_true != TRUE){
+        while (digit_true != TRUE) {
           # Ask User which of the files should be used to adjust the parameters
           message("Error. Please type only a digit which is smaller than number of available files.")
-          file_number <- readline(prompt="Choose number of file which is used to adjust all parameters: [e.g. 1] ")
+          file_number <- readline(prompt = "Choose number of file which is used to adjust all parameters: [e.g. 1] ")
           # Check if input is a digit
           digit_true <- grepl(pattern, file_number)
         }
@@ -1472,20 +1466,20 @@ MetaboDecon1D <- function(filepath, filename = NA, file_format = "bruker", numbe
 
         # Start deconvolution for each file
         return_list <- list()
-        for(i in 1:length(files_rearranged)){
+        for (i in 1:length(files_rearranged)) {
           name <- files_rearranged[i]
           current_filenumber <- i
           # Generate whole filepath of current folder
-          filepath_completed <- paste(filepath, files_rearranged[i], spectroscopy_value, sep="/")
+          filepath_completed <- paste(filepath, files_rearranged[i], spectroscopy_value, sep = "/")
 
           print_text_1 <- "Start deconvolution of "
           print_text_2 <- ":"
-          message(paste(print_text_1, files_rearranged[i], print_text_2, sep=""))
+          message(paste(print_text_1, files_rearranged[i], print_text_2, sep = ""))
 
           deconv_result <- deconvolution(filepath_completed, name, file_format, same_parameter, processing_value, number_iterations, range_water_signal_ppm, signal_free_region, smoothing_param, delta, scale_factor, current_filenumber, debug = debug)
 
           # Save return values in a list and return the list
-          list_file <- list("number_of_files"=number_of_files, "filename"=deconv_result$filename, "x_values"=deconv_result$spectrum_x, "x_values_ppm" = deconv_result$spectrum_x_ppm, "y_values"=deconv_result$spectrum_y, "spectrum_superposition"=deconv_result$spectrum_approx, "mse_normed"=deconv_result$mse_normed, "index_peak_triplets_middle"=deconv_result$index_peak_triplets_middle, "index_peak_triplets_left"=deconv_result$index_peak_triplets_left, "index_peak_triplets_right"=deconv_result$index_peak_triplets_right, "peak_triplets_middle"=deconv_result$peak_triplets_middle, "peak_triplets_left"=deconv_result$peak_triplets_left, "peak_triplets_right"=deconv_result$peak_triplets_right, "integrals"=deconv_result$integrals, "signal_free_region"=deconv_result$signal_free_region, "range_water_signal_ppm"=deconv_result$range_water_signal_ppm, "A"=deconv_result$A, "lambda"=deconv_result$lambda, "x_0"=deconv_result$w)
+          list_file <- list("number_of_files" = number_of_files, "filename" = deconv_result$filename, "x_values" = deconv_result$spectrum_x, "x_values_ppm" = deconv_result$spectrum_x_ppm, "y_values" = deconv_result$spectrum_y, "spectrum_superposition" = deconv_result$spectrum_approx, "mse_normed" = deconv_result$mse_normed, "index_peak_triplets_middle" = deconv_result$index_peak_triplets_middle, "index_peak_triplets_left" = deconv_result$index_peak_triplets_left, "index_peak_triplets_right" = deconv_result$index_peak_triplets_right, "peak_triplets_middle" = deconv_result$peak_triplets_middle, "peak_triplets_left" = deconv_result$peak_triplets_left, "peak_triplets_right" = deconv_result$peak_triplets_right, "integrals" = deconv_result$integrals, "signal_free_region" = deconv_result$signal_free_region, "range_water_signal_ppm" = deconv_result$range_water_signal_ppm, "A" = deconv_result$A, "lambda" = deconv_result$lambda, "x_0" = deconv_result$w)
           # "lorentz_curves"=deconv_result$lorentz_curves,
 
           if (debug) {
@@ -1505,9 +1499,8 @@ MetaboDecon1D <- function(filepath, filename = NA, file_format = "bruker", numbe
         }
 
         return(return_list)
-
       }
-      if(parameter_request == "n"){
+      if (parameter_request == "n") {
         # User want to adjust parameters for each spectrum separately
 
         # Set variable to false
@@ -1515,19 +1508,19 @@ MetaboDecon1D <- function(filepath, filename = NA, file_format = "bruker", numbe
 
         # Start deconvolution for each file
         return_list <- list()
-        for(i in 1:length(files)){
+        for (i in 1:length(files)) {
           name <- files[i]
           # Generate whole filepath of current folder
-          filepath_completed <- paste(filepath, files[i], spectroscopy_value, sep="/")
+          filepath_completed <- paste(filepath, files[i], spectroscopy_value, sep = "/")
 
           print_text_1 <- "Start deconvolution of "
           print_text_2 <- ":"
-          message(paste(print_text_1, files[i], print_text_2, sep=""))
+          message(paste(print_text_1, files[i], print_text_2, sep = ""))
 
           deconv_result <- deconvolution(filepath_completed, name, file_format, same_parameter, processing_value, number_iterations, range_water_signal_ppm, signal_free_region, smoothing_param, delta, scale_factor, debug = debug)
 
           # Save return values in a list and return the list
-          list_file <- list("number_of_files"=number_of_files, "filename"=deconv_result$filename, "x_values"=deconv_result$spectrum_x, "x_values_ppm" = deconv_result$spectrum_x_ppm, "y_values"=deconv_result$spectrum_y, "spectrum_superposition"=deconv_result$spectrum_approx, "mse_normed"=deconv_result$mse_normed, "index_peak_triplets_middle"=deconv_result$index_peak_triplets_middle, "index_peak_triplets_left"=deconv_result$index_peak_triplets_left, "index_peak_triplets_right"=deconv_result$index_peak_triplets_right, "peak_triplets_middle"=deconv_result$peak_triplets_middle, "peak_triplets_left"=deconv_result$peak_triplets_left, "peak_triplets_right"=deconv_result$peak_triplets_right, "integrals"=deconv_result$integrals, "A"=deconv_result$A, "lambda"=deconv_result$lambda, "x_0"=deconv_result$w)
+          list_file <- list("number_of_files" = number_of_files, "filename" = deconv_result$filename, "x_values" = deconv_result$spectrum_x, "x_values_ppm" = deconv_result$spectrum_x_ppm, "y_values" = deconv_result$spectrum_y, "spectrum_superposition" = deconv_result$spectrum_approx, "mse_normed" = deconv_result$mse_normed, "index_peak_triplets_middle" = deconv_result$index_peak_triplets_middle, "index_peak_triplets_left" = deconv_result$index_peak_triplets_left, "index_peak_triplets_right" = deconv_result$index_peak_triplets_right, "peak_triplets_middle" = deconv_result$peak_triplets_middle, "peak_triplets_left" = deconv_result$peak_triplets_left, "peak_triplets_right" = deconv_result$peak_triplets_right, "integrals" = deconv_result$integrals, "A" = deconv_result$A, "lambda" = deconv_result$lambda, "x_0" = deconv_result$w)
           # "lorentz_curves"=deconv_result$lorentz_curves,
 
           if (debug) {
@@ -1535,7 +1528,7 @@ MetaboDecon1D <- function(filepath, filename = NA, file_format = "bruker", numbe
           }
 
           # Save result list of current spectrum in a return list
-          #return_list[[paste0("element", i)]] <- list_file
+          # return_list[[paste0("element", i)]] <- list_file
           return_list[[paste0(files[i])]] <- list_file
         }
 
@@ -1549,8 +1542,8 @@ MetaboDecon1D <- function(filepath, filename = NA, file_format = "bruker", numbe
 
 
 
-  # If a filename is given, thus unequal NA, only this file is analysed
-  }else{
+    # If a filename is given, thus unequal NA, only this file is analysed
+  } else {
     # Call deconvolution function
 
     # Set variable to false
@@ -1561,16 +1554,15 @@ MetaboDecon1D <- function(filepath, filename = NA, file_format = "bruker", numbe
 
     print_text_1 <- "Start deconvolution of "
     print_text_2 <- ":"
-    message(paste(print_text_1, filename, print_text_2, sep=""))
+    message(paste(print_text_1, filename, print_text_2, sep = ""))
 
     # Check which file format is loaded
-    if(file_format == "jcampdx"){
-
+    if (file_format == "jcampdx") {
       deconv_result <- deconvolution(filepath, filename, file_format, same_parameter, processing_value, number_iterations, range_water_signal_ppm, signal_free_region, smoothing_param, delta, scale_factor, debug = debug)
 
       # Save return values in a list and return the list
-      return_list <- list("number_of_files"=number_of_files, "filename"=deconv_result$filename, "x_values"=deconv_result$spectrum_x, "x_values_ppm" = deconv_result$spectrum_x_ppm, "y_values"=deconv_result$spectrum_y, "spectrum_superposition"=deconv_result$spectrum_approx, "mse_normed"=deconv_result$mse_normed, "index_peak_triplets_middle"=deconv_result$index_peak_triplets_middle, "index_peak_triplets_left"=deconv_result$index_peak_triplets_left, "index_peak_triplets_right"=deconv_result$index_peak_triplets_right, "peak_triplets_middle"=deconv_result$peak_triplets_middle, "peak_triplets_left"=deconv_result$peak_triplets_left, "peak_triplets_right"=deconv_result$peak_triplets_right, "integrals"=deconv_result$integrals, "A"=deconv_result$A, "lambda"=deconv_result$lambda, "x_0"=deconv_result$w)
-      #"lorentz_curves"=deconv_result$lorentz_curves,
+      return_list <- list("number_of_files" = number_of_files, "filename" = deconv_result$filename, "x_values" = deconv_result$spectrum_x, "x_values_ppm" = deconv_result$spectrum_x_ppm, "y_values" = deconv_result$spectrum_y, "spectrum_superposition" = deconv_result$spectrum_approx, "mse_normed" = deconv_result$mse_normed, "index_peak_triplets_middle" = deconv_result$index_peak_triplets_middle, "index_peak_triplets_left" = deconv_result$index_peak_triplets_left, "index_peak_triplets_right" = deconv_result$index_peak_triplets_right, "peak_triplets_middle" = deconv_result$peak_triplets_middle, "peak_triplets_left" = deconv_result$peak_triplets_left, "peak_triplets_right" = deconv_result$peak_triplets_right, "integrals" = deconv_result$integrals, "A" = deconv_result$A, "lambda" = deconv_result$lambda, "x_0" = deconv_result$w)
+      # "lorentz_curves"=deconv_result$lorentz_curves,
 
       if (debug) {
         return_list$debuglist <- deconv_result$debuglist
@@ -1581,36 +1573,33 @@ MetaboDecon1D <- function(filepath, filename = NA, file_format = "bruker", numbe
     }
 
     # Check which file format is loaded
-    if(file_format == "bruker"){
-
+    if (file_format == "bruker") {
       # If example is loaded use predefined values, else get some values from the user
-      if(example == TRUE){
+      if (example == TRUE) {
         spectroscopy_value <- 10
         processing_value <- 10
-      }else{
-        spectroscopy_value <- readline(prompt="What is the name of the subfolder of your filepath: \n[e.g. 10 for C:/Users/Username/Desktop/spectra_folder/spectrum_name/10] ")
-        processing_value <- readline(prompt="What is the name of the subsubsubfolder of your filepath: \n[e.g. 10 for C:/Users/Username/Desktop/spectra_folder/spectrum_name/10/pdata/10] ")
+      } else {
+        spectroscopy_value <- readline(prompt = "What is the name of the subfolder of your filepath: \n[e.g. 10 for C:/Users/Username/Desktop/spectra_folder/spectrum_name/10] ")
+        processing_value <- readline(prompt = "What is the name of the subsubsubfolder of your filepath: \n[e.g. 10 for C:/Users/Username/Desktop/spectra_folder/spectrum_name/10/pdata/10] ")
       }
 
       # Set variable to false
       same_parameter <- FALSE
 
       # Generate whole filepath of current folder
-      filepath_completed <- paste(filepath, filename, spectroscopy_value, sep="/")
+      filepath_completed <- paste(filepath, filename, spectroscopy_value, sep = "/")
       deconv_result <- deconvolution(filepath_completed, filename, file_format, same_parameter, processing_value, number_iterations, range_water_signal_ppm, signal_free_region, smoothing_param, delta, scale_factor, debug = debug)
 
       # Save return values in a list and return the list
-      return_list <- list("number_of_files"=number_of_files, "filename"=deconv_result$filename, "x_values"=deconv_result$spectrum_x, "x_values_ppm" = deconv_result$spectrum_x_ppm, "y_values"=deconv_result$spectrum_y, "spectrum_superposition"=deconv_result$spectrum_approx, "mse_normed"=deconv_result$mse_normed, "index_peak_triplets_middle"=deconv_result$index_peak_triplets_middle, "index_peak_triplets_left"=deconv_result$index_peak_triplets_left, "index_peak_triplets_right"=deconv_result$index_peak_triplets_right, "peak_triplets_middle"=deconv_result$peak_triplets_middle, "peak_triplets_left"=deconv_result$peak_triplets_left, "peak_triplets_right"=deconv_result$peak_triplets_right, "integrals"=deconv_result$integrals, "A"=deconv_result$A, "lambda"=deconv_result$lambda, "x_0"=deconv_result$w)
+      return_list <- list("number_of_files" = number_of_files, "filename" = deconv_result$filename, "x_values" = deconv_result$spectrum_x, "x_values_ppm" = deconv_result$spectrum_x_ppm, "y_values" = deconv_result$spectrum_y, "spectrum_superposition" = deconv_result$spectrum_approx, "mse_normed" = deconv_result$mse_normed, "index_peak_triplets_middle" = deconv_result$index_peak_triplets_middle, "index_peak_triplets_left" = deconv_result$index_peak_triplets_left, "index_peak_triplets_right" = deconv_result$index_peak_triplets_right, "peak_triplets_middle" = deconv_result$peak_triplets_middle, "peak_triplets_left" = deconv_result$peak_triplets_left, "peak_triplets_right" = deconv_result$peak_triplets_right, "integrals" = deconv_result$integrals, "A" = deconv_result$A, "lambda" = deconv_result$lambda, "x_0" = deconv_result$w)
 
       if (debug) {
         return_list$debuglist <- deconv_result$debuglist
         cat3("Finished MetaboDecon1D")
-
       }
 
       return(return_list)
     }
-
   }
 }
 
@@ -1621,45 +1610,46 @@ MetaboDecon1D <- function(filepath, filename = NA, file_format = "bruker", numbe
 #' @param x_range Row vector with two entries consisting of the ppm start and the ppm end value to scale the range of the x-axis (optional)
 #' @param y_range Row vector with two entries consisting of the ppm start and the ppm end value to scale the range of the y-axis (optional)
 #' @return No return value, called for side effect of plotting.
-#' @examples \dontrun{
+#' @seealso [MetaboDecon1D()], [calculate_lorentz_curves()], [plot_lorentz_curves_save_as_png()], [plot_spectrum_superposition_save_as_png()]
+#' @examples
+#' \dontrun{
+#'
 #' # Load one spectrum (Bruker format)
-#' result <- MetaboDecon1D(filepath="load_example_path", filename="urine", file_format="bruker")
+#' result <- MetaboDecon1D(filepath = "load_example_path", filename = "urine", file_format = "bruker")
 #' plot_triplets(result)
+#'
 #' # Plot part of spectrum
-#' plot_triplets(result, c(1.4,1.3), c(0,20))
+#' plot_triplets(result, c(1.4, 1.3), c(0, 20))
 #'
 #' # Load all spectra (Bruker format) of choosen folder
-#' result <- MetaboDecon1D(filepath="load_example_path", file_format="bruker")
+#' result <- MetaboDecon1D(filepath = "load_example_path", file_format = "bruker")
+#'
 #' # Plot triplets of all investigated spectra
 #' plot_triplets(result)
+#'
 #' # Plot triplets of one certain investigated spectrum
 #' plot_triplets(result$urine)
+#'
 #' }
-#' @seealso
-#' \code{\link{MetaboDecon1D}},
-#' \code{\link{calculate_lorentz_curves}},
-#' \code{\link{plot_lorentz_curves_save_as_png}},
-#' \code{\link{plot_spectrum_superposition_save_as_png}}
-plot_triplets <- function(deconv_result, x_range=c(), y_range=c()){
-
+plot_triplets <- function(deconv_result, x_range = c(), y_range = c()) {
   number_in_folder <- 0
   # Get number of analysed spectra
-  if("number_of_files" %in% names(deconv_result)){
+  if ("number_of_files" %in% names(deconv_result)) {
     number_of_files <- deconv_result$number_of_files
-  }else{
-    if("number_of_files" %in% names(deconv_result[[1]])){
+  } else {
+    if ("number_of_files" %in% names(deconv_result[[1]])) {
       number_of_files <- deconv_result[[1]]$number_of_files
 
       # Check if only one spectrum is inside whole folder
-      if(number_of_files == 1){
+      if (number_of_files == 1) {
         number_in_folder <- 1
       }
     }
   }
 
-  if(number_of_files > 1 | number_in_folder == 1){
+  if (number_of_files > 1 | number_in_folder == 1) {
     # Check if user input comprise a $ sign
-    if(grepl("[$]", deparse(substitute(deconv_result)))){
+    if (grepl("[$]", deparse(substitute(deconv_result)))) {
       # User would like to plot triplets of only one spectrum
       name <- deconv_result$filename
       spectrum_x_ppm <- deconv_result$x_values_ppm
@@ -1671,29 +1661,29 @@ plot_triplets <- function(deconv_result, x_range=c(), y_range=c()){
       message(paste("Plot triplets of ", name))
 
       # Check if x_range is adjusted or not
-      if(is.null(x_range)){
-        filename <- paste(name, "_peak_triplets.png", sep="")
+      if (is.null(x_range)) {
+        filename <- paste(name, "_peak_triplets.png", sep = "")
         # Save plot as png
-        grDevices::png(file=filename, width=825, height=525)
-        plot(spectrum_x_ppm, spectrum_y, type = "l", main=name, xlab="[ppm]", ylab="Intensity [a.u.]", cex=1.3, xlim=rev(range(spectrum_x_ppm)), ylim=y_range)
-        graphics::points(spectrum_x_ppm[index_peaks_triplets], spectrum_y[index_peaks_triplets], col = "red", cex=1.3)
-        graphics::points(spectrum_x_ppm[index_right_position], spectrum_y[index_right_position], col = "green", cex=1.3)
-        graphics::points(spectrum_x_ppm[index_left_position], spectrum_y[index_left_position], col = "blue", cex=1.3)
-        graphics::legend("topright", legend=c("x_left", "x_middle", "x_right"), col=c("green", "red", "blue"), pch=1, bty="n", cex=1.3)
+        grDevices::png(file = filename, width = 825, height = 525)
+        plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = rev(range(spectrum_x_ppm)), ylim = y_range)
+        graphics::points(spectrum_x_ppm[index_peaks_triplets], spectrum_y[index_peaks_triplets], col = "red", cex = 1.3)
+        graphics::points(spectrum_x_ppm[index_right_position], spectrum_y[index_right_position], col = "green", cex = 1.3)
+        graphics::points(spectrum_x_ppm[index_left_position], spectrum_y[index_left_position], col = "blue", cex = 1.3)
+        graphics::legend("topright", legend = c("x_left", "x_middle", "x_right"), col = c("green", "red", "blue"), pch = 1, bty = "n", cex = 1.3)
         grDevices::dev.off()
-      }else{
-        filename <- paste(name, "_peak_triplets.png", sep="")
+      } else {
+        filename <- paste(name, "_peak_triplets.png", sep = "")
         # Save plot as png
-        grDevices::png(file=filename, width=825, height=525)
-        plot(spectrum_x_ppm, spectrum_y, type = "l", main=name, xlab="[ppm]", ylab="Intensity [a.u.]", cex=1.3, xlim=x_range, ylim=y_range)
-        graphics::points(spectrum_x_ppm[index_peaks_triplets], spectrum_y[index_peaks_triplets], col = "red", cex=1.3)
-        graphics::points(spectrum_x_ppm[index_right_position], spectrum_y[index_right_position], col = "green", cex=1.3)
-        graphics::points(spectrum_x_ppm[index_left_position], spectrum_y[index_left_position], col = "blue", cex=1.3)
-        graphics::legend("topright", legend=c("x_left", "x_middle", "x_right"), col=c("green", "red", "blue"), pch=1, bty="n", cex=1.3)
+        grDevices::png(file = filename, width = 825, height = 525)
+        plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = x_range, ylim = y_range)
+        graphics::points(spectrum_x_ppm[index_peaks_triplets], spectrum_y[index_peaks_triplets], col = "red", cex = 1.3)
+        graphics::points(spectrum_x_ppm[index_right_position], spectrum_y[index_right_position], col = "green", cex = 1.3)
+        graphics::points(spectrum_x_ppm[index_left_position], spectrum_y[index_left_position], col = "blue", cex = 1.3)
+        graphics::legend("topright", legend = c("x_left", "x_middle", "x_right"), col = c("green", "red", "blue"), pch = 1, bty = "n", cex = 1.3)
         grDevices::dev.off()
       }
-    }else{
-      for(l in 1:number_of_files){
+    } else {
+      for (l in 1:number_of_files) {
         # User would like to plot triplets of all investigated spectra
         name <- deconv_result[[l]]$filename
         spectrum_x_ppm <- deconv_result[[l]]$x_values_ppm
@@ -1705,30 +1695,30 @@ plot_triplets <- function(deconv_result, x_range=c(), y_range=c()){
         message(paste("Plot triplets of ", name))
 
         # Check if x_range is adjusted or not
-        if(is.null(x_range)){
-          filename <- paste(name, "_peak_triplets.png", sep="")
+        if (is.null(x_range)) {
+          filename <- paste(name, "_peak_triplets.png", sep = "")
           # Save plot as png
-          grDevices::png(file=filename, width=825, height=525)
-          plot(spectrum_x_ppm, spectrum_y, type = "l", main=name, xlab="[ppm]", ylab="Intensity [a.u.]", cex=1.3, xlim=rev(range(spectrum_x_ppm)), ylim=y_range)
-          graphics::points(spectrum_x_ppm[index_peaks_triplets], spectrum_y[index_peaks_triplets], col = "red", cex=1.3)
-          graphics::points(spectrum_x_ppm[index_right_position], spectrum_y[index_right_position], col = "green", cex=1.3)
-          graphics::points(spectrum_x_ppm[index_left_position], spectrum_y[index_left_position], col = "blue", cex=1.3)
-          graphics::legend("topright", legend=c("x_left", "x_middle", "x_right"), col=c("green", "red", "blue"), pch=1, bty="n", cex=1.3)
+          grDevices::png(file = filename, width = 825, height = 525)
+          plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = rev(range(spectrum_x_ppm)), ylim = y_range)
+          graphics::points(spectrum_x_ppm[index_peaks_triplets], spectrum_y[index_peaks_triplets], col = "red", cex = 1.3)
+          graphics::points(spectrum_x_ppm[index_right_position], spectrum_y[index_right_position], col = "green", cex = 1.3)
+          graphics::points(spectrum_x_ppm[index_left_position], spectrum_y[index_left_position], col = "blue", cex = 1.3)
+          graphics::legend("topright", legend = c("x_left", "x_middle", "x_right"), col = c("green", "red", "blue"), pch = 1, bty = "n", cex = 1.3)
           grDevices::dev.off()
-        }else{
-          filename <- paste(name, "_peak_triplets.png", sep="")
+        } else {
+          filename <- paste(name, "_peak_triplets.png", sep = "")
           # Save plot as png
-          grDevices::png(file=filename, width=825, height=525)
-          plot(spectrum_x_ppm, spectrum_y, type = "l", main=name, xlab="[ppm]", ylab="Intensity [a.u.]", cex=1.3, xlim=x_range, ylim=y_range)
-          graphics::points(spectrum_x_ppm[index_peaks_triplets], spectrum_y[index_peaks_triplets], col = "red", cex=1.3)
-          graphics::points(spectrum_x_ppm[index_right_position], spectrum_y[index_right_position], col = "green", cex=1.3)
-          graphics::points(spectrum_x_ppm[index_left_position], spectrum_y[index_left_position], col = "blue", cex=1.3)
-          graphics::legend("topright", legend=c("x_left", "x_middle", "x_right"), col=c("green", "red", "blue"), pch=1, bty="n", cex=1.3)
+          grDevices::png(file = filename, width = 825, height = 525)
+          plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = x_range, ylim = y_range)
+          graphics::points(spectrum_x_ppm[index_peaks_triplets], spectrum_y[index_peaks_triplets], col = "red", cex = 1.3)
+          graphics::points(spectrum_x_ppm[index_right_position], spectrum_y[index_right_position], col = "green", cex = 1.3)
+          graphics::points(spectrum_x_ppm[index_left_position], spectrum_y[index_left_position], col = "blue", cex = 1.3)
+          graphics::legend("topright", legend = c("x_left", "x_middle", "x_right"), col = c("green", "red", "blue"), pch = 1, bty = "n", cex = 1.3)
           grDevices::dev.off()
         }
       }
     }
-  }else{
+  } else {
     name <- deconv_result$filename
     spectrum_x_ppm <- deconv_result$x_values_ppm
     spectrum_y <- deconv_result$y_values
@@ -1739,52 +1729,49 @@ plot_triplets <- function(deconv_result, x_range=c(), y_range=c()){
     message(paste("Plot triplets of ", name))
 
     # Check if x_range is adjusted or not
-    if(is.null(x_range)){
-      filename <- paste(name, "_peak_triplets.png", sep="")
+    if (is.null(x_range)) {
+      filename <- paste(name, "_peak_triplets.png", sep = "")
       # Save plot as png
-      grDevices::png(file=filename, width=825, height=525)
-      plot(spectrum_x_ppm, spectrum_y, type = "l", main=name, xlab="[ppm]", ylab="Intensity [a.u.]", cex=1.3, xlim=rev(range(spectrum_x_ppm)), ylim=y_range)
-      graphics::points(spectrum_x_ppm[index_peaks_triplets], spectrum_y[index_peaks_triplets], col = "red", cex=1.3)
-      graphics::points(spectrum_x_ppm[index_right_position], spectrum_y[index_right_position], col = "green", cex=1.3)
-      graphics::points(spectrum_x_ppm[index_left_position], spectrum_y[index_left_position], col = "blue", cex=1.3)
-      graphics::legend("topright", legend=c("x_left", "x_middle", "x_right"), col=c("green", "red", "blue"), pch=1, bty="n", cex=1.3)
+      grDevices::png(file = filename, width = 825, height = 525)
+      plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = rev(range(spectrum_x_ppm)), ylim = y_range)
+      graphics::points(spectrum_x_ppm[index_peaks_triplets], spectrum_y[index_peaks_triplets], col = "red", cex = 1.3)
+      graphics::points(spectrum_x_ppm[index_right_position], spectrum_y[index_right_position], col = "green", cex = 1.3)
+      graphics::points(spectrum_x_ppm[index_left_position], spectrum_y[index_left_position], col = "blue", cex = 1.3)
+      graphics::legend("topright", legend = c("x_left", "x_middle", "x_right"), col = c("green", "red", "blue"), pch = 1, bty = "n", cex = 1.3)
       grDevices::dev.off()
-    }else{
-      filename <- paste(name, "_peak_triplets.png", sep="")
+    } else {
+      filename <- paste(name, "_peak_triplets.png", sep = "")
       # Save plot as png
-      grDevices::png(file=filename, width=825, height=525)
-      plot(spectrum_x_ppm, spectrum_y, type = "l", main=name, xlab="[ppm]", ylab="Intensity [a.u.]", cex=1.3, xlim=x_range, ylim=y_range)
-      graphics::points(spectrum_x_ppm[index_peaks_triplets], spectrum_y[index_peaks_triplets], col = "red", cex=1.3)
-      graphics::points(spectrum_x_ppm[index_right_position], spectrum_y[index_right_position], col = "green", cex=1.3)
-      graphics::points(spectrum_x_ppm[index_left_position], spectrum_y[index_left_position], col = "blue", cex=1.3)
-      graphics::legend("topright", legend=c("x_left", "x_middle", "x_right"), col=c("green", "red", "blue"), pch=1, bty="n", cex=1.3)
+      grDevices::png(file = filename, width = 825, height = 525)
+      plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = x_range, ylim = y_range)
+      graphics::points(spectrum_x_ppm[index_peaks_triplets], spectrum_y[index_peaks_triplets], col = "red", cex = 1.3)
+      graphics::points(spectrum_x_ppm[index_right_position], spectrum_y[index_right_position], col = "green", cex = 1.3)
+      graphics::points(spectrum_x_ppm[index_left_position], spectrum_y[index_left_position], col = "blue", cex = 1.3)
+      graphics::legend("topright", legend = c("x_left", "x_middle", "x_right"), col = c("green", "red", "blue"), pch = 1, bty = "n", cex = 1.3)
       grDevices::dev.off()
     }
   }
 }
-
-
 
 #' @export
 #' @title Calculate lorentz curves for each analysed spectrum
 #' @description Calculates the lorentz curves of each investigated spectrum.
 #' @param deconv_result Saved result of the MetaboDecon1D() function
 #' @param number_of_files Number of spectra to analyze
-#' @return \bold{One spectrum:} matrix containing the generated Lorentz curves.
-#' Each row depicts one Lorentz curve. \bold{More spectra:} list containing the
-#' matrix with the generated Lorentz curve. Each matrix corresponds to one
-#' spectrum and each row in the matrix depicts one Lorentz curve.
-#' @examples \dontrun{
+#' @return \bold{One spectrum:} matrix containing the generated Lorentz curves. Each row depicts one Lorentz curve. \bold{More spectra:} list containing the matrix with the generated Lorentz curve. Each matrix corresponds to one spectrum and each row in the matrix depicts one Lorentz curve.
+#' @examples
+#' \dontrun{
+#'
 #' # Load one spectrum (Bruker format)
 #' result <- MetaboDecon1D(
-#'   filepath="load_example_path",
-#'   filename="urine",
-#'   file_format="bruker"
+#'   filepath = "load_example_path",
+#'   filename = "urine",
+#'   file_format = "bruker"
 #' )
 #' lorentz_curves <- calculate_lorentz_curves(result)
 #'
 #' # Load all spectra (Bruker format) of choosen folder
-#' result <- MetaboDecon1D(filepath="load_example_path", file_format="bruker")
+#' result <- MetaboDecon1D(filepath = "load_example_path", file_format = "bruker")
 #'
 #' # Calculate Lorentz curves of all investigated spectra
 #' lorentz_curves <- calculate_lorentz_curves(result)
@@ -1793,27 +1780,21 @@ plot_triplets <- function(deconv_result, x_range=c(), y_range=c()){
 #' lorentz_curves_first_spectrum <- lorentz_curves[[1]]
 #'
 #' # Calculate Lorentz curves of one certain investigated spectrum
-#' lorentz_curves_spectrum1 <- calculate_lorentz_curves(
-#'   result$urine
-#' )
+#' lorentz_curves_spectrum1 <- calculate_lorentz_curves(result$urine)
+#'
 #' }
-#' @seealso
-#' \code{\link{MetaboDecon1D}},
-#' \code{\link{plot_triplets}},
-#' \code{\link{plot_lorentz_curves_save_as_png}},
-#' \code{\link{plot_spectrum_superposition_save_as_png}}
-calculate_lorentz_curves <- function(deconv_result, number_of_files = NA){
-
+#' @seealso [MetaboDecon1D()], [plot_triplets()], [plot_lorentz_curves_save_as_png()], [plot_spectrum_superposition_save_as_png()]
+calculate_lorentz_curves <- function(deconv_result, number_of_files = NA) {
   number_in_folder <- 0
-  if(is.na(number_of_files)){
+  if (is.na(number_of_files)) {
     # Get number of analysed spectra
-    if("number_of_files" %in% names(deconv_result)){
+    if ("number_of_files" %in% names(deconv_result)) {
       number_of_files <- deconv_result$number_of_files
-    }else{
-      if("number_of_files" %in% names(deconv_result[[1]])){
+    } else {
+      if ("number_of_files" %in% names(deconv_result[[1]])) {
         number_of_files <- deconv_result[[1]]$number_of_files
         # Check if only one spectrum is inside whole folder
-        if(number_of_files == 1){
+        if (number_of_files == 1) {
           number_in_folder <- 1
         }
       }
@@ -1821,9 +1802,9 @@ calculate_lorentz_curves <- function(deconv_result, number_of_files = NA){
   }
 
   # Check if more than one spectra was analysed
-  if(number_of_files > 1 | number_in_folder == 1){
+  if (number_of_files > 1 | number_in_folder == 1) {
     # Check if user input comprise a $ sign
-    if(grepl("[$]", deparse(substitute(deconv_result)))){
+    if (grepl("[$]", deparse(substitute(deconv_result)))) {
       spectrum_x <- deconv_result$x_values
       A_new <- deconv_result$A
       lambda_new <- deconv_result$lambda
@@ -1831,18 +1812,18 @@ calculate_lorentz_curves <- function(deconv_result, number_of_files = NA){
 
       # Calculate lorentz curves
       lorentz_curves_initial <- matrix(nrow = length(A_new), ncol = length(spectrum_x))
-      for(i in 1:length(A_new)){
-        if((w_new[i] == 0) | (lambda_new[i] == 0) | (A_new[i] == 0)){
-          lorentz_curves_initial[i,] <- 0
-        }else{
-          lorentz_curves_initial[i,] <- abs(A_new[i]*(lambda_new[i]/(lambda_new[i]^2 + (spectrum_x-w_new[i])^2)))
+      for (i in 1:length(A_new)) {
+        if ((w_new[i] == 0) | (lambda_new[i] == 0) | (A_new[i] == 0)) {
+          lorentz_curves_initial[i, ] <- 0
+        } else {
+          lorentz_curves_initial[i, ] <- abs(A_new[i] * (lambda_new[i] / (lambda_new[i]^2 + (spectrum_x - w_new[i])^2)))
         }
       }
       # Return matrix with each row contains one lorentz curve
       return(lorentz_curves_initial)
-    }else{
+    } else {
       lorentz_curves_list <- list()
-      for(l in 1:number_of_files){
+      for (l in 1:number_of_files) {
         name <- deconv_result[[l]]$filename
         spectrum_x <- deconv_result[[l]]$x_values
         A_new <- deconv_result[[l]]$A
@@ -1851,18 +1832,18 @@ calculate_lorentz_curves <- function(deconv_result, number_of_files = NA){
 
         # Calculate lorentz curves
         lorentz_curves_initial <- matrix(nrow = length(A_new), ncol = length(spectrum_x))
-        for(i in 1:length(A_new)){
-          if((w_new[i] == 0) | (lambda_new[i] == 0) | (A_new[i] == 0)){
-            lorentz_curves_initial[i,] <- 0
-          }else{
-            lorentz_curves_initial[i,] <- abs(A_new[i]*(lambda_new[i]/(lambda_new[i]^2 + (spectrum_x-w_new[i])^2)))
+        for (i in 1:length(A_new)) {
+          if ((w_new[i] == 0) | (lambda_new[i] == 0) | (A_new[i] == 0)) {
+            lorentz_curves_initial[i, ] <- 0
+          } else {
+            lorentz_curves_initial[i, ] <- abs(A_new[i] * (lambda_new[i] / (lambda_new[i]^2 + (spectrum_x - w_new[i])^2)))
           }
         }
         lorentz_curves_list[[paste0(name)]] <- lorentz_curves_initial
       }
       return(lorentz_curves_list)
     }
-  }else{
+  } else {
     spectrum_x <- deconv_result$x_values
     A_new <- deconv_result$A
     lambda_new <- deconv_result$lambda
@@ -1870,11 +1851,11 @@ calculate_lorentz_curves <- function(deconv_result, number_of_files = NA){
 
     # Calculate lorentz curves
     lorentz_curves_initial <- matrix(nrow = length(A_new), ncol = length(spectrum_x))
-    for(i in 1:length(A_new)){
-      if((w_new[i] == 0) | (lambda_new[i] == 0) | (A_new[i] == 0)){
-        lorentz_curves_initial[i,] <- 0
-      }else{
-        lorentz_curves_initial[i,] <- abs(A_new[i]*(lambda_new[i]/(lambda_new[i]^2 + (spectrum_x-w_new[i])^2)))
+    for (i in 1:length(A_new)) {
+      if ((w_new[i] == 0) | (lambda_new[i] == 0) | (A_new[i] == 0)) {
+        lorentz_curves_initial[i, ] <- 0
+      } else {
+        lorentz_curves_initial[i, ] <- abs(A_new[i] * (lambda_new[i] / (lambda_new[i]^2 + (spectrum_x - w_new[i])^2)))
       }
     }
     # Return matrix with each row contains one lorentz curve
@@ -1882,8 +1863,7 @@ calculate_lorentz_curves <- function(deconv_result, number_of_files = NA){
   }
 }
 
-
-#' @export
+#' @noRd
 #' @title Plot lorentz curves for variable range
 #' @description Plots the original spectrum and all generated Lorentz curves and save the result as png under the filepath.
 #' @param deconv_result Saved result of the MetaboDecon1D() function
@@ -1891,42 +1871,43 @@ calculate_lorentz_curves <- function(deconv_result, number_of_files = NA){
 #' the ppm end value to scale the range of the x-axis (optional)
 #' @param y_range Row vector with two entries consisting of the ppm start and
 #' the ppm end value to scale the range of the y-axis (optional)
-#' @return NULL
-#' @examples \dontrun{
+#' @return NULL, called for side effects.
+#' @seealso [MetaboDecon1D()], [plot_triplets()], [plot_spectrum_superposition_save_as_png()]
+#' @examples
+#' \dontrun{
+#'
 #' # Load one spectrum (Bruker format)
-#' result <- MetaboDecon1D(filepath="load_example_path", filename="urine", file_format="bruker")
+#' result <- MetaboDecon1D(filepath = "load_example_path", filename = "urine", file_format = "bruker")
 #' plot_lorentz_curves_save_as_png(result)
 #'
 #' # Load more spectra (Bruker format)
-#' result <- MetaboDecon1D(filepath="load_example_path", file_format="bruker")
+#' result <- MetaboDecon1D(filepath = "load_example_path", file_format = "bruker")
+#'
 #' # Plot Lorentz curves of all investigated spectra
 #' plot_lorentz_curves_save_as_png(result)
+#'
 #' # Plot Lorentz curves of one certain investigated spectrum
 #' plot_lorentz_curves_save_as_png(result$urine)
 #' }
-#' @seealso
-#' \code{\link{MetaboDecon1D}},
-#' \code{\link{plot_triplets}},
-#' \code{\link{plot_spectrum_superposition_save_as_png}}
-plot_lorentz_curves_save_as_png <- function(deconv_result, x_range=c(), y_range=c()){
+plot_lorentz_curves_save_as_png <- function(deconv_result, x_range = c(), y_range = c()) {
   number_in_folder <- 0
   # Get number of analysed spectra
-  if("number_of_files" %in% names(deconv_result)){
+  if ("number_of_files" %in% names(deconv_result)) {
     number_of_files <- deconv_result$number_of_files
-  }else{
-    if("number_of_files" %in% names(deconv_result[[1]])){
+  } else {
+    if ("number_of_files" %in% names(deconv_result[[1]])) {
       number_of_files <- deconv_result[[1]]$number_of_files
       # Check if only one spectrum is inside whole folder
-      if(number_of_files == 1){
+      if (number_of_files == 1) {
         number_in_folder <- 1
       }
     }
   }
 
   # Check how many spectra are investigated
-  if(number_of_files > 1 | number_in_folder == 1){
+  if (number_of_files > 1 | number_in_folder == 1) {
     # Check if user input comprise a $ sign
-    if(grepl("[$]", deparse(substitute(deconv_result)))){
+    if (grepl("[$]", deparse(substitute(deconv_result)))) {
       # Get parameters
       name <- deconv_result$filename
       spectrum_x_ppm <- deconv_result$x_values_ppm
@@ -1941,32 +1922,32 @@ plot_lorentz_curves_save_as_png <- function(deconv_result, x_range=c(), y_range=
       message(paste("Plot Lorentz curves of", name))
 
       # Check if x_range is adjusted or not
-      if(is.null(x_range)){
-        filename <- paste(name, "_lorentz_curves.png", sep="")
+      if (is.null(x_range)) {
+        filename <- paste(name, "_lorentz_curves.png", sep = "")
         # Save plot as png
-        grDevices::png(file=filename, width=825, height=525)
-        plot(spectrum_x_ppm, spectrum_y, type="l", main=name, xlab="[ppm]", ylab="Intensity [a.u.]", cex=1.3, xlim=rev(range(spectrum_x_ppm)), ylim=y_range)
-        for(i in 1:dim(lorentz_curves_initial)[1]){
-          graphics::lines(spectrum_x_ppm, lorentz_curves_initial[i,], col = "red")
+        grDevices::png(file = filename, width = 825, height = 525)
+        plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = rev(range(spectrum_x_ppm)), ylim = y_range)
+        for (i in 1:dim(lorentz_curves_initial)[1]) {
+          graphics::lines(spectrum_x_ppm, lorentz_curves_initial[i, ], col = "red")
         }
-        graphics::legend("topright", legend=c("Original spectrum", "Lorentz curves"), col=c("black", "red"), lty=1, bty="n", cex=1.3)
+        graphics::legend("topright", legend = c("Original spectrum", "Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
         grDevices::dev.off()
-      }else{
-        filename <- paste(name, "_lorentz_curves.png", sep="")
+      } else {
+        filename <- paste(name, "_lorentz_curves.png", sep = "")
         # Save plot as png
-        grDevices::png(file=filename, width=825, height=525)
-        plot(spectrum_x_ppm, spectrum_y, type="l", main=name, xlab="[ppm]", ylab="Intensity [a.u.]", cex=1.3, xlim=x_range, ylim=y_range)
-        for(i in 1:dim(lorentz_curves_initial)[1]){
-          graphics::lines(spectrum_x_ppm, lorentz_curves_initial[i,], col = "red")
+        grDevices::png(file = filename, width = 825, height = 525)
+        plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = x_range, ylim = y_range)
+        for (i in 1:dim(lorentz_curves_initial)[1]) {
+          graphics::lines(spectrum_x_ppm, lorentz_curves_initial[i, ], col = "red")
         }
-        graphics::legend("topright", legend=c("Original spectrum", "Lorentz curves"), col=c("black", "red"), lty=1, bty="n", cex=1.3)
+        graphics::legend("topright", legend = c("Original spectrum", "Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
         grDevices::dev.off()
       }
-    }else{
+    } else {
       # Calculate Lorentz curves
       lorentz_curves_matrix <- calculate_lorentz_curves(deconv_result)
 
-      for(l in 1:number_of_files){
+      for (l in 1:number_of_files) {
         # Get necessary parameters
         name <- deconv_result[[l]]$filename
         spectrum_x_ppm <- deconv_result[[l]]$x_values_ppm
@@ -1977,30 +1958,30 @@ plot_lorentz_curves_save_as_png <- function(deconv_result, x_range=c(), y_range=
         message(paste("Plot Lorentz curves of", name))
 
         # Check if x_range is adjusted or not
-        if(is.null(x_range)){
-          filename <- paste(name, "_lorentz_curves.png", sep="")
+        if (is.null(x_range)) {
+          filename <- paste(name, "_lorentz_curves.png", sep = "")
           # Save plot as png
-          grDevices::png(file=filename, width=825, height=525)
-          plot(spectrum_x_ppm, spectrum_y, type="l", main=name, xlab="[ppm]", ylab="Intensity [a.u.]", cex=1.3, xlim=rev(range(spectrum_x_ppm)), ylim=y_range)
-          for(i in 1:length(filtered_peaks)){
-            graphics::lines(spectrum_x_ppm, lorentz_curves_initial[i,], col = "red")
+          grDevices::png(file = filename, width = 825, height = 525)
+          plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = rev(range(spectrum_x_ppm)), ylim = y_range)
+          for (i in 1:length(filtered_peaks)) {
+            graphics::lines(spectrum_x_ppm, lorentz_curves_initial[i, ], col = "red")
           }
-          graphics::legend("topright", legend=c("Original spectrum", "Lorentz curves"), col=c("black", "red"), lty=1, bty="n", cex=1.3)
+          graphics::legend("topright", legend = c("Original spectrum", "Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
           grDevices::dev.off()
-        }else{
-          filename <- paste(name, "_lorentz_curves.png", sep="")
+        } else {
+          filename <- paste(name, "_lorentz_curves.png", sep = "")
           # Save plot as png
-          grDevices::png(file=filename, width=825, height=525)
-          plot(spectrum_x_ppm, spectrum_y, type="l", main=name, xlab="[ppm]", ylab="Intensity [a.u.]", cex=1.3, xlim=x_range, ylim=y_range)
-          for(i in 1:length(filtered_peaks)){
-            graphics::lines(spectrum_x_ppm, lorentz_curves_initial[i,], col = "red")
+          grDevices::png(file = filename, width = 825, height = 525)
+          plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = x_range, ylim = y_range)
+          for (i in 1:length(filtered_peaks)) {
+            graphics::lines(spectrum_x_ppm, lorentz_curves_initial[i, ], col = "red")
           }
-          graphics::legend("topright", legend=c("Original spectrum", "Lorentz curves"), col=c("black", "red"), lty=1, bty="n", cex=1.3)
+          graphics::legend("topright", legend = c("Original spectrum", "Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
           grDevices::dev.off()
         }
       }
     }
-  }else{
+  } else {
     # Calculate Lorentz curves
     lorentz_curves_initial <- calculate_lorentz_curves(deconv_result)
 
@@ -2013,83 +1994,80 @@ plot_lorentz_curves_save_as_png <- function(deconv_result, x_range=c(), y_range=
     message(paste("Plot Lorentz curves of", name))
 
     # Check if x_range is adjusted or not
-    if(is.null(x_range)){
-      filename <- paste(name, "_lorentz_curves.png", sep="")
+    if (is.null(x_range)) {
+      filename <- paste(name, "_lorentz_curves.png", sep = "")
       # Save plot as png
-      grDevices::png(file=filename, width=825, height=525)
-      plot(spectrum_x_ppm, spectrum_y, type="l", main=name, xlab="[ppm]", ylab="Intensity [a.u.]", cex=1.3, xlim=rev(range(spectrum_x_ppm)), ylim=y_range)
-      for(i in 1:length(filtered_peaks)){
-        graphics::lines(spectrum_x_ppm, lorentz_curves_initial[i,], col = "red")
+      grDevices::png(file = filename, width = 825, height = 525)
+      plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = rev(range(spectrum_x_ppm)), ylim = y_range)
+      for (i in 1:length(filtered_peaks)) {
+        graphics::lines(spectrum_x_ppm, lorentz_curves_initial[i, ], col = "red")
       }
-      graphics::legend("topright", legend=c("Original spectrum", "Lorentz curves"), col=c("black", "red"), lty=1, bty="n", cex=1.3)
+      graphics::legend("topright", legend = c("Original spectrum", "Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
       grDevices::dev.off()
-    }else{
-      filename <- paste(name, "_lorentz_curves.png", sep="")
+    } else {
+      filename <- paste(name, "_lorentz_curves.png", sep = "")
       # Save plot as png
-      grDevices::png(file=filename, width=825, height=525)
-      plot(spectrum_x_ppm, spectrum_y, type="l", main=name, xlab="[ppm]", ylab="Intensity [a.u.]", cex=1.3, xlim=x_range, ylim=y_range)
-      for(i in 1:length(filtered_peaks)){
-        graphics::lines(spectrum_x_ppm, lorentz_curves_initial[i,], col = "red")
+      grDevices::png(file = filename, width = 825, height = 525)
+      plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = x_range, ylim = y_range)
+      for (i in 1:length(filtered_peaks)) {
+        graphics::lines(spectrum_x_ppm, lorentz_curves_initial[i, ], col = "red")
       }
-      graphics::legend("topright", legend=c("Original spectrum", "Lorentz curves"), col=c("black", "red"), lty=1, bty="n", cex=1.3)
+      graphics::legend("topright", legend = c("Original spectrum", "Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
       grDevices::dev.off()
     }
   }
 }
 
-
-
+#' @noRd
 #' @title Plot spectrum approx for variable range
-#' @description The MetaboDecon1D package also comprise the additional function
-#' plot_spectrum_superposition_save_as_png() to plot the original spectrum and
-#' the superposition of all generated Lorentz curves and save the result as png
-#' under the filepath.
+#' @description The MetaboDecon1D package also comprise the additional function plot_spectrum_superposition_save_as_png() to plot the original spectrum and the superposition of all generated Lorentz curves and save the result as png under the filepath.
 #' @param deconv_result Saved result of the MetaboDecon1D() function
 #' @param x_range Row vector with two entries consisting of the ppm start and
 #' the ppm end value to scale the range of the x-axis (optional)
 #' @param y_range Row vector with two entries consisting of the ppm start and
 #' the ppm end value to scale the range of the y-axis (optional)
-#' @return NULL
-#' @examples \dontrun{
+#' @return NULL, called for side effects.
+#' @seealso [MetaboDecon1D()], [calculate_lorentz_curves()], [plot_triplets()], [plot_lorentz_curves_save_as_png()]
+#' @examples
+#' \dontrun{
+#'
 #' # Load one spectrum (Bruker format)
 #' result <- MetaboDecon1D(
-#'   filepath="load_example_path",
-#'   filename="urine",
-#'   file_format="bruker"
+#'   filepath = "load_example_path",
+#'   filename = "urine",
+#'   file_format = "bruker"
 #' )
 #' plot_spectrum_superposition_save_as_png(result)
 #'
 #' # Load more spectra (Bruker format)
-#' result <- MetaboDecon1D(filepath="load_example_path", file_format="bruker")
+#' result <- MetaboDecon1D(filepath = "load_example_path", file_format = "bruker")
+#'
 #' # Plot superposition of Lorentz curves of all spectra
 #' plot_spectrum_superposition_save_as_png(result)
+#'
 #' # Plot superposition of Lorentz curves of one certain investigated spectrum
 #' plot_spectrum_superposition_save_as_png(result$urine)
+#'
 #' }
-#' @seealso
-#' \code{\link{MetaboDecon1D}},
-#' \code{\link{calculate_lorentz_curves}},
-#' \code{\link{plot_triplets}},
-#' \code{\link{plot_lorentz_curves_save_as_png}}
-plot_spectrum_superposition_save_as_png <- function(deconv_result, x_range=c(), y_range=c()){
+plot_spectrum_superposition_save_as_png <- function(deconv_result, x_range = c(), y_range = c()) {
   number_in_folder <- 0
   # Get number of analysed spectra
-  if("number_of_files" %in% names(deconv_result)){
+  if ("number_of_files" %in% names(deconv_result)) {
     number_of_files <- deconv_result$number_of_files
-  }else{
-    if("number_of_files" %in% names(deconv_result[[1]])){
+  } else {
+    if ("number_of_files" %in% names(deconv_result[[1]])) {
       number_of_files <- deconv_result[[1]]$number_of_files
       # Check if only one spectrum is inside whole folder
-      if(number_of_files == 1){
+      if (number_of_files == 1) {
         number_in_folder <- 1
       }
     }
   }
 
   # Check how many spectra are investigated
-  if(number_of_files > 1 | number_in_folder == 1){
+  if (number_of_files > 1 | number_in_folder == 1) {
     # Check if user input comprise a $ sign
-    if(grepl("[$]", deparse(substitute(deconv_result)))){
+    if (grepl("[$]", deparse(substitute(deconv_result)))) {
       name <- deconv_result$filename
       spectrum_x_ppm <- deconv_result$x_values_ppm
       spectrum_y <- deconv_result$y_values
@@ -2100,29 +2078,29 @@ plot_spectrum_superposition_save_as_png <- function(deconv_result, x_range=c(), 
       message(paste("Plot superposition of", name))
 
       # Check if x_range is adjusted or not
-      if(is.null(x_range)){
-        filename <- paste(name, "_sum_lorentz_curves.png", sep="")
+      if (is.null(x_range)) {
+        filename <- paste(name, "_sum_lorentz_curves.png", sep = "")
         # Save plot as png
-        grDevices::png(file=filename, width=825, height=525)
-        plot(spectrum_x_ppm, spectrum_y, type="l", main=name, xlab="[ppm]", ylab="Intensity [a.u.]", cex=1.3, xlim=rev(range(spectrum_x_ppm)), ylim=y_range)
+        grDevices::png(file = filename, width = 825, height = 525)
+        plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = rev(range(spectrum_x_ppm)), ylim = y_range)
         graphics::lines(spectrum_x_ppm, spectrum_approx, col = "red")
-        graphics::legend("topright", legend=c("Original spectrum", "Sum of Lorentz curves"), col=c("black", "red"), lty=1, bty="n", cex=1.3)
-        text <- paste("MSE_Normed = ", mse, sep="")
-        graphics::mtext(text, side=3)
+        graphics::legend("topright", legend = c("Original spectrum", "Sum of Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
+        text <- paste("MSE_Normed = ", mse, sep = "")
+        graphics::mtext(text, side = 3)
         grDevices::dev.off()
-      }else{
-        filename <- paste(name, "_sum_lorentz_curves.png", sep="")
+      } else {
+        filename <- paste(name, "_sum_lorentz_curves.png", sep = "")
         # Save plot as png
-        grDevices::png(file=filename, width=825, height=525)
-        plot(spectrum_x_ppm, spectrum_y, type="l", main=name, xlab="[ppm]", ylab="Intensity [a.u.]", cex=1.3, xlim=x_range, ylim=y_range)
+        grDevices::png(file = filename, width = 825, height = 525)
+        plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = x_range, ylim = y_range)
         graphics::lines(spectrum_x_ppm, spectrum_approx, col = "red")
-        graphics::legend("topright", legend=c("Original spectrum", "Sum of Lorentz curves"), col=c("black", "red"), lty=1, bty="n", cex=1.3)
-        text <- paste("MSE_Normed = ", mse, sep="")
-        graphics::mtext(text, side=3)
+        graphics::legend("topright", legend = c("Original spectrum", "Sum of Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
+        text <- paste("MSE_Normed = ", mse, sep = "")
+        graphics::mtext(text, side = 3)
         grDevices::dev.off()
       }
-    }else{
-      for(l in 1:number_of_files){
+    } else {
+      for (l in 1:number_of_files) {
         # Get necessary parameters
         name <- deconv_result[[l]]$filename
         spectrum_x_ppm <- deconv_result[[l]]$x_values_ppm
@@ -2134,30 +2112,30 @@ plot_spectrum_superposition_save_as_png <- function(deconv_result, x_range=c(), 
         message(paste("Plot superposition of", name))
 
         # Check if x_range is adjusted or not
-        if(is.null(x_range)){
-          filename <- paste(name, "_sum_lorentz_curves.png", sep="")
+        if (is.null(x_range)) {
+          filename <- paste(name, "_sum_lorentz_curves.png", sep = "")
           # Save plot as png
-          grDevices::png(file=filename, width=825, height=525)
-          plot(spectrum_x_ppm, spectrum_y, type="l", main=name, xlab="[ppm]", ylab="Intensity [a.u.]", cex=1.3, xlim=rev(range(spectrum_x_ppm)), ylim=y_range)
+          grDevices::png(file = filename, width = 825, height = 525)
+          plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = rev(range(spectrum_x_ppm)), ylim = y_range)
           graphics::lines(spectrum_x_ppm, spectrum_approx, col = "red")
-          graphics::legend("topright", legend=c("Original spectrum", "Sum of Lorentz curves"), col=c("black", "red"), lty=1, bty="n", cex=1.3)
-          text <- paste("MSE_Normed = ", mse, sep="")
-          graphics::mtext(text, side=3)
+          graphics::legend("topright", legend = c("Original spectrum", "Sum of Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
+          text <- paste("MSE_Normed = ", mse, sep = "")
+          graphics::mtext(text, side = 3)
           grDevices::dev.off()
-        }else{
-          filename <- paste(name, "_sum_lorentz_curves.png", sep="")
+        } else {
+          filename <- paste(name, "_sum_lorentz_curves.png", sep = "")
           # Save plot as png
-          grDevices::png(file=filename, width=825, height=525)
-          plot(spectrum_x_ppm, spectrum_y, type="l", main=name, xlab="[ppm]", ylab="Intensity [a.u.]", cex=1.3, xlim=x_range, ylim=y_range)
+          grDevices::png(file = filename, width = 825, height = 525)
+          plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = x_range, ylim = y_range)
           graphics::lines(spectrum_x_ppm, spectrum_approx, col = "red")
-          graphics::legend("topright", legend=c("Original spectrum", "Sum of Lorentz curves"), col=c("black", "red"), lty=1, bty="n", cex=1.3)
-          text <- paste("MSE_Normed = ", mse, sep="")
-          graphics::mtext(text, side=3)
+          graphics::legend("topright", legend = c("Original spectrum", "Sum of Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
+          text <- paste("MSE_Normed = ", mse, sep = "")
+          graphics::mtext(text, side = 3)
           grDevices::dev.off()
         }
       }
     }
-  }else{
+  } else {
     name <- deconv_result$filename
     spectrum_x_ppm <- deconv_result$x_values_ppm
     spectrum_y <- deconv_result$y_values
@@ -2168,36 +2146,35 @@ plot_spectrum_superposition_save_as_png <- function(deconv_result, x_range=c(), 
     message(paste("Plot superposition of", name))
 
     # Check if x_range is adjusted or not
-    if(is.null(x_range)){
-      filename <- paste(name, "_sum_lorentz_curves.png", sep="")
+    if (is.null(x_range)) {
+      filename <- paste(name, "_sum_lorentz_curves.png", sep = "")
       # Save plot as png
-      grDevices::png(file=filename, width=825, height=525)
-      plot(spectrum_x_ppm, spectrum_y, type="l", main=name, xlab="[ppm]", ylab="Intensity [a.u.]", cex=1.3, xlim=rev(range(spectrum_x_ppm)), ylim=y_range)
+      grDevices::png(file = filename, width = 825, height = 525)
+      plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = rev(range(spectrum_x_ppm)), ylim = y_range)
       graphics::lines(spectrum_x_ppm, spectrum_approx, col = "red")
-      graphics::legend("topright", legend=c("Original spectrum", "Sum of Lorentz curves"), col=c("black", "red"), lty=1, bty="n", cex=1.3)
-      text <- paste("MSE_Normed = ", mse, sep="")
-      graphics::mtext(text, side=3)
+      graphics::legend("topright", legend = c("Original spectrum", "Sum of Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
+      text <- paste("MSE_Normed = ", mse, sep = "")
+      graphics::mtext(text, side = 3)
       grDevices::dev.off()
-    }else{
-      filename <- paste(name, "_sum_lorentz_curves.png", sep="")
+    } else {
+      filename <- paste(name, "_sum_lorentz_curves.png", sep = "")
       # Save plot as png
-      grDevices::png(file=filename, width=825, height=525)
-      plot(spectrum_x_ppm, spectrum_y, type="l", main=name, xlab="[ppm]", ylab="Intensity [a.u.]", cex=1.3, xlim=x_range, ylim=y_range)
+      grDevices::png(file = filename, width = 825, height = 525)
+      plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = x_range, ylim = y_range)
       graphics::lines(spectrum_x_ppm, spectrum_approx, col = "red")
-      graphics::legend("topright", legend=c("Original spectrum", "Sum of Lorentz curves"), col=c("black", "red"), lty=1, bty="n", cex=1.3)
-      text <- paste("MSE_Normed = ", mse, sep="")
-      graphics::mtext(text, side=3)
+      graphics::legend("topright", legend = c("Original spectrum", "Sum of Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
+      text <- paste("MSE_Normed = ", mse, sep = "")
+      graphics::mtext(text, side = 3)
       grDevices::dev.off()
     }
   }
 }
 
-
-#' @export
+#' @noRd
 #' @title Show terms and conditions of license
 #' @description Show terms and conditions of license
 #' @param ... Not used
-show_license <- function(...){
+show_license <- function(...) {
   message("TERMS AND CONDITIONS
            0. Definitions.
 
@@ -2358,5 +2335,3 @@ IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING WILL ANY C
 
 If the disclaimer of warranty and limitation of liability provided above cannot be given local legal effect according to their terms, reviewing courts shall apply local law that most closely approximates an absolute waiver of all civil liability in connection with the Program, unless a warranty or assumption of liability accompanies a copy of the Program in return for a fee.")
 }
-
-# nolint end

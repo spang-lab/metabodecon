@@ -2,7 +2,7 @@
 % Please edit documentation in R/40_alignment.R
 \name{speaq_align}
 \alias{speaq_align}
-\title{speaq_align}
+\title{Align Signals using speaq}
 \usage{
 speaq_align(feat, maxShift, spectrum_data, size_real_spectrum)
 }
@@ -15,8 +15,11 @@ speaq_align(feat, maxShift, spectrum_data, size_real_spectrum)
 
 \item{size_real_spectrum}{(positive integer) number of real data points in your original spectra, e.g. 128k = 131072 data points}
 }
+\value{
+A matrix containing the aligned integral values of all spectra.
+}
 \description{
-Alignment by speaq. The speaq package is used to perform the signal alignment across the individual spectra. For speaq please cite: (Beirnaert C, Meysman P, Vu TN, Hermans N, Apers S, Pieters L, et al. (2018) speaq 2.0: A complete workflow for high-throughput 1D NMRspectra processing and quantification. PLoS Comput Biol 14(3): e1006018. https://www.doi.org/10.1371/journal.pcbi.1006018. The spectra deconvolution process yields the signals of all spectra. Due to slight changes in measurement conditions, e.g. pH variations, signal positions may vary slightly across spectra. As a consequence, prior to further analysis signals belonging to the same compound have to be aligned across spectra. This is the purpose of the speaq package.
+Performs signal alignment across the individual spectra using the speaq package (Beirnaert C, Meysman P, Vu TN, Hermans N, Apers S, Pieters L, et al. (2018) speaq 2.0: A complete workflow for high-throughput 1D NMRspectra processing and quantification. PLoS Comput Biol 14(3): e1006018. https://www.doi.org/10.1371/journal.pcbi.1006018). The spectra deconvolution process yields the signals of all spectra. Due to slight changes in measurement conditions, e.g. pH variations, signal positions may vary slightly across spectra. As a consequence, prior to further analysis signals belonging to the same compound have to be aligned across spectra. This is the purpose of the speaq package.
 }
 \details{
 The output of speaq_align is a data matrix of aligned integral values. Each row contains the data of each spectrum and each column corresponds to one data point. Each entry corresponds to the integral of a deconvoluted signal with the signal center at this specific position after alignment by speaq.

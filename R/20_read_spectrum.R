@@ -1,7 +1,7 @@
 # Private Main #####
 
-#' @description Reads spectra from the user specified data path.
 #' @noRd
+#' @description Reads spectra from the user specified data path.
 read_spectra <- function(data_path = file.path(download_example_datasets(), "bruker/urine"),
                          file_format = "bruker",
                          expno = 10,
@@ -42,6 +42,7 @@ read_spectra <- function(data_path = file.path(download_example_datasets(), "bru
     invisible(spectra)
 }
 
+#' @noRd
 #' @title Read Spectrum
 #' @description Reads a single spectrum file or folder and returns the spectrum data as list.
 #' @param path The path of the file/folder containing the spectrum data. E.g. `"example_datasets/jcampdx/urine/urine_1.dx"` or `"example_datasets/bruker/urine/urine"`.
@@ -58,7 +59,6 @@ read_spectra <- function(data_path = file.path(download_example_datasets(), "bru
 #' spectrum_data <- read_spectrum(path, type = "jcampdx")
 #' str(spectrum_data, 1)
 #' }
-#' @noRd
 read_spectrum <- function(path, type = "bruker", sf = c(1e3, 1e6), expno = 10, procno = 10) {
     sfx <- sf[1]
     sfy <- sf[2]
@@ -70,6 +70,7 @@ read_spectrum <- function(path, type = "bruker", sf = c(1e3, 1e6), expno = 10, p
 
 # Private Helpers #####
 
+#' @noRd
 #' @title Read single JCAMPDX Spectrum
 #' @description Reads a single JCAMPDX spectrum file and returns the spectrum data in ppm.
 #' @param path The path of the file containing the spectrum data. E.g. `"example_datasets/jcampdx/urine/urine_1.dx"`.
@@ -82,7 +83,6 @@ read_spectrum <- function(path, type = "bruker", sf = c(1e3, 1e6), expno = 10, p
 #' spectrum_data <- read_jcampdx_spectrum(path)
 #' str(spectrum_data, 1)
 #' }
-#' @noRd
 read_jcampdx_spectrum <- function(path, sfx = 1e3, sfy = 1e6) {
     # List of 5
     # $ dataGuide   :'data.frame':   3 obs. of  3 variables:
@@ -118,13 +118,13 @@ read_jcampdx_spectrum <- function(path, sfx = 1e3, sfy = 1e6) {
     ))
 }
 
+#' @noRd
 #' @description Reads a single spectrum exported from bruker Topspin v3
 #' @examples
 #' xds_path <- download_example_datasets()
 #' path <- file.path(xds_path, "bruker/urine/urine_1")
 #' spectrum_data <- read_topspin3_spectrum(path) # takes 3s on machine r31
 #' str(spectrum_data)
-#' @noRd
 read_topspin3_spectrum <- function(path = file.path(download_example_datasets(), "bruker/urine/urine_1"), expno = 10, procno = 10) {
     acqus <- readLines(file.path(path, expno, "acqus"))
     procs <- readLines(file.path(path, expno, "pdata", procno, "procs"))
@@ -136,6 +136,7 @@ read_topspin3_spectrum <- function(path = file.path(download_example_datasets(),
     return(list(y = list(au = au), x = list(ppm = ppm), file = list(path = path, expno = expno, procno = procno)))
 }
 
+#' @noRd
 #' @title Read single Bruker Spectrum
 #' @description Reads a single Bruker spectrum and returns the spectrum data in ppm.
 #' @param path The path of the directory holding the spectrum data. E.g. `"example_datasets/bruker/urine/urine_1/"`.
@@ -152,7 +153,6 @@ read_topspin3_spectrum <- function(path = file.path(download_example_datasets(),
 #' spectrum_data <- read_bruker_spectrum(path) # takes 3s on machine r31
 #' str(spectrum_data, 1)
 #' }
-#' @noRd
 read_bruker_spectrum <- function(path = file.path(download_example_datasets(), "bruker/urine/urine_1"), sfx = 1e3, sfy = 1e6, expno = 10, procno = 10) {
     acqus <- readLines(file.path(path, expno, "acqus"))
     procs <- readLines(file.path(path, expno, "pdata", procno, "procs"))
@@ -175,19 +175,20 @@ read_bruker_spectrum <- function(path = file.path(download_example_datasets(), "
     ))
 }
 
+#' @noRd
 #' @title Read Bruker TopSpin spectrum from 1r file
 #' @param path The path of the directory holding the spectrum data. E.g. `"example_datasets/bruker/urine/urine_1/"`.
 #' @param procno The processing number for the file. E.g. `"10"`.
 #' @param expno The experiment number for the file. E.g. `"10"`.
 #' @param procs The content of the `procs` file. E.g. `readLines(file.path(path, expno, "pdata", procno, "procs"))`.
-#' @examples \dontrun{
+#' @return The signals read from the file as numeric vector
+#' @examples
+#' \donttest{
 #' xds_path <- download_example_datasets()
 #' path <- file.path(xds_path, "bruker/urine/urine_1")
 #' procs <- readLines(file.path(path, 10, "pdata", 10, "procs"))
 #' y <- read_1r_file(path, 10, 10, procs)
 #' }
-#' @return The signals read from the file as numeric vector
-#' @noRd
 read_1r_file <- function(path, expno, procno, procs) {
     n <- as.numeric(sub("\\D+", "", procs[startsWith(procs, "##$SI=")]))
     int_type <- as.numeric(sub("\\D+", "", procs[startsWith(procs, "##$DTYPP=")]))

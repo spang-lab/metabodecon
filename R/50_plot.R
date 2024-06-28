@@ -1,20 +1,18 @@
-#' Plot peaks of a spectrum
-#'
-#' This function plots the peaks of a spectrum, including the smoothed and scaled signal intensity and the second derivative.
-#' It also allows for the specification of peak positions and the option to draw vertical lines at these positions.
-#'
+#' @noRd
+#' @title Plot peaks of a spectrum
+#' @description  This function plots the peaks of a spectrum, including the smoothed and scaled signal intensity and the second derivative. It also allows for the specification of peak positions and the option to draw vertical lines at these positions.#'
 #' @param spec A data frame containing the spectrum data. It should have columns 'ppm', 'Y', 'ip', 'ip_left', 'ip_right', and 'd'.
 #' @param ppm A vector of length 2 specifying the range of ppm values to consider for the plot. Default is c(3.402, 3.437).
 #' @param dp A vector specifying the positions of the peaks. If NULL (default), the function will determine the peak positions based on the 'ppm' range.
 #' @param vlines A logical value indicating whether to draw vertical lines at the peak positions. Default is FALSE.
 #' @return A data frame with columns 'x' (ppm values), 'y' (smoothed and scaled signal intensity), 'd' (second derivative), 'is_ip' (whether the position is a peak), and 'is_ip_left' (whether the position is to the left of a peak).
-#' @examples \dontrun{
+#' @examples
+#' \dontrun{
 #' plot_peaks(spec, ppm = c(3.402, 3.437), dp = NULL, vlines = FALSE) # region from 3.402 to 3.437 ppm
 #' pdf("spec_3.400_3.500.pdf", width = 24, height=8); plot_peaks(spec, c(3.400, 3.500), vlines = FALSE);  dev.off()
 #' plot_peaks(spec, dp = 1:200, vlines = FALSE) # first 200 data points
 #' pdf("spec_n1_n500.pdf", width = 24, height=8); plot_peaks(spec, dp = 1:500, vlines = FALSE);  dev.off()
 #' }
-#' @noRd
 plot_peaks <- function(spec, ppm = c(3.402, 3.437), dp = NULL, vlines = FALSE) {
     if (is.null(dp)) dp <- which(spec$ppm > min(ppm) & spec$ppm < max(ppm))
     x <- spec$ppm[dp]
@@ -78,13 +76,13 @@ plot_spectrum <- function(spec, focus) {
     )
 }
 
+#' @noRd
 #' @title Plot Signal Free Region
 #' @description Draws the signal free region as green vertical lines into the given spectrum.
 #' @param spec A list representing the spectrum as returned by [read_spectrum()] or [load_bruker_spectrum()].
 #' @param left_ppm The left border of the signal free region in ppm.
 #' @param right_ppm The right border of the signal free region in ppm.
 #' @return NULL. Called for side effect of plotting the signal free region.
-#' @noRd
 plot_sfr <- function(spec, left_ppm, right_ppm) {
     plot(
         x = spec$ppm,
@@ -97,12 +95,12 @@ plot_sfr <- function(spec, left_ppm, right_ppm) {
     graphics::abline(v = c(left_ppm, right_ppm), col = "green")
 }
 
+#' @noRd
 #' @title Plot Water Signal
 #' @description Draws the water signal as red vertical lines into the given spectrum.
 #' @param spec A list representing the spec as returned by [read_spectrum()] or [read_bruker_spectrum()].
 #' @param hwidth_ppm The half width of the water signal in ppm.
 #' @return NULL. Called for side effect of plotting the water signal.
-#' @noRd
 plot_ws <- function(spec, hwidth_ppm) {
     center_ppm <- (spec$ppm_max + spec$ppm_min) / 2
     plot(

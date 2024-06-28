@@ -2,7 +2,7 @@
 % Please edit documentation in R/40_alignment.R
 \name{combine_peaks}
 \alias{combine_peaks}
-\title{combine_peaks}
+\title{Combine Peaks}
 \usage{
 combine_peaks(shifted_mat, range, lower_bound, spectrum_data, data_path)
 }
@@ -17,11 +17,11 @@ combine_peaks(shifted_mat, range, lower_bound, spectrum_data, data_path)
 
 \item{data_path}{(string) Path to the parent folder where the original spectra are stored. After deconvolution this folder also contains for each spectrum two .txt files which contain for each spectrum the spectrum approximated from all deconvoluted signals and a parameter file that contains all numerical values of the deconvolution}
 }
+\value{
+A list containing two data frames \code{long} and \code{short}. The first one contains one for one column for each data point in the original spectrum. The second one contains only columns where at least one entry is non-zero. The returned data.frames are additionally written to disk as .csv files \code{aligned_res_long.csv} and \code{aligned_res_short.csv}.
+}
 \description{
 Even after alignment of spectra, alignment of individual signals is not always perfect, as a segment-wise alignment is performed i.e. groups of signals are aligned. For further improvements, partly filled neighboring columns are merged.
-}
-\details{
-As result two .csv files will be generated. One that contain all columns for each data point in the original spectrum one column (aligned_res_long.csv) and one where all columns that contain only zeros (aligned_res_short.csv) are omitted. Both files will be stored in the directory specified by data_path.
 }
 \examples{
 \dontrun{

@@ -18,26 +18,27 @@ matrix with the generated Lorentz curve. Each matrix corresponds to one
 spectrum and each row in the matrix depicts one Lorentz curve.
 }
 \description{
-The MetaboDecon1D package also comprise the additional function
-calculate_lorentz_curves() to calculate the lorentz curves of each
-investigated spectrum.
+Calculates the lorentz curves of each investigated spectrum.
 }
 \examples{
 \dontrun{
 # Load one spectrum (Bruker format)
 result <- MetaboDecon1D(
-  filepath="load_example_path",
-  filename="urine",
-  file_format="bruker"
+  filepath = "load_example_path",
+  filename = "urine",
+  file_format = "bruker"
 )
 lorentz_curves <- calculate_lorentz_curves(result)
 
 # Load all spectra (Bruker format) of choosen folder
-result <- MetaboDecon1D(filepath="load_example_path", file_format="bruker")
+result <- MetaboDecon1D(filepath = "load_example_path", file_format = "bruker")
+
 # Calculate Lorentz curves of all investigated spectra
 lorentz_curves <- calculate_lorentz_curves(result)
+
 # Save matrix containing all Lorentz curves of first spectrum
 lorentz_curves_first_spectrum <- lorentz_curves[[1]]
+
 # Calculate Lorentz curves of one certain investigated spectrum
 lorentz_curves_spectrum1 <- calculate_lorentz_curves(
   result$urine

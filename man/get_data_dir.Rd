@@ -11,6 +11,9 @@ get_data_dir(dataset_name = c("", "blood", "test", "urine"), warn = TRUE)
 
 \item{warn}{Whether to print a warning message when the example folders do not yet exist, i.e. \code{\link[=download_example_datasets]{download_example_datasets()}} has not been called yet.}
 }
+\value{
+Path to the directory storing the example files.
+}
 \description{
 Returns the path to the directory storing the example files shipped with metabodecon.
 

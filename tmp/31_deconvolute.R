@@ -643,44 +643,6 @@ get_peak_score_v20 <- function(j, l, r, a) {
      }
 }
 
-# Misc #####
-
-#' @title Convert Parts per Million (ppm) to Data Points (dp)
-#' @description Converts parts per million (ppm) to data points (dp) for a given spectrum.
-#' @param ppm A numeric vector of parts per million (ppm) values.
-#' @param spectrum A list containing the spectrum data as returned by [load_bruker_spectrum()] or [read_spectrum()].
-#' @param bwc Use the old, slightly incorrect method for conversion to maintain backwards compatibility with MetaboDecon1D results? For details see issue `Check: ppm to dp conversion` in TODOS.md
-#' @noRd
-ppm_to_dp <- function(ppm, spectrum, bwc = TRUE) {
-    dp <- if (bwc) {
-        # (ppm - spectrum$ppm_min) / spectrum$ppm_nstep + 1
-        (spectrum$n + 1) - (spectrum$ppm_max - ppm) / spectrum$ppm_nstep
-    } else {
-        (ppm - spectrum$ppm_min) / spectrum$ppm_step
-    }
-    return(dp)
-}
-
-#' @title Convert Parts per Million (ppm) to Scaled Data Points (dp)
-#' @description Converts parts per million (ppm) to scaled data points (sdp) for a given spectrum.
-#' @inheritParams ppm_to_dp
-#' @noRd
-ppm_to_sdp <- function(ppm, spectrum, bwc = TRUE, sf = 1000) {
-    dp <- ppm_to_dp(ppm, spectrum, bwc)
-    sdp <- dp / sf
-    return(sdp)
-}
-
-#' @title Convert Data Points (dp) to Parts per Million (ppm)
-#' @description Converts data points (dp) to parts per million (ppm) for a given spectrum.
-#' @param dp A numeric vector of data point (dp) values.
-#' @param spectrum A list containing the spectrum data as returned by [load_bruker_spectrum()] or [read_spectrum()].
-#' @noRd
-dp_to_ppm <- function(dp, spectrum) {
-    ppm <- spectrum$ppm_min + dp * spectrum$ppm_step
-    return(ppm)
-}
-
 rescale <- function(x, range = c(0, 1)) {
     x_min <- min(x, na.rm = TRUE)
     x_max <- max(x, na.rm = TRUE)

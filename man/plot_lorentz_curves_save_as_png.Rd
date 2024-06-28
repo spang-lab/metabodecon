@@ -15,19 +15,20 @@ the ppm end value to scale the range of the x-axis (optional)}
 \item{y_range}{Row vector with two entries consisting of the ppm start and
 the ppm end value to scale the range of the y-axis (optional)}
 }
+\value{
+NULL, called for side effects.
+}
 \description{
-The MetaboDecon1D package also comprise the additional function
-plot_lorentz_curves_save_as_png() to plot the original spectrum and all
-generated Lorentz curves and save the result as png under the filepath.
+Plots the original spectrum and all generated Lorentz curves and save the result as png under the filepath.
 }
 \examples{
 \dontrun{
 # Load one spectrum (Bruker format)
-result <- MetaboDecon1D(filepath="load_example_path", filename="urine", file_format="bruker")
+result <- MetaboDecon1D(filepath = "load_example_path", filename = "urine", file_format = "bruker")
 plot_lorentz_curves_save_as_png(result)
 
 # Load more spectra (Bruker format)
-result <- MetaboDecon1D(filepath="load_example_path", file_format="bruker")
+result <- MetaboDecon1D(filepath = "load_example_path", file_format = "bruker")
 # Plot Lorentz curves of all investigated spectra
 plot_lorentz_curves_save_as_png(result)
 # Plot Lorentz curves of one certain investigated spectrum
@@ -35,7 +36,5 @@ plot_lorentz_curves_save_as_png(result$urine)
 }
 }
 \seealso{
-\code{\link{MetaboDecon1D}},
-\code{\link{plot_triplets}},
-\code{\link{plot_spectrum_superposition_save_as_png}}
+\code{\link[=MetaboDecon1D]{MetaboDecon1D()}}, \code{\link[=plot_triplets]{plot_triplets()}}, \code{\link[=plot_spectrum_superposition_save_as_png]{plot_spectrum_superposition_save_as_png()}}
 }

@@ -13,6 +13,9 @@ datadir(file = NULL, warn = TRUE, persistent = NULL)
 
 \item{persistent}{Return the path to the persistent data directory instead of the temporary one?}
 }
+\value{
+Path to the data directory or a file within it.
+}
 \description{
 Returns the path to the directory where \code{\link[=download_example_datasets]{download_example_datasets()}} stores metabodecon's example data sets or any file within that directory. By default this directory is a subdirectory of R's temporary session directory. If \code{persistent} is set to \code{TRUE}, the directory equals the data directory returned by \code{\link[tools:userdir]{tools::R_user_dir()}} instead.
 }

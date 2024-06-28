@@ -50,6 +50,30 @@ generate_lorentz_curves(
 
 \item{ncores}{Number of cores to use for parallel processing. If set to \code{"auto"}, the number of cores will be determined automatically. If set to a number greater than 1, the number of cores will be limited to the number of spectra or 1 if the operating system is Windows.}
 }
+\value{
+A list of deconvoluted spectra. Each list element contains a list with the following elements:
+\itemize{
+\item \code{number_of_files}: Number of deconvoluted spectra.
+\item \code{filename}: Name of the current spectrum.
+\item \code{x_values}: x values of the spectrum.
+\item \code{x_values_ppm}: x values of the spectrum in ppm.
+\item \code{y_values}: y values of the spectrum.
+\item \code{spectrum_superposition}: Superposition of the Lorentz curves.
+\item \code{mse_normed}: Mean squared error of the normalized y values and the superposition.
+\item \code{index_peak_triplets_middle}: Index of the peak triplet's middle peak.
+\item \code{index_peak_triplets_left}: Index of the peak triplet's left peak.
+\item \code{index_peak_triplets_right}: Index of the peak triplet's right peak.
+\item \code{peak_triplets_middle}: ppm value of the peak triplet's middle peak.
+\item \code{peak_triplets_left}: ppm value of the peak triplet's left peak.
+\item \code{peak_triplets_right}: ppm value of the peak triplet's right peak.
+\item \code{integrals}: Integrals of the Lorentz curves.
+\item \code{signal_free_region}: Signal free region of the spectrum.
+\item \code{range_water_signal_ppm}: Half width of the water signal in ppm.
+\item \code{A}: Amplitude of the Lorentz curves.
+\item \code{lambda}: Half width of the Lorentz curves.
+\item \code{x_0}: Center of the Lorentz curves.
+}
+}
 \description{
 Deconvolutes NMR spetra and generates a Lorentz curve for each detected signal within a spectra.
 }
@@ -62,6 +86,5 @@ xp <- download_example_datasets()
 dp <- file.path(xp, "bruker/urine")
 ff <- "bruker"
 x <- generate_lorentz_curves(dp, ff, ask = FALSE, nfit = 3, ncores = 1)
-x2 <- generate_lorentz_curves(dp, ff, ask = FALSE, nfit = 3)
 }
 }

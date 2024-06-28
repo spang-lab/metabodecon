@@ -8,9 +8,10 @@
 #' @param persistent Logical. If TRUE, the downloaded datasets will be cached at [datadir_persistent()] to speed up future calls to download_example_datasets(). If FALSE, the datasets will be cached at [datadir_temp()]. If NULL, the function will check both paths for the cached datasets but will use [datadir_temp()] if the cached file does not yet exist.
 #' @param overwrite Logical. If TRUE, existing files with the same name in the destination directory will be overwritten.
 #' @return The path to the downloaded (and possibly extracted) datasets.
-#' @examples \donttest{
-#' zip_path <- download_example_datasets(extract = FALSE, persistent = FALSE)
-#' dir_path <- download_example_datasets(extract = TRUE)
+#' @examples
+#' \donttest{
+#'      zip_path <- download_example_datasets(extract = FALSE, persistent = FALSE)
+#'      dir_path <- download_example_datasets(extract = TRUE)
 #' }
 #' @seealso [datadir()]
 download_example_datasets <- function(dst_dir = NULL,
@@ -18,11 +19,12 @@ download_example_datasets <- function(dst_dir = NULL,
                                       persistent = NULL,
                                       overwrite = FALSE) {
 
-    # dst_dir <- C:/Users/max/Downloads
-    # dst_zip <- C:/Users/max/Downloads/example_datasets.zip
-    # dst_xds <- C:/Users/max/Downloads/example_datasets
-    # cached_zip <- C:/Users/max/.local/share/R/metabodecon/example_datasets.zip
-    # cached_xds <- C:/Users/max/.local/share/R/metabodecon/example_datasets
+    # Example:
+    # input   dst_dir    = C:/Users/max/Downloads
+    # var     cached_zip = C:/Users/max/.local/share/R/metabodecon/example_datasets.zip
+    # var     cached_xds = C:/Users/max/.local/share/R/metabodecon/example_datasets
+    # return  dst_zip    = C:/Users/max/Downloads/example_datasets.zip
+    # return  dst_xds    = C:/Users/max/Downloads/example_datasets
     cached_zip <- cache_example_datasets(persistent = persistent, extract = extract, overwrite = overwrite)
     cached_xds <- file.path(dirname(cached_zip), "example_datasets")
     if (is.null(dst_dir)) {
@@ -41,6 +43,7 @@ download_example_datasets <- function(dst_dir = NULL,
 
 # Private #####
 
+#' @noRd
 #' @title Example Datasets Information
 #' @description This list contains information about the example datasets provided for users to try the package.
 #' The datasets can be downloaded from the provided URL.
@@ -49,13 +52,7 @@ download_example_datasets <- function(dst_dir = NULL,
 #' @field dir_size The expected size of the directory containing the example datasets in bytes.
 #' @field n_files The expected total number of files in the example_datasets folder after extraction.
 #' @examples
-#' \dontrun{
-#' print(xds$url)
-#' print(xds$zip_size)
-#' print(xds$dir_size)
-#' print(xds$n_files)
-#' }
-#' @noRd
+#' str(xds)
 xds <- list(
     url = "https://github.com/spang-lab/metabodecon/releases/download/v1.1.0/example_datasets.zip",
     zip_size = 38425397,
@@ -63,6 +60,7 @@ xds <- list(
     n_files = 1018
 )
 
+#' @noRd
 #' @title Cache Example Datasets
 #' @description If file `"example_datasets.zip"` does not yet exist at [datadir()], it is downloaded.
 #' If the zip exists but has a wrong size, it can be overwritten based on the `overwrite` parameter.
@@ -79,10 +77,10 @@ xds <- list(
 #' If TRUE, the datasets are extracted even if the corresponding folder already exists.
 #' If FALSE, files are not extracted again.
 #' @return The path to the cached datasets.
-#' @examples \dontrun{
+#' @examples
+#' \donttest{
 #' cache_example_datasets(persistent = FALSE, extract = FALSE, overwrite = FALSE)
 #' }
-#' @noRd
 cache_example_datasets <- function(persistent = NULL, extract = FALSE, overwrite = FALSE) {
 
     pdir <- datadir_persistent()
@@ -122,14 +120,15 @@ extract_example_datasets <- function(path = datadir("example_datasets.zip")) {
     utils::unzip(zipfile = path, exdir = dirname(path))
 }
 
+#' @noRd
 #' @title Download Example Datasets Zip
 #' @description This function downloads the example_datasets.zip file from the specified URL and saves it to the destination directory provided. If the directory does not exist, it will be created. If the file already exists in the directory, it will be overwritten without asking for permission.
 #' @param path A string. The path where the downloaded file will be saved.
 #' @return The path where the downloaded file is saved.
-#' @examples \dontrun{
+#' @examples
+#' \donttest{
 #' download_example_datasets_zip("/path/to/your/directory/example_datasets.zip")
 #' }
-#' @noRd
 download_example_datasets_zip <- function(path, copyfrom = NULL) {
     mkdirs(dirname(path))
     if (!is.null(copyfrom) && file.exists(copyfrom) && file.size(copyfrom) == xds$zip_size) {

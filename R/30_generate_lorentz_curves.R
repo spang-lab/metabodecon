@@ -17,8 +17,29 @@
 #' @param ask  Whether to ask for user input during the deconvolution process. If set to FALSE, the provided default values will be used.
 #' @param debug Whether to return additional intermediate results for debugging purposes.
 #' @param ncores Number of cores to use for parallel processing. If set to `"auto"`, the number of cores will be determined automatically. If set to a number greater than 1, the number of cores will be limited to the number of spectra or 1 if the operating system is Windows.
+#' @return A list of deconvoluted spectra. Each list element contains a list with the following elements:
+#' * `number_of_files`: Number of deconvoluted spectra.
+#' * `filename`: Name of the current spectrum.
+#' * `x_values`: x values of the spectrum.
+#' * `x_values_ppm`: x values of the spectrum in ppm.
+#' * `y_values`: y values of the spectrum.
+#' * `spectrum_superposition`: Superposition of the Lorentz curves.
+#' * `mse_normed`: Mean squared error of the normalized y values and the superposition.
+#' * `index_peak_triplets_middle`: Index of the peak triplet's middle peak.
+#' * `index_peak_triplets_left`: Index of the peak triplet's left peak.
+#' * `index_peak_triplets_right`: Index of the peak triplet's right peak.
+#' * `peak_triplets_middle`: ppm value of the peak triplet's middle peak.
+#' * `peak_triplets_left`: ppm value of the peak triplet's left peak.
+#' * `peak_triplets_right`: ppm value of the peak triplet's right peak.
+#' * `integrals`: Integrals of the Lorentz curves.
+#' * `signal_free_region`: Signal free region of the spectrum.
+#' * `range_water_signal_ppm`: Half width of the water signal in ppm.
+#' * `A`: Amplitude of the Lorentz curves.
+#' * `lambda`: Half width of the Lorentz curves.
+#' * `x_0`: Center of the Lorentz curves.
 #' @details First, an automated curvature based signal selection is performed. Each signal is represented by 3 data points to allow the determination of initial Lorentz curves. These Lorentz curves are then iteratively adjusted to optimally approximate the measured spectrum.
-#' @examples \donttest{
+#' @examples
+#' \donttest{
 #' xp <- download_example_datasets()
 #' dp <- file.path(xp, "bruker/urine")
 #' ff <- "bruker"
@@ -69,8 +90,25 @@ generate_lorentz_curves <- function(data_path = file.path(download_example_datas
     cat3("Finished deconvolution of", n, "spectra in", format(duration))
     names(spectra) <- nams
 
-    # Create return lists
-    if (debug) spectra else lapply(spectra, function(s) s$ret)
+    # Prepare, store and return results
+    ret <- if (debug) spectra else lapply(spectra, function(s) s$ret)
+
+    if (isTRUE(make_rds)) {
+        rdspath <- file.path(data_path, "spectrum_data.rds")
+        if (interactive) {
+            yes <- get_yn_input(sprintf("Save results as '%s'?", rdspath))
+            if (yes) saveRDS(ret, rdspath)
+        } else {
+            cat3(
+                "Skipping saving of results as RDS because cannot for confirmation in interactive mode. For details see `help('generate_lorentz_curves')`.")
+        }
+    } else if (is.character(make_rds)) {
+        cat3("Saving results as", make_rds)
+        saveRDS(ret, make_rds)
+    }
+
+    ret
+
 }
 
 # Private Helpers #####
@@ -246,7 +284,8 @@ add_return_list_v13 <- function(spec = glc_v13(), n = 1, nam = "urine_1", debug 
 #' @param sf Vector with two entries consisting of the factor to scale the x-axis and the factor to scale the y-axis.
 #' @param ask  Whether to ask for user input during the deconvolution process. If set to FALSE, the provided default values will be used.
 #' @details First, an automated curvature based signal selection is performed. Each signal is represented by 3 data points to allow the determination of initial Lorentz curves. These Lorentz curves are then iteratively adjusted to optimally approximate the measured spectrum.
-#' @examples \dontrun{
+#' @examples
+#' \dontrun{
 #' xds_path <- download_example_datasets()
 #' data_path <- file.path(xds_path, "bruker/urine")
 #' file_format <- "bruker"
@@ -319,12 +358,12 @@ filter_peaks_v12 <- function(spec, delta = 6.4) {
     spec
 }
 
+#' @noRd
 #' @title create backwards compatible return list
 #' @param spec Deconvoluted spectrum as returned by [refine_lorentz_curves_v12()].
 #' @param n Number of deconvoluted spectrum.
 #' @param nam Name of current spectrum.
 #' @param debug Add debug info to the return list
-#' @noRd
 add_return_list_v12 <- function(spec = glc_v13()$rv, n = 1, nam = "urine_1", debug = TRUE) {
     spec$ret <- list(
         number_of_files = n,
