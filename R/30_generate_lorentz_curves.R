@@ -35,8 +35,8 @@
 #' * `signal_free_region`: Signal free region of the spectrum.
 #' * `range_water_signal_ppm`: Half width of the water signal in ppm.
 #' * `A`: Amplitude of the Lorentz curves.
-#' * `lambda`: Half width of the Lorentz curves.
-#' * `x_0`: Center of the Lorentz curves.
+#' * `lambda`: Half width of the Lorentz curves in scaled data points.
+#' * `x_0`: Center of the Lorentz curves in scaled data points.
 #' @details First, an automated curvature based signal selection is performed. Each signal is represented by 3 data points to allow the determination of initial Lorentz curves. These Lorentz curves are then iteratively adjusted to optimally approximate the measured spectrum.
 #' @examples
 #' \donttest{

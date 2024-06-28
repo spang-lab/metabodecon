@@ -291,3 +291,28 @@ dp_to_ppm <- function(dp, spectrum) {
     ppm <- spectrum$ppm_min + dp * spectrum$ppm_step
     return(ppm)
 }
+
+#' @title Calculate Signal Width in Hz for deconvoluted NMR Spectra
+#' @description Iterates over each deconvoluted spectrum in the provided list, calculates the signal width in Hz for each signal, and updates the spectrum object with the calculated width.
+#' @param spectrum_data A list of spectrum data entries, where each entry is expected to have `x_values`, `lambda` and `peak_triplets_middle` among other properties.
+#' @param sw_hz The spectral width in Hz.
+#' @return The modified spectrum_data list where each element has an additional entry `lambda_hz`.
+#' @examples
+#' \donttest{
+#' xp <- download_example_datasets()
+#' dp <- file.path(xp, "bruker/urine/urine_1")
+#' x <- generate_lorentz_curves(dp, ask = FALSE, nfit = 3, ncores = 1)
+#' dspec <- x$urine_1
+#' lambda_hz <- calc_signal_width_in_hz(dspec, sw_hz = 800)
+#' }
+#' @noRd
+calc_signal_width_in_hz <- function(dspec, sw_hz) {
+    nr_dpi <- dspec$x_values[1] * 1000 # number of data point intervals (131071 (2^17 - 1) for "128k spectra")
+    nr_dp <- nr_dpi + 1 # number of data points
+    hw_sdp <- dspec$lambda # half width in scaled data point intervals
+    hw_dp <- hw_sdp * 1000 # half width in data point intervals
+    w_dp <- 2 * hw_dp # width in data points intervals
+    hzni <- sw_hz / nr_dp # hz n-interval (too small, because we divide by number of points instead of number of intervals)
+    hzi <- sw_hz / nr_dpi # hz interval
+    lambda_hz <- abs(hzni * w_dp)
+}

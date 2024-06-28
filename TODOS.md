@@ -56,15 +56,6 @@
 
 # Todos before writing docs
 
-## CRAN-8: Functions should not write to disk by default
-
-Please ensure that your functions do not write by default or in your `examples/vignettes/tests` in the user's home filespace (including the package directory and `getwd()`). This is not allowed by CRAN policies. Please omit any default path in writing functions. In your examples/vignettes/tests you can write to `tempdir()`.
-
-ToSc: affected functions are:
-
-- `generate_lorentz_curves`
-- `plot_triplets`
-
 ## FEATURE-6: Return lambda in hertz
 
 Original Teams Messages:
@@ -103,10 +94,14 @@ lw_hz <- function(spectrum_data, sw_hz) {
 }
 ```
 
+2024/06/28 Update: implemented function in `calc_signal_width_in_hz` in `00_util.R`. The following is left to do:
+
+1. Update `read_spectra` to return `sw_hz` and `T` from bruker/jcampdx files.
+2. Call `calc_signal_width_in_hz` in `deconvolute_spectra` and add `lambda_hz` to the return value.
+
 ## FEATURE-8: Warn user if peaks are found in SFR
 
 If delta is small (e.g. 1), peaks in SFR might not be filtered out. Either implement this and warn user about it (this is a strong indication that delta was chosen too small).
-
 
 ## REFACTOR-6: Use a single unit as source of truth
 
@@ -561,6 +556,17 @@ You have examples for unexported functions. Please either omit these examples or
 ## CRAN-6: Fix vignettes
 
 In addition, we see: "Unexecutable code in vignettes/metabodecon.Rmd": the `#` should be before `"2)"` instead of afterwards, I guess.
+
+## CRAN-8: Functions should not write to disk by default
+
+Please ensure that your functions do not write by default or in your `examples/vignettes/tests` in the user's home filespace (including the package directory and `getwd()`). This is not allowed by CRAN policies. Please omit any default path in writing functions. In your examples/vignettes/tests you can write to `tempdir()`.
+
+ToSc: affected functions are:
+
+- `generate_lorentz_curves`
+- `plot_triplets`
+
+2024/06/28: Implemented with f5d63f7, 6491b42 and 76b8c4d.
 
 ## CRAN-9: Functions should not change working dir or global options
 
