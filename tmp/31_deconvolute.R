@@ -168,9 +168,9 @@ determine_signal_free_region_v20 <- function(spec, sfr = NULL, ask = TRUE, bwc =
             sfr_ok <- get_yn_input("Signal free region borders correct selected? (Area left and right of the green lines)")
         }
     }
-    left_dp <- ppm_to_dp(left_ppm, spec, bwc)
+    left_dp <- ppm_to_dpn(left_ppm, spec, bwc)
     left_sdp <- left_dp / spec$sfx
-    right_dp <- ppm_to_dp(right_ppm, spec, bwc)
+    right_dp <- ppm_to_dpn(right_ppm, spec, bwc)
     right_sdp <- right_dp / spec$sfx
     spec$sfr <- list(left_ppm = left_ppm, right_ppm = right_ppm, left_sdp = left_sdp, right_sdp = right_sdp, left_dp = left_dp, right_dp = right_dp)
     spec

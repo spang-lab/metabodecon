@@ -21,23 +21,25 @@ Plots the peak triplets for each peak detected by \code{\link[=MetaboDecon1D]{Me
 }
 \examples{
 \dontrun{
+
 # Load one spectrum (Bruker format)
 result <- MetaboDecon1D(filepath = "load_example_path", filename = "urine", file_format = "bruker")
 plot_triplets(result)
+
 # Plot part of spectrum
 plot_triplets(result, c(1.4, 1.3), c(0, 20))
 
 # Load all spectra (Bruker format) of choosen folder
 result <- MetaboDecon1D(filepath = "load_example_path", file_format = "bruker")
+
 # Plot triplets of all investigated spectra
 plot_triplets(result)
+
 # Plot triplets of one certain investigated spectrum
 plot_triplets(result$urine)
+
 }
 }
 \seealso{
-\code{\link{MetaboDecon1D}},
-\code{\link{calculate_lorentz_curves}},
-\code{\link{plot_lorentz_curves_save_as_png}},
-\code{\link{plot_spectrum_superposition_save_as_png}}
+\code{\link[=MetaboDecon1D]{MetaboDecon1D()}}, \code{\link[=calculate_lorentz_curves]{calculate_lorentz_curves()}}, \code{\link[=plot_lorentz_curves_save_as_png]{plot_lorentz_curves_save_as_png()}}, \code{\link[=plot_spectrum_superposition_save_as_png]{plot_spectrum_superposition_save_as_png()}}
 }

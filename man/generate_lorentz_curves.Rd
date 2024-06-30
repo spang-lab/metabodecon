@@ -54,24 +54,24 @@ generate_lorentz_curves(
 A list of deconvoluted spectra. Each list element contains a list with the following elements:
 \itemize{
 \item \code{number_of_files}: Number of deconvoluted spectra.
-\item \code{filename}: Name of the current spectrum.
-\item \code{x_values}: x values of the spectrum.
-\item \code{x_values_ppm}: x values of the spectrum in ppm.
-\item \code{y_values}: y values of the spectrum.
-\item \code{spectrum_superposition}: Superposition of the Lorentz curves.
-\item \code{mse_normed}: Mean squared error of the normalized y values and the superposition.
-\item \code{index_peak_triplets_middle}: Index of the peak triplet's middle peak.
-\item \code{index_peak_triplets_left}: Index of the peak triplet's left peak.
-\item \code{index_peak_triplets_right}: Index of the peak triplet's right peak.
-\item \code{peak_triplets_middle}: ppm value of the peak triplet's middle peak.
-\item \code{peak_triplets_left}: ppm value of the peak triplet's left peak.
-\item \code{peak_triplets_right}: ppm value of the peak triplet's right peak.
+\item \code{filename}: Name of the analyzed spectrum.
+\item \code{x_values}: Scaled datapoint numbers (SDP). Datapoints are numbered in descending order going from N to 0, where N equals the . Scaled data point numbers are obtained by dividing these numbers by the x-axis scale factor \code{sf[1]}. I.e., for a spectrum with 131072 datapoints and a scale factor of 1000, the first scale datapoint has value 131.071 and the last one has value 0.
+\item \code{x_values_ppm}: The chemical shift of each datapoint in ppm (parts per million).
+\item \code{y_values}: The scaled signal intensity (SSI) of each datapoint. Obtained by reading the raw intensity values from the provided \code{data_path} as integers and dividing them by the y-axis scale factor \code{sf[2]}.
+\item \code{spectrum_superposition}: Scaled signal intensity obtained by calculating the sum of all estimated Lorentz curves for each data point.
+\item \code{mse_normed}: Normalized mean squared error. Calulcated as $\frac{1}{n} \sum{i=1}{n} (z_i - \hat{z}_i)^2$ where $z_i$ is the normalized, smoothed signal intensity of data point i and $\hat{z}_i$ is the normalized superposition of Lorentz curves at data point i. Normalized in this context means that the vectors were scaled so the sum over all data points equals 1.
+\item \code{index_peak_triplets_middle}: Datapoint numbers of peak centers.
+\item \code{index_peak_triplets_left}: Datapoint numbers of left peak borders.
+\item \code{index_peak_triplets_right}: Datapoint numbers of right peak borders.
+\item \code{peak_triplets_middle}: Chemical shift of peak centers in ppm .
+\item \code{peak_triplets_left}: Chemical shift of left peak borders in ppm .
+\item \code{peak_triplets_right}: Chemical shift of right peak borders in ppm .
 \item \code{integrals}: Integrals of the Lorentz curves.
-\item \code{signal_free_region}: Signal free region of the spectrum.
-\item \code{range_water_signal_ppm}: Half width of the water signal in ppm.
-\item \code{A}: Amplitude of the Lorentz curves.
-\item \code{lambda}: Half width of the Lorentz curves.
-\item \code{x_0}: Center of the Lorentz curves.
+\item \code{signal_free_region}: Borders of the signal free region of the spectrum in scaled datapoint numbers. Left of the first element and right of the second element no signals are expected.
+\item \code{range_water_signal_ppm}: Half width of the water signal in ppm. Potential signals in this region are ignored.
+\item \code{A}: Amplitude parameter of the Lorentz curves. Provided as negative number to maintain backwards compatiblity with MetaboDecon1D. The area under the Lorentz curve is calculated as $A \cdot \pi$.
+\item \code{lambda}: Half width of the Lorentz curves in scaled data points. Provided as negative value to maintain backwards compatiblity with MetaboDecon1D. Example: a value of -0.00525 corresponds to 5.25 data points. With a spectral width of 12019 Hz and 131072 data points this corresponds to a halfwidth at half height of approx. 0.48 Hz. The corresponding calculation is: (12019 Hz / 131071 dp) * 5.25 dp.
+\item \code{x_0}: Center of the Lorentz curves in scaled data points.
 }
 }
 \description{
@@ -82,9 +82,10 @@ First, an automated curvature based signal selection is performed. Each signal i
 }
 \examples{
 \donttest{
-xp <- download_example_datasets()
-dp <- file.path(xp, "bruker/urine")
-ff <- "bruker"
-x <- generate_lorentz_curves(dp, ff, ask = FALSE, nfit = 3, ncores = 1)
+path_xds <- download_example_datasets()
+path_urine <- file.path(path_xds, "bruker/urine")
+path_urine_1 <- file.path(path_urine, "urine_1")
+decons <- generate_lorentz_curves(path_urine, ask = FALSE, nfit = 1)
+decon_urine_1 <- generate_lorentz_curves(path_urine_1, ask = FALSE)[[1]]
 }
 }

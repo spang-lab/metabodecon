@@ -12,16 +12,14 @@ calculate_lorentz_curves(deconv_result, number_of_files = NA)
 \item{number_of_files}{Number of spectra to analyze}
 }
 \value{
-\bold{One spectrum:} matrix containing the generated Lorentz curves.
-Each row depicts one Lorentz curve. \bold{More spectra:} list containing the
-matrix with the generated Lorentz curve. Each matrix corresponds to one
-spectrum and each row in the matrix depicts one Lorentz curve.
+\bold{One spectrum:} matrix containing the generated Lorentz curves. Each row depicts one Lorentz curve. \bold{More spectra:} list containing the matrix with the generated Lorentz curve. Each matrix corresponds to one spectrum and each row in the matrix depicts one Lorentz curve.
 }
 \description{
 Calculates the lorentz curves of each investigated spectrum.
 }
 \examples{
 \dontrun{
+
 # Load one spectrum (Bruker format)
 result <- MetaboDecon1D(
   filepath = "load_example_path",
@@ -40,14 +38,10 @@ lorentz_curves <- calculate_lorentz_curves(result)
 lorentz_curves_first_spectrum <- lorentz_curves[[1]]
 
 # Calculate Lorentz curves of one certain investigated spectrum
-lorentz_curves_spectrum1 <- calculate_lorentz_curves(
-  result$urine
-)
+lorentz_curves_spectrum1 <- calculate_lorentz_curves(result$urine)
+
 }
 }
 \seealso{
-\code{\link{MetaboDecon1D}},
-\code{\link{plot_triplets}},
-\code{\link{plot_lorentz_curves_save_as_png}},
-\code{\link{plot_spectrum_superposition_save_as_png}}
+\code{\link[=MetaboDecon1D]{MetaboDecon1D()}}, \code{\link[=plot_triplets]{plot_triplets()}}, \code{\link[=plot_lorentz_curves_save_as_png]{plot_lorentz_curves_save_as_png()}}, \code{\link[=plot_spectrum_superposition_save_as_png]{plot_spectrum_superposition_save_as_png()}}
 }

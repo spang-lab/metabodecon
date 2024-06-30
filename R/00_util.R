@@ -257,27 +257,27 @@ all_identical <- function(x) {
 # Convert #####
 
 #' @noRd
-#' @title Convert Parts per Million (ppm) to Data Points (dp)
-#' @description Converts parts per million (ppm) to data points (dp) for a given spectrum.
+#' @title Convert Parts per Million (ppm) to Data Points Numbers (dpn)
+#' @description Converts parts per million (ppm) to data points numbers (dpn) for a given spectrum.
 #' @param ppm A numeric vector of parts per million (ppm) values.
 #' @param spectrum A list containing the spectrum data as returned by [load_bruker_spectrum()] or [read_spectrum()].
-#' @param bwc Use the old, slightly incorrect method for conversion to maintain backwards compatibility with MetaboDecon1D results? For details see issue `Check: ppm to dp conversion` in TODOS.md
-ppm_to_dp <- function(ppm, spectrum, bwc = TRUE) {
-    dp <- if (bwc) {
+#' @param bwc Use the old, slightly incorrect method for conversion to maintain backwards compatibility with MetaboDecon1D results? For details see issue `Check: ppm to dpn conversion` in TODOS.md
+ppm_to_dpn <- function(ppm, spectrum, bwc = TRUE) {
+    dpn <- if (bwc) {
         # (ppm - spectrum$ppm_min) / spectrum$ppm_nstep + 1
         (spectrum$n + 1) - (spectrum$ppm_max - ppm) / spectrum$ppm_nstep
     } else {
         (ppm - spectrum$ppm_min) / spectrum$ppm_step
     }
-    return(dp)
+    return(dpn)
 }
 
 #' @noRd
-#' @title Convert Parts per Million (ppm) to Scaled Data Points (dp)
-#' @description Converts parts per million (ppm) to scaled data points (sdp) for a given spectrum.
-#' @inheritParams ppm_to_dp
-ppm_to_sdp <- function(ppm, spectrum, bwc = TRUE, sf = 1000) {
-    dp <- ppm_to_dp(ppm, spectrum, bwc)
+#' @title Convert Parts per Million (ppm) to Scaled Data Point Numbers (sdpn)
+#' @description Converts parts per million (ppm) to scaled data point numbers (sdpn) for a given spectrum.
+#' @inheritParams ppm_to_sdpn
+ppm_to_sdpn <- function(ppm, spectrum, bwc = TRUE, sf = 1000) {
+    dp <- ppm_to_dpn(ppm, spectrum, bwc)
     sdp <- dp / sf
     return(sdp)
 }
@@ -293,7 +293,7 @@ dp_to_ppm <- function(dp, spectrum) {
 }
 
 #' @title Calculate Signal Width in Hz for deconvoluted NMR Spectra
-#' @description Iterates over each deconvoluted spectrum in the provided list, calculates the signal width in Hz for each signal, and updates the spectrum object with the calculated width.
+#' @description Iterates over each deconvoluted spectrum in the provided list, calculates the full signal width at half height in Hz for each signal, and updates the spectrum object with the calculated width.
 #' @param spectrum_data A list of spectrum data entries, where each entry is expected to have `x_values`, `lambda` and `peak_triplets_middle` among other properties.
 #' @param sw_hz The spectral width in Hz.
 #' @return The modified spectrum_data list where each element has an additional entry `lambda_hz`.

@@ -28,8 +28,8 @@ Downloads example datasets that can be used to test the functionality of the met
 }
 \examples{
 \donttest{
-zip_path <- download_example_datasets(extract = FALSE, persistent = FALSE)
-dir_path <- download_example_datasets(extract = TRUE)
+     zip_path <- download_example_datasets(extract = FALSE, persistent = FALSE)
+     dir_path <- download_example_datasets(extract = TRUE)
 }
 }
 \seealso{

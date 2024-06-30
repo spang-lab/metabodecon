@@ -25,8 +25,6 @@ Even after alignment of spectra, alignment of individual signals is not always p
 }
 \examples{
 \dontrun{
-aligned_res <- combine_peaks(
-    after_speaq_mat, range, lower_bound, spectrum_data, data_path
-)
+aligned_res <- combine_peaks(after_speaq_mat, range, lower_bound, spectrum_data, data_path)
 }
 }

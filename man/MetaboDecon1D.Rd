@@ -41,24 +41,24 @@ MetaboDecon1D(
 \value{
 List containing
 \itemize{
-\item{\bold{filename}}
-\item{\bold{x_values} (in datapoints)}
-\item{\bold{x_values_ppm} (in ppm)}
-\item{\bold{y_values} of the original spectrum}
-\item{\bold{spectrum_superposition} y_values of the superposition of all generated Lorentz curves}
-\item{\bold{mse_normed} is the mse value between the superposition of the Lorentz curves and the original spectrum which are standardized according to get a total area of 1}
-\item{\bold{peak_triplets_left} (ppm x_values)}
-\item{\bold{peak_triplets_middle} (ppm x_values)}
-\item{\bold{peak_triplets_right} (ppm x_values)}
-\item{\bold{index_peak_triplets_left} (index)}
-\item{\bold{index_peak_triplets_middle} (index)}
-\item{\bold{index_peak_triplets_right} (index)}
-\item{\bold{integrals} for each generated Lorentz curve}
-\item{\bold{signal_free_region} adjusted borders of signal free region}
-\item{\bold{range_water_signal_ppm} adjusted range water signal in ppm}
-\item{\bold{A} values of each Lorentz curve}
-\item{\bold{lambda} values of each Lorentz curve}
-\item{\bold{x_0} values of each Lorentz curve}
+\item \code{filename}: Name of the analyzed spectrum.
+\item \code{x_values}: Scaled datapoint numbers (SDP). Datapoints are numbered in descending order going from N to 0, where N equals the . Scaled data point numbers are obtained by dividing these numbers by the scale factor of the x-axis. I.e., for a spectrum with 131072 datapoints and a scale factor of 1000, the first scale datapoint has value 131.071 and the last one has value 0.
+\item \code{x_values_ppm}: The chemical shift of each datapoint in ppm (parts per million).
+\item \code{y_values}: The scaled signal intensity (SSI) of each datapoint. Obtained by reading the raw intensity values from the provided \code{data_path} as integers and dividing them scale factor of the y-axis.
+\item \code{spectrum_superposition}: Scaled signal intensity obtained by calculating the sum of all estimated Lorentz curves for each data point.
+\item \code{mse_normed}: Normalized mean squared error. Calulcated as $\frac{1}{n} \sum{i=1}{n} (z_i - \hat{z}_i)^2$ where $z_i$ is the normalized, smoothed signal intensity of data point i and $\hat{z}_i$ is the normalized superposition of lorentz curves at data point i. Normalized in this context means that the vectors were scaled so the sum over all data points equals 1.
+\item \code{peak_triplets_middle}: Chemical shift of peak centers in ppm.
+\item \code{peak_triplets_left}: Chemical shift of left peak borders in ppm.
+\item \code{peak_triplets_right}: Chemical shift of right peak borders in ppm.
+\item \code{index_peak_triplets_middle}: Datapoint numbers of peak centers.
+\item \code{index_peak_triplets_left}: Datapoint numbers of left peak borders.
+\item \code{index_peak_triplets_right}: Datapoint numbers of right peak borders.
+\item \code{integrals}: Integrals of the Lorentz curves.
+\item \code{signal_free_region}: Borders of the signal free region of the spectrum in scaled datapoint numbers. Left of the first element and right of the second element no signals are expected.
+\item \code{range_water_signal_ppm}: Half width of the water signal in ppm. Potential signals in this region are ignored.
+\item \code{A}: Amplitude parameter of the Lorentz curves. Provided as negative number to maintain backwards compatiblity with MetaboDecon1D. The area under the Lorentz curve is calculated as $A \cdot \pi$.
+\item \code{lambda}: Half width of the Lorentz curves in scaled data points. Provided as negative value to maintain backwards compatiblity with MetaboDecon1D. Example: a value of -0.00525 corresponds to 5.25 data points. With a spectral width of 12019 Hz and 131072 data points this corresponds to a halfwidth at half height of approx. 0.48 Hz. The corresponding calculation is: (12019 Hz / 131071 dp) * 5.25 dp.
+\item \code{x_0}: Center of the Lorentz curves in scaled data points.
 }
 
 \bold{Notice:} The parameters A, lambda and x_0 to calculate the Lorentz curves are saved in parameters.txt and the approximated spectrum is saved in approximated_spectrum.txt under the file path.
@@ -96,10 +96,7 @@ urine_all_deconv <- generate_lorentz_curves(urine, ask = FALSE)
 Haeckl, M.; Tauber, P.; Schweda, F.; Zacharias, H.U.; Altenbuchinger, M.; Oefner, P.J.; Gronwald, W. An R-Package for the Deconvolution and Integration of 1D NMR Data: MetaboDecon1D. Metabolites 2021, 11, 452. https://doi.org/10.3390/metabo11070452
 }
 \seealso{
-\code{\link{calculate_lorentz_curves}},
-\code{\link{plot_triplets}},
-\code{\link{plot_lorentz_curves_save_as_png}},
-\code{\link{plot_spectrum_superposition_save_as_png}}
+\code{\link[=calculate_lorentz_curves]{calculate_lorentz_curves()}}, \code{\link[=plot_triplets]{plot_triplets()}}, \code{\link[=plot_lorentz_curves_save_as_png]{plot_lorentz_curves_save_as_png()}}, \code{\link[=plot_spectrum_superposition_save_as_png]{plot_spectrum_superposition_save_as_png()}}
 }
 \author{
 Martina Haeckl

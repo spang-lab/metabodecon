@@ -19,31 +19,32 @@
 #' @param ncores Number of cores to use for parallel processing. If set to `"auto"`, the number of cores will be determined automatically. If set to a number greater than 1, the number of cores will be limited to the number of spectra or 1 if the operating system is Windows.
 #' @return A list of deconvoluted spectra. Each list element contains a list with the following elements:
 #' * `number_of_files`: Number of deconvoluted spectra.
-#' * `filename`: Name of the current spectrum.
-#' * `x_values`: x values of the spectrum.
-#' * `x_values_ppm`: x values of the spectrum in ppm.
-#' * `y_values`: y values of the spectrum.
-#' * `spectrum_superposition`: Superposition of the Lorentz curves.
-#' * `mse_normed`: Mean squared error of the normalized y values and the superposition.
-#' * `index_peak_triplets_middle`: Index of the peak triplet's middle peak.
-#' * `index_peak_triplets_left`: Index of the peak triplet's left peak.
-#' * `index_peak_triplets_right`: Index of the peak triplet's right peak.
-#' * `peak_triplets_middle`: ppm value of the peak triplet's middle peak.
-#' * `peak_triplets_left`: ppm value of the peak triplet's left peak.
-#' * `peak_triplets_right`: ppm value of the peak triplet's right peak.
+#' * `filename`: Name of the analyzed spectrum.
+#' * `x_values`: Scaled datapoint numbers (SDP). Datapoints are numbered in descending order going from N to 0, where N equals the . Scaled data point numbers are obtained by dividing these numbers by the x-axis scale factor `sf[1]`. I.e., for a spectrum with 131072 datapoints and a scale factor of 1000, the first scale datapoint has value 131.071 and the last one has value 0.
+#' * `x_values_ppm`: The chemical shift of each datapoint in ppm (parts per million).
+#' * `y_values`: The scaled signal intensity (SSI) of each datapoint. Obtained by reading the raw intensity values from the provided `data_path` as integers and dividing them by the y-axis scale factor `sf[2]`.
+#' * `spectrum_superposition`: Scaled signal intensity obtained by calculating the sum of all estimated Lorentz curves for each data point.
+#' * `mse_normed`: Normalized mean squared error. Calulcated as $\frac{1}{n} \sum{i=1}{n} (z_i - \hat{z}_i)^2$ where $z_i$ is the normalized, smoothed signal intensity of data point i and $\hat{z}_i$ is the normalized superposition of Lorentz curves at data point i. Normalized in this context means that the vectors were scaled so the sum over all data points equals 1.
+#' * `index_peak_triplets_middle`: Datapoint numbers of peak centers.
+#' * `index_peak_triplets_left`: Datapoint numbers of left peak borders.
+#' * `index_peak_triplets_right`: Datapoint numbers of right peak borders.
+#' * `peak_triplets_middle`: Chemical shift of peak centers in ppm .
+#' * `peak_triplets_left`: Chemical shift of left peak borders in ppm .
+#' * `peak_triplets_right`: Chemical shift of right peak borders in ppm .
 #' * `integrals`: Integrals of the Lorentz curves.
-#' * `signal_free_region`: Signal free region of the spectrum.
-#' * `range_water_signal_ppm`: Half width of the water signal in ppm.
-#' * `A`: Amplitude of the Lorentz curves.
-#' * `lambda`: Half width of the Lorentz curves in scaled data points.
+#' * `signal_free_region`: Borders of the signal free region of the spectrum in scaled datapoint numbers. Left of the first element and right of the second element no signals are expected.
+#' * `range_water_signal_ppm`: Half width of the water signal in ppm. Potential signals in this region are ignored.
+#' * `A`: Amplitude parameter of the Lorentz curves. Provided as negative number to maintain backwards compatiblity with MetaboDecon1D. The area under the Lorentz curve is calculated as $A \cdot \pi$.
+#' * `lambda`: Half width of the Lorentz curves in scaled data points. Provided as negative value to maintain backwards compatiblity with MetaboDecon1D. Example: a value of -0.00525 corresponds to 5.25 data points. With a spectral width of 12019 Hz and 131072 data points this corresponds to a halfwidth at half height of approx. 0.48 Hz. The corresponding calculation is: (12019 Hz / 131071 dp) * 5.25 dp.
 #' * `x_0`: Center of the Lorentz curves in scaled data points.
 #' @details First, an automated curvature based signal selection is performed. Each signal is represented by 3 data points to allow the determination of initial Lorentz curves. These Lorentz curves are then iteratively adjusted to optimally approximate the measured spectrum.
 #' @examples
 #' \donttest{
-#' xp <- download_example_datasets()
-#' dp <- file.path(xp, "bruker/urine")
-#' ff <- "bruker"
-#' x <- generate_lorentz_curves(dp, ff, ask = FALSE, nfit = 3, ncores = 1)
+#' path_xds <- download_example_datasets()
+#' path_urine <- file.path(path_xds, "bruker/urine")
+#' path_urine_1 <- file.path(path_urine, "urine_1")
+#' decons <- generate_lorentz_curves(path_urine, ask = FALSE, nfit = 1)
+#' decon_urine_1 <- generate_lorentz_curves(path_urine_1, ask = FALSE)[[1]]
 #' }
 generate_lorentz_curves <- function(data_path = file.path(download_example_datasets(), "bruker/urine"),
                                     file_format = "bruker",

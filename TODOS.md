@@ -103,14 +103,6 @@ lw_hz <- function(spectrum_data, sw_hz) {
 
 If delta is small (e.g. 1), peaks in SFR might not be filtered out. Either implement this and warn user about it (this is a strong indication that delta was chosen too small).
 
-## REFACTOR-6: Use a single unit as source of truth
-
-Function `generate_lorentz_curves` and `MetaboDecon1D` use different units for their calculations and in their returned list, e.g.
- `ppm` (parts per million), `dp` (data points) and `sdp` (scaled data points) as x values and `si` (signal intensity), `ssi` (scaled signal intensity) as y values. Thats not good, as each conversion introduces numeric rounding errors and whenever we do a transformation, e.g. "removal of water signal", "removal of negative values" or "smoothing", we need to do the transformation for all units. Instead, we should use only one unit as single source of truth and provide conversion functions for the user, e.g. `ppm_to_hz` or `ppm_to_dp`. In the final returned list, it's ok to have all units, but at least during the calculation we should stick to `ppm` and `si` I think.
-
-This also makes input for the user much easier, because something like the following wouldn't occur: in function [deconvolution](R/MetaboDecon1D.R#1245) the argument `signal_free_region` is interpreted as `ppm` if `isFALSE(same_parameter) || current_filenumber == 1`. Else, the argument `signal_free_region` is interpreted as `sdp`. This is confusing and error prone.
-
-
 ## REFACTOR-7: Split monolithic functions into smaller parts
 
 The original `MetaboDecon1D` function has approx. 350 lines of code and the original `deconvolution` function has approx 1000 lines of code. This is way too much for testing and modifying. We should extract copy-pasted parts into indivual functions and test these functions separately.
@@ -158,43 +150,7 @@ In function `add_return_list_v13`:
 
 
 
-## CHECK-2: Signal free region calculation
 
-In function `deconvolution` of file [MetaboDecon1D.R](R/MetaboDecon1D.R#1372), the signal free region border in data points is calculated as follows:
-
-```R
-# Calculate signal free region
-signal_free_region_left  <- (spectrum_length+1)-((ppm_highest_value-signal_free_region[1])/(ppm_range/spectrum_length))
-signal_free_region_right <- (spectrum_length+1)-((ppm_highest_value-signal_free_region[2])/(ppm_range/spectrum_length))
-```
-
-These versions contain the following two errors:
-
-* Error 1: `spectrum$ppm_nstep` is used instead of `spectrum$ppm_step`. That's not really important, because it only causes a slight shift of the border towards the max value, but the number of data points to the left (or right) of the border stays the same (except for the edge case where the border falls exactly on a datapoint).
-* Error 2: The `+ 1` in `(spectrum$n + 1)` is wrong. It should be `- 1`. This causes the signal free border to be shifted two points to the left.
-
-Example code to demonstrate the error:
-
-```R
-dp <-  c(7,   6,   5,   4,   3,    2,    1,    0   )
-ppm <- c(4.7, 3.4, 2.1, 0.8, -0.5, -1.8, -3.1, -4.4)
-sfrl_ppm <- 2.0 # i.e. 3 points left
-n <- length(dp) # 8 (n) data points, i.e. 7 (n - 1) intervals of size 1.3 in between
-ppm_step <- (max(ppm) - min(ppm)) / (n - 1) # 1.3
-ppm_nstep <- (max(ppm) - min(ppm)) / n # 1.11
-sfrl_dp <- (n + 1) - (max(ppm) - sfrl_ppm) / ppm_nstep
-# 8 - (4.7 - 2.0) / 1.11  ==  8 - 2.37  ==  6.63  ==> 1 point left
-sfrl_dp_without_error_1 <- sfrl_dp <- (n + 1) - (max(ppm) - sfrl_ppm) / ppm_step
-# 8 - (4.7 - 2.0) / 1.3  ==  8 - 2.08  ==  6.92  ==> 1 point left
-sfrl_dp_correct <- sfrl_dp <- (n - 1) - (max(ppm) - sfrl_ppm) / ppm_step
-# 6 - (4.7 - 2.0) / 1.3  ==  6 - 2.08  ==  4.92  ==> 3 point left
-```
-
-It's not a big deal as we have over 100000 data points in our examples and whether we exclude e.g. 20500 or 20502 is not super important, as the user cannot make such a precise estimate anyways based on the shown plot, but it makes the code really confusing to understand.
-
-The correct method of converting ppm to dp is `(sfrl_ppm - min(ppm)) / ppm_step` as done in function `ppm_to_dp` in `00_util.R`.
-
-2024/06/28: Closed because we have a correct implementation in `ppm_to_dp` in `00_util.R`. However, in `generate_lorentz_curves()` we will continue to use the wrong calculation to stay backwards compatible. The new method will be used in the successor function `deconvolute_spectra()`.
 
 ## CHECK-3: Water signal calculation
 
@@ -233,9 +189,16 @@ ws_ppm <- (max(ppm) + min(ppm)) / 2 # 0.8 and also works for odd ((n - 1) / 2)
 
 ## CHECK-4: Data point format
 
-- Why do we count data points starting from 0 instead of 1? That makes programming in R complicated, as R starts counting at 1.
-- Why do we use "scaled data points" as x values? That's unintuitive and (as far as I can see) unnecessary.
-- Why do we show large ppm values left and low values right? ToSc: Convention: keep it.
+1. Why do we count data points starting from 0 instead of 1? That makes programming in R complicated, as R starts counting at 1.
+2. Why do we use "scaled data points" as x values? That's unintuitive and (as far as I can see) unnecessary.
+3. Why do we show large ppm values left and low values right?
+
+Answers after discussion with Wolfram:
+
+1. Reason why MetaboDecon starts counting at 0 is not clear. Probably because Martina has C or python background and was more comfortable with 0-based indexing. For `generate_lorentz_curves` we will keep the 0-based indexing to stay backwards compatible. For `deconvolute_spectra` we will switch to 1-based indexing. Tracked b [FEATURE-10](#feature-10-implement-deconvolute_spectra).
+2. Intention was to prevent rounding errors, but as far as I can see that's not necessary. For `deconvolute_spectra` we completely remove the scale factor and scaled data point numbers. Tracked by [FEATURE-10](#feature-10-implement-deconvolute_spectra).
+3. That's the general convention in NMR spectroscopy and stems from the fact that in the early days of NMR the frequency was kept contant and the magnetic field was changed instead. To keep the way the spectra looked like, the frequency had to be shown from high to low values. We will keep this convention.
+
 
 ## CHECK-5: Signal preprocessing
 
@@ -275,8 +238,10 @@ Implement and export `read_spectra` and `read_spectrum` in a way that DTYPP is i
 
 Implement `deconvolute_spectra()` which should be the successor of `generate_lorentz_curves()` and `MetaboDecon1D` without trying to maintain backwards compatibility. In particular it should:
 
-1. Accepts
+1. Accept `nmr_spectrum` objects as input (as returned by `read_spectra`). See [FEATURE-9](#feature-9-implement-and-export-read_spectra).
 2. Use the correct SFR calculation as described in [CHECK-2](#check-2-signal-free-region-calculation).
+3. Use 1-based indexing for data points as described in [CHECK-4](#check-4-data-point-format).
+4. Remove the scale factor and scaled data point numbers as described in [CHECK-4](#check-4-data-point-format).
 
 
 # Done
@@ -394,6 +359,15 @@ identical(s1, s2) == FALSE
 all.equal(s1, s2) == TRUE
 ```
 
+## REFACTOR-6: Use a single unit as source of truth
+
+Function `generate_lorentz_curves` and `MetaboDecon1D` use different units for their calculations and in their returned list, e.g.
+ `ppm` (parts per million), `dp` (data points) and `sdp` (scaled data points) as x values and `si` (signal intensity), `ssi` (scaled signal intensity) as y values. Thats not good, as each conversion introduces numeric rounding errors and whenever we do a transformation, e.g. "removal of water signal", "removal of negative values" or "smoothing", we need to do the transformation for all units. Instead, we should use only one unit as single source of truth and provide conversion functions for the user, e.g. `ppm_to_hz` or `ppm_to_dp`. In the final returned list, it's ok to have all units, but at least during the calculation we should stick to `ppm` and `si` I think.
+
+This also makes input for the user much easier, because something like the following wouldn't occur: in function [deconvolution](R/MetaboDecon1D.R#1245) the argument `signal_free_region` is interpreted as `ppm` if `isFALSE(same_parameter) || current_filenumber == 1`. Else, the argument `signal_free_region` is interpreted as `sdp`. This is confusing and error prone.
+
+2024/06/30: Tracked by [FEATURE-10](#feature-10-implement-deconvolute_spectra)
+
 ## CHECK-1: Use of DTYPP in load_spectrum
 
 In function `deconvolution` from `MetaboDecon1D_deconvolution.R:121` or the extracted version `read_1r_file`, the y values are read as follows:
@@ -468,6 +442,44 @@ Note: there are also images in *Bruker_NMR_Data_Formats.pdf* explaining how to
 interpret 64 bit float numbers.
 
 2024/06/28: Checked and now traced by issue [FEATURE-9](#feature-9-implement-and-export-read_spectra).
+
+## CHECK-2: Signal free region calculation
+
+In function `deconvolution` of file [MetaboDecon1D.R](R/MetaboDecon1D.R#1372), the signal free region border in data points is calculated as follows:
+
+```R
+# Calculate signal free region
+signal_free_region_left  <- (spectrum_length+1)-((ppm_highest_value-signal_free_region[1])/(ppm_range/spectrum_length))
+signal_free_region_right <- (spectrum_length+1)-((ppm_highest_value-signal_free_region[2])/(ppm_range/spectrum_length))
+```
+
+These versions contain the following two errors:
+
+* Error 1: `spectrum$ppm_nstep` is used instead of `spectrum$ppm_step`. That's not really important, because it only causes a slight shift of the border towards the max value, but the number of data points to the left (or right) of the border stays the same (except for the edge case where the border falls exactly on a datapoint).
+* Error 2: The `+ 1` in `(spectrum$n + 1)` is wrong. It should be `- 1`. This causes the signal free border to be shifted two points to the left.
+
+Example code to demonstrate the error:
+
+```R
+dp <-  c(7,   6,   5,   4,   3,    2,    1,    0   )
+ppm <- c(4.7, 3.4, 2.1, 0.8, -0.5, -1.8, -3.1, -4.4)
+sfrl_ppm <- 2.0 # i.e. 3 points left
+n <- length(dp) # 8 (n) data points, i.e. 7 (n - 1) intervals of size 1.3 in between
+ppm_step <- (max(ppm) - min(ppm)) / (n - 1) # 1.3
+ppm_nstep <- (max(ppm) - min(ppm)) / n # 1.11
+sfrl_dp <- (n + 1) - (max(ppm) - sfrl_ppm) / ppm_nstep
+# 8 - (4.7 - 2.0) / 1.11  ==  8 - 2.37  ==  6.63  ==> 1 point left
+sfrl_dp_without_error_1 <- sfrl_dp <- (n + 1) - (max(ppm) - sfrl_ppm) / ppm_step
+# 8 - (4.7 - 2.0) / 1.3  ==  8 - 2.08  ==  6.92  ==> 1 point left
+sfrl_dp_correct <- sfrl_dp <- (n - 1) - (max(ppm) - sfrl_ppm) / ppm_step
+# 6 - (4.7 - 2.0) / 1.3  ==  6 - 2.08  ==  4.92  ==> 3 point left
+```
+
+It's not a big deal as we have over 100000 data points in our examples and whether we exclude e.g. 20500 or 20502 is not super important, as the user cannot make such a precise estimate anyways based on the shown plot, but it makes the code really confusing to understand.
+
+The correct method of converting ppm to dp is `(sfrl_ppm - min(ppm)) / ppm_step` as done in function `ppm_to_dp` in `00_util.R`.
+
+2024/06/28: Closed because we have a correct implementation in `ppm_to_dp` in `00_util.R`. However, in `generate_lorentz_curves()` we will continue to use the wrong calculation to stay backwards compatible. The new method will be used in the successor function `deconvolute_spectra()`, tacked by [FEATURE-10](#feature-10-implement-deconvolute_spectra)
 
 ## CHECK-6: Negative value removal
 

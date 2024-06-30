@@ -25,5 +25,7 @@ Performs signal alignment across the individual spectra using the speaq package 
 The output of speaq_align is a data matrix of aligned integral values. Each row contains the data of each spectrum and each column corresponds to one data point. Each entry corresponds to the integral of a deconvoluted signal with the signal center at this specific position after alignment by speaq.
 }
 \examples{
-\dontrun{after_speaq_mat <- speaq_align(feat, maxShift)}
+\dontrun{
+after_speaq_mat <- speaq_align(feat, maxShift)
+}
 }
