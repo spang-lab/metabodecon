@@ -102,25 +102,25 @@ generate_lorentz_curves_v20 <- function(data_path,
 #' }
 #' @noRd
 deconvolute_spectrum_v20 <- function(path = file.path(download_example_datasets(), "bruker/urine/urine_1"),
-                                      type = "bruker",
-                                      expno = 10,
-                                      procno = 10,
-                                      nfit = 10,
-                                      wshw = 0.1527692,
-                                      sfr = c(11.44494, -1.8828),
-                                      smopts = c(2, 5),
-                                      delta = 6.4,
-                                      sf = c(1e3, 1e6),
-                                      filno = 1,
-                                      nfils = 1,
-                                      ask = TRUE,
-                                      bwc = TRUE) {
+                                     type = "bruker",
+                                     expno = 10,
+                                     procno = 10,
+                                     nfit = 10,
+                                     wshw = 0.1527692,
+                                     sfr = c(11.44494, -1.8828),
+                                     smopts = c(2, 5),
+                                     delta = 6.4,
+                                     sf = c(1e3, 1e6),
+                                     filno = 1,
+                                     nfils = 1,
+                                     ask = TRUE,
+                                     bwc = TRUE) {
 
     toscutil::stub(deconvolute_spectrum_v2, ask = FALSE)
     type <- match.arg(type, c("bruker", "jcampdx"))
 
     # Implemented
-    spec <- read_spectrum(path, type, sf, expno, procno)
+    spec <- read_spectrum(path, type, sf, expno, procno, bwc)
     spec <- determine_signal_free_region_v20(spec, sfr, ask)
     spec <- determine_water_signal_v20(spec, hwidth_ppm = wshw, bwc, ask)
     spec <- remove_water_signal_v20(spec, bwc)

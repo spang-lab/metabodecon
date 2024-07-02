@@ -62,7 +62,7 @@ generate_lorentz_curves <- function(data_path = file.path(download_example_datas
                                     ncores = "auto") {
 
     # Read spectra and ask user for parameters
-    spectra <- read_spectra(data_path, file_format, expno, procno, ask, sf)
+    spectra <- read_spectra(data_path, file_format, expno, procno, ask, sf, bwc = TRUE)
     adjno <- get_adjno(spectra, sfr, wshw, ask)
     spectra <- get_sfrs(spectra, sfr, ask, adjno)
     spectra <- get_wsrs(spectra, wshw, ask, adjno)
@@ -307,7 +307,7 @@ generate_lorentz_curves_v12 <- function(data_path = file.path(download_example_d
                                         ncores = 2) {
 
     # Read spectra and ask user for parameters
-    spectra <- read_spectra(data_path, file_format, expno, procno, ask, sf)
+    spectra <- read_spectra(data_path, file_format, expno, procno, ask, sf, bwc = TRUE)
     adjno <- get_adjno(spectra, sfr, wshw, ask)
     spectra <- get_sfrs(spectra, sfr, ask, adjno)
     spectra <- get_wsrs(spectra, wshw, ask, adjno)

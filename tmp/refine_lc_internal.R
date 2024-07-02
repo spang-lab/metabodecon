@@ -2,7 +2,7 @@
 test_refine_lc_internal <- function() {
 
     # Prepare Inputs
-    spectra <- read_spectra()
+    spectra <- read_spectra(bwc = TRUE)
     spectra <- get_sfrs(spectra, sfr = c(11.44494, -1.8828), ask = FALSE, adjno = 1)
     spectra <- get_wsrs(spectra, wshw = 0.1527692, ask = FALSE, adjno = 1)
     spec <- spectra[[1]]

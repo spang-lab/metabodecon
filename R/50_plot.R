@@ -98,7 +98,7 @@ plot_sfr <- function(spec, left_ppm, right_ppm) {
 #' @noRd
 #' @title Plot Water Signal
 #' @description Draws the water signal as red vertical lines into the given spectrum.
-#' @param spec A list representing the spec as returned by [read_spectrum()] or [read_bruker_spectrum()].
+#' @param spec A list representing the spec as returned by [read_spectrum()].
 #' @param hwidth_ppm The half width of the water signal in ppm.
 #' @return NULL. Called for side effect of plotting the water signal.
 plot_ws <- function(spec, hwidth_ppm) {

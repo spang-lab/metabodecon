@@ -1,6 +1,6 @@
 expected_str_urine_1 <- c( # for str(x$rv, digits.d=12, vec.len=1)
     "List of 13",
-    " $ y_raw    : num [1:131072] 1265 1003 ...",
+    " $ y_raw    : int [1:131072] 1265 1003 ...",
     " $ y_scaled : num [1:131072] 0.001265 0.001003 ...",
     " $ n        : int 131072",
     " $ sfx      : num 1000",
@@ -16,7 +16,7 @@ expected_str_urine_1 <- c( # for str(x$rv, digits.d=12, vec.len=1)
 )
 
 test_that("read_spectrum works for bruker/urine_1", {
-    x <- evalwith(testdir = "read_spectrum_urine1", inputs = "bruker/urine/urine_1", expr = read_spectrum("urine_1"))
+    x <- evalwith(testdir = "read_spectrum_urine1", inputs = "bruker/urine/urine_1", expr = read_spectrum("urine_1", bwc = TRUE))
     y <- MD1D()
     expect_equal(x$rv$y_raw, y$rv$debuglist$data_read$spectrum_y_raw)
     expect_equal(x$rv$y_scaled, y$rv$debuglist$data_read$spectrum_y)
@@ -26,7 +26,7 @@ test_that("read_spectrum works for bruker/urine_1", {
 skip_if_slow_tests_disabled()
 
 test_that("read_spectrum works for jcampdx/urine_1.dx", {
-    x <- evalwith(testdir = "read_spectrum_urine1dx", inputs = "jcampdx/urine/urine_1.dx", expr = read_spectrum("urine_1.dx", type = "jcampdx"))
+    x <- evalwith(testdir = "read_spectrum_urine1dx", inputs = "jcampdx/urine/urine_1.dx", expr = read_spectrum("urine_1.dx", type = "jcampdx", bwc = TRUE))
     y <- MD1D(dp = "urine_1.dx", ff = "jcampdx")
     expect_equal(x$rv$y_raw, y$rv$debuglist$data_read$spectrum_y_raw)
     expect_equal(x$rv$y_scaled, y$rv$debuglist$data_read$spectrum_y)

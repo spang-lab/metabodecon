@@ -1,6 +1,6 @@
 # Version Matrix
 
-| Topic | Function                                | 0.2 | 1.0 | 1.2 | 2.0 |
+| Topic | Function                                | 0.2 | 1.0 | 1.3 | 2.0 |
 | ----- | --------------------------------------- | --- | --- | --- | --- |
 | decon | MetaboDecon1D                           | e   | e   | d   | -   |
 | decon | calculate_lorentz_curves                | e   | e   | d   | -   |
@@ -54,7 +54,20 @@
 - ᵈ The faster implementation also fixes an indexing bug, which in most cases shouldn't have any effect, but in some rare cases it might cause one peak to be missed.
 - ᵉ Only true for MetaboDecon1D versions >= v1.0.0
 
-# Todos before writing docs
+# Todos
+
+## FEATURE-9 Implement and export read_spectra
+
+Implement and export `read_spectra` and `read_spectrum` in a way that
+
+1. DTYPP is interpreted correctly (see [CHECK-1](#check-1-use-of-dtypp-in-load_spectrum)) and
+2. The spectrum width (SW) in Hz as well as the Magnetic Field Strength is returned (see [FEATURE-6](#feature-6-return-lambda-in-hertz)).
+
+This function can then be used to read spectra if a character string is provided as argument to `deconvolute_spectra()` or `generate_lorentz_curves` (see [FEATURE-11](#feature-11-accept-dataframes-in-glc)).
+
+## FEATURE-14: Provide simulated datasets from blood spectra
+
+Provide simulated datasets from blood spectra
 
 ## FEATURE-6: Return lambda in hertz
 
@@ -103,41 +116,6 @@ lw_hz <- function(spectrum_data, sw_hz) {
 
 If delta is small (e.g. 1), peaks in SFR might not be filtered out. Either implement this and warn user about it (this is a strong indication that delta was chosen too small).
 
-## REFACTOR-7: Split monolithic functions into smaller parts
-
-The original `MetaboDecon1D` function has approx. 350 lines of code and the original `deconvolution` function has approx 1000 lines of code. This is way too much for testing and modifying. We should extract copy-pasted parts into indivual functions and test these functions separately.
-
-## REFACTOR-8: Improve docs for Metabodecon1D return value
-
-Original Teams Message from Wolfram from `2023/11/08 3:29 PM`
-
-<!-- /* cSpell:disable */ -->
-*Hi Tobi, es kommen ja in letzter Zeit eine ganze Menge Fragen zu MetaboDecon auch nach den Variablen im Output. Ich hab hier eine Zusammenstellung dieser Variablen gemacht, vielleicht können wir das auch noch einbauen? Viele Grüße Wolfram*
-<!-- /* cSpell:enable */ -->
-
-Output variables of MetaboDecon1D (These variables will be obtained for each analyzed spectrum):
-
-- __Number_of_files:__ number of analyzed spectra (In case folder contains more than one spectrum value >1).
-- __Filename:__ name of analyzed spectrum
-- __X_values:__ all data points of original spectrum are numbered in descending order. The first data point has the maximum value and the last one the value 0. If we have for example 131072 (128k) datapoints, the first has the value 131.071. Note that numbers were divided by the scale factor which has a default value of 1000 for the x_axis.
-- __X_values_ppm:__ as above but here the corresponding ppm values are provided.
-- __Y_values:__ intensities of original datapoints
-- __Spectrum_superposition:__ y-values of the superposition of all estimated Lorentzcurves, values are provided in a point-wise manner.
-- __Mse_normed:__ final mean-squared-error after optimization of all Lorentz curves.
-- __Index_peak_triplets_middle:__ each identified signal is defined by three data points. Here the middle data point is given. Note, numbering starts in ascending order from left to right.
-- __Index_peak_triplets_left:__ as above for the left data point.
-- __Index_peak_triplets_right:__ as above for the right data point.
-- __Peak_triplets_middle:__ for each identified signal the position of the middle data point is given in ppm, order from left to right.
-- __Peak_triplets_right:__ as above for the right data point
-- __Peak_triplets_left:__ as above for the left datapoint.
-- __Integrals:__ integrals of deconvoluted signals from left to right as above.
-- __Signal_free_region:__ e.g., 109.03619, 21.79452, left and right of these borders no signals are expected. Values are in points like x_values but here with 5 instead of 3 decimals.
-- __Range_water_signal_ppm:__ half width of water signal region i.e., where no signals should be identified in ppm, for example 0.15 ppm.
-- __A:__ -A*p area under Lorentz-curve, see also integrals, A is always provided as negative number.
-- __Lambda:__ for all identified signals half width at half height. Is provided as negative value in data points divided by scale-factor i.e., 1000. For example, a value of von 0.00525 corresponds to 5.25 data points. With a spectral width 12019 Hz (this example) and 31072 data points this corresponds to a half linewidth at half height of 0.48 Hz.
-- __X_0:__ center of all estimated Lorentz curves. Provided in data points divided by scale factor (see also x_values).
-- __Scale_factor:__ scale factor for x- and y-axis to reduce numerical instabilities, default 1000 and 1000000. Toy example for TSP signal (note numbers will differ for each spectrum): TSP is signal 979, `index_peak_triplets_middle[979]=96955`, `x_0[979]=34.11715` (Note `(131072-96955)/1000=34.117)`, `peak_triplets_middle=0.000` ppm, `lambda[979]=-0.00525` corresponds to 0.48 Hz. `A[979]=-1.218312`; `A* Pi=-3.82`, `integrals[979]=3.82`)
-
 ## REFACTOR-9: Improve mse_normed calculation
 
 In function `add_return_list_v13`:
@@ -146,11 +124,163 @@ In function `add_return_list_v13`:
 
    `s <- sapply(x, function(x_i) sum(abs(A * (lambda / (lambda^2 + (x_i - w)^2))))) # takes approx. 2.2 seconds for urine_1`
 
-2. Check whether it makes sense to calculate y as `y <- spec$y_smooth` or whether it's better to use `y <- spec$y_raw`
+2. Return `mse_normed_raw` in addition to `mse_normed` (which is calculated based on `y <- spec$y_smooth`). `mse_normed_raw` should be based on `y <- spec$y_raw`.
+
+## CHECK-10: Negative values for estimated A
+
+Check why there are negative values for the estimated lorentz curve area A.
+
+## FEATURE-11: Accept dataframes in GLC
+
+Let `generate_lorentz_curves` accept dataframes as input. This is useful for Maximilians Bachelorthesis and also makes testing easier. If necessary, implement a private wrapper around `read_spectra`, called `read_spectra_glc` that converts the return value of `read_spectra` to a format that can be used by `deconvolute_spectra`.
 
 
+## DOC-1: Document whole package
 
+Document the whole package in vignettes, including chapters about alignment and a short introduction into all datasets.
 
+## FEATURE-13: Merge into main
+
+Merge the existing functionality into main as v1.2.0. Start a new branch v1.3.0 for the remaining todos.
+
+## FEATURE-10: Implement deconvolute_spectra
+
+Implement `deconvolute_spectra()` which should be the successor of `generate_lorentz_curves()` and `MetaboDecon1D` without trying to maintain backwards compatibility. In particular it should:
+
+1. Accept `nmr_spectrum` objects as input (as returned by `read_spectra`). See [FEATURE-9](#feature-9-implement-and-export-read_spectra).
+2. Use the correct SFR calculation as described in [CHECK-2](#check-2-signal-free-region-calculation).
+3. Uses the correct water signal calculation as described in [CHECK-3](#check-3-water-signal-calculation).
+4. Use 1-based indexing for data points as described in [CHECK-4](#check-4-data-point-format).
+5. Remove the scale factor and scaled data point numbers as described in [CHECK-4](#check-4-data-point-format).
+6. Remove negative values in a consistent way, as described by [CHECK-5](#check-5-signal-preprocessing)
+
+## CRAN-7: Check dontrun examples
+
+Remove `dontrun` from examples if they are executable in < 5 sec, or create additionally small toy examples to allow automatic testing in < 5 sec. Reason: `\dontrun{}` should only be used if the example really cannot be executed by the user, e.g. because of missing additional software, missing API keys, etc. That's why wrapping examples in `\dontrun{}` adds the comment ("# Not run:") as a warning for the user. Alternative: You could also replace `\dontrun{}` with `\donttest`, if it takes longer than 5 sec to be executed, but it would be preferable to have automatic checks for functions. Otherwise, you can also write some tests.
+
+## CRAN-10: Resubmit to CRAN
+
+Fix all R CMD check findings and resubmit the package to CRAN.
+
+## DOC-2: Write paper
+
+Reformat the vignettes as paper and send to Wolfram for proofreading.
+
+# Done
+
+## CHECK-1: Use of DTYPP in load_spectrum
+
+In function `deconvolution` from `MetaboDecon1D_deconvolution.R:121` or the extracted version `read_1r_file`, the y values are read as follows:
+
+```R
+int_type <- as.numeric(sub("\\D+", "", procs[startsWith(procs, "##$DTYPP=")]))
+int_size <- if (int_type == 0) 4 else 8
+path_1r <- file.path(path, expno, "pdata", procno, "1r")
+spec_stream <- file(path_1r, "rb")
+on.exit(close(spec_stream), add = TRUE)
+y <- readBin(
+   spec_stream,
+   what = "int",
+   size = int_size,
+   n = n,
+   signed = TRUE,
+   endian = "little"
+)
+```
+
+But in [Bruker_NMR_Data_Formats.pdf](http://www.nmragenda-leiden.nl/static/Bruker_manual_4.1.4/topspin_pdf/Bruker_NMR_Data_Formats.pdf) it says:
+
+> The processing status parameter `DTYPP` defines how the data values are stored. If
+> the `DTYPP` is 0 ("int"), the stored value represents a mantissa of the data
+> point value, the processing status parameter `NC_proc` is the exponent. In this
+> case all data points share the same exponent.
+>
+> [...]
+>
+> Their format is given by the parameter `DTYPP`, the byte ordering is given by
+> the parameter `BYTORDP`, both may be read from the processing status parameter
+> file `procs`.
+
+e.i., we should read y as
+
+```R
+path_1r <- file.path(path, expno, "pdata", procno, "1r")
+spec_stream <- file(path_1r, "rb")
+on.exit(close(spec_stream), add = TRUE)
+dtypp <- as.numeric(sub("\\D+", "", procs[startsWith(procs, "##$DTYPP=")]))
+ncproc <- as.numeric(strsplit(procs[startsWith(procs, "##$NC_proc=")], "=")[[1]][2])
+bytordp <- as.numeric(strsplit(procs[startsWith(procs, "##$BYTORDP")], "=")[[1]][2])
+if (dtypp == 0) {
+   mantissa <- readBin(
+      spec_stream,
+      what = "int",
+      size = 4,
+      n = n,
+      endian = if (bytordp == 0) "little" else "big",
+      signed = TRUE # this needs to be verified as well
+   )
+   y <- mantissa * (2 ^ ncproc)
+} else {
+   stop("Not yet implemented")
+}
+```
+
+Note: I've checked the [urine/urine_1/10/pdata/10/1r](misc/example_datasets/bruker/urine/urine_1/10/pdata/10/1r) example file. There we have `ncproc == -2`, i.e. using the above described implementation, we would get `y <- mantissa * (2 ^ (-2))` == `y <- mantissa * 0.25`, i.e. the right now the values we use are 4 times larger as they should be. I guess that's not the end of the world, as signals get scaled anyway.
+
+Further useful info from [Bruker_NMR_Data_Formats.pdf](http://www.nmragenda-leiden.nl/static/Bruker_manual_4.1.4/topspin_pdf/Bruker_NMR_Data_Formats.pdf):
+
+> The raw data files `fid` and `ser` contain one dimensional or multi-dimensional
+> acquired data, respectively. They consist of a sequence of acquired data point
+> values in binary format. The acquisition status parameter `DTYPA` defines, how
+> the data values are stored. If the `DTYPA` is "int" the stored value represents
+> a mantissa of the data point value, the acquisition parameter NC is the
+> exponent. All data points share in this case the same exponent. If `DTYPA` is
+> "double", the data points are stored as a double precision 64 bit floating
+> number, parameter NC is not used.
+
+Note: there are also images in *Bruker_NMR_Data_Formats.pdf* explaining how to
+interpret 64 bit float numbers.
+
+2024/06/28: Checked and now traced by issue [FEATURE-9](#feature-9-implement-and-export-read_spectra).
+
+## CHECK-2: Signal free region calculation
+
+In function `deconvolution` of file [MetaboDecon1D.R](R/MetaboDecon1D.R#1372), the signal free region border in data points is calculated as follows:
+
+```R
+# Calculate signal free region
+signal_free_region_left  <- (spectrum_length+1)-((ppm_highest_value-signal_free_region[1])/(ppm_range/spectrum_length))
+signal_free_region_right <- (spectrum_length+1)-((ppm_highest_value-signal_free_region[2])/(ppm_range/spectrum_length))
+```
+
+These versions contain the following two errors:
+
+* Error 1: `spectrum$ppm_nstep` is used instead of `spectrum$ppm_step`. That's not really important, because it only causes a slight shift of the border towards the max value, but the number of data points to the left (or right) of the border stays the same (except for the edge case where the border falls exactly on a datapoint).
+* Error 2: The `+ 1` in `(spectrum$n + 1)` is wrong. It should be `- 1`. This causes the signal free border to be shifted two points to the left.
+
+Example code to demonstrate the error:
+
+```R
+dp <-  c(7,   6,   5,   4,   3,    2,    1,    0   )
+ppm <- c(4.7, 3.4, 2.1, 0.8, -0.5, -1.8, -3.1, -4.4)
+sfrl_ppm <- 2.0 # i.e. 3 points left
+n <- length(dp) # 8 (n) data points, i.e. 7 (n - 1) intervals of size 1.3 in between
+ppm_step <- (max(ppm) - min(ppm)) / (n - 1) # 1.3
+ppm_nstep <- (max(ppm) - min(ppm)) / n # 1.11
+sfrl_dp <- (n + 1) - (max(ppm) - sfrl_ppm) / ppm_nstep
+# 8 - (4.7 - 2.0) / 1.11  ==  8 - 2.37  ==  6.63  ==> 1 point left
+sfrl_dp_without_error_1 <- sfrl_dp <- (n + 1) - (max(ppm) - sfrl_ppm) / ppm_step
+# 8 - (4.7 - 2.0) / 1.3  ==  8 - 2.08  ==  6.92  ==> 1 point left
+sfrl_dp_correct <- sfrl_dp <- (n - 1) - (max(ppm) - sfrl_ppm) / ppm_step
+# 6 - (4.7 - 2.0) / 1.3  ==  6 - 2.08  ==  4.92  ==> 3 point left
+```
+
+It's not a big deal as we have over 100000 data points in our examples and whether we exclude e.g. 20500 or 20502 is not super important, as the user cannot make such a precise estimate anyways based on the shown plot, but it makes the code really confusing to understand.
+
+The correct method of converting ppm to dp is `(sfrl_ppm - min(ppm)) / ppm_step` as done in function `ppm_to_dp` in `00_util.R`.
+
+> [!IMPORTANT] Check result:
+> Closed because we have a correct implementation in `ppm_to_dp` in `00_util.R`. However, in `generate_lorentz_curves()` we will continue to use the wrong calculation to stay backwards compatible. The new method will be used in the successor function `deconvolute_spectra()`, tracked by [FEATURE-10](#feature-10-implement-deconvolute_spectra)
 
 ## CHECK-3: Water signal calculation
 
@@ -187,18 +317,21 @@ ws_dp <- (n - 1)/2 # 3
 ws_ppm <- (max(ppm) + min(ppm)) / 2 # 0.8 and also works for odd ((n - 1) / 2)
 ```
 
+> [!IMPORTANT] Check result:
+> Will be fixed with function `deconvolute_spectra` in [FEATURE-10](#check-10-negative-values-for-estimated-a).
+
 ## CHECK-4: Data point format
 
 1. Why do we count data points starting from 0 instead of 1? That makes programming in R complicated, as R starts counting at 1.
 2. Why do we use "scaled data points" as x values? That's unintuitive and (as far as I can see) unnecessary.
 3. Why do we show large ppm values left and low values right?
 
-Answers after discussion with Wolfram:
-
-1. Reason why MetaboDecon starts counting at 0 is not clear. Probably because Martina has C or python background and was more comfortable with 0-based indexing. For `generate_lorentz_curves` we will keep the 0-based indexing to stay backwards compatible. For `deconvolute_spectra` we will switch to 1-based indexing. Tracked b [FEATURE-10](#feature-10-implement-deconvolute_spectra).
-2. Intention was to prevent rounding errors, but as far as I can see that's not necessary. For `deconvolute_spectra` we completely remove the scale factor and scaled data point numbers. Tracked by [FEATURE-10](#feature-10-implement-deconvolute_spectra).
-3. That's the general convention in NMR spectroscopy and stems from the fact that in the early days of NMR the frequency was kept contant and the magnetic field was changed instead. To keep the way the spectra looked like, the frequency had to be shown from high to low values. We will keep this convention.
-
+> [!IMPORTANT] Check result:
+> Discussion with Wolfram lead to the following conclusions:
+>
+> 1. Reason why MetaboDecon starts counting at 0 is not clear. Probably because Martina has C or python background and was more comfortable with 0-based indexing. For `generate_lorentz_curves` we will keep the 0-based indexing to stay backwards compatible. For `deconvolute_spectra` we will switch to 1-based indexing. Tracked b [FEATURE-10](#feature-10-implement-deconvolute_spectra).
+> 2. Intention was to prevent rounding errors, but as far as I can see that's not necessary. For `deconvolute_spectra` we completely remove the scale factor and scaled data point numbers. Tracked by [FEATURE-10](#feature-10-implement-deconvolute_spectra).
+> 3. That's the general convention in NMR spectroscopy and stems from the fact that in the early days of NMR the frequency was kept contant and the magnetic field was changed instead. To keep the way the spectra looked like, the frequency had to be shown from high to low values. We will keep this convention.
 
 ## CHECK-5: Signal preprocessing
 
@@ -216,35 +349,74 @@ for (i in 1:length(spectrum$y)) {
 
 ToSc:
 
-- WS: check if other zeros. If no, use min(spectrum$y).
+- WS: check if other zeros. If no, use `min(spectrum$y)`.
 - Negatives: leave as is
 
+## CHECK-6: Negative value removal
 
-# Todos after writing docs
+Why do we "remove negative values" using `abs` instead of setting them to zero or the minimum value of the spectrum? See [R/MetaboDecon1D.R#1781](R/MetaboDecon1D.R#1781)
 
-## CRAN-7: Check dontrun examples
+```R
+# Remove negative values of spectrum by Saving the absolut values
+for(i in 1:length(spectrum_y)){
+   spectrum_y[i] <- abs(spectrum_y[i])
+}
+```
 
-Remove `dontrun` from examples if they are executable in < 5 sec, or create additionally small toy examples to allow automatic testing in < 5 sec. Reason: `\dontrun{}` should only be used if the example really cannot be executed by the user, e.g. because of missing additional software, missing API keys, etc. That's why wrapping examples in `\dontrun{}` adds the comment ("# Not run:") as a warning for the user. Alternative: You could also replace `\dontrun{}` with `\donttest`, if it takes longer than 5 sec to be executed, but it would be preferable to have automatic checks for functions. Otherwise, you can also write some tests.
+> [!IMPORTANT] Check result:
+> Discussed with Wolfram and decided that it doesn't matter whether we use `abs` for negative removal or something else, as these signals should be filtered out anyways by the algorithm.
 
-## CHECK-10: Negative values for estimated A
+## CHECK-7: Peak selection procedure
 
-Check why there are negative values for the estimated lorentz curve area A.
+Currently the [peak selection procedure]((R/MetaboDecon1D.R#1825))
 
-## FEATURE-9 Implement and export read_spectra
+1. Requires two loops in R, which is low
+2. Iterates from 1:(m-2) instead of 2:(m-1), which is wrong and might cause the miss of one peak if it's at the very end of the spectrum (which is almost certainly in the signal free region so it's not too bad).
 
-Implement and export `read_spectra` and `read_spectrum` in a way that DTYPP is interpreted correctly (see [CHECK-1](#check-1-use-of-dtypp-in-load_spectrum)). This function should then be used to read spectra if a character string is provided as argument to `deconvolute_spectra()`. If necessary, implement a prviate wrapper around `read_spectra`, called `read_spectra_glc` that converts the return value of `read_spectra` to a format that can be used by `deconvolute_spectra`.
+We should use vectorized operations and correct indexing to fix this.
 
-## FEATURE-10: Implement deconvolute_spectra
+```R
+# Peak selection procedure
 
-Implement `deconvolute_spectra()` which should be the successor of `generate_lorentz_curves()` and `MetaboDecon1D` without trying to maintain backwards compatibility. In particular it should:
+# Calculate second derivative of spectrum
+second_derivative <- matrix(nrow = 2, ncol = length(spectrum_x)-2)
+for(i in 2:length(spectrum_x)-1){
+   second_derivative[1,i-1] <- spectrum_x[i]
+   second_derivative[2,i-1] <- spectrum_y[i-1] + spectrum_y[i+1] -2*spectrum_y[i]
+}
 
-1. Accept `nmr_spectrum` objects as input (as returned by `read_spectra`). See [FEATURE-9](#feature-9-implement-and-export-read_spectra).
-2. Use the correct SFR calculation as described in [CHECK-2](#check-2-signal-free-region-calculation).
-3. Use 1-based indexing for data points as described in [CHECK-4](#check-4-data-point-format).
-4. Remove the scale factor and scaled data point numbers as described in [CHECK-4](#check-4-data-point-format).
+# Find all local minima of second derivative
+peaks_x <- c()
+peaks_index <- c()
+second_derivative_border <- ncol(second_derivative)-1
+for(i in 2:second_derivative_border){
+   if(second_derivative[2,i] < 0){
+   if((second_derivative[2,i] <= second_derivative[2,i-1]) & (second_derivative[2,i] < second_derivative[2,i+1])){
+      #if(((spectrum_y[i+1] >= spectrum_y[i]) & (spectrum_y[i+1] > spectrum_y[i+2])) | ((spectrum_y[i+1] > spectrum_y[i]) & (spectrum_y[i+1] >= spectrum_y[i+2]))){
+      # Add local minima to peak list
+      peaks_x <- c(peaks_x, second_derivative[1,i])
+      peaks_index <- c(peaks_index, i)
+   }
+   }
+}
+```
 
+> [!IMPORTANT] Check result:
+> Implemented in function [select_peaks_v2](R/generate_lorentz_curves.R#1325).
 
-# Done
+## CHECK-8: Fix name of samples in blood dataset
+
+It should be `Blood` not `Bood`.
+
+> [!IMPORTANT] Check result:
+> Fixed in branch `test-glc`
+
+## CHECK-9: Ask Wolfram about peak selection
+
+Ask Wolfram whether it's ok that the peak selection sometimes selects two peaks for one local maximum.
+
+> [!IMPORTANT] Check result:
+> That's ok and by intention.
 
 ## FEATURE-1: Use temp dirs for full example data
 
@@ -366,180 +538,47 @@ Function `generate_lorentz_curves` and `MetaboDecon1D` use different units for t
 
 This also makes input for the user much easier, because something like the following wouldn't occur: in function [deconvolution](R/MetaboDecon1D.R#1245) the argument `signal_free_region` is interpreted as `ppm` if `isFALSE(same_parameter) || current_filenumber == 1`. Else, the argument `signal_free_region` is interpreted as `sdp`. This is confusing and error prone.
 
-2024/06/30: Tracked by [FEATURE-10](#feature-10-implement-deconvolute_spectra)
+2024/06/30: Tracked by [FEATURE-10](#feature-10-implement-deconvolute_spectra) instead.
 
-## CHECK-1: Use of DTYPP in load_spectrum
+## REFACTOR-7: Split monolithic functions into smaller parts
 
-In function `deconvolution` from `MetaboDecon1D_deconvolution.R:121` or the extracted version `read_1r_file`, the y values are read as follows:
+The original `MetaboDecon1D` function has approx. 350 lines of code and the original `deconvolution` function has approx 1000 lines of code. This is way too much for testing and modifying. We should extract copy-pasted parts into indivual functions and test these functions separately.
 
-```R
-int_type <- as.numeric(sub("\\D+", "", procs[startsWith(procs, "##$DTYPP=")]))
-int_size <- if (int_type == 0) 4 else 8
-path_1r <- file.path(path, expno, "pdata", procno, "1r")
-spec_stream <- file(path_1r, "rb")
-on.exit(close(spec_stream), add = TRUE)
-y <- readBin(
-   spec_stream,
-   what = "int",
-   size = int_size,
-   n = n,
-   signed = TRUE,
-   endian = "little"
-)
-```
+2024/06/30: Done in function `generate_lorentz_curves` in branch `v1.2.0`.
 
-But in [Bruker_NMR_Data_Formats.pdf](http://www.nmragenda-leiden.nl/static/Bruker_manual_4.1.4/topspin_pdf/Bruker_NMR_Data_Formats.pdf) it says:
+## REFACTOR-8: Improve docs for Metabodecon1D return value
 
-> The processing status parameter `DTYPP` defines how the data values are stored. If
-> the `DTYPP` is 0 ("int"), the stored value represents a mantissa of the data
-> point value, the processing status parameter `NC_proc` is the exponent. In this
-> case all data points share the same exponent.
->
-> [...]
->
-> Their format is given by the parameter `DTYPP`, the byte ordering is given by
-> the parameter `BYTORDP`, both may be read from the processing status parameter
-> file `procs`.
+Original Teams Message from Wolfram from `2023/11/08 3:29 PM`
 
-e.i., we should read y as
+<!-- /* cSpell:disable */ -->
+*Hi Tobi, es kommen ja in letzter Zeit eine ganze Menge Fragen zu MetaboDecon auch nach den Variablen im Output. Ich hab hier eine Zusammenstellung dieser Variablen gemacht, vielleicht können wir das auch noch einbauen? Viele Grüße Wolfram*
+<!-- /* cSpell:enable */ -->
 
-```R
-path_1r <- file.path(path, expno, "pdata", procno, "1r")
-spec_stream <- file(path_1r, "rb")
-on.exit(close(spec_stream), add = TRUE)
-dtypp <- as.numeric(sub("\\D+", "", procs[startsWith(procs, "##$DTYPP=")]))
-ncproc <- as.numeric(strsplit(procs[startsWith(procs, "##$NC_proc=")], "=")[[1]][2])
-bytordp <- as.numeric(strsplit(procs[startsWith(procs, "##$BYTORDP")], "=")[[1]][2])
-if (dtypp == 0) {
-   mantissa <- readBin(
-      spec_stream,
-      what = "int",
-      size = 4,
-      n = n,
-      endian = if (bytordp == 0) "little" else "big",
-      signed = TRUE # this needs to be verified as well
-   )
-   y <- mantissa * (2 ^ ncproc)
-} else {
-   stop("Not yet implemented")
-}
-```
+Output variables of MetaboDecon1D (These variables will be obtained for each analyzed spectrum):
 
-Note: I've checked the [urine/urine_1/10/pdata/10/1r](misc/example_datasets/bruker/urine/urine_1/10/pdata/10/1r) example file. There we have `ncproc == -2`, i.e. using the above described implementation, we would get `y <- mantissa * (2 ^ (-2))` == `y <- mantissa * 0.25`, i.e. the right now the values we use are 4 times larger as they should be. I guess that's not the end of the world, as signals get scaled anyway.
+- __Number_of_files:__ number of analyzed spectra (In case folder contains more than one spectrum value >1).
+- __Filename:__ name of analyzed spectrum
+- __X_values:__ all data points of original spectrum are numbered in descending order. The first data point has the maximum value and the last one the value 0. If we have for example 131072 (128k) datapoints, the first has the value 131.071. Note that numbers were divided by the scale factor which has a default value of 1000 for the x_axis.
+- __X_values_ppm:__ as above but here the corresponding ppm values are provided.
+- __Y_values:__ intensities of original datapoints
+- __Spectrum_superposition:__ y-values of the superposition of all estimated Lorentzcurves, values are provided in a point-wise manner.
+- __Mse_normed:__ final mean-squared-error after optimization of all Lorentz curves.
+- __Index_peak_triplets_middle:__ each identified signal is defined by three data points. Here the middle data point is given. Note, numbering starts in ascending order from left to right.
+- __Index_peak_triplets_left:__ as above for the left data point.
+- __Index_peak_triplets_right:__ as above for the right data point.
+- __Peak_triplets_middle:__ for each identified signal the position of the middle data point is given in ppm, order from left to right.
+- __Peak_triplets_right:__ as above for the right data point
+- __Peak_triplets_left:__ as above for the left datapoint.
+- __Integrals:__ integrals of deconvoluted signals from left to right as above.
+- __Signal_free_region:__ e.g., 109.03619, 21.79452, left and right of these borders no signals are expected. Values are in points like x_values but here with 5 instead of 3 decimals.
+- __Range_water_signal_ppm:__ half width of water signal region i.e., where no signals should be identified in ppm, for example 0.15 ppm.
+- __A:__ -A*p area under Lorentz-curve, see also integrals, A is always provided as negative number.
+- __Lambda:__ for all identified signals half width at half height. Is provided as negative value in data points divided by scale-factor i.e., 1000. For example, a value of von 0.00525 corresponds to 5.25 data points. With a spectral width 12019 Hz (this example) and 31072 data points this corresponds to a half linewidth at half height of 0.48 Hz.
+- __X_0:__ center of all estimated Lorentz curves. Provided in data points divided by scale factor (see also x_values).
+- __Scale_factor:__ scale factor for x- and y-axis to reduce numerical instabilities, default 1000 and 1000000. Toy example for TSP signal (note numbers will differ for each spectrum): TSP is signal 979, `index_peak_triplets_middle[979]=96955`, `x_0[979]=34.11715` (Note `(131072-96955)/1000=34.117)`, `peak_triplets_middle=0.000` ppm, `lambda[979]=-0.00525` corresponds to 0.48 Hz. `A[979]=-1.218312`; `A* Pi=-3.82`, `integrals[979]=3.82`)
 
-Further useful info from [Bruker_NMR_Data_Formats.pdf](http://www.nmragenda-leiden.nl/static/Bruker_manual_4.1.4/topspin_pdf/Bruker_NMR_Data_Formats.pdf):
+2024/06/30: Implemented with ab20d64.
 
-> The raw data files `fid` and `ser` contain one dimensional or multi-dimensional
-> acquired data, respectively. They consist of a sequence of acquired data point
-> values in binary format. The acquisition status parameter `DTYPA` defines, how
-> the data values are stored. If the `DTYPA` is "int" the stored value represents
-> a mantissa of the data point value, the acquisition parameter NC is the
-> exponent. All data points share in this case the same exponent. If `DTYPA` is
-> "double", the data points are stored as a double precision 64 bit floating
-> number, parameter NC is not used.
-
-Note: there are also images in *Bruker_NMR_Data_Formats.pdf* explaining how to
-interpret 64 bit float numbers.
-
-2024/06/28: Checked and now traced by issue [FEATURE-9](#feature-9-implement-and-export-read_spectra).
-
-## CHECK-2: Signal free region calculation
-
-In function `deconvolution` of file [MetaboDecon1D.R](R/MetaboDecon1D.R#1372), the signal free region border in data points is calculated as follows:
-
-```R
-# Calculate signal free region
-signal_free_region_left  <- (spectrum_length+1)-((ppm_highest_value-signal_free_region[1])/(ppm_range/spectrum_length))
-signal_free_region_right <- (spectrum_length+1)-((ppm_highest_value-signal_free_region[2])/(ppm_range/spectrum_length))
-```
-
-These versions contain the following two errors:
-
-* Error 1: `spectrum$ppm_nstep` is used instead of `spectrum$ppm_step`. That's not really important, because it only causes a slight shift of the border towards the max value, but the number of data points to the left (or right) of the border stays the same (except for the edge case where the border falls exactly on a datapoint).
-* Error 2: The `+ 1` in `(spectrum$n + 1)` is wrong. It should be `- 1`. This causes the signal free border to be shifted two points to the left.
-
-Example code to demonstrate the error:
-
-```R
-dp <-  c(7,   6,   5,   4,   3,    2,    1,    0   )
-ppm <- c(4.7, 3.4, 2.1, 0.8, -0.5, -1.8, -3.1, -4.4)
-sfrl_ppm <- 2.0 # i.e. 3 points left
-n <- length(dp) # 8 (n) data points, i.e. 7 (n - 1) intervals of size 1.3 in between
-ppm_step <- (max(ppm) - min(ppm)) / (n - 1) # 1.3
-ppm_nstep <- (max(ppm) - min(ppm)) / n # 1.11
-sfrl_dp <- (n + 1) - (max(ppm) - sfrl_ppm) / ppm_nstep
-# 8 - (4.7 - 2.0) / 1.11  ==  8 - 2.37  ==  6.63  ==> 1 point left
-sfrl_dp_without_error_1 <- sfrl_dp <- (n + 1) - (max(ppm) - sfrl_ppm) / ppm_step
-# 8 - (4.7 - 2.0) / 1.3  ==  8 - 2.08  ==  6.92  ==> 1 point left
-sfrl_dp_correct <- sfrl_dp <- (n - 1) - (max(ppm) - sfrl_ppm) / ppm_step
-# 6 - (4.7 - 2.0) / 1.3  ==  6 - 2.08  ==  4.92  ==> 3 point left
-```
-
-It's not a big deal as we have over 100000 data points in our examples and whether we exclude e.g. 20500 or 20502 is not super important, as the user cannot make such a precise estimate anyways based on the shown plot, but it makes the code really confusing to understand.
-
-The correct method of converting ppm to dp is `(sfrl_ppm - min(ppm)) / ppm_step` as done in function `ppm_to_dp` in `00_util.R`.
-
-2024/06/28: Closed because we have a correct implementation in `ppm_to_dp` in `00_util.R`. However, in `generate_lorentz_curves()` we will continue to use the wrong calculation to stay backwards compatible. The new method will be used in the successor function `deconvolute_spectra()`, tacked by [FEATURE-10](#feature-10-implement-deconvolute_spectra)
-
-## CHECK-6: Negative value removal
-
-Why do we "remove negative values" using `abs` instead of setting them to zero or the minimum value of the spectrum? See [R/MetaboDecon1D.R#1781](R/MetaboDecon1D.R#1781)
-
-```R
-# Remove negative values of spectrum by Saving the absolut values
-for(i in 1:length(spectrum_y)){
-   spectrum_y[i] <- abs(spectrum_y[i])
-}
-```
-
-2024/06/28: Because it shouldn't matter, as they should be filtered out anyways by the algorithm.
-
-## CHECK-7: Peak selection procedure
-
-Currently the [peak selection procedure]((R/MetaboDecon1D.R#1825))
-
-1. Requires two loops in R, which is low
-2. Iterates from 1:(m-2) instead of 2:(m-1), which is wrong and might cause the miss of one peak if it's at the very end of the spectrum (which is almost certainly in the signal free region so it's not too bad).
-
-We should use vectorized operations and correct indexing to fix this.
-
-```R
-# Peak selection procedure
-
-# Calculate second derivative of spectrum
-second_derivative <- matrix(nrow = 2, ncol = length(spectrum_x)-2)
-for(i in 2:length(spectrum_x)-1){
-   second_derivative[1,i-1] <- spectrum_x[i]
-   second_derivative[2,i-1] <- spectrum_y[i-1] + spectrum_y[i+1] -2*spectrum_y[i]
-}
-
-# Find all local minima of second derivative
-peaks_x <- c()
-peaks_index <- c()
-second_derivative_border <- ncol(second_derivative)-1
-for(i in 2:second_derivative_border){
-   if(second_derivative[2,i] < 0){
-   if((second_derivative[2,i] <= second_derivative[2,i-1]) & (second_derivative[2,i] < second_derivative[2,i+1])){
-      #if(((spectrum_y[i+1] >= spectrum_y[i]) & (spectrum_y[i+1] > spectrum_y[i+2])) | ((spectrum_y[i+1] > spectrum_y[i]) & (spectrum_y[i+1] >= spectrum_y[i+2]))){
-      # Add local minima to peak list
-      peaks_x <- c(peaks_x, second_derivative[1,i])
-      peaks_index <- c(peaks_index, i)
-   }
-   }
-}
-```
-
-Implemented in function [select_peaks_v2](R/generate_lorentz_curves.R#1325).
-
-## CHECK-8: Fix name of samples in blood dataset
-
-It should be `Blood` not `Bood`.
-
-Fixed in branch `test-glc`
-
-## CHECK-9: Ask Wolfram about peak selection
-
-Ask Wolfram whether it's ok that the peak selection sometimes selects two peaks for one local maximum. That's ok and by intention.
 
 ## CRAN-0: Omit "Functions for" in title
 

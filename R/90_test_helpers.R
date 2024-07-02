@@ -414,7 +414,7 @@ compare_spectra <- function(new = glc_v13()$rv,
     o10 <- old$debuglist$params_approx
     o11 <- old$debuglist$params_saved # nolint: object_usage_linter.
 
-    # [1-5] spectra <- read_spectra(data_path, file_format, expno, procno, ask, sf)
+    # [1-5] spectra <- read_spectra(data_path, file_format, expno, procno, ask, sf, bwc = TRUE)
     # [6-7] spectra <- get_sfrs(spectra, sfr, ask, adjno)
     # [8-9] spectra <- get_wsrs(spectra, wshw, ask, adjno)
     # [10] spec <- rm_water_signal_v12(spec)
