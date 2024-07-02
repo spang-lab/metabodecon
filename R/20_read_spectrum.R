@@ -67,6 +67,7 @@ read_spectrum <- function(path,
                           expno = 10,
                           procno = 10,
                           bwc = FALSE) {
+    type <- match.arg(type, c("bruker", "jcampdx"))
     switch(type,
         "bruker" = read_topspin3_spectrum_glc(path, sf[1], sf[2], expno, procno),
         "jcampdx" = read_jcampdx_spectrum_glc(path, sf[1], sf[2])
@@ -188,7 +189,7 @@ read_topspin3_spectrum_glc <- function(path = file.path(download_example_dataset
                                        expno = 10,
                                        procno = 10) {
     X <- read_topspin3_spectrum(path, expno, procno, raw = TRUE, silent = TRUE, force = FALSE)
-    format_spectrum_for_glc(X, sfx, sfy)
+    as_glc_spectrum(X, sfx, sfy)
 }
 
 #' @title Takes a spectrum as returned by [read_topspin3_spectrum()] and formats it so that it can be used as input for [generate_lorentz_curves()].
