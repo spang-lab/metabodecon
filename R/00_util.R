@@ -264,10 +264,11 @@ is_int_str <- function(x) {
 is_float_str <- function(x) {
     grepl(
         paste0(
-            "^\\s*[+-]?",
+            "^\\s*[+-]?", # Optional leading spaces and sign at start of string
             "(\\d+\\.\\d*([eE][+-]?\\d+)?", # 1.e-3,  1.0e-3, 1.0e+3
             "|\\.\\d+([eE][+-]?\\d+)?",     # .1e-2, .1.0e-2,  .1e+4
-            "|\\d+([eE][+-]?\\d+))"         # 1e-3,   1.0e-3,   1e+3
+            "|\\d+([eE][+-]?\\d+)",         # 1e-3,   1.0e-3,   1e+3
+            ")$" # End of string
         ),
         x, perl = TRUE
     )

@@ -9,7 +9,7 @@ test_that("read_1r_file works", {
     expect_equal(oneR$procno, 10)
     expect_match(oneR$path_1r, ".bruker.blood.blood_01.10.pdata.10.1r")
     expect_match(oneR$path_procs, ".bruker.blood.blood_01.10.pdata.10.procs")
-    expect_equal(length(oneR$procs), 124)
+    expect_equal(length(oneR$procs), 125)
     expect_equal(oneR$byteordp, 0)
     expect_equal(oneR$dtypp, 0)
     expect_equal(oneR$endian, "little")

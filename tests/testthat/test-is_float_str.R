@@ -6,7 +6,7 @@ test_that("is_int_str works", {
 
     floats <- c(fixed_point_notation, scientific_notation)
     ints <- c("5", "-5", "1234")
-    words <- c("Hello", "world", "!", "It was nice seeing you", ".")
+    words <- c("Hello", "world", "!", "It was nice seeing you", ".", "123.0 alles ist vorbei")
 
     expect_true(all(is_float_str(floats) == TRUE))
     expect_true(all(is_float_str(ints) == FALSE))

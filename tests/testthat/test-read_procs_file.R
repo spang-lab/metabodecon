@@ -3,7 +3,7 @@ library(testthat)
 test_that("read_procs_file works", {
     spldir <- pkg_file("example_datasets/bruker/blood/blood_01")
     procs <- read_procs_file(spldir)
-    expect_equal(length(procs), 124)
+    expect_equal(length(procs), 125)
     expect_equal(procs$TITLE, "Parameter file, TOPSPIN\t\tVersion 3.1")
     expect_equal(procs$JCAMPDX, 5)
     expect_equal(procs$BYTORDP, 0)

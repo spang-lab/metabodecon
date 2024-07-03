@@ -1,34 +1,26 @@
-expected_str_urine_1 <- c( # for str(x$rv, digits.d=12, vec.len=1)
-    "List of 13",
-    " $ y_raw    : int [1:131072] 1265 1003 ...",
-    " $ y_scaled : num [1:131072] 0.001265 0.001003 ...",
-    " $ n        : int 131072",
-    " $ sfx      : num 1000",
-    " $ sfy      : num 1e+06",
-    " $ dp       : num [1:131072] 131071 131070 ...",
-    " $ sdp      : num [1:131072] 131.071 131.07 ...",
-    " $ ppm      : num [1:131072] 14.80254 ...",
-    " $ ppm_min  : num -5.2210744339",
-    " $ ppm_max  : num 14.80254",
-    " $ ppm_range: num 20.0236144339",
-    " $ ppm_step : num 0.000152769219994",
-    " $ ppm_nstep: num 0.000152768054458"
-)
+library(testthat)
 
-test_that("read_spectrum works for bruker/urine_1", {
-    x <- evalwith(testdir = "read_spectrum_urine1", inputs = "bruker/urine/urine_1", expr = read_spectrum("urine_1", bwc = TRUE))
-    y <- MD1D()
-    expect_equal(x$rv$y_raw, y$rv$debuglist$data_read$spectrum_y_raw)
-    expect_equal(x$rv$y_scaled, y$rv$debuglist$data_read$spectrum_y)
-    expect_identical(str2(x$rv, digits.d = 12, vec.len = 1), expected_str_urine_1)
+test_that("read_spectrum works for bruker spectra", {
+    urine <- pkg_file("example_datasets/bruker/urine")
+    urine_1 <- file.path(urine, "urine_1")
+    urine_2 <- file.path(urine, "urine_2")
+    X1 <- read_spectrum(urine_1)
+    X2 <- read_spectrum(urine_2)
+    XX1 <- read_spectra(urine_1)
+    XX <- read_spectra(urine)
+    expect_equal(X1, XX$urine_1)
+    expect_equal(X2, XX$urine_2)
+    expect_equal(XX1$urine_1, XX$urine_1)
+    expect_equal(X1[1, ], structure(list(si = 316.25, cs = 14.80254, fq = 600243921.683815), row.names = 1L, class = "data.frame"))
+    expect_equal(X1[131072, ], structure(list(si = 269.5, cs = -5.2210744338963, fq = 600255940.914584), row.names = 131072L, class = "data.frame"))
 })
 
 skip_if_slow_tests_disabled()
 
-test_that("read_spectrum works for jcampdx/urine_1.dx", {
-    x <- evalwith(testdir = "read_spectrum_urine1dx", inputs = "jcampdx/urine/urine_1.dx", expr = read_spectrum("urine_1.dx", type = "jcampdx", bwc = TRUE))
-    y <- MD1D(dp = "urine_1.dx", ff = "jcampdx")
-    expect_equal(x$rv$y_raw, y$rv$debuglist$data_read$spectrum_y_raw)
-    expect_equal(x$rv$y_scaled, y$rv$debuglist$data_read$spectrum_y)
-    expect_identical(str2(x$rv, digits.d = 12, vec.len = 1), expected_str_urine_1)
+test_that("read_spectrum works for jcampdx spectra", {
+    urine_1 <- pkg_file("example_datasets/bruker/urine/urine_1")
+    urine_1_dx <- pkg_file("example_datasets/jcampdx/urine/urine_1.dx")
+    X1 <- read_spectrum(urine_1)
+    X1_dx <- read_spectrum(urine_1_dx, file_format = "jcampdx")
+    expect_equal(X1, X1_dx)
 })
