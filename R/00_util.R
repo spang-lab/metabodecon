@@ -352,7 +352,7 @@ ppm_to_hz <- function(ppm, hz_ref) {
 #' \donttest{
 #' xp <- download_example_datasets()
 #' dp <- file.path(xp, "bruker/urine/urine_1")
-#' x <- generate_lorentz_curves(dp, ask = FALSE, nfit = 3, ncores = 1)
+#' x <- generate_lorentz_curves(dp, ask = FALSE, nfit = 3, nworkers = 1)
 #' dspec <- x$urine_1
 #' lambda_hz <- calc_signal_width_in_hz(dspec, sw_hz = 800)
 #' }
@@ -366,4 +366,32 @@ calc_signal_width_in_hz <- function(dspec, sw_hz) {
     hzni <- sw_hz / nr_dp # hz n-interval (too small, because we divide by number of points instead of number of intervals)
     hzi <- sw_hz / nr_dpi # hz interval
     lambda_hz <- abs(hzni * w_dp)
+}
+
+#' @noRd
+#' @title Calculate Magnetic Field Strength
+#' @description Calculates the magnetic field strength based on the measured frequencies and chemical shifts of a spectrum as well as the gyromagnetic ratio for protons. For this to work, the following is assumed:
+#' 1. The spectrum is a 1H spectrum
+#' 2. The chemical shift of the reference is at 0.0 ppm
+#' 3. The resonance frequency of the reference equals the resonance frequency of protons
+#' @param X A data frame containing the spectrum data with at least two columns: `cs` for chemical shifts and `fq` for frequencies.
+#' @return The magnetic field strength in Tesla.
+#' @examples
+#' X = read_spectrum(pkg_file("example_datasets/bruker/urine/urine_1"))
+#' calc_B(X)
+calc_B <- function(X = read_spectrum()) {
+    # max_cs                       ref_cs       min_cs
+    # 14.8                         0.0          -5.2
+    # |----------------------------|------------|
+    # min_fq                       ref_fq       max_fq
+    # 600.243 922                  600.252 807  600.255 941
+    cs_maxmin <- max(X$cs) - min(X$cs)
+    cs_refmin <- 0.0000000 - min(X$cs)
+    ratio <- cs_refmin / cs_maxmin
+    fq_maxmin <- max(X$fq) - min(X$fq)
+    fq_refmax <- ratio * fq_maxmin
+    fq_ref <- max(X$fq) - fq_refmax # Frequency of the reference (which is equal the frequency of a proton)
+    gamma <- 2.675e8 # Gyromagnetic ratio for protons
+    B <- (2 * pi * fq_ref) / gamma
+    B
 }

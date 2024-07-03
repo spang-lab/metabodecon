@@ -16,7 +16,7 @@
 #' @param sf Vector with two entries consisting of the factor to scale the x-axis and the factor to scale the y-axis.
 #' @param ask  Whether to ask for user input during the deconvolution process. If set to FALSE, the provided default values will be used.
 #' @param debug Whether to return additional intermediate results for debugging purposes.
-#' @param ncores Number of cores to use for parallel processing. If set to `"auto"`, the number of cores will be determined automatically. If set to a number greater than 1, the number of cores will be limited to the number of spectra or 1 if the operating system is Windows.
+#' @param nworkers Number of workers to use for parallel processing. If set to `"auto"`, the number of workers will be determined automatically. If set to a number greater than 1, the number of workers will be limited to the number of spectra or 1 if the operating system is Windows.
 #' @return A list of deconvoluted spectra. Each list element contains a list with the following elements:
 #' * `number_of_files`: Number of deconvoluted spectra.
 #' * `filename`: Name of the analyzed spectrum.
@@ -46,7 +46,7 @@
 #' decons <- generate_lorentz_curves(path_urine, ask = FALSE, nfit = 1)
 #' decon_urine_1 <- generate_lorentz_curves(path_urine_1, ask = FALSE)[[1]]
 #' }
-generate_lorentz_curves <- function(data_path = file.path(download_example_datasets(), "bruker/urine"),
+generate_lorentz_curves <- function(data_path = pkg_file("example_datasets/bruker/urine"),
                                     file_format = "bruker",
                                     make_rds = FALSE,
                                     expno = 10,
@@ -59,10 +59,10 @@ generate_lorentz_curves <- function(data_path = file.path(download_example_datas
                                     sf = c(1000, 1000000),
                                     ask = TRUE,
                                     debug = FALSE,
-                                    ncores = "auto") {
+                                    nworkers = "auto") {
 
     # Read spectra and ask user for parameters
-    spectra_ds <- read_spectra(data_path, file_format, expno, procno, ask, sf, raw = TRUE)
+    spectra_ds <- read_spectra(data_path, file_format, expno, procno, raw = TRUE)
     spectra <- lapply(spectra_ds, convert_spectrum, sfx = sf[1], sfy = sf[2])
     adjno <- get_adjno(spectra, sfr, wshw, ask)
     spectra <- get_sfrs(spectra, sfr, ask, adjno)
@@ -72,16 +72,16 @@ generate_lorentz_curves <- function(data_path = file.path(download_example_datas
     n <- length(spectra)
     nams <- names(spectra)
     os <- Sys.info()["sysname"]
-    if (ncores == "auto") {
-        ncores <- min(ceiling(parallel::detectCores() / 2), length(spectra), if (os == "Windows") 1 else Inf)
-    } else if (ncores > 1 && os == "Windows") {
-        warning("Multiprocessing is not supported on Windows. Only 1 core will be used instead of ", ncores, immediate. = TRUE)
-        ncores <- 1
+    if (nworkers == "auto") {
+        nworkers <- min(ceiling(parallel::detectCores() / 2), length(spectra), if (os == "Windows") 1 else Inf)
+    } else if (nworkers > 1 && os == "Windows") {
+        warning("Multiprocessing is not supported on Windows. Only 1 worker will be used instead of ", nworkers, immediate. = TRUE)
+        nworkers <- 1
     }
-    cat3("Starting deconvolution of", n, "spectra with", ncores, if (ncores > 1) "cores" else "core")
+    cat3("Starting deconvolution of", n, "spectra with", nworkers, if (nworkers > 1) "workers" else "worker")
     starttime <- Sys.time()
-    spectra <- parallel::mclapply(seq_len(n), mc.cores = ncores, function(i) {
-        if (ncores > 1) {
+    spectra <- parallel::mclapply(seq_len(n), mc.cores = nworkers, function(i) {
+        if (nworkers > 1) {
             opts <- options(metabodecon.cat3_prefix = sprintf("CORE %d ", i))
             on.exit(options(opts), add = TRUE)
         }
@@ -209,11 +209,11 @@ smooth_signals_v12 <- function(spec, reps = 2, k = 5) {
 }
 
 filter_peaks_v13 <- function(ppm, # x values in ppm
-                                         pc, # peak center indices
-                                         ps, # peak scores
-                                         sfrl, # signal free region left in ppm
-                                         sfrr, # signal free region right in ppm
-                                         delta = 6.4) { # threshold parameter to distinguish between "real" peaks from noise
+                             pc, # peak center indices
+                             ps, # peak scores
+                             sfrl, # signal free region left in ppm
+                             sfrr, # signal free region right in ppm
+                             delta = 6.4) { # threshold parameter to distinguish between "real" peaks from noise
     if (any(is.na(ps))) stop("Peak scores must never be NA")
     cat3("Removing peaks with low scores")
     in_sfr <- which(ppm[pc] >= ppm || ppm[pc] <= ppm)
@@ -259,7 +259,8 @@ add_return_list_v13 <- function(spec = glc_v13(), n = 1, nam = "urine_1", debug 
         range_water_signal_ppm = spec$wsr$hwidth_ppm,
         A = spec$lcr$A,
         lambda = spec$lcr$lambda,
-        x_0 = spec$lcr$w
+        x_0 = spec$lcr$w,
+        x_values_hz = spec$hz
     )
     spec
 }
@@ -305,7 +306,7 @@ generate_lorentz_curves_v12 <- function(data_path = file.path(download_example_d
                                         sf = c(1000, 1000000),
                                         ask = TRUE,
                                         debug = FALSE,
-                                        ncores = 2) {
+                                        nworkers = 2) {
 
     # Read spectra and ask user for parameters
     spectra_ds <- read_spectra(data_path, file_format, expno, procno, ask, sf, raw = TRUE)

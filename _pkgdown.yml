@@ -11,6 +11,7 @@ articles:
       - Alignment_Details
       - FAQ
       - MetaboDecon1D
+      - Datasets
 reference:
 - title: Public API
   desc: Metabodecon's Public User Interface

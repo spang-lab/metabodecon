@@ -1,0 +1,94 @@
+---
+title: "Datasets"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Datasets}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+# Blood
+
+TODO
+
+# Urine
+
+TODO
+
+# Latin Square
+
+TODO
+
+# Simulated Datasets
+
+There are scenarios, where it is useful to work with simulated datasets, instead of real data, e.g.
+
+- When you need to know the underlying distribution of the data, to be able to check whether a function works as expected
+- To speed up testcases and/or examples, where a few datapoints are sufficient to test/showcase a function
+
+For such cases, `metabodecon` comes with a set of simulated datasets, which where generated as follows:
+
+1. Download example blood datasets
+2. Deconvolute these spectra using the `generate_lorentz_curves` function with default parameters
+3. Extract peak parameters (x0, lambda, A) for all peaks found between 3.55 and 3.45 ppm
+4. Generate a new dataset for each deconvoluted spectrum ranging from 3.6 to 3.4 ppm by using the extracted peak parameters as ground truth and calculating the signal intensity as superposition of Lorentzian functions. The resolution of the simulated spectra, i.e. the number of datapoints per ppm, is kept constant. [^1]
+5. Add noise to the simulated spectra
+
+[^1] Given, that all blood spectra have 131072 datapoints over a range of approx. 20 ppm (14.8 ppm to -5.2), we get approx. 1310 datapoints per 0.2 ppm interval (3.6 - 3.4 ppm). Sidenote: for the blood spectra the 14.8 to -5.2 ppm range corresponds to a 600.244 MHz to 600.256 MHz range and a magnetic field strength of 14.1 T, i.e., the 3.6 to 3.4 ppm range corresponds to a 600.250660 MHz to 600.250780 MHz range.
+
+The 16 simuated spectra are plotted in [Figure 1: Simulated Datasets](). For further details about the simulation process, see the source code of function `simulate_spectra()`.
+
+```R
+simulate_spectra <- function(src = pkg_file("example_datasets/bruker/blood")) {
+    xds <- download_example_datasets()
+    blood <- file.path(xds, "bruker/blood")
+    cachefile <- file.path(cachedir(), "deconvs.rds")
+    if (file.exists(cachefile)) {
+        deconvs <- readRDS(cachefile)
+    } else {
+        deconvs <- generate_lorentz_curves(blood, ask = FALSE)
+        saveRDS(deconvs, file = file.path(cachedir(), "deconvs.rds"))
+    }
+    for (deconv in deconvs) {
+        simulate_spectrum(deconv)
+    }
+}
+
+```
+
+The simulation was based on the following observations:
+
+1.  Typical spectra have 131072 datapoints ranging from approx. 14.8 ppm to -5.2 ppm, which corresponds to a frequency range from approx. 600.244 MHz to 600.256 MHz, assuming a magnetic field strength of 14.1 T. This can be seen by running the following code:
+
+    ```{R}
+    XX <- read_spectra(pkg_file("example_datasets/bruker/blood"))
+    df <- data.frame(
+        n = sapply(XX, nrow),
+        cs_max = sapply(XX, function(X) round(max(X$cs), 1)),
+        cs_min = sapply(XX, function(X) round(min(X$cs), 1)),
+        fq_max = sapply(XX, function(X) round(max(X$fq) / 1e6, 3)),
+        fq_min = sapply(XX, function(X) round(min(X$fq) / 1e6, 3)),
+        B = sapply(XX, function(X) round(calc_B(X), 1))
+    )
+    df
+    ```
+
+    That means we have approx. 655 datapoints per 0.1ppm interval.
+
+2. When plotting the number of peaks for every 0.1 ppm interval as well as the corresponding peaks areas and half widths, we can see that the we have approx. 10-20 peaks in dense regions like the 3.4 - 3.5 ppm interval or the 1.0 - 1.1 ppm interval. The area and half widths of these peaks ranges from 0.1 to 0.5 and 0.1 to 0.5, respectively.
+
+    ```{R}
+    XX <- read_spectra(pkg_file("example_datasets/bruker/blood"))
+    df <- data.frame(
+        n = sapply(XX, nrow),
+        cs_max = sapply(XX, function(X) round(max(X$cs), 1)),
+        cs_min = sapply(XX, function(X) round(min(X$cs), 1)),
+        fq_max = sapply(XX, function(X) round(max(X$fq) / 1e6, 3)),
+        fq_min = sapply(XX, function(X) round(min(X$fq) / 1e6, 3)),
+        B = sapply(XX, function(X) round(calc_B(X), 1))
+    )
+    df
+    ```
+
+    That means we have approx. 655 datapoints per 0.1ppm interval.
+3. That means we have approx. 655 datapoints per 0.1ppm. When looking at the number of peaks per 0.1 ppm

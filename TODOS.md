@@ -56,18 +56,13 @@
 
 # Todos
 
-## FEATURE-9 Implement and export read_spectra
-
-Implement and export `read_spectra` and `read_spectrum` in a way that
-
-1. DTYPP is interpreted correctly (see [CHECK-1](#check-1-use-of-dtypp-in-load_spectrum)) and
-2. The spectrum width (SW) in Hz as well as the Magnetic Field Strength is returned (see [FEATURE-6](#feature-6-return-lambda-in-hertz)).
-
-This function can then be used to read spectra if a character string is provided as argument to `deconvolute_spectra()` or `generate_lorentz_curves` (see [FEATURE-11](#feature-11-accept-dataframes-in-glc)).
-
 ## FEATURE-14: Provide simulated datasets from blood spectra
 
 Provide simulated datasets from blood spectra
+
+## FEATURE-15: Add lifecycle badges
+
+Add lifecycle badges to all exported functions. Functions which are exported but should not be used should be marked as "experimental" or (if possible) as "internal" (idea: check where other badges are stored and whether they can be modified).
 
 ## FEATURE-6: Return lambda in hertz
 
@@ -500,6 +495,17 @@ For the "??"" values I haven't yet checked how they're calculated, so I cannot r
    - ...
 
 2024/06/28: Closed without implementation, as we will keep the return value of `generate_lorentz_curves` backwards compatible with `MetabDecon1D` and instead fix it in `deconvolute_spectra`.
+
+## FEATURE-9 Implement and export read_spectra
+
+Implement and export `read_spectra` and `read_spectrum` in a way that
+
+1. DTYPP is interpreted correctly (see [CHECK-1](#check-1-use-of-dtypp-in-load_spectrum)) and
+2. The spectrum width (SW) in Hz as well as the Magnetic Field Strength is returned (see [FEATURE-6](#feature-6-return-lambda-in-hertz)).
+
+This function can then be used to read spectra if a character string is provided as argument to `deconvolute_spectra()` or `generate_lorentz_curves` (see [FEATURE-11](#feature-11-accept-dataframes-in-glc)).
+
+2024/07/03: done in branch `v1.2.0` with commit `e3c35dce9965cf9a3a44383be818a8f5ab1b0c6e`. Note: the Magnetic Field Strength is not returned directly, but can be calculated via function `calc_B()`.
 
 ## REFACTOR-1: Combine load_xxx_spectrum functions
 

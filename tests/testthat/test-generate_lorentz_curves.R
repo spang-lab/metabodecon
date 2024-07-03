@@ -21,11 +21,11 @@ test_that("GLC v13 works for n bruker", {
 })
 
 test_that("GLC v13 works for 16 bruker blood samples", {
-    x1 <- glc_v13(dp = "blood", nfit = 10, cache = FALSE, ncores = 1) # 56s on R4
-    x2 <- glc_v13(dp = "blood", nfit = 10, cache = FALSE, ncores = 2) # 40s on R4
-    x4 <- glc_v13(dp = "blood", nfit = 10, cache = FALSE, ncores = 4) # 28s on R4
-    x8 <- glc_v13(dp = "blood", nfit = 10, cache = FALSE, ncores = 8) # 18s on R4
-    x16 <- glc_v13(dp = "blood", nfit = 10, cache = FALSE, ncores = 16) # 15s on R4
+    x1 <- glc_v13(dp = "blood", nfit = 10, cache = FALSE, nworkers = 1) # 56s on R4
+    x2 <- glc_v13(dp = "blood", nfit = 10, cache = FALSE, nworkers = 2) # 40s on R4
+    x4 <- glc_v13(dp = "blood", nfit = 10, cache = FALSE, nworkers = 4) # 28s on R4
+    x8 <- glc_v13(dp = "blood", nfit = 10, cache = FALSE, nworkers = 8) # 18s on R4
+    x16 <- glc_v13(dp = "blood", nfit = 10, cache = FALSE, nworkers = 16) # 15s on R4
     xa <- glc_v13(dp = "blood", nfit = 10, cache = FALSE)
     y <- MD1D(dp = "blood", nfit = 10) # 490s on R4
     r <- lapply(1:16, function(i) compare_spectra_v13(new = xa$rv[[i]], old = y$rv[[i]], silent = TRUE))

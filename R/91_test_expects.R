@@ -166,7 +166,7 @@ cache_glc_results <- function(overwrite = FALSE) cache_func_results("glc", overw
 
 cache_MD1D_results <- function(overwrite = FALSE) cache_func_results("MD1D", overwrite = FALSE)
 
-glc_v13 <- function(dp = "urine_1", ff = "bruker", nfit = 3, simple = TRUE, overwrite = FALSE, cout = TRUE, cplot = TRUE, cache = TRUE, debug = TRUE, ncores = "auto") {
+glc_v13 <- function(dp = "urine_1", ff = "bruker", nfit = 3, simple = TRUE, overwrite = FALSE, cout = TRUE, cplot = TRUE, cache = TRUE, debug = TRUE, nworkers = "auto") {
     tid <- get_tid("glc_v13", dp, ff, nfit, simple)
     if (dp %in% c("urine", "blood")) {
         answers <- c(SameParam = "y", AdjNo = "1", SFRok = "y", WSok = "y")
@@ -184,7 +184,7 @@ glc_v13 <- function(dp = "urine_1", ff = "bruker", nfit = 3, simple = TRUE, over
         plot = if (cplot) "plots.pdf" else NULL,
         output = if (cout) "captured" else NULL,
         message = if (cout) "captured" else NULL,
-        expr = generate_lorentz_curves(data_path = dp, file_format = ff, nfit = nfit, debug = debug, ncores = ncores)
+        expr = generate_lorentz_curves(data_path = dp, file_format = ff, nfit = nfit, debug = debug, nworkers = nworkers)
     ))
 }
 

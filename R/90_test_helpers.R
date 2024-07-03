@@ -203,30 +203,79 @@ get_datadir_mock <- function(type = "temp", state = "default") {
 
 # simulate #####
 
-quote({
-    p <- pkg_file("bruker/blood/blood_01")
-    d <- generate_lorentz_curves(p, ask = FALSE)[[1]]
-    idx <- d$x_values_ppm < 3.7 & d$x_values_ppm > 3.5
-    x <- d$x_values_ppm[idx]
-    y <- d$y_values[idx]
-    plot(x, y, type = "l", xlim = c(max(x), min(x)))
-    A <- d$A; lambda <- d$lambda; x0 <- d$x0
-})
+#' @noRd
+#' @title Simulate a spectrum based on a deconvolution result
+#' @description Simulates a spectrum based on the parameters of a deconvolution result. The simulated spectrum is a superposition of Lorentzian functions.
+#' @param deconv A list containing the deconvolution result, as returned by [generate_lorentz_curves()].
+#' @param show Logical indicating whether to display the simulated spectrum.
+#' @param pdfpath Path to save the simulated spectrum as a PDF file.
+#' @param pngpath Path to save the simulated spectrum as a PNG file.
+#' @param rdspath Path to save the simulated spectrum as an RDS file.
+#' @return A list containing the simulated spectrum and the parameters used for simulation.
+#' @examples
+#' example_datasets <- download_example_datasets()
+#' blood_01 <- file.path(example_datasets, "bruker/blood/blood_01")
+#' deconv <- generate_lorentz_curves(blood_01, ask = FALSE)[[1]]
+#' simulate_spectrum(deconv)
+simulate_spectrum <- function(deconv,
+                              show = TRUE,
+                              pdfpath = NULL,
+                              pngpath = NULL,
+                              rdspath = NULL) {
+    # Extract parameters calculated using scaled datapoint numbers
+    S <- data.frame(A = - deconv$A, w = deconv$x_0, l = - deconv$lambda)
 
-simulate_spectrum <- function(A,
-                              lambda,
-                              x0,
-                              lb,
-                              rb,
-                              n = 1024,
-                              noise = 0.01,
-                              seed = 42,
-                              globshift = function(i) 0,
-                              peakshift = function(i) 0) {
-    x <- seq(lb, rb, length.out = n)
-    y <- A / (1 + ((x - x0) / lambda)^2)
-    y <- y + rnorm(n, 0, noise)
-    list(x = x, y = y)
+    # Convert parameters to ppm
+    sdp_wid <- diff(range(deconv$x_values))
+    ppm_wid <- diff(range(deconv$x_values_ppm))
+    ppm_min <- min(deconv$x_values_ppm)
+    M <- (S / sdp_wid) * ppm_wid
+    M$w <- M$w + ppm_min # sdp starts at 0, but ppm at ppm_min, so we need to shift
+
+    # Throw away peaks outside of the 3.45 to 3.55 ppm range
+    ix <- which(M$w >= 3.45 & M$w <= 3.55)
+    P <- M[ix, ]; rownames(P) <- NULL
+
+    # Calculate simulated signal intensities as superposition of Lorentzian functions
+    p <- deconv$x_values_ppm
+    i <- which(p >= 3.40 & p <= 3.60)
+    X <- data.frame(si = deconv$y_values[i], cs = p[i], fq = deconv$x_values_hz[i])
+    X$ssi <- sapply(X$cs, function(csi) sum(abs(P$A * (P$l / (P$l^2 + (csi - P$w)^2))))) # simulate signal intensity
+
+    # Plot simulated spectrum
+    ticks <- seq(from = min(X$cs), to = max(X$cs), length.out = 5)
+    labels <- round(seq(from = min(X$fq), to = max(X$fq), length.out = 5))
+    title_text <- sprintf("Sim_01 (based on %s)", deconv$filename)
+    bracket_text <- "[3.6 - 3.4 ppm]"
+    main <- gsub("blood", "sim", deconv$filename)
+    sub <- sprintf("based on: %s (3.6 - 3.4 ppm)", deconv$filename)
+    plot_spectrum <- function() {
+        plot(x = X$cs, y = X$si, type = "l", xlab = "Chemical Shift [PPM]", ylab = "Signal Intensity [AU]", xlim = c(3.6, 3.4))
+        lines(x = X$cs, y = X$ssi, col = "red")
+        legend("topleft", lty = 1,legend = c("Original", "Simulated"),col = c("black", "red"))
+        axis(3, at = ticks, labels = labels, cex.axis = 0.75)
+        mtext(sprintf("Frequency [Hz]"), side = 3, line = 2)
+        mtext(main, side = 3, line = - 3, col = "red", cex = 2)
+        mtext(sub, side = 3, line = - 4.5, col = "red", cex = 1)
+    }
+    if (show) plot_spectrum()
+
+    # Store simulated spectrum as pdf, png and/or rds
+    colnames(P) <- c("A", "x_0", "lambda")
+    if (!is.null(pdfpath)) {
+        pdf(file = pdfpath)
+        tryCatch(plot_spectrum(), finally = dev.off())
+    }
+    if (!is.null(pngpath)) {
+        png(file = pngpath)
+        tryCatch(plot_spectrum(), finally = dev.off())
+    }
+    if (!is.null(rdspath)) {
+        saveRDS(X, file = rdspath)
+    }
+
+    # Return simulated spectrum
+    list(X = X, P = P)
 }
 
 # testing #####

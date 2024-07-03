@@ -35,7 +35,7 @@
 #' X1_dx <- read_spectrum(urine_1_dx, file_format = "jcampdx")
 #' stopifnot(all.equal(X1, X1_dx))
 #' }
-read_spectrum <- function(path,
+read_spectrum <- function(path = pkg_file("example_datasets/bruker/urine/urine_1"),
                           file_format = "bruker",
                           expno = 10,
                           procno = 10,
@@ -55,7 +55,9 @@ read_spectra <- function(data_path = pkg_file("example_datasets/bruker/urine"),
                          file_format = "bruker",
                          expno = 10,
                          procno = 10,
-                         raw = FALSE) {
+                         raw = FALSE,
+                         silent = TRUE,
+                         force = FALSE) {
     if (!file_format %in% c("bruker", "jcampdx")) {
         stop("Argument `file_format` should be either 'bruker' or 'jcampdx'")
     }
@@ -83,7 +85,7 @@ read_spectra <- function(data_path = pkg_file("example_datasets/bruker/urine"),
         stop("No spectra found in directory", data_path)
     }
     spectra <- lapply(paths, function(path) {
-        cat3("Reading spectrum", path)
+        if (!silent) cat3("Reading spectrum", path)
         read_spectrum(path, file_format, expno, procno, raw, silent, force)
     })
     names(spectra) <- files
@@ -232,13 +234,13 @@ convert_spectrum <- function(X, sfx, sfy) {
     # ==> ppm_step == 1.2
     # ==> ppm_nstep ~= 1.06 (not really useful, but we need it for backwards compatibility with MetaboDecon1D results)
     ppm <- X$cs # Parts per million
-    fq <- X$fq # Frequency in Hz
+    hz <- X$fq # Frequency in Hz
     dp <- seq(n - 1, 0, -1) # Data point numbers
     sdp <- seq((n - 1) / sfx, 0, -1 / sfx) # Scaled data point numbers. (Same as `dp / sfx`, but with slight numeric differences, so we stick with the old calculation method for backwards compatibility)
     named(
         y_raw, y_scaled, # y-axis
         n, sfx, sfy, # misc
-        dp, sdp, ppm, fq,# x-axis
+        dp, sdp, ppm, hz,# x-axis
         ppm_min, ppm_max, ppm_range, ppm_step, ppm_nstep # additional ppm info
     )
 }
