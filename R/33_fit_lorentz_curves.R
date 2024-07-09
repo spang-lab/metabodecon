@@ -1,10 +1,10 @@
 # Private Main #####
 
 fit_lorentz_curves <- function(spec, nfit = 3) {
-    cat3("Initializing Lorentz curves")
+    logf("Initializing Lorentz curves")
     spec$lci <- lc <- init_lc_v14(spec)
     spec$lca <- vector("list", length = nfit)
-    cat3("Refining Lorentz Curves")
+    logf("Refining Lorentz Curves")
     for (i in 1:nfit) {
         spec$lca[[i]] <- lc <- refine_lc_v14(spec, lc$Z)
     }
@@ -54,7 +54,7 @@ init_lc_v14 <- function(spec) {
 
     # Print MSE
     mse <- mean((y[lmr] - rowSums(Z))^2)
-    cat3(sprintf("MSE at peak tiplet positions: %.22f", mse))
+    logf("MSE at peak tiplet positions: %.22f", mse)
 
     # Create return list
     P <- data.frame(il, ic, ir, rl, rc, rr, xl, xc, xr, yl, yc, yr, as, ds)
@@ -136,7 +136,7 @@ refine_lc_v14 <- function(spec, Z) {
 
     # Print MSE
     mse <- mean((y[lmr] - rowSums(Z))^2)
-    cat3(sprintf("MSE at peak tiplet positions: %.22f", mse))
+    logf("MSE at peak tiplet positions: %.22f", mse)
 
     # Create return list
     P <- data.frame(il, ic, ir, rl, rc, rr, xl, xc, xr, yl, yc, yr, sl, sc, sr, ql, qc, qr)
@@ -258,7 +258,7 @@ init_lorentz_curves_v10 <- function(spectrum_x, spectrum_y, filtered_peaks, filt
 }
 
 init_lorentz_curves_v12 <- function(spec) {
-    cat3("Initializing Lorentz curves")
+    logf("Initializing Lorentz curves")
     w_1 <- c()
     w_2 <- c()
     w_3 <- c()
@@ -419,7 +419,7 @@ init_lorentz_curves_v13 <- function(x, y, pc, pl, pr) {
 
 #' @noRd
 refine_lorentz_curves_v12 <- function(spec, nfit) {
-    cat3("Refining Lorentz curves")
+    logf("Refining Lorentz curves")
 
     spectrum_x <- spec$sdp
     spectrum_y <- spec$y_smooth
@@ -574,7 +574,7 @@ refine_lorentz_curves_v12 <- function(spec, nfit) {
             difference_normed[i] <- (spectrum_y_normed[i] - spectrum_approx_normed[i])^2
         }
         mse_normed <- (1 / length(difference_normed)) * sum(difference_normed)
-        cat3(sprintf("Normed MSE after iteration %d: %.22f", b, mse_normed))
+        logf("Normed MSE after iteration %d: %.22f", b, mse_normed)
     }
 
     # Calculate the integrals for each lorentz curve

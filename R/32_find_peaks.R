@@ -1,7 +1,7 @@
 # Private Main #####
 
 find_peaks_v12 <- function(spec) {
-    cat3("Starting peak selection")
+    logf("Starting peak selection")
     d <- spec$d <- calc_second_derivative_v12(y = spec$y_smooth)
     a <- abs(d)
     m <- length(d)
@@ -15,7 +15,7 @@ find_peaks_v12 <- function(spec) {
         r <- spec$peak$right[i] <- get_right_border_v12(j, d, m)
         spec$peak$score[i] <- get_peak_score_v12(j, l, r, a)
     }
-    cat3("Detected", length(center), "peaks")
+    logf("Detected %d peaks", length(center))
     return(spec)
 }
 

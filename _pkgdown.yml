@@ -19,6 +19,12 @@ reference:
   - generate_lorentz_curves
   - download_example_datasets
   - datadir
+- title: Utility Functions
+  desc: Small utility functions, e.g. for converting between units, reading files measuring distances etc.
+  contents:
+  - width
+  - convert_width
+  - convert_ppm
 - title: Plotting Functions
   desc: Functions to plot the results of the deconvolution
   contents:

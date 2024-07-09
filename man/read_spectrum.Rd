@@ -6,7 +6,7 @@
 \title{Read one or more Spectra}
 \usage{
 read_spectrum(
-  path,
+  path = pkg_file("example_datasets/bruker/urine/urine_1"),
   file_format = "bruker",
   expno = 10,
   procno = 10,
@@ -20,7 +20,9 @@ read_spectra(
   file_format = "bruker",
   expno = 10,
   procno = 10,
-  raw = FALSE
+  raw = FALSE,
+  silent = TRUE,
+  force = FALSE
 )
 }
 \arguments{

@@ -302,70 +302,68 @@ all_identical <- function(x) {
 
 # Convert #####
 
-#' @noRd
-#' @title Convert Parts per Million (ppm) to Data Points Numbers (dpn)
-#' @description Converts parts per million (ppm) to data points numbers (dpn) for a given spectrum.
-#' @param ppm A numeric vector of parts per million (ppm) values.
-#' @param spectrum A list containing the spectrum data as returned by [load_bruker_spectrum()] or [read_spectrum()].
-#' @param bwc Use the old, slightly incorrect method for conversion to maintain backwards compatibility with MetaboDecon1D results? For details see issue `Check: ppm to dpn conversion` in TODOS.md
-ppm_to_dpn <- function(ppm, spectrum, bwc = TRUE) {
-    dpn <- if (bwc) {
-        # (ppm - spectrum$ppm_min) / spectrum$ppm_nstep + 1
-        (spectrum$n + 1) - (spectrum$ppm_max - ppm) / spectrum$ppm_nstep
-    } else {
-        (ppm - spectrum$ppm_min) / spectrum$ppm_step
-    }
-    return(dpn)
+#' @export
+#' @title Calculate the Width of a Numeric Vector
+#' @description This function calculates the width of a numeric vector by computing the difference between the maximum and minimum values in the vector.
+#' @param x A numeric vector.
+#' @return The width of the vector, calculated as the difference between its maximum and minimum values.
+#' @examples
+#' vec <- c(1, 3, 5, 7, 9)
+#' width(vec)
+width <- function(x) {
+    diff(range(x))
 }
 
-#' @noRd
-#' @title Convert Parts per Million (ppm) to Scaled Data Point Numbers (sdpn)
-#' @description Converts parts per million (ppm) to scaled data point numbers (sdpn) for a given spectrum.
-#' @inheritParams ppm_to_sdpn
-ppm_to_sdpn <- function(ppm, spectrum, bwc = TRUE, sf = 1000) {
-    dp <- ppm_to_dpn(ppm, spectrum, bwc)
-    sdp <- dp / sf
-    return(sdp)
-}
-
-#' @noRd
-#' @title Convert Data Points (dp) to Parts per Million (ppm)
-#' @description Converts data points (dp) to parts per million (ppm) for a given spectrum.
-#' @param dp A numeric vector of data point (dp) values.
-#' @param spectrum A list containing the spectrum data as returned by [load_bruker_spectrum()] or [read_spectrum()].
-dp_to_ppm <- function(dp, spectrum) {
-    ppm <- spectrum$ppm_min + dp * spectrum$ppm_step
-    return(ppm)
-}
-
-ppm_to_hz <- function(ppm, hz_ref) {
-    hz <- hz_ref - hz_ref * (ppm / 1e6)
-    return(hz)
-}
-
-#' @title Calculate Signal Width in Hz for deconvoluted NMR Spectra
-#' @description Iterates over each deconvoluted spectrum in the provided list, calculates the full signal width at half height in Hz for each signal, and updates the spectrum object with the calculated width.
-#' @param spectrum_data A list of spectrum data entries, where each entry is expected to have `x_values`, `lambda` and `peak_triplets_middle` among other properties.
-#' @param sw_hz The spectral width in Hz.
-#' @return The modified spectrum_data list where each element has an additional entry `lambda_hz`.
+#' @export
+#' @title Convert values from unit A to unit B
+#' @description Converts values from unit A to unit B using a conversion factor.
+#' @param xa A numeric vector with values in unit A.
+#' @param wa Width of a certain interval (e.g. the spectrum width) in unit A.
+#' @param wb With of the same interval in unit B.
+#' @return A numeric vector of values converted from unit A to unit B.
 #' @examples
 #' \donttest{
-#' xp <- download_example_datasets()
-#' dp <- file.path(xp, "bruker/urine/urine_1")
-#' x <- generate_lorentz_curves(dp, ask = FALSE, nfit = 3, nworkers = 1)
-#' dspec <- x$urine_1
-#' lambda_hz <- calc_signal_width_in_hz(dspec, sw_hz = 800)
+#' urine_1 <- pkg_file("example_datasets/bruker/urine/urine_1")
+#' deconv <- generate_lorentz_curves(urine_1, ask = FALSE)[[1]]
+#' sdp <- deconv$x_values
+#' sdp_width <- diff(range(sdp))
+#' ppm <- deconv$x_values_ppm
+#' ppm_width <- diff(range(ppm))
+#' lambda_sdp <- deconv$lambda
+#' lambda_ppm <- convert_width(lambda_sdp, sdp_width, ppm_width)
 #' }
-#' @noRd
-calc_signal_width_in_hz <- function(dspec, sw_hz) {
-    nr_dpi <- dspec$x_values[1] * 1000 # number of data point intervals (131071 (2^17 - 1) for "128k spectra")
-    nr_dp <- nr_dpi + 1 # number of data points
-    hw_sdp <- dspec$lambda # half width in scaled data point intervals
-    hw_dp <- hw_sdp * 1000 # half width in data point intervals
-    w_dp <- 2 * hw_dp # width in data points intervals
-    hzni <- sw_hz / nr_dp # hz n-interval (too small, because we divide by number of points instead of number of intervals)
-    hzi <- sw_hz / nr_dpi # hz interval
-    lambda_hz <- abs(hzni * w_dp)
+convert_width <- function(xa, wa, wb) {
+    xa * (wb / wa)
+}
+
+#' @export
+#' @title Convert positions from unit A to unit B
+#' @description Converts positions from unit A to unit B using a conversion factor.
+#' @param xa A numeric vector with positions in unit A.
+#' @param wa Width of a certain interval (e.g. the spectrum width) in unit A.
+#' @param wb With of the same interval in unit B.
+#' @param x0a The position of a reference point in unit A (e.g. the most right point of the spectrum).
+#' @param x0b The position of the same reference point in unit B.
+#' @return A numeric vector of positions converted from unit A to unit B.
+#' @examples
+#' \donttest{
+#' urine_1 <- pkg_file("example_datasets/bruker/urine/urine_1")
+#' deconv <- generate_lorentz_curves(urine_1, ask = FALSE)[[1]]
+#' sdp <- deconv$x_values
+#' ppm <- deconv$x_values_ppm
+#' peak9_sdp <- deconv$x_0[1]
+#' peak9_ppm <- convert_pos(peak9_sdp,
+#'     width(sdp), width(ppm),  # width of the spectrum in both units
+#'     sdp[3], ppm[3]           # position of any reference point in both units
+#' )
+#' stopifnot(all.equal(peak9_ppm, deconv$x_0_ppm[9]))
+#' }
+convert_pos <- function(xa, ya, yb) {
+    wa <- ya[2] - ya[1]
+    wb <- yb[2] - yb[1]
+    y0a <- y0a[1]
+
+    x0b + (xa - x0a) * (wb / wa)
 }
 
 #' @noRd
@@ -380,11 +378,10 @@ calc_signal_width_in_hz <- function(dspec, sw_hz) {
 #' X = read_spectrum(pkg_file("example_datasets/bruker/urine/urine_1"))
 #' calc_B(X)
 calc_B <- function(X = read_spectrum()) {
-    # max_cs                       ref_cs       min_cs
-    # 14.8                         0.0          -5.2
-    # |----------------------------|------------|
-    # min_fq                       ref_fq       max_fq
-    # 600.243 922                  600.252 807  600.255 941
+    # Example:
+    # |---------------------------|----------------------|
+    # 14.8 ppm (max)            0.0 (ref)       -5.2 (min)
+    # 600.243 MHz (min)       600.252 (ref)  600.255 (max)
     cs_maxmin <- max(X$cs) - min(X$cs)
     cs_refmin <- 0.0000000 - min(X$cs)
     ratio <- cs_refmin / cs_maxmin

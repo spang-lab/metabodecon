@@ -152,9 +152,9 @@ cachedir <- function(persistent = NULL) {
 #' @return A function that mimics the readline function, returning the next element from `texts` each time it's called.
 #' @examples
 #' readline_mock <- get_readline_mock(c("yes", "no", "maybe"))
-#' readline_mock("Continue? ")      # Returns "yes"
-#' readline_mock("Continue? ")      # Returns "no"
-#' readline_mock("Continue? ")      # Returns "maybe"
+#' readline_mock("Continue? ") # Returns "yes"
+#' readline_mock("Continue? ") # Returns "no"
+#' readline_mock("Continue? ") # Returns "maybe"
 #' try(readline_mock("Continue? ")) # Throws error "readline called 4 times, but only 3 answers were provided"
 get_readline_mock <- function(texts, env = as.environment(list())) {
     if (is.null(texts)) {
@@ -175,8 +175,7 @@ get_readline_mock <- function(texts, env = as.environment(list())) {
 
 #' @noRd
 #' @title Get a mock for the datadir functions
-#' @description Returns a function that when called, returns a path to a mock data directory. The type and state of the mock data directory can be specified.
-#' Used internally by [mock_datadir()].
+#' @description Returns a function that, when called, returns a path to a mock data directory. The type and state of the mock data directory can be specified. Used internally by [mock_datadir()].
 #' @param type The type of data directory to mock. Can be "persistent" or "temp".
 #' @param state The state of the data directory to mock. Can be "missing", "empty", or "filled".
 #' @return A function that when called, returns a path to the mock data directory.
@@ -204,8 +203,71 @@ get_datadir_mock <- function(type = "temp", state = "default") {
 # simulate #####
 
 #' @noRd
-#' @title Simulate a spectrum based on a deconvolution result
-#' @description Simulates a spectrum based on the parameters of a deconvolution result. The simulated spectrum is a superposition of Lorentzian functions.
+#' @title Simulate multiple spectra based on real deconvolution results
+#' @description Simulates multiple spectra based on the deconvolution results of real spectra. The simulated spectra are superpositions of Lorentzian functions from a small part of the original spectra.
+#' @param src Path to the directory containing the real spectra.
+#' @param cache Logical indicating whether to cache the deconvolution results.
+#' @param pngdir Path to the directory where the PNG files of the simulated spectra should be saved.
+#' @param pdfdir Path to the directory where the PDF files of the simulated spectra should be saved.
+#' @param rdsdir Path to the directory where the RDS files of the simulated spectra should be saved.
+#' @return A list containing the simulated spectra and the paths to the saved PNG, PDF, and RDS files.
+#' @examples
+#' simulate_spectra(cache = TRUE)
+#' \dontrun{
+#' simulate_spectra(cache = TRUE, pngdir = "vignettes/Datasets/png", pdfdir = "vignettes/Datasets/pdf", rdsdir = "inst/example_datasets/rds")
+#' }
+simulate_spectra <- function(src = pkg_file("example_datasets/bruker/blood"),
+                             cache = NULL,
+                             pngdir = NULL,
+                             pdfdir = NULL,
+                             rdsdir = NULL,
+                             brukerdir = NULL) {
+    xds <- download_example_datasets()
+    blood <- file.path(xds, "bruker/blood")
+    cachefile <- file.path(cachedir(), "deconvs.rds")
+    if (file.exists(cachefile)) {
+        logf("Loading deconvolution results from cachefile '%s'", cachefile)
+        deconvs <- readRDS(cachefile)
+    } else {
+        if (is.null(cache)) {
+            if (interactive()) {
+                prompt <- sprintf("Cachefile '%s' doesn't exist yet. Create?", cachefile)
+                cache <- get_yn_input(prompt)
+            } else {
+                cache <- FALSE
+            }
+        }
+        deconvs <- generate_lorentz_curves(blood, ask = FALSE)
+        if (cache) saveRDS(deconvs, file = file.path(cachedir(), "deconvs.rds"))
+    }
+    if (is.null(pngdir)) pngdir <- tmpdir("simulate_spectra/png", create = TRUE)
+    if (is.null(pdfdir)) pdfdir <- tmpdir("simulate_spectra/pdf", create = TRUE)
+    if (is.null(rdsdir)) rdsdir <- tmpdir("simulate_spectra/rds", create = TRUE)
+    if (is.null(brukerdir)) brukerdir <- tmpdir("simulate_spectra/bruker", create = TRUE)
+    logf("Saving pngs to %s", pngdir)
+    logf("Saving pdfs to %s", pdfdir)
+    logf("Saving rds to %s", rdsdir)
+    logf("Saving bruker files to %s", brukerdir)
+    logf("Simulating %s spectra, using following deconvolution results as base:", length(deconvs))
+    sim <- lapply(deconvs, function(deconv) {
+        logf(deconv$filename)
+        old_name <- deconv$filename
+        new_name <- gsub("blood", "sim", old_name)
+        simulate_spectrum(
+            deconv,
+            show = FALSE,
+            pdfpath = file.path(pdfdir, paste0(new_name, ".pdf")),
+            pngpath = file.path(pngdir, paste0(new_name, ".png")),
+            rdspath = file.path(rdsdir, paste0(new_name, ".rds")),
+            brukerdir = file.path(brukerdir, new_name)
+        )
+    })
+    invisible(named(sim, pngdir, pdfdir, rdsdir))
+}
+
+#' @noRd
+#' @title Simulate a spectrum based on a real deconvolution result
+#' @description Simulates a spectrum based on the deconvolution results of a real spectrum. The simulated spectrum is a superposition of Lorentzian functions from a small part of the original spectrum.
 #' @param deconv A list containing the deconvolution result, as returned by [generate_lorentz_curves()].
 #' @param show Logical indicating whether to display the simulated spectrum.
 #' @param pdfpath Path to save the simulated spectrum as a PDF file.
@@ -221,42 +283,48 @@ simulate_spectrum <- function(deconv,
                               show = TRUE,
                               pdfpath = NULL,
                               pngpath = NULL,
-                              rdspath = NULL) {
-    # Extract parameters calculated using scaled datapoint numbers
-    S <- data.frame(A = - deconv$A, w = deconv$x_0, l = - deconv$lambda)
-
-    # Convert parameters to ppm
-    sdp_wid <- diff(range(deconv$x_values))
-    ppm_wid <- diff(range(deconv$x_values_ppm))
-    ppm_min <- min(deconv$x_values_ppm)
-    M <- (S / sdp_wid) * ppm_wid
-    M$w <- M$w + ppm_min # sdp starts at 0, but ppm at ppm_min, so we need to shift
-
+                              rdspath = NULL,
+                              brukerdir = NULL) {
     # Throw away peaks outside of the 3.45 to 3.55 ppm range
-    ix <- which(M$w >= 3.45 & M$w <= 3.55)
-    P <- M[ix, ]; rownames(P) <- NULL
+    ix <- which(deconv$x_0_ppm >= 3.45 & deconv$x_0_ppm <= 3.55)
+    P <- data.frame(
+        A = -deconv$A_ppm[ix],
+        w = +deconv$x_0_ppm[ix],
+        l = -deconv$lambda_ppm[ix]
+    )
 
-    # Calculate simulated signal intensities as superposition of Lorentzian functions
-    p <- deconv$x_values_ppm
-    i <- which(p >= 3.40 & p <= 3.60)
-    X <- data.frame(si = deconv$y_values[i], cs = p[i], fq = deconv$x_values_hz[i])
-    X$ssi <- sapply(X$cs, function(csi) sum(abs(P$A * (P$l / (P$l^2 + (csi - P$w)^2))))) # simulate signal intensity
+    # Calculate "signal-intensities-simulated" (SIS) as superposition of Lorentzian functions
+    si <- deconv$y_values
+    sir <- deconv$y_values_raw * 1e-6
+    cs <- deconv$x_values_ppm
+    fq <- deconv$x_values_hz
+    ix <- which(cs >= 3.40 & cs <= 3.60)
+    X <- data.frame(si, cs, fq, sir)[ix, ]
+    rownames(X) <- NULL
+    X$sis <- sapply(X$cs, function(csi) {
+        sum(abs(P$A * (P$l / (P$l^2 + (csi - P$w)^2))))
+    })
+
+    # Add some random noise to the simulated data. (To find a reasonable noise level, we determine the standard deviation in the SFR of the original spectrum. The true SFR covers approx. the first and last 20k datapoints. However, to be on the safe side, we only use the first and last 10k datapoints.)
+    sfr_sd <- sd(deconv$y_values_raw[c(1:10000, 121073:131072)] * 1e-6)
+    X$sis <- X$sis + rnorm(n = length(X$sis), mean = 0, sd = sfr_sd)
 
     # Plot simulated spectrum
-    ticks <- seq(from = min(X$cs), to = max(X$cs), length.out = 5)
-    labels <- round(seq(from = min(X$fq), to = max(X$fq), length.out = 5))
+    top_ticks <- seq(from = min(X$cs), to = max(X$cs), length.out = 5)
+    top_labels <- round(seq(from = min(X$fq), to = max(X$fq), length.out = 5))
     title_text <- sprintf("Sim_01 (based on %s)", deconv$filename)
-    bracket_text <- "[3.6 - 3.4 ppm]"
-    main <- gsub("blood", "sim", deconv$filename)
-    sub <- sprintf("based on: %s (3.6 - 3.4 ppm)", deconv$filename)
+    new_name <- gsub("blood", "sim", deconv$filename)
+    main_title <- sprintf("Name: %s", new_name)
+    sub_title <- sprintf("Base: %s (3.6 - 3.4 ppm)", deconv$filename)
     plot_spectrum <- function() {
-        plot(x = X$cs, y = X$si, type = "l", xlab = "Chemical Shift [PPM]", ylab = "Signal Intensity [AU]", xlim = c(3.6, 3.4))
-        lines(x = X$cs, y = X$ssi, col = "red")
-        legend("topleft", lty = 1,legend = c("Original", "Simulated"),col = c("black", "red"))
-        axis(3, at = ticks, labels = labels, cex.axis = 0.75)
+        plot(x = X$cs, y = X$sir, type = "l", xlab = "Chemical Shift [PPM]", ylab = "Signal Intensity [AU]", xlim = c(3.6, 3.4), col = "black")
+        lines(x = X$cs, y = X$si, col = "blue")
+        lines(x = X$cs, y = X$sis, col = "red")
+        legend(x = "topleft", lty = 1, col = c("black", "blue", "red"), legend = c("Original Raw", "Original Smoothed", "Simulated"))
+        axis(3, at = top_ticks, labels = top_labels, cex.axis = 0.75)
         mtext(sprintf("Frequency [Hz]"), side = 3, line = 2)
-        mtext(main, side = 3, line = - 3, col = "red", cex = 2)
-        mtext(sub, side = 3, line = - 4.5, col = "red", cex = 1)
+        mtext(main_title, side = 3, line = -3, col = "red", cex = 1, adj = 1)
+        mtext(sub_title, side = 3, line = -4, col = "red", cex = 1, adj = 1)
     }
     if (show) plot_spectrum()
 
@@ -272,6 +340,32 @@ simulate_spectrum <- function(deconv,
     }
     if (!is.null(rdspath)) {
         saveRDS(X, file = rdspath)
+    }
+    if (!is.null(brukerdir)) {
+        # cs_max = procs$OFFSET, # Spectrum offset in PPM
+
+        procs_str <- paste(sep = "\n",
+            "##$BYTORDP=0", # Byte order (0 = Little endian)
+            "##$NC_proc=0", # Exponent for intensity values (y_scaled = y_raw * 2^NC_proc)
+            "##$DTYPP=0", # Data storage type (0=4-byte-integers, else=double)
+            sprintf("##$SI=%d", length(X$sis)), # Number of data points
+            sprintf("##$OFFSET=%f", max(X$cs)), # Offset in PPM, i.e. the maximum chemical shift
+        )
+        acqus_str <- paste(sep = "\n",
+            sprintf("##$SW=%f", width(X$cs)), # Spectrum width in PPM
+            sprintf("##$SFO1=%f", convert_pos(0, X$cs, X$fq)), # Reference Frequency in MHz
+            sprintf("##$SW_h=%f", width(X$fq)), # Spectrum width in Hz
+        )
+        # cs_width = acqus$SW, # Spectrum width in PPM
+        # fq_ref = acqus$SFO1 * 1e6, # Reference Frequency in Hz (better than procs$SF, because it fulfills `all.equal` check of `make_spectrum`)
+        # fq_width = acqus$SW_h, # Spectrum width in Hz
+
+
+
+        mkdirs(file.path(brukerdir, "10", "pdata", "10"))
+        cat("", file = file.path(brukerdir, "10/acqus"))
+        cat("", file = file.path(brukerdir, "10/pdata/10/procs"))
+        writeBin("", file = file.path(brukerdir, "10/pdata/10/1r"))
     }
 
     # Return simulated spectrum
@@ -300,20 +394,25 @@ skip_if_slow_tests_disabled <- function() {
 #' @return The total size of the object, including its subcomponents, as a character string with the specified unit.
 #' @examples
 #' obj <- list(
-#'      a = rnorm(1000),
-#'      b = list(
-#'          c = rnorm(2000),
-#'          d = list(
-#'              e = rnorm(3000),
-#'              f = rnorm(4000)
-#'          )
-#'      )
+#'     a = rnorm(1000),
+#'     b = list(
+#'         c = rnorm(2000),
+#'         d = list(
+#'             e = rnorm(3000),
+#'             f = rnorm(4000)
+#'         )
+#'     )
 #' )
 #' du(obj)
 #' du(obj, max_level = Inf, unit = "KB")
 du <- function(obj, pname = "", level = 0, max_level = 1, max_len = 50, unit = "MB") {
     match.arg(unit, c("GB", "MB", "KB", "B"))
-    denom <- switch(unit, "GB" = 1e9, "MB" = 1e6, "KB" = 1e3, "B" = 1)
+    denom <- switch(unit,
+        "GB" = 1e9,
+        "MB" = 1e6,
+        "KB" = 1e3,
+        "B" = 1
+    )
     size <- function(x) paste(round(object.size(x) / denom, 2), unit)
     for (name in names(obj)) {
         x <- obj[[name]]
@@ -337,7 +436,7 @@ du <- function(obj, pname = "", level = 0, max_level = 1, max_len = 50, unit = "
 #' @return The result of devtools::test()
 #' @examples
 #' if (interactive()) {
-#' run_tests(all = FALSE)
+#'     run_tests(all = FALSE)
 #' }
 run_tests <- function(all = FALSE) {
     RUN_SLOW_TESTS_OLD <- Sys.getenv("RUN_SLOW_TESTS")
@@ -442,7 +541,6 @@ vcomp <- function(x, y, xpct = 0, silent = FALSE) {
 compare_spectra <- function(new = glc_v13()$rv,
                             old = MD1D()$rv,
                             silent = FALSE) {
-
     # Define comparison function
     comp <- vcomp
     arglist <- formals(comp)

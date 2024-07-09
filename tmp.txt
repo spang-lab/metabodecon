@@ -1,0 +1,28 @@
+2024-07-04 10:23:45.40 Starting deconvolution of 2 spectra using 1 worker
+2024-07-04 10:23:45.40 Starting deconvolution of urine_1
+2024-07-04 10:23:45.40 Removing water signal
+2024-07-04 10:23:45.40 Removing negative signals
+2024-07-04 10:23:45.40 Smoothing signals
+2024-07-04 10:23:45.67 Starting peak selection
+2024-07-04 10:23:48.20 Detected 13322 peaks
+2024-07-04 10:23:48.20 Removing peaks with low scores
+2024-07-04 10:23:48.20 Removed 12095 peaks
+2024-07-04 10:23:48.20 Initializing Lorentz curves
+2024-07-04 10:23:48.27 MSE at peak tiplet positions: 4.6053115097018597623446
+2024-07-04 10:23:48.28 Refining Lorentz Curves
+2024-07-04 10:23:48.42 MSE at peak tiplet positions: 0.1216620396171408935437
+2024-07-04 10:23:50.09 Finished deconvolution of urine_1
+2024-07-04 10:23:50.10 Starting deconvolution of urine_2
+2024-07-04 10:23:50.10 Removing water signal
+2024-07-04 10:23:50.10 Removing negative signals
+2024-07-04 10:23:50.10 Smoothing signals
+2024-07-04 10:23:50.35 Starting peak selection
+2024-07-04 10:23:52.42 Detected 12982 peaks
+2024-07-04 10:23:52.42 Removing peaks with low scores
+2024-07-04 10:23:52.42 Removed 11589 peaks
+2024-07-04 10:23:52.42 Initializing Lorentz curves
+2024-07-04 10:23:52.51 MSE at peak tiplet positions: 7.3967169014641411806110
+2024-07-04 10:23:52.51 Refining Lorentz Curves
+2024-07-04 10:23:52.83 MSE at peak tiplet positions: 0.1579954355585187208977
+2024-07-04 10:23:54.57 Finished deconvolution of urine_2
+2024-07-04 10:23:54.57 Finished deconvolution of 2 spectra in 9.168689 secs

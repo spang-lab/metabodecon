@@ -24,7 +24,7 @@
 #' * `x_values_ppm`: The chemical shift of each datapoint in ppm (parts per million).
 #' * `y_values`: The scaled signal intensity (SSI) of each datapoint. Obtained by reading the raw intensity values from the provided `data_path` as integers and dividing them by the y-axis scale factor `sf[2]`.
 #' * `spectrum_superposition`: Scaled signal intensity obtained by calculating the sum of all estimated Lorentz curves for each data point.
-#' * `mse_normed`: Normalized mean squared error. Calulcated as $\frac{1}{n} \sum{i=1}{n} (z_i - \hat{z}_i)^2$ where $z_i$ is the normalized, smoothed signal intensity of data point i and $\hat{z}_i$ is the normalized superposition of Lorentz curves at data point i. Normalized in this context means that the vectors were scaled so the sum over all data points equals 1.
+#' * `mse_normed`: Normalized mean squared error. Calculated as \eqn{\frac{1}{n} \sum_{i=1}^{n} (z_i - \hat{z}_i)^2} where \eqn{z_i} is the normalized, smoothed signal intensity of data point i and \eqn{\hat{z}_i} is the normalized superposition of Lorentz curves at data point i. Normalized in this context means that the vectors were scaled so the sum over all data points equals 1.
 #' * `index_peak_triplets_middle`: Datapoint numbers of peak centers.
 #' * `index_peak_triplets_left`: Datapoint numbers of left peak borders.
 #' * `index_peak_triplets_right`: Datapoint numbers of right peak borders.
@@ -34,17 +34,17 @@
 #' * `integrals`: Integrals of the Lorentz curves.
 #' * `signal_free_region`: Borders of the signal free region of the spectrum in scaled datapoint numbers. Left of the first element and right of the second element no signals are expected.
 #' * `range_water_signal_ppm`: Half width of the water signal in ppm. Potential signals in this region are ignored.
-#' * `A`: Amplitude parameter of the Lorentz curves. Provided as negative number to maintain backwards compatiblity with MetaboDecon1D. The area under the Lorentz curve is calculated as $A \cdot \pi$.
+#' * `A`: Amplitude parameter of the Lorentz curves. Provided as negative number to maintain backwards compatiblity with MetaboDecon1D. The area under the Lorentz curve is calculated as \eqn{A \cdot \pi}.
 #' * `lambda`: Half width of the Lorentz curves in scaled data points. Provided as negative value to maintain backwards compatiblity with MetaboDecon1D. Example: a value of -0.00525 corresponds to 5.25 data points. With a spectral width of 12019 Hz and 131072 data points this corresponds to a halfwidth at half height of approx. 0.48 Hz. The corresponding calculation is: (12019 Hz / 131071 dp) * 5.25 dp.
 #' * `x_0`: Center of the Lorentz curves in scaled data points.
 #' @details First, an automated curvature based signal selection is performed. Each signal is represented by 3 data points to allow the determination of initial Lorentz curves. These Lorentz curves are then iteratively adjusted to optimally approximate the measured spectrum.
 #' @examples
 #' \donttest{
-#' path_xds <- download_example_datasets()
-#' path_urine <- file.path(path_xds, "bruker/urine")
-#' path_urine_1 <- file.path(path_urine, "urine_1")
-#' decons <- generate_lorentz_curves(path_urine, ask = FALSE, nfit = 1)
-#' decon_urine_1 <- generate_lorentz_curves(path_urine_1, ask = FALSE)[[1]]
+#' example_datasets <- download_example_datasets()
+#' urine <- file.path(example_datasets, "bruker/urine")
+#' urine_1 <- file.path(urine, "urine_1")
+#' deconv_urine <- generate_lorentz_curves(urine, ask = FALSE, nfit = 1)
+#' deconv_urine_1 <- generate_lorentz_curves(urine_1, ask = FALSE)[[1]]
 #' }
 generate_lorentz_curves <- function(data_path = pkg_file("example_datasets/bruker/urine"),
                                     file_format = "bruker",
@@ -71,25 +71,32 @@ generate_lorentz_curves <- function(data_path = pkg_file("example_datasets/bruke
     # Deconvolute spectra
     n <- length(spectra)
     nams <- names(spectra)
-    os <- Sys.info()["sysname"]
-    if (nworkers == "auto") {
-        nworkers <- min(ceiling(parallel::detectCores() / 2), length(spectra), if (os == "Windows") 1 else Inf)
-    } else if (nworkers > 1 && os == "Windows") {
-        warning("Multiprocessing is not supported on Windows. Only 1 worker will be used instead of ", nworkers, immediate. = TRUE)
-        nworkers <- 1
-    }
-    cat3("Starting deconvolution of", n, "spectra with", nworkers, if (nworkers > 1) "workers" else "worker")
+    if (nworkers == "auto") nworkers <- min(ceiling(parallel::detectCores() / 2), length(spectra))
     starttime <- Sys.time()
-    spectra <- parallel::mclapply(seq_len(n), mc.cores = nworkers, function(i) {
-        if (nworkers > 1) {
-            opts <- options(metabodecon.cat3_prefix = sprintf("CORE %d ", i))
+
+    if (nworkers == 1) {
+        logf("Starting deconvolution of %d spectra using 1 worker", n)
+        spectra <- lapply(seq_len(n), function(i) {
+            deconvolute_spectrum(nams[[i]], spectra[[i]], smopts, delta, nfit, n, debug)
+        })
+    } else {
+        logf("Starting %d worker processes", nworkers)
+        cl <- parallel::makeCluster(nworkers, outfile = "")
+        on.exit(parallel::stopCluster(cl), add = TRUE)
+        logf("Exporting required functions and data to workers")
+        exportvars <- c("logf", "fg", "deconvolute_spectrum", "nams", "spectra", "smopts", "delta", "nfit", "n", "debug")
+        parallel::clusterExport(cl, exportvars, envir = environment())
+        logf("Starting deconvolution of %d spectra using %d workers", n, nworkers)
+        spectra <- parallel::parLapply(cl, seq_len(n), function(i) {
+            opts <- options(toscutil.logf.sep1 = sprintf(" CORE %d ", Sys.getpid()))
             on.exit(options(opts), add = TRUE)
-        }
-        deconvolute_spectrum(nams[[i]], spectra[[i]], smopts, delta, nfit, n, debug)
-    })
+            deconvolute_spectrum(nams[[i]], spectra[[i]], smopts, delta, nfit, n, debug)
+        })
+    }
+
     endtime <- Sys.time()
     duration <- endtime - starttime
-    cat3("Finished deconvolution of", n, "spectra in", format(duration))
+    logf("Finished deconvolution of %d spectra in %s", n, format(duration))
     names(spectra) <- nams
 
     # Prepare, store and return results
@@ -100,7 +107,7 @@ generate_lorentz_curves <- function(data_path = pkg_file("example_datasets/bruke
             yes <- get_yn_input(sprintf("Save results as '%s'?", rdspath))
             if (yes) saveRDS(ret, rdspath)
         } else {
-            cat3("Skipping RDS save: confirmation required but not in interactive mode. For details see `help('generate_lorentz_curves')`.")
+            logf("Skipping RDS save: confirmation required but not in interactive mode. For details see `help('generate_lorentz_curves')`.")
         }
     } else if (is.character(make_rds)) {
         cat("Saving results as", make_rds, "\n")
@@ -112,7 +119,7 @@ generate_lorentz_curves <- function(data_path = pkg_file("example_datasets/bruke
 # Private Helpers #####
 
 deconvolute_spectrum <- function(nam, spec, smopts, delta, nfit, n, debug) {
-    cat3("Starting deconvolution of", nam)
+    logf("Starting deconvolution of %s", nam)
     spec <- rm_water_signal_v12(spec)
     spec <- rm_negative_signals_v12(spec)
     spec <- smooth_signals_v12(spec, reps = smopts[1], k = smopts[2])
@@ -120,12 +127,12 @@ deconvolute_spectrum <- function(nam, spec, smopts, delta, nfit, n, debug) {
     spec <- filter_peaks_v12(spec, delta)
     spec <- fit_lorentz_curves(spec, nfit)
     spec <- add_return_list_v13(spec, n, nam, debug)
-    cat3("Finished deconvolution of", nam)
+    logf("Finished deconvolution of %s", nam)
     spec
 }
 
 rm_water_signal_v12 <- function(spec) {
-    cat3("Removing water signal")
+    logf("Removing water signal")
     y <- spec$y_scaled
     left <- spec$wsr$left_dp
     right <- spec$wsr$right_dp
@@ -135,7 +142,7 @@ rm_water_signal_v12 <- function(spec) {
 }
 
 rm_negative_signals_v12 <- function(spec) {
-    cat3("Removing negative signals")
+    logf("Removing negative signals")
     if (is.null(spec$y_nows)) stop("Water signal not removed yet. Please call `rm_water_signal_v12()` first.")
     spec$y_pos <- abs(spec$y_nows)
     spec
@@ -181,7 +188,7 @@ smooth_signals_v20 <- function(spec, reps = 2, k = 5) {
 #' @details Old and slow version producing the same results as the implementation within `deconvolution` from `MetaboDecon1D_deconvolution.R`.
 #' @noRd
 smooth_signals_v12 <- function(spec, reps = 2, k = 5) {
-    cat3("Smoothing signals")
+    logf("Smoothing signals")
     if (k %% 2 == 0) stop("k must be odd")
     Z <- vector("list", length = reps)
     y <- spec$y_pos
@@ -215,12 +222,12 @@ filter_peaks_v13 <- function(ppm, # x values in ppm
                              sfrr, # signal free region right in ppm
                              delta = 6.4) { # threshold parameter to distinguish between "real" peaks from noise
     if (any(is.na(ps))) stop("Peak scores must never be NA")
-    cat3("Removing peaks with low scores")
+    logf("Removing peaks with low scores")
     in_sfr <- which(ppm[pc] >= ppm || ppm[pc] <= ppm)
     mu <- mean(ps[in_sfr]) # mean (greek letter mu)
     sigma <- sd(ps[in_sfr]) # standard deviation (greek letter sigma)
     gt_tau <- (ps >= mu + delta * sigma) # greater than threshold value (greek letter tau)
-    cat3("Removed", sum(!gt_tau), "peaks")
+    logf("Removed %d peaks", sum(!gt_tau))
     list(in_sfr, gt_tau) # gttho
 }
 
@@ -231,15 +238,38 @@ filter_peaks_v13 <- function(ppm, # x values in ppm
 #' @param debug Add debug info to the return list
 #' @noRd
 add_return_list_v13 <- function(spec = glc_v13(), n = 1, nam = "urine_1", debug = TRUE) {
+
+    # Prepare some shortcuts for later calculations
+    x <- spec$sdp
+    p <- spec$ppm
+    r <- spec$y_raw
+    y <- spec$y_smooth
+    n <- length(x)
     A <- spec$lcr$A
     lambda <- spec$lcr$lambda
-    w <- spec$lcr$w
-    x <- spec$sdp
-    y <- spec$y_smooth
-    s <- sapply(x, function(x_i) sum(abs(A * (lambda / (lambda^2 + (x_i - w)^2))))) # takes approx. 2.2 seconds for urine_1
-    y_normed <- y / sum(y)
+    x_0 <- spec$lcr$w
+
+    # Calculate spectrum superposition
+    s <- sapply(x, function(x_i) sum(abs(A * (lambda / (lambda^2 + (x_i - x_0)^2))))) # takes approx. 2.2 seconds for urine_1
     s_normed <- s / sum(s)
+
+    # Calculate MSE_normed and MSE_normed_raw
+    y_normed <- y / sum(y)
+    y_raw_normed <- r / sum(r)
     mse_normed <- mean((y_normed - s_normed)^2)
+    mse_normed_raw <- mean((y_raw_normed - s_normed)^2)
+
+    # Prepare variables for converting between units in the next step
+    width_ppm <- p[1] - p[n]
+    width_sdp <- x[1] - x[n]
+    width_hz  <- spec$hz[1] - spec$hz[n]
+    width_dp  <- spec$dp[1] - spec$dp[n]
+    ref_ppm   <- p[1]
+    ref_sdp   <- x[1]
+    ref_hz    <- spec$hz[1]
+    ref_dp    <- spec$dp[1]
+
+    # Create and return list
     spec$ret <- list(
         number_of_files = n,
         filename = nam,
@@ -260,7 +290,19 @@ add_return_list_v13 <- function(spec = glc_v13(), n = 1, nam = "urine_1", debug 
         A = spec$lcr$A,
         lambda = spec$lcr$lambda,
         x_0 = spec$lcr$w,
-        x_values_hz = spec$hz
+        # New fields (available since v1.2.0)
+        y_values_raw = spec$y_raw,
+        x_values_hz = spec$hz,
+        mse_normed_raw = mse_normed_raw,
+        x_0_hz  = convert_pos(x_0, width_sdp, width_hz, ref_sdp, ref_hz),
+        x_0_dp  = convert_pos(x_0, width_sdp, width_dp, ref_sdp, ref_dp),
+        x_0_ppm = convert_pos(x_0, width_sdp, width_ppm, ref_sdp, ref_ppm),
+        A_hz  = convert_width(A, width_sdp, width_hz),
+        A_dp  = convert_width(A, width_sdp, width_dp),
+        A_ppm = convert_width(A, width_sdp, width_ppm),
+        lambda_hz  = convert_width(lambda, width_sdp, width_hz),
+        lambda_dp  = convert_width(lambda, width_sdp, width_dp),
+        lambda_ppm = convert_width(lambda, width_sdp, width_ppm)
     )
     spec
 }
@@ -320,7 +362,7 @@ generate_lorentz_curves_v12 <- function(data_path = file.path(download_example_d
     nams <- names(spectra)
     spectra <- lapply(seq_len(n), function(i) {
         nam <- nams[i]
-        cat3("Starting deconvolution of", nam)
+        logf("Starting deconvolution of %s", nam)
         spec <- spectra[[i]]
         spec <- rm_water_signal_v12(spec)
         spec <- rm_negative_signals_v12(spec)
@@ -344,7 +386,7 @@ generate_lorentz_curves_v12 <- function(data_path = file.path(download_example_d
 }
 
 filter_peaks_v12 <- function(spec, delta = 6.4) {
-    cat3("Removing peaks with low scores")
+    logf("Removing peaks with low scores")
     score <- spec$peak$score
     l <- which(spec$sdp[spec$peak$center] >= spec$sfr$left_sdp)
     r <- which(spec$sdp[spec$peak$center] <= spec$sfr$right_sdp)
@@ -354,7 +396,7 @@ filter_peaks_v12 <- function(spec, delta = 6.4) {
     spec$peak$region <- "norm"
     spec$peak$region[l] <- "sfrl"
     spec$peak$region[r] <- "sfrr"
-    cat3("Removed", sum(!spec$peak$high), "peaks")
+    logf("Removed %d peaks", sum(!spec$peak$high))
     spec
 }
 

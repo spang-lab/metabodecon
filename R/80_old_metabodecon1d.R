@@ -32,7 +32,7 @@ deconvolution <- function(filepath,
                           current_filenumber,
                           debug = FALSE) {
   if (debug) {
-    cat3("Starting deconvolution")
+    logf("Starting deconvolution")
     args <- list(
       filepath = filepath,
       name = name,
@@ -65,7 +65,7 @@ deconvolution <- function(filepath,
     spectrum_x <- seq((spectrum_length / factor_x), 0, -1 / factor_x)
     spectrum_y <- (data[[4]]$y) / factor_y
     if (debug) {
-      cat3("Read raw data from", name)
+      logf("Read raw data from %s", name)
       debuglist$data_read <- list(
         spectrum_y_raw = (data[[4]]$y),
         spectrum_y = spectrum_y
@@ -157,7 +157,7 @@ deconvolution <- function(filepath,
     # Calculate spectrum_x and recalculate spectum_y
     spectrum_x <- seq((spectrum_length - 1) / factor_x, 0, -0.001)
     if (debug) {
-      cat3("Read raw data from", spec_file)
+      logf("Read raw data from %s", spec_file)
       debuglist$data_read <- list(
         spectrum_y_raw = spectrum_y,
         spectrum_y = spectrum_y / factor_y
@@ -564,7 +564,7 @@ deconvolution <- function(filepath,
   }
 
   if (debug) {
-    cat3("Removed water signal")
+    logf("Removed water signal")
     debuglist$ws_rm <- list(
       spectrum_length = spectrum_length,
       spectrum_x = spectrum_x,
@@ -585,7 +585,7 @@ deconvolution <- function(filepath,
     spectrum_y[i] <- abs(spectrum_y[i])
   }
   if (debug) {
-    cat3("Removed negative values")
+    logf("Removed negative values")
     debuglist$neg_rm <- list(spectrum_y = spectrum_y)
   }
 
@@ -622,7 +622,7 @@ deconvolution <- function(filepath,
   }
 
   if (debug) {
-    cat3("Smoothed spectrum")
+    logf("Smoothed spectrum")
     debuglist$smoothed <- list(spectrum_y = spectrum_y)
   }
 
@@ -689,7 +689,7 @@ deconvolution <- function(filepath,
   }
 
   if (debug) {
-    cat3("Selected peaks")
+    logf("Selected peaks")
     debuglist$peaks_sel <- list(
       spectrum_length = spectrum_length,
       second_derivative = second_derivative,
@@ -711,7 +711,7 @@ deconvolution <- function(filepath,
     }
   }
   if (debug) {
-    cat3("Removed peaks without border")
+    logf("Removed peaks without border")
     debuglist$peaks_wob_rm <- list( # peaks without borders removed
       peaks_x = peaks_x,
       peaks_index = peaks_index,
@@ -766,7 +766,7 @@ deconvolution <- function(filepath,
     }
   }
   if (debug) {
-    cat3("Filtered peaks by score")
+    logf("Filtered peaks by score")
     debuglist$peak_scores_calc <- list(
       scores = scores,
       scores_left = scores_left,
@@ -878,7 +878,7 @@ deconvolution <- function(filepath,
   }
 
   if (debug) {
-    cat3("Initialized lorentz curve parameters")
+    logf("Initialized lorentz curve parameters")
     debuglist$params_init <- list(
       A = A,
       filtered_left_position = filtered_left_position,
@@ -1047,7 +1047,7 @@ deconvolution <- function(filepath,
   }
 
   if (debug) {
-    cat3("Approximated lorentz curve parameters")
+    logf("Approximated lorentz curve parameters")
     debuglist$params_approx <- list(
       A_new = A_new,
       lambda_new = lambda_new,
@@ -1099,7 +1099,7 @@ deconvolution <- function(filepath,
   }
 
   if (debug) {
-    cat3("Reached point where parameters were saved to txt documents previously")
+    logf("Reached point where parameters were saved to txt documents previously")
     debuglist$params_saved <- list(
       index_peak_triplets_middle = index_peak_triplets_middle,
       index_peak_triplets_left = index_peak_triplets_left,
@@ -1119,7 +1119,7 @@ deconvolution <- function(filepath,
 
   if (debug) {
     return_list$debuglist <- debuglist
-    cat3("Finished deconvolution")
+    logf("Finished deconvolution")
   }
 
   return(return_list)
@@ -1149,7 +1149,7 @@ deconvolution <- function(filepath,
 #' * `x_values_ppm`: The chemical shift of each datapoint in ppm (parts per million).
 #' * `y_values`: The scaled signal intensity (SSI) of each datapoint. Obtained by reading the raw intensity values from the provided `data_path` as integers and dividing them scale factor of the y-axis.
 #' * `spectrum_superposition`: Scaled signal intensity obtained by calculating the sum of all estimated Lorentz curves for each data point.
-#' * `mse_normed`: Normalized mean squared error. Calulcated as $\frac{1}{n} \sum{i=1}{n} (z_i - \hat{z}_i)^2$ where $z_i$ is the normalized, smoothed signal intensity of data point i and $\hat{z}_i$ is the normalized superposition of lorentz curves at data point i. Normalized in this context means that the vectors were scaled so the sum over all data points equals 1.
+#' * `mse_normed`: Normalized mean squared error. Calculated as \eqn{\frac{1}{n} \sum_{i=1}^{n} (z_i - \hat{z}_i)^2} where \eqn{z_i} is the normalized, smoothed signal intensity of data point i and \eqn{\hat{z}_i} is the normalized superposition of Lorentz curves at data point i. Normalized in this context means that the vectors were scaled so the sum over all data points equals 1.
 #' * `peak_triplets_middle`: Chemical shift of peak centers in ppm.
 #' * `peak_triplets_left`: Chemical shift of left peak borders in ppm.
 #' * `peak_triplets_right`: Chemical shift of right peak borders in ppm.
@@ -1159,7 +1159,7 @@ deconvolution <- function(filepath,
 #' * `integrals`: Integrals of the Lorentz curves.
 #' * `signal_free_region`: Borders of the signal free region of the spectrum in scaled datapoint numbers. Left of the first element and right of the second element no signals are expected.
 #' * `range_water_signal_ppm`: Half width of the water signal in ppm. Potential signals in this region are ignored.
-#' * `A`: Amplitude parameter of the Lorentz curves. Provided as negative number to maintain backwards compatiblity with MetaboDecon1D. The area under the Lorentz curve is calculated as $A \cdot \pi$.
+#' * `A`: Amplitude parameter of the Lorentz curves. Provided as negative number to maintain backwards compatiblity with MetaboDecon1D. The area under the Lorentz curve is calculated as \eqn{A \cdot \pi}.
 #' * `lambda`: Half width of the Lorentz curves in scaled data points. Provided as negative value to maintain backwards compatiblity with MetaboDecon1D. Example: a value of -0.00525 corresponds to 5.25 data points. With a spectral width of 12019 Hz and 131072 data points this corresponds to a halfwidth at half height of approx. 0.48 Hz. The corresponding calculation is: (12019 Hz / 131071 dp) * 5.25 dp.
 #' * `x_0`: Center of the Lorentz curves in scaled data points.
 #'
@@ -1197,7 +1197,7 @@ MetaboDecon1D <- function(filepath,
                           delta = 6.4,
                           scale_factor = c(1000, 1000000),
                           debug = FALSE) {
-  cat3("Starting MetaboDecon1D")
+  logf("Starting MetaboDecon1D")
 
   # Print license message to console
   message("
@@ -1493,7 +1493,7 @@ MetaboDecon1D <- function(filepath,
         }
 
         if (debug) {
-          cat3("Finished MetaboDecon1D")
+          logf("Finished MetaboDecon1D")
         }
 
         return(return_list)
@@ -1531,7 +1531,7 @@ MetaboDecon1D <- function(filepath,
         }
 
         if (debug) {
-          cat3("Finished MetaboDecon1D")
+          logf("Finished MetaboDecon1D")
         }
 
         return(return_list)
@@ -1564,7 +1564,7 @@ MetaboDecon1D <- function(filepath,
 
       if (debug) {
         return_list$debuglist <- deconv_result$debuglist
-        cat3("Finished MetaboDecon1D")
+        logf("Finished MetaboDecon1D")
       }
 
       return(return_list)
@@ -1593,7 +1593,7 @@ MetaboDecon1D <- function(filepath,
 
       if (debug) {
         return_list$debuglist <- deconv_result$debuglist
-        cat3("Finished MetaboDecon1D")
+        logf("Finished MetaboDecon1D")
       }
 
       return(return_list)

@@ -85,7 +85,7 @@ read_spectra <- function(data_path = pkg_file("example_datasets/bruker/urine"),
         stop("No spectra found in directory", data_path)
     }
     spectra <- lapply(paths, function(path) {
-        if (!silent) cat3("Reading spectrum", path)
+        if (!silent) logf("Reading spectrum %s", path)
         read_spectrum(path, file_format, expno, procno, raw, silent, force)
     })
     names(spectra) <- files
@@ -399,7 +399,7 @@ read_1r_file <- function(spldir = pkg_file("example_datasets/bruker/blood/blood_
     if (!silent) catf(msg)
     con <- file(path_1r, "rb"); on.exit(close(con), add = TRUE)
     raw <- readBin(con, what = type, n = n, size = nbytes, signed = TRUE, endian = endian)
-    scaled <- if (type == "integer") raw * 2 ^ procs$NC_proc else raw
+    scaled <- if (type == "integer") raw * 2 ^ ncproc else raw
     named(
         spldir, expno, procno, path_1r, path_procs, # path related variables
         procs, byteordp, dtypp, endian, nbytes, ncproc, type, n,# processing parameters and derived values
