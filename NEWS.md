@@ -19,10 +19,10 @@ Internal:
 * Added improved versions of `load_jcampdx_spectrum()` and `load_bruker_spectrum()` named `load_jcampdx_spectrum_v2()` and `load_bruker_spectrum_v2()` incl. test cases
 * Added util function `normPath()`.
 * Added test cases for `deconvolute_spectrum()`
-* Moved helper function `.deconvolute_spectrum()` into seperate file `deconvolute_spectrum_v2` for development and renamed it to `deconvolute_spectrum_v2()`.
+* Moved helper function `.deconvolute_spectrum()` into separate file `deconvolute_spectrum_v2` for development and renamed it to `deconvolute_spectrum_v2()`.
 * Added helper function `get_signal_free_region_in_su()`
 * Disabled `object_length_linter`
-* Moved `deconvolution` function `MetaboDecon1D.R` into seperate file `MetaboDecon1D_deconvolution.R`.
+* Moved `deconvolution` function `MetaboDecon1D.R` into separate file `MetaboDecon1D_deconvolution.R`.
 * Moved `str2`, `get_num_input`, `get_str_input`, `get_yn_input`, `collapse` from `main_v2.R` into `util.R`
 * Added functions `ppm_to_dp()`, `ppm_to_sdp()`, `dp_to_ppm()` to `util.R`
 * Added `GLOSSARY.md`

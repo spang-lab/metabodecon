@@ -56,62 +56,41 @@
 
 # Todos
 
-## FEATURE-14: Provide simulated datasets from blood spectra
+## v1.2.0
+
+### FEATURE-14: Provide simulated datasets from blood spectra
 
 Provide simulated datasets from blood spectra
 
-## FEATURE-15: Add lifecycle badges
+### FEATURE-15: Add lifecycle badges
 
 Add lifecycle badges to all exported functions. Functions which are exported but should not be used should be marked as "experimental" or (if possible) as "internal" (idea: check where other badges are stored and whether they can be modified).
 
-## FEATURE-6: Return lambda in hertz
+### FEATURE-17: Discard output
 
-Original Teams Messages:
+By default output of `generate_lorentz_curves` should be discarded during parallel phase. Before this phase, print a message that the remaining task might take up to a few minutes and that live output can be disabled by settings `share_stdout = TRUE`, but that the output might be scrambled depending on configuration of the R installation and the operating system.
 
-<!-- /* cSpell:disable */ -->
-From Wolfram at `2023/11/08 3:29 PM`
+### FEATURE-11: Accept dataframes in GLC
 
-*Hi Tobi, ich würde MetaboDecon gerne noch um ca zwei-drei Zeilen Code erweitern. wir geben für jedes Signal einen lambda Wert an, das ist die halbe Signalbreite auf halber Höhe. Dieser Wert wird in Datenpunkten angegeben. Für viele Anwendungen braucht man diesen Wert aber auch in Hertz d.h. ich würde auch die lamda Werte in Hertz angeben die Umwandlung ist ganz einfach.*
+Let `generate_lorentz_curves` accept dataframes as input. This is useful for Maximilians Bachelorthesis and also makes testing easier. If necessary, implement a private wrapper around `read_spectra`, called `read_spectra_glc` that converts the return value of `read_spectra` to a format that can be used by `deconvolute_spectra`.
 
-From Wolfram at `2023/11/16 10:50 AM`
+### FEATURE-13: Merge into main
 
-Hi Tobi hier ist der Code zur Linienbreitenberechnung in Hz, Achtung ich hab hier immer die gesamte Linienbreite auf halber Höhe berechnet
+Merge the existing functionality into main as v1.2.0. Start a new branch v1.3.0 for the remaining todos.
 
-```R
-# Function to compute the linewidh for all detected features in Hz based on the original
-# values given in points
-# lw_hz = line width in Hz
-# sw_hz = spectral width in hz
-# dp datapoints
-return_path=c("C:/Users/Gronwald/Metabolomics/Statistics/Deconvolution/Rechnungen_wolfram/Alex_Ref_metabolites_in_Water/")
-lw_hz <- function(spectrum_data, sw_hz) {
-   for (entry in spectrum_data)
-   {
-      dp <- entry$x_values[1] * 1000 + 1 # multipy  with 1000 (scale factor) and add 1 as last datapoint has index 0
-      cat("dp=", dp, "\n")
-      # multiply with 1000 (sale factor)
-      # multiply with 2 to get full linewidth instead of half-linewidth
-      # take abs as original lambda is given in negative values
-      entry$lambda_hz<-abs((sw_hz/dp)*entry$lambda*1000*2)
-      cat("lambda= ",entry$lambda_hz[5],"\n") # random signal to show that everything works
-      entry$rl1<-data.frame(entry$peak_triplets_middle,entry$lambda_hz)
-      entry$rl2<-data.frame(entry$rl1,t(entry$integrals))
-      ret_nam<-paste(return_path,entry$filename,"_lw.csv", sep="")
-      write.csv2(entry$rl2,file=ret_nam)
-   }
-}
-```
+## v1.2.1
 
-2024/06/28 Update: implemented function in `calc_signal_width_in_hz` in `00_util.R`. The following is left to do:
+### DOC-1: Document whole package
 
-1. Update `read_spectra` to return `sw_hz` and `T` from bruker/jcampdx files.
-2. Call `calc_signal_width_in_hz` in `deconvolute_spectra` and add `lambda_hz` to the return value.
+Document the whole package in vignettes, including chapters about alignment and a short introduction into all datasets.
 
-## FEATURE-8: Warn user if peaks are found in SFR
+## v1.3.0
+
+### FEATURE-8: Warn user if peaks are found in SFR
 
 If delta is small (e.g. 1), peaks in SFR might not be filtered out. Either implement this and warn user about it (this is a strong indication that delta was chosen too small).
 
-## REFACTOR-9: Improve mse_normed calculation
+### REFACTOR-9: Improve mse_normed calculation
 
 In function `add_return_list_v13`:
 
@@ -121,24 +100,30 @@ In function `add_return_list_v13`:
 
 2. Return `mse_normed_raw` in addition to `mse_normed` (which is calculated based on `y <- spec$y_smooth`). `mse_normed_raw` should be based on `y <- spec$y_raw`.
 
-## CHECK-10: Negative values for estimated A
+### CHECK-10: Negative values for estimated A
 
 Check why there are negative values for the estimated lorentz curve area A.
 
-## FEATURE-11: Accept dataframes in GLC
+### CRAN-7: Check dontrun examples
 
-Let `generate_lorentz_curves` accept dataframes as input. This is useful for Maximilians Bachelorthesis and also makes testing easier. If necessary, implement a private wrapper around `read_spectra`, called `read_spectra_glc` that converts the return value of `read_spectra` to a format that can be used by `deconvolute_spectra`.
+Remove `dontrun` from examples if they are executable in < 5 sec, or create additionally small toy examples to allow automatic testing in < 5 sec. Reason: `\dontrun{}` should only be used if the example really cannot be executed by the user, e.g. because of missing additional software, missing API keys, etc. That's why wrapping examples in `\dontrun{}` adds the comment ("# Not run:") as a warning for the user. Alternative: You could also replace `\dontrun{}` with `\donttest`, if it takes longer than 5 sec to be executed, but it would be preferable to have automatic checks for functions. Otherwise, you can also write some tests.
+
+## v1.3.1
+
+### CRAN-10: Resubmit to CRAN
+
+Fix all R CMD check findings and resubmit the package to CRAN.
+
+### DOC-2: Write paper
+
+Reformat the vignettes as paper and send to Wolfram for proofreading.
+
+## v1.3.2
 
 
-## DOC-1: Document whole package
+## v1.4.0
 
-Document the whole package in vignettes, including chapters about alignment and a short introduction into all datasets.
-
-## FEATURE-13: Merge into main
-
-Merge the existing functionality into main as v1.2.0. Start a new branch v1.3.0 for the remaining todos.
-
-## FEATURE-10: Implement deconvolute_spectra
+### FEATURE-10: Implement deconvolute_spectra
 
 Implement `deconvolute_spectra()` which should be the successor of `generate_lorentz_curves()` and `MetaboDecon1D` without trying to maintain backwards compatibility. In particular it should:
 
@@ -147,19 +132,13 @@ Implement `deconvolute_spectra()` which should be the successor of `generate_lor
 3. Uses the correct water signal calculation as described in [CHECK-3](#check-3-water-signal-calculation).
 4. Use 1-based indexing for data points as described in [CHECK-4](#check-4-data-point-format).
 5. Remove the scale factor and scaled data point numbers as described in [CHECK-4](#check-4-data-point-format).
-6. Remove negative values in a consistent way, as described by [CHECK-5](#check-5-signal-preprocessing)
+1. Remove negative values in a consistent way, as described by [CHECK-5](#check-5-signal-preprocessing)
 
-## CRAN-7: Check dontrun examples
+If possible, create a conversion function to convert the return value of `deconvolute_spectra()` to the return value of `generate_lorentz_curves()` (which is a *List of Lorentz Curves (LLC)*) and notice in the docs that users can replace `lc <- generate_lorentz_curves()` with `ds <- deconvolute_spectra(); lc <- as_llc(ds)`.
 
-Remove `dontrun` from examples if they are executable in < 5 sec, or create additionally small toy examples to allow automatic testing in < 5 sec. Reason: `\dontrun{}` should only be used if the example really cannot be executed by the user, e.g. because of missing additional software, missing API keys, etc. That's why wrapping examples in `\dontrun{}` adds the comment ("# Not run:") as a warning for the user. Alternative: You could also replace `\dontrun{}` with `\donttest`, if it takes longer than 5 sec to be executed, but it would be preferable to have automatic checks for functions. Otherwise, you can also write some tests.
+### FEATURE-16: Improve multiprocessing
 
-## CRAN-10: Resubmit to CRAN
-
-Fix all R CMD check findings and resubmit the package to CRAN.
-
-## DOC-2: Write paper
-
-Reformat the vignettes as paper and send to Wolfram for proofreading.
+Right now, output gets scrambled because all procs share one stdout. We can fix this by not using parLapply, but distributing the tasks ourselver over the cores and in a mainloop collecting outputs and results.
 
 # Done
 
@@ -446,6 +425,46 @@ Batch mode can also run in parallel to speed up calculations. Instead of waiting
 ## FEATURE-5: Add test suite to ensure correct behaviour after updates
 
 Write test cases for every function to ensure that future updates don't break any existing behaviour. Tests should be run automatically upon pull requests and pushes to main.
+
+## FEATURE-6: Return lambda in hertz
+
+Original Teams Messages:
+
+<!-- /* cSpell:disable */ -->
+From Wolfram at `2023/11/08 3:29 PM`
+
+*Hi Tobi, ich würde MetaboDecon gerne noch um ca zwei-drei Zeilen Code erweitern. wir geben für jedes Signal einen lambda Wert an, das ist die halbe Signalbreite auf halber Höhe. Dieser Wert wird in Datenpunkten angegeben. Für viele Anwendungen braucht man diesen Wert aber auch in Hertz d.h. ich würde auch die lamda Werte in Hertz angeben die Umwandlung ist ganz einfach.*
+
+From Wolfram at `2023/11/16 10:50 AM`
+
+Hi Tobi hier ist der Code zur Linienbreitenberechnung in Hz, Achtung ich hab hier immer die gesamte Linienbreite auf halber Höhe berechnet
+
+```R
+# Function to compute the linewidh for all detected features in Hz based on the original
+# values given in points
+# lw_hz = line width in Hz
+# sw_hz = spectral width in hz
+# dp datapoints
+return_path=c("C:/Users/Gronwald/Metabolomics/Statistics/Deconvolution/Rechnungen_wolfram/Alex_Ref_metabolites_in_Water/")
+lw_hz <- function(spectrum_data, sw_hz) {
+   for (entry in spectrum_data)
+   {
+      dp <- entry$x_values[1] * 1000 + 1 # multipy  with 1000 (scale factor) and add 1 as last datapoint has index 0
+      cat("dp=", dp, "\n")
+      # multiply with 1000 (sale factor)
+      # multiply with 2 to get full linewidth instead of half-linewidth
+      # take abs as original lambda is given in negative values
+      entry$lambda_hz<-abs((sw_hz/dp)*entry$lambda*1000*2)
+      cat("lambda= ",entry$lambda_hz[5],"\n") # random signal to show that everything works
+      entry$rl1<-data.frame(entry$peak_triplets_middle,entry$lambda_hz)
+      entry$rl2<-data.frame(entry$rl1,t(entry$integrals))
+      ret_nam<-paste(return_path,entry$filename,"_lw.csv", sep="")
+      write.csv2(entry$rl2,file=ret_nam)
+   }
+}
+```
+
+2024/07/09: Done in branch `v1.2.0` with commit `5a9ed6ab00d8e641a2aa82d209de6604d86bf9be`.
 
 ## FEATURE-7: Improve return value
 

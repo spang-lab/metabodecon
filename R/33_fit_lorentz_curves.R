@@ -19,7 +19,7 @@ fit_lorentz_curves <- function(spec, nfit = 3) {
 #' @title Initialize Lorentz Curve parameters from a spectrum with selected peak triplets
 #' @param spec List with elements: `x`, `y`, `peak` where `peak` is a list with elements `center`, `left`, `right` and `high`.
 #' @noRd
-init_lc_v14 <- function(spec) {
+init_lc_v14 <- function(spec, verbose = TRUE) {
     # Init values
     p <- spec$peak
     ir <- p$right[p$high]; ic <- p$center[p$high]; il <- p$left[p$high] # index of each peak triplet position (PTP)
@@ -54,12 +54,12 @@ init_lc_v14 <- function(spec) {
 
     # Print MSE
     mse <- mean((y[lmr] - rowSums(Z))^2)
-    logf("MSE at peak tiplet positions: %.22f", mse)
+    if (verbose) logf("MSE at peak tiplet positions: %.22f", mse)
 
     # Create return list
     P <- data.frame(il, ic, ir, rl, rc, rr, xl, xc, xr, yl, yc, yr, as, ds)
     D <- data.frame(wl, wc, wr, wrc, wrl, wcl, yrc, yrl, ycl)
-    named_list(A, lambda, w, Z, D, P) # nolint: object_usage_linter
+    named(A, lambda, w, Z, D, P) # nolint: object_usage_linter
 }
 
 refine_lc_v14 <- function(spec, Z) {
@@ -141,7 +141,7 @@ refine_lc_v14 <- function(spec, Z) {
     # Create return list
     P <- data.frame(il, ic, ir, rl, rc, rr, xl, xc, xr, yl, yc, yr, sl, sc, sr, ql, qc, qr)
     D <- data.frame(wl, wc, wr, wrc, wrl, wcl, yrc, yrl, ycl)
-    named_list(A, lambda, w, Z, D, P) # nolint: object_usage_linter
+    named(A, lambda, w, Z, D, P) # nolint: object_usage_linter
 }
 
 calc_w_v14 <- function(wr, wc, wl, yr, yc, yl, wrc, wrl, wcl, yrc, yrl, ycl, xr) {

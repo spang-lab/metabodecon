@@ -13,7 +13,7 @@ width(x)
 The width of the vector, calculated as the difference between its maximum and minimum values.
 }
 \description{
-This function calculates the width of a numeric vector by computing the difference between the maximum and minimum values in the vector.
+Calculates the width of a numeric vector by computing the difference between the maximum and minimum values in the vector.
 }
 \examples{
 vec <- c(1, 3, 5, 7, 9)

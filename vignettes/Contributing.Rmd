@@ -32,7 +32,7 @@ Whenever you update any of those things, you should run the below commands to ch
 devtools::document() # Build files in man folder
 devtools::spell_check() # Check spelling (add false positives to inst/WORDLIST)
 urlchecker::url_check() # Check URLs
-devtools::test() # Execute tests from tests folder
+run_tests(all = TRUE) # Execute tests from tests folder inkl. slow tests
 toscutil::check_pkg_docs() # Check function documentation for missing tags
 devtools::check() # Check package formalities
 devtools::install() # Install as required by next command

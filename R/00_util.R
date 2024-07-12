@@ -222,10 +222,53 @@ msgf <- function(fmt, ..., appendLF = TRUE) {
     if (appendLF) cat("\n")
 }
 
-# Misc #####
+# Interactive #####
 
-named_list <- function(...) {
-    structure(list(...), names = as.character(substitute(list(...)))[-1])
+#' @noRd
+#' @title Recursive Object Size Printer
+#' @description Prints the size of an object and its subcomponents recursively, similar to the `du` command in Unix. This function is useful for understanding the memory footprint of complex objects in R.
+#' @param obj The object to analyze.
+#' @param pname Internal parameter for recursive calls, representing the parent name of the current object. Should not be used directly.
+#' @param level Internal parameter for recursive calls, indicating the current depth of recursion. Should not be used directly.
+#' @param max_level The maximum depth of recursion. Default is 1. Increase this to explore deeper into nested structures.
+#' @param max_len The maximum number of elements in a list to recurse into. Default is 50. Lists with more elements will not be explored further.
+#' @param unit The unit of measurement for object sizes. Can be "GB", "MB", "KB", or "B". Default is "MB".
+#' @return The total size of the object, including its subcomponents, as a character string with the specified unit.
+#' @examples
+#' obj <- list(
+#'     a = rnorm(1000),
+#'     b = list(
+#'         c = rnorm(2000),
+#'         d = list(
+#'             e = rnorm(3000),
+#'             f = rnorm(4000)
+#'         )
+#'     )
+#' )
+#' du(obj)
+#' du(obj, max_level = Inf, unit = "KB")
+du <- function(obj, pname = "", level = 0, max_level = 1, max_len = 50, unit = "MB") {
+    match.arg(unit, c("GB", "MB", "KB", "B"))
+    denom <- switch(unit,
+        "GB" = 1e9,
+        "MB" = 1e6,
+        "KB" = 1e3,
+        "B" = 1
+    )
+    size <- function(x) paste(round(object.size(x) / denom, 2), unit)
+    for (name in names(obj)) {
+        x <- obj[[name]]
+        indent <- collapse(rep("    ", level), "")
+        cat2(indent, name, " ", size(x), sep = "")
+        if (is.list(x) && length(x) < max_len && level < max_level) {
+            du(x, name, level + 1, max_level, unit = unit)
+        }
+    }
+    if (level == 0) {
+        total <- size(obj)
+        cat2("Total:", total)
+        invisible(total)
+    }
 }
 
 # Compare #####
@@ -304,7 +347,7 @@ all_identical <- function(x) {
 
 #' @export
 #' @title Calculate the Width of a Numeric Vector
-#' @description This function calculates the width of a numeric vector by computing the difference between the maximum and minimum values in the vector.
+#' @description Calculates the width of a numeric vector by computing the difference between the maximum and minimum values in the vector.
 #' @param x A numeric vector.
 #' @return The width of the vector, calculated as the difference between its maximum and minimum values.
 #' @examples
@@ -315,55 +358,47 @@ width <- function(x) {
 }
 
 #' @export
-#' @title Convert values from unit A to unit B
-#' @description Converts values from unit A to unit B using a conversion factor.
-#' @param xa A numeric vector with values in unit A.
-#' @param wa Width of a certain interval (e.g. the spectrum width) in unit A.
-#' @param wb With of the same interval in unit B.
+#' @title Convert from unit A to unit B
+#' @description `convert_pos` converts positions from unit A to unit B. `convert_width` converts widths from unit A to unit B. If the direction of units A and B is reversed, the width's sign will be reversed as well. To keep widths strictly positive, wrap the result with `abs()`.
+#' @param xa For `convert_width` a numeric vector specifying widths in unit A. For `convert_pos` a numeric vector specifying positions in unit A.
+#' @param ya A numeric vector giving the positions of at least two points in unit A.
+#' @param yb A numeric vector giving the positions of the same points in unit B.
 #' @return A numeric vector of values converted from unit A to unit B.
 #' @examples
-#' \donttest{
-#' urine_1 <- pkg_file("example_datasets/bruker/urine/urine_1")
-#' deconv <- generate_lorentz_curves(urine_1, ask = FALSE)[[1]]
-#' sdp <- deconv$x_values
-#' sdp_width <- diff(range(sdp))
-#' ppm <- deconv$x_values_ppm
-#' ppm_width <- diff(range(ppm))
-#' lambda_sdp <- deconv$lambda
-#' lambda_ppm <- convert_width(lambda_sdp, sdp_width, ppm_width)
-#' }
-convert_width <- function(xa, wa, wb) {
+#' ya <- c(244, 246, 248, 250, 252)
+#' yb <- c(15, 10, 5, 0, -5)
+#' convert_width(c(2, 4, 8), ya, yb)
+#' convert_pos(c(247, 249), ya, yb)
+convert_width <- function(xa, ya, yb) {
+    n <- length(ya)
+    wa <- ya[n] - ya[1]
+    wb <- yb[n] - yb[1]
     xa * (wb / wa)
 }
 
 #' @export
-#' @title Convert positions from unit A to unit B
-#' @description Converts positions from unit A to unit B using a conversion factor.
-#' @param xa A numeric vector with positions in unit A.
-#' @param wa Width of a certain interval (e.g. the spectrum width) in unit A.
-#' @param wb With of the same interval in unit B.
-#' @param x0a The position of a reference point in unit A (e.g. the most right point of the spectrum).
-#' @param x0b The position of the same reference point in unit B.
-#' @return A numeric vector of positions converted from unit A to unit B.
-#' @examples
-#' \donttest{
-#' urine_1 <- pkg_file("example_datasets/bruker/urine/urine_1")
-#' deconv <- generate_lorentz_curves(urine_1, ask = FALSE)[[1]]
-#' sdp <- deconv$x_values
-#' ppm <- deconv$x_values_ppm
-#' peak9_sdp <- deconv$x_0[1]
-#' peak9_ppm <- convert_pos(peak9_sdp,
-#'     width(sdp), width(ppm),  # width of the spectrum in both units
-#'     sdp[3], ppm[3]           # position of any reference point in both units
-#' )
-#' stopifnot(all.equal(peak9_ppm, deconv$x_0_ppm[9]))
-#' }
+#' @rdname convert_width
 convert_pos <- function(xa, ya, yb) {
-    wa <- ya[2] - ya[1]
-    wb <- yb[2] - yb[1]
-    y0a <- y0a[1]
-
-    x0b + (xa - x0a) * (wb / wa)
+    # Example:
+    #     |-------------w----------|
+    #     |----d----|              |
+    # xa  |        247             |
+    # ya  244   246 | 248   250   252
+    # yb  15    10  | 5     0     -5
+    # ==>
+    # wa  =  ya[n] - ya[1] = 252 - 244   = 8
+    # wb  =  yb[n] - yb[1] = (-5) - 15   = 20
+    # da  =  xa    - ya[1] = 247 - 244   = 3
+    # db  =  da/wa * wb    = (3/8) * -20 = -7.5 (because da/wa == db/wb)
+    # xb  =  yb[1] + db    = 15 + (-7.5) = 7.5
+    if (length(ya) != length(yb)) stop("ya and yb must have the same length.")
+    n <- length(ya)
+    wa <- ya[n] - ya[1]
+    wb <- yb[n] - yb[1]
+    da <- xa - ya[1]
+    db <- (da / wa) * wb
+    xb <- yb[1] + db
+    xb
 }
 
 #' @noRd

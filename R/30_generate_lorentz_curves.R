@@ -2,7 +2,7 @@
 
 #' @export
 #' @title Generate Lorentz Curves from NMR Spectra
-#' @description Deconvolutes NMR spetra and generates a Lorentz curve for each detected signal within a spectra.
+#' @description Deconvolutes NMR spectra and generates a Lorentz curve for each detected signal within a spectra.
 #' @param data_path Either the path to an existing directory containing measured NMR spectra or a dataframe with columns `ppm` (parts per million) and `si` (signal intensity) or a list of such dataframes.
 #' @param file_format Format of the spectra files. Either `"bruker"` or `"jcampdx"`. Only relevant if `data_path` is a directory.
 #' @param make_rds Store results as rds file on disk? Should be set to TRUE if many spectra are evaluated to decrease computation time.
@@ -34,8 +34,8 @@
 #' * `integrals`: Integrals of the Lorentz curves.
 #' * `signal_free_region`: Borders of the signal free region of the spectrum in scaled datapoint numbers. Left of the first element and right of the second element no signals are expected.
 #' * `range_water_signal_ppm`: Half width of the water signal in ppm. Potential signals in this region are ignored.
-#' * `A`: Amplitude parameter of the Lorentz curves. Provided as negative number to maintain backwards compatiblity with MetaboDecon1D. The area under the Lorentz curve is calculated as \eqn{A \cdot \pi}.
-#' * `lambda`: Half width of the Lorentz curves in scaled data points. Provided as negative value to maintain backwards compatiblity with MetaboDecon1D. Example: a value of -0.00525 corresponds to 5.25 data points. With a spectral width of 12019 Hz and 131072 data points this corresponds to a halfwidth at half height of approx. 0.48 Hz. The corresponding calculation is: (12019 Hz / 131071 dp) * 5.25 dp.
+#' * `A`: Amplitude parameter of the Lorentz curves. Provided as negative number to maintain backwards compatibility with MetaboDecon1D. The area under the Lorentz curve is calculated as \eqn{A \cdot \pi}.
+#' * `lambda`: Half width of the Lorentz curves in scaled data points. Provided as negative value to maintain backwards compatibility with MetaboDecon1D. Example: a value of -0.00525 corresponds to 5.25 data points. With a spectral width of 12019 Hz and 131072 data points this corresponds to a halfwidth at half height of approx. 0.48 Hz. The corresponding calculation is: (12019 Hz / 131071 dp) * 5.25 dp.
 #' * `x_0`: Center of the Lorentz curves in scaled data points.
 #' @details First, an automated curvature based signal selection is performed. Each signal is represented by 3 data points to allow the determination of initial Lorentz curves. These Lorentz curves are then iteratively adjusted to optimally approximate the measured spectrum.
 #' @examples
@@ -62,41 +62,39 @@ generate_lorentz_curves <- function(data_path = pkg_file("example_datasets/bruke
                                     nworkers = "auto") {
 
     # Read spectra and ask user for parameters
-    spectra_ds <- read_spectra(data_path, file_format, expno, procno, raw = TRUE)
+    spectra_ds <- read_spectra(data_path, file_format, expno, procno, raw = TRUE) # spectra in [deconvolute_spectra()] (DS) format
     spectra <- lapply(spectra_ds, convert_spectrum, sfx = sf[1], sfy = sf[2])
     adjno <- get_adjno(spectra, sfr, wshw, ask)
     spectra <- get_sfrs(spectra, sfr, ask, adjno)
     spectra <- get_wsrs(spectra, wshw, ask, adjno)
 
     # Deconvolute spectra
-    n <- length(spectra)
+    nfiles <- length(spectra)
     nams <- names(spectra)
     if (nworkers == "auto") nworkers <- min(ceiling(parallel::detectCores() / 2), length(spectra))
     starttime <- Sys.time()
-
     if (nworkers == 1) {
-        logf("Starting deconvolution of %d spectra using 1 worker", n)
-        spectra <- lapply(seq_len(n), function(i) {
-            deconvolute_spectrum(nams[[i]], spectra[[i]], smopts, delta, nfit, n, debug)
+        logf("Starting deconvolution of %d spectra using 1 worker", nfiles)
+        spectra <- lapply(seq_len(nfiles), function(i) {
+            deconvolute_spectrum(nams[[i]], spectra[[i]], smopts, delta, nfit, nfiles, debug)
         })
     } else {
         logf("Starting %d worker processes", nworkers)
         cl <- parallel::makeCluster(nworkers, outfile = "")
         on.exit(parallel::stopCluster(cl), add = TRUE)
         logf("Exporting required functions and data to workers")
-        exportvars <- c("logf", "fg", "deconvolute_spectrum", "nams", "spectra", "smopts", "delta", "nfit", "n", "debug")
+        exportvars <- c("logf", "fg", "deconvolute_spectrum", "nams", "spectra", "smopts", "delta", "nfit", "nfiles", "debug")
         parallel::clusterExport(cl, exportvars, envir = environment())
-        logf("Starting deconvolution of %d spectra using %d workers", n, nworkers)
-        spectra <- parallel::parLapply(cl, seq_len(n), function(i) {
-            opts <- options(toscutil.logf.sep1 = sprintf(" CORE %d ", Sys.getpid()))
+        logf("Starting deconvolution of %d spectra using %d workers", nfiles, nworkers)
+        spectra <- parallel::parLapply(cl, seq_len(nfiles), function(i) {
+            opts <- options(toscutil.logf.sep1 = sprintf(" PID %d ", Sys.getpid()))
             on.exit(options(opts), add = TRUE)
-            deconvolute_spectrum(nams[[i]], spectra[[i]], smopts, delta, nfit, n, debug)
+            deconvolute_spectrum(nams[[i]], spectra[[i]], smopts, delta, nfit, nfiles, debug)
         })
     }
-
     endtime <- Sys.time()
     duration <- endtime - starttime
-    logf("Finished deconvolution of %d spectra in %s", n, format(duration))
+    logf("Finished deconvolution of %d spectra in %s", nfiles, format(duration))
     names(spectra) <- nams
 
     # Prepare, store and return results
@@ -118,7 +116,7 @@ generate_lorentz_curves <- function(data_path = pkg_file("example_datasets/bruke
 
 # Private Helpers #####
 
-deconvolute_spectrum <- function(nam, spec, smopts, delta, nfit, n, debug) {
+deconvolute_spectrum <- function(nam, spec, smopts, delta, nfit, nfiles, debug) {
     logf("Starting deconvolution of %s", nam)
     spec <- rm_water_signal_v12(spec)
     spec <- rm_negative_signals_v12(spec)
@@ -126,7 +124,7 @@ deconvolute_spectrum <- function(nam, spec, smopts, delta, nfit, n, debug) {
     spec <- find_peaks_v12(spec)
     spec <- filter_peaks_v12(spec, delta)
     spec <- fit_lorentz_curves(spec, nfit)
-    spec <- add_return_list_v13(spec, n, nam, debug)
+    spec <- add_return_list_v13(spec, nfiles, nam, debug)
     logf("Finished deconvolution of %s", nam)
     spec
 }
@@ -233,45 +231,30 @@ filter_peaks_v13 <- function(ppm, # x values in ppm
 
 #' @title create backwards compatible return list
 #' @param spec Deconvoluted spectrum as returned by [refine_lorentz_curves_v12()].
-#' @param n Number of deconvoluted spectrum.
+#' @param nfiles Number of deconvoluted spectrum.
 #' @param nam Name of current spectrum.
 #' @param debug Add debug info to the return list
 #' @noRd
-add_return_list_v13 <- function(spec = glc_v13(), n = 1, nam = "urine_1", debug = TRUE) {
+add_return_list_v13 <- function(spec = glc(), nfiles = 1, nam = "urine_1", debug = TRUE) {
 
     # Prepare some shortcuts for later calculations
-    x <- spec$sdp
-    p <- spec$ppm
-    r <- spec$y_raw
-    y <- spec$y_smooth
-    n <- length(x)
-    A <- spec$lcr$A
-    lambda <- spec$lcr$lambda
-    x_0 <- spec$lcr$w
+    sdp <- spec$sdp; ppm <- spec$ppm; hz <- spec$hz; dp <- spec$dp
+    y_raw <- spec$y_raw; y_smooth <- spec$y_smooth
+    A <- spec$lcr$A; lambda <- spec$lcr$lambda; x_0 <- spec$lcr$w
 
     # Calculate spectrum superposition
-    s <- sapply(x, function(x_i) sum(abs(A * (lambda / (lambda^2 + (x_i - x_0)^2))))) # takes approx. 2.2 seconds for urine_1
+    s <- sapply(sdp, function(x_i) sum(abs(A * (lambda / (lambda^2 + (x_i - x_0)^2))))) # takes approx. 2.2 seconds for urine_1
     s_normed <- s / sum(s)
 
     # Calculate MSE_normed and MSE_normed_raw
-    y_normed <- y / sum(y)
-    y_raw_normed <- r / sum(r)
+    y_normed <- y_smooth / sum(y_smooth)
+    y_raw_normed <- y_raw / sum(y_raw)
     mse_normed <- mean((y_normed - s_normed)^2)
     mse_normed_raw <- mean((y_raw_normed - s_normed)^2)
 
-    # Prepare variables for converting between units in the next step
-    width_ppm <- p[1] - p[n]
-    width_sdp <- x[1] - x[n]
-    width_hz  <- spec$hz[1] - spec$hz[n]
-    width_dp  <- spec$dp[1] - spec$dp[n]
-    ref_ppm   <- p[1]
-    ref_sdp   <- x[1]
-    ref_hz    <- spec$hz[1]
-    ref_dp    <- spec$dp[1]
-
     # Create and return list
     spec$ret <- list(
-        number_of_files = n,
+        number_of_files = nfiles,
         filename = nam,
         x_values = spec$sdp,
         x_values_ppm = spec$ppm,
@@ -294,15 +277,15 @@ add_return_list_v13 <- function(spec = glc_v13(), n = 1, nam = "urine_1", debug 
         y_values_raw = spec$y_raw,
         x_values_hz = spec$hz,
         mse_normed_raw = mse_normed_raw,
-        x_0_hz  = convert_pos(x_0, width_sdp, width_hz, ref_sdp, ref_hz),
-        x_0_dp  = convert_pos(x_0, width_sdp, width_dp, ref_sdp, ref_dp),
-        x_0_ppm = convert_pos(x_0, width_sdp, width_ppm, ref_sdp, ref_ppm),
-        A_hz  = convert_width(A, width_sdp, width_hz),
-        A_dp  = convert_width(A, width_sdp, width_dp),
-        A_ppm = convert_width(A, width_sdp, width_ppm),
-        lambda_hz  = convert_width(lambda, width_sdp, width_hz),
-        lambda_dp  = convert_width(lambda, width_sdp, width_dp),
-        lambda_ppm = convert_width(lambda, width_sdp, width_ppm)
+        x_0_hz  = convert_pos(x_0, sdp, hz),
+        x_0_dp  = convert_pos(x_0, sdp, dp),
+        x_0_ppm = convert_pos(x_0, sdp, ppm),
+        A_hz  = convert_width(A, sdp, hz),
+        A_dp  = convert_width(A, sdp, dp),
+        A_ppm = convert_width(A, sdp, ppm),
+        lambda_hz  = convert_width(lambda, sdp, hz),
+        lambda_dp  = convert_width(lambda, sdp, dp),
+        lambda_ppm = convert_width(lambda, sdp, ppm)
     )
     spec
 }
@@ -311,7 +294,7 @@ add_return_list_v13 <- function(spec = glc_v13(), n = 1, nam = "urine_1", debug 
 # Private Deprecated #####
 
 #' @title Generate Lorentz Curves from NMR Spectra
-#' @description Deconvolutes NMR spetra and generates a Lorentz curve for each detected signal within a spectra.
+#' @description Deconvolutes NMR spectra and generates a Lorentz curve for each detected signal within a spectra.
 #' @param data_path Either the path to an existing directory containing measured NMR spectra or a dataframe with columns `ppm` (parts per million) and `si` (signal intensity) or a list of such dataframes.
 #' @param file_format Format of the spectra files. Either `"bruker"` or `"jcampdx"`. Only relevant if `data_path` is a directory.
 #' @param make_rds Store results as rds file on disk? Should be set to TRUE if many spectra are evaluated to decrease computation time.
@@ -406,7 +389,7 @@ filter_peaks_v12 <- function(spec, delta = 6.4) {
 #' @param n Number of deconvoluted spectrum.
 #' @param nam Name of current spectrum.
 #' @param debug Add debug info to the return list
-add_return_list_v12 <- function(spec = glc_v13()$rv, n = 1, nam = "urine_1", debug = TRUE) {
+add_return_list_v12 <- function(spec = glc()$rv, n = 1, nam = "urine_1", debug = TRUE) {
     spec$ret <- list(
         number_of_files = n,
         filename = nam,

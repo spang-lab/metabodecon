@@ -36,4 +36,4 @@ For such cases, `metabodecon` comes with a set of simulated datasets, which were
 
 [^1] Given, that all blood spectra have 131072 datapoints over a range of approx. 20 ppm (14.8 ppm to -5.2), we get approx. 1310 datapoints per 0.2 ppm interval (3.6 - 3.4 ppm). Sidenote: for the blood spectra the 14.8 to -5.2 ppm range corresponds to a 600.244 MHz to 600.256 MHz range and a magnetic field strength of 14.1 T, i.e., the 3.6 to 3.4 ppm range corresponds to a 600.250660 MHz to 600.250780 MHz range.
 
-The 16 simuated spectra are plotted in [Figure 1: Simulated Datasets](). For further details about the simulation process, see the source code of function `simulate_spectra()`.
+The 16 simulated spectra are plotted in [Figure 1: Simulated Datasets](). For further details about the simulation process, see the source code of function `simulate_spectra()`.

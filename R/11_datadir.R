@@ -56,9 +56,7 @@ datadir_temp <- function() {
     normalizePath(p, "/", mustWork = FALSE)
 }
 
-# Private Helpers #####
-
-#' @noRd
+#' @export
 #' @title Temporary Session Directory
 #' @description Returns the path to metabodecon's temporary session directory.
 #' This directory equals subdirectory `"metabodecon"` of R's temporary session directory `[base::tempdir()]` plus additional path normalization.
@@ -76,6 +74,8 @@ tmpdir <- function(subdir = NULL, create = FALSE) {
     normalizePath(p, "/", mustWork = FALSE)
 
 }
+
+# Private Helpers #####
 
 zip_temp <- function() {
     p <- file.path(datadir_temp(), "example_datasets.zip")

@@ -10,7 +10,7 @@
 #' @param file_format The file_format of the spectrum file. E.g. `"bruker"` or `"jcampdx"`.
 #' @param expno The experiment number for the file. E.g. `"10"`. Only relevant if `file_format` equals `"bruker"`.
 #' @param procno The processing number for the file. E.g. `"10"`. Only relevant if `file_format` equals `"bruker"`.
-#' @param raw If `TRUE`, scales the returned signal intensities based on information available in the spectrum metadata, in particular `NC_proc`. For details see <https://www.bruker.com/protected/en/services/user-manuals/nmr/acquisition-processing.html> (requires account creation and login at <https://www.bruker.com>).
+#' @param raw If `TRUE`, scales the returned signal intensities based on information available in the spectrum metadata, in particular `NC_proc`. For details see `processing-reference.pdf`, available at <https://www.bruker.com/en.html> at section 'Services & Support > Documentation & Manuals > Magnetic Resonance > Acquisition & Processing > TopSpin Processing Commands and Parameters' (requires login).
 #' @param silent If `TRUE`, no output will be printed to the console.
 #' @param force If `TRUE`, try to continue when encountering errors and print info messages instead. To hide these messages as well, set `silent = TRUE`.
 #' @return For `read_spectrum`, a dataframe with following columns:
@@ -29,7 +29,7 @@
 #' XX <- read_spectra(urine)
 #' str(XX)
 #' str(X1)
-#' stopifnot(all.equal(X1, XX$urine_1)
+#' stopifnot(all.equal(X1, XX$urine_1))
 #' \donttest{
 #' urine_1_dx <- pkg_file("example_datasets/jcampdx/urine/urine_1.dx")
 #' X1_dx <- read_spectrum(urine_1_dx, file_format = "jcampdx")

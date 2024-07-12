@@ -2,7 +2,7 @@
 % Please edit documentation in R/80_old_metabodecon1d.R
 \name{calculate_lorentz_curves}
 \alias{calculate_lorentz_curves}
-\title{Calculate lorentz curves for each analysed spectrum}
+\title{Calculate lorentz curves for each analyzed spectrum}
 \usage{
 calculate_lorentz_curves(deconv_result, number_of_files = NA)
 }

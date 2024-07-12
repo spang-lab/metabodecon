@@ -34,7 +34,7 @@ read_spectra(
 
 \item{procno}{The processing number for the file. E.g. \code{"10"}. Only relevant if \code{file_format} equals \code{"bruker"}.}
 
-\item{raw}{If \code{TRUE}, scales the returned signal intensities based on information available in the spectrum metadata, in particular \code{NC_proc}. For details see \url{https://www.bruker.com/protected/en/services/user-manuals/nmr/acquisition-processing.html} (requires account creation and login at \url{https://www.bruker.com}).}
+\item{raw}{If \code{TRUE}, scales the returned signal intensities based on information available in the spectrum metadata, in particular \code{NC_proc}. For details see \code{processing-reference.pdf}, available at \url{https://www.bruker.com/en.html} at section 'Services & Support > Documentation & Manuals > Magnetic Resonance > Acquisition & Processing > TopSpin Processing Commands and Parameters' (requires login).}
 
 \item{silent}{If \code{TRUE}, no output will be printed to the console.}
 
@@ -68,7 +68,7 @@ X2 <- read_spectra(urine_2)
 XX <- read_spectra(urine)
 str(XX)
 str(X1)
-stopifnot(all.equal(X1, XX$urine_1)
+stopifnot(all.equal(X1, XX$urine_1))
 \donttest{
 urine_1_dx <- pkg_file("example_datasets/jcampdx/urine/urine_1.dx")
 X1_dx <- read_spectrum(urine_1_dx, file_format = "jcampdx")

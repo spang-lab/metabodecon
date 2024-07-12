@@ -2,32 +2,29 @@
 % Please edit documentation in R/00_util.R
 \name{convert_width}
 \alias{convert_width}
-\title{Convert values from unit A to unit B}
+\alias{convert_pos}
+\title{Convert from unit A to unit B}
 \usage{
-convert_width(xa, wa, wb)
+convert_width(xa, ya, yb)
+
+convert_pos(xa, ya, yb)
 }
 \arguments{
-\item{xa}{A numeric vector with values in unit A.}
+\item{xa}{For \code{convert_width} a numeric vector specifying widths in unit A. For \code{convert_pos} a numeric vector specifying positions in unit A.}
 
-\item{wa}{Width of a certain interval (e.g. the spectrum width) in unit A.}
+\item{ya}{A numeric vector giving the positions of at least two points in unit A.}
 
-\item{wb}{With of the same interval in unit B.}
+\item{yb}{A numeric vector giving the positions of the same points in unit B.}
 }
 \value{
 A numeric vector of values converted from unit A to unit B.
 }
 \description{
-Converts values from unit A to unit B using a conversion factor.
+\code{convert_pos} converts positions from unit A to unit B. \code{convert_width} converts widths from unit A to unit B. If the direction of units A and B is reversed, the width's sign will be reversed as well. To keep widths strictly positive, wrap the result with \code{abs()}.
 }
 \examples{
-\donttest{
-urine_1 <- pkg_file("example_datasets/bruker/urine/urine_1")
-deconv <- generate_lorentz_curves(urine_1, ask = FALSE)[[1]]
-sdp <- deconv$x_values
-sdp_width <- diff(range(sdp))
-ppm <- deconv$x_values_ppm
-ppm_width <- diff(range(ppm))
-lambda_sdp <- deconv$lambda
-lambda_ppm <- convert_width(lambda_sdp, sdp_width, ppm_width)
-}
+ya <- c(244, 246, 248, 250, 252)
+yb <- c(15, 10, 5, 0, -5)
+convert_width(c(2, 4, 8), ya, yb)
+convert_pos(c(247, 249), ya, yb)
 }
