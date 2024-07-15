@@ -2,23 +2,22 @@
 
 #' @export
 #' @title Generate Lorentz Curves from NMR Spectra
-#' @description Deconvolutes NMR spectra and generates a Lorentz curve for each detected signal within a spectra.
-#' @param data_path Either the path to an existing directory containing measured NMR spectra or a dataframe with columns `ppm` (parts per million) and `si` (signal intensity) or a list of such dataframes.
+#' @description Deconvolutes NMR spectra by modeling each detected signal within a spectra as Lorentz Curve.
+#' @param data_path Either the path to a directory containing measured NMR spectra, a dataframe as returned by [read_spectrum()], or a list of such dataframes.
 #' @param file_format Format of the spectra files. Either `"bruker"` or `"jcampdx"`. Only relevant if `data_path` is a directory.
-#' @param make_rds Store results as rds file on disk? Should be set to TRUE if many spectra are evaluated to decrease computation time.
-#' @param expno The experiment number for the spectra files. E.g. `"10"`. Only relevant if `data_path` is a directory and `file_format` is `"bruker"`.
-#' @param procno The processing number for the spectra. E.g. `"10"`. Only relevant if `data_path` is a directory and `file_format` is `"bruker"`.
-#' @param nfit Number of iterations for the approximation of the parameters for the Lorentz curves.
-#' @param wshw Half width of the water artefact in ppm.
-#' @param sfr Row vector with two entries consisting of the ppm positions for the left and right border of the signal free region of the spectrum.
-#' @param smopts Vector with two entries consisting of the number of smoothing iterations and the number of data points to use for smoothing (must be uneven).
+#' @param make_rds Logical or character. If TRUE, stores results as an RDS file on disk. If a character string, saves the RDS file with the specified name. Should be set to TRUE if many spectra are evaluated to decrease computation time.
+#' @param expno The experiment number for the spectra files, e.g., `"10"`. Only relevant if `data_path` is a directory and `file_format` is `"bruker"`.
+#' @param procno The processing number for the spectra, e.g., `"10"`. Only relevant if `data_path` is a directory and `file_format` is `"bruker"`.
+#' @param nfit Number of iterations for approximating the parameters for the Lorentz curves.
+#' @param wshw Half-width of the water artifact in ppm.
+#' @param sfr Numeric vector with two entries: the ppm positions for the left and right border of the signal-free region of the spectrum.
+#' @param smopts Numeric vector with two entries: the number of smoothing iterations and the number of data points to use for smoothing (must be odd).
 #' @param delta Threshold value to distinguish between signal and noise.
-#' @param sf Vector with two entries consisting of the factor to scale the x-axis and the factor to scale the y-axis.
-#' @param ask  Whether to ask for user input during the deconvolution process. If set to FALSE, the provided default values will be used.
-#' @param debug Whether to return additional intermediate results for debugging purposes.
-#' @param nworkers Number of workers to use for parallel processing. If set to `"auto"`, the number of workers will be determined automatically. If set to a number greater than 1, the number of workers will be limited to the number of spectra or 1 if the operating system is Windows.
+#' @param sf Numeric vector with two entries: the factors to scale the x-axis and y-axis.
+#' @param ask Logical. Whether to ask for user input during the deconvolution process. If FALSE, the provided default values will be used.
+#' @param debug Logical. Whether to return additional intermediate results for debugging purposes.
+#' @param nworkers Number of workers to use for parallel processing. If `"auto"`, the number of workers will be determined automatically. If a number greater than 1, it will be limited to the number of spectra.
 #' @param share_stdout Whether to share the standard output (usually your terminal) of the main process with the worker processes. Only relevant if `nworkers` is greater than 1. Note that this can cause messages from different processes to get mixed up, making the output hard to follow.
-#' @param share_stdout If set to TRUE, the output (messages, warnings, etc.) from the main process and the workers are combined. This is only applicable when `nworkers` is more than 1. It means you might see , which could make the output harder to follow.
 #' @return A list of deconvoluted spectra. Each list element contains a list with the following elements:
 #' * `number_of_files`: Number of deconvoluted spectra.
 #' * `filename`: Name of the analyzed spectrum.
@@ -41,11 +40,56 @@
 #' * `x_0`: Center of the Lorentz curves in scaled data points.
 #' @details First, an automated curvature based signal selection is performed. Each signal is represented by 3 data points to allow the determination of initial Lorentz curves. These Lorentz curves are then iteratively adjusted to optimally approximate the measured spectrum.
 #' @examples
+#' # -----------------------------------------------------------------------------
+#' # Define the paths to the example datasets we want to deconvolute:
+#' # `sim`: directory containing 16 simulated spectra
+#' # `sim_01`: path to the first spectrum in the `sim` directory
+#' # `sim_01_spec`: the first spectrum in the `sim` directory as a dataframe
+#' # -----------------------------------------------------------------------------
 #' sim <- system.file("example_datasets/bruker/sim", package = "metabodecon")
-#' decon <- generate_lorentz_curves(
-#'      sim_01, sfr = c(3.42, 3.58), ws = 0, ask = FALSE,
-#'      smopts = c(1, 5), delta = 0.1)
+#' sim_01 <- file.path(sim, "sim_01")
+#' sim_01_spec <- read_spectrum(sim_01)
+#'
+#' # -----------------------------------------------------------------------------
+#' # Define a little wrapper function so we don't have to provide all parameters
+#' # every time we want to start the deconvolution procedure:
+#' # -----------------------------------------------------------------------------
+#' glc2 <- function(data_path) {
+#'      generate_lorentz_curves(
+#'          data_path = data_path,
+#'          ask = FALSE,
+#'          sfr = c(3.42, 3.58),
+#'          ws = 0,
+#'          smopts = c(1, 5),
+#'          delta = 0.1
+#'      )
 #' )
+#'
+#' # -----------------------------------------------------------------------------
+#' # Deconvolute each input:
+#' # -----------------------------------------------------------------------------
+#' decon_df <- glc2(sim_01)
+#' decon_01 <- glc2(sim_01_spec)
+#' decons   <- glc2(sim)
+#'
+#' # -----------------------------------------------------------------------------
+#' # Make sure the results for the first spectrum are the same:
+#' # -----------------------------------------------------------------------------
+#' ignore <- which(names(decon_01) %in% c("number_of_files", "filename"))
+#' stopifnot(isTRUE(all.equal(decon_01[-ignore], decon_df[-ignore])))
+#' stopifnot(isTRUE(all.equal(decons[[1]][-ignore], decon_df[-ignore])))
+#'
+#' # -----------------------------------------------------------------------------
+#' # Below example uses data from a real NMR experiment, instead of (small)
+#' # simulated datasets and therefor requires multiple seconds to run. Because
+#' # `ask` is TRUE in this example (the default value), the user will be asked
+#' # for input during the deconvolution. To avoid this, set `ask = FALSE`.
+#' # -----------------------------------------------------------------------------
+#' if (interactive()) {
+#'      example_datasets <- download_example_datasets()
+#'      urine_1 <- file.path(example_datasets, "bruker/urine/urine_1")
+#'      generate_lorentz_curves(urine_1)
+#' }
 generate_lorentz_curves <- function(data_path = pkg_file("example_datasets/bruker/urine"),
                                     file_format = "bruker",
                                     make_rds = FALSE,
@@ -61,9 +105,21 @@ generate_lorentz_curves <- function(data_path = pkg_file("example_datasets/bruke
                                     debug = FALSE,
                                     nworkers = "auto",
                                     share_stdout = FALSE) {
-
     # Read spectra and ask user for parameters
-    spectra_ds <- read_spectra(data_path, file_format, expno, procno, raw = TRUE) # spectra in [deconvolute_spectra()] (DS) format
+    if (is.character(data_path)) {
+        spectra_ds <- read_spectra(data_path, file_format, expno, procno, raw = TRUE) # spectra in [deconvolute_spectra()] (DS) format
+    } else if (is.data.frame(data_path)) {
+        if (!all(c("cs", "si", "fq") %in% colnames(data_path))) stop("'data_path' must have columns 'si', 'cs' and 'fq'")
+        spectra_ds <- list(data_path)
+    } else if (is.list(data_path)) {
+        if (!all(sapply(data_path, function(df) is.data.frame(df)))) stop("Invalid 'data_path' format.")
+        dfs_ok <- lapply(data_path, function(df) all(c("cs", "si", "fq") %in% colnames(df)))
+        if (!all(dfs_ok)) stop("Each spectrum in 'data_path' must have columns 'si', 'cs' and 'fq'.")
+        spectra_ds <- lapply(data_path, function(df) convert_spectrum(df, sfx = sf[1], sfy = sf[2]))
+    } else {
+        stop("'data_path' must be a directory, a dataframe or a list of dataframes")
+    }
+    if (is.null(names(spectra_ds))) names(spectra_ds) <- paste0("spectrum_", seq_along(spectra_ds))
     spectra <- lapply(spectra_ds, convert_spectrum, sfx = sf[1], sfy = sf[2])
     adjno <- get_adjno(spectra, sfr, wshw, ask)
     spectra <- get_sfrs(spectra, sfr, ask, adjno)

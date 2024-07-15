@@ -115,15 +115,23 @@ plot_sfr <- function(spec, left_ppm, right_ppm) {
 #' @param hwidth_ppm The half width of the water signal in ppm.
 #' @return NULL. Called for side effect of plotting the water signal.
 plot_ws <- function(spec, hwidth_ppm) {
-    center_ppm <- (spec$ppm_max + spec$ppm_min) / 2
+    hw <- hwidth_ppm
+    x0 <- (spec$ppm_max + spec$ppm_min) / 2
+    xlim <- if (hw > 0) c(x0 + 5 * hw, x0 - 5 * hw) else range(spec$ppm)[2:1]
     plot(
         spec$ppm,
         spec$y_scaled,
         type = "l",
-        xlab = "[ppm]",
-        ylab = "Intensity [a.u.]",
-        xlim = c(center_ppm + 2 * hwidth_ppm, center_ppm - 2 * hwidth_ppm)
+        xlab = "Chemical Shift [ppm]",
+        ylab = "Intensity [au]",
+        xlim = xlim
     )
-    graphics::abline(v = center_ppm + hwidth_ppm, col = "red")
-    graphics::abline(v = center_ppm - hwidth_ppm, col = "red")
+    graphics::abline(v = x0, col = "red", lty = 1) # center
+    mtext("center", side = 3, line = 0, at = x0, col = "red")
+    if (hw > 0) {
+        ya <- max(spec$y_scaled) * 0.8
+        abline(v = c(x0 + hw, x0 - hw), col = "red") # left/right border
+        arrows(x0, ya, x0 + c(hw, -hw), ya, col = "red", length = 0.1)
+        text(x0 + c(hw, -hw) / 2, ya, labels = "wshw", pos = 3, col = "red")
+    }
 }

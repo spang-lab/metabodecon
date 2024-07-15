@@ -56,10 +56,6 @@
 
 # v1.2.0
 
-## FEATURE-17: Discard output
-
-By default output of `generate_lorentz_curves` should be discarded during parallel phase. Before this phase, print a message that the remaining task might take up to a few minutes and that live output can be disabled by settings `share_stdout = TRUE`, but that the output might be scrambled depending on configuration of the R installation and the operating system.
-
 ## FEATURE-11: Accept dataframes in GLC
 
 Let `generate_lorentz_curves` accept dataframes as input. This is useful for Maximilians Bachelorthesis and also makes testing easier. If necessary, implement a private wrapper around `read_spectra`, called `read_spectra_glc` that converts the return value of `read_spectra` to a format that can be used by `deconvolute_spectra`.>
@@ -152,6 +148,17 @@ Fix all R CMD check findings and resubmit the package to CRAN.
 ## DOC-2: Write paper
 
 Reformat the vignettes as paper and send to Wolfram for proofreading.
+
+# v1.3.2
+
+## FEATURE 1.3.2-1: make SFR and WS defaults dynamic
+
+Replace the default values `wshw = 0.1527692` and `sfr = c(11.44494, -1.8828)` in `generate_lorentz_curves()` with `wshw = "auto"` and `sfr = "auto"`, which should be calculated as follows:
+
+If `c(11.44494, -1.8828)` is part of the ppm range, use these values, otherwise calculate them as
+
+1. `wshw = 0.01 * width(cs)` (where `0.01` is `round(0.007629452, 2)` and `0.007629452` equals `0.1527692 / 20.0236144338963` which is the width of the default WSHW dividided by the width of the `urine_1` spectrum. I.e., the new calculation would give approximately the same proportion of the spectrum width as the default value.)
+2. `sfr = max(cs) - c(1/6, 5/6) * width(cs)`
 
 # v1.4.0
 
@@ -569,6 +576,12 @@ Provide simulated datasets from blood spectra
 Add lifecycle badges to all non-stable exported functions. Functions which are exported but should not be used should be marked as "experimental" or (if possible) as "internal" (idea: check where other badges are stored and whether they can be modified).
 
 2024/07/15: Closed. Will be done with [DOC-1: Document whole package](#doc-1-document-whole-package).
+
+## FEATURE-17: Discard output
+
+By default output of `generate_lorentz_curves` should be discarded during parallel phase. Before this phase, print a message that the remaining task might take up to a few minutes and that live output can be disabled by settings `share_stdout = TRUE`, but that the output might be scrambled depending on configuration of the R installation and the operating system.
+
+Done in branch `v1.2.0` with commit `f9bf57a5e4c7167dfc3231cfe0ee515b40ad12bf`.
 
 ## REFACTOR-1: Combine load_xxx_spectrum functions
 
