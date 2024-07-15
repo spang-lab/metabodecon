@@ -17,3 +17,15 @@ test_that("GLC works for bruker folder", {
     expect_true(sum(r1 %in% 0:1) >= 60 && sum(r1 %in% 2:3) == 0) # >=60 identical/equal && no diffs/errors
     expect_true(sum(r2 %in% 0:1) >= 60 && sum(r2 %in% 2:3) == 0) # >=60 identical/equal && no diffs/errors
 })
+
+test_that("GLC works when no peaks are filtered out", {
+    obj <- readRDS(pkg_file("example_datasets/rds/sim/sim_01.rds"))
+    X <- obj$X
+    P <- obj$P
+    X$si <- lc(X$cs, x0 = P$x_0[11], A = P$A[11], lambda = P$lambda[11]) * 1e6 # glc expects raw signal intensities
+    decon <- generate_lorentz_curves(X, sfr = c(3.58, 3.42), wshw = 0, smopts = c(0, 3), ask = FALSE, force = TRUE)
+    ratio <- abs(P$A[11] / decon$A_ppm) # true/estimate
+    expect_identical(length(decon), 31L)
+    expect_true(ratio > 0.8 && ratio < 1.2)
+    expect_error(generate_lorentz_curves(X, sfr = c(3.58, 3.42), wshw = 0, smopts = c(0, 3), ask = FALSE))
+})

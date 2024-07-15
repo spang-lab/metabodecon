@@ -89,6 +89,15 @@ plot_spectrum <- function(decon, focus = c(3.45, 3.55)) {
     )
 }
 
+plot_decon <- function(decon, focus = c(3.45, 3.55)) {
+    opar <- par(mfrow = c(2, 2))
+    on.exit(par(opar))
+    plot(spec$ppm, spec$y_scaled, type = "l")
+    plot(spec$ppm, spec$y_nows, type = "l")
+    plot(spec$ppm, spec$y_pos, type = "l")
+    plot(spec$ppm, spec$y_smooth, type = "l")
+}
+
 #' @noRd
 #' @title Plot Signal Free Region
 #' @description Draws the signal free region as green vertical lines into the given spectrum.

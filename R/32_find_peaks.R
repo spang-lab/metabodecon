@@ -61,6 +61,30 @@ get_left_border_v12 <- function(j, d) {
     return(NA)
 }
 
+
+#' @title Get Peak Score
+#' @description Calculate the score of a peak based on the sum of absolute second derivative values of its datapoints.
+#' @param j <- Index of the peak center
+#' @param l <- Index of the left border
+#' @param r <- Index of the right border
+#' @param a <- Absolute values of the second derivative for all data points
+#' @return The score of the peak.
+#' @examples
+#' y <- c( 0, 1, 2, 3, 4, 3, 3, 2, 1, 0, 0, 1, 2, 3, 1, 1, 0  )
+#' #      ____________________________________________________
+#' #     |____2________5___________9_______12____14____16_____|
+#' #     |             x                                      |
+#' #     |          x  x  x  x                    x           |
+#' #     |       x  x  x  x  x  x              x  x           |
+#' #     |_.__x__x__x__x__x__x__x__x__.__.__x__x__x__x__x__.__|
+#' a <- c(NA, 0, 0, 0, 2, 1, 1, 0, 0, 1, 1, 0, 0, 3, 2, 1, NA )
+#' #          |----2---|-----4-----|        |--3--|--6--|
+#' all.equal(a, abs(calc_second_derivative_v12(y)))
+#'
+#' s1 <- get_peak_score_v12( 5, 2,   9, a)
+#' s2 <- get_peak_score_v12(14, 12, 16, a)
+#' stopifnot(s1 == min(sum(a[2:5]), sum(a[5:9])))
+#' stopifnot(s2 == min(sum(a[12:14]), sum(a[14:16])))
 get_peak_score_v12 <- function(j, l, r, a) {
     if (any(is.na(a[c(l, j, r)]))) {
         0

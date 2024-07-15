@@ -223,7 +223,7 @@ get_datadir_mock <- function(type = "temp", state = "default") {
 #'      simulate_spectra(
 #'          pngdir = "vignettes/Datasets/png",
 #'          pdfdir = "vignettes/Datasets/pdf",
-#'          rdsdir = "inst/example_datasets/rds",
+#'          rdsdir = "inst/example_datasets/rds/sim",
 #'          brukerdir = "inst/example_datasets/bruker/sim",
 #'          verbose = TRUE
 #'      )

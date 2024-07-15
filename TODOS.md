@@ -56,10 +56,6 @@
 
 # v1.2.0
 
-## FEATURE-11: Accept dataframes in GLC
-
-Let `generate_lorentz_curves` accept dataframes as input. This is useful for Maximilians Bachelorthesis and also makes testing easier. If necessary, implement a private wrapper around `read_spectra`, called `read_spectra_glc` that converts the return value of `read_spectra` to a format that can be used by `deconvolute_spectra`.>
-
 ## FIX-1: Prevent crashes for high smoothing
 
 > From: Maximilian Sombke <Maximilian.Sombke@stud.uni-regensburg.de>
@@ -564,6 +560,12 @@ Implement and export `read_spectra` and `read_spectrum` in a way that
 This function can then be used to read spectra if a character string is provided as argument to `deconvolute_spectra()` or `generate_lorentz_curves` (see [FEATURE-11](#feature-11-accept-dataframes-in-glc)).
 
 2024/07/03: done in branch `v1.2.0` with commit `e3c35dce9965cf9a3a44383be818a8f5ab1b0c6e`. Note: the Magnetic Field Strength is not returned directly, but can be calculated via function `calc_B()`.
+
+## FEATURE-11: Accept dataframes in GLC
+
+Let `generate_lorentz_curves` accept dataframes as input. This is useful for Maximilians Bachelorthesis and also makes testing easier. If necessary, implement a private wrapper around `read_spectra`, called `read_spectra_glc` that converts the return value of `read_spectra` to a format that can be used by `deconvolute_spectra`.
+
+2024/07/15: done in branch `v1.2.0` with commit `fa3c427cc1680925c6a12a0eab17f14673c6ee0f`.
 
 ## FEATURE-14: Provide simulated datasets from blood spectra
 
