@@ -17,6 +17,8 @@
 #' @param ask  Whether to ask for user input during the deconvolution process. If set to FALSE, the provided default values will be used.
 #' @param debug Whether to return additional intermediate results for debugging purposes.
 #' @param nworkers Number of workers to use for parallel processing. If set to `"auto"`, the number of workers will be determined automatically. If set to a number greater than 1, the number of workers will be limited to the number of spectra or 1 if the operating system is Windows.
+#' @param share_stdout Whether to share the standard output (usually your terminal) of the main process with the worker processes. Only relevant if `nworkers` is greater than 1. Note that this can cause messages from different processes to get mixed up, making the output hard to follow.
+#' @param share_stdout If set to TRUE, the output (messages, warnings, etc.) from the main process and the workers are combined. This is only applicable when `nworkers` is more than 1. It means you might see , which could make the output harder to follow.
 #' @return A list of deconvoluted spectra. Each list element contains a list with the following elements:
 #' * `number_of_files`: Number of deconvoluted spectra.
 #' * `filename`: Name of the analyzed spectrum.
@@ -39,13 +41,11 @@
 #' * `x_0`: Center of the Lorentz curves in scaled data points.
 #' @details First, an automated curvature based signal selection is performed. Each signal is represented by 3 data points to allow the determination of initial Lorentz curves. These Lorentz curves are then iteratively adjusted to optimally approximate the measured spectrum.
 #' @examples
-#' \donttest{
-#' example_datasets <- download_example_datasets()
-#' urine <- file.path(example_datasets, "bruker/urine")
-#' urine_1 <- file.path(urine, "urine_1")
-#' deconv_urine <- generate_lorentz_curves(urine, ask = FALSE, nfit = 1)
-#' deconv_urine_1 <- generate_lorentz_curves(urine_1, ask = FALSE)[[1]]
-#' }
+#' sim <- system.file("example_datasets/bruker/sim", package = "metabodecon")
+#' decon <- generate_lorentz_curves(
+#'      sim_01, sfr = c(3.42, 3.58), ws = 0, ask = FALSE,
+#'      smopts = c(1, 5), delta = 0.1)
+#' )
 generate_lorentz_curves <- function(data_path = pkg_file("example_datasets/bruker/urine"),
                                     file_format = "bruker",
                                     make_rds = FALSE,
@@ -59,7 +59,8 @@ generate_lorentz_curves <- function(data_path = pkg_file("example_datasets/bruke
                                     sf = c(1000, 1000000),
                                     ask = TRUE,
                                     debug = FALSE,
-                                    nworkers = "auto") {
+                                    nworkers = "auto",
+                                    share_stdout = FALSE) {
 
     # Read spectra and ask user for parameters
     spectra_ds <- read_spectra(data_path, file_format, expno, procno, raw = TRUE) # spectra in [deconvolute_spectra()] (DS) format
@@ -80,7 +81,7 @@ generate_lorentz_curves <- function(data_path = pkg_file("example_datasets/bruke
         })
     } else {
         logf("Starting %d worker processes", nworkers)
-        cl <- parallel::makeCluster(nworkers, outfile = "")
+        cl <- parallel::makeCluster(nworkers, outfile = if (share_stdout) "" else nullfile())
         on.exit(parallel::stopCluster(cl), add = TRUE)
         logf("Exporting required functions and data to workers")
         exportvars <- c("logf", "fg", "deconvolute_spectrum", "nams", "spectra", "smopts", "delta", "nfit", "nfiles", "debug")
@@ -111,7 +112,7 @@ generate_lorentz_curves <- function(data_path = pkg_file("example_datasets/bruke
         cat("Saving results as", make_rds, "\n")
         saveRDS(ret, make_rds)
     }
-    ret
+    if (nfiles == 1) ret[[1]] else ret
 }
 
 # Private Helpers #####
@@ -229,12 +230,13 @@ filter_peaks_v13 <- function(ppm, # x values in ppm
     list(in_sfr, gt_tau) # gttho
 }
 
+#' @noRd
 #' @title create backwards compatible return list
 #' @param spec Deconvoluted spectrum as returned by [refine_lorentz_curves_v12()].
 #' @param nfiles Number of deconvoluted spectrum.
 #' @param nam Name of current spectrum.
 #' @param debug Add debug info to the return list
-#' @noRd
+#' @return The input spectrum with an additional list element `ret` containing the deconvolution results in a backwards compatible format.
 add_return_list_v13 <- function(spec = glc(), nfiles = 1, nam = "urine_1", debug = TRUE) {
 
     # Prepare some shortcuts for later calculations
@@ -287,6 +289,7 @@ add_return_list_v13 <- function(spec = glc(), nfiles = 1, nam = "urine_1", debug
         lambda_dp  = convert_width(lambda, sdp, dp),
         lambda_ppm = convert_width(lambda, sdp, ppm)
     )
+    class(spec$ret) <- "decon"
     spec
 }
 

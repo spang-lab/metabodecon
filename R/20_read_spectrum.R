@@ -21,7 +21,7 @@
 #' @details For details about `procno` and `expno` see section [File Structure](https://spang-lab.github.io/metabodecon/articles/FAQ.html#file-structure) in the metabodecon FAQ.
 #' @seealso [read_spectrum()]
 #' @examples
-#' urine <- pkg_file("example_datasets/bruker/urine")
+#' urine <- system.file("example_datasets/bruker/urine", package = "metabodecon")
 #' urine_1 <- file.path(urine, "urine_1")
 #' urine_2 <- file.path(urine, "urine_2")
 #' X1 <- read_spectra(urine_1)

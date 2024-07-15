@@ -60,7 +60,7 @@ Read one or more spectra files or folders from disk and return each parsed spect
 For details about \code{procno} and \code{expno} see section \href{https://spang-lab.github.io/metabodecon/articles/FAQ.html#file-structure}{File Structure} in the metabodecon FAQ.
 }
 \examples{
-urine <- pkg_file("example_datasets/bruker/urine")
+urine <- system.file("example_datasets/bruker/urine", package = "metabodecon")
 urine_1 <- file.path(urine, "urine_1")
 urine_2 <- file.path(urine, "urine_2")
 X1 <- read_spectra(urine_1)

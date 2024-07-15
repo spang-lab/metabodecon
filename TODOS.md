@@ -2,30 +2,30 @@
 
 | Topic | Function                                | 0.2 | 1.0 | 1.3 | 2.0 |
 | ----- | --------------------------------------- | --- | --- | --- | --- |
-| decon | MetaboDecon1D                           | e   | e   | d   | -   |
-| decon | calculate_lorentz_curves                | e   | e   | d   | -   |
-| decon | plot_lorentz_curves_save_as_png         | e   | e   | d   | -   |
-| decon | plot_triplets                           | e   | e   | e   | d   |
-| decon | generate_lorentz_curves                 | -   | e   | e   | d   |
-| decon | deconvolute_spectra                     | -   | -   | x   | e   |
+| decon | MetaboDecon1D                           | s   | s   | d   | -   |
+| decon | calculate_lorentz_curves                | s   | s   | d   | -   |
+| decon | plot_lorentz_curves_save_as_png         | s   | s   | d   | -   |
+| decon | plot_triplets                           | s   | s   | s   | d   |
+| decon | generate_lorentz_curves                 | -   | s   | s   | d   |
+| decon | deconvolute_spectra                     | -   | -   | x   | s   |
 | ----- | --------------------------------------- | --- | --- | --- | --- |
-| align | combine_peaks                           | -   | e   | e   | ?   |
-| align | dohCluster                              | -   | e   | e   | ?   |
-| align | gen_feat_mat                            | -   | e   | e   | ?   |
-| align | get_ppm_range                           | -   | e   | e   | ?   |
-| align | speaq_align                             | -   | e   | e   | ?   |
+| align | combine_peaks                           | -   | s   | s   | ?   |
+| align | dohCluster                              | -   | s   | s   | ?   |
+| align | gen_feat_mat                            | -   | s   | s   | ?   |
+| align | get_ppm_range                           | -   | s   | s   | ?   |
+| align | speaq_align                             | -   | s   | s   | ?   |
 | ----- | --------------------------------------- | --- | --- | --- | --- |
-| data  | get_data_dir                            | -   | e   | d   | -   |
-| data  | datadir                                 | -   | -   | e   | e   |
-| data  | datadir_persistent                      | -   | -   | e   | e   |
-| data  | datadir_temp                            | -   | -   | e   | e   |
-| data  | download_example_datasets               | -   | -   | e   | e   |
+| data  | get_data_dir                            | -   | s   | d   | -   |
+| data  | datadir                                 | -   | -   | s   | s   |
+| data  | datadir_persistent                      | -   | -   | s   | s   |
+| data  | datadir_temp                            | -   | -   | s   | s   |
+| data  | download_example_datasets               | -   | -   | s   | s   |
 
 * -: internal or not available in package
 * ?: not yet decided
-* d: deprecated (exported and marked as deprecated)
-* e: exported
-* x: experimental (exported and marked as experimental)
+* d: deprecated
+* s: stable
+* x: experimental
 
 # Feature Matrix
 
@@ -54,43 +54,78 @@
 - ᵈ The faster implementation also fixes an indexing bug, which in most cases shouldn't have any effect, but in some rare cases it might cause one peak to be missed.
 - ᵉ Only true for MetaboDecon1D versions >= v1.0.0
 
-# Todos
+# v1.2.0
 
-## v1.2.0
-
-### FEATURE-14: Provide simulated datasets from blood spectra
-
-Provide simulated datasets from blood spectra
-
-### FEATURE-15: Add lifecycle badges
-
-Add lifecycle badges to all exported functions. Functions which are exported but should not be used should be marked as "experimental" or (if possible) as "internal" (idea: check where other badges are stored and whether they can be modified).
-
-### FEATURE-17: Discard output
+## FEATURE-17: Discard output
 
 By default output of `generate_lorentz_curves` should be discarded during parallel phase. Before this phase, print a message that the remaining task might take up to a few minutes and that live output can be disabled by settings `share_stdout = TRUE`, but that the output might be scrambled depending on configuration of the R installation and the operating system.
 
-### FEATURE-11: Accept dataframes in GLC
+## FEATURE-11: Accept dataframes in GLC
 
-Let `generate_lorentz_curves` accept dataframes as input. This is useful for Maximilians Bachelorthesis and also makes testing easier. If necessary, implement a private wrapper around `read_spectra`, called `read_spectra_glc` that converts the return value of `read_spectra` to a format that can be used by `deconvolute_spectra`.
+Let `generate_lorentz_curves` accept dataframes as input. This is useful for Maximilians Bachelorthesis and also makes testing easier. If necessary, implement a private wrapper around `read_spectra`, called `read_spectra_glc` that converts the return value of `read_spectra` to a format that can be used by `deconvolute_spectra`.>
 
-### FEATURE-13: Merge into main
+## FIX-1: Prevent crashes for high smoothing
+
+> From: Maximilian Sombke <Maximilian.Sombke@stud.uni-regensburg.de>
+> Sent: Friday, July 12, 2024 2:59 PM
+> To: Tobias2 Schmidt <Tobias2.Schmidt@klinik.uni-regensburg.de>
+> Subject: Re: Benchmark Metabodecon>
+>
+> Hey,
+>
+> sorry für die ganzen mails. Ich wollte es nur so früh wie möglich
+> kommunizieren, falls ich keine Lösung finde. Ich hab glaube ich sogar etwas
+> sehr Interessantes gefunden worüber wir nächste Woche nochmal reden sollten.
+> Als kurze Zusammenfassung:
+>
+> Meine Vermutung, dass es daran liegt, dass keine Peaks gefunden werden ist
+> nicht richtig. Das tatsächliche Problem ist, dass keine Peaks herausgefiltered
+> werden. Hier mal ein output log:
+>
+> ```
+> 2024-07-12 14:54:40.96 Starting deconvolution of 1 spectra with 1 core
+> 2024-07-12 14:54:40.96 Starting deconvolution of sim_6
+> 2024-07-12 14:54:40.96 Removing water signal
+> 2024-07-12 14:54:40.96 Removing negative signals
+> 2024-07-12 14:54:40.96 Smoothing signals
+> 2024-07-12 14:54:41.06 Starting peak selection
+> 2024-07-12 14:54:41.06 Detected 4 peaks
+> 2024-07-12 14:54:41.06 Removing peaks with low scores
+> 2024-07-12 14:54:41.06 Removed NA peaks
+> 2024-07-12 14:54:41.06 Initializing Lorentz curves
+> Error in xl[ds] <- 2 * xc[ds] - xr[ds] (deconvolution.R#63): NAs are not allowed in subscripted assignments
+> ```
+>
+> Es findet also 4 peaks aber keiner davon scheint einen score zu haben der
+> niedrig genug ist um herausgefiltered zu werden, wodurch das dann einfach NA
+> ist und das Program crashed. Das passiert hauptsächlich wenn smoothing einen
+> gewissen Threshold überschreitet, z.B. smoothing iterations 20 und smoothing
+> window size 29, bzw. 15 und 39, oder 25 und 25. Delta scheint zu mindest
+> keinen Einfluss hierauf zu haben, es war nur delta = 1 die erste Zeile im Grid
+> in der sollche hohen smoothing kombinationen erreicht werden. Die zu hohen
+> Parameter nicht zu verwenden hat das Problem (zu mindest bis jetzt) gelöst.
+>
+> - Sombke Maximilian
+
+
+
+## FEATURE-13: Merge into main
 
 Merge the existing functionality into main as v1.2.0. Start a new branch v1.3.0 for the remaining todos.
 
-## v1.2.1
+# v1.2.1
 
-### DOC-1: Document whole package
+## DOC-1: Document whole package
 
-Document the whole package in vignettes, including chapters about alignment and a short introduction into all datasets.
+Document the whole package in vignettes, including chapters about alignment and a short introduction into all datasets. Also go over each function and make sure it is used or mentioned at least once in a vignette. While doing so, also add lifecycle badges to the functions.
 
-## v1.3.0
+# v1.3.0
 
-### FEATURE-8: Warn user if peaks are found in SFR
+## FEATURE-8: Warn user if peaks are found in SFR
 
 If delta is small (e.g. 1), peaks in SFR might not be filtered out. Either implement this and warn user about it (this is a strong indication that delta was chosen too small).
 
-### REFACTOR-9: Improve mse_normed calculation
+## REFACTOR-9: Improve mse_normed calculation
 
 In function `add_return_list_v13`:
 
@@ -100,30 +135,27 @@ In function `add_return_list_v13`:
 
 2. Return `mse_normed_raw` in addition to `mse_normed` (which is calculated based on `y <- spec$y_smooth`). `mse_normed_raw` should be based on `y <- spec$y_raw`.
 
-### CHECK-10: Negative values for estimated A
+## CHECK-10: Negative values for estimated A
 
 Check why there are negative values for the estimated lorentz curve area A.
 
-### CRAN-7: Check dontrun examples
+## CRAN-7: Check dontrun examples
 
 Remove `dontrun` from examples if they are executable in < 5 sec, or create additionally small toy examples to allow automatic testing in < 5 sec. Reason: `\dontrun{}` should only be used if the example really cannot be executed by the user, e.g. because of missing additional software, missing API keys, etc. That's why wrapping examples in `\dontrun{}` adds the comment ("# Not run:") as a warning for the user. Alternative: You could also replace `\dontrun{}` with `\donttest`, if it takes longer than 5 sec to be executed, but it would be preferable to have automatic checks for functions. Otherwise, you can also write some tests.
 
-## v1.3.1
+# v1.3.1
 
-### CRAN-10: Resubmit to CRAN
+## CRAN-10: Resubmit to CRAN
 
 Fix all R CMD check findings and resubmit the package to CRAN.
 
-### DOC-2: Write paper
+## DOC-2: Write paper
 
 Reformat the vignettes as paper and send to Wolfram for proofreading.
 
-## v1.3.2
+# v1.4.0
 
-
-## v1.4.0
-
-### FEATURE-10: Implement deconvolute_spectra
+## FEATURE-10: Implement deconvolute_spectra
 
 Implement `deconvolute_spectra()` which should be the successor of `generate_lorentz_curves()` and `MetaboDecon1D` without trying to maintain backwards compatibility. In particular it should:
 
@@ -136,7 +168,7 @@ Implement `deconvolute_spectra()` which should be the successor of `generate_lor
 
 If possible, create a conversion function to convert the return value of `deconvolute_spectra()` to the return value of `generate_lorentz_curves()` (which is a *List of Lorentz Curves (LLC)*) and notice in the docs that users can replace `lc <- generate_lorentz_curves()` with `ds <- deconvolute_spectra(); lc <- as_llc(ds)`.
 
-### FEATURE-16: Improve multiprocessing
+## FEATURE-16: Improve multiprocessing
 
 Right now, output gets scrambled because all procs share one stdout. We can fix this by not using parLapply, but distributing the tasks ourselver over the cores and in a mainloop collecting outputs and results.
 
@@ -525,6 +557,18 @@ Implement and export `read_spectra` and `read_spectrum` in a way that
 This function can then be used to read spectra if a character string is provided as argument to `deconvolute_spectra()` or `generate_lorentz_curves` (see [FEATURE-11](#feature-11-accept-dataframes-in-glc)).
 
 2024/07/03: done in branch `v1.2.0` with commit `e3c35dce9965cf9a3a44383be818a8f5ab1b0c6e`. Note: the Magnetic Field Strength is not returned directly, but can be calculated via function `calc_B()`.
+
+## FEATURE-14: Provide simulated datasets from blood spectra
+
+Provide simulated datasets from blood spectra
+
+2024/17/15: Done in branch `v1.2.0` with commit `d01706c1f5885b6e965b55c6db53c041c866ed47`
+
+## FEATURE-15: Add lifecycle badges
+
+Add lifecycle badges to all non-stable exported functions. Functions which are exported but should not be used should be marked as "experimental" or (if possible) as "internal" (idea: check where other badges are stored and whether they can be modified).
+
+2024/07/15: Closed. Will be done with [DOC-1: Document whole package](#doc-1-document-whole-package).
 
 ## REFACTOR-1: Combine load_xxx_spectrum functions
 
