@@ -5,7 +5,8 @@
 \title{Generate Lorentz Curves from NMR Spectra}
 \usage{
 generate_lorentz_curves(
-  data_path = pkg_file("example_datasets/bruker/urine"),
+  data_path = system.file("example_datasets/bruker/urine/urine_1", package =
+    "metabodecon"),
   file_format = "bruker",
   make_rds = FALSE,
   expno = 10,
@@ -18,37 +19,46 @@ generate_lorentz_curves(
   sf = c(1000, 1e+06),
   ask = TRUE,
   debug = FALSE,
-  nworkers = "auto"
+  nworkers = "auto",
+  share_stdout = FALSE,
+  force = FALSE,
+  verbose = TRUE
 )
 }
 \arguments{
-\item{data_path}{Either the path to an existing directory containing measured NMR spectra or a dataframe with columns \code{ppm} (parts per million) and \code{si} (signal intensity) or a list of such dataframes.}
+\item{data_path}{Either the path to a directory containing measured NMR spectra, a dataframe as returned by \code{\link[=read_spectrum]{read_spectrum()}}, or a list of such dataframes.}
 
 \item{file_format}{Format of the spectra files. Either \code{"bruker"} or \code{"jcampdx"}. Only relevant if \code{data_path} is a directory.}
 
-\item{make_rds}{Store results as rds file on disk? Should be set to TRUE if many spectra are evaluated to decrease computation time.}
+\item{make_rds}{Logical or character. If TRUE, stores results as an RDS file on disk. If a character string, saves the RDS file with the specified name. Should be set to TRUE if many spectra are evaluated to decrease computation time.}
 
-\item{expno}{The experiment number for the spectra files. E.g. \code{"10"}. Only relevant if \code{data_path} is a directory and \code{file_format} is \code{"bruker"}.}
+\item{expno}{The experiment number for the spectra files, e.g., \code{"10"}. Only relevant if \code{data_path} is a directory and \code{file_format} is \code{"bruker"}.}
 
-\item{procno}{The processing number for the spectra. E.g. \code{"10"}. Only relevant if \code{data_path} is a directory and \code{file_format} is \code{"bruker"}.}
+\item{procno}{The processing number for the spectra, e.g., \code{"10"}. Only relevant if \code{data_path} is a directory and \code{file_format} is \code{"bruker"}.}
 
-\item{nfit}{Number of iterations for the approximation of the parameters for the Lorentz curves.}
+\item{nfit}{Number of iterations for approximating the parameters for the Lorentz curves.}
 
-\item{wshw}{Half width of the water artefact in ppm.}
+\item{wshw}{Half-width of the water artifact in ppm.}
 
-\item{sfr}{Row vector with two entries consisting of the ppm positions for the left and right border of the signal free region of the spectrum.}
+\item{sfr}{Numeric vector with two entries: the ppm positions for the left and right border of the signal-free region of the spectrum.}
 
-\item{smopts}{Vector with two entries consisting of the number of smoothing iterations and the number of data points to use for smoothing (must be uneven).}
+\item{smopts}{Numeric vector with two entries: the number of smoothing iterations and the number of data points to use for smoothing (must be odd).}
 
 \item{delta}{Threshold value to distinguish between signal and noise.}
 
-\item{sf}{Vector with two entries consisting of the factor to scale the x-axis and the factor to scale the y-axis.}
+\item{sf}{Numeric vector with two entries: the factors to scale the x-axis and y-axis.}
 
-\item{ask}{Whether to ask for user input during the deconvolution process. If set to FALSE, the provided default values will be used.}
+\item{ask}{Logical. Whether to ask for user input during the deconvolution process. If FALSE, the provided default values will be used.}
 
-\item{debug}{Whether to return additional intermediate results for debugging purposes.}
+\item{debug}{Logical. Whether to return additional intermediate results for debugging purposes.}
 
-\item{nworkers}{Number of workers to use for parallel processing. If set to \code{"auto"}, the number of workers will be determined automatically. If set to a number greater than 1, the number of workers will be limited to the number of spectra or 1 if the operating system is Windows.}
+\item{nworkers}{Number of workers to use for parallel processing. If \code{"auto"}, the number of workers will be determined automatically. If a number greater than 1, it will be limited to the number of spectra.}
+
+\item{share_stdout}{Whether to share the standard output (usually your terminal) of the main process with the worker processes. Only relevant if \code{nworkers} is greater than 1. Note that this can cause messages from different processes to get mixed up, making the output hard to follow.}
+
+\item{force}{If FALSE, the function stops with an error message if no peaks are found in the SFR (which are used as reference for peak filtering). If TRUE, the function instead proceeds without peak filtering, potentially increasing runtime and memory usage significantly.}
+
+\item{verbose}{Logical. Whether to print log messages during the deconvolution process.}
 }
 \value{
 A list of deconvoluted spectra. Each list element contains a list with the following elements:
@@ -75,17 +85,61 @@ A list of deconvoluted spectra. Each list element contains a list with the follo
 }
 }
 \description{
-Deconvolutes NMR spectra and generates a Lorentz curve for each detected signal within a spectra.
+Deconvolutes NMR spectra by modeling each detected signal within a spectra as Lorentz Curve.
 }
 \details{
 First, an automated curvature based signal selection is performed. Each signal is represented by 3 data points to allow the determination of initial Lorentz curves. These Lorentz curves are then iteratively adjusted to optimally approximate the measured spectrum.
 }
 \examples{
-\donttest{
-example_datasets <- download_example_datasets()
-urine <- file.path(example_datasets, "bruker/urine")
-urine_1 <- file.path(urine, "urine_1")
-deconv_urine <- generate_lorentz_curves(urine, ask = FALSE, nfit = 1)
-deconv_urine_1 <- generate_lorentz_curves(urine_1, ask = FALSE)[[1]]
+# Define the paths to the example datasets we want to deconvolute:
+# `sim_dir`: directory containing 16 simulated spectra
+# `sim_01`: path to the first spectrum in the `sim` directory
+# `sim_01_spec`: the first spectrum in the `sim` directory as a dataframe
+sim_dir <- system.file("example_datasets/bruker/sim", package = "metabodecon")
+sim_1_dir <- file.path(sim_dir, "sim_01")
+sim_2_dir <- file.path(sim_dir, "sim_02")
+sim_1_spec <- read_spectrum(sim_1_dir)
+sim_2_spec <- read_spectrum(sim_2_dir)
+sim_12_specs <- list(sim_1_spec, sim_2_spec)
+
+# Define a little wrapper function so we don't have to provide all parameters
+# every time we want to start the deconvolution procedure:
+glc2 <- function(data_path) {
+     generate_lorentz_curves(
+         data_path = data_path,
+         ask = FALSE,
+         sfr = c(3.42, 3.58),
+         ws = 0,
+         smopts = c(1, 5),
+         delta = 0.1,
+         nworkers = 2,
+         verbose = FALSE
+     )
+}
+
+# Deconvolute each input:
+decon_sim_1_dir <- glc2(sim_1_dir)
+decon_sim_1_spec <- glc2(sim_1_spec)
+decon_sim_12_specs <- glc2(sim_12_specs)
+decon_sim_dir <- glc2(sim)
+
+# Make sure the results for the first spectrum are the same:
+compare <- function(decon1, decon2) {
+     ignore <- which(names(decon1) \%in\% c("number_of_files", "filename"))
+     equal <- all.equal(decon1[-ignore], decon2[-ignore])
+     stopifnot(isTRUE(equal))
+}
+compare(decon_sim_1_dir, decon_sim_1_spec)
+compare(decon_sim_1_dir, decon_sim_12_specs[[1]])
+compare(decon_sim_1_dir, decon_sim_dir[[1]])
+
+# Below example uses data from a real NMR experiment, instead of (small)
+# simulated datasets and therefor requires multiple seconds to run. Because
+# `ask` is TRUE in this example (the default value), the user will be asked
+# for input during the deconvolution. To avoid this, set `ask = FALSE`.
+if (interactive()) {
+     example_datasets <- download_example_datasets()
+     urine_1 <- file.path(example_datasets, "bruker/urine/urine_1")
+     generate_lorentz_curves(urine_1)
 }
 }

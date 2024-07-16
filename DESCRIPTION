@@ -37,9 +37,9 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.1
 biocViews:
 SystemRequirements: C++11
+Depends: R (>= 3.5.0)
 Imports:
     data.table,
-    lifecycle,
     readJDX,
     speaq,
     withr,

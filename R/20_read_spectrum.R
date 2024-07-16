@@ -188,9 +188,9 @@ make_spectrum <- function(si,
     fq_width_calc <- fq_max - fq_min
     if (!is.null(fq_width) && !isTRUE(all.equal(fq_width_calc, fq_width))) { # check if calculated spectrum width in Hz matches the value from the metadata
         if (!force) {
-            stop(sprintf("Calculated spectrum width in Hz (%s) does not match the provided value (%s). Please read in the data manually or set `force = TRUE` to ignore this error. Please note that by doing so, all downstream calculations using frequencies might be wrong, so be sure to double check the results.", round(fq_width_calc, 5), round(fq_width, 5)))
+            stop(logf("Calculated spectrum width in Hz (%s) does not match the provided value (%s). Please read in the data manually or set `force = TRUE` to ignore this error. Please note that by doing so, all downstream calculations using frequencies might be wrong, so be sure to double check the results.", round(fq_width_calc, 5), round(fq_width, 5)))
         } else {
-            if (!silent) catf(sprintf("Calculated spectrum width in Hz (%s) does not match the provided value (%s). Continuing anyways, because `force` equals `TRUE`. Please note that all downstream calculations using frequencies might be wrong, so be sure to double check the results.", round(fq_width_calc, 5), round(fq_width, 5)))
+            if (!silent) logf(sprintf("Calculated spectrum width in Hz (%s) does not match the provided value (%s). Continuing anyways, because `force` equals `TRUE`. Please note that all downstream calculations using frequencies might be wrong, so be sure to double check the results.", round(fq_width_calc, 5), round(fq_width, 5)))
         }
     }
     data.frame(si, cs, fq)
@@ -396,7 +396,7 @@ read_1r_file <- function(spldir = pkg_file("example_datasets/bruker/blood/blood_
         msg <- sprintf("Processing parameter `DTYPP` has value '%s' but only '0' is supported. This indicates that the intensity values in file '%s' are stored doubles and not as integers. To read the file nonetheless, set `force = TRUE`, but note that this behaviour is completely untested, so please double check the returned values.", dtypp, path_1r)
         stop(msg)
     }
-    if (!silent) catf(msg)
+    if (!silent) logf(msg)
     con <- file(path_1r, "rb"); on.exit(close(con), add = TRUE)
     raw <- readBin(con, what = type, n = n, size = nbytes, signed = TRUE, endian = endian)
     scaled <- if (type == "integer") raw * 2 ^ ncproc else raw

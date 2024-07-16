@@ -18,10 +18,10 @@ The `MetaboDecon1D` package is the predecessor of this package and can be downlo
 3. Download [MetaboDecon1D_0.2.2.tar.gz](https://genomics.ur.de/software/NMR/MetaboDecon1D/MetaboDecon1D_0.2.2.tar.gz)
 4. Start an R session and enter command `install.packages("C:/Users/tobi/Downloads/MetaboDecon1D_0.2.2.tar.gz", repos = NULL, type = "source")` (replace `C:/Users/tobi/Downloads/MetaboDecon1D_0.2.2.tar.gz` with the path to the downloaded file on your computer)
 
-<img src="MetaboDecon1D/install/1_website_gronwald_software.png" width="49%">
-<img src="MetaboDecon1D/install/2_index_gronwald_software.png" width="49%">
-<img src="MetaboDecon1D/install/3_downloaded_archive.png" width="49%">
-<img src="MetaboDecon1D/install/4_commands.png" width="49%">
+<img src="MetaboDecon1D/install/1_website_gronwald_software.png" width="49%" alt="1_website_gronwald_software.png">
+<img src="MetaboDecon1D/install/2_index_gronwald_software.png" width="49%" alt="2_index_gronwald_software.png">
+<img src="MetaboDecon1D/install/3_downloaded_archive.png" width="49%" alt="3_downloaded_archive.png">
+<img src="MetaboDecon1D/install/4_commands.png" width="49%" alt="4_commands.png">
 
 ## Load package
 
@@ -38,9 +38,9 @@ result <- MetaboDecon1D(
     file_format = "bruker"
 )
 ```
-![](MetaboDecon1D/bruker/1_signal_borders.png)
-![](MetaboDecon1D/bruker/2_water_artefact.png)
-![](MetaboDecon1D/bruker/3_output.png)
+![1_signal_borders.png](MetaboDecon1D/bruker/1_signal_borders.png)
+![2_water_artefact.png](MetaboDecon1D/bruker/2_water_artefact.png)
+![3_output.png](MetaboDecon1D/bruker/3_output.png)
 
 ## Visualize results and store plots as png
 
@@ -51,7 +51,7 @@ plot_lorentz_curves_save_as_png(result)
 plot_spectrum_superposition_save_as_png(result)
 ```
 
-![](MetaboDecon1D/bruker/4_plots.png)
+![4_plots.png](MetaboDecon1D/bruker/4_plots.png)
 
 ## Deconvolute one spectrum in jcampdx format
 
@@ -76,8 +76,8 @@ result <- MetaboDecon1D(
 str(result)
 ```
 
-<img src = "MetaboDecon1D/bruker/5_n_spectra_1.png" width = "49%">
-<img src = "MetaboDecon1D/bruker/6_n_spectra_2.png" width = "49%">
+<img src = "MetaboDecon1D/bruker/5_n_spectra_1.png" width = "49%" alt="5_n_spectra_1.png">
+<img src = "MetaboDecon1D/bruker/6_n_spectra_2.png" width = "49%" alt="6_n_spectra_2.png">
 
 ## Deconvolute multiple spectra in jcampdx format
 
@@ -91,5 +91,5 @@ plot_lorentz_curves_save_as_png(jcamp_results)
 plot_spectrum_superposition_save_as_png(jcamp_results)
 ```
 
-<img src = "MetaboDecon1D/jcamp/2_many_jcamp_dxs_1.png" width = "49%">
-<img src = "MetaboDecon1D/jcamp/3_many_jcamp_dxs_2.png" width = "49%">
+<img src = "MetaboDecon1D/jcamp/2_many_jcamp_dxs_1.png" width = "49%" alt="2_many_jcamp_dxs_1.png">
+<img src = "MetaboDecon1D/jcamp/3_many_jcamp_dxs_2.png" width = "49%" alt="3_many_jcamp_dxs_2.png">

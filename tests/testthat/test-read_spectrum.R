@@ -21,6 +21,6 @@ test_that("read_spectrum works for jcampdx spectra", {
     urine_1 <- pkg_file("example_datasets/bruker/urine/urine_1")
     urine_1_dx <- pkg_file("example_datasets/jcampdx/urine/urine_1.dx")
     X1 <- read_spectrum(urine_1, raw = TRUE)
-    X1_dx <- read_spectrum(urine_1_dx, file_format = "jcampdx")
+    system.time(X1_dx <- read_spectrum(urine_1_dx, file_format = "jcampdx"))
     expect_equal(X1, X1_dx)
 })

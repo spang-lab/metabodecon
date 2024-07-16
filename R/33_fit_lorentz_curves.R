@@ -364,7 +364,7 @@ init_lorentz_curves_v12 <- function(spec) {
 # pr <- spec$peak$left[spec$peak$high]
 init_lorentz_curves_v13 <- function(x, y, pc, pl, pr) {
 
-    msg("Initializing Lorentz curves")
+    logf("Initializing Lorentz curves")
 
     xl <- x[pl] # position of peak triplets
     xc <- x[pc]

@@ -56,51 +56,6 @@
 
 # v1.2.0
 
-## FIX-1: Prevent crashes for high smoothing
-
-> From: Maximilian Sombke <Maximilian.Sombke@stud.uni-regensburg.de>
-> Sent: Friday, July 12, 2024 2:59 PM
-> To: Tobias2 Schmidt <Tobias2.Schmidt@klinik.uni-regensburg.de>
-> Subject: Re: Benchmark Metabodecon>
->
-> Hey,
->
-> sorry für die ganzen mails. Ich wollte es nur so früh wie möglich
-> kommunizieren, falls ich keine Lösung finde. Ich hab glaube ich sogar etwas
-> sehr Interessantes gefunden worüber wir nächste Woche nochmal reden sollten.
-> Als kurze Zusammenfassung:
->
-> Meine Vermutung, dass es daran liegt, dass keine Peaks gefunden werden ist
-> nicht richtig. Das tatsächliche Problem ist, dass keine Peaks herausgefiltered
-> werden. Hier mal ein output log:
->
-> ```
-> 2024-07-12 14:54:40.96 Starting deconvolution of 1 spectra with 1 core
-> 2024-07-12 14:54:40.96 Starting deconvolution of sim_6
-> 2024-07-12 14:54:40.96 Removing water signal
-> 2024-07-12 14:54:40.96 Removing negative signals
-> 2024-07-12 14:54:40.96 Smoothing signals
-> 2024-07-12 14:54:41.06 Starting peak selection
-> 2024-07-12 14:54:41.06 Detected 4 peaks
-> 2024-07-12 14:54:41.06 Removing peaks with low scores
-> 2024-07-12 14:54:41.06 Removed NA peaks
-> 2024-07-12 14:54:41.06 Initializing Lorentz curves
-> Error in xl[ds] <- 2 * xc[ds] - xr[ds] (deconvolution.R#63): NAs are not allowed in subscripted assignments
-> ```
->
-> Es findet also 4 peaks aber keiner davon scheint einen score zu haben der
-> niedrig genug ist um herausgefiltered zu werden, wodurch das dann einfach NA
-> ist und das Program crashed. Das passiert hauptsächlich wenn smoothing einen
-> gewissen Threshold überschreitet, z.B. smoothing iterations 20 und smoothing
-> window size 29, bzw. 15 und 39, oder 25 und 25. Delta scheint zu mindest
-> keinen Einfluss hierauf zu haben, es war nur delta = 1 die erste Zeile im Grid
-> in der sollche hohen smoothing kombinationen erreicht werden. Die zu hohen
-> Parameter nicht zu verwenden hat das Problem (zu mindest bis jetzt) gelöst.
->
-> - Sombke Maximilian
-
-
-
 ## FEATURE-13: Merge into main
 
 Merge the existing functionality into main as v1.2.0. Start a new branch v1.3.0 for the remaining todos.
@@ -583,7 +538,7 @@ Add lifecycle badges to all non-stable exported functions. Functions which are e
 
 By default output of `generate_lorentz_curves` should be discarded during parallel phase. Before this phase, print a message that the remaining task might take up to a few minutes and that live output can be disabled by settings `share_stdout = TRUE`, but that the output might be scrambled depending on configuration of the R installation and the operating system.
 
-Done in branch `v1.2.0` with commit `f9bf57a5e4c7167dfc3231cfe0ee515b40ad12bf`.
+2024/07/09: Done in branch `v1.2.0` with commit `f9bf57a5e4c7167dfc3231cfe0ee515b40ad12bf`.
 
 ## REFACTOR-1: Combine load_xxx_spectrum functions
 
@@ -706,3 +661,48 @@ ToSc: affected functions are:
 ## CRAN-9: Functions should not change working dir or global options
 
  Please make sure that you do not change the user's options, par or working directory. If you really have to do so within functions, please ensure with an *immediate* call of on.exit() that the settings are reset when the function is exited. E.g. `R/MetaboDecon1D.R`. If you're not familiar with the function, please check `?on.exit`. This function makes it possible to restore options before exiting a function even if the function breaks. Therefore it needs to be called immediately after the option change within a function.
+
+## FIX-1: Prevent crashes for high smoothing
+
+> From: Maximilian Sombke <Maximilian.Sombke@stud.uni-regensburg.de>
+> Sent: Friday, July 12, 2024 2:59 PM
+> To: Tobias2 Schmidt <Tobias2.Schmidt@klinik.uni-regensburg.de>
+> Subject: Re: Benchmark Metabodecon>
+>
+> Hey,
+>
+> sorry für die ganzen mails. Ich wollte es nur so früh wie möglich
+> kommunizieren, falls ich keine Lösung finde. Ich hab glaube ich sogar etwas
+> sehr Interessantes gefunden worüber wir nächste Woche nochmal reden sollten.
+> Als kurze Zusammenfassung:
+>
+> Meine Vermutung, dass es daran liegt, dass keine Peaks gefunden werden ist
+> nicht richtig. Das tatsächliche Problem ist, dass keine Peaks herausgefiltered
+> werden. Hier mal ein output log:
+>
+> ```
+> 2024-07-12 14:54:40.96 Starting deconvolution of 1 spectra with 1 core
+> 2024-07-12 14:54:40.96 Starting deconvolution of sim_6
+> 2024-07-12 14:54:40.96 Removing water signal
+> 2024-07-12 14:54:40.96 Removing negative signals
+> 2024-07-12 14:54:40.96 Smoothing signals
+> 2024-07-12 14:54:41.06 Starting peak selection
+> 2024-07-12 14:54:41.06 Detected 4 peaks
+> 2024-07-12 14:54:41.06 Removing peaks with low scores
+> 2024-07-12 14:54:41.06 Removed NA peaks
+> 2024-07-12 14:54:41.06 Initializing Lorentz curves
+> Error in xl[ds] <- 2 * xc[ds] - xr[ds] (deconvolution.R#63): NAs are not allowed in subscripted assignments
+> ```
+>
+> Es findet also 4 peaks aber keiner davon scheint einen score zu haben der
+> niedrig genug ist um herausgefiltered zu werden, wodurch das dann einfach NA
+> ist und das Program crashed. Das passiert hauptsächlich wenn smoothing einen
+> gewissen Threshold überschreitet, z.B. smoothing iterations 20 und smoothing
+> window size 29, bzw. 15 und 39, oder 25 und 25. Delta scheint zu mindest
+> keinen Einfluss hierauf zu haben, es war nur delta = 1 die erste Zeile im Grid
+> in der sollche hohen smoothing kombinationen erreicht werden. Die zu hohen
+> Parameter nicht zu verwenden hat das Problem (zu mindest bis jetzt) gelöst.
+>
+> - Sombke Maximilian
+
+2024/07/09: Done in branch `v1.2.0` with commit `f5c204cab44b838afe5d5e8c7ace8c74f11b293c`.

@@ -18,7 +18,8 @@
 #' @param debug Logical. Whether to return additional intermediate results for debugging purposes.
 #' @param nworkers Number of workers to use for parallel processing. If `"auto"`, the number of workers will be determined automatically. If a number greater than 1, it will be limited to the number of spectra.
 #' @param share_stdout Whether to share the standard output (usually your terminal) of the main process with the worker processes. Only relevant if `nworkers` is greater than 1. Note that this can cause messages from different processes to get mixed up, making the output hard to follow.
-#' @param force If FALSE, the function stops with an error message if no peaks are found in the SFR. If TRUE, the function instead proceeds without filtering any peaks, potentially increasing runtime significantly
+#' @param force If FALSE, the function stops with an error message if no peaks are found in the SFR (which are used as reference for peak filtering). If TRUE, the function instead proceeds without peak filtering, potentially increasing runtime and memory usage significantly.
+#' @param verbose Logical. Whether to print log messages during the deconvolution process.
 #' @return A list of deconvoluted spectra. Each list element contains a list with the following elements:
 #' * `number_of_files`: Number of deconvoluted spectra.
 #' * `filename`: Name of the analyzed spectrum.
@@ -42,12 +43,15 @@
 #' @details First, an automated curvature based signal selection is performed. Each signal is represented by 3 data points to allow the determination of initial Lorentz curves. These Lorentz curves are then iteratively adjusted to optimally approximate the measured spectrum.
 #' @examples
 #' # Define the paths to the example datasets we want to deconvolute:
-#' # `sim`: directory containing 16 simulated spectra
+#' # `sim_dir`: directory containing 16 simulated spectra
 #' # `sim_01`: path to the first spectrum in the `sim` directory
 #' # `sim_01_spec`: the first spectrum in the `sim` directory as a dataframe
-#' sim <- system.file("example_datasets/bruker/sim", package = "metabodecon")
-#' sim_01 <- file.path(sim, "sim_01")
-#' sim_01_spec <- read_spectrum(sim_01)
+#' sim_dir <- system.file("example_datasets/bruker/sim", package = "metabodecon")
+#' sim_1_dir <- file.path(sim_dir, "sim_01")
+#' sim_2_dir <- file.path(sim_dir, "sim_02")
+#' sim_1_spec <- read_spectrum(sim_1_dir)
+#' sim_2_spec <- read_spectrum(sim_2_dir)
+#' sim_12_specs <- list(sim_1_spec, sim_2_spec)
 #'
 #' # Define a little wrapper function so we don't have to provide all parameters
 #' # every time we want to start the deconvolution procedure:
@@ -58,19 +62,27 @@
 #'          sfr = c(3.42, 3.58),
 #'          ws = 0,
 #'          smopts = c(1, 5),
-#'          delta = 0.1
+#'          delta = 0.1,
+#'          nworkers = 2,
+#'          verbose = FALSE
 #'      )
 #' }
 #'
 #' # Deconvolute each input:
-#' decon_01 <- glc2(sim_01_spec)
-#' decon_df <- glc2(sim_01)
-#' decons   <- glc2(sim)
+#' decon_sim_1_dir <- glc2(sim_1_dir)
+#' decon_sim_1_spec <- glc2(sim_1_spec)
+#' decon_sim_12_specs <- glc2(sim_12_specs)
+#' decon_sim_dir <- glc2(sim)
 #'
 #' # Make sure the results for the first spectrum are the same:
-#' ignore <- which(names(decon_01) %in% c("number_of_files", "filename"))
-#' stopifnot(isTRUE(all.equal(decon_01[-ignore], decon_df[-ignore])))
-#' stopifnot(isTRUE(all.equal(decons[[1]][-ignore], decon_df[-ignore])))
+#' compare <- function(decon1, decon2) {
+#'      ignore <- which(names(decon1) %in% c("number_of_files", "filename"))
+#'      equal <- all.equal(decon1[-ignore], decon2[-ignore])
+#'      stopifnot(isTRUE(equal))
+#' }
+#' compare(decon_sim_1_dir, decon_sim_1_spec)
+#' compare(decon_sim_1_dir, decon_sim_12_specs[[1]])
+#' compare(decon_sim_1_dir, decon_sim_dir[[1]])
 #'
 #' # Below example uses data from a real NMR experiment, instead of (small)
 #' # simulated datasets and therefor requires multiple seconds to run. Because
@@ -81,7 +93,7 @@
 #'      urine_1 <- file.path(example_datasets, "bruker/urine/urine_1")
 #'      generate_lorentz_curves(urine_1)
 #' }
-generate_lorentz_curves <- function(data_path = pkg_file("example_datasets/bruker/urine"),
+generate_lorentz_curves <- function(data_path = system.file("example_datasets/bruker/urine/urine_1", package = "metabodecon"),
                                     file_format = "bruker",
                                     make_rds = FALSE,
                                     expno = 10,
@@ -96,7 +108,12 @@ generate_lorentz_curves <- function(data_path = pkg_file("example_datasets/bruke
                                     debug = FALSE,
                                     nworkers = "auto",
                                     share_stdout = FALSE,
-                                    force = FALSE) {
+                                    force = FALSE,
+                                    verbose = TRUE) {
+    if (isFALSE(verbose)) {
+        opts <- options(toscutil.logf.file = nullfile())
+        on.exit(options(opts), add = TRUE)
+    }
     # Read spectra and ask user for parameters
     if (is.character(data_path)) {
         spectra_ds <- read_spectra(data_path, file_format, expno, procno, raw = TRUE) # spectra in [deconvolute_spectra()] (DS) format
@@ -105,9 +122,9 @@ generate_lorentz_curves <- function(data_path = pkg_file("example_datasets/bruke
         spectra_ds <- list(data_path)
     } else if (is.list(data_path)) {
         if (!all(sapply(data_path, function(df) is.data.frame(df)))) stop("Invalid 'data_path' format.")
-        dfs_ok <- lapply(data_path, function(df) all(c("cs", "si", "fq") %in% colnames(df)))
+        dfs_ok <- sapply(data_path, function(df) all(c("cs", "si", "fq") %in% colnames(df)))
         if (!all(dfs_ok)) stop("Each spectrum in 'data_path' must have columns 'si', 'cs' and 'fq'.")
-        spectra_ds <- lapply(data_path, function(df) convert_spectrum(df, sfx = sf[1], sfy = sf[2]))
+        spectra_ds <- data_path
     } else {
         stop("'data_path' must be a directory, a dataframe or a list of dataframes")
     }
@@ -120,7 +137,8 @@ generate_lorentz_curves <- function(data_path = pkg_file("example_datasets/bruke
     # Deconvolute spectra
     nfiles <- length(spectra)
     nams <- names(spectra)
-    if (nworkers == "auto") nworkers <- min(ceiling(parallel::detectCores() / 2), length(spectra))
+    if (nworkers == "auto") nworkers <- ceiling(parallel::detectCores() / 2)
+    nworkers <- min(nworkers, length(spectra))
     starttime <- Sys.time()
     if (nworkers == 1) {
         logf("Starting deconvolution of %d spectra using 1 worker", nfiles)
@@ -181,11 +199,9 @@ deconvolute_spectrum <- function(nam, spec, smopts, delta, nfit, nfiles, debug, 
 rm_water_signal_v12 <- function(spec) {
     logf("Removing water signal")
     y <- spec$y_scaled
-    if (spec$wsr$hwidth_ppm > 0) {
-        left <- spec$wsr$left_dp
-        right <- spec$wsr$right_dp
-        y[right:left] <- 0.01 / spec$sfy # Order, i.e. `right:left` instead of `left:right`, is important here, because `right` and `left` are floats. Example: `right <- 3.3; left <- 1.4` ==> `right:left == c(3.3, 2.3)` and `left:right == c(1.4, 2.4)`.
-    }
+    left <- spec$wsr$left_dp
+    right <- spec$wsr$right_dp
+    y[right:left] <- 0.01 / spec$sfy # Order, i.e. `right:left` instead of `left:right`, is important here, because `right` and `left` are floats. Example: `right <- 3.3; left <- 1.4` ==> `right:left == c(3.3, 2.3)` and `left:right == c(1.4, 2.4)`.
     spec$y_nows <- y
     spec
 }
@@ -202,12 +218,10 @@ rm_negative_signals_v12 <- function(spec) {
 #' @noRd
 smooth_signals_v20 <- function(spec, reps = 2, k = 5) {
     if (k %% 2 == 0) stop("k must be odd")
-
     Z <- vector("list", length = reps)
     y <- spec$y_pos
     n <- length(y)
-
-    for (i in 1:reps) {
+    for (i in seq_len(reps)) {
         filter <- rep(1 / k, k)
         z <- stats::filter(y, filter, sides = 2) # (1)
         q <- (k - 1) / 2 # (2)
@@ -219,8 +233,8 @@ smooth_signals_v20 <- function(spec, reps = 2, k = 5) {
         # Calling (1) gives NAs at both sides of vector, as there are not enough values for the moving average. The number of NAs at each side is given by (2). Example: if n==100 and k==5, then q==2, so z[1]==NA, z[2]==NA, z[99]==NA and z[100]==NA. To stay backwards compatible, these values must be filled with the mean of the values that are available. To do so, we iterate from 1:q, i.e. j==1 and j==2 and set
         # z[1]   <- mean(y[1:3])    # 3 == 2+1 == q+j            # (3)
         # z[2]   <- mean(y[1:4])    # 4 == 2+2 == q+j            # (3)
-        # z[100] <- mean(y[98:100]) # 98 == 100-2-1+1 == n-q-j+1 # (4)
         # z[99]  <- mean(y[97:100]) # 97 == 100-2-2+1 == n-q-j+1 # (4)
+        # z[100] <- mean(y[98:100]) # 98 == 100-2-1+1 == n-q-j+1 # (4)
         # Note: we could also think of leaving the NAs as they are, which would be more correct I think and even faster, but would break compatibility with the old version completely. So not even `all.equal(v1, v2)` would be TRUE anymore.
     }
     spec$Z <- Z
@@ -262,6 +276,26 @@ smooth_signals_v12 <- function(spec, reps = 2, k = 5) {
     spec
 }
 
+smooth_signals_v12 <- function(spec, reps = 2, k = 5, verbose = TRUE) {
+    if (verbose) logf("Smoothing signals")
+    if (k %% 2 == 0) stop("k must be odd")
+    n <- length(spec$y_pos) # number of data points in total
+    ws <- floor(k / 2) # window size left/right of center
+    ct <- seq_len(n) # center positions
+    lb <- pmax(ct - ws, 1) # left borders
+    rb <- pmin(ct + ws, n) # right borders
+    nw <- rb - lb + 1 # number of data points in window
+    Z <- data.frame(spec$y_pos)
+    for (j in seq_len(reps)) {
+        zj <- Z[[j]]
+        zk <- sapply(seq_len(n), function(i) sum(zj[lb[i]:rb[i]]))
+        zk <- (1 / nw) * zk
+        Z[[j + 1]] <- zk
+    }
+    spec[c("Z", "y_smooth")] <- list(Z[, -1], Z[, reps + 1])
+    spec
+}
+
 #' @noRd
 #' @title Filter Peaks with Low Scores Outside Signal-Free Region
 #' @description Calculates a score for each peak in the spectrum. Peaks with scores that are lower than `mu + delta * sigma` are filtered out, with `mu` being the mean and `sigma` the standard deviation of the scores of peaks within the signal-free region (SFR).
@@ -289,14 +323,14 @@ filter_peaks_v12 <- function(spec, delta = 6.4, force = FALSE) {
         sigma <- sd(peak_scores[in_sfr])
     } else {
         if (force) {
-            logf("No signals found in signal free region. This is a clear indiciation that the deconvolution parameters are not set correctly. Continuing anyways without peak filtering, because `force` is TRUE. Note that this might increase runtime drastically.")
+            logf("No signals found in signal free region. This is a clear indiciation that the deconvolution parameters are not set correctly. Continuing anyways without dynamic peak filtering, because `force` is TRUE. Note that this might increase runtime drastically.")
             mu <- 0
             sigma <- 0
         } else {
             stop("No signals found in signal free region. Please double check deconvolution parameters.")
         }
     }
-    spec$peak$high <- (peak_scores >= mu + delta * sigma)
+    spec$peak$high <- (peak_scores > mu + delta * sigma)
     spec$peak$region <- "norm"
     spec$peak$region[in_left_sfr] <- "sfrl"
     spec$peak$region[in_right_sfr] <- "sfrr"
@@ -377,10 +411,7 @@ add_return_list_v13 <- function(spec = glc(), nfiles = 1, nam = "urine_1", debug
 #' @return Numeric vector of y values.
 #' @examples lc(1:10, 5, 10, 2)
 lc <- function(x, x0, A, lambda) {
-    # For details see formula below sentence "In physics, a three-parameter
-    # Lorentzian function is often used:" at
-    # [Wikipedia > Cauchy_distribution > #Properties_of_PDF]
-    # (https://en.wikipedia.org/wiki/Cauchy_distribution#Properties_of_PDF).
+    # For details see formula below sentence "In physics, a three-parameter Lorentzian function is often used:" at [Wikipedia > Cauchy_distribution > #Properties_of_PDF](https://en.wikipedia.org/wiki/Cauchy_distribution#Properties_of_PDF).
     A * (lambda / (lambda^2 + (x - x0)^2))
 }
 
@@ -504,8 +535,8 @@ filter_peaks_v13 <- function(ppm, # x values in ppm
     logf("Removing peaks with low scores")
     in_sfr <- which(ppm[pc] >= ppm || ppm[pc] <= ppm)
     if (any(in_sfr)) {
-        mu <- mean(peak_scores[in_sfr])
-        sigma <- sd(peak_scores[in_sfr])
+        mu <- mean(ps[in_sfr])
+        sigma <- sd(ps[in_sfr])
     } else {
         stop("No signals found in signal free region. Please double check deconvolution parameters.")
     }

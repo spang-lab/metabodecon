@@ -68,6 +68,8 @@ plot_peaks <- function(spec, ppm = c(3.402, 3.437), dp = NULL, vlines = FALSE) {
 
 #' @title Plot Spectrum
 #' @description Plot a spectrum based on the provided deconvolution data and highlight a specific region of interest in the spectrum.
+#'
+#' lifecycle::experimental()
 #' @param decon An object as returned by [generate_lorentz_curves()], containing the deconvolution data. Must include either `x_values_ppm` or `ppm` for the x-axis values, and either `y_values` or `y_smooth` for the y-axis values.
 #' @param focus A numeric vector of length 2 specifying the region of interest to highlight on the plot. The region is defined by its start and end points on the x-axis (in ppm).
 #' @return A plot is generated as a side effect, highlighting the specified focus region on the spectrum.
@@ -92,10 +94,10 @@ plot_spectrum <- function(decon, focus = c(3.45, 3.55)) {
 plot_decon <- function(decon, focus = c(3.45, 3.55)) {
     opar <- par(mfrow = c(2, 2))
     on.exit(par(opar))
-    plot(spec$ppm, spec$y_scaled, type = "l")
-    plot(spec$ppm, spec$y_nows, type = "l")
-    plot(spec$ppm, spec$y_pos, type = "l")
-    plot(spec$ppm, spec$y_smooth, type = "l")
+    plot(decon$ppm, decon$y_scaled, type = "l")
+    plot(decon$ppm, decon$y_nows, type = "l")
+    plot(decon$ppm, decon$y_pos, type = "l")
+    plot(decon$ppm, decon$y_smooth, type = "l")
 }
 
 #' @noRd

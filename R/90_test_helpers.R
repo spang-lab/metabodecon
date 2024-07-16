@@ -735,7 +735,7 @@ compare_spectra <- function(new = glc()$rv,
     r[is.na(r)] <- 4
     msg <- "Identical: %s, Equal: %s, Different: %s, Error: %s, Empty: %s"
     if (!silent) {
-        catf(msg, sum(r == 0), sum(r == 1), sum(r == 2), sum(r == 3), sum(r == 4))
+        logf(msg, sum(r == 0), sum(r == 1), sum(r == 2), sum(r == 3), sum(r == 4))
     }
 
     invisible(r)
@@ -852,7 +852,7 @@ compare_spectra_v13 <- function(new = glc()$rv$urine_1,
     # Print summary
     if (!silent) {
         msg <- "Identical: %s, Equal: %s, Different: %s, Error: %s, Empty: %s"
-        catf(msg, sum(r == 0), sum(r == 1), sum(r == 2), sum(r == 3), sum(r == 4))
+        logf(msg, sum(r == 0), sum(r == 1), sum(r == 2), sum(r == 3), sum(r == 4))
     }
 
     # styler: on

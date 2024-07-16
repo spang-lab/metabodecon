@@ -184,42 +184,16 @@ collapse <- function(x, sep = ", ") {
 }
 
 #' @noRd
-#' @title Concatenate and print with newline
-#' @param ... Arguments to be concatenated and printed.
-#' @examples
-#' cat2("Hello", "world!")
-cat2 <- function(..., col = NULL) {
-    if (!is.null(col)) cat(col)
-    cat(...)
-    cat("\n")
-    if (!is.null(col)) cat(RESET)
-}
-
-cat3 <- function(...,
-                 sep = " ",
-                 prefix = .Options$metabodecon.cat3_prefix %||% "",
-                 suffix = "\n") {
-    x <- format(Sys.time(), "%Y-%m-%d %H:%M:%OS2 ")
-    y <- paste(..., sep = sep)
-    cat(x, prefix, y, suffix, sep = "")
-}
-
-catf <- function(fmt, ..., end = "", file = "", sep = " ", fill = FALSE, labels = NULL, append = FALSE) {
-    cat(sprintf(fmt, ...), end = end, file = file, sep = sep, fill = fill, labels = labels, append = append)
-}
-
-msg <- function(..., sep = " ", appendLF = TRUE) {
-    # message(paste(..., sep = sep), appendLF = appendLF)
-    cat(format(Sys.time()), "")
-    cat(..., sep = sep)
-    if (appendLF) cat("\n")
-}
-
-msgf <- function(fmt, ..., appendLF = TRUE) {
-    # message(sprintf(fmt, ...), appendLF = appendLF)
-    cat(format(Sys.time()), "")
-    cat(sprintf(fmt, ...))
-    if (appendLF) cat("\n")
+#' @description Fixed copy of [toscutil::logf()]. Can be replaced with original after issue [Fix: logf ignores file and append arguments](https://github.com/toscm/toscutil/issues/10) has been fixed.
+logf <- function(fmt,
+                 ...,
+                 file = .Options$toscutil.logf.file %||% "",
+                 append = .Options$toscutil.logf.append %||% FALSE,
+                 prefix = .Options$toscutil.logf.prefix %||% function() now_ms(usetz = FALSE, color = "\033[1;30m"),
+                 sep1 = .Options$toscutil.logf.sep1 %||% " ",
+                 sep2 = .Options$toscutil.logf.sep2 %||% "",
+                 end = .Options$toscutil.logf.end %||% "\n") {
+    cat(prefix(), sep1, sprintf(fmt, ...), sep2, end, sep = "", file = file, append = append)
 }
 
 # Interactive #####
