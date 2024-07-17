@@ -1918,25 +1918,28 @@ calculate_lorentz_curves <- function(deconv_result, number_of_files = NA) {
 #' @param deconv_result Saved result of the MetaboDecon1D() function
 #' @param x_range Row vector with two entries consisting of the ppm start and the ppm end value to scale the range of the x-axis (optional)
 #' @param y_range Row vector with two entries consisting of the ppm start and the ppm end value to scale the range of the y-axis (optional)
+#' @param out_dir Path to the directory where the png files should be saved. Default is the current working directory.
+#' @param ask Logical value. Whether to ask for confirmation from the user before writing files to disk. Default is TRUE.
 #' @return NULL, called for side effects.
 #' @seealso [MetaboDecon1D()], [plot_triplets()], [plot_spectrum_superposition_save_as_png()]
 #' @examples
-#' \dontrun{
-#'
-#' # Load one spectrum (Bruker format)
-#' result <- MetaboDecon1D(filepath = "load_example_path", filename = "urine", file_format = "bruker")
-#' plot_lorentz_curves_save_as_png(result)
-#'
-#' # Load more spectra (Bruker format)
-#' result <- MetaboDecon1D(filepath = "load_example_path", file_format = "bruker")
-#'
-#' # Plot Lorentz curves of all investigated spectra
-#' plot_lorentz_curves_save_as_png(result)
-#'
-#' # Plot Lorentz curves of one certain investigated spectrum
-#' plot_lorentz_curves_save_as_png(result$urine)
-#' }
-plot_lorentz_curves_save_as_png <- function(deconv_result, x_range = c(), y_range = c()) {
+#' sim <- metabodecon_file("bruker/sim_subset")
+#' sim_decon <- generate_lorentz_curves(sim, sfr = c(3.58, 3.42), wshw = 0, ask = FALSE, verbose = FALSE)
+#' png_dir <- tmpdir("sim_decon/pngs", create = TRUE)
+#' plot_lorentz_curves_save_as_png(sim_decon, out_dir = png_dir, ask = FALSE)
+#' dir(png_dir, full.names = TRUE)
+plot_lorentz_curves_save_as_png <- function(deconv_result, x_range = c(), y_range = c(), out_dir = ".", ask = TRUE) {
+
+  out_dir <- normPath(out_dir)
+  if (ask) {
+    continue <- get_yn_input(sprintf("Continue creating pngs in %s?", out_dir))
+    if (!continue) {
+      invisible(NULL)
+    }
+  }
+  owd <- setwd(out_dir)
+  on.exit(setwd(owd), add = TRUE)
+
   number_in_folder <- 0
   # Get number of analyzed spectra
   if ("number_of_files" %in% names(deconv_result)) {

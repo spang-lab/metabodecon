@@ -5,8 +5,7 @@
 \title{Generate Lorentz Curves from NMR Spectra}
 \usage{
 generate_lorentz_curves(
-  data_path = system.file("example_datasets/bruker/urine/urine_1", package =
-    "metabodecon"),
+  data_path = metabodecon_file("urine_1"),
   file_format = "bruker",
   make_rds = FALSE,
   expno = 10,
@@ -54,18 +53,18 @@ generate_lorentz_curves(
 
 \item{nworkers}{Number of workers to use for parallel processing. If \code{"auto"}, the number of workers will be determined automatically. If a number greater than 1, it will be limited to the number of spectra.}
 
-\item{share_stdout}{Whether to share the standard output (usually your terminal) of the main process with the worker processes. Only relevant if \code{nworkers} is greater than 1. Note that this can cause messages from different processes to get mixed up, making the output hard to follow.}
+\item{share_stdout}{Whether to share the standard output (usually your terminal) of the main process with the worker processes. Only relevant if \code{nworkers} is greater than 1. Note that this can cause messages from different workers to get mixed up, making the output hard to follow.}
 
 \item{force}{If FALSE, the function stops with an error message if no peaks are found in the SFR (which are used as reference for peak filtering). If TRUE, the function instead proceeds without peak filtering, potentially increasing runtime and memory usage significantly.}
 
 \item{verbose}{Logical. Whether to print log messages during the deconvolution process.}
 }
 \value{
-A list of deconvoluted spectra. Each list element contains a list with the following elements:
+A list of deconvoluted spectra. Each deconvoluted spetrum is a list with the following elements:
 \itemize{
 \item \code{number_of_files}: Number of deconvoluted spectra.
 \item \code{filename}: Name of the analyzed spectrum.
-\item \code{x_values}: Scaled datapoint numbers (SDP). Datapoints are numbered in descending order going from N to 0, where N equals the . Scaled data point numbers are obtained by dividing these numbers by the x-axis scale factor \code{sf[1]}. I.e., for a spectrum with 131072 datapoints and a scale factor of 1000, the first scale datapoint has value 131.071 and the last one has value 0.
+\item \code{x_values}: Scaled datapoint numbers (SDP). Datapoints are numbered in descending order going from N - 1 to 0, where N equals the number of datapoints. Scaled data point numbers are obtained by dividing these numbers by the x-axis scale factor \code{sf[1]}. I.e., for a spectrum with 131072 datapoints and a scale factor of 1000, the first scale datapoint has value 131.071 and the last one has value 0.
 \item \code{x_values_ppm}: The chemical shift of each datapoint in ppm (parts per million).
 \item \code{y_values}: The scaled signal intensity (SSI) of each datapoint. Obtained by reading the raw intensity values from the provided \code{data_path} as integers and dividing them by the y-axis scale factor \code{sf[2]}.
 \item \code{spectrum_superposition}: Scaled signal intensity obtained by calculating the sum of all estimated Lorentz curves for each data point.
@@ -85,7 +84,7 @@ A list of deconvoluted spectra. Each list element contains a list with the follo
 }
 }
 \description{
-Deconvolutes NMR spectra by modeling each detected signal within a spectra as Lorentz Curve.
+Deconvolutes NMR spectra by modeling each detected signal within a spectrum as Lorentz Curve.
 }
 \details{
 First, an automated curvature based signal selection is performed. Each signal is represented by 3 data points to allow the determination of initial Lorentz curves. These Lorentz curves are then iteratively adjusted to optimally approximate the measured spectrum.
@@ -140,6 +139,6 @@ compare(decon_sim_1_dir, decon_sim_dir[[1]])
 if (interactive()) {
      example_datasets <- download_example_datasets()
      urine_1 <- file.path(example_datasets, "bruker/urine/urine_1")
-     generate_lorentz_curves(urine_1)
+     decon_urine_1 <- generate_lorentz_curves(urine_1)
 }
 }

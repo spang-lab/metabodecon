@@ -64,7 +64,7 @@ result <- MetaboDecon1D(
 str(result)
 ```
 
-<img src = "MetaboDecon1D/jcamp/1_one_jcamp_dx.png">
+<img src = "MetaboDecon1D/jcamp/1_one_jcamp_dx.png" alt = "1_one_jcamp_dx.png">
 
 ## Deconvolute multiple spectra in Bruker format
 
@@ -76,8 +76,8 @@ result <- MetaboDecon1D(
 str(result)
 ```
 
-<img src = "MetaboDecon1D/bruker/5_n_spectra_1.png" width = "49%" alt="5_n_spectra_1.png">
-<img src = "MetaboDecon1D/bruker/6_n_spectra_2.png" width = "49%" alt="6_n_spectra_2.png">
+<img src = "MetaboDecon1D/bruker/5_n_spectra_1.png" width = "49%" alt = "5_n_spectra_1.png">
+<img src = "MetaboDecon1D/bruker/6_n_spectra_2.png" width = "49%" alt = "6_n_spectra_2.png">
 
 ## Deconvolute multiple spectra in jcampdx format
 

@@ -6,51 +6,53 @@ articles:
     navbar: ~
     contents:
       - Get_Started
-      - NMR_Basics
-      - Deconvolution_Details
-      - Alignment_Details
+      # - NMR_Basics
+      # - Deconvolution_Details
+      # - Alignment_Details
       - FAQ
       - MetaboDecon1D
       - Datasets
       - Contributing
 reference:
-- title: Public API
-  desc: Metabodecon's Public User Interface
+- title: Example Datasets
+  desc: Functions to download and/or find example datasets.
   contents:
   - datadir
   - download_example_datasets
-  - generate_lorentz_curves
-  - read_spectrum
-- title: Utility Functions
-  desc: Small utility functions, e.g. for converting between units, reading files measuring distances etc.
-  contents:
-  - width
-  - convert_width
-  - convert_pos
-- title: Plotting Functions
-  desc: Functions to plot the results of the deconvolution
-  contents:
-  - plot_lorentz_curves_save_as_png
-  - plot_spectrum_superposition_save_as_png
-  - plot_triplets
-  - plot_spectrum
-- title: Internal
-  desc: Internal Helper Functions. These function are exported but should not be used directly by the user. The main reason they are documented here is so that functions from the Public API can reference them when implementation details are explained.
-  contents:
-  # datadir helpers
+  - metabodecon_file
   - datadir_persistent
   - datadir_temp
   - tmpdir
-  # generate_lorentz_curves helper
+- title: Deconvolution
+  desc: Functions to deconvolute a spectrum into its individual peaks.
+  contents:
+  - read_spectrum
+  - generate_lorentz_curves
+  - plot_spectrum
+  - plot_triplets
+  - plot_lorentz_curves_save_as_png
+  - plot_spectrum_superposition_save_as_png
+- title: Alignment
+  desc: Functions to align multiple spectra.
+  contents:
   - dohCluster
   - gen_feat_mat
   - get_ppm_range
   - speaq_align
-  - get_peak_score_v12
+  - combine_peaks
+- title: Utility Functions
+  desc: Utility functions, e.g. for downloading examples datasets, converting between units, finding files, etc.
+  contents:
+  - width
+  - convert_width
+  - convert_pos
+# - title: Internal
+#   desc: Internal Helper Functions. These function are exported but should not be used directly by the user. The main reason they are documented here is so that functions from the Public API can reference them when implementation details are explained.
+#   contents:
+#   - func1
 - title: Deprecated
   desc: Deprecated functions. These functions are no longer used by the package and are only kept for backwards compatibility. They will be removed in future versions of the package.
   contents:
-  - MetaboDecon1D # Public API Function
+  - MetaboDecon1D # MetaboDecon1D main function
   - calculate_lorentz_curves # MetaboDecon1D helper
-  - combine_peaks # MetaboDecon1D helper
-  - get_data_dir # Public API Function
+  - get_data_dir # Superseded by datadir()

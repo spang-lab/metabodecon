@@ -10,16 +10,17 @@
 #' @details The decision to use a temporary data dir as default and a persistent one only optionally was made to conform to CRAN package policies, which state that: *Packages should not write in the user's home filespace (including clipboards), nor anywhere else on the file system apart from the R session's temporary directory \[...\] Limited exceptions may be allowed in interactive sessions if the package obtains confirmation from the user. For R version 4.0 or later \[...\] packages may store user-specific data, configuration and cache files in their respective user directories obtained from [tools::R_user_dir()] \[...\]*. Source: [cran.r-project.org/web/packages/policies](https://cran.r-project.org/web/packages/policies.html).
 #' @seealso [download_example_datasets()], [datadir_persistent()], [datadir_temp()]
 #' @examples
-#' datadir(persistent = FALSE, warn = FALSE)  # temporary datadir
-#' datadir(persistent = TRUE, warn = FALSE)   # persistent datadir
-#' datadir(warn = FALSE)  # persistent datadir if existing, else temp datadir
+#' # Get temporary datadir and persistent datadir
+#' datadir(persistent = FALSE, warn = FALSE)
+#' datadir(persistent = TRUE, warn = FALSE)
+#'
+#' # Get persistent datadir if existing else temp datadir. Set `warn = TRUE`
+#' # to raise a warning if none of the directories exist yet.
+#' datadir(warn = FALSE)
+#' if (interactive()) datadir()
+#'
+#' # Get PERSISTENT_DATADIR/bruker if existing else TEMP_DATADIR/bruker
 #' datadir(file = "bruker/urine", warn = FALSE)
-#' # PERSISTENT_DATADIR/bruker/urine if existing else "TEMP_DATADIR/bruker/urine"
-#' if (interactive) {
-#'      # Below command raises a warning if DATADIR doesn't exist yet (i.e. if
-#'      # `download_example_datasets()` hasn't been called yet).
-#'      datadir()
-#' }
 datadir <- function(file = NULL, warn = TRUE, persistent = NULL) {
     datadir <- datadir_temp <- datadir_temp()
     datadir_persistent <- datadir_persistent()
@@ -33,6 +34,33 @@ datadir <- function(file = NULL, warn = TRUE, persistent = NULL) {
         warning(file_path, " does not exist. Please call `download_example_datasets()` first.", call. = FALSE)
     }
     normalizePath(file_path, "/", mustWork = FALSE)
+}
+
+#' @export
+#' @title Return Path to File or Directory in metabodecon Package
+#' @description Recursively searches for files or directories within the 'metabodecon' package that match the given name.
+#' @param name The name to search for.
+#' @return The file or directory path.
+#' @examples
+#' # Unambiguous paths
+#' metabodecon_file("sim_01")
+#' metabodecon_file("urine_1")
+#' metabodecon_file("urine_1.dx")
+#'
+#' # Ambiguous paths (i.e. multiple matches)
+#' metabodecon_file("sim")
+#' metabodecon_file("urine")
+#'
+#' # Non-existing paths (i.e. a charactr vector of length zero gets returned)
+#' metabodecon_file("asdfasdf")
+metabodecon_file <- function(name = "sim_01") {
+    paths <- list.files(
+        path = system.file(package = "metabodecon"),
+        full.names = TRUE,
+        recursive = TRUE,
+        include.dirs = TRUE
+    )
+    paths[grepl(paste0(name, "$"), paths)]
 }
 
 # Exported Helpers #####

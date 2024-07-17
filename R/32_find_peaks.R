@@ -61,7 +61,7 @@ get_left_border_v12 <- function(j, d) {
     return(NA)
 }
 
-
+#' @noRd
 #' @title Get Peak Score
 #' @description Calculate the score of a peak based on the sum of absolute second derivative values of its datapoints.
 #' @param j <- Index of the peak center

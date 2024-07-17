@@ -23,11 +23,17 @@ Returns the path to the directory where \code{\link[=download_example_datasets]{
 The decision to use a temporary data dir as default and a persistent one only optionally was made to conform to CRAN package policies, which state that: \emph{Packages should not write in the user's home filespace (including clipboards), nor anywhere else on the file system apart from the R session's temporary directory [...] Limited exceptions may be allowed in interactive sessions if the package obtains confirmation from the user. For R version 4.0 or later [...] packages may store user-specific data, configuration and cache files in their respective user directories obtained from \code{\link[tools:userdir]{tools::R_user_dir()}} [...]}. Source: \href{https://cran.r-project.org/web/packages/policies.html}{cran.r-project.org/web/packages/policies}.
 }
 \examples{
-datadir(persistent = FALSE, warn = FALSE)  # temporary datadir
-datadir(persistent = TRUE, warn = FALSE)   # persistent datadir
-datadir()  # persistent datadir if existing, else temp datadir
-datadir(file = "bruker/urine")
-# PERSISTENT_DATADIR/bruker/urine if existing else "TEMP_DATADIR/bruker/urine"
+# Get temporary datadir and persistent datadir
+datadir(persistent = FALSE, warn = FALSE)
+datadir(persistent = TRUE, warn = FALSE)
+
+# Get persistent datadir if existing else temp datadir. Set `warn = TRUE`
+# to raise a warning if none of the directories exist yet.
+datadir(warn = FALSE)
+if (interactive()) datadir()
+
+# Get PERSISTENT_DATADIR/bruker if existing else TEMP_DATADIR/bruker
+datadir(file = "bruker/urine", warn = FALSE)
 }
 \seealso{
 \code{\link[=download_example_datasets]{download_example_datasets()}}, \code{\link[=datadir_persistent]{datadir_persistent()}}, \code{\link[=datadir_temp]{datadir_temp()}}

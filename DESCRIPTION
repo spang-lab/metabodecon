@@ -1,6 +1,4 @@
 Package: metabodecon
-Language: en-US
-Type: Package
 Title: Deconvolution and Alignment of 1D NMR Spectra
 Version: 1.2.0
 Authors@R: c(
@@ -31,27 +29,27 @@ Description: A framework for deconvolution, alignment and postprocessing of 1D
     an early version of the package, 'MetaboDecon1D v0.2.2', can be found in
     Haeckl et al. (2021) <doi:10.3390/metabo11070452>.
 License: GPL (>= 3)
+URL: https://github.com/spang-lab/metabodecon/, https://spang-lab.github.io/metabodecon/
+BugReports: https://github.com/spang-lab/metabodecon/issues
+biocViews: NMR, Deconvolution
 Encoding: UTF-8
-LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.1
-biocViews:
-SystemRequirements: C++11
 Depends: R (>= 3.5.0)
 Imports:
     data.table,
     readJDX,
     speaq,
-    withr,
-    toscutil
+    toscutil,
+    withr
 Suggests:
+    devtools,
     digest,
     knitr,
     lifecycle,
     rmarkdown,
-    testthat (>= 3.0.0),
-    devtools
+    testthat (>= 3.0.0)
+LazyData: true
 Config/testthat/edition: 3
-Config/testthat/start-first: read_spectrum, download_example_datasets, generate_lorentz_curves, cache_example_datasets, datadir, smooth_signals
 Config/testthat/parallel: true
-URL: https://spang-lab.github.io/metabodecon/
+Config/testthat/start-first: read_spectrum, download_example_datasets, generate_lorentz_curves, cache_example_datasets, datadir, smooth_signals

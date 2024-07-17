@@ -53,8 +53,8 @@ For \code{read_spectra} a named list of such dataframes, where the names are the
 }
 \description{
 Read one or more spectra files or folders from disk and return each parsed spectrum as dataframe.
-\code{read_spectrum} reads a single spectrum and returns its signal intensities, chemical shifts and frequencies as dataframe.
-\code{read_spectra()} can be used to read multiple spectra at once and returns a list of dataframes of the above mentioned format.
+\code{read_spectrum()} reads a single spectrum and returns its signal intensities, chemical shifts and frequencies as dataframe.
+\code{read_spectra()} can be used to read multiple spectra at once and returns a list of dataframes in the above mentioned format.
 }
 \details{
 For details about \code{procno} and \code{expno} see section \href{https://spang-lab.github.io/metabodecon/articles/FAQ.html#file-structure}{File Structure} in the metabodecon FAQ.
@@ -63,14 +63,19 @@ For details about \code{procno} and \code{expno} see section \href{https://spang
 urine <- system.file("example_datasets/bruker/urine", package = "metabodecon")
 urine_1 <- file.path(urine, "urine_1")
 urine_2 <- file.path(urine, "urine_2")
-X1 <- read_spectra(urine_1)
-X2 <- read_spectra(urine_2)
+X1 <- read_spectrum(urine_1)
+X2 <- read_spectrum(urine_2)
 XX <- read_spectra(urine)
 str(XX)
 str(X1)
 stopifnot(all.equal(X1, XX$urine_1))
-\donttest{
-urine_1_dx <- pkg_file("example_datasets/jcampdx/urine/urine_1.dx")
+
+# Below code shows how a spectrum stored in JCAMP-DX format can be read.
+# Reading files in this format is very slow (about 30s on the development
+# machine). So if possible, you should stick with the original Bruker
+# data storage format.
+\dontrun{
+urine_1_dx <- system.file("example_datasets/jcampdx/urine/urine_1.dx", package = "metabodecon")
 X1_dx <- read_spectrum(urine_1_dx, file_format = "jcampdx")
 stopifnot(all.equal(X1, X1_dx))
 }

@@ -4,7 +4,13 @@
 \alias{plot_lorentz_curves_save_as_png}
 \title{Plot lorentz curves for variable range}
 \usage{
-plot_lorentz_curves_save_as_png(deconv_result, x_range = c(), y_range = c())
+plot_lorentz_curves_save_as_png(
+  deconv_result,
+  x_range = c(),
+  y_range = c(),
+  out_dir = ".",
+  ask = TRUE
+)
 }
 \arguments{
 \item{deconv_result}{Saved result of the MetaboDecon1D() function}
@@ -12,6 +18,10 @@ plot_lorentz_curves_save_as_png(deconv_result, x_range = c(), y_range = c())
 \item{x_range}{Row vector with two entries consisting of the ppm start and the ppm end value to scale the range of the x-axis (optional)}
 
 \item{y_range}{Row vector with two entries consisting of the ppm start and the ppm end value to scale the range of the y-axis (optional)}
+
+\item{out_dir}{Path to the directory where the png files should be saved. Default is the current working directory.}
+
+\item{ask}{Logical value. Whether to ask for confirmation from the user before writing files to disk. Default is TRUE.}
 }
 \value{
 NULL, called for side effects.
@@ -20,21 +30,11 @@ NULL, called for side effects.
 Plots the original spectrum and all generated Lorentz curves and save the result as png under the filepath.
 }
 \examples{
-\dontrun{
-
-# Load one spectrum (Bruker format)
-result <- MetaboDecon1D(filepath = "load_example_path", filename = "urine", file_format = "bruker")
-plot_lorentz_curves_save_as_png(result)
-
-# Load more spectra (Bruker format)
-result <- MetaboDecon1D(filepath = "load_example_path", file_format = "bruker")
-
-# Plot Lorentz curves of all investigated spectra
-plot_lorentz_curves_save_as_png(result)
-
-# Plot Lorentz curves of one certain investigated spectrum
-plot_lorentz_curves_save_as_png(result$urine)
-}
+sim <- metabodecon_file("bruker/sim_subset")
+sim_decon <- generate_lorentz_curves(sim, sfr = c(3.58, 3.42), wshw = 0, ask = FALSE, verbose = FALSE)
+png_dir <- tmpdir("sim_decon/pngs", create = TRUE)
+plot_lorentz_curves_save_as_png(sim_decon, out_dir = png_dir, ask = FALSE)
+dir(png_dir, full.names = TRUE)
 }
 \seealso{
 \code{\link[=MetaboDecon1D]{MetaboDecon1D()}}, \code{\link[=plot_triplets]{plot_triplets()}}, \code{\link[=plot_spectrum_superposition_save_as_png]{plot_spectrum_superposition_save_as_png()}}
