@@ -2,7 +2,8 @@
 
 #' @export
 #' @title Generate Lorentz Curves from NMR Spectra
-#' @description Deconvolutes NMR spectra by modeling each detected signal within a spectrum as Lorentz Curve.
+#' @description
+#' Deconvolutes NMR spectra by modeling each detected signal within a spectrum as Lorentz Curve.
 #' @param data_path Either the path to a directory containing measured NMR spectra, a dataframe as returned by [read_spectrum()], or a list of such dataframes.
 #' @param file_format Format of the spectra files. Either `"bruker"` or `"jcampdx"`. Only relevant if `data_path` is a directory.
 #' @param make_rds Logical or character. If TRUE, stores results as an RDS file on disk. If a character string, saves the RDS file with the specified name. Should be set to TRUE if many spectra are evaluated to decrease computation time.
@@ -12,22 +13,24 @@
 #' @param wshw Half-width of the water artifact in ppm.
 #' @param sfr Numeric vector with two entries: the ppm positions for the left and right border of the signal-free region of the spectrum.
 #' @param smopts Numeric vector with two entries: the number of smoothing iterations and the number of data points to use for smoothing (must be odd).
-#' @param delta Threshold value to distinguish between signal and noise.
+#' @param delta Threshold value to distinguish between signal and noise. The higher the value, the more peaks get filtered out. The exact definition is as follows: a peak `i` gets filtered out, if his score is lower than `mu + s * delta`, where `mu` is the average peak score within the signal free region (SFR) and `s` is the standard deviation of peak scores in the SFR.
+#' @param delta \loadmathjax Threshold for peak filtering. Higher values result in more peaks being filtered out. A peak is filtered if its score is below \mjeqn{\mu + \sigma \cdot \delta}{mu + s * delta}, where \mjeqn{\mu}{mu} is the average peak score in the signal-free region (SFR), and \mjeqn{\sigma}{s} is the standard deviation of peak scores in the SFR.
 #' @param sf Numeric vector with two entries: the factors to scale the x-axis and y-axis.
 #' @param ask Logical. Whether to ask for user input during the deconvolution process. If FALSE, the provided default values will be used.
 #' @param debug Logical. Whether to return additional intermediate results for debugging purposes.
 #' @param nworkers Number of workers to use for parallel processing. If `"auto"`, the number of workers will be determined automatically. If a number greater than 1, it will be limited to the number of spectra.
 #' @param share_stdout Whether to share the standard output (usually your terminal) of the main process with the worker processes. Only relevant if `nworkers` is greater than 1. Note that this can cause messages from different workers to get mixed up, making the output hard to follow.
-#' @param force If FALSE, the function stops with an error message if no peaks are found in the SFR (which are used as reference for peak filtering). If TRUE, the function instead proceeds without peak filtering, potentially increasing runtime and memory usage significantly.
+#' @param force If FALSE, the function stops with an error message if no peaks are found in the signal free region (SFR), as these peaks are required as a reference for peak filtering. If TRUE, the function instead proceeds without peak filtering, potentially increasing runtime and memory usage significantly.
 #' @param verbose Logical. Whether to print log messages during the deconvolution process.
-#' @return A list of deconvoluted spectra. Each deconvoluted spetrum is a list with the following elements:
+#' @return \loadmathjax
+#' A list of deconvoluted spectra. Each deconvoluted spetrum is a list with the following elements:
 #' * `number_of_files`: Number of deconvoluted spectra.
 #' * `filename`: Name of the analyzed spectrum.
 #' * `x_values`: Scaled datapoint numbers (SDP). Datapoints are numbered in descending order going from N - 1 to 0, where N equals the number of datapoints. Scaled data point numbers are obtained by dividing these numbers by the x-axis scale factor `sf[1]`. I.e., for a spectrum with 131072 datapoints and a scale factor of 1000, the first scale datapoint has value 131.071 and the last one has value 0.
 #' * `x_values_ppm`: The chemical shift of each datapoint in ppm (parts per million).
 #' * `y_values`: The scaled signal intensity (SSI) of each datapoint. Obtained by reading the raw intensity values from the provided `data_path` as integers and dividing them by the y-axis scale factor `sf[2]`.
 #' * `spectrum_superposition`: Scaled signal intensity obtained by calculating the sum of all estimated Lorentz curves for each data point.
-#' * `mse_normed`: Normalized mean squared error. Calculated as \eqn{\frac{1}{n} \sum_{i=1}^{n} (z_i - \hat{z}_i)^2} where \eqn{z_i} is the normalized, smoothed signal intensity of data point i and \eqn{\hat{z}_i} is the normalized superposition of Lorentz curves at data point i. Normalized in this context means that the vectors were scaled so the sum over all data points equals 1.
+#' * `mse_normed`: Normalized mean squared error. Calculated as \mjeqn{\frac{1}{n} \sum_{i=1}^{n} (z_i - \hat{z}_i)^2}{1/n * sum((z_i - zhat_i)^2)} where \mjeqn{z_i}{z_i} is the normalized, smoothed signal intensity of data point i and \mjeqn{\hat{z}_i}{zhat_i} is the normalized superposition of Lorentz curves at data point i. Normalized in this context means that the vectors were scaled so the sum over all data points equals 1.
 #' * `index_peak_triplets_middle`: Datapoint numbers of peak centers.
 #' * `index_peak_triplets_left`: Datapoint numbers of left peak borders.
 #' * `index_peak_triplets_right`: Datapoint numbers of right peak borders.
@@ -37,7 +40,7 @@
 #' * `integrals`: Integrals of the Lorentz curves.
 #' * `signal_free_region`: Borders of the signal free region of the spectrum in scaled datapoint numbers. Left of the first element and right of the second element no signals are expected.
 #' * `range_water_signal_ppm`: Half width of the water signal in ppm. Potential signals in this region are ignored.
-#' * `A`: Amplitude parameter of the Lorentz curves. Provided as negative number to maintain backwards compatibility with MetaboDecon1D. The area under the Lorentz curve is calculated as \eqn{A \cdot \pi}.
+#' * `A`: Amplitude parameter of the Lorentz curves. Provided as negative number to maintain backwards compatibility with MetaboDecon1D. The area under the Lorentz curve is calculated as \mjeqn{A \cdot \pi}{A * pi}.
 #' * `lambda`: Half width of the Lorentz curves in scaled data points. Provided as negative value to maintain backwards compatibility with MetaboDecon1D. Example: a value of -0.00525 corresponds to 5.25 data points. With a spectral width of 12019 Hz and 131072 data points this corresponds to a halfwidth at half height of approx. 0.48 Hz. The corresponding calculation is: (12019 Hz / 131071 dp) * 5.25 dp.
 #' * `x_0`: Center of the Lorentz curves in scaled data points.
 #' @details First, an automated curvature based signal selection is performed. Each signal is represented by 3 data points to allow the determination of initial Lorentz curves. These Lorentz curves are then iteratively adjusted to optimally approximate the measured spectrum.
@@ -72,7 +75,7 @@
 #' decon_sim_1_dir <- glc2(sim_1_dir)
 #' decon_sim_1_spec <- glc2(sim_1_spec)
 #' decon_sim_12_specs <- glc2(sim_12_specs)
-#' decon_sim_dir <- glc2(sim)
+#' decon_sim_dir <- glc2(sim_dir)
 #'
 #' # Make sure the results for the first spectrum are the same:
 #' compare <- function(decon1, decon2) {
@@ -300,7 +303,7 @@ smooth_signals_v12 <- function(spec, reps = 2, k = 5, verbose = TRUE) {
 #' @title Filter Peaks with Low Scores Outside Signal-Free Region
 #' @description Calculates a score for each peak in the spectrum. Peaks with scores that are lower than `mu + delta * sigma` are filtered out, with `mu` being the mean and `sigma` the standard deviation of the scores of peaks within the signal-free region (SFR).
 #' @param spec A list containing the spectrum data, including peaks and their scores, and the signal-free region definition.
-#' @param delta A numeric value specifying the number of standard deviations above the mean score within the SFR a peak's score needs to be to avoid being filtered out.
+#' @param delta A numeric value specifying how many standard deviations `s` a score needs to be above `mu` to not get filtered out. Here `s` denotes the standard deviation of peaks scores in the signal free region (SFR) and `mu` denotes the average peak score within the SFR.
 #' @param force If no peaks are found in the SFR, the function stops with an error message by default. If `force` is TRUE, the function instead proceeds without filtering any peaks, potentially increasing runtime.
 #' @return Returns the modified `spec` list with the `peak` component updated to indicate which peaks are considered significant based on their score relative to the SFR and the `delta` parameter. Peaks within the SFR are marked with a specific region code ("sfrl" for peaks in the left SFR and "sfrr" for peaks in the right SFR). Peaks in the normal region have the region-code "norm".
 #' @details The function first identifies peaks within the SFR by comparing their center positions against the SFR boundaries. If peaks are found within the SFR, it calculates the mean and standard deviation of their scores to establish a filtering threshold. Peaks with scores below this threshold are considered low and filtered out. If no peaks are found within the SFR and `force` is FALSE, the function stops and issues an error message. If `force` is TRUE, the function proceeds without filtering, potentially increasing runtime.
@@ -403,7 +406,7 @@ add_return_list_v13 <- function(spec = glc(), nfiles = 1, nam = "urine_1", debug
 
 #' @noRd
 #' @title Calculate Lorentz Curve values
-#' @description Calculates the values of a Lorentz Curve for given x values. The Lorentz Curve is defined as \eqn{A \cdot \frac{\lambda}{\lambda^2 + (x_i - x_0)^2}}.
+#' @description Calculates the values of a Lorentz Curve for given x values. The Lorentz Curve is defined as \mjeqn{A \cdot \frac{\lambda}{\lambda^2 + (x_i - x_0)^2}}.
 #' @param x Numeric vector of x values.
 #' @param x0 Center of the Lorentz curve.
 #' @param A Amplitude parameter of the Lorentz curve.

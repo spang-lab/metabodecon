@@ -13,13 +13,15 @@
 #' @param raw If `TRUE`, scales the returned signal intensities based on information available in the spectrum metadata, in particular `NC_proc`. For details see `processing-reference.pdf`, available at <https://www.bruker.com/en.html> at section 'Services & Support > Documentation & Manuals > Magnetic Resonance > Acquisition & Processing > TopSpin Processing Commands and Parameters' (requires login).
 #' @param silent If `TRUE`, no output will be printed to the console.
 #' @param force If `TRUE`, try to continue when encountering errors and print info messages instead. To hide these messages as well, set `silent = TRUE`.
-#' @return For `read_spectrum`, a dataframe with following columns:
+#' @return
+#' For `read_spectrum`, a dataframe with following columns:
+#'
 #' - `si`: signal intensities in arbitrary units
 #' - `cs`: chemical shifts in ppm
 #' - `fq`: frequencies in Hz
+#'
 #' For `read_spectra` a named list of such dataframes, where the names are the file names of the spectra.
 #' @details For details about `procno` and `expno` see section [File Structure](https://spang-lab.github.io/metabodecon/articles/FAQ.html#file-structure) in the metabodecon FAQ.
-#' @seealso [read_spectrum()]
 #' @examples
 #' urine <- system.file("example_datasets/bruker/urine", package = "metabodecon")
 #' urine_1 <- file.path(urine, "urine_1")

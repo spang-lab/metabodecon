@@ -2,22 +2,22 @@ Package: metabodecon
 Title: Deconvolution and Alignment of 1D NMR Spectra
 Version: 1.2.0
 Authors@R: c(
-    person(given = "Wolfram",
-           family = "Gronwald",
-           role = c("aut", "cph"),
-           email = "wolfram.gronwald@klinik.uni-regensburg.de"),
-    person(given = "Martina",
-           family = "Haeckl",
-           role = c("aut"),
-           email = "martina.haeckl@stud.uni-regensburg.de"),
     person(given = "Tobias",
            family = "Schmidt",
-           role = c("aut", "cre"),
+           role = c("aut", "cre", "cph"),
            email = "tobias.schmidt331@gmail.com"),
+    person(given = "Martina",
+           family = "Haeckl",
+           role = c("aut", "cph"),
+           email = "martina.haeckl@stud.uni-regensburg.de"),
     person(given = "Yanren Linda",
            family = "Hu",
            role = c("ctb"),
-           email = "yanren-linda.hu@klinik.uni-regensburg.de")
+           email = "yanren-linda.hu@klinik.uni-regensburg.de"),
+    person(given = "Wolfram",
+           family = "Gronwald",
+           role = c("aut", "cph"),
+           email = "wolfram.gronwald@klinik.uni-regensburg.de")
     )
 Description: A framework for deconvolution, alignment and postprocessing of 1D
     NMR spectra, resulting in a data matrix of aligned signal integrals. The
@@ -38,6 +38,7 @@ RoxygenNote: 7.3.1
 Depends: R (>= 3.5.0)
 Imports:
     data.table,
+    mathjaxr,
     readJDX,
     speaq,
     toscutil,
@@ -53,3 +54,5 @@ LazyData: true
 Config/testthat/edition: 3
 Config/testthat/parallel: true
 Config/testthat/start-first: read_spectrum, download_example_datasets, generate_lorentz_curves, cache_example_datasets, datadir, smooth_signals
+RdMacros: mathjaxr
+BuildManual: TRUE

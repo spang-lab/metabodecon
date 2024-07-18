@@ -6,53 +6,46 @@ articles:
     navbar: ~
     contents:
       - Get_Started
-      # - NMR_Basics
-      # - Deconvolution_Details
-      # - Alignment_Details
       - FAQ
       - MetaboDecon1D
       - Datasets
       - Contributing
 reference:
-- title: Example Datasets
-  desc: Functions to download and/or find example datasets.
-  contents:
-  - datadir
-  - download_example_datasets
-  - metabodecon_file
-  - datadir_persistent
-  - datadir_temp
-  - tmpdir
 - title: Deconvolution
   desc: Functions to deconvolute a spectrum into its individual peaks.
   contents:
-  - read_spectrum
   - generate_lorentz_curves
-  - plot_spectrum
-  - plot_triplets
   - plot_lorentz_curves_save_as_png
+  - plot_spectrum
   - plot_spectrum_superposition_save_as_png
+  - plot_triplets
+  - read_spectrum
 - title: Alignment
   desc: Functions to align multiple spectra.
   contents:
+  - combine_peaks
   - dohCluster
   - gen_feat_mat
   - get_ppm_range
   - speaq_align
-  - combine_peaks
-- title: Utility Functions
-  desc: Utility functions, e.g. for downloading examples datasets, converting between units, finding files, etc.
+- title: Datasets
+  desc: Functions to download and/or find example datasets.
   contents:
-  - width
-  - convert_width
+  - datadir
+  - datadir_persistent
+  - datadir_temp
+  - download_example_datasets
+  - metabodecon_file
+  - tmpdir
+- title: Utility
+  desc: Utility functions, e.g. for converting between units or for calculating y values for a given lorentz curve.
+  contents:
+  - calculate_lorentz_curves
   - convert_pos
-# - title: Internal
-#   desc: Internal Helper Functions. These function are exported but should not be used directly by the user. The main reason they are documented here is so that functions from the Public API can reference them when implementation details are explained.
-#   contents:
-#   - func1
+  - convert_width
+  - width
 - title: Deprecated
   desc: Deprecated functions. These functions are no longer used by the package and are only kept for backwards compatibility. They will be removed in future versions of the package.
   contents:
-  - MetaboDecon1D # MetaboDecon1D main function
-  - calculate_lorentz_curves # MetaboDecon1D helper
-  - get_data_dir # Superseded by datadir()
+  - get_data_dir # Superseded by `datadir()`
+  - MetaboDecon1D # supersed by `generate_lorentz_curves()`

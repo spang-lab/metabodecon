@@ -20,10 +20,10 @@ Plot a spectrum based on the provided deconvolution data and highlight a specifi
 lifecycle::experimental()
 }
 \examples{
-sim_01 <- system.file("example_datasets/bruker/sim/sim_01", package = "metabodecon")
+sim_01 <- metabodecon_file("sim/sim_01")
 decon <- generate_lorentz_curves(
-    sim_01, sfr = c(3.42, 3.58), ws = 0, ask = FALSE,
-    smopts = c(1, 5), delta = 0.1
+     sim_01, sfr = c(3.42, 3.58), ws = 0,
+     ask = FALSE, verbose = FALSE
 )
-plot_spectrum(decon)
+plot_spectrum(decon, focus = c(3.504, 3.450))
 }

@@ -10,7 +10,7 @@ datadir_temp()
 Returns the path to the temporary data directory.
 }
 \description{
-Returns the path to the temporary data directory where metabodecon's data sets are stored. This directory equals subdirectory \code{"data"} of metabodecons temporary session directory \verb{[tmpdir()]} plus additional path normalization.
+Returns the path to the temporary data directory where metabodecon's data sets are stored. This directory equals subdirectory 'data' of metabodecons temporary session directory \code{\link[=tmpdir]{tmpdir()}} plus additional path normalization.
 }
 \examples{
 datadir_temp()

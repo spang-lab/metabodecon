@@ -74,12 +74,12 @@ plot_peaks <- function(spec, ppm = c(3.402, 3.437), dp = NULL, vlines = FALSE) {
 #' @param focus A numeric vector of length 2 specifying the region of interest to highlight on the plot. The region is defined by its start and end points on the x-axis (in ppm).
 #' @return A plot is generated as a side effect, highlighting the specified focus region on the spectrum.
 #' @examples
-#' sim_01 <- system.file("example_datasets/bruker/sim/sim_01", package = "metabodecon")
+#' sim_01 <- metabodecon_file("sim/sim_01")
 #' decon <- generate_lorentz_curves(
-#'     sim_01, sfr = c(3.42, 3.58), ws = 0, ask = FALSE,
-#'     smopts = c(1, 5), delta = 0.1
+#'      sim_01, sfr = c(3.42, 3.58), ws = 0,
+#'      ask = FALSE, verbose = FALSE
 #' )
-#' plot_spectrum(decon)
+#' plot_spectrum(decon, focus = c(3.504, 3.450))
 plot_spectrum <- function(decon, focus = c(3.45, 3.55)) {
     x <- decon$x_values_ppm %||% decon$ppm
     y <- decon$y_values %||% decon$y_smooth

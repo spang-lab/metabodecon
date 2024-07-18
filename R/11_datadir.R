@@ -43,15 +43,15 @@ datadir <- function(file = NULL, warn = TRUE, persistent = NULL) {
 #' @return The file or directory path.
 #' @examples
 #' # Unambiguous paths
-#' metabodecon_file("sim_01")
 #' metabodecon_file("urine_1")
 #' metabodecon_file("urine_1.dx")
+#' metabodecon_file("sim/sim_01")
 #'
 #' # Ambiguous paths (i.e. multiple matches)
 #' metabodecon_file("sim")
 #' metabodecon_file("urine")
 #'
-#' # Non-existing paths (i.e. a charactr vector of length zero gets returned)
+#' # Non-existing paths (i.e. a character vector of length zero gets returned)
 #' metabodecon_file("asdfasdf")
 metabodecon_file <- function(name = "sim_01") {
     paths <- list.files(
@@ -79,7 +79,7 @@ datadir_persistent <- function() {
 
 #' @export
 #' @title Temporary Data Directory
-#' @description Returns the path to the temporary data directory where metabodecon's data sets are stored. This directory equals subdirectory `"data"` of metabodecons temporary session directory `[tmpdir()]` plus additional path normalization.
+#' @description Returns the path to the temporary data directory where metabodecon's data sets are stored. This directory equals subdirectory 'data' of metabodecons temporary session directory [tmpdir()] plus additional path normalization.
 #' @return Returns the path to the temporary data directory.
 #' @seealso [tmpdir()], [datadir()], [datadir_persistent()]
 #' @examples
@@ -92,7 +92,7 @@ datadir_temp <- function() {
 #' @export
 #' @title Temporary Session Directory
 #' @description Returns the path to metabodecon's temporary session directory.
-#' This directory equals subdirectory `"metabodecon"` of R's temporary session directory `[base::tempdir()]` plus additional path normalization.
+#' This directory equals subdirectory 'metabodecon' of R's temporary session directory [base::tempdir()] plus additional path normalization.
 #' @param subdir Optional subdirectory within the temporary session directory.
 #' @param create Whether to create the directory if it does not yet exist.
 #' @return Returns the path to the temporary session directory.

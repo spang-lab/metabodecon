@@ -17,14 +17,14 @@ Recursively searches for files or directories within the 'metabodecon' package t
 }
 \examples{
 # Unambiguous paths
-metabodecon_file("sim_01")
 metabodecon_file("urine_1")
 metabodecon_file("urine_1.dx")
+metabodecon_file("sim/sim_01")
 
 # Ambiguous paths (i.e. multiple matches)
 metabodecon_file("sim")
 metabodecon_file("urine")
 
-# Non-existing paths (i.e. a charactr vector of length zero gets returned)
+# Non-existing paths (i.e. a character vector of length zero gets returned)
 metabodecon_file("asdfasdf")
 }

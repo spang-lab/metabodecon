@@ -7,41 +7,42 @@
 calculate_lorentz_curves(deconv_result, number_of_files = NA)
 }
 \arguments{
-\item{deconv_result}{Saved result of the MetaboDecon1D() function}
+\item{deconv_result}{A list as returned by \code{\link[=generate_lorentz_curves]{generate_lorentz_curves()}} or \link{MetaboDecon1D}.}
 
 \item{number_of_files}{Number of spectra to analyze}
 }
 \value{
-\bold{One spectrum:} matrix containing the generated Lorentz curves. Each row depicts one Lorentz curve. \bold{More spectra:} list containing the matrix with the generated Lorentz curve. Each matrix corresponds to one spectrum and each row in the matrix depicts one Lorentz curve.
+If \code{deconv_result} holds the result of a single deconvolution, a matrix containing the generated Lorentz curves is returned, where each row depicts one Lorentz curve. If \code{deconv_result} is a list of deconvoluted spectra, a list of such matrices is returned.
 }
 \description{
 Calculates the lorentz curves of each investigated spectrum.
 }
 \examples{
-\dontrun{
 
-# Load one spectrum (Bruker format)
-result <- MetaboDecon1D(
-  filepath = "load_example_path",
-  filename = "urine",
-  file_format = "bruker"
-)
-lorentz_curves <- calculate_lorentz_curves(result)
+# Deconvolute the spectra in folder "bruker/sim_subset" into a list of
+# Lorentz Curves (specified via the parameters A, lambda and x_0).
+sim <- metabodecon_file("bruker/sim_subset")
+decons <- generate_lorentz_curves(sim, sfr = c(3.58, 3.42), wshw = 0, ask = FALSE, verbose = FALSE)
+decon1 <- decons[[1]]
 
-# Load all spectra (Bruker format) of choosen folder
-result <- MetaboDecon1D(filepath = "load_example_path", file_format = "bruker")
+# Calculate the corresponding y values at each ppm value for each Lorentz
+# Curve. I.e. you get a matrix of dimension n x m for each deconvolution,
+# where n is the number of Lorentz Curves and m is the number of ppm values.
+Xs <- calculate_lorentz_curves(decons)
+X1 <- Xs[[1]]
+dim(X1)
 
-# Calculate Lorentz curves of all investigated spectra
-lorentz_curves <- calculate_lorentz_curves(result)
-
-# Save matrix containing all Lorentz curves of first spectrum
-lorentz_curves_first_spectrum <- lorentz_curves[[1]]
-
-# Calculate Lorentz curves of one certain investigated spectrum
-lorentz_curves_spectrum1 <- calculate_lorentz_curves(result$urine)
-
-}
+# Visualize the 5th, 9th and 11th Lorentz curve.
+nrs <- c(5, 9, 11)
+col <- c("red", "blue", "orange")
+desc <- paste("Lorentz curve", nrs)
+plot(decon1$x_values_ppm, decon1$y_values, type = "l", lty = 2)
+for (i in 1:3) lines(decon1$x_values_ppm, X1[nrs[i], ], col = col[i])
+legend("topright", legend = desc, col = col, lty = 1)
 }
 \seealso{
 \code{\link[=MetaboDecon1D]{MetaboDecon1D()}}, \code{\link[=plot_triplets]{plot_triplets()}}, \code{\link[=plot_lorentz_curves_save_as_png]{plot_lorentz_curves_save_as_png()}}, \code{\link[=plot_spectrum_superposition_save_as_png]{plot_spectrum_superposition_save_as_png()}}
+}
+\author{
+Martina Haeckl, Tobias Schmidt
 }

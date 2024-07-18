@@ -68,7 +68,7 @@ A list of deconvoluted spectra. Each deconvoluted spetrum is a list with the fol
 \item \code{x_values_ppm}: The chemical shift of each datapoint in ppm (parts per million).
 \item \code{y_values}: The scaled signal intensity (SSI) of each datapoint. Obtained by reading the raw intensity values from the provided \code{data_path} as integers and dividing them by the y-axis scale factor \code{sf[2]}.
 \item \code{spectrum_superposition}: Scaled signal intensity obtained by calculating the sum of all estimated Lorentz curves for each data point.
-\item \code{mse_normed}: Normalized mean squared error. Calculated as \eqn{\frac{1}{n} \sum_{i=1}^{n} (z_i - \hat{z}_i)^2} where \eqn{z_i} is the normalized, smoothed signal intensity of data point i and \eqn{\hat{z}_i} is the normalized superposition of Lorentz curves at data point i. Normalized in this context means that the vectors were scaled so the sum over all data points equals 1.
+\item \code{mse_normed}: Normalized mean squared error. Calculated as \mjeqn{\frac{1}{n} \sum_{i=1}^{n} (z_i - \hat{z}_i)^2}{1/n * sum((z_i - zhat_i)^2)} where \mjeqn{z_i}{z_i} is the normalized, smoothed signal intensity of data point i and \mjeqn{\hat{z}_i}{zhat_i} is the normalized superposition of Lorentz curves at data point i. Normalized in this context means that the vectors were scaled so the sum over all data points equals 1.
 \item \code{index_peak_triplets_middle}: Datapoint numbers of peak centers.
 \item \code{index_peak_triplets_left}: Datapoint numbers of left peak borders.
 \item \code{index_peak_triplets_right}: Datapoint numbers of right peak borders.
@@ -78,12 +78,13 @@ A list of deconvoluted spectra. Each deconvoluted spetrum is a list with the fol
 \item \code{integrals}: Integrals of the Lorentz curves.
 \item \code{signal_free_region}: Borders of the signal free region of the spectrum in scaled datapoint numbers. Left of the first element and right of the second element no signals are expected.
 \item \code{range_water_signal_ppm}: Half width of the water signal in ppm. Potential signals in this region are ignored.
-\item \code{A}: Amplitude parameter of the Lorentz curves. Provided as negative number to maintain backwards compatibility with MetaboDecon1D. The area under the Lorentz curve is calculated as \eqn{A \cdot \pi}.
+\item \code{A}: Amplitude parameter of the Lorentz curves. Provided as negative number to maintain backwards compatibility with MetaboDecon1D. The area under the Lorentz curve is calculated as \mjeqn{A \cdot \pi}{A * pi}.
 \item \code{lambda}: Half width of the Lorentz curves in scaled data points. Provided as negative value to maintain backwards compatibility with MetaboDecon1D. Example: a value of -0.00525 corresponds to 5.25 data points. With a spectral width of 12019 Hz and 131072 data points this corresponds to a halfwidth at half height of approx. 0.48 Hz. The corresponding calculation is: (12019 Hz / 131071 dp) * 5.25 dp.
 \item \code{x_0}: Center of the Lorentz curves in scaled data points.
 }
 }
 \description{
+\loadmathjax
 Deconvolutes NMR spectra by modeling each detected signal within a spectrum as Lorentz Curve.
 }
 \details{
@@ -120,7 +121,7 @@ glc2 <- function(data_path) {
 decon_sim_1_dir <- glc2(sim_1_dir)
 decon_sim_1_spec <- glc2(sim_1_spec)
 decon_sim_12_specs <- glc2(sim_12_specs)
-decon_sim_dir <- glc2(sim)
+decon_sim_dir <- glc2(sim_dir)
 
 # Make sure the results for the first spectrum are the same:
 compare <- function(decon1, decon2) {

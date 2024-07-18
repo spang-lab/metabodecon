@@ -5,6 +5,7 @@
 #' @import stats
 #' @import graphics
 #' @import grDevices
+#' @import mathjaxr
 
 #' @import toscutil
 

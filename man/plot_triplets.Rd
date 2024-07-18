@@ -4,7 +4,13 @@
 \alias{plot_triplets}
 \title{Plot peak triplets for variable range}
 \usage{
-plot_triplets(deconv_result, x_range = c(), y_range = c())
+plot_triplets(
+  deconv_result,
+  x_range = c(),
+  y_range = c(),
+  out_dir = ".",
+  ask = TRUE
+)
 }
 \arguments{
 \item{deconv_result}{Saved result of the MetaboDecon1D() function}
@@ -12,34 +18,27 @@ plot_triplets(deconv_result, x_range = c(), y_range = c())
 \item{x_range}{Row vector with two entries consisting of the ppm start and the ppm end value to scale the range of the x-axis (optional)}
 
 \item{y_range}{Row vector with two entries consisting of the ppm start and the ppm end value to scale the range of the y-axis (optional)}
+
+\item{out_dir}{Directory to save the png files (optional)}
+
+\item{ask}{Logical value to ask the user if the png files should be saved in the specified directory (optional)}
 }
 \value{
 No return value, called for side effect of plotting.
 }
 \description{
-Plots the peak triplets for each peak detected by \code{\link[=MetaboDecon1D]{MetaboDecon1D()}}.
+Plots the peak triplets for each peak detected by \code{\link[=MetaboDecon1D]{MetaboDecon1D()}} and stores the plots as png at \code{outdir}.
 }
 \examples{
-\dontrun{
-
-# Load one spectrum (Bruker format)
-result <- MetaboDecon1D(filepath = "load_example_path", filename = "urine", file_format = "bruker")
-plot_triplets(result)
-
-# Plot part of spectrum
-plot_triplets(result, c(1.4, 1.3), c(0, 20))
-
-# Load all spectra (Bruker format) of choosen folder
-result <- MetaboDecon1D(filepath = "load_example_path", file_format = "bruker")
-
-# Plot triplets of all investigated spectra
-plot_triplets(result)
-
-# Plot triplets of one certain investigated spectrum
-plot_triplets(result$urine)
-
-}
+sim <- metabodecon_file("bruker/sim_subset")
+sim_decon <- generate_lorentz_curves(sim, sfr = c(3.58, 3.42), wshw = 0, ask = FALSE, verbose = FALSE)
+png_dir <- tmpdir("sim_decon/pngs", create = TRUE)
+plot_triplets(sim_decon, out_dir = png_dir, ask = FALSE)
+dir(png_dir, full.names = TRUE)
 }
 \seealso{
 \code{\link[=MetaboDecon1D]{MetaboDecon1D()}}, \code{\link[=calculate_lorentz_curves]{calculate_lorentz_curves()}}, \code{\link[=plot_lorentz_curves_save_as_png]{plot_lorentz_curves_save_as_png()}}, \code{\link[=plot_spectrum_superposition_save_as_png]{plot_spectrum_superposition_save_as_png()}}
+}
+\author{
+Martina Haeckl, Tobias Schmidt
 }

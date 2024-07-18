@@ -212,6 +212,7 @@ get_datadir_mock <- function(type = "temp", state = "default") {
 #' @description Simulates multiple spectra based on the deconvolution results of real spectra. The simulated spectra are superpositions of Lorentzian functions from a small part of the original spectra.
 #' @param pngdir Path to the directory where the PNG files of the simulated spectra should be saved.
 #' @param pdfdir Path to the directory where the PDF files of the simulated spectra should be saved.
+#' @param svgdir Path to the directory where the SVG files of the simulated spectra should be saved.
 #' @param rdsdir Path to the directory where the RDS files of the simulated spectra should be saved.
 #' @param brukerdir Path to the directory where the Bruker files of the simulated spectra should be saved.
 #' @param verbose Logical indicating whether to print progress messages.
@@ -223,6 +224,7 @@ get_datadir_mock <- function(type = "temp", state = "default") {
 #'      simulate_spectra(
 #'          pngdir = "vignettes/Datasets/png",
 #'          pdfdir = "vignettes/Datasets/pdf",
+#'          svgdir = "vignettes/Datasets/svg",
 #'          rdsdir = "inst/example_datasets/rds/sim",
 #'          brukerdir = "inst/example_datasets/bruker/sim",
 #'          verbose = TRUE
@@ -230,16 +232,19 @@ get_datadir_mock <- function(type = "temp", state = "default") {
 #' }
 simulate_spectra <- function(pngdir = NULL,
                              pdfdir = NULL,
+                             svgdir = NULL,
                              rdsdir = NULL,
                              brukerdir = NULL,
                              verbose = TRUE) {
     deconvs <- glc("blood", debug = FALSE)$rv
     if (is.null(pngdir)) pngdir <- tmpdir("simulate_spectra/png", create = TRUE)
     if (is.null(pdfdir)) pdfdir <- tmpdir("simulate_spectra/pdf", create = TRUE)
+    if (is.null(svgdir)) svgdir <- tmpdir("simulate_spectra/svg", create = TRUE)
     if (is.null(rdsdir)) rdsdir <- tmpdir("simulate_spectra/rds", create = TRUE)
     if (is.null(brukerdir)) brukerdir <- tmpdir("simulate_spectra/bruker", create = TRUE)
     logf("Saving pngs to %s", pngdir)
     logf("Saving pdfs to %s", pdfdir)
+    logf("Saving svgs to %s", svgdir)
     logf("Saving rds to %s", rdsdir)
     logf("Saving bruker files to %s", brukerdir)
     logf("Simulating %s spectra, using following deconvolution results as base:", length(deconvs))
@@ -250,8 +255,9 @@ simulate_spectra <- function(pngdir = NULL,
         simulate_spectrum(
             deconv,
             show = FALSE,
-            pdfpath = file.path(pdfdir, paste0(new_name, ".pdf")),
             pngpath = file.path(pngdir, paste0(new_name, ".png")),
+            pdfpath = file.path(pdfdir, paste0(new_name, ".pdf")),
+            svgpath = file.path(svgdir, paste0(new_name, ".svg")),
             rdspath = file.path(rdsdir, paste0(new_name, ".rds")),
             brukerdir = file.path(brukerdir, new_name)
         )
@@ -264,25 +270,28 @@ simulate_spectra <- function(pngdir = NULL,
 #' @description Simulates a spectrum based on the deconvolution results of a real spectrum. The simulated spectrum is a superposition of Lorentzian functions from a small part of the original spectrum.
 #' @param deconv A list containing the deconvolution result, as returned by [generate_lorentz_curves()].
 #' @param show Logical indicating whether to display the simulated spectrum.
-#' @param pdfpath Path to save the simulated spectrum as a PDF file.
 #' @param pngpath Path to save the simulated spectrum as a PNG file.
+#' @param pdfpath Path to save the simulated spectrum as a PDF file.
+#' @param svgpath Path to save the simulated spectrum as a SVG file.
 #' @param rdspath Path to save the simulated spectrum as an RDS file.
 #' @return A list containing the simulated spectrum and the parameters used for simulation.
 #' @examples
 #' simulate_spectrum()
 #' \dontrun{
-#'      deconv <- glc("blood_01")$rv$blood_01$ret
+#'      deconv <- glc("blood_02")$rv$ret
 #'      show = FALSE
-#'      pdfpath <- "vignettes/Datasets/pdf/sim_01.pdf"
 #'      pngpath <- "vignettes/Datasets/png/sim_01.png"
+#'      pdfpath <- "vignettes/Datasets/pdf/sim_01.pdf"
+#'      svgpath <- "vignettes/Datasets/svg/sim_01.svg"
 #'      rdspath <- "inst/example_datasets/rds/sim/sim_01.rds"
 #'      brukerdir <- "inst/example_datasets/bruker/sim/sim_01"
-#'      simulate_spectrum(deconv, show, pdfpath, pngpath, rdspath, brukerdir)
+#'      simulate_spectrum(deconv, show, pngpath, pdfpath, svgpath, rdspath, brukerdir)
 #' }
 simulate_spectrum <- function(deconv = glc("blood_01")$rv$blood_01$ret,
                               show = TRUE,
-                              pdfpath = NULL,
                               pngpath = NULL,
+                              pdfpath = NULL,
+                              svgpath = NULL,
                               rdspath = NULL,
                               brukerdir = NULL,
                               verbose = TRUE) {
@@ -290,7 +299,7 @@ simulate_spectrum <- function(deconv = glc("blood_01")$rv$blood_01$ret,
     logv("Creating simulated spectrum based on deconvolution results of %s", deconv$filename)
     simspec <- create_sim_spec(deconv, verbose)
     if (show) plot_sim_spec(simspec)
-    store_sim_spec(simspec, pdfpath, pngpath, rdspath, brukerdir, verbose)
+    store_sim_spec(simspec, pngpath, pdfpath, svgpath, rdspath, brukerdir, verbose)
     logv("Finished creation of simulated spectrum")
     invisible(simspec)
 }
@@ -360,7 +369,6 @@ plot_sim_spec <- function(simspec = create_sim_spec()) {
     X <- simspec$X
     top_ticks <- seq(from = min(X$cs), to = max(X$cs), length.out = 5)
     top_labels <- round(seq(from = min(X$fq), to = max(X$fq), length.out = 5))
-    title_text <- sprintf("Sim_01 (based on %s)", simspec$filename)
     line1_text <- sprintf("Name: %s", gsub("blood", "sim", simspec$filename))
     line2_text <- sprintf("Base: %s ", simspec$filename)
     line3_text <- sprintf("Range: 3.6-3.4 ppm")
@@ -386,8 +394,9 @@ plot_sim_spec <- function(simspec = create_sim_spec()) {
 #' @noRd
 #' @title Stores a spectrum simulated with [create_sim_spec()]
 #' @param simspec A simulated spectrum as returned by [create_sim_spec()].
-#' @param pdfpath Path to save the simulated spectrum as a PDF file.
 #' @param pngpath Path to save the simulated spectrum as a PNG file.
+#' @param pdfpath Path to save the simulated spectrum as a PDF file.
+#' @param svgpath Path to save the simulated spectrum as a SVG file.
 #' @param rdspath Path to save the simulated spectrum as an RDS file.
 #' @param brukerdir Path to the directory where the Bruker files should be saved.
 #' @examples
@@ -395,8 +404,9 @@ plot_sim_spec <- function(simspec = create_sim_spec()) {
 #' X <- create_sim_spec(deconv)
 #' store_sim_spec(X)
 store_sim_spec <- function(simspec = create_sim_spec(),
-                           pdfpath = NULL,
                            pngpath = NULL,
+                           pdfpath = NULL,
+                           svgpath = NULL,
                            rdspath = NULL,
                            brukerdir = NULL,
                            verbose = TRUE) {
@@ -427,6 +437,16 @@ store_sim_spec <- function(simspec = create_sim_spec(),
         png(filename = pngpath)
         tryCatch(plot_sim_spec(simspec), finally = dev.off())
     }
+
+    if (is.null(svgpath)) {
+        logv("No SVG path provided. Not saving SVG")
+    } else {
+        logv("Saving SVG to %s", svgpath)
+        if (!dir.exists(svgdir <- dirname(normPath(svgpath)))) mkdirs(svgdir)
+        svg(filename = svgpath)
+        tryCatch(plot_sim_spec(simspec), finally = dev.off())
+    }
+
 
     if (is.null(rdspath)) {
         logv("No RDS path provided. Not saving RDS.")

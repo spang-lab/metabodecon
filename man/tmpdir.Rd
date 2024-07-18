@@ -16,7 +16,7 @@ Returns the path to the temporary session directory.
 }
 \description{
 Returns the path to metabodecon's temporary session directory.
-This directory equals subdirectory \code{"metabodecon"} of R's temporary session directory \verb{[base::tempdir()]} plus additional path normalization.
+This directory equals subdirectory 'metabodecon' of R's temporary session directory \code{\link[base:tempfile]{base::tempdir()}} plus additional path normalization.
 }
 \examples{
 tmpdir()

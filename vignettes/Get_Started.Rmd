@@ -13,17 +13,26 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 
 # Introduction to metabodecon
 
-The goal of metabodecon is to make deconvolution and alignment of 1D NMR spectra as easy as possible. The deconvolution part uses the codebase from [MetaboDecon1D](https://www.doi.org/10.3390/metabo11070452) and implements the algorithm from ([Koh et al, 2009](#koh-et-al-2009)). The alignment of the deconvoluted spectra is done using functions from the [speaq](https://CRAN.R-project.org/package=speaq) package ([Beirnaert et al., 2018](#beirnaert-et-al-2018)) that have been adapted for metabodecon.
+The goal of metabodecon is to make deconvolution and alignment of 1D NMR spectra as easy as possible. The deconvolution part uses the algorithm described by [Koh et al. (2009)](https://doi.org/10.1016/j.jmr.2009.09.003). The alignment of the deconvoluted spectra is done using functions from the [speaq](https://CRAN.R-project.org/package=speaq) package, described in [Beirnaert et al. (2018)](https://doi.org/10.1371/journal.pcbi.1006018) and [Vu et al. (2011)](https://doi.org/doi:10.1186/1471-2105-12-405), that have been adapted for metabodecon.
 
-## Download the example data
+## The example data
 
-The [metabodecon repository](https://github.com/spang-lab/metabodecon) contains two example datasets: [blood](https://github.com/spang-lab/metabodecon/tree/main/misc/datasets/blood)^[previously called _test_] and [urine](https://github.com/spang-lab/metabodecon/tree/main/misc/datasets/urine). The _blood_ dataset contains 16 1D CPMG NMR spectra of blood plasma in Bruker format. The _urine_ dataset contains two 1D NOESY NMR spectra of urine. These spectra are available in both Bruker and jcamp-dx format. Due to the size constraints for R packages, these datasets are not included by default when the package is installed, but must be explicitly downloaded afterwards via command `download_example_datasets()`.
+The [metabodecon repository](https://github.com/spang-lab/metabodecon) contains a selection of example datasets, e.g. [blood], [urine][^1] and [sim]. The _blood_ dataset contains 16 1D CPMG NMR spectra of blood plasma in Bruker format, the _urine_ dataset contains two 1D NOESY NMR spectra of urine and the sim dataset is a simulated dataset based on the _blood_ dataset. It has the same resolution[^2], but only goes from 3.6 ppm to 3.4 ppm instead of 15ppm to -5ppm.
 
-```{r download-example-datasets}
-library(metabodecon)
-xdspath <- download_example_datasets(persistent = FALSE)
-# Set persistent to TRUE to keep the data after the R session ends
-```
+All the following examples work with each of the above mentioned datasets. However in the following, only the _sim_ dataset will be used, due to the following reasons:
+
+1. The _sim_ dataset is much smaller than the _blood_ dataset (only 1% of the number of datapoints), i.e. the examples will run much faster.
+2. Because of its small size, the _sim_ dataset comes preinstalled with the package, i.e. it does not have to be downloaded separately.
+3. The _sim_ dataset is a simulated dataset, i.e. we know the ground truth of the dataset. This allows us to evaluate the quality of the deconvolution and alignment.
+
+For further details about the other datasets, see article [Datasets](file:///C:/Users/tobi/repos/github/spang-lab/metabodecon/docs/articles/Datasets.html)
+
+[^1]: previously called _test_
+[^2]: i.e. each datapoint is approximately TODO ppm apart
+
+[blood]: https://github.com/spang-lab/metabodecon/tree/main/misc/datasets/blood,
+[urine]: https://github.com/spang-lab/metabodecon/tree/main/misc/datasets/urine
+[sim]: https://github.com/spang-lab/metabodecon/tree/main/inst/example_datasets/bruker/sim
 
 ## Use metabodecon to convert a spectrum into Lorentz curves
 

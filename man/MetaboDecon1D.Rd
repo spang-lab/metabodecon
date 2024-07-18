@@ -46,7 +46,7 @@ List containing
 \item \code{x_values_ppm}: The chemical shift of each datapoint in ppm (parts per million).
 \item \code{y_values}: The scaled signal intensity (SSI) of each datapoint. Obtained by reading the raw intensity values from the provided \code{data_path} as integers and dividing them scale factor of the y-axis.
 \item \code{spectrum_superposition}: Scaled signal intensity obtained by calculating the sum of all estimated Lorentz curves for each data point.
-\item \code{mse_normed}: Normalized mean squared error. Calculated as \eqn{\frac{1}{n} \sum_{i=1}^{n} (z_i - \hat{z}_i)^2} where \eqn{z_i} is the normalized, smoothed signal intensity of data point i and \eqn{\hat{z}_i} is the normalized superposition of Lorentz curves at data point i. Normalized in this context means that the vectors were scaled so the sum over all data points equals 1.
+\item \code{mse_normed}: Normalized mean squared error. Calculated as \mjeqn{\frac{1}{n} \sum_{i=1}^{n} (z_i - \hat{z}_i)^2}{1/n * sum((z_i - zhat_i)^2)} where \mjeqn{z_i}{z_i} is the normalized, smoothed signal intensity of data point i and \mjeqn{\hat{z}_i}{zhat_i} is the normalized superposition of Lorentz curves at data point i. Normalized in this context means that the vectors were scaled so the sum over all data points equals 1.
 \item \code{peak_triplets_middle}: Chemical shift of peak centers in ppm.
 \item \code{peak_triplets_left}: Chemical shift of left peak borders in ppm.
 \item \code{peak_triplets_right}: Chemical shift of right peak borders in ppm.
@@ -56,7 +56,7 @@ List containing
 \item \code{integrals}: Integrals of the Lorentz curves.
 \item \code{signal_free_region}: Borders of the signal free region of the spectrum in scaled datapoint numbers. Left of the first element and right of the second element no signals are expected.
 \item \code{range_water_signal_ppm}: Half width of the water signal in ppm. Potential signals in this region are ignored.
-\item \code{A}: Amplitude parameter of the Lorentz curves. Provided as negative number to maintain backwards compatibility with MetaboDecon1D. The area under the Lorentz curve is calculated as \eqn{A \cdot \pi}.
+\item \code{A}: Amplitude parameter of the Lorentz curves. Provided as negative number to maintain backwards compatibility with MetaboDecon1D. The area under the Lorentz curve is calculated as \mjeqn{A \cdot \pi}{A * pi}.
 \item \code{lambda}: Half width of the Lorentz curves in scaled data points. Provided as negative value to maintain backwards compatibility with MetaboDecon1D. Example: a value of -0.00525 corresponds to 5.25 data points. With a spectral width of 12019 Hz and 131072 data points this corresponds to a halfwidth at half height of approx. 0.48 Hz. The corresponding calculation is: (12019 Hz / 131071 dp) * 5.25 dp.
 \item \code{x_0}: Center of the Lorentz curves in scaled data points.
 }
@@ -64,16 +64,17 @@ List containing
 \bold{Notice:} The parameters A, lambda and x_0 to calculate the Lorentz curves are saved in parameters.txt and the approximated spectrum is saved in approximated_spectrum.txt under the file path.
 }
 \description{
-Automatic deconvolution of a 1D NMR spectrum into several Lorentz curves and the integration of them. The NMR file need to be in Bruker format or jcamp-dx format.
+\loadmathjax
+Automatic deconvolution of a 1D NMR spectrum into several Lorentz curves and the integration of them. The NMR file needs to be in Bruker format or jcamp-dx format.
 
 Deprecated since metabodecon v1.2.0. Please use \code{\link[=generate_lorentz_curves]{generate_lorentz_curves()}} instead. See examples below for usage.
 
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
 }
 \details{
-The MetaboDecon1D package returns a list with i.a. the parameters A, lambda and x_0 to calculate the Lorentz curves.The Lorentz curves could be calculated by using the function calculate_lorentz_curves(). This returns a matrix containing the generated and approximated Lorentz curves for each real peak of the spectrum. Each row of the matrix depicts one Lorentz curve. The Lorentz curves could be visualised and saved by using the function plot_lorentz_curves_save_as_png(). The superposition of all Lorentz curves, which reconstructs the original spectrum, could also be visualised and saved with the plot_spectrum_superposition_save_as_png() function. For the analytical calculation of the Lorentz curves peak triplets for each peak are used. To visualise these peak triplets and to illustrate the impact of the threshold delta the function plot_triplets() is available. The integral values for each generated Lorentz curves are saved in a vector.
+A list with parameters \code{A}, \code{lambda} and \code{x_0} required to calculate the Lorentz curves. The Lorentz curves could be calculated by using the function \code{\link[=calculate_lorentz_curves]{calculate_lorentz_curves()}}. This returns a matrix containing the generated and approximated Lorentz curves for each real peak of the spectrum. Each row of the matrix depicts one Lorentz curve. The Lorentz curves could be visualised and saved by using the function \code{\link[=plot_lorentz_curves_save_as_png]{plot_lorentz_curves_save_as_png()}}. The superposition of all Lorentz curves, which reconstructs the original spectrum, could be visualised and saved with function \link{plot_spectrum_superposition_save_as_png(}). For the analytical calculation of the Lorentz curves peak triplets for each peak are used. To visualise these peak triplets and to illustrate the impact of the threshold \code{delta} the function \code{plot_triplets()} is available. The integral values for each generated Lorentz curves are saved in a vector.
 
-\bold{Notice}: It is feasible to load all spectra of a folder at once. Here the filename need to be "NA" which is the default value. One selected spectrum could then be used to adjust the parameters (signal_free_region and range_water_signal_ppm) for the analysis of all spectra. Furthermore it is possible to adjust these parameters for each spectrum separate.
+\bold{Notice}: It is feasible to load all spectra of a folder at once. Here the filename needs to be "NA" which is the default value. One selected spectrum could then be used to adjust the parameters (\code{signal_free_region} and \code{range_water_signal_ppm}) for the analysis of all spectra. Furthermore it is possible to adjust these parameters for each spectrum separate.
 }
 \examples{
 \donttest{
@@ -99,5 +100,5 @@ Haeckl, M.; Tauber, P.; Schweda, F.; Zacharias, H.U.; Altenbuchinger, M.; Oefner
 \code{\link[=calculate_lorentz_curves]{calculate_lorentz_curves()}}, \code{\link[=plot_triplets]{plot_triplets()}}, \code{\link[=plot_lorentz_curves_save_as_png]{plot_lorentz_curves_save_as_png()}}, \code{\link[=plot_spectrum_superposition_save_as_png]{plot_spectrum_superposition_save_as_png()}}
 }
 \author{
-Martina Haeckl
+Martina Haeckl, Tobias Schmidt
 }

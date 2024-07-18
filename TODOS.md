@@ -90,6 +90,23 @@ Check why there are negative values for the estimated lorentz curve area A.
 
 Remove `dontrun` from examples if they are executable in < 5 sec, or create additionally small toy examples to allow automatic testing in < 5 sec. Reason: `\dontrun{}` should only be used if the example really cannot be executed by the user, e.g. because of missing additional software, missing API keys, etc. That's why wrapping examples in `\dontrun{}` adds the comment ("# Not run:") as a warning for the user. Alternative: You could also replace `\dontrun{}` with `\donttest`, if it takes longer than 5 sec to be executed, but it would be preferable to have automatic checks for functions. Otherwise, you can also write some tests.
 
+## FEATURE: Implement plot_decon
+
+Implement `plot_decon` which should be the successor of the following functions:
+
+- plot_triplets
+- plot_lorentz_curves_save_as_png
+- plot_spectrum_superposition_save_as_png
+
+All the functionality, i.e.
+
+- showing triplets
+- showing individual lorentz curves and
+- showing superposition of all lorentz curves
+- storing plots as png on disk
+
+should be controllable via function arguments.
+
 # v1.3.1
 
 ## CRAN-10: Resubmit to CRAN

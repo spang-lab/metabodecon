@@ -48,8 +48,9 @@ For \code{read_spectrum}, a dataframe with following columns:
 \item \code{si}: signal intensities in arbitrary units
 \item \code{cs}: chemical shifts in ppm
 \item \code{fq}: frequencies in Hz
-For \code{read_spectra} a named list of such dataframes, where the names are the file names of the spectra.
 }
+
+For \code{read_spectra} a named list of such dataframes, where the names are the file names of the spectra.
 }
 \description{
 Read one or more spectra files or folders from disk and return each parsed spectrum as dataframe.
@@ -79,7 +80,4 @@ urine_1_dx <- system.file("example_datasets/jcampdx/urine/urine_1.dx", package =
 X1_dx <- read_spectrum(urine_1_dx, file_format = "jcampdx")
 stopifnot(all.equal(X1, X1_dx))
 }
-}
-\seealso{
-\code{\link[=read_spectrum]{read_spectrum()}}
 }
