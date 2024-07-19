@@ -39,6 +39,7 @@ MetaboDecon1D(
 \item{debug}{Logical value to activate the debug mode (Default: debug=FALSE)}
 }
 \value{
+\loadmathjax
 List containing
 \itemize{
 \item \code{filename}: Name of the analyzed spectrum.
@@ -64,7 +65,6 @@ List containing
 \bold{Notice:} The parameters A, lambda and x_0 to calculate the Lorentz curves are saved in parameters.txt and the approximated spectrum is saved in approximated_spectrum.txt under the file path.
 }
 \description{
-\loadmathjax
 Automatic deconvolution of a 1D NMR spectrum into several Lorentz curves and the integration of them. The NMR file needs to be in Bruker format or jcamp-dx format.
 
 Deprecated since metabodecon v1.2.0. Please use \code{\link[=generate_lorentz_curves]{generate_lorentz_curves()}} instead. See examples below for usage.
@@ -72,7 +72,7 @@ Deprecated since metabodecon v1.2.0. Please use \code{\link[=generate_lorentz_cu
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
 }
 \details{
-A list with parameters \code{A}, \code{lambda} and \code{x_0} required to calculate the Lorentz curves. The Lorentz curves could be calculated by using the function \code{\link[=calculate_lorentz_curves]{calculate_lorentz_curves()}}. This returns a matrix containing the generated and approximated Lorentz curves for each real peak of the spectrum. Each row of the matrix depicts one Lorentz curve. The Lorentz curves could be visualised and saved by using the function \code{\link[=plot_lorentz_curves_save_as_png]{plot_lorentz_curves_save_as_png()}}. The superposition of all Lorentz curves, which reconstructs the original spectrum, could be visualised and saved with function \link{plot_spectrum_superposition_save_as_png(}). For the analytical calculation of the Lorentz curves peak triplets for each peak are used. To visualise these peak triplets and to illustrate the impact of the threshold \code{delta} the function \code{plot_triplets()} is available. The integral values for each generated Lorentz curves are saved in a vector.
+A list with parameters \code{A}, \code{lambda} and \code{x_0} required to calculate the Lorentz curves. The Lorentz curves could be calculated by using the function \code{\link[=calculate_lorentz_curves]{calculate_lorentz_curves()}}. This returns a matrix containing the generated and approximated Lorentz curves for each real peak of the spectrum. Each row of the matrix depicts one Lorentz curve. The Lorentz curves could be visualised and saved by using the function \code{\link[=plot_lorentz_curves_save_as_png]{plot_lorentz_curves_save_as_png()}}. The superposition of all Lorentz curves, which reconstructs the original spectrum, could be visualised and saved with function \code{\link[=plot_spectrum_superposition_save_as_png]{plot_spectrum_superposition_save_as_png()}}. For the analytical calculation of the Lorentz curves peak triplets for each peak are used. To visualise these peak triplets and to illustrate the impact of the threshold \code{delta} the function \code{plot_triplets()} is available. The integral values for each generated Lorentz curves are saved in a vector.
 
 \bold{Notice}: It is feasible to load all spectra of a folder at once. Here the filename needs to be "NA" which is the default value. One selected spectrum could then be used to adjust the parameters (\code{signal_free_region} and \code{range_water_signal_ppm}) for the analysis of all spectra. Furthermore it is possible to adjust these parameters for each spectrum separate.
 }

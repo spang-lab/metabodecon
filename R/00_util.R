@@ -137,8 +137,8 @@ get_str_input <- function(prompt, valid) {
 #' @return TRUE if the user entered 'y' and FALSE if they entered 'n'.
 #' @examples
 #' if (interactive()) {
-#'      show_dir <- get_yn_input("List dir content? (y/n) ")
-#'      if (show_dir) print(dir())
+#'     show_dir <- get_yn_input("List dir content? (y/n) ")
+#'     if (show_dir) print(dir())
 #' }
 get_yn_input <- function(prompt) {
     if (!grepl("(y/n)", prompt, fixed = TRUE)) {
@@ -246,8 +246,35 @@ du <- function(obj, pname = "", level = 0, max_level = 1, max_len = 50, unit = "
     }
 }
 
-# Compare #####
-
+#' @export
+#' @title Print the Structure of a Directory Tree
+#' @description This function prints the structure of a directory tree up to a specified maximum level of depth. It lists all files and directories under the specified path, displaying them in a tree-like structure.
+#' @param path The root path from which to start listing the directory structure.
+#' @param max.level The maximum depth of directories to list.
+#' @param level Internal parameter used for recursion, indicating the current level of depth.
+#' @param prefix Internal parameter used for formatting the printed tree structure.
+#' @examples
+#' metabodecon_dir <- system.file(package = "metabodecon")
+#' tree(metabodecon_dir, max.level = 1)
+tree <- function(path, max.level = 2, level = 0, prefix = "") {
+    if (level == max.level) {
+        return()
+    }
+    entries <- list.files(path, full.names = TRUE)
+    dirs <- entries[isdir <- file.info(entries)$isdir]
+    files <- entries[!isdir]
+    all_entries <- sort(c(dirs, files))
+    num_entries <- length(all_entries)
+    if (level == 0) cat(path, "\n", sep = "")
+    for (i in seq_along(all_entries)) {
+        entry <- all_entries[i]
+        is_last <- i == num_entries
+        prefix2 <- if(is_last) "└── " else "├── "
+        cat(prefix, prefix2, basename(entry), ifelse(file.info(entry)$isdir, "/", ""), "\n", sep = "")
+        new_prefix <- if (is_last) paste0(prefix, "    ") else paste0(prefix, "│   ")
+        if (file.info(entry)$isdir) tree(entry, max.level, level + 1, new_prefix)
+    }
+}
 #' @noRd
 #' @title Check if strings represent integer values
 #' @description Tests each element of a character vector to determine if it represents an integer value. It allows for optional leading and trailing whitespace, and optional leading + or - signs.
@@ -284,11 +311,12 @@ is_float_str <- function(x) {
         paste0(
             "^\\s*[+-]?", # Optional leading spaces and sign at start of string
             "(\\d+\\.\\d*([eE][+-]?\\d+)?", # 1.e-3,  1.0e-3, 1.0e+3
-            "|\\.\\d+([eE][+-]?\\d+)?",     # .1e-2, .1.0e-2,  .1e+4
-            "|\\d+([eE][+-]?\\d+)",         # 1e-3,   1.0e-3,   1e+3
+            "|\\.\\d+([eE][+-]?\\d+)?", # .1e-2, .1.0e-2,  .1e+4
+            "|\\d+([eE][+-]?\\d+)", # 1e-3,   1.0e-3,   1e+3
             ")$" # End of string
         ),
-        x, perl = TRUE
+        x,
+        perl = TRUE
     )
 }
 
@@ -385,7 +413,7 @@ convert_pos <- function(xa, ya, yb) {
 #' @param X A data frame containing the spectrum data with at least two columns: `cs` for chemical shifts and `fq` for frequencies.
 #' @return The magnetic field strength in Tesla.
 #' @examples
-#' X = read_spectrum(pkg_file("example_datasets/bruker/urine/urine_1"))
+#' X <- read_spectrum(pkg_file("example_datasets/bruker/urine/urine_1"))
 #' calc_B(X)
 calc_B <- function(X = read_spectrum()) {
     # Example:

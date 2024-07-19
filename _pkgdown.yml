@@ -43,6 +43,7 @@ reference:
   - calculate_lorentz_curves
   - convert_pos
   - convert_width
+  - tree
   - width
 - title: Deprecated
   desc: Deprecated functions. These functions are no longer used by the package and are only kept for backwards compatibility. They will be removed in future versions of the package.

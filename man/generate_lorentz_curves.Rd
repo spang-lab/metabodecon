@@ -43,7 +43,7 @@ generate_lorentz_curves(
 
 \item{smopts}{Numeric vector with two entries: the number of smoothing iterations and the number of data points to use for smoothing (must be odd).}
 
-\item{delta}{Threshold value to distinguish between signal and noise.}
+\item{delta}{\loadmathjax Threshold for peak filtering. Higher values result in more peaks being filtered out. A peak is filtered if its score is below \mjeqn{\mu + \sigma \cdot \delta}{mu + s * delta}, where \mjeqn{\mu}{mu} is the average peak score in the signal-free region (SFR), and \mjeqn{\sigma}{s} is the standard deviation of peak scores in the SFR.}
 
 \item{sf}{Numeric vector with two entries: the factors to scale the x-axis and y-axis.}
 
@@ -55,11 +55,12 @@ generate_lorentz_curves(
 
 \item{share_stdout}{Whether to share the standard output (usually your terminal) of the main process with the worker processes. Only relevant if \code{nworkers} is greater than 1. Note that this can cause messages from different workers to get mixed up, making the output hard to follow.}
 
-\item{force}{If FALSE, the function stops with an error message if no peaks are found in the SFR (which are used as reference for peak filtering). If TRUE, the function instead proceeds without peak filtering, potentially increasing runtime and memory usage significantly.}
+\item{force}{If FALSE, the function stops with an error message if no peaks are found in the signal free region (SFR), as these peaks are required as a reference for peak filtering. If TRUE, the function instead proceeds without peak filtering, potentially increasing runtime and memory usage significantly.}
 
 \item{verbose}{Logical. Whether to print log messages during the deconvolution process.}
 }
 \value{
+\loadmathjax
 A list of deconvoluted spectra. Each deconvoluted spetrum is a list with the following elements:
 \itemize{
 \item \code{number_of_files}: Number of deconvoluted spectra.
@@ -84,7 +85,6 @@ A list of deconvoluted spectra. Each deconvoluted spetrum is a list with the fol
 }
 }
 \description{
-\loadmathjax
 Deconvolutes NMR spectra by modeling each detected signal within a spectrum as Lorentz Curve.
 }
 \details{
