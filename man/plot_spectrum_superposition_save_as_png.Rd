@@ -31,7 +31,7 @@ Plots the original spectrum and the superposition of all generated Lorentz curve
 }
 \examples{
 sim <- metabodecon_file("bruker/sim_subset")
-sim_decon <- generate_lorentz_curves(sim, sfr = c(3.58, 3.42), wshw = 0, ask = FALSE, verbose = FALSE)
+sim_decon <- generate_lorentz_curves(sim, sfr=c(3.58, 3.42), wshw=0, ask=FALSE, verbose=FALSE)
 png_dir <- tmpdir("sim_decon/pngs", create = TRUE)
 plot_spectrum_superposition_save_as_png(sim_decon, out_dir = png_dir, ask = FALSE)
 dir(png_dir, full.names = TRUE)

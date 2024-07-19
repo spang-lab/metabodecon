@@ -89,7 +89,9 @@ read_spectra <- function(data_path = pkg_file("example_datasets/bruker/urine"),
         files <- files[r1_paths_exists]
     }
     if (length(files) == 0) {
-        stop("No spectra found in directory", data_path)
+        msg <- sprintf("No spectra found in directory '%s'.", data_path)
+        if (file_format == "bruker") msg <- paste(msg, "Did you specify the correct `expno` and `procno`?")
+        stop(msg)
     }
     spectra <- lapply(paths, function(path) {
         if (!silent) logf("Reading spectrum %s", path)
@@ -105,7 +107,7 @@ read_spectra <- function(data_path = pkg_file("example_datasets/bruker/urine"),
 #' @title Read single Bruker TopSpin 3 Spectrum
 #' @description For params and return value see [read_spectrum()].
 #' @examples
-#' spldir <- pkg_file("example_datasets/bruker/blood/blood_01")
+#' spldir <- pkg_file("example_datasets/bruker/urine/urine_1")
 #' X <- read_topspin3_spectrum(spldir)
 #' fq_ref <- X$fq[1] / (1 - (X$cs[1] / 1e6))
 #' print(head(X))
@@ -225,7 +227,7 @@ make_spectrum <- function(si,
 #' - `ppm_step`: The step size of the chemical shifts in ppm.
 #' - `ppm_nstep`: The step size of the chemical shifts in ppm, calculated as `ppm_range / n`.
 #' @examples
-#' spldir <- pkg_file("example_datasets/bruker/blood/blood_01")
+#' spldir <- pkg_file("example_datasets/bruker/urine/urine_1")
 #' X <- read_topspin3_spectrum(spldir)
 #' X_glc <- convert_spectrum(X, 1e3, 1e6)
 convert_spectrum <- function(X, sfx, sfy) {
@@ -292,12 +294,12 @@ parse_metadata_file <- function(path = NULL, lines = NULL) {
 #' @param procno The processing number for the file. E.g. `"10"`.
 #' @return The signals acquisition parameters read from the file as named list.
 #' @examples
-#' blood1_dir <- pkg_file("example_datasets/bruker/blood/blood_01")
+#' blood1_dir <- pkg_file("example_datasets/bruker/urine/urine_1")
 #' acqus <- read_acqus_file(blood1_dir)
 #' str(acqus, 0)
-#' cat("Spetrum width ppm:", as.numeric(acqus$SW))
-#' cat("Spetrum width Hz:", as.numeric(acqus$SW_h))
-read_acqus_file <- function(spldir = pkg_file("example_datasets/bruker/blood/blood_01"),
+#' cat("spectrum width ppm:", as.numeric(acqus$SW))
+#' cat("spectrum width Hz:", as.numeric(acqus$SW_h))
+read_acqus_file <- function(spldir = pkg_file("example_datasets/bruker/urine/urine_1"),
                             expno = 10) {
     path <- file.path(spldir, expno, "acqus")
     acqus <- parse_metadata_file(path)
@@ -311,9 +313,9 @@ read_acqus_file <- function(spldir = pkg_file("example_datasets/bruker/blood/blo
 #' @param procno The processing number for the file. E.g. `"10"`.
 #' @return The processing parameters read from the file as named list.
 #' @examples
-#' blood1_dir <- pkg_file("example_datasets/bruker/blood/blood_01")
+#' blood1_dir <- pkg_file("example_datasets/bruker/urine/urine_1")
 #' procs <- read_procs_file(blood1_dir)
-read_procs_file <- function(spldir = pkg_file("example_datasets/bruker/blood/blood_01"),
+read_procs_file <- function(spldir = pkg_file("example_datasets/bruker/urine/urine_1"),
                             expno = 10,
                             procno = 10) {
     path <- file.path(spldir, expno, "pdata", procno, "procs")
@@ -347,10 +349,10 @@ read_procs_file <- function(spldir = pkg_file("example_datasets/bruker/blood/blo
 #' - `scaled` The scaled signal intensity values.
 #' The first 5 elements in the list (`spldir` - `path_procs`) are path related values. The next 7 elements (`procs` - `n`) are processing parameters and derived values. The last 2 elements (`raw` - `scaled`) are the raw and scaled signal intensity values.
 #' @examples
-#' spldir <- pkg_file("example_datasets/bruker/blood/blood_01")
+#' spldir <- pkg_file("example_datasets/bruker/urine/urine_1")
 #' oneR <- read_1r_file(spldir, 10, 10)
 #' str(oneR, 1)
-read_1r_file <- function(spldir = pkg_file("example_datasets/bruker/blood/blood_01"),
+read_1r_file <- function(spldir = pkg_file("example_datasets/bruker/urine/urine_1"),
                          expno = 10,
                          procno = 10,
                          procs = read_procs_file(spldir, expno, procno),

@@ -278,13 +278,13 @@ simulate_spectra <- function(pngdir = NULL,
 #' @examples
 #' simulate_spectrum()
 #' \dontrun{
-#'      deconv <- glc("blood_02")$rv$ret
+#'      deconv <- glc("blood_11")$rv$ret
 #'      show = FALSE
-#'      pngpath <- "vignettes/Datasets/png/sim_01.png"
-#'      pdfpath <- "vignettes/Datasets/pdf/sim_01.pdf"
-#'      svgpath <- "vignettes/Datasets/svg/sim_01.svg"
-#'      rdspath <- "inst/example_datasets/rds/sim/sim_01.rds"
-#'      brukerdir <- "inst/example_datasets/bruker/sim/sim_01"
+#'      pngpath <- "vignettes/Datasets/png/sim_11.png"
+#'      pdfpath <- "vignettes/Datasets/pdf/sim_11.pdf"
+#'      svgpath <- "vignettes/Datasets/svg/sim_11.svg"
+#'      rdspath <- "inst/example_datasets/rds/sim/sim_11.rds"
+#'      brukerdir <- "inst/example_datasets/bruker/sim/sim_11"
 #'      simulate_spectrum(deconv, show, pngpath, pdfpath, svgpath, rdspath, brukerdir)
 #' }
 simulate_spectrum <- function(deconv = glc("blood_01")$rv$blood_01$ret,

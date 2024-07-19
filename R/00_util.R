@@ -248,11 +248,12 @@ du <- function(obj, pname = "", level = 0, max_level = 1, max_len = 50, unit = "
 
 #' @export
 #' @title Print the Structure of a Directory Tree
-#' @description This function prints the structure of a directory tree up to a specified maximum level of depth. It lists all files and directories under the specified path, displaying them in a tree-like structure.
+#' @description Prints the structure of a directory tree up to a specified maximum level of depth. It lists all files and directories under the specified path, displaying them in a tree-like structure.
 #' @param path The root path from which to start listing the directory structure.
 #' @param max.level The maximum depth of directories to list.
 #' @param level Internal parameter used for recursion, indicating the current level of depth.
 #' @param prefix Internal parameter used for formatting the printed tree structure.
+#' @return NULL, called for its side effect of printing the directory structure.
 #' @examples
 #' metabodecon_dir <- system.file(package = "metabodecon")
 #' tree(metabodecon_dir, max.level = 1)
@@ -269,11 +270,12 @@ tree <- function(path, max.level = 2, level = 0, prefix = "") {
     for (i in seq_along(all_entries)) {
         entry <- all_entries[i]
         is_last <- i == num_entries
-        prefix2 <- if(is_last) "└── " else "├── "
+        prefix2 <- if(is_last) "\u2514\u2500\u2500 " else "\u251C\u2500\u2500 "
         cat(prefix, prefix2, basename(entry), ifelse(file.info(entry)$isdir, "/", ""), "\n", sep = "")
-        new_prefix <- if (is_last) paste0(prefix, "    ") else paste0(prefix, "│   ")
+        new_prefix <- if (is_last) paste0(prefix, "    ") else paste0(prefix, "\u2502   ")
         if (file.info(entry)$isdir) tree(entry, max.level, level + 1, new_prefix)
     }
+    invisible(NULL)
 }
 #' @noRd
 #' @title Check if strings represent integer values

@@ -279,30 +279,48 @@ dohCluster <- function(X, peakList, refInd = 0, maxShift = 100, acceptLostPeak =
 
 #' @export
 #' @title Get ppm range
-#' @description Returns the ppm range of the provided spectrum.
-#' @param spectrum_data Output of [generate_lorentz_curves()]
-#' @return A vector containing the lowest and highest ppm value of the provided spectrum.
-#' @details determines after deconvolution the signal with the highest and the signal with the lowest ppm value.
+#' @author Wolfram Gronwald, Tobias Schmidt
+#' @description Returns the ppm range across all peaks of the provided deconvoluted spectra.
+#' @param spectrum_data A list of deconvoluted spectra as returned by [generate_lorentz_curves()].
+#' @param show Whether to plot the ppm range on the spectrum plot.
+#' @return A vector containing the lowest and highest ppm value over all peaks of the provided deconvoluted spectra.
 #' @examples
-#' \donttest{
-#' xp <- download_example_datasets()
-#' dp <- file.path(xp, "bruker/urine")
-#' ff <- "bruker"
-#' x <- generate_lorentz_curves(dp, ff, ask = FALSE, nfit = 3)
-#' ppm_range <- get_ppm_range(spectrum_data = x)
-#' }
-get_ppm_range <- function(spectrum_data) {
-    ppm_scale_min <- min(spectrum_data[[1]]$peak_triplets_middle)
-    ppm_scale_max <- max(spectrum_data[[1]]$peak_triplets_middle)
-    for (entry in spectrum_data) {
-        if (ppm_scale_min > min(entry$peak_triplets_middle)) {
-            ppm_scale_min <- min(entry$peak_triplets_middle)
+#' sim <- metabodecon_file("bruker/sim_subset")
+#' decons <- generate_lorentz_curves(
+#'      sim, sfr = c(3.58, 3.42), wshw = 0,
+#'      ask = FALSE, verbose = FALSE
+#' )
+#' ppm_rng <- get_ppm_range(decons, show = TRUE)
+#' print(ppm_rng)
+get_ppm_range <- function(spectrum_data, show = FALSE) {
+    ss <- spectrum_data
+    ppm_min <- min(sapply(ss, function(s) min(s$peak_triplets_middle)))
+    ppm_max <- max(sapply(ss, function(s) max(s$peak_triplets_middle)))
+    ppm_rng <- c(ppm_min, ppm_max)
+    if (show) {
+        ymax <- max(sapply(ss, function(s) max(s$y_values)))
+        xrng <- range(c(sapply(ss, function(s) s$x_values_ppm)))
+        y0.8 <- ymax * 0.8
+        a <- ppm_rng[1]
+        b <- ppm_rng[2]
+        cols <- rainbow(length(ss))
+        alen <- (b - a) / 4
+        lgdtxt <- paste("Spectrum", 1:length(ss))
+        plot(NA, type = "n", xlim = xrng[2:1], ylim = c(0, ymax), ylab = "Signal Intensity [au]", xlab = "Chemical Shift [ppm]")
+        abline(v = ppm_rng, lty = 2)
+        for (i in 1:length(ss)) {
+            lines(ss[[i]]$x_values_ppm, ss[[i]]$y_values, col = cols[i])
         }
-        if (ppm_scale_max < max(entry$peak_triplets_middle)) {
-            ppm_scale_max <- max(entry$peak_triplets_middle)
-        }
+        arrows(
+            x0 = c(a + alen, b - alen), x1 = c(a, b),
+            y0 = y0.8, y1 = y0.8,
+            length = 0.1, lty = 2, col = "black"
+        )
+        text(mean(c(a, b)), y0.8, "ppm range")
+        mtext(round(c(a, b), 4), side = 3, line = 0, at = c(a, b))
+        legend("topright", legend = lgdtxt, col = cols, lty = 1)
     }
-    return(c(ppm_scale_min, ppm_scale_max))
+    ppm_rng
 }
 
 # Private Helpers #####

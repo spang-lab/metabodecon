@@ -15,8 +15,11 @@ tree(path, max.level = 2, level = 0, prefix = "")
 
 \item{prefix}{Internal parameter used for formatting the printed tree structure.}
 }
+\value{
+NULL, called for its side effect of printing the directory structure.
+}
 \description{
-This function prints the structure of a directory tree up to a specified maximum level of depth. It lists all files and directories under the specified path, displaying them in a tree-like structure.
+Prints the structure of a directory tree up to a specified maximum level of depth. It lists all files and directories under the specified path, displaying them in a tree-like structure.
 }
 \examples{
 metabodecon_dir <- system.file(package = "metabodecon")

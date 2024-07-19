@@ -20,6 +20,7 @@ de
 deconvolute
 Deconvolute
 deconvoluted
+deconvoluting
 deconvolution
 Deconvolution
 dir
@@ -48,6 +49,7 @@ jmr
 Koh
 Levenberg
 LEVENBERG
+lifecycle
 linter
 lorentz
 Marqardt
@@ -72,6 +74,7 @@ pkgdown
 PLoS
 png
 postprocessing
+pre
 radiowaves
 rds
 regensburg

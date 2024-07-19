@@ -31,7 +31,7 @@ Plots the peak triplets for each peak detected by \code{\link[=MetaboDecon1D]{Me
 }
 \examples{
 sim <- metabodecon_file("bruker/sim_subset")
-sim_decon <- generate_lorentz_curves(sim, sfr = c(3.58, 3.42), wshw = 0, ask = FALSE, verbose = FALSE)
+sim_decon <- generate_lorentz_curves(sim, sfr=c(3.58, 3.42), wshw=0, ask=FALSE, verbose=FALSE)
 png_dir <- tmpdir("sim_decon/pngs", create = TRUE)
 plot_triplets(sim_decon, out_dir = png_dir, ask = FALSE)
 dir(png_dir, full.names = TRUE)

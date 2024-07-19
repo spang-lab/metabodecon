@@ -61,7 +61,7 @@ generate_lorentz_curves(
 }
 \value{
 \loadmathjax
-A list of deconvoluted spectra. Each deconvoluted spetrum is a list with the following elements:
+A list of deconvoluted spectra. Each deconvoluted spectrum is a list with the following elements:
 \itemize{
 \item \code{number_of_files}: Number of deconvoluted spectra.
 \item \code{filename}: Name of the analyzed spectrum.
@@ -137,7 +137,7 @@ compare(decon_sim_1_dir, decon_sim_dir[[1]])
 # simulated datasets and therefor requires multiple seconds to run. Because
 # `ask` is TRUE in this example (the default value), the user will be asked
 # for input during the deconvolution. To avoid this, set `ask = FALSE`.
-if (interactive()) {
+\dontrun{
      example_datasets <- download_example_datasets()
      urine_1 <- file.path(example_datasets, "bruker/urine/urine_1")
      decon_urine_1 <- generate_lorentz_curves(urine_1)

@@ -1646,7 +1646,7 @@ deconvolution <- function(filepath,
 #' @seealso [MetaboDecon1D()], [calculate_lorentz_curves()], [plot_lorentz_curves_save_as_png()], [plot_spectrum_superposition_save_as_png()]
 #' @examples
 #' sim <- metabodecon_file("bruker/sim_subset")
-#' sim_decon <- generate_lorentz_curves(sim, sfr = c(3.58, 3.42), wshw = 0, ask = FALSE, verbose = FALSE)
+#' sim_decon <- generate_lorentz_curves(sim, sfr=c(3.58, 3.42), wshw=0, ask=FALSE, verbose=FALSE)
 #' png_dir <- tmpdir("sim_decon/pngs", create = TRUE)
 #' plot_triplets(sim_decon, out_dir = png_dir, ask = FALSE)
 #' dir(png_dir, full.names = TRUE)
@@ -1790,7 +1790,7 @@ plot_triplets <- function(deconv_result, x_range = c(), y_range = c(), out_dir =
 #' @seealso [MetaboDecon1D()], [plot_triplets()], [plot_spectrum_superposition_save_as_png()]
 #' @examples
 #' sim <- metabodecon_file("bruker/sim_subset")
-#' sim_decon <- generate_lorentz_curves(sim, sfr = c(3.58, 3.42), wshw = 0, ask = FALSE, verbose = FALSE)
+#' sim_decon <- generate_lorentz_curves(sim, sfr=c(3.58, 3.42), wshw=0, ask=FALSE, verbose=FALSE)
 #' png_dir <- tmpdir("sim_decon/pngs", create = TRUE)
 #' plot_lorentz_curves_save_as_png(sim_decon, out_dir = png_dir, ask = FALSE)
 #' dir(png_dir, full.names = TRUE)
@@ -1947,7 +1947,7 @@ plot_lorentz_curves_save_as_png <- function(deconv_result, x_range = c(), y_rang
 #' @seealso [MetaboDecon1D()], [calculate_lorentz_curves()], [plot_triplets()], [plot_lorentz_curves_save_as_png()]
 #' @examples
 #' sim <- metabodecon_file("bruker/sim_subset")
-#' sim_decon <- generate_lorentz_curves(sim, sfr = c(3.58, 3.42), wshw = 0, ask = FALSE, verbose = FALSE)
+#' sim_decon <- generate_lorentz_curves(sim, sfr=c(3.58, 3.42), wshw=0, ask=FALSE, verbose=FALSE)
 #' png_dir <- tmpdir("sim_decon/pngs", create = TRUE)
 #' plot_spectrum_superposition_save_as_png(sim_decon, out_dir = png_dir, ask = FALSE)
 #' dir(png_dir, full.names = TRUE)

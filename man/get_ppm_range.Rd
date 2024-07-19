@@ -4,26 +4,28 @@
 \alias{get_ppm_range}
 \title{Get ppm range}
 \usage{
-get_ppm_range(spectrum_data)
+get_ppm_range(spectrum_data, show = FALSE)
 }
 \arguments{
-\item{spectrum_data}{Output of \code{\link[=generate_lorentz_curves]{generate_lorentz_curves()}}}
+\item{spectrum_data}{A list of deconvoluted spectra as returned by \code{\link[=generate_lorentz_curves]{generate_lorentz_curves()}}.}
+
+\item{show}{Whether to plot the ppm range on the spectrum plot.}
 }
 \value{
-A vector containing the lowest and highest ppm value of the provided spectrum.
+A vector containing the lowest and highest ppm value over all peaks of the provided deconvoluted spectra.
 }
 \description{
-Returns the ppm range of the provided spectrum.
-}
-\details{
-determines after deconvolution the signal with the highest and the signal with the lowest ppm value.
+Returns the ppm range across all peaks of the provided deconvoluted spectra.
 }
 \examples{
-\donttest{
-xp <- download_example_datasets()
-dp <- file.path(xp, "bruker/urine")
-ff <- "bruker"
-x <- generate_lorentz_curves(dp, ff, ask = FALSE, nfit = 3)
-ppm_range <- get_ppm_range(spectrum_data = x)
+sim <- metabodecon_file("bruker/sim_subset")
+decons <- generate_lorentz_curves(
+     sim, sfr = c(3.58, 3.42), wshw = 0,
+     ask = FALSE, verbose = FALSE
+)
+ppm_rng <- get_ppm_range(decons, show = TRUE)
+print(ppm_rng)
 }
+\author{
+Wolfram Gronwald, Tobias Schmidt
 }

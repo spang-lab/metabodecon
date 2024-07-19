@@ -66,6 +66,7 @@ plot_peaks <- function(spec, ppm = c(3.402, 3.437), dp = NULL, vlines = FALSE) {
 }
 
 
+#' @export
 #' @title Plot Spectrum
 #' @description Plot a spectrum based on the provided deconvolution data and highlight a specific region of interest in the spectrum.
 #'

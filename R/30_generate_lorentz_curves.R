@@ -23,7 +23,7 @@
 #' @param force If FALSE, the function stops with an error message if no peaks are found in the signal free region (SFR), as these peaks are required as a reference for peak filtering. If TRUE, the function instead proceeds without peak filtering, potentially increasing runtime and memory usage significantly.
 #' @param verbose Logical. Whether to print log messages during the deconvolution process.
 #' @return \loadmathjax
-#' A list of deconvoluted spectra. Each deconvoluted spetrum is a list with the following elements:
+#' A list of deconvoluted spectra. Each deconvoluted spectrum is a list with the following elements:
 #' * `number_of_files`: Number of deconvoluted spectra.
 #' * `filename`: Name of the analyzed spectrum.
 #' * `x_values`: Scaled datapoint numbers (SDP). Datapoints are numbered in descending order going from N - 1 to 0, where N equals the number of datapoints. Scaled data point numbers are obtained by dividing these numbers by the x-axis scale factor `sf[1]`. I.e., for a spectrum with 131072 datapoints and a scale factor of 1000, the first scale datapoint has value 131.071 and the last one has value 0.
@@ -91,7 +91,7 @@
 #' # simulated datasets and therefor requires multiple seconds to run. Because
 #' # `ask` is TRUE in this example (the default value), the user will be asked
 #' # for input during the deconvolution. To avoid this, set `ask = FALSE`.
-#' if (interactive()) {
+#' \dontrun{
 #'      example_datasets <- download_example_datasets()
 #'      urine_1 <- file.path(example_datasets, "bruker/urine/urine_1")
 #'      decon_urine_1 <- generate_lorentz_curves(urine_1)
