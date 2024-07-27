@@ -1,7 +1,21 @@
 # evalwith #####
 
-#' @noRd
-#' @description Run expression with predefined global state
+#' @export
+#' @title Evaluate an expression with predefined global state
+#' @description Evaluates an expression with a predefined global state, including the:
+#'
+#' - working directory (set via [setwd()])
+#' - global options (set via [options()])
+#' - grafical parameters (set via [par()])
+#'
+#' In addition to that, `evalwith` allows to:
+#'
+#' - Redirect or capture the output and/or message stream via [sink()]
+#' - Measuure the runtime of the evaluated expression vi a[system.time()]
+#' - Creating a the test directory (inside [tmpdir()]) and populating it with input files according to `inputs`
+#' - Predefine answers for calls to [readline()] happening during evaluation of `expr`
+#' - Cache the result of the expression
+#'
 #' @param expr Expression to be evaluated.
 #' @param testdir ID of the test directory. E.g. `"xyz/2"`. Will be created and populated with `inputs`. To clear, use `clear(testdir("xyz/2"))`.
 #' @param answers Answers to be returned by readline().
@@ -27,13 +41,16 @@
 #' - `inputs`: The paths to the copied input files.
 #' @examples
 #' x1 <- evalwith(output = "captured", cat("Helloworld\n"))
-#' x2 <- evalwith(datadir_persistent = "missing", datadir())
+#' str(x1)
+#'
+#' x2 <- evalwith(datadir_persistent = "missing", message = "captured", datadir())
+#' str(x2)
+#'
 #' x3 <- evalwith(testdir = "dummy", inputs = "bruker/urine/urine_1", dir())
+#' str(x3)
+#'
 #' x4 <- evalwith(Sys.sleep(0.02))
-#' cat(sprintf("x1$output: '%s'", x1$output))
-#' cat(sprintf("x2$rv: '%s'", x2$rv))
-#' cat(sprintf("x3$rv: '%s'", x3$rv))
-#' cat(sprintf("x4$runtime: '%s'", x4$runtime))
+#' str(x4)
 evalwith <- function(expr, # nolint: cyclocomp_linter.
                      testdir = NULL,
                      answers = NULL,
@@ -103,18 +120,19 @@ evalwith <- function(expr, # nolint: cyclocomp_linter.
     }
     withCallingHandlers(
         testthat::with_mocked_bindings(
-            tryCatch(
-                {
+            code = {
+                tryCatch({
                     runtime <- system.time(rv <- expr)[["elapsed"]]
                 },
                 error = function(e) {
                     sink(NULL, type = "message")
                     stop(e)
-                }
-            ),
+                })
+            },
             datadir_temp = get_datadir_mock(type = "temp", state = datadir_temp),
             datadir_persistent = get_datadir_mock(type = "persistent", state = datadir_persistent),
-            readline = get_readline_mock(answers)
+            readline = get_readline_mock(answers),
+            .package = if (loaded_via_devtools()) NULL else "metabodecon"
         ),
         warning = function(w) {
             message("Warning: ", conditionMessage(w))
@@ -203,6 +221,12 @@ get_datadir_mock <- function(type = "temp", state = "default") {
     if (state == "empty") mkdirs(p)
     if (state == "filled") download_example_datasets(dst_dir = p)
     function() p
+}
+
+loaded_via_devtools <- function() {
+  pkg_dir <- dirname(system.file("DESCRIPTION", package = "metabodecon"))
+  loaded_via_devtools <- dir.exists(file.path(pkg_dir, "inst"))
+  return(loaded_via_devtools)
 }
 
 # simulate #####

@@ -418,6 +418,20 @@ lc <- function(x, x0, A, lambda) {
     A * (lambda / (lambda^2 + (x - x0)^2))
 }
 
+#' @noRd
+#' @title Calculate a superposition of Lorentz Curves
+#' @description Calculates the superposition of Lorentz Curves for a set of x values and a set of paremeter vectors (x0, A, lambda). The Lorentz Curve is defined as \mjeqn{A \cdot \frac{\lambda}{\lambda^2 + (x_i - x_0)^2}}.
+#' @param x Numeric vector of x values.
+#' @param x0 Centers of the Lorentz curves.
+#' @param A Amplitudes of the Lorentz curves.
+#' @param lambda Half widths at half height of the Lorentz curves.
+#' @return Numeric vector of y values.
+#' @examples lc(1:10, 4:5, 9:10, 2)
+lcsp <- function(x, x0, A, lambda, iterover = "params") {
+    # For details see formula below sentence "In physics, a three-parameter Lorentzian function is often used:" at [Wikipedia > Cauchy_distribution > #Properties_of_PDF](https://en.wikipedia.org/wiki/Cauchy_distribution#Properties_of_PDF).
+    A * (lambda / (lambda^2 + (x - x0)^2))
+}
+
 # Private Deprecated #####
 
 #' @title Generate Lorentz Curves from NMR Spectra

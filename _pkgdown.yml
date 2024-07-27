@@ -45,6 +45,7 @@ reference:
   - convert_width
   - tree
   - width
+  - evalwith
 - title: Deprecated
   desc: Deprecated functions. These functions should no longer be used. They will be retained for a short period of time to give users time to migrate to their replacement function, but will be removed in future releases of the package.
   contents:

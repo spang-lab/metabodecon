@@ -8,16 +8,35 @@ vignette: >
 ---
 
 ```{r knitr-setup, include = FALSE}
-knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
+knitr::opts_chunk$set(eval = FALSE) # collapse = TRUE, comment = "#>"
 ```
 
-This article illustrates how to use 'metabodecon' for deconvoluting and aligning one-dimensional NMR spectra, focusing on the preinstalled [sim](https://spang-lab.github.io/metabodecon/articles/Datasets.html#sim) dataset. The 'sim' dataset includes 16 simulated spectra, each with 1309 data points ranging from 3.6 to 3.4 ppm.  These simulations closely mimic the resolution and signal strength of real NMR experiments on blood plasma from 16 individuals. For more information on the _sim_ and _blood_ datasets, refer to the [Datasets](https://spang-lab.github.io/metabodecon/articles/Datasets.html) article.
+<style>
+.sourceCode.txt {
+  background-color: #f1f3f5;
+}
+figure {
+  border: 1px solid #dee2e6;
+  border-radius: .375rem;
+  padding: 0;
+  background-color: #f1f3f5;
+}
+figcaption {
+  text-align: center;
+  font-style: italic;
+  border-top: 1px solid #dee2e6;
+  padding: 0.75rem;
+  background-color: #ffffff;
+}
+</style>
+
+This article illustrates how to use Metabodecon for deconvoluting and aligning one-dimensional NMR spectra, focusing on the preinstalled [Sim](https://spang-lab.github.io/metabodecon/articles/Datasets.html#sim) dataset. The Sim dataset includes 16 simulated spectra, each with 1309 data points ranging from 3.6 to 3.4 ppm. These simulations closely mimic the resolution and signal strength of real NMR experiments on blood plasma from 16 individuals. For more information on the Sim and Blood datasets, refer to the [Datasets](https://spang-lab.github.io/metabodecon/articles/Datasets.html) article.
 
 # Deconvolute spectra
 
-The function for deconvoluting 1D NMR spectra is `generate_lorentz_curves()`, which can be used as follows:
+The function for deconvoluting one-dimensional NMR spectra is `generate_lorentz_curves()`, which can be used as follows:
 
-```{r}
+```{r, eval=FALSE, echo=TRUE}
 sim_dir <- metabodecon::metabodecon_file("bruker/sim")
 deconvs <- metabodecon::generate_lorentz_curves(
     data_path = sim_dir,  # path to the directory containing the spectra
@@ -30,23 +49,71 @@ deconvs <- metabodecon::generate_lorentz_curves(
 )
 ```
 
-After calling `generate_lorentz_curves()`, the function will request interactive user input, such as:
+After calling `generate_lorentz_curves()`, the function asks the user the following questions to determine the optimal parameters for the deconvolution.
 
-- Use same parameters for all spectra?
-- Number of spectrum for adjusting parameters?
-- Signal free region correctly selected?
-- Water artefact fully inside red vertical lines?
+```txt
+## Use same parameters for all spectra? (y/n) y
+## Number of spectrum for adjusting parameters? (1: sim_01, 2: sim_02, ...) 1
+## Signal free region correctly selected? (y/n) y
+## Water artefact fully inside red vertical lines? (y/n) y
+```
 
-For homogeneous datasets, e.g. human blood plasma measured in the same lab with the same acquisition and processing parameters, applying uniform parameters is usually fine. However, for heterogeneous datasets it's advisable to tailor parameters for each measurement type. The latter two prompts help verify the accuracy of the selected signal-free region (`sfr`) and water signal half width (`wshw`) [^wshw]. Adjustments can be made if the selections are inaccurate.
+Questions one and two are answered with `y` and `1`, respectively.
+That's fine in this case, because the dataset is homogeneous, i.e. all spectra were measured in the same lab with the same acquisition and processing parameters.
+However, in the case of heterogeneous datasets it would be advisable to tailor the parameters for each batch of spectra.
 
-When using the function in scripts, where interactive user input is not desired, you can disable the interactive prompts by setting parameter `ask` to `FALSE`. In this case, the provided parameters will be used for the deconvolution of all spectra automatically. [^askFALSE]
+Questions three and four are shown in combination with the plots from [Figure 1](#fig-sim01-sfr-and-wsr).
+The plots allow the user to verify the accuracy of the selected signal-free region (SFR) and water signal half width (WSHW) [^wshw].
+In case the selected regions are not accurate, the user can adjust the parameters accordingly.
 
-[^wshw] Since the used dataset was simulated based on actual measurement in the range 3.6 to 3.4 ppm, it doesn't contain a water signal. Therefore, the water signal half width was set to zero.
-[^askFALSE]: In this case it may be useful to set `ask = TRUE` for the first run to determine the optimal parameters interactively and then set `ask = FALSE` for subsequent runs.
+<!-- background-color: #f1f3f5; -->
+<figure id="fig-sim01-sfr-and-wsr">
+```{r eval=TRUE, echo=FALSE, message=FALSE, fig.alt="The sim_01 spectrum. For details see caption."}
+sim_dir <- metabodecon::metabodecon_file("bruker/sim")
+ewobj <- metabodecon::evalwith(
+  pars = list(mfrow = c(1, 2)),
+  answers = c("y", "1", "y", "y"),
+  metabodecon::generate_lorentz_curves(data_path = sim_dir, sfr = c(3.42, 3.58), wshw = 0, smopts = c(1, 5), delta = 2, verbose = FALSE)
+
+)
+deconvs <- ewobj$rv
+```
+<figcaption>
+<strong>Figure 1.</strong>
+The sim_01 spectrum.
+The x-Axis gives the chemical shift of each datapoint in parts per million (ppm).
+The y-Axis gives the signal intensity of each datapoint in arbitrary units (au).
+The borders of the signal free region are shown as green vertical lines in the left plot.
+The center of the water signal is shown as a red vertical line in the right plot.
+Because the water signal half width is set to zero, the borders of the water signal region equal its center.
+</figcaption>
+</figure>
+
+When using the function in scripts, where interactive user input is not desired, the interactive prompts can be disabled by setting parameter `ask` to `FALSE`. In this case, the provided parameters will be used for the deconvolution of all spectra automatically. [^askFALSE]
 
 # Visualize deconvoluted spectra
 
-TODO
+After devonvoluting the spectra, we might want to visualize the deconvoluted signals, to get an impression of the quality of the deconvolution. Metabodecon provides four functions for this purpose:
+
+1. `plot_spectrum()` for plotting the the spectrum before the deconvolution
+2. `plot_triplets` for plotting the peak centers and borders detected by the deconvolution algorithm
+3. `plot_lorentz_curves_save_as_png` for plotting the individual deconvoluted signals
+4. `plot_spectrum_superposition_save_as_png` for plotting the superposition of all deconvoluted signals
+
+The following code snippet shows how these functions can be used for the deconvoluted Sim dataset. The resulting plots for Sim_01, the first spectrum of the Sim dataset, are shown in [Figure 2](#fig-sim1-plots).
+
+&#9888; Attention: below code snippet requires object `deconvs`, generated in section [Deconvolute spectra](#deconvolute-spectra). If you haven't run the code snippet from this section yet, please do so before continuing.
+
+```{r, eval=FALSE, echo=FALSE}
+decon <- deconvs[[1]]
+metabodecon::plot_spectrum(deconvs[[1]], focus = c(3.5, 3.45))
+```
+
+
+```{r, eval=FALSE, echo=FALSE}
+
+```
+
 
 # Align deconvoluted spectra
 
@@ -57,7 +124,7 @@ The general workflow for aligning a set of deconvoluted spectra is as follows:
 3. Align the spectra using the 'speaq' package
 4. Combine signals of peaks which are spread over adjacent columns
 
-The following code snippets show, how the above steps can be implemented using the 'metabodecon' package:
+The following code snippet shows, how the above steps can be done using the 'metabodecon' package:
 
 ## 1. Look up spectrum range
 
@@ -118,3 +185,8 @@ The final result of the alignment `aligned_res` is a list containing two matrice
 - `short`: same as `long`, but all columns containing only zeros have been removed.
 
 Furthermore, results are written into two .csv files in your `data_path` directory "aligned_res_short.csv" and "aligned_res_long.csv".
+
+<!-- Footnotes -->
+
+[^wshw]: Since the used dataset was simulated based on actual measurement in the range 3.6 to 3.4 ppm, it doesn't contain a water signal. Therefore, the water signal half width was set to zero.
+[^askFALSE]: In this case it may be useful to set `ask = TRUE` for the first run to determine the optimal parameters interactively and then set `ask = FALSE` for subsequent runs.
