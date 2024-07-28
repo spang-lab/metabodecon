@@ -164,7 +164,7 @@ generate_lorentz_curves <- function(data_path = metabodecon_file("urine_1"),
     }
     endtime <- Sys.time()
     duration <- endtime - starttime
-    logf("Finished deconvolution of %d spectra in %s", nfiles, format(duration))
+    logf("Finished deconvolution of %d spectra in %s", nfiles, format(round(duration, 3)))
     names(spectra) <- nams
 
     # Prepare, store and return results

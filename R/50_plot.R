@@ -84,7 +84,7 @@ plot_peaks <- function(spec, ppm = c(3.402, 3.437), dp = NULL, vlines = FALSE) {
 #' @param axis_col Color of tickmarks and ticklabels.
 #' @param rect_fill_col Backghround color of the rectangle around the focus region.
 #' @param rect_border_col Border color of the rectangle around the focus region.
-#' @param sub_fig Either NULL or a numeric vector of the form `c(x1, x2, y1, y2)` giving the left/right/bottom/top coordinates of the sub figure region in "normalized plot coordinates" (as described in [graphics::grconvertX()]). If provided, the focussed region is drawn as sub figure within the main plot region. Setting `sub_fig` to NULL will prevent the sub figure from being drawn.
+#' @param sub_fig Either NULL or a numeric vector of the form `c(x1, x2, y1, y2)` giving the left/right/bottom/top coordinates of the sub figure region in "normalized plot coordinates" (as described in [graphics::grconvertX()]). If provided, the focussed region is drawn as sub figure within the main plot region. Setting `sub_fig` to NULL will prevent the sub figure from being drawn. If used, active multi-figure configurations (as defined by setting `mfrow` or `mfcol`) will be reset. See 'Details' for more information.
 #' @param sub_mar Margins of the sub figure.
 #' @param sub_line_col Color of the lines in the sub figure.
 #' @param sub_axis_col Color of the axis in the sub figure.
@@ -92,6 +92,7 @@ plot_peaks <- function(spec, ppm = c(3.402, 3.437), dp = NULL, vlines = FALSE) {
 #' @param sub_box_col Border color of the box surrounding the sub figure.
 #' @param connect_line_col Color of the lines connecting the main and sub figure.
 #' @param ysquash Fraction of plot height to squash y-values into. Useful in combination with `sub_fig` to prevent the spectrum lines from overlapping with the sub figure showing the focussed region.
+#' @details Setting `sub_fig` to a value unequal NULL resets a potential multi-figure configuration defined via `mfrow` or `mfcol`. In such cases you need to restore the array config (`mfrow`/`mfcol`) as well as the current figure number (`mfg`) manually yourself. E.g. if you have a 2 x 2 grid, defined via `par(mfrow = c(2, 2))` and draw into position (1, 2), then you need to call `par(mfrow = c(2, 2), mfg = c(1, 2))` after calling `.plot_spectrum(...)`, to draw into position (2, 1) in the next plot.
 #' @return NULL. Called for side effect of plotting the spectrum, as sketched below.
 #'
 #' ```
@@ -186,6 +187,8 @@ plot_spectrum <- function(decon,
     if (!is.null(sub_fig) && !is.null(foc_rgn)) {
         xfig <- convert_pos(sub_fig[1:2], c(0, 1), main$par$plt[1:2])
         yfig <- convert_pos(sub_fig[3:4], c(0, 1), main$par$plt[3:4])
+        xndc <- convert_pos(xfig, c(0, 1), main$par$fig[1:2])
+        yndc <- convert_pos(yfig, c(0, 1), main$par$fig[3:4])
         sub <- .plot_spectrum(
             cs, si, foc_rgn,
             foc_only = TRUE,
@@ -194,24 +197,24 @@ plot_spectrum <- function(decon,
             box_col = sub_box_col,
             axis_col = sub_axis_col,
             fill_col = sub_fill_col,
-            fig = c(xfig, yfig),
+            fig = c(xndc, yndc),
             add = TRUE
         )
     }
 
-    # Draw connecting lines between main and sub figure.
-    if (!is.null(sub_fig) && !is.null(foc_rgn)) {
-        line1_x0 <- grconvertX(main$rct$xleft_ndc, "ndc", "user")
-        line2_x0 <- grconvertX(main$rct$xright_ndc, "ndc", "user")
-        line1_x1 <- grconvertX(sub$plt$xlim_ndc[1], "ndc", "user")
-        line2_x1 <- grconvertX(sub$plt$xlim_ndc[2], "ndc", "user")
-        y0 <- grconvertY(main$rct$ytop_ndc, "ndc", "user")
-        y1 <- grconvertY(sub$plt$ylim_ndc[1], "ndc", "user")
-        opar <- par(xpd = TRUE)
-        on.exit(par(opar))
-        segments(x0 = line1_x0, y0 = y0, x1 = line1_x1, y1 = y1, col = connect_line_col)
-        segments(x0 = line2_x0, y0 = y0, x1 = line2_x1, y1 = y1, col = connect_line_col)
-    }
+    # # Draw connecting lines between main and sub figure.
+    # if (!is.null(sub_fig) && !is.null(foc_rgn)) {
+    #     line1_x0 <- grconvertX(main$rct$xleft_ndc, "ndc", "user")
+    #     line2_x0 <- grconvertX(main$rct$xright_ndc, "ndc", "user")
+    #     line1_x1 <- grconvertX(sub$plt$xlim_ndc[1], "ndc", "user")
+    #     line2_x1 <- grconvertX(sub$plt$xlim_ndc[2], "ndc", "user")
+    #     y0 <- grconvertY(main$rct$ytop_ndc, "ndc", "user")
+    #     y1 <- grconvertY(sub$plt$ylim_ndc[1], "ndc", "user")
+    #     opar <- par(xpd = TRUE)
+    #     on.exit(par(opar), add = TRUE)
+    #     segments(x0 = line1_x0, y0 = y0, x1 = line1_x1, y1 = y1, col = connect_line_col)
+    #     segments(x0 = line2_x0, y0 = y0, x1 = line2_x1, y1 = y1, col = connect_line_col)
+    # }
 
     # Return plot parameters
     invisible(named(main, sub))
@@ -232,8 +235,9 @@ plot_spectrum <- function(decon,
 #' @param rect_fill_col Fill color of rectangle around foc_rgn region.
 #' @param rect_border_col Border color of rectangle around foc_rgn region.
 #' @param ysquash Fraction of plot height to squash y-values into.
-#' @param fig Figure region to draw into.
+#' @param fig Region to draw into, given as normalized device coordinates. Doesn't work for multi-figure configurations defined by setting `mfrow` or `mfcol`. See 'Details' for more information.
 #' @param add If TRUE, the new plot is added to the existing plot.
+#' @details Setting `fig` to a value unequal NULL resets a potential multi-figure configuration defined via `mfrow` or `mfcol`. In such cases you need to restore the array config (`mfrow`/`mfcol`) as well as the current figure number (`mfg`) manually yourself. E.g. if you have a 2 x 2 grid, defined via `par(mfrow = c(2, 2))` and draw into position (1, 2), then you need to call `par(mfrow = c(2, 2), mfg = c(1, 2))` after calling `.plot_spectrum(...)`, to draw into position (2, 1) in the next plot.
 #' @examples
 #' sim_01 <- metabodecon_file("sim/sim_01")
 #' decon <- generate_lorentz_curves(
@@ -256,12 +260,17 @@ plot_spectrum <- function(decon,
                            rect_fill_col = rgb(1.0, 0.0, 0.0, alpha = 0.1),
                            rect_border_col = "red",
                            ysquash = 0.96,
-                           fig = c(0, 1, 0, 1),
+                           fig = NULL,
                            add = FALSE
                            ) {
 
-    opar <- par(fig = fig, mar = mar, new = add)
-    on.exit(par(opar), add = TRUE)
+    if (add && !is.null(fig)) {
+        opar <- par(mar = mar, new = add, fig = fig)
+    } else {
+        opar <- par(mar = mar, new = add)
+    }
+    on.exit(add = TRUE, par(opar))
+
     has_foc_rgn <- !is.null(foc_rgn)
     if (has_foc_rgn && length(foc_rgn) != 2) stop("foc_rgn must be a numeric vector of length 2")
     if (foc_only && !has_foc_rgn) stop("foc_only requires foc_rgn to be specified")

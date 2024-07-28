@@ -7,10 +7,6 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r knitr-setup, include = FALSE}
-knitr::opts_chunk$set(eval = FALSE) # collapse = TRUE, comment = "#>"
-```
-
 <style>
 .sourceCode.txt {
   background-color: #f1f3f5;
@@ -36,26 +32,24 @@ This article illustrates how to use Metabodecon for deconvoluting and aligning o
 
 The function for deconvoluting one-dimensional NMR spectra is `generate_lorentz_curves()`, which can be used as follows:
 
-```{r, eval=FALSE, echo=TRUE}
+```R
 sim_dir <- metabodecon::metabodecon_file("bruker/sim")
 deconvs <- metabodecon::generate_lorentz_curves(
-    data_path = sim_dir,  # path to the directory containing the spectra
-    sfr = c(3.42, 3.58),  # borders of the signal free region (SFR) in ppm
-    wshw = 0,             # half width of the water signal (WS) in ppm
-    smopts = c(1, 5), # smooth by applying 1 time a moving average of size 5
-    delta = 2   # filter peaks with scores smaller than `mu + sd * delta`,
-                # where `mu` and `sd` are the mean and standard deviation of
-                # peak-scores in the signal free region
+    data_path = sim_dir, # Path to directory containing spectra
+    sfr = c(3.42, 3.58), # Borders of signal free region (SFR) in ppm
+    wshw = 0,            # Half width of water signal (WS) in ppm
+    smopts = c(1, 5),    # Smooth by applying 1 time a moving average of size 5
+    delta = 2            # Configure threshold for peak filtering
 )
 ```
 
 After calling `generate_lorentz_curves()`, the function asks the user the following questions to determine the optimal parameters for the deconvolution.
 
 ```txt
-## Use same parameters for all spectra? (y/n) y
-## Number of spectrum for adjusting parameters? (1: sim_01, 2: sim_02, ...) 1
-## Signal free region correctly selected? (y/n) y
-## Water artefact fully inside red vertical lines? (y/n) y
+Use same parameters for all spectra? (y/n) y
+Number of spectrum for adjusting parameters? (1: sim_01, 2: sim_02, ...) 1
+Signal free region correctly selected? (y/n) y
+Water artefact fully inside red vertical lines? (y/n) y
 ```
 
 Questions one and two are answered with `y` and `1`, respectively.
@@ -66,18 +60,9 @@ Questions three and four are shown in combination with the plots from [Figure 1]
 The plots allow the user to verify the accuracy of the selected signal-free region (SFR) and water signal half width (WSHW) [^wshw].
 In case the selected regions are not accurate, the user can adjust the parameters accordingly.
 
-<!-- background-color: #f1f3f5; -->
-<figure id="fig-sim01-sfr-and-wsr">
-```{r eval=TRUE, echo=FALSE, message=FALSE, fig.alt="The sim_01 spectrum. For details see caption."}
-sim_dir <- metabodecon::metabodecon_file("bruker/sim")
-ewobj <- metabodecon::evalwith(
-  pars = list(mfrow = c(1, 2)),
-  answers = c("y", "1", "y", "y"),
-  metabodecon::generate_lorentz_curves(data_path = sim_dir, sfr = c(3.42, 3.58), wshw = 0, smopts = c(1, 5), delta = 2, verbose = FALSE)
 
-)
-deconvs <- ewobj$rv
-```
+<figure id="fig-sim01-sfr-and-wsr">
+<img src="Get_Started\sim_01_decon.svg" alt="sim_01_decon.svg">
 <figcaption>
 <strong>Figure 1.</strong>
 The sim_01 spectrum.
@@ -100,20 +85,13 @@ After devonvoluting the spectra, we might want to visualize the deconvoluted sig
 3. `plot_lorentz_curves_save_as_png` for plotting the individual deconvoluted signals
 4. `plot_spectrum_superposition_save_as_png` for plotting the superposition of all deconvoluted signals
 
-The following code snippet shows how these functions can be used for the deconvoluted Sim dataset. The resulting plots for Sim_01, the first spectrum of the Sim dataset, are shown in [Figure 2](#fig-sim1-plots).
+The following code snippet shows how these functions can be used for the deconvoluted Sim dataset. The resulting plots for the first spectrum of the Sim dataset, are shown in [Figure 2](#fig-sim1-plots).
 
-&#9888; Attention: below code snippet requires object `deconvs`, generated in section [Deconvolute spectra](#deconvolute-spectra). If you haven't run the code snippet from this section yet, please do so before continuing.
-
-```{r, eval=FALSE, echo=FALSE}
-decon <- deconvs[[1]]
-metabodecon::plot_spectrum(deconvs[[1]], focus = c(3.5, 3.45))
+```R
+decon <- deconvs[[1]] # Generated in section 'Deconvolute spectra'
+par(mfrow = c(2, 2))
+metabodecon::plot_spectrum(decon, foc_rgn = c(0.4, 0.6))
 ```
-
-
-```{r, eval=FALSE, echo=FALSE}
-
-```
-
 
 # Align deconvoluted spectra
 

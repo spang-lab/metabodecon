@@ -106,10 +106,17 @@ evalwith <- function(expr, # nolint: cyclocomp_linter.
         on.exit(sink(NULL, type = "message"), add = TRUE)
         on.exit(close(msgcon), add = TRUE)
     }
-    if (!is.null(plot)) {
-        pdf(plot)
-        on.exit(dev.off(), add = TRUE)
+    dev_cur <- dev.cur()
+    force(plot) # forces eval, useful if plot ~= `svg("abc.svg")`
+    if (identical(dev_cur, dev.cur()) && !is.null(plot)) {
+        if (is.expression(plot)) eval(plot) # plot == `quote(svg("abc.svg", width = 10))`
+        if (identical(plot, "captured")) plot <- tempfile(fileext = ".png")
+        if (grepl("\\.pdf$", plot)) pdf(plot)
+        else if (grepl("\\.svg$", plot)) svg(plot)
+        else if (grepl("\\.png$", plot)) png(plot)
+        else stop("plot must be an expression opening a device or a path ending in .pdf, .svg, or .png")
     }
+    if (!identical(dev_cur, dev.cur())) on.exit(dev.off(), add = TRUE)
     if (!is.null(opts)) {
         oldopts <- options(opts)
         on.exit(options(oldopts), add = TRUE)
