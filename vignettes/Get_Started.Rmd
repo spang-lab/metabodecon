@@ -93,6 +93,14 @@ par(mfrow = c(2, 2))
 metabodecon::plot_spectrum(decon, foc_rgn = c(0.4, 0.6))
 ```
 
+<figure id="fig-sim1-plots">
+<img src="Get_Started\sim_01_spectrum.svg" alt="sim_01_spectrum.svg" width = 49%>
+<figcaption>
+<strong>Figure 2.</strong>
+TODO
+</figcaption>
+</figure>
+
 # Align deconvoluted spectra
 
 The general workflow for aligning a set of deconvoluted spectra is as follows:

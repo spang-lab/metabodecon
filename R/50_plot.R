@@ -202,19 +202,19 @@ plot_spectrum <- function(decon,
         )
     }
 
-    # # Draw connecting lines between main and sub figure.
-    # if (!is.null(sub_fig) && !is.null(foc_rgn)) {
-    #     line1_x0 <- grconvertX(main$rct$xleft_ndc, "ndc", "user")
-    #     line2_x0 <- grconvertX(main$rct$xright_ndc, "ndc", "user")
-    #     line1_x1 <- grconvertX(sub$plt$xlim_ndc[1], "ndc", "user")
-    #     line2_x1 <- grconvertX(sub$plt$xlim_ndc[2], "ndc", "user")
-    #     y0 <- grconvertY(main$rct$ytop_ndc, "ndc", "user")
-    #     y1 <- grconvertY(sub$plt$ylim_ndc[1], "ndc", "user")
-    #     opar <- par(xpd = TRUE)
-    #     on.exit(par(opar), add = TRUE)
-    #     segments(x0 = line1_x0, y0 = y0, x1 = line1_x1, y1 = y1, col = connect_line_col)
-    #     segments(x0 = line2_x0, y0 = y0, x1 = line2_x1, y1 = y1, col = connect_line_col)
-    # }
+    # Draw connecting lines between main and sub figure.
+    if (!is.null(sub_fig) && !is.null(foc_rgn)) {
+        line1_x0 <- grconvertX(main$rct$xleft_ndc, "ndc", "user")
+        line2_x0 <- grconvertX(main$rct$xright_ndc, "ndc", "user")
+        line1_x1 <- grconvertX(sub$plt$xlim_ndc[1], "ndc", "user")
+        line2_x1 <- grconvertX(sub$plt$xlim_ndc[2], "ndc", "user")
+        y0 <- grconvertY(main$rct$ytop_ndc, "ndc", "user")
+        y1 <- grconvertY(sub$plt$ylim_ndc[1], "ndc", "user")
+        opar <- par(xpd = TRUE)
+        on.exit(par(opar), add = TRUE)
+        segments(x0 = line1_x0, y0 = y0, x1 = line1_x1, y1 = y1, col = connect_line_col)
+        segments(x0 = line2_x0, y0 = y0, x1 = line2_x1, y1 = y1, col = connect_line_col)
+    }
 
     # Return plot parameters
     invisible(named(main, sub))
