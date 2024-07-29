@@ -4,26 +4,114 @@
 \alias{plot_spectrum}
 \title{Plot Spectrum}
 \usage{
-plot_spectrum(decon, focus = c(3.45, 3.55))
+plot_spectrum(
+  decon,
+  foc_rgn = c(0.4, 0.35),
+  foc_unit = "fraction",
+  mar = c(4, 4, 0, 1),
+  line_col = "black",
+  axis_col = "black",
+  rect_fill_col = rgb(0, 0, 1, alpha = 0.05),
+  rect_border_col = "blue",
+  sub_fig = c(x1 = 0.05, x2 = 0.95, y1 = 0.2, y2 = 0.95),
+  sub_mar = c(2, 2, 0, 0),
+  sub_line_col = line_col,
+  sub_axis_col = axis_col,
+  sub_fill_col = rect_fill_col,
+  sub_box_col = rect_border_col,
+  connect_line_col = rect_border_col,
+  ysquash = if (!is.null(foc_rgn) && !is.null(sub_fig)) sub_fig[3] * 0.96 else 0.96,
+  mf_orient = "row"
+)
 }
 \arguments{
 \item{decon}{An object as returned by \code{\link[=generate_lorentz_curves]{generate_lorentz_curves()}}, containing the deconvolution data. Must include either \code{x_values_ppm} or \code{ppm} for the x-axis values, and either \code{y_values} or \code{y_smooth} for the y-axis values.}
 
-\item{focus}{A numeric vector of length 2 specifying the region of interest to highlight on the plot. The region is defined by its start and end points on the x-axis (in ppm).}
+\item{foc_rgn}{Numeric vector specifying the start and end of focus region.}
+
+\item{foc_unit}{Character string specifying the unit in which \code{foc_rgn} is given. Can be "fraction" or "ppm".}
+
+\item{mar}{Number of lines below/left/above/right plot region (used for axis annotations).}
+
+\item{line_col}{Color of the spectrum line.}
+
+\item{axis_col}{Color of tickmarks and ticklabels.}
+
+\item{rect_fill_col}{Backghround color of the rectangle around the focus region.}
+
+\item{rect_border_col}{Border color of the rectangle around the focus region.}
+
+\item{sub_fig}{Either NULL or a numeric vector of the form \code{c(x1, x2, y1, y2)} giving the left/right/bottom/top coordinates of the sub figure region in "normalized plot coordinates" (as described in \code{\link[graphics:convertXY]{graphics::grconvertX()}}). If provided, the focussed region is drawn as sub figure within the main plot region. Setting \code{sub_fig} to NULL will prevent the sub figure from being drawn.}
+
+\item{sub_mar}{Margins of the sub figure.}
+
+\item{sub_line_col}{Color of the lines in the sub figure.}
+
+\item{sub_axis_col}{Color of the axis in the sub figure.}
+
+\item{sub_fill_col}{Background color of the sub figure.}
+
+\item{sub_box_col}{Border color of the box surrounding the sub figure.}
+
+\item{connect_line_col}{Color of the lines connecting the main and sub figure.}
+
+\item{ysquash}{Fraction of plot height to squash y-values into. Useful in combination with \code{sub_fig} to prevent the spectrum lines from overlapping with the sub figure showing the focussed region.}
+
+\item{focus}{A numeric vector of length 2 specifying the region of interest to zoom in on the plot. The region is defined by its start and end points on the x-axis (in ppm).}
 }
 \value{
-A plot is generated as a side effect, highlighting the specified focus region on the spectrum.
+NULL. Called for side effect of plotting the spectrum, as sketched below.
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{0__0.1_____________0.5_____________0.9__1
+|    _______________________________    |0.9
+|   |Focus Region  _/\\_   _         |   |
+|   |       _    _/    \\_/ \\__      |   |
+|   |    __/ \\__/             \\_    |   |
+|   |___/_______________________\\___|   |0.5
+|                    _______________    |
+| Full /\\           |Focus /\\       |   |
+| Spectrum          |Region  \\/\\    |   |
+|    /    \\     /\\  |  /\\/      \\   |   |
+|___/______\\___/__\\_|_/__________\\__|___|0
+}\if{html}{\out{</div>}}
 }
 \description{
-Plot a spectrum based on the provided deconvolution data and highlight a specific region of interest in the spectrum.
+Plot a spectrum based on the provided deconvolution data and zoom in on a specific region of interest in the spectrum.
 
-lifecycle::experimental()
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 }
 \examples{
+# Prepare a deconvoluted spectrum as input
 sim_01 <- metabodecon_file("sim/sim_01")
 decon <- generate_lorentz_curves(
-     sim_01, sfr = c(3.42, 3.58), ws = 0,
-     ask = FALSE, verbose = FALSE
+    sim_01,
+    sfr = c(3.42, 3.58), ws = 0,
+    ask = FALSE, verbose = FALSE
 )
-plot_spectrum(decon, focus = c(3.504, 3.450))
+example_function <- function() {
+    opar <- par(mfrow = c(3, 2))
+    on.exit <- par(opar)
+
+    # Plot the full spectrum
+    plot_spectrum(decon, foc_rgn = NULL)
+
+    # Focus on a specific region, specified in ppm or as fraction
+    plot_spectrum(decon, foc_rgn = c(3.49, 3.45), foc_unit = "ppm")
+    plot_spectrum(decon, foc_rgn = c(0.4, 0.3), foc_unit = "fraction")
+
+    # Change color and position of the focus region
+    plot_spectrum(decon,
+        rect_fill_col = rgb(1, 0, 0, alpha = 0.1),
+        rect_border_col = "red",
+        sub_fig = c(x1 = 0.1, x2 = 0.9, y1 = 0.5, y2 = 0.9)
+    )
+
+    # Remove connecting lines and fill colors
+    plot_spectrum(decon,
+        rect_fill_col = NULL,
+        sub_fill_col = NULL,
+        connect_line_col = NULL
+    )
+}
+example_function()
 }

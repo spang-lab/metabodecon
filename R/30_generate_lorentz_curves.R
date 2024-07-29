@@ -188,18 +188,18 @@ generate_lorentz_curves <- function(data_path = metabodecon_file("urine_1"),
 
 deconvolute_spectrum <- function(nam, spec, smopts, delta, nfit, nfiles, debug, force) {
     logf("Starting deconvolution of %s", nam)
-    spec <- rm_water_signal_v12(spec)
-    spec <- rm_negative_signals_v12(spec)
-    spec <- smooth_signals_v12(spec, reps = smopts[1], k = smopts[2])
-    spec <- find_peaks_v12(spec)
-    spec <- filter_peaks_v12(spec, delta, force)
+    spec <- rm_water_signal(spec)
+    spec <- rm_negative_signals(spec)
+    spec <- smooth_signals(spec, reps = smopts[1], k = smopts[2])
+    spec <- find_peaks(spec)
+    spec <- filter_peaks(spec, delta, force)
     spec <- fit_lorentz_curves(spec, nfit)
-    spec <- add_return_list_v13(spec, nfiles, nam, debug)
+    spec <- add_return_list(spec, nfiles, nam, debug)
     logf("Finished deconvolution of %s", nam)
     spec
 }
 
-rm_water_signal_v12 <- function(spec) {
+rm_water_signal <- function(spec) {
     logf("Removing water signal")
     y <- spec$y_scaled
     left <- spec$wsr$left_dp
@@ -209,14 +209,14 @@ rm_water_signal_v12 <- function(spec) {
     spec
 }
 
-rm_negative_signals_v12 <- function(spec) {
+rm_negative_signals <- function(spec) {
     logf("Removing negative signals")
-    if (is.null(spec$y_nows)) stop("Water signal not removed yet. Please call `rm_water_signal_v12()` first.")
+    if (is.null(spec$y_nows)) stop("Water signal not removed yet. Please call `rm_water_signal()` first.")
     spec$y_pos <- abs(spec$y_nows)
     spec
 }
 
-#' @inherit smooth_signals_v12
+#' @inherit smooth_signals
 #' @details New and fast version for smoothing of signals. Implements the same algorithm as [smooth_signal_v12()] using different R functions (e.g. [stats::filter()]), causing a massive speedup but also numeric differences compared to the old version.
 #' @noRd
 smooth_signals_v20 <- function(spec, reps = 2, k = 5) {
@@ -253,33 +253,7 @@ smooth_signals_v20 <- function(spec, reps = 2, k = 5) {
 #' @return A numeric vector of the smoothed values.
 #' @details Old and slow version producing the same results as the implementation within `deconvolution` from `MetaboDecon1D_deconvolution.R`.
 #' @noRd
-smooth_signals_v12 <- function(spec, reps = 2, k = 5) {
-    logf("Smoothing signals")
-    if (k %% 2 == 0) stop("k must be odd")
-    spec$Z <- vector("list", length = reps)
-    spec$y_smooth <- y <- spec$y_pos
-    n <- length(y)
-    for (i in seq_along(reps)) {
-        z <- y
-        for (j in seq_len(n)) {
-            lb <- j - floor(k / 2) # left border
-            rb <- j + floor(k / 2) # right border
-            if (lb <= 0) {
-                lb <- 1
-                z[j] <- (1 / rb) * sum(y[lb:rb])
-            } else if (rb >= n) {
-                rb <- n
-                z[j] <- (1 / (rb - lb + 1)) * sum(y[lb:rb])
-            } else {
-                z[j] <- (1 / k) * sum(y[lb:rb])
-            }
-        }
-        y <- spec$y_smooth <- spec$Z[[i]] <- as.numeric(z)
-    }
-    spec
-}
-
-smooth_signals_v12 <- function(spec, reps = 2, k = 5, verbose = TRUE) {
+smooth_signals <- function(spec, reps = 2, k = 5, verbose = TRUE) {
     if (verbose) logf("Smoothing signals")
     if (k %% 2 == 0) stop("k must be odd")
     n <- length(spec$y_pos) # number of data points in total
@@ -313,9 +287,9 @@ smooth_signals_v12 <- function(spec, reps = 2, k = 5, verbose = TRUE) {
 #'      sdp = c(3, 2, 1),
 #'      sfr = list(left_sdp = 2.8, right_sdp = 1.2)
 #' )
-#' rm3 <- filtered_spec <- filter_peaks_v12(spec)
-#' rm2 <- filtered_spec <- filter_peaks_v12(spec, delta = 1)
-filter_peaks_v12 <- function(spec, delta = 6.4, force = FALSE) {
+#' rm3 <- filtered_spec <- filter_peaks(spec)
+#' rm2 <- filtered_spec <- filter_peaks(spec, delta = 1)
+filter_peaks <- function(spec, delta = 6.4, force = FALSE) {
     logf("Removing peaks with low scores")
     peak_scores <- spec$peak$score
     in_left_sfr  <- spec$sdp[spec$peak$center] >= spec$sfr$left_sdp
@@ -348,7 +322,7 @@ filter_peaks_v12 <- function(spec, delta = 6.4, force = FALSE) {
 #' @param nam Name of current spectrum.
 #' @param debug Add debug info to the return list
 #' @return The input spectrum with an additional list element `ret` containing the deconvolution results in a backwards compatible format.
-add_return_list_v13 <- function(spec = glc(), nfiles = 1, nam = "urine_1", debug = TRUE) {
+add_return_list <- function(spec = glc(), nfiles = 1, nam = "urine_1", debug = TRUE) {
 
     # Prepare some shortcuts for later calculations
     sdp <- spec$sdp; ppm <- spec$ppm; hz <- spec$hz; dp <- spec$dp
@@ -405,6 +379,20 @@ add_return_list_v13 <- function(spec = glc(), nfiles = 1, nam = "urine_1", debug
 }
 
 #' @noRd
+#' @title Calculate a superposition of Lorentz Curves
+#' @description Calculates the superposition of Lorentz Curves for a set of x values and a set of parameter vectors (x0, A, lambda). The Lorentz Curve is defined as \mjeqn{A \cdot \frac{\lambda}{\lambda^2 + (x_i - x_0)^2}}.
+#' @param x Numeric vector of x values.
+#' @param x0 Centers of the Lorentz curves.
+#' @param A Amplitudes of the Lorentz curves.
+#' @param lambda Half widths at half height of the Lorentz curves.
+#' @param iterover Character string specifying whether to iterate over the parameters or the x values. Must be either `"params"` or `"x"`.
+#' @return Numeric vector of y values.
+#' @examples lc(1:10, 4:5, 9:10, 2)
+lcsp <- function(x, x0, A, lambda, iterover = "params") {
+    message("TODO")
+}
+
+#' @noRd
 #' @title Calculate Lorentz Curve values
 #' @description Calculates the values of a Lorentz Curve for given x values. The Lorentz Curve is defined as \mjeqn{A \cdot \frac{\lambda}{\lambda^2 + (x_i - x_0)^2}}.
 #' @param x Numeric vector of x values.
@@ -414,20 +402,6 @@ add_return_list_v13 <- function(spec = glc(), nfiles = 1, nam = "urine_1", debug
 #' @return Numeric vector of y values.
 #' @examples lc(1:10, 5, 10, 2)
 lc <- function(x, x0, A, lambda) {
-    # For details see formula below sentence "In physics, a three-parameter Lorentzian function is often used:" at [Wikipedia > Cauchy_distribution > #Properties_of_PDF](https://en.wikipedia.org/wiki/Cauchy_distribution#Properties_of_PDF).
-    A * (lambda / (lambda^2 + (x - x0)^2))
-}
-
-#' @noRd
-#' @title Calculate a superposition of Lorentz Curves
-#' @description Calculates the superposition of Lorentz Curves for a set of x values and a set of paremeter vectors (x0, A, lambda). The Lorentz Curve is defined as \mjeqn{A \cdot \frac{\lambda}{\lambda^2 + (x_i - x_0)^2}}.
-#' @param x Numeric vector of x values.
-#' @param x0 Centers of the Lorentz curves.
-#' @param A Amplitudes of the Lorentz curves.
-#' @param lambda Half widths at half height of the Lorentz curves.
-#' @return Numeric vector of y values.
-#' @examples lc(1:10, 4:5, 9:10, 2)
-lcsp <- function(x, x0, A, lambda, iterover = "params") {
     # For details see formula below sentence "In physics, a three-parameter Lorentzian function is often used:" at [Wikipedia > Cauchy_distribution > #Properties_of_PDF](https://en.wikipedia.org/wiki/Cauchy_distribution#Properties_of_PDF).
     A * (lambda / (lambda^2 + (x - x0)^2))
 }
@@ -488,11 +462,11 @@ generate_lorentz_curves_v12 <- function(data_path = file.path(download_example_d
         nam <- nams[i]
         logf("Starting deconvolution of %s", nam)
         spec <- spectra[[i]]
-        spec <- rm_water_signal_v12(spec)
-        spec <- rm_negative_signals_v12(spec)
-        spec <- smooth_signals_v12(spec, reps = smopts[1], k = smopts[2])
-        spec <- find_peaks_v12(spec)
-        spec <- filter_peaks_v12(spec, delta)
+        spec <- rm_water_signal(spec)
+        spec <- rm_negative_signals(spec)
+        spec <- smooth_signals(spec, reps = smopts[1], k = smopts[2])
+        spec <- find_peaks(spec)
+        spec <- filter_peaks(spec, delta)
         spec <- init_lorentz_curves_v12(spec)
         spec <- refine_lorentz_curves_v12(spec, nfit)
         spec <- add_return_list_v12(spec, n, nam, debug)

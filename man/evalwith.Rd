@@ -82,11 +82,14 @@ Attention: the mocked functions, i.e. \code{\link[=datadir_temp]{datadir_temp()}
 }
 \examples{
 x1 <- evalwith(output = "captured", cat("Helloworld\n"))
-x2 <- evalwith(datadir_persistent = "missing", datadir())
+str(x1)
+
+x2 <- evalwith(datadir_persistent = "missing", message = "captured", datadir())
+str(x2)
+
 x3 <- evalwith(testdir = "dummy", inputs = "bruker/urine/urine_1", dir())
+str(x3)
+
 x4 <- evalwith(Sys.sleep(0.02))
-cat(sprintf("x1$output: '\%s'", x1$output))
-cat(sprintf("x2$rv: '\%s'", x2$rv))
-cat(sprintf("x3$rv: '\%s'", x3$rv))
-cat(sprintf("x4$runtime: '\%s'", x4$runtime))
+str(x4)
 }

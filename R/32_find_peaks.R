@@ -1,8 +1,8 @@
 # Private Main #####
 
-find_peaks_v12 <- function(spec) {
+find_peaks <- function(spec) {
     logf("Starting peak selection")
-    d <- spec$d <- calc_second_derivative_v12(y = spec$y_smooth)
+    d <- spec$d <- calc_second_derivative(y = spec$y_smooth)
     a <- abs(d)
     m <- length(d)
     dl <- c(NA, d[-m]) # dl[i] == d[i-1]
@@ -21,7 +21,7 @@ find_peaks_v12 <- function(spec) {
 
 # Private Helpers #####
 
-calc_second_derivative_v12 <- function(y) {
+calc_second_derivative <- function(y) {
     n <- length(y)
     x <- c(NA, y[-n]) # x[i] == y[i-1]
     z <- c(y[-1], NA) # z[i] == y[i+1]
@@ -79,7 +79,7 @@ get_left_border_v12 <- function(j, d) {
 #' #     |_.__x__x__x__x__x__x__x__x__.__.__x__x__x__x__x__.__|
 #' a <- c(NA, 0, 0, 0, 2, 1, 1, 0, 0, 1, 1, 0, 0, 3, 2, 1, NA )
 #' #          |----2---|-----4-----|        |--3--|--6--|
-#' all.equal(a, abs(calc_second_derivative_v12(y)))
+#' all.equal(a, abs(calc_second_derivative(y)))
 #'
 #' s1 <- get_peak_score_v12( 5, 2,   9, a)
 #' s2 <- get_peak_score_v12(14, 12, 16, a)

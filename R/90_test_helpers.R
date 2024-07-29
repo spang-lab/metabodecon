@@ -703,9 +703,9 @@ compare_spectra <- function(new = glc()$rv,
     # [1-5] spectra <- read_spectra(data_path, file_format, expno, procno, ask, sf, bwc = TRUE)
     # [6-7] spectra <- get_sfrs(spectra, sfr, ask, adjno)
     # [8-9] spectra <- get_wsrs(spectra, wshw, ask, adjno)
-    # [10] spec <- rm_water_signal_v12(spec)
-    # [11] spec <- rm_negative_signals_v12(spec)
-    # [12] spec <- smooth_signals_v12(spec, reps = smopts[1], k = smopts[2])
+    # [10] spec <- rm_water_signal(spec)
+    # [11] spec <- rm_negative_signals(spec)
+    # [12] spec <- smooth_signals(spec, reps = smopts[1], k = smopts[2])
     r[1] <- comp(new$y_raw, o2$spectrum_y_raw)
     r[2] <- comp(new$y_scaled, o2$spectrum_y)
     r[3] <- comp(new$n, o3$spectrum_length)
@@ -719,7 +719,7 @@ compare_spectra <- function(new = glc()$rv,
     r[11] <- comp(new$y_pos, o4$spectrum_y)
     r[12] <- comp(new$y_smooth, o5$spectrum_y)
 
-    # spec <- find_peaks_v12(spec)
+    # spec <- find_peaks(spec)
     r[13] <- comp(new$n, o6$spectrum_length)
     r[14] <- comp(new$d, c(NA, o6$second_derivative[2, ], NA)) # (1)
     r[16] <- comp(new$peak$center, as.integer(o6$peaks_index + 1)) # (1)
@@ -728,7 +728,7 @@ compare_spectra <- function(new = glc()$rv,
     r[19] <- comp(new$peak$left, as.integer(o6$right_position[1, ]) + 1) # (1)
     # (1) MetaboDecon1D did not store NAs at the border, which is bad, because you need to shift every index by one when you switch from `second_derivative` to any other vector like `x_ppm` or `y_au`.
 
-    # spec <- filter_peaks_v12(spec, delta)
+    # spec <- filter_peaks(spec, delta)
     border_is_na <- which(is.na(new$peak$left) | is.na(new$peak$right)) # the original MetaboDecon1D implementation throws away NAs, so for comparsion we need to do the same
     new_peak2 <- if (length(border_is_na) > 0) new$peak[-border_is_na, ] else new$peak
     r[20] <- comp(new_peak2$center, as.integer(o7$peaks_index + 1)) # (1) see above

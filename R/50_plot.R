@@ -84,7 +84,7 @@ plot_peaks <- function(spec, ppm = c(3.402, 3.437), dp = NULL, vlines = FALSE) {
 #' @param axis_col Color of tickmarks and ticklabels.
 #' @param rect_fill_col Backghround color of the rectangle around the focus region.
 #' @param rect_border_col Border color of the rectangle around the focus region.
-#' @param sub_fig Either NULL or a numeric vector of the form `c(x1, x2, y1, y2)` giving the left/right/bottom/top coordinates of the sub figure region in "normalized plot coordinates" (as described in [graphics::grconvertX()]). If provided, the focussed region is drawn as sub figure within the main plot region. Setting `sub_fig` to NULL will prevent the sub figure from being drawn. If used, active multi-figure configurations (as defined by setting `mfrow` or `mfcol`) will be reset. See 'Details' for more information.
+#' @param sub_fig Either NULL or a numeric vector of the form `c(x1, x2, y1, y2)` giving the left/right/bottom/top coordinates of the sub figure region in "normalized plot coordinates" (as described in [graphics::grconvertX()]). If provided, the focussed region is drawn as sub figure within the main plot region. Setting `sub_fig` to NULL will prevent the sub figure from being drawn.
 #' @param sub_mar Margins of the sub figure.
 #' @param sub_line_col Color of the lines in the sub figure.
 #' @param sub_axis_col Color of the axis in the sub figure.
@@ -92,7 +92,6 @@ plot_peaks <- function(spec, ppm = c(3.402, 3.437), dp = NULL, vlines = FALSE) {
 #' @param sub_box_col Border color of the box surrounding the sub figure.
 #' @param connect_line_col Color of the lines connecting the main and sub figure.
 #' @param ysquash Fraction of plot height to squash y-values into. Useful in combination with `sub_fig` to prevent the spectrum lines from overlapping with the sub figure showing the focussed region.
-#' @details Setting `sub_fig` to a value unequal NULL resets a potential multi-figure configuration defined via `mfrow` or `mfcol`. In such cases you need to restore the array config (`mfrow`/`mfcol`) as well as the current figure number (`mfg`) manually yourself. E.g. if you have a 2 x 2 grid, defined via `par(mfrow = c(2, 2))` and draw into position (1, 2), then you need to call `par(mfrow = c(2, 2), mfg = c(1, 2))` after calling `.plot_spectrum(...)`, to draw into position (2, 1) in the next plot.
 #' @return NULL. Called for side effect of plotting the spectrum, as sketched below.
 #'
 #' ```
@@ -110,7 +109,6 @@ plot_peaks <- function(spec, ppm = c(3.402, 3.437), dp = NULL, vlines = FALSE) {
 #' ```
 #'
 #' @examples
-#'
 #' # Prepare a deconvoluted spectrum as input
 #' sim_01 <- metabodecon_file("sim/sim_01")
 #' decon <- generate_lorentz_curves(
@@ -118,49 +116,53 @@ plot_peaks <- function(spec, ppm = c(3.402, 3.437), dp = NULL, vlines = FALSE) {
 #'     sfr = c(3.42, 3.58), ws = 0,
 #'     ask = FALSE, verbose = FALSE
 #' )
+#' example_function <- function() {
+#'     opar <- par(mfrow = c(3, 2))
+#'     on.exit <- par(opar)
 #'
-#' # Plot the full spectrum
-#' plot_spectrum(decon, foc_rgn = NULL)
+#'     # Plot the full spectrum
+#'     plot_spectrum(decon, foc_rgn = NULL)
 #'
-#' # Focus on a specific region, specified in ppm or as fraction
-#' plot_spectrum(decon, foc_rgn = c(3.49, 3.45), foc_unit = "ppm")
-#' plot_spectrum(decon, foc_rgn = c(0.4, 0.3), foc_unit = "fraction")
+#'     # Focus on a specific region, specified in ppm or as fraction
+#'     plot_spectrum(decon, foc_rgn = c(3.49, 3.45), foc_unit = "ppm")
+#'     plot_spectrum(decon, foc_rgn = c(0.4, 0.3), foc_unit = "fraction")
 #'
-#' # Change color and position of the focus region
-#' plot_spectrum(decon,
-#'     rect_fill_col = rgb(1, 0, 0, alpha = 0.1),
-#'     rect_border_col = "red",
-#'     sub_fig = c(x1 = 0.1, x2 = 0.9, y1 = 0.5, y2 = 0.9)
-#' )
+#'     # Change color and position of the focus region
+#'     plot_spectrum(decon,
+#'         rect_fill_col = rgb(1, 0, 0, alpha = 0.1),
+#'         rect_border_col = "red",
+#'         sub_fig = c(x1 = 0.1, x2 = 0.9, y1 = 0.5, y2 = 0.9)
+#'     )
 #'
-#' # Remove connecting lines and fill colors
-#' plot_spectrum(decon,
-#'     rect_fill_col = NULL,
-#'     sub_fill_col = NULL
-#'     connect_line_col = NULL
-#' )
+#'     # Remove connecting lines and fill colors
+#'     plot_spectrum(decon,
+#'         rect_fill_col = NULL,
+#'         sub_fill_col = NULL,
+#'         connect_line_col = NULL
+#'     )
+#' }
+#' example_function()
 plot_spectrum <- function(decon,
                           foc_rgn = c(0.40, 0.35),
                           foc_unit = "fraction",
-                          mar = c(4.1, 4.1, 0.1, 0.1),
+                          mar = c(4, 4, 0, 1),
                           line_col = "black",
                           axis_col = "black",
                           rect_fill_col = rgb(0, 0, 1, alpha = 0.05),
                           rect_border_col = "blue",
                           sub_fig = c(x1 = 0.05, x2 = 0.95, y1 = 0.2, y2 = 0.95),
-                          sub_mar = c(2.1, 2.1, 0.1, 0.1),
+                          sub_mar = c(2, 2, 0, 0),
                           sub_line_col = line_col,
                           sub_axis_col = axis_col,
                           sub_fill_col = rect_fill_col,
                           sub_box_col = rect_border_col,
                           connect_line_col = rect_border_col,
-                          ysquash = if (!is.null(foc_rgn) && !is.null(sub_fig)) sub_fig[3] * 0.96 else 0.96
+                          ysquash = if (!is.null(foc_rgn) && !is.null(sub_fig)) sub_fig[3] * 0.96 else 0.96,
+                          mf_orient = "row"
                           ) {
 
     # Check args.
     foc_unit <- match.arg(foc_unit, c("ppm", "fraction"))
-    cs <- decon[["ppm"]] %||% decon[["x_values_ppm"]] %||% decon[["cs"]]
-    si <- decon[["y_smooth"]] %||% decon[["y_values"]] %||% decon[["si"]]
     if (foc_unit == "fraction" && !is.null(foc_rgn)) foc_rgn <- quantile(cs, foc_rgn)
     if (identical(sort(names(sub_fig)), c("x1", "x2", "y1", "y2"))) {
         sub_fig <- sub_fig[order(names(sub_fig))]
@@ -170,7 +172,7 @@ plot_spectrum <- function(decon,
 
     # Draw full spectrum if sub_fig is NULL, else focussed region.
     main <- .plot_spectrum(
-        cs, si, foc_rgn,
+        decon, foc_rgn,
         foc_only = if (is.null(sub_fig)) TRUE else FALSE,
         mar = mar,
         line_col = line_col,
@@ -190,7 +192,7 @@ plot_spectrum <- function(decon,
         xndc <- convert_pos(xfig, c(0, 1), main$par$fig[1:2])
         yndc <- convert_pos(yfig, c(0, 1), main$par$fig[3:4])
         sub <- .plot_spectrum(
-            cs, si, foc_rgn,
+            decon, foc_rgn,
             foc_only = TRUE,
             mar = sub_mar,
             line_col = sub_line_col,
@@ -222,9 +224,8 @@ plot_spectrum <- function(decon,
 
 #' @noRd
 #' @title Plot Spectrum Internal
-#' @description Plot a spectrum based on the provided chemical shift and signal intensity data. Should not be called directly by the user. Use [plot_spectrum()] instead.
-#' @param cs Chemical shift of spectrum in ppm.
-#' @param si Signal intensity of spectrum in arbitrary units.
+#' @description Plot a spectrum based on the provided chemical shift and signal intensity data. Helper function of [plot_spectrum()]. Should not be called directly by the user.
+#' @param decon An object as returned by [generate_lorentz_curves()], containing the deconvolution data. Must include either `x_values_ppm` or `ppm` for the x-axis values, and either `y_values` or `y_smooth` for the y-axis values.
 #' @param foc_rgn Focus region in ppm.
 #' @param foc_only If TRUE, only the focussed region is drawn. If FALSE, the full spectrum is drawn.
 #' @param mar Number of lines below/left/above/right plot region.
@@ -235,9 +236,8 @@ plot_spectrum <- function(decon,
 #' @param rect_fill_col Fill color of rectangle around foc_rgn region.
 #' @param rect_border_col Border color of rectangle around foc_rgn region.
 #' @param ysquash Fraction of plot height to squash y-values into.
-#' @param fig Region to draw into, given as normalized device coordinates. Doesn't work for multi-figure configurations defined by setting `mfrow` or `mfcol`. See 'Details' for more information.
+#' @param fig Region to draw into, given as normalized device coordinates
 #' @param add If TRUE, the new plot is added to the existing plot.
-#' @details Setting `fig` to a value unequal NULL resets a potential multi-figure configuration defined via `mfrow` or `mfcol`. In such cases you need to restore the array config (`mfrow`/`mfcol`) as well as the current figure number (`mfg`) manually yourself. E.g. if you have a 2 x 2 grid, defined via `par(mfrow = c(2, 2))` and draw into position (1, 2), then you need to call `par(mfrow = c(2, 2), mfg = c(1, 2))` after calling `.plot_spectrum(...)`, to draw into position (2, 1) in the next plot.
 #' @examples
 #' sim_01 <- metabodecon_file("sim/sim_01")
 #' decon <- generate_lorentz_curves(
@@ -245,11 +245,24 @@ plot_spectrum <- function(decon,
 #'     sfr = c(3.42, 3.58), ws = 0,
 #'     ask = FALSE, verbose = FALSE
 #' )
-#' cs <- decon[["x_values_ppm"]]
-#' si <- decon[["y_values"]]
-#' po <- .plot_spectrum(cs, si)
-.plot_spectrum <- function(cs,
-                           si,
+#' .plot_dummy <- function() {
+#'      plot(0, 0, ylim = c(0, 1), xlim = c(0, 1), xaxs = "i", yaxs = "i")
+#'      text(0.5, 0.5, "dummy")
+#' }
+#' leftmiddle <- c(0.1, 0.4, 0.4, 0.6)
+#' leftbottom <- c(0.1, 0.4, 0.1, 0.3)
+#' local({
+#'      opar <- par(mfrow = c(3, 2), mar = c(2, 2, 0.5, 0.5))
+#'      on.exit(par(opar))
+#'      .plot_dummy()
+#'      .plot_spectrum(decon)
+#'      .plot_dummy()
+#'      .plot_spectrum(decon, fig = leftmiddle, add = TRUE, fill_col = "grey")
+#'      .plot_dummy()
+#'      .plot_spectrum(decon, fig = leftbottom)
+#'      .plot_spectrum(decon)
+#' })
+.plot_spectrum <- function(decon,
                            foc_rgn = NULL,
                            foc_only = FALSE,
                            mar = c(4.1, 4.1, 0.1, 0.1),
@@ -261,22 +274,52 @@ plot_spectrum <- function(decon,
                            rect_border_col = "red",
                            ysquash = 0.96,
                            fig = NULL,
-                           add = FALSE
+                           add = FALSE,
+                           show_triplets = FALSE
+                           show_curves = FALSE,
+                           show_superposition = FALSE
+                           d2_as_y = FALSE
                            ) {
 
-    if (add && !is.null(fig)) {
-        opar <- par(mar = mar, new = add, fig = fig)
-    } else {
-        opar <- par(mar = mar, new = add)
-    }
-    on.exit(add = TRUE, par(opar))
-
+    # Check function args
     has_foc_rgn <- !is.null(foc_rgn)
-    if (has_foc_rgn && length(foc_rgn) != 2) stop("foc_rgn must be a numeric vector of length 2")
-    if (foc_only && !has_foc_rgn) stop("foc_only requires foc_rgn to be specified")
-    in_focus <- if (has_foc_rgn) (cs >= min(foc_rgn) & cs <= max(foc_rgn)) else FALSE
-    si_foc <- si[in_focus]
-    cs_foc <- cs[in_focus]
+    if (has_foc_rgn && length(foc_rgn) != 2) {
+        stop("foc_rgn must be a numeric vector of length 2")
+    }
+    if (foc_only && !has_foc_rgn) {
+        stop("foc_only requires foc_rgn to be specified")
+    }
+
+    # Prepare plotting parameters and on.exit handler
+    if (is.null(fig)) {
+        opar <- par(mar = mar, new = add)
+        on.exit(add = TRUE, par(opar))
+    } else {
+        mfg <- par("mfg")
+        mfrow <- par("mfrow")
+        mfcol <- par("mfcol")
+        byrow <- mf_filled_by_row()
+        opar <- par(mar = mar, new = TRUE, fig = fig) # Always use new = TRUE when setting `fig`, to prevent the device from being cleared first.
+        on.exit(add = TRUE, {
+            par(opar)
+        })
+        if (sum(mfg[3:4]) > 2) on.exit(add = TRUE, {
+            # Setting `fig` resets active multi-figure configurations, so we need to reset the array layout defined via `mfrow` or `mfcol` as well as the current figure number `mfg`. When resetting `mfg` it's important to additionally advance at least one frame, because when querying `mfg` we get the "current figure number", but when setting it, the value is interpreted as "next figure number". I.e. without advancing one frame, we would set the "current figure number" as "next figure number".
+            if (byrow) par(mfrow = mfrow) else par(mfcol = mfcol)
+            par(mfg = mfg)
+            plot_empty() # Advance one frame.
+            if (!add) plot_empty() # Advance an additional frame, if we dont add to the current figure, but create a new one.
+        })
+
+    }
+
+    # Prepare data to be plotted
+    cs <- decon[["ppm"]] %||% decon[["x_values_ppm"]] %||% decon[["cs"]]
+    si <- decon[["y_smooth"]] %||% decon[["y_values"]] %||% decon[["si"]]
+    d2 <- NULL
+    in_foc <- if (has_foc_rgn) (cs >= min(foc_rgn) & cs <= max(foc_rgn)) else FALSE
+    si_foc <- si[in_foc]
+    cs_foc <- cs[in_foc]
 
     # Prepare plot region
     plt <- list(
@@ -310,6 +353,11 @@ plot_spectrum <- function(decon,
     axis(1, at = xticks, labels = round(xticks, 2), col = NA, col.ticks = axis_col, col.axis = axis_col)
     axis(2, at = yticks, labels = round(yticks, 2), col = NA, col.ticks = axis_col, col.axis = axis_col, las = 1)
     box(col = box_col)
+
+    # Draw peak triplets
+    if (show_triplets) {
+        message("TODO")
+    }
 
     # Draw rectangle around focus region
     rct <- NULL
@@ -382,4 +430,53 @@ plot_ws <- function(spec, hwidth_ppm) {
         arrows(x0, ya, x0 + c(hw, -hw), ya, col = "red", length = 0.1)
         text(x0 + c(hw, -hw) / 2, ya, labels = "wshw", pos = 3, col = "red")
     }
+}
+
+# Helpers #####
+
+#' @description Returns TRUE if the current multi-figure gets filled by row, else FALSE.
+#' @examples
+#' helper <- function(by_row = TRUE) {
+#'      grid <- c(2, 2)
+#'      opar <- if (by_row) par(mfrow = grid) else par(mfcol = grid)
+#'      on.exit(opar)
+#'      plot(1:10)
+#'      by_row <- mf_filled_by_row()
+#'      plot(1:5)
+#'      by_row
+#' }
+#' helper(by_row = TRUE)
+#' helper(by_row = FALSE)
+#'
+mf_filled_by_row <- function() {
+    mfg <- par("mfg")
+    row <- mfg[1]
+    col <- mfg[2]
+    nrows <- mfg[3]
+    ncols <- mfg[4]
+    if (nrows == 1 || ncols == 1) {
+        # In this case it doesn't matter, as the figure spots in the grid will be filled top-to-bottom / left-to-right in both cases.
+        return(TRUE)
+    } else {
+        # We have at least two rows AND two cols. So what we can do is to set c(1, 1) as next figure, and then advance one frame. If we end up in c(1, 2) we are row-oriented, if we end up in c(2, 1) we are column-oriented. After doing this we can reset the current figure number to the original value.
+
+        par(mfg = c(1, 1, nrows, ncols))
+        on.exit({
+            par(mfg = mfg)
+            plot_empty() # When querying `mfg` we get the "current figure number". But when setting it, we set the "next figure number". I.e. we need to advance one frame, or we would set the "current figure number" as "next figure number".
+        })
+        plot_empty() # draw into c(1, 1)
+        plot_empty() # draw into c(1, 2) or c(2, 1)
+        mfg2 <- par("mfg") # query current position
+        return(if (mfg2[1] == 1) TRUE else FALSE)
+    }
+}
+
+plot_empty <- function() {
+    plot(
+        x = 0.5, y = 0.5, type = "n",
+        xlim = c(0, 1), xlab = "", xaxs = "i",
+        ylim = c(0, 1), ylab = "", yaxs = "i",
+        axes = FALSE, main = "", ann = FALSE
+    )
 }

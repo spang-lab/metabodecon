@@ -1683,7 +1683,7 @@ plot_triplets <- function(deconv_result, x_range = c(), y_range = c(), out_dir =
       index_left_position <- deconv_result$index_peak_triplets_left
       index_right_position <- deconv_result$index_peak_triplets_right
 
-      message(paste("Plot triplets of ", name))
+      message(paste("Plot triplets of", name))
 
       # Check if x_range is adjusted or not
       if (is.null(x_range)) {
@@ -1717,7 +1717,7 @@ plot_triplets <- function(deconv_result, x_range = c(), y_range = c(), out_dir =
         index_left_position <- deconv_result[[l]]$index_peak_triplets_left
         index_right_position <- deconv_result[[l]]$index_peak_triplets_right
 
-        message(paste("Plot triplets of ", name))
+        message(paste("Plot triplets of", name))
 
         # Check if x_range is adjusted or not
         if (is.null(x_range)) {
@@ -1751,7 +1751,7 @@ plot_triplets <- function(deconv_result, x_range = c(), y_range = c(), out_dir =
     index_left_position <- deconv_result$index_peak_triplets_left
     index_right_position <- deconv_result$index_peak_triplets_right
 
-    message(paste("Plot triplets of ", name))
+    message(paste("Plot triplets of", name))
 
     # Check if x_range is adjusted or not
     if (is.null(x_range)) {

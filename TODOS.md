@@ -74,7 +74,7 @@ If delta is small (e.g. 1), peaks in SFR might not be filtered out. Either imple
 
 ## REFACTOR-9: Improve mse_normed calculation
 
-In function `add_return_list_v13`:
+In function `add_return_list`:
 
 1. Make the following part faster (or remove completely):
 

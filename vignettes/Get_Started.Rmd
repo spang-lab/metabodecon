@@ -60,9 +60,8 @@ Questions three and four are shown in combination with the plots from [Figure 1]
 The plots allow the user to verify the accuracy of the selected signal-free region (SFR) and water signal half width (WSHW) [^wshw].
 In case the selected regions are not accurate, the user can adjust the parameters accordingly.
 
-
 <figure id="fig-sim01-sfr-and-wsr">
-<img src="Get_Started\sim_01_decon.svg" alt="sim_01_decon.svg">
+<img src="Get_Started\sim_01_param_checking.svg" alt="sim_01_param_checking.svg">
 <figcaption>
 <strong>Figure 1.</strong>
 The sim_01 spectrum.
@@ -81,9 +80,9 @@ When using the function in scripts, where interactive user input is not desired,
 After devonvoluting the spectra, we might want to visualize the deconvoluted signals, to get an impression of the quality of the deconvolution. Metabodecon provides four functions for this purpose:
 
 1. `plot_spectrum()` for plotting the the spectrum before the deconvolution
-2. `plot_triplets` for plotting the peak centers and borders detected by the deconvolution algorithm
-3. `plot_lorentz_curves_save_as_png` for plotting the individual deconvoluted signals
-4. `plot_spectrum_superposition_save_as_png` for plotting the superposition of all deconvoluted signals
+2. `plot_triplets()` for plotting the peak centers and borders detected by the deconvolution algorithm
+3. `plot_lorentz_curves_save_as_png()` for plotting the individual deconvoluted signals
+4. `plot_spectrum_superposition_save_as_png()` for plotting the superposition of all deconvoluted signals
 
 The following code snippet shows how these functions can be used for the deconvoluted Sim dataset. The resulting plots for the first spectrum of the Sim dataset, are shown in [Figure 2](#fig-sim1-plots).
 
