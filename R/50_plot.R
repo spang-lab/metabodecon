@@ -171,7 +171,7 @@ plot_spectrum <- function(decon,
     }
 
     # Draw full spectrum if sub_fig is NULL, else focussed region.
-    main <- .plot_spectrum(
+    main <- plot_spec(
         decon, foc_rgn,
         foc_only = if (is.null(sub_fig)) TRUE else FALSE,
         mar = mar,
@@ -191,7 +191,7 @@ plot_spectrum <- function(decon,
         yfig <- convert_pos(sub_fig[3:4], c(0, 1), main$par$plt[3:4])
         xndc <- convert_pos(xfig, c(0, 1), main$par$fig[1:2])
         yndc <- convert_pos(yfig, c(0, 1), main$par$fig[3:4])
-        sub <- .plot_spectrum(
+        sub <- plot_spec(
             decon, foc_rgn,
             foc_only = TRUE,
             mar = sub_mar,
@@ -220,169 +220,6 @@ plot_spectrum <- function(decon,
 
     # Return plot parameters
     invisible(named(main, sub))
-}
-
-#' @noRd
-#' @title Plot Spectrum Internal
-#' @description Plot a spectrum based on the provided chemical shift and signal intensity data. Helper function of [plot_spectrum()]. Should not be called directly by the user.
-#' @param decon An object as returned by [generate_lorentz_curves()], containing the deconvolution data. Must include either `x_values_ppm` or `ppm` for the x-axis values, and either `y_values` or `y_smooth` for the y-axis values.
-#' @param foc_rgn Focus region in ppm.
-#' @param foc_only If TRUE, only the focussed region is drawn. If FALSE, the full spectrum is drawn.
-#' @param mar Number of lines below/left/above/right plot region.
-#' @param line_col Color of spectrum line.
-#' @param box_col Color of box around plot region.
-#' @param axis_col Color of tickmarks and ticklabels.
-#' @param fill_col Background color of plot region.
-#' @param rect_fill_col Fill color of rectangle around foc_rgn region.
-#' @param rect_border_col Border color of rectangle around foc_rgn region.
-#' @param ysquash Fraction of plot height to squash y-values into.
-#' @param fig Region to draw into, given as normalized device coordinates
-#' @param add If TRUE, the new plot is added to the existing plot.
-#' @examples
-#' sim_01 <- metabodecon_file("sim/sim_01")
-#' decon <- generate_lorentz_curves(
-#'     sim_01,
-#'     sfr = c(3.42, 3.58), ws = 0,
-#'     ask = FALSE, verbose = FALSE
-#' )
-#' .plot_dummy <- function() {
-#'      plot(0, 0, ylim = c(0, 1), xlim = c(0, 1), xaxs = "i", yaxs = "i")
-#'      text(0.5, 0.5, "dummy")
-#' }
-#' leftmiddle <- c(0.1, 0.4, 0.4, 0.6)
-#' leftbottom <- c(0.1, 0.4, 0.1, 0.3)
-#' local({
-#'      opar <- par(mfrow = c(3, 2), mar = c(2, 2, 0.5, 0.5))
-#'      on.exit(par(opar))
-#'      .plot_dummy()
-#'      .plot_spectrum(decon)
-#'      .plot_dummy()
-#'      .plot_spectrum(decon, fig = leftmiddle, add = TRUE, fill_col = "grey")
-#'      .plot_dummy()
-#'      .plot_spectrum(decon, fig = leftbottom)
-#'      .plot_spectrum(decon)
-#' })
-.plot_spectrum <- function(decon,
-                           foc_rgn = NULL,
-                           foc_only = FALSE,
-                           mar = c(4.1, 4.1, 0.1, 0.1),
-                           line_col = "black",
-                           box_col = "black",
-                           axis_col = "black",
-                           fill_col = NULL,
-                           rect_fill_col = rgb(1.0, 0.0, 0.0, alpha = 0.1),
-                           rect_border_col = "red",
-                           ysquash = 0.96,
-                           fig = NULL,
-                           add = FALSE,
-                           show_triplets = FALSE
-                           show_curves = FALSE,
-                           show_superposition = FALSE
-                           d2_as_y = FALSE
-                           ) {
-
-    # Check function args
-    has_foc_rgn <- !is.null(foc_rgn)
-    if (has_foc_rgn && length(foc_rgn) != 2) {
-        stop("foc_rgn must be a numeric vector of length 2")
-    }
-    if (foc_only && !has_foc_rgn) {
-        stop("foc_only requires foc_rgn to be specified")
-    }
-
-    # Prepare plotting parameters and on.exit handler
-    if (is.null(fig)) {
-        opar <- par(mar = mar, new = add)
-        on.exit(add = TRUE, par(opar))
-    } else {
-        mfg <- par("mfg")
-        mfrow <- par("mfrow")
-        mfcol <- par("mfcol")
-        byrow <- mf_filled_by_row()
-        opar <- par(mar = mar, new = TRUE, fig = fig) # Always use new = TRUE when setting `fig`, to prevent the device from being cleared first.
-        on.exit(add = TRUE, {
-            par(opar)
-        })
-        if (sum(mfg[3:4]) > 2) on.exit(add = TRUE, {
-            # Setting `fig` resets active multi-figure configurations, so we need to reset the array layout defined via `mfrow` or `mfcol` as well as the current figure number `mfg`. When resetting `mfg` it's important to additionally advance at least one frame, because when querying `mfg` we get the "current figure number", but when setting it, the value is interpreted as "next figure number". I.e. without advancing one frame, we would set the "current figure number" as "next figure number".
-            if (byrow) par(mfrow = mfrow) else par(mfcol = mfcol)
-            par(mfg = mfg)
-            plot_empty() # Advance one frame.
-            if (!add) plot_empty() # Advance an additional frame, if we dont add to the current figure, but create a new one.
-        })
-
-    }
-
-    # Prepare data to be plotted
-    cs <- decon[["ppm"]] %||% decon[["x_values_ppm"]] %||% decon[["cs"]]
-    si <- decon[["y_smooth"]] %||% decon[["y_values"]] %||% decon[["si"]]
-    d2 <- NULL
-    in_foc <- if (has_foc_rgn) (cs >= min(foc_rgn) & cs <= max(foc_rgn)) else FALSE
-    si_foc <- si[in_foc]
-    cs_foc <- cs[in_foc]
-
-    # Prepare plot region
-    plt <- list(
-        x = x <- if (foc_only) cs_foc else cs,
-        y = y <- if (foc_only) si_foc else si,
-        type = "n",
-        axes = FALSE,
-        xlab = "Chemical Shift [ppm]",
-        xlim = c(max(x), min(x)),
-        xaxs = "i",
-        ylab = "Signal Intensity [au]",
-        ylim = c(0, max(y) / ysquash),
-        yaxs = "i"
-    )
-    do.call(plot, plt)
-
-    # Color background of plotting region
-    if (!is.null(fill_col)) rect(
-        xleft = plt$xlim[1],
-        ybottom = plt$ylim[1],
-        xright = plt$xlim[2],
-        ytop = plt$ylim[2],
-        col = fill_col,
-        border = NA
-    )
-
-    # Draw spectrum as line
-    lines(plt$x, plt$y, type = "l", col = line_col)
-    xticks <- seq(min(plt$x), max(plt$x), length.out = 5)
-    yticks <- seq(0,          max(plt$y), length.out = 5)
-    axis(1, at = xticks, labels = round(xticks, 2), col = NA, col.ticks = axis_col, col.axis = axis_col)
-    axis(2, at = yticks, labels = round(yticks, 2), col = NA, col.ticks = axis_col, col.axis = axis_col, las = 1)
-    box(col = box_col)
-
-    # Draw peak triplets
-    if (show_triplets) {
-        message("TODO")
-    }
-
-    # Draw rectangle around focus region
-    rct <- NULL
-    if (has_foc_rgn && !foc_only) {
-        rct <- list(
-            xleft = max(foc_rgn),
-            xright = min(foc_rgn),
-            ybottom = 0,
-            ytop = max(si_foc) / 0.96,
-            col = rect_fill_col,
-            border = rect_border_col
-        )
-        do.call(rect, rct)
-    }
-
-    # Return plot parameters
-    plt$xlim_ndc <- grconvertX(plt$xlim, from = "user", to = "ndc")
-    plt$ylim_ndc <- grconvertY(plt$ylim, from = "user", to = "ndc")
-    if (!is.null(rct)) {
-        rct$xleft_ndc <- grconvertX(rct$xleft, from = "user", to = "ndc")
-        rct$xright_ndc <- grconvertX(rct$xright, from = "user", to = "ndc")
-        rct$ybottom_ndc <- grconvertY(rct$ybottom, from = "user", to = "ndc")
-        rct$ytop_ndc <- grconvertY(rct$ytop, from = "user", to = "ndc")
-    }
-    invisible(list(plt = plt, rct = rct, par = par()))
 }
 
 #' @noRd
@@ -432,11 +269,181 @@ plot_ws <- function(spec, hwidth_ppm) {
     }
 }
 
+# Plot_Spectrum and Helpers #####
+
+#' @noRd
+#' @title Plot Spectrum Internal
+#' @description Plot a spectrum based on the provided chemical shift and signal intensity data. Helper of public function [plot_spectrum()]. Should not be called directly by the user.
+#' @param decon An object as returned by [generate_lorentz_curves()], containing the deconvolution data. Must include either `x_values_ppm` or `ppm` for the x-axis values, and either `y_values` or `y_smooth` for the y-axis values.
+#' @param foc_rgn Focus region in ppm.
+#' @param foc_only If TRUE, only the focussed region is drawn. If FALSE, the full spectrum is drawn.
+#' @param mar Number of lines below/left/above/right plot region.
+#' @param line_col Color of spectrum line.
+#' @param box_col Color of box around plot region.
+#' @param axis_col Color of tickmarks and ticklabels.
+#' @param fill_col Background color of plot region.
+#' @param rect_fill_col Fill color of rectangle around foc_rgn region.
+#' @param rect_border_col Border color of rectangle around foc_rgn region.
+#' @param ysquash Fraction of plot height to squash y-values into.
+#' @param fig Region to draw into, given as normalized device coordinates
+#' @param add If TRUE, the new plot is added to the existing plot.
+#' @return A list with the following 3 elements:
+#' - plt: List with 12 elements used for creating the main plot, in particular `xlim_ndc` and `ylim_ndc`, which are the normalized device coordinates of the x- and y-axis limits.
+#' - rct: List of 10 elements used for creating the rectangle around the focus region, in particular `xleft_ndc`, `xright_ndc`, `ybottom_ndc`, and `ytop_ndc`, which are the normalized device coordinates of the rectangle.
+#' - par: List of the 72 graphical parameters ([graphics::par()]) used for creating the plot.
+#' @examples
+#' sim_01 <- metabodecon_file("sim/sim_01")
+#' decon <- generate_lorentz_curves(
+#'     sim_01,
+#'     sfr = c(3.42, 3.58), ws = 0,
+#'     ask = FALSE, verbose = FALSE,
+#'     delta = 0.1
+#' )
+#' plot_dummy <- function() {
+#'      plot(0, 0, ylim = c(0, 1), xlim = c(0, 1), xaxs = "i", yaxs = "i")
+#'      text(0.5, 0.5, "dummy")
+#' }
+#' leftmiddle <- c(0.1, 0.4, 0.4, 0.6)
+#' leftbottom <- c(0.1, 0.4, 0.1, 0.3)
+#' p <- local({
+#'      p <- list()
+#'      opar <- par(mfrow = c(3, 2), mar = c(2, 2, 0.5, 0.5))
+#'      on.exit(par(opar))
+#'      p[[1]] <- plot_dummy()
+#'      p[[2]] <- plot_spec(decon, foc_rgn = c(3.55, 3.52))
+#'      p[[3]] <- plot_dummy()
+#'      p[[3]] <- plot_spec(decon, fig = leftmiddle, fill_col = "grey")
+#'      p[[4]] <- plot_dummy()
+#'      p[[5]] <- plot_spec(decon, fig = leftbottom, add = FALSE)
+#'      p[[6]] <- plot_spec(decon)
+#'      p
+#' })
+plot_spec <- function(decon,
+                      foc_rgn = NULL,
+                      foc_only = FALSE,
+                      mar = c(4.1, 4.1, 0.1, 0.1),
+                      line_col = "black",
+                      box_col = "black",
+                      axis_col = "black",
+                      fill_col = NULL,
+                      rect_fill_col = rgb(1.0, 0.0, 0.0, alpha = 0.1),
+                      rect_border_col = "red",
+                      ysquash = 0.96,
+                      fig = NULL,
+                      add = !is.null(fig),
+                      show_triplets = FALSE,
+                      show_curves = FALSE,
+                      show_superposition = FALSE,
+                      d2_as_y = FALSE
+                      ) {
+
+    ps_check_args(foc_rgn, foc_only)
+    op <- par(mar = mar, new = add); on.exit(par(op), add = TRUE)
+    reset <- set_fig(fig = fig, add = add); on.exit(reset(), add = TRUE)
+    dat <- ps_get_dat(decon, foc_rgn, foc_only)
+    plt <- ps_plot_frame(dat, foc_only)
+
+
+    rct <- list(
+        xleft = max(foc_rgn), xright = min(foc_rgn),
+        ybottom = 0, ytop = max(si_foc) / 0.96,
+        col = rect_fill_col, border = rect_border_col
+    )
+    trp <- list(
+    )
+
+
+    # Prepare plot region incl. coloring the background
+
+    # Draw spectrum as line
+    lines(plt$x, plt$y, type = "l", col = line_col)
+    xticks <- seq(min(plt$x), max(plt$x), length.out = 5)
+    yticks <- seq(0,          max(plt$y), length.out = 5)
+    axis(1, at = xticks, labels = round(xticks, 2), col = NA, col.ticks = axis_col, col.axis = axis_col)
+    axis(2, at = yticks, labels = round(yticks, 2), col = NA, col.ticks = axis_col, col.axis = axis_col, las = 1)
+    box(col = box_col)
+
+    # Draw peak triplets
+    if (show_triplets) {
+
+        points(x[m], y[m], type = "p", pch = 124) # vertical dash
+        points(x[p], y[p], col = "red", pch = 17) # triangle
+        points(x[l], y[l], col = "blue", pch = 0) # open square
+        points(x[r], y[r], col = "blue", pch = 4) # x character
+    }
+
+    # Draw rectangle around focus region
+    rct <- NULL
+    if (!is.null(foc_rgn) && !foc_only) {
+        do.call(rect, rct)
+    }
+
+    # Return plot parameters
+    plt$xlim_ndc <- grconvertX(plt$xlim, from = "user", to = "ndc")
+    plt$ylim_ndc <- grconvertY(plt$ylim, from = "user", to = "ndc")
+    if (!is.null(rct)) {
+        rct$xleft_ndc <- grconvertX(rct$xleft, from = "user", to = "ndc")
+        rct$xright_ndc <- grconvertX(rct$xright, from = "user", to = "ndc")
+        rct$ybottom_ndc <- grconvertY(rct$ybottom, from = "user", to = "ndc")
+        rct$ytop_ndc <- grconvertY(rct$ytop, from = "user", to = "ndc")
+    }
+    invisible(list(plt = plt, rct = rct, par = par()))
+}
+
+ps_check_args <- function(foc_rgn, foc_only) {
+    if (!is.null(foc_rgn) && length(foc_rgn) != 2) {
+        stop("foc_rgn must be a numeric vector of length 2")
+    }
+    if (foc_only && is.null(foc_rgn)) {
+        stop("foc_only requires foc_rgn to be specified")
+    }
+}
+
+ps_get_dat <- function(decon, foc_rgn, foc_only) {
+    cs <- decon[["ppm"]] %||% decon[["x_values_ppm"]] %||% decon[["cs"]]
+    si <- decon[["y_smooth"]] %||% decon[["y_values"]] %||% decon[["si"]]
+    in_foc <- if (!is.null(foc_rgn)) (cs >= min(foc_rgn) & cs <= max(foc_rgn)) else FALSE
+    si_foc <- si[in_foc]
+    cs_foc <- cs[in_foc]
+    id <- rev(seq_along(cs)) # Indices of all Data Points
+    ipc <- decon$index_peak_triplets_middle # Indices of Peak Centers
+    ipl <- decon$index_peak_triplets_left # Indices of Peak borders Left
+    ipr <- decon$index_peak_triplets_right # Indices of Peak border Right
+    ip  <- c(ipc, ipl, ipr) # Indices of Peaks (center & borders combined)
+    iq <- setdiff(id, ip) # Indices of Non-Peak data points
+    invisible(named(cs, si, in_foc, si_foc, cs_foc, id, ipc, ipl, ipr, ip, iq))
+}
+
+ps_plot_frame <- function(dat, foc_only = TRUE, fill_col = NULL) {
+    plt <- within(list(), {
+        x <- if (foc_only) dat$cs_foc else dat$cs
+        y <- if (foc_only) dat$si_foc else dat$si
+        type <- "n"
+        axes <- FALSE
+        xlab <- "Chemical Shift [ppm]"
+        ylab <- "Signal Intensity [au]"
+        xaxs <- "i"
+        yaxs <- "i"
+        xlim <- c(max(x), min(x))
+        ylim <- c(0, max(y) / ysquash)
+    })
+    bgrct <- within(list(), {
+        xleft <- plt$xlim[1]
+        xright <- plt$xlim[2]
+        ybottom <- plt$ylim[1]
+        ytop <- plt$ylim[2]
+        col <- fill_col
+        border <- NA
+    })
+    do.call(plot, plt)
+    if (!is.null(fill_col)) do.call(rect, bgrct)
+}
+
 # Helpers #####
 
 #' @description Returns TRUE if the current multi-figure gets filled by row, else FALSE.
 #' @examples
-#' helper <- function(by_row = TRUE) {
+#' callwith <- function(by_row = TRUE) {
 #'      grid <- c(2, 2)
 #'      opar <- if (by_row) par(mfrow = grid) else par(mfcol = grid)
 #'      on.exit(opar)
@@ -445,9 +452,9 @@ plot_ws <- function(spec, hwidth_ppm) {
 #'      plot(1:5)
 #'      by_row
 #' }
-#' helper(by_row = TRUE)
-#' helper(by_row = FALSE)
-#'
+#' x <- callwith(by_row = TRUE)
+#' y <- callwith(by_row = FALSE)
+#' stopifnot(isTRUE(x) && isFALSE(y))
 mf_filled_by_row <- function() {
     mfg <- par("mfg")
     row <- mfg[1]
@@ -479,4 +486,75 @@ plot_empty <- function() {
         ylim = c(0, 1), ylab = "", yaxs = "i",
         axes = FALSE, main = "", ann = FALSE
     )
+}
+
+#' @noRd
+#' @title Set Figure Region
+#' @description Calling `par(fig=xxyy)` resets the current multi-figure configuration (MFC) to one row and one column. `set_fig()` handles this scenario, by first storing the current MFC, then calling `par(fig=xxyy)` and finally returning a function that can be used to restore current the MFC. See 'Details' for further information.
+#' @param fig Region to draw into, given as normalized device coordinates.
+#' @param add If TRUE, the new plot is added to the existing plot.
+#' @return Function to reset the MFC.
+#' @details
+#' Note 1: Setting `par(fig=xxyy)` resets the current MFC to one row and one column. I.e., array layouts defined by setting `mfrow` or `mfcol`, must be saved before changing `fig` and restored after the plot has been drawn. The same applies to the current figure number `mfg` (see Note 2).
+#'
+#' Note 2: When restoring `mfg` it's important to additionally advance one frame, because when querying `mfg`, the "current figure number" is returned, but when setting `mfg`, the value is interpreted as "next figure number". I.e. without advancing one frame, the next figure would be drawn into the spot of the current figure.
+#'
+#' Note 3: If `fig=xxyy` and `add=FALSE`, it is still necessary to use `par(fig=xxyy, new=TRUE)` to prevent the device from being cleared (which would be bad in a multi-figure environment). I.e., the figure number must be advanced manually, as would have been done by a normal plot. This manual increment must be done before the MFC is reset by `par(fig=xxyy, new=TRUE)`.
+#' @examples
+#' plot_dummy <- function() {
+#'      plot(0, 0, ylim = c(0, 1), xlim = c(0, 1), xaxs = "i", yaxs = "i")
+#'      text(0.5, 0.5, "dummy")
+#' }
+#' p <- local({
+#'      opar <- par(mfrow = c(2, 2), mar = c(2, 2, 0.5, 0.5))
+#'      on.exit(par(opar))
+#'
+#'      topleft   <- plot_dummy()
+#'      reset_mfc <- set_fig(fig = c(0.25, 0.50, 0.50, 0.75), add = TRUE)
+#'      topleft2  <- plot_dummy()
+#'      reset_mfc()
+#'
+#'      topright    <- plot_dummy()
+#'
+#'      reset_mfc   <- set_fig(fig = c(0.1, 0.4, 0.1, 0.4), add = FALSE)
+#'      bottom_left <- plot_dummy()
+#'      reset_mfc()
+#'
+#'      bottom_right <- plot_dummy()
+#' })
+set_fig <- function(fig = NULL, add = TRUE) {
+    if (is.null(fig)) return(function() {}) # Nothing to do if region is NULL
+    if (isFALSE(add)) plot_empty() # Advance one frame if `add=FALSE` (Note 3)
+    op <- par(c("mar", "mfrow", "mfcol", "mfg", "fig")) # Store MF conf (Note 1)
+    byrow <- mf_filled_by_row() # Store MF conf (Note 1)
+    par(fig = fig, new = TRUE) # Set new figure region (Note 3)
+    reset_mfc <- function() {
+        if (byrow) par(mfrow = op$mfrow) else par(mfcol = op$mfcol) # Restore MF Layout (Note 1)
+        par(mfg = op$mfg) # Restore current figure number (Note 1)
+        plot_empty() # Advance one frame (Note 2)
+    }
+    reset_mfc
+}
+
+#' @noRd
+#' @title Plot into specific figure region
+#' @description For Details see [set_fig()].
+#' @examples
+#' plot_dummy <- function() {
+#'      plot(0, 0, ylim = c(0, 1), xlim = c(0, 1), xaxs = "i", yaxs = "i")
+#'      text(0.5, 0.5, "dummy")
+#' }
+#' p <- local({
+#'      opar <- par(mfrow = c(2, 2), mar = c(2, 2, 0.5, 0.5))
+#'      on.exit(par(opar))
+#'      topleft     <- plot_dummy()
+#'      topleft2    <- with_fig(fig = c(0.25, 0.50, 0.50, 0.75), add = TRUE, plot_dummy())
+#'      topright    <- plot_dummy()
+#'      bottom_left <- with_fig(fig = c(0.1, 0.4, 0.1, 0.4), add = FALSE, plot_dummy())
+#'      bottom_right <- plot_dummy()
+#' })
+with_fig <- function(expr, fig = NULL, add = TRUE) {
+    reset_mfc <- set_fig(fig = fig, add = add)
+    on.exit(reset_mfc())
+    expr
 }
