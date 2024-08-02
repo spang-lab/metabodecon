@@ -6,12 +6,12 @@
 #'
 #' - working directory (set via [setwd()])
 #' - global options (set via [options()])
-#' - grafical parameters (set via [par()])
+#' - graphical parameters (set via [par()])
 #'
 #' In addition to that, `evalwith` allows to:
 #'
 #' - Redirect or capture the output and/or message stream via [sink()]
-#' - Measuure the runtime of the evaluated expression vi a[system.time()]
+#' - Measure the runtime of the evaluated expression vi a[system.time()]
 #' - Creating a the test directory (inside [tmpdir()]) and populating it with input files according to `inputs`
 #' - Predefine answers for calls to [readline()] happening during evaluation of `expr`
 #' - Cache the result of the expression
@@ -24,7 +24,7 @@
 #' @param plot Path to the pdf file where plots should be saved to.
 #' @param datadir_temp State of the mocked temporary data directory. See details section.
 #' @param datadir_persistent State of the mocked persistent data directory. See details section.
-#' @param inputs Paths to be copied to the test directory before evaluting `expr`.
+#' @param inputs Paths to be copied to the test directory before evaluating `expr`.
 #' @param opts Named list of options to be set. See [options()].
 #' @param pars Named list of parameters to be set. See [par()].
 #' @param cache Logical indicating whether to cache the result of the expression.
@@ -348,12 +348,14 @@ simulate_spectrum <- function(deconv = glc("blood_01")$rv$blood_01$ret,
 #' `si_sim`: Simulated signal intensities of base spectrum (incl. noise).
 #' `si_sim_raw`: Raw simulated signal intensities in raw format, i.e. `as.integer(si_sim * 1e6)`.
 #' @examples
-#' deconv = glc(dp = "blood_01", debug = FALSE)$rv$blood_01
+#' deconv = glc(dp = "blood_01", debug = FALSE)$rv
 #' simspec <- create_sim_spec(deconv)
 #' str(simspec)
-create_sim_spec <- function(deconv = glc(dp = "blood_01", debug = FALSE)$rv$blood_01,
-                            verbose = TRUE) {
+create_sim_spec <- function(deconv = glc(dp = "blood_01", debug = FALSE)$rv,
+                            verbose = TRUE,
+                            noise_method = "SFR") {
 
+    noise_method <- match.arg(noise_method, c("RND", "SFR"))
     logv <- if (verbose) logf else function(...) NULL
     cs <- deconv$x_values_ppm
     fq <- deconv$x_values_hz
@@ -365,11 +367,11 @@ create_sim_spec <- function(deconv = glc(dp = "blood_01", debug = FALSE)$rv$bloo
     X <- data.frame(cs, fq, si_raw, si_smooth)[ix, ]
 
     logv("Throwing away lorentz curves outside of 3.45 to 3.55 ppm range")
-    ix <- which(deconv$x_0_ppm >= 3.45 & deconv$x_0_ppm <= 3.55)
+    ip <- which(deconv$x_0_ppm >= 3.45 & deconv$x_0_ppm <= 3.55)
     P <- data.frame(
-        A = -deconv$A_ppm[ix],
-        w = +deconv$x_0_ppm[ix],
-        l = -deconv$lambda_ppm[ix]
+        A = -deconv$A_ppm[ip],
+        w = +deconv$x_0_ppm[ip],
+        l = -deconv$lambda_ppm[ip]
     )
 
     logv("Calculating simulated signal intensities (si_sim) as superposition of lorentz curves")
@@ -379,12 +381,26 @@ create_sim_spec <- function(deconv = glc(dp = "blood_01", debug = FALSE)$rv$bloo
     })
     colnames(P) <- c("A", "x_0", "lambda")
 
-    logv("Adding noise to simulated data, with noise-SD being equal to SFR-SD.")
-    # The true SFR covers approx. the first and last 20k datapoints. However, to
-    # be on the safe side, only use the first and last 10k datapoints for the
-    # calculation.
-    sfr_sd <- sd(si_raw[c(1:10000, 121073:131072)] * 1e-6)
-    X$si_sim <- X$si_sim + rnorm(n = length(X$si_sim), mean = 0, sd = sfr_sd)
+    if (noise_method == "RND") {
+        logv("Adding noise to simulated data, with noise-SD being equal to SFR-SD.")
+        # The true SFR covers approx. the first and last 20k datapoints. However, to
+        # be on the safe side, only use the first and last 10k datapoints for the
+        # calculation.
+        sfr_sd <- sd(si_raw[c(1:10000, 121073:131072)] * 1e-6)
+        noise <- rnorm(n = length(X$si_sim), mean = 0, sd = sfr_sd)
+        X$si_sim <- X$si_sim + noise
+        # ToSc, 2024-08-02: noise_method 'RND' turned out to be a bad idea,
+        # because the true noise is not normally distributed, but has long
+        # stretches of continuous increase or decrease that would be incredibly
+        # unlikely to occur with a normal distribution. This can be seen by
+        # running `analyze_noise_methods()`.
+    } else {
+        logv("Adding noise to simulated data, with noise taken from SFR.")
+        idx <- ix - min(ix) + 5000 # use SI of datapoints 5000:6308 for noise
+        noise <- si_raw[idx] * 1e-6
+        X$si_sim <- X$si_sim + noise
+    }
+
     X$si_sim_raw <- as.integer(X$si_sim * 1e6) # This looses precision but will be the "ground truth" that we can also write to disk ==> we need to recalculate si_sim from si_sim_raw, so that si_sim and si_sim_raw are consistent.
     X$si_sim <- X$si_sim_raw / 1.e6
     named(X, P, filename = deconv$filename)
@@ -530,6 +546,98 @@ store_sim_spec <- function(simspec = create_sim_spec(),
 
     logv("Finished storing simulated spectrum")
     simspec
+}
+
+#' @noRd
+#' @description Used during development of `simulate_spectra()` to find a realistic method for noise generation.
+analyze_noise_methods <- function(ask = TRUE) {
+
+    deconv = glc(dp = "blood_01", debug = FALSE)$rv
+    si_raw <- deconv$y_values_raw
+    sd_sfr <- sd(si_raw[c(1:10000, 121073:131072)] * 1e-6)
+    siRND <- rnorm(n = 10000, mean = 0, sd = sd_sfr)
+    siSFR <- si_raw[1:10000] * 1e-6
+
+    logf("Visualizing raw SIs for noise methods RND and SFR")
+    visualize <- function(siRND, siSFR, n = 300, start = 5000) {
+        ymin <- min(c(min(siRND), min(siSFR)))
+        ymax <- max(c(max(siRND), max(siSFR)))
+        ylim <- c(ymin, ymax)
+        opar <- par(mfrow = c(5, 1), mar = c(0, 4, 0, 1))
+        on.exit(par(opar), add = TRUE)
+        for (i in 1:5) {
+            redT <- rgb(1, 0, 0, 0.1)
+            bluT <- rgb(0, 0, 1, 0.1)
+            idx <- ((i - 1) * n + 1):(i * n) + start
+            ysiRND <- siRND[idx]
+            ysiSFR <- siSFR[idx]
+            plot(1:n, ysiRND, type = "n", ylim = ylim, ylab = "", xlab = "")
+            points(1:n, ysiRND, col = "red", pch = 20)
+            points(1:n, ysiSFR, col = "blue", pch = 20)
+            lines(1:n, ysiRND, col = "red")
+            lines(1:n, ysiSFR, col = "blue")
+            lines(1:n, rep(0, n), col = "black", lty = 2)
+            polygon(c(1:n, n:1), c(ysiRND, rep(0, n)), col = redT, border = NA)
+            polygon(c(1:n, n:1), c(ysiSFR, rep(0, n)), col = bluT, border = NA)
+            legend("topleft", NULL, c("RND", "SFR"), col = c("red", "blue"), lty = 1)
+        }
+    }
+    visualize(siRND, siSFR)
+    if (!get_yn_input("Continue?")) return()
+
+    logf("Visualizing smoothed SIs for noise methods RND and SFR")
+    siRND_sm <- smooth_signals(list(y_pos = siRND))$y_smooth
+    siSFR_sm <- smooth_signals(list(y_pos = siSFR))$y_smooth
+    visualize(siRND_sm, siSFR_sm)
+    if (!get_yn_input("Continue?")) return()
+
+    logf("Visualizing lengths of intervals of continuous increase and/or decrease")
+    slRND <- count_stretches(siRND) # stretch lengths of siRND
+    slSFR <- count_stretches(siSFR) # stretch lengths of SFR
+    table(slRND)
+    table(slSFR)
+    opar <- par(mfrow = c(2, 1))
+    on.exit(par(opar), add = TRUE)
+    hist(slRND, breaks = 0:20 + 0.5, xlim = c(0, 20))
+    hist(slSFR, breaks = 0:20 + 0.5, xlim = c(0, 20))
+
+}
+
+#' @title Count Stretches of Increases and Decreases
+#' @description Counts the lengths of consecutive increases and decreases in a numeric vector.
+#' @param vec A numeric vector.
+#' @return A numeric vector containing the lengths of stretches of increases and decreases.
+#' @examples
+#' #
+#' # Example Data (x)
+#' # | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
+#' # |-------------------------------|
+#' # |   |   |   |###|   |   |   |###|
+#' # |   |   |###|###|   |   |###|###|
+#' # |   |###|###|###|###|   |###|###|
+#' # |###|###|###|###|###|###|###|###|
+#' # |-------------------------------|
+#' # |   +   +   +   -   -   +   +   |
+#' # |-------------------------------|
+#' #
+#' x <- c(1.0, 2.2, 3.0, 4.4, 2.0, 1.0, 3.0, 4.0)
+#' count_stretches(x) # Returns c(3, 2, 2) because we have 3+, 2-, 2+
+count_stretches <- function(x) {
+  if (length(x) < 2) return(integer(0))
+  ss <- numeric(length(x))
+  s <- 1
+  inc <- x[2] > x[1]
+  for (i in 3:length(x)) {
+    if ((inc && x[i] > x[i - 1]) || (!inc && x[i] < x[i - 1])) {
+      s <- s + 1
+    } else {
+      ss[i - 1] <- s
+      s <- 1
+      inc <- x[i] > x[i - 1]
+    }
+  }
+  ss[i] <- s
+  return(ss[ss != 0])
 }
 
 # testthat #####

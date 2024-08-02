@@ -9,18 +9,19 @@
 #' @param foc_rgn Numeric vector specifying the start and end of focus region.
 #' @param foc_unit Character string specifying the unit in which `foc_rgn` is given. Can be "fraction" or "ppm".
 #' @param sub_show Logical. If TRUE, a sub figure is drawn within the main plot region. If FALSE, the sub figure is not drawn.
-#' @param sub_rgn Either NULL or a numeric vector of the form `c(x1, x2, y1, y2)` giving the left/right/bottom/top coordinates of the sub figure region in "normalized plot coordinates" (as described in [graphics::grconvertX()]). If provided, the focussed region is drawn as sub figure within the main plot region. Setting `sub_rgn` to NULL will prevent the sub figure from being drawn.
-#' @param foc_only Logical. If TRUE, only the focussed region is drawn. If FALSE, the full spectrum is drawn.
+#' @param sub_rgn Either NULL or a numeric vector of the form `c(x1, x2, y1, y2)` giving the left/right/bottom/top coordinates of the sub figure region in "normalized plot coordinates" (as described in [graphics::grconvertX()]). If provided, the focused region is drawn as sub figure within the main plot region. Setting `sub_rgn` to NULL will prevent the sub figure from being drawn.
+#' @param foc_only Logical. If TRUE, only the focused region is drawn. If FALSE, the full spectrum is drawn.
 #' @param foc_fill Background color of the rectangle around the focus region.
 #' @param foc_col Border color of the rectangle around the focus region.
+#' @param main Title of the plot.
+#' @param xlab Label for the x-axis.
+#' @param ylab Label for the y-axis.
 #' @param mar Number of lines below/left/above/right plot region (used for axis annotations).
 #' @param line_col Color of the spectrum line.
 #' @param axis_col Color of tickmarks and ticklabels.
 #' @param fill_col Background color of the plot region.
 #' @param box_col Border color of the box surrounding the plot region.
-#' @param xlab Label for the x-axis.
-#' @param ylab Label for the y-axis.
-#' @param ysquash Fraction of plot height to squash y-values into. Useful in combination with `sub_rgn` to prevent the spectrum lines from overlapping with the sub figure showing the focussed region.
+#' @param ysquash Fraction of plot height to squash y-values into. Useful in combination with `sub_rgn` to prevent the spectrum lines from overlapping with the sub figure showing the focused region.
 #' @param trp_show Logical. If TRUE, the peak triplets are shown.
 #' @param lc_show Logical. If TRUE, the Lorentzian Curves are shown.
 #' @param sup_show Logical. If TRUE, the superposition of the Lorentzian Curves is shown.
@@ -70,8 +71,6 @@
 #'     n <- length(figs)
 #'     nr <- ceiling(sqrt(n))
 #'     nc <- if (nr^2 > n) nr - 1 else nr
-#'     spec <- read_spectrum(metabodecon_file("sim/sim_01"))
-#'     decon <- glc("sim_01", debug = FALSE)$rv
 #'     opar <- par(mfrow = c(nr, nc))
 #'     on.exit(par(opar))
 #'
@@ -83,32 +82,39 @@
 #'     if (3 %in% figs) plot_spectrum(decon, foc_rgn = c(0.40, 0.30))
 #'
 #'     # Change margin, color and position of the focus region
-#'     if (4 %in% figs) plot_spectrum(decon,
-#'         sub_mar = c(4, 4, 0, 0),
-#'         foc_fill = rgb(0.9, 0.5, 0.9, alpha = 0.1),
-#'         foc_col = "violet",
-#'         sub_rgn = c(x1 = 0.1, x2 = 0.9, y1 = 0.4, y2 = 0.9)
-#'     )
+#'     if (4 %in% figs) {
+#'         plot_spectrum(decon,
+#'             sub_mar = c(4, 4, 0, 0),
+#'             foc_fill = rgb(0.9, 0.5, 0.9, alpha = 0.1),
+#'             foc_col = "violet",
+#'             sub_rgn = c(x1 = 0.1, x2 = 0.9, y1 = 0.4, y2 = 0.9)
+#'         )
+#'     }
 #'
 #'     # Remove connecting lines and fill colors
-#'     if (5 %in% figs) plot_spectrum(decon,
-#'         foc_fill = NULL,
-#'         sub_fill_col = NULL,
-#'         cnct_col = NULL
-#'     )
+#'     if (5 %in% figs) {
+#'         plot_spectrum(decon,
+#'             foc_fill = NULL,
+#'             sub_fill_col = NULL,
+#'             cnct_col = NULL
+#'         )
+#'     }
 #'
 #'     # Hide xlab and ylab
-#'     if (6 %in% figs) plot_spectrum(decon,
-#'         xlab = "",
-#'         ylab = "",
-#'         mar = c(2, 2, 0, 1)
-#'     )
+#'     if (6 %in% figs) {
+#'         plot_spectrum(decon,
+#'             xlab = "",
+#'             ylab = "",
+#'             mar = c(2, 2, 0, 1)
+#'         )
+#'     }
 #' }
 #' testfunc(3:4)
 #' testfunc(1:6)
 plot_spectrum <- function(
-    decon,
     # Common Settings
+    decon,
+    main = "",
     foc_rgn = c(0.40, 0.35),
     foc_unit = "fraction",
     sub_show = TRUE,
@@ -118,13 +124,13 @@ plot_spectrum <- function(
     foc_fill = rgb(1, 1, 0, alpha = 0.08),
     foc_col = "black",
     # Settings for Main Figure
-    mar = c(4, 4, 0, 1),
+    xlab = "Chemical Shift [ppm]",
+    ylab = "Signal Intensity [au]",
+    mar = c(4, 4, if (main == "") 0 else 4, 1),
     line_col = "black",
     axis_col = "black",
     fill_col = NULL,
     box_col = "black",
-    xlab = "Chemical Shift [ppm]",
-    ylab = "Signal Intensity [au]",
     ysquash = if (sub_show) sub_rgn[3] * 0.96 else 0.96,
     trp_show = if (sub_show) FALSE else TRUE,
     lc_show = if (sub_show) FALSE else TRUE,
@@ -149,21 +155,21 @@ plot_spectrum <- function(
     # Connecting Lines
     cnct_show = if (sub_show) TRUE else FALSE,
     cnct_col = foc_col) {
-    #
-    # Function Body
-    #
-    # px_setup_dev_env()
-    main_args <- px_get_main_args()
+    # ~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
+    # Start Function Body
+    # ~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
+    if (isTRUE(.Options$metabodecon.devmode)) ps_setup_dev_env()
+    main_args <- ps_get_main_args()
     main_plot <- do.call(plot_spec, main_args)
-    sub_args <- if (sub_show) px_get_sub_args(main_args, main_plot)
+    sub_args <- if (sub_show) ps_get_sub_args(main_args, main_plot)
     sub_plot <- if (sub_show) do.call(plot_spec, sub_args)
-    cnct_plot <- if (cnct_show) px_connect_main_sub(main_plot, sub_plot, cnct_col)
+    cnct_plot <- if (cnct_show) ps_connect_main_sub(main_plot, sub_plot, cnct_col)
     invisible(named(main_args, main_plot, sub_args, sub_plot, cnct_plot))
 }
 
 # Helpers #####
 
-px_get_main_args <- function(env = parent.frame()) {
+ps_get_main_args <- function(env = parent.frame()) {
     args <- sapply(names(formals(plot_spectrum)), get, envir = env)
     args$foc_unit <- match.arg(args$foc_unit, c("ppm", "fraction"))
     if (identical(sort(names(args$sub_rgn)), c("x1", "x2", "y1", "y2"))) {
@@ -176,7 +182,7 @@ px_get_main_args <- function(env = parent.frame()) {
     invisible(args)
 }
 
-px_get_sub_args <- function(main_args, main_plot) {
+ps_get_sub_args <- function(main_args, main_plot) {
     sub_args <- within(main_args, {
         foc_only <- TRUE
         mar <- sub_mar
@@ -187,6 +193,7 @@ px_get_sub_args <- function(main_args, main_plot) {
         trp_show <- sub_trp_show
         lc_show <- sub_lc_show
         sup_show <- sub_sup_show
+        main <- ""
         xlab <- ""
         ylab <- ""
         ysquash <- 0.96
@@ -199,11 +206,11 @@ px_get_sub_args <- function(main_args, main_plot) {
     invisible(sub_args)
 }
 
-px_connect_main_sub <- function(main_plot, sub_plot, cnct_col) {
+ps_connect_main_sub <- function(main_plot, sub_plot, cnct_col) {
     rct <- main_plot$foc$ndc
     sfg <- sub_plot$plt$ndc
     xds <- list(
-        c(x0 = rct$xleft,  x1 = sfg$xlim[1]),
+        c(x0 = rct$xleft, x1 = sfg$xlim[1]),
         c(x0 = rct$xright, x1 = sfg$xlim[2])
     )
     yd <- c(y0 = rct$ytop, y1 = sfg$ylim[1])
@@ -219,14 +226,14 @@ px_connect_main_sub <- function(main_plot, sub_plot, cnct_col) {
 
 # Development #####
 
-px_setup_dev_env <- function() {
+ps_setup_dev_env <- function() {
     # Prepare a deconvoluted spectrum as input
     sim_01 <- metabodecon_file("sim/sim_01")
     spec <- read_spectrum(sim_01)
     decon <- generate_lorentz_curves(
         data_path = sim_01,
         sfr = c(3.42, 3.58),
-        ws = 0,
+        wshw = 0,
         delta = 0.1,
         ask = FALSE,
         verbose = FALSE
@@ -248,10 +255,11 @@ px_setup_dev_env <- function() {
     invisible(args)
 }
 
+#' @noRd
 #' @examples
-#' px_test(1, 2) # first two plots
-#' px_text(2:4)  # second to fourth plot
-px_test <- function(figs = 1:5) {
+#' ps_test(1, 2) # first two plots
+#' ps_text(2:4) # second to fourth plot
+ps_test <- function(figs = 1:5) {
     n <- length(figs)
     nr <- ceiling(sqrt(n))
     nc <- if (nr^2 > n) nr - 1 else nr
@@ -268,31 +276,37 @@ px_test <- function(figs = 1:5) {
     if (3 %in% figs) plot_spectrum(decon, foc_rgn = c(0.40, 0.30))
 
     # Change margin, color and position of the focus region
-    if (4 %in% figs) plot_spectrum(decon,
-        sub_mar = c(4, 4, 0, 0),
-        foc_fill = rgb(0.9, 0.5, 0.9, alpha = 0.1),
-        foc_col = "violet",
-        sub_rgn = c(x1 = 0.1, x2 = 0.9, y1 = 0.4, y2 = 0.9)
-    )
+    if (4 %in% figs) {
+        plot_spectrum(decon,
+            sub_mar = c(4, 4, 0, 0),
+            foc_fill = rgb(0.9, 0.5, 0.9, alpha = 0.1),
+            foc_col = "violet",
+            sub_rgn = c(x1 = 0.1, x2 = 0.9, y1 = 0.4, y2 = 0.9)
+        )
+    }
 
     # Remove connecting lines and fill colors
-    if (5 %in% figs) plot_spectrum(decon,
-        foc_fill = NULL,
-        sub_fill_col = NULL,
-        cnct_col = NULL
-    )
+    if (5 %in% figs) {
+        plot_spectrum(decon,
+            foc_fill = NULL,
+            sub_fill_col = NULL,
+            cnct_col = NULL
+        )
+    }
 
     # Hide xlab and ylab
-    if (6 %in% figs) plot_spectrum(decon,
-        xlab = "",
-        ylab = "",
-        mar = c(2, 2, 0, 1)
-    )
+    if (6 %in% figs) {
+        plot_spectrum(decon,
+            xlab = "",
+            ylab = "",
+            mar = c(2, 2, 0, 1)
+        )
+    }
 }
 
 # Throwaway #####
 
-px_test_gr_convert <- function() {
+ps_test_gr_convert <- function() {
     par(mfrow = c(1, 2), xpd = TRUE)
     plot_dummy()
     x <- c(0.25, 0.75)

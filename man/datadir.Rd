@@ -25,7 +25,7 @@ The decision to use a temporary data dir as default and a persistent one only op
 \examples{
 # Get temporary datadir and persistent datadir
 datadir(persistent = FALSE, warn = FALSE)
-datadir(persistent = TRUE, warn = FALSE)
+datadir(persistent = TRUE,  warn = FALSE)
 
 # Get persistent datadir if existing else temp datadir. Set `warn = TRUE`
 # to raise a warning if none of the directories exist yet.

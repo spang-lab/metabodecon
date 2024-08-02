@@ -37,7 +37,7 @@ evalwith(
 
 \item{datadir_persistent}{State of the mocked persistent data directory. See details section.}
 
-\item{inputs}{Paths to be copied to the test directory before evaluting \code{expr}.}
+\item{inputs}{Paths to be copied to the test directory before evaluating \code{expr}.}
 
 \item{opts}{Named list of options to be set. See \code{\link[=options]{options()}}.}
 
@@ -64,13 +64,13 @@ Evaluates an expression with a predefined global state, including the:
 \itemize{
 \item working directory (set via \code{\link[=setwd]{setwd()}})
 \item global options (set via \code{\link[=options]{options()}})
-\item grafical parameters (set via \code{\link[=par]{par()}})
+\item graphical parameters (set via \code{\link[=par]{par()}})
 }
 
 In addition to that, \code{evalwith} allows to:
 \itemize{
 \item Redirect or capture the output and/or message stream via \code{\link[=sink]{sink()}}
-\item Measuure the runtime of the evaluated expression vi a\code{\link[=system.time]{system.time()}}
+\item Measure the runtime of the evaluated expression vi a\code{\link[=system.time]{system.time()}}
 \item Creating a the test directory (inside \code{\link[=tmpdir]{tmpdir()}}) and populating it with input files according to \code{inputs}
 \item Predefine answers for calls to \code{\link[=readline]{readline()}} happening during evaluation of \code{expr}
 \item Cache the result of the expression
