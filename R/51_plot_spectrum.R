@@ -17,7 +17,7 @@
 #' @param xlab Label for the x-axis.
 #' @param ylab Label for the y-axis.
 #' @param mar Number of lines below/left/above/right plot region (used for axis annotations).
-#' @param line_col Color of the spectrum line.
+#' @param line_col Color of raw signal intensities.
 #' @param axis_col Color of tickmarks and ticklabels.
 #' @param fill_col Background color of the plot region.
 #' @param box_col Border color of the box surrounding the plot region.
@@ -34,8 +34,10 @@
 #' @param sub_lc_show Logical. If TRUE, the Lorentzian Curves are shown in the sub figure.
 #' @param sub_sup_show Logical. If TRUE, the superposition of the Lorentzian Curves is shown in the sub figure.
 #' @param yscale10 Logical. If TRUE, scales the y-axis by a power of 10 so that all y-values are between 0 and 100.
+#' @param sm_col Color of smoothed signal intensities.
 #' @param lc_col Color of the Lorentzian Curves.
 #' @param lc_lty Line type of the Lorentzian Curves.
+#' @param lc_fill Color of the rectangles shown at center of each lorentzian curve. The width of the rectangle equals the half width at half height.
 #' @param trp_col Vector of length 4 giving the colors for the peak triplets. The first three colors specify the color used for each peak-center, left-border and right-border and the fourth color used for any non-peak data point.
 #' @param trp_pch Vector of length 4 giving the plotting characters for the peak triplets.
 #' @param sup_col Color of the superposition of the Lorentzian Curves.
@@ -121,8 +123,8 @@ plot_spectrum <- function(
     sub_rgn = c(x1 = 0.05, x2 = 0.95, y1 = 0.2, y2 = 0.95),
     # Focus Region
     foc_only = if (sub_show) FALSE else TRUE,
-    foc_fill = rgb(1, 1, 0, alpha = 0.08),
     foc_col = "black",
+    foc_fill = transp("yellow"),
     # Settings for Main Figure
     xlab = "Chemical Shift [ppm]",
     ylab = "Signal Intensity [au]",
@@ -146,10 +148,12 @@ plot_spectrum <- function(
     sub_sup_show = TRUE,
     # Settings for both Figures
     yscale10 = TRUE,
-    trp_col = c("red", "red", "red", "black"),
-    lc_col = "darkgrey",
-    trp_pch = c(17, 4, 4, NA),
+    sm_col = "blue",
+    lc_col = "black",
     lc_lty = 1,
+    lc_fill = transp(lc_col),
+    trp_col = rep(sm_col, 4),
+    trp_pch = c(17, 4, 4, NA),
     sup_col = "red",
     sup_lty = 1,
     # Connecting Lines
@@ -165,6 +169,20 @@ plot_spectrum <- function(
     sub_plot <- if (sub_show) do.call(plot_spec, sub_args)
     cnct_plot <- if (cnct_show) ps_connect_main_sub(main_plot, sub_plot, cnct_col)
     invisible(named(main_args, main_plot, sub_args, sub_plot, cnct_plot))
+}
+
+#' @export
+#' @title Make transparent
+#' @description Make a color transparent by adding an alpha channel.
+#' @param col Character string specifying the color to make transparent.
+#' @param alpha Numeric value between 0 and 1 specifying the transparency level.
+#' @return A character string representing the color with an alpha channel.
+#' @examples
+#' transp("violet", 0.08)
+#' transp("black", 0.5)
+transp <- function(col = "violet", alpha = 0.08) {
+    col <- col2rgb(col)[, 1] / 255
+    rgb(col[1], col[2], col[3], alpha = alpha)
 }
 
 # Helpers #####

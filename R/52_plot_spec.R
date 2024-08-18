@@ -68,67 +68,69 @@ plot_spec <- function(
     foc_rgn = NULL,
     foc_unit = "ppm",
     foc_only = FALSE,
-    foc_fill = rgb(0, 0, 1, alpha = 0.1),
-    foc_col = "blue",
+    foc_fill = trans("yellow"),
+    foc_col = "black",
     # Spectrum Lines
     line_col = "black",
+    sm_col = "blue",
     ysquash = 0.96,
     yscale10 = TRUE,
     d2_show = FALSE,
-    # Peak Triplets
-    trp_show = TRUE,
-    trp_col = c("red", "blue", "blue", "black"),
-    trp_pch = c(17, 4, 4, NA),
     # Lorentzians
     lc_show = TRUE,
-    lc_col = "darkgrey",
+    lc_col = "black",
     lc_lty = 1,
+    lc_fill = trans("black"),
     sup_show = TRUE,
     sup_col = "red",
     sup_lty = 1,
+    # Peak Triplets
+    trp_show = TRUE,
+    trp_col = rep("black", 4),
+    trp_pch = c(17, 4, 4, NA),
     # Unused
     ...) {
     # ~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
     # Start Function Body
     # ~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
-    psi_check_args(foc_rgn, foc_only)
-    old <- par(mar = mar, new = add)
-    on.exit(par(old), add = TRUE)
-    rst <- set_fig(fig = fig, add = add)
-    on.exit(rst(), add = TRUE)
+    args <- psi_get_args()
 
-    dat <- psi_get_dat(decon, foc_rgn, foc_unit, foc_only, yscale10, ysquash)
+    old <- par(    mar = mar, new = add); on.exit(par(old), add = TRUE)
+    rst <- set_fig(fig = fig, add = add); on.exit(rst(), add = TRUE)
+
+    dat <- psi_get_dat(args)
     plt <- psi_init_plot_region(dat)
     bgr <- psi_draw_bg(dat, fill_col)
-    lns <- psi_draw_lines(dat, line_col, d2_show, foc_only)
+    lns <- psi_draw_lines(dat, line_col, d2_show, foc_only, sm_col)
     trp <- if (trp_show) psi_draw_triplets(dat, trp_pch, trp_col)
-    lcs <- psi_draw_lorentz_curves(
-        dat, lc_show, lc_col, lc_lty, sup_show,
-        sup_col, sup_lty, foc_only
-    )
+    lcs <- psi_draw_lorentz_curves(dat, args)
     foc <- if (!foc_only) psi_draw_focus_region(dat, foc_fill, foc_col)
     axs <- psi_draw_axis(dat, main, xlab, ylab, axis_col, box_col)
+    lgd <- psi_draw_legend(args)
     named(dat, plt, bgr, axs, lns, trp, lcs, foc, par = par())
 }
 
 # Helpers #####
 
-psi_check_args <- function(foc_rgn = NULL,
-                           foc_only = FALSE) {
-    if (!is.null(foc_rgn) && length(foc_rgn) != 2) {
+psi_get_args <- function(env = parent.frame()) {
+    args <- sapply(names(formals(plot_spec)), get, envir = env)
+    if (!is.null(args$foc_rgn) && length(args$foc_rgn) != 2) {
         stop("foc_rgn must be a numeric vector of length 2")
     }
-    if (foc_only && is.null(foc_rgn)) {
+    if (args$foc_only && is.null(args$foc_rgn)) {
         stop("foc_only requires foc_rgn to be specified")
     }
+    invisible(args)
 }
 
-psi_get_dat <- function(decon = glc("sim_01", debug = FALSE)$rv,
-                        foc_rgn = NULL,
-                        foc_unit = "ppm",
-                        foc_only = FALSE,
-                        yscale10 = TRUE,
-                        ysquash = 0.96) {
+psi_get_dat <- function(args) {
+    decon    = args$decon
+    foc_rgn  = args$foc_rgn
+    foc_unit = args$foc_unit
+    foc_only = args$foc_only
+    yscale10 = args$yscale10
+    ysquash  = args$ysquash
+
     # Chemical Shift and Signal Intensity
     cs <- decon[["ppm"]] %||% decon[["x_values_ppm"]] %||% decon[["cs"]]
     si <- decon[["y_raw"]] %||% decon[["y_values_raw"]] %||% decon[["si"]]
@@ -246,7 +248,7 @@ psi_draw_lines <- function(dat,
                            line_col = "black",
                            d2_show = FALSE,
                            foc_only = FALSE,
-                           sm_col = "blue") {
+                           sm_col = sm_col) {
     x <- if (foc_only) dat$cs[dat$ifp] else dat$cs # Chemical Shift
     y <- if (foc_only) dat$si[dat$ifp] else dat$si # Raw SI
     ys <- if (foc_only) dat$sis[dat$ifp] else dat$sis # Smoothed SI
@@ -294,33 +296,126 @@ psi_draw_focus_region <- function(dat,
     named(usr, ndc)
 }
 
-psi_draw_lorentz_curves <- function(dat = psi_get_dat(),
-                                    lc_show = TRUE,
-                                    lc_col = "darkgrey",
-                                    lc_lty = 1,
-                                    sup_show = TRUE,
-                                    sup_col = "red",
-                                    sup_lty = 1,
-                                    foc_only = FALSE) {
+psi_draw_lorentz_curves <- function(dat, args = NULL) {
+    lc_show  = args$lc_show  %||% TRUE
+    lc_col   = args$lc_col   %||%"black"
+    lc_lty   = args$lc_lty   %||% 1
+    lc_fill  = args$lc_fill  %||% transp(lc_col)
+    sup_show = args$sup_show %||% TRUE
+    sup_col  = args$sup_col  %||%"red"
+    sup_lty  = args$sup_lty  %||% 1
+    foc_only = args$foc_only %||% FALSE
     if ((is.null(lc_show) && is.null(sup_show)) || is.null(dat$A)) {
         return(invisible(NULL))
     }
     x <- if (foc_only) dat$cs[dat$ifp] else dat$cs
     Y <- matrix(nrow = length(x), ncol = length(dat$A))
     for (i in seq_along(dat$A)) {
-        Y[, i] <- lc(x, dat$x_0[i], dat$A[i], dat$lambda[i])
-        if (lc_show) {
-            y <- Y[, i]
-            near_zero <- abs(y) < 0.01
-            y_big <- y[!near_zero]
-            x_big <- x[!near_zero]
-            lines(x = x_big, y = y_big, col = lc_col, lty = lc_lty, type = "l")
-        }
+        Y[, i] <- psi_draw_lorentz_curve(
+            x,
+            x_0 = dat$x_0[i],
+            A = dat$A[i],
+            lambda = dat$lambda[i],
+            lc_show = lc_show,
+            lc_col = lc_col,
+            lc_lty = lc_lty,
+            lc_fill = lc_fill
+        )
     }
     if (sup_show) {
         lines(x = x, y = rowSums(Y), col = sup_col, lty = sup_lty, type = "l")
     }
     invisible(NULL)
+}
+
+psi_draw_lorentz_curve <- function(x,
+                                   x_0,
+                                   A,
+                                   lambda,
+                                   lc_show = TRUE,
+                                   lc_col = "black",
+                                   lc_lty = 1,
+                                   lc_fill = NULL,
+                                   lc_ctr_col = NULL) {
+    y <- lc(x, x_0, A, lambda)
+    if (lc_show) {
+        near_zero <- abs(y) < 0.01
+        y_big <- y[!near_zero]
+        x_big <- x[!near_zero]
+        lines(
+            x = x_big,
+            y = y_big,
+            col = lc_col,
+            lty = lc_lty,
+            type = "l"
+        )
+    }
+    if (!is.null(lc_ctr_col)) segments(
+        x0 = x_0,
+        x1 = x_0,
+        y0 = par("usr")[3],
+        y1 = lc(x_0, x_0, A, lambda),
+        col = lc_col,
+        lty = 2
+    )
+    if (!is.null(lc_fill)) rect(
+        xleft = x_0 + lambda,
+        xright = x_0 - lambda,
+        ybottom = par("usr")[3],
+        ytop = lc(x_0, x_0, A, lambda),
+        col = lc_fill,
+        border = NA
+    )
+    return(y)
+}
+
+psi_draw_legend <- function(args) {
+    # decon   :List of 31
+    # fig     : NULL
+    # add     : logi FALSE
+    # main    : chr ""
+    # xlab    : chr "Chemical Shift [ppm]"
+    # ylab    : chr "Signal Intensity [au]"
+    # mar     : num [1:4] 4 4 0 1
+    # box_col : chr "black"
+    # axis_col: chr "black"
+    # fill_col: NULL
+    # foc_rgn : num [1:2] 0.2 0.8
+    # foc_unit: chr "fraction"
+    # foc_only: logi TRUE
+    # foc_fill: chr "#FFFF0014"
+    # foc_col : chr "black"
+    # line_col: chr "black"
+    # sm_col  : chr "blue"
+    # ysquash : num 0.96
+    # yscale10: logi TRUE
+    # d2_show : logi FALSE
+    # lc_show : logi TRUE
+    # lc_col  : chr "black"
+    # lc_lty  : num 1
+    # lc_fill : chr "#00000014"
+    # sup_show: logi TRUE
+    # sup_col : chr "red"
+    # sup_lty : num 1
+    # trp_show: logi TRUE
+    # trp_col : chr [1:4] "blue" "blue" "blue" "blue"
+    # trp_pch : num [1:4] 17 4 4 NA
+    legend(
+        "topright",
+        legend = c(
+            "Raw Signal",
+            "Smoothed Signal",
+            "Single Lorentzian",
+            "Superposition",
+            "Peak Triplets"
+        ),
+        col = c(
+            args$line_col, args$sm_col, args$lc_col, args$sup_col, args$trp_col[1]
+        ),
+        lty =  c(1,  1,  1,  1,  NA),
+        pch =  c(NA, NA, NA, NA, args$trp_pch[1]),
+    )
+
 }
 
 psi_setup_dev_env <- function() {

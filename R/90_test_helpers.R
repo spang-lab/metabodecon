@@ -369,17 +369,16 @@ create_sim_spec <- function(deconv = glc(dp = "blood_01", debug = FALSE)$rv,
     logv("Throwing away lorentz curves outside of 3.45 to 3.55 ppm range")
     ip <- which(deconv$x_0_ppm >= 3.45 & deconv$x_0_ppm <= 3.55)
     P <- data.frame(
-        A = -deconv$A_ppm[ip],
-        w = +deconv$x_0_ppm[ip],
-        l = -deconv$lambda_ppm[ip]
+        A     = -deconv$A_ppm[ip],
+        x_0   = +deconv$x_0_ppm[ip],
+        lambda = -deconv$lambda_ppm[ip]
     )
 
     logv("Calculating simulated signal intensities (si_sim) as superposition of lorentz curves")
     rownames(X) <- NULL
     X$si_sim <- sapply(X$cs, function(csi) {
-        sum(abs(P$A * (P$l / (P$l^2 + (csi - P$w)^2))))
+        sum(abs(P$A * (P$lambda / (P$lambda^2 + (csi - P$x_0)^2))))
     })
-    colnames(P) <- c("A", "x_0", "lambda")
 
     if (noise_method == "RND") {
         logv("Adding noise to simulated data, with noise-SD being equal to SFR-SD.")
@@ -400,7 +399,6 @@ create_sim_spec <- function(deconv = glc(dp = "blood_01", debug = FALSE)$rv,
         noise <- si_raw[idx] * 1e-6
         X$si_sim <- X$si_sim + noise
     }
-
     X$si_sim_raw <- as.integer(X$si_sim * 1e6) # This looses precision but will be the "ground truth" that we can also write to disk ==> we need to recalculate si_sim from si_sim_raw, so that si_sim and si_sim_raw are consistent.
     X$si_sim <- X$si_sim_raw / 1.e6
     named(X, P, filename = deconv$filename)
@@ -703,6 +701,114 @@ run_tests <- function(all = FALSE) {
 }
 
 # compare #####
+
+#' @noRd
+#' @title Check the quality of a deconvolution by comparing with the true parameters
+#' @description Checks the quality of a deconvolution by comparing the deconvolution results with the true parameters (which are only known for simulated spectra). See 'Details' for more information on how the quality is assessed.
+#' @param decon A list containing the deconvolution results, as returned by [generate_lorentz_curves()].
+#' @param lcpar A data frame containing the true parameters of the peaks, as returned by `create_sim_spec()`.
+#' @return A quality score for the deconvolution. In addition, a plot is created to visualize the deconvolution results.
+#' @details The function first plots the deconvolution results for visual inspection and then returns a quality score for the deconvolution.
+#'
+#' The plotting is done as follows:
+#'
+#' 1. Plot the deconvoluted spectrum using `plot_spectrum()`.
+#' 2. Draw green circles around found peaks [^1].
+#' 3. Draw red circles around missed peaks [^1].
+#' 4. Draw red rectangles around falsely detected peaks. [^2]
+#'
+#' [^1]: we consider a peak as 'found' if there is at least one detected peak center within 0.001 ppm of the true peak position. If this is not the case, the peak is considered as 'missed'.
+#' [^2]: we consider a peak as 'falsely detected' if there is no true peak center within 0.001 ppm of the detected peak position.
+#'
+#' In addition, a quality score is calculated as follows:
+#'
+#' quality    = peak_ratio * area_ratio
+#' peak_ratio = min(peaks_true, peaks_found) / max(peaks_true, peaks_found)
+#' area_ratio = min(area_true,  area_found)  / max(area_true,  area_found)
+#'
+#' I.e., the score is close to 1 if the number of peaks and the area of the peaks are similar in the true and found spectra and the score is close to 0 if the number of peaks and/or the area of the peaks are very different.
+check_decon_quality <- function(decon = glc("sim_01", debug = FALSE)$rv,
+                                lcpar = readRDS(metabodecon_file("sim_01.rds"))$P) {
+    true <- lcpar # True Params
+    found <- data.frame( # Found Params
+        A      = decon$A_ppm,
+        x_0    = decon$x_0_ppm,
+        lambda = decon$lambda_ppm
+    )
+
+    # Calculate y values at found x_0 position
+    ppm <- decon$x_values_ppm
+    y <- decon$y_values
+    i_0 <- convert_pos(found$x_0, ppm, 1:length(ppm))
+    i_0_floor <- floor(i_0)
+    i_0_ceil <- ceiling(i_0)
+    i_0_frac <- i_0 - i_0_floor
+    y_floor <- y[i_0_floor]
+    y_ceil <- y[i_0_ceil]
+    found$y_0 <- y_floor + (y_ceil - y_floor) * i_0_frac
+
+    # Check which peaks are found correctly and which were missed
+    for (i in seq_along(true$x_0)) {
+        true[i, "closest"] <- j <- which.min(abs(found$x_0 - true$x_0[i]))
+        true[i, "dist"] <- d <- abs(found$x_0[j] - true$x_0[i])
+        true[i, "correct"] <- d < 0.001
+    }
+    for (i in seq_along(found$x_0)) {
+        found[i, "closest"] <- j <- which.min(abs(true$x_0 - found$x_0[i]))
+        found[i, "dist"] <- d <- abs(true$x_0[j] - found$x_0[i])
+        found[i, "correct"] <- d < 0.001
+    }
+
+    plot_spectrum(decon, foc_rgn = c(0.2, 0.8), sub_show = FALSE)
+    points(
+        x = found$x_0,
+        y = found$y_0,
+        pch = 21,
+        cex = 3,
+        bg = "transparent",
+        col = ifelse(found$correct, "green", "red")
+    )
+    abline(v = found$x_0)
+
+    symbols(
+        x = found$x_0,
+        y = found$y_0,
+        circles = rep(0.01, length(found$x_0)),  # Radius is half the width
+        fg = "green"
+    )
+
+    for (i in seq_len(nrow(true))) {
+        rect(
+            xleft = true$x_0[i] - true$lambda[i] / 2,
+            ybottom = 0,
+            xright = true$x_0[i] + true$lambda[i] / 2,
+            ytop = par("usr")[4],  # Full y height
+            col = rgb(0.5, 0.5, 0.5, 0.1),  # Transparent grey
+            border = NA
+        )
+    }
+
+
+
+    found$x_0_closest <- sapply(found$x_0, function(x_0) which.min(abs(true$x_0 - x_0)))
+    true$x_0_assign <- sapply(seq_len(nrow(true)), function(i)
+        collapse(which(found$x_0_closest == i))
+    )
+    plot_spectrum(found, foc_rgn = c(0, 1), sub_show = FALSE)
+
+    # Draw vertical lines at T$x_0
+    opar <- par(xpd = TRUE)
+    on.exit(par(opar), add = TRUE)
+    y_range <- range(par("usr")[3:4])
+    for (i in seq_along(T$x_0)) {
+        x0 <- T$x_0[i]
+        y0 <- y_range[1]
+        x1 <- T$x_0[i]
+        y1 <- y_range[2]
+        segments(x0, y0, x1, y1, lty = 2)
+        # text(T$x_0[i], y_range[1], labels = i, pos = 3, col = "blue")
+    }
+}
 
 pairwise_identical <- function(x) {
     lapply(seq_len(length(x) - 1), function(i) identical(x[[i]], x[[i + 1]]))
