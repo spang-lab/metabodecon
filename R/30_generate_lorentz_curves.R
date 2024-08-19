@@ -291,13 +291,14 @@ smooth_signals <- function(spec, reps = 2, k = 5, verbose = TRUE) {
 #' rm2 <- filtered_spec <- filter_peaks(spec, delta = 1)
 filter_peaks <- function(spec, delta = 6.4, force = FALSE) {
     logf("Removing peaks with low scores")
-    peak_scores <- spec$peak$score
+    peak_score <- spec$peak$score
+    peak_defined <- !is.na(spec$peak$left) & !is.na(spec$peak$center) & !is.na(spec$peak$right)
     in_left_sfr  <- spec$sdp[spec$peak$center] >= spec$sfr$left_sdp
     in_right_sfr <- spec$sdp[spec$peak$center] <= spec$sfr$right_sdp
     in_sfr <- in_left_sfr | in_right_sfr
     if (any(in_sfr)) {
-        mu <- mean(peak_scores[in_sfr])
-        sigma <- sd(peak_scores[in_sfr])
+        mu <- mean(peak_score[in_sfr])
+        sigma <- sd(peak_score[in_sfr])
     } else {
         if (force) {
             logf("No signals found in signal free region. This is a clear indiciation that the deconvolution parameters are not set correctly. Continuing anyways without dynamic peak filtering, because `force` is TRUE. Note that this might increase runtime drastically.")
@@ -307,7 +308,7 @@ filter_peaks <- function(spec, delta = 6.4, force = FALSE) {
             stop("No signals found in signal free region. Please double check deconvolution parameters.")
         }
     }
-    spec$peak$high <- (peak_scores > mu + delta * sigma)
+    spec$peak$high <- peak_defined & (peak_score > mu + delta * sigma)
     spec$peak$region <- "norm"
     spec$peak$region[in_left_sfr] <- "sfrl"
     spec$peak$region[in_right_sfr] <- "sfrr"

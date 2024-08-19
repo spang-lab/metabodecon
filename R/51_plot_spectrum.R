@@ -149,9 +149,9 @@ plot_spectrum <- function(
     # Settings for both Figures
     yscale10 = TRUE,
     sm_col = "blue",
-    lc_col = "black",
+    lc_col = "darkgrey",
     lc_lty = 1,
-    lc_fill = transp(lc_col),
+    lc_fill = transp(lc_col, 0.2),
     trp_col = rep(sm_col, 4),
     trp_pch = c(17, 4, 4, NA),
     sup_col = "red",
@@ -197,6 +197,8 @@ ps_get_main_args <- function(env = parent.frame()) {
     } else {
         stop("sub_rgn must be NULL or a numeric vector with names x1, x2, y1, y2")
     }
+    args$lgd <- if (args$sub_show) FALSE else TRUE
+    args$sm_show <- if (args$sub_show) FALSE else TRUE
     invisible(args)
 }
 
@@ -211,6 +213,7 @@ ps_get_sub_args <- function(main_args, main_plot) {
         trp_show <- sub_trp_show
         lc_show <- sub_lc_show
         sup_show <- sub_sup_show
+        sm_show <- TRUE
         main <- ""
         xlab <- ""
         ylab <- ""
@@ -220,6 +223,7 @@ ps_get_sub_args <- function(main_args, main_plot) {
             convert_pos(sub_rgn[3:4], c(0, 1), main_plot$plt$ndc$ylim)
         )
         add <- TRUE
+        lgd <- TRUE
     })
     invisible(sub_args)
 }

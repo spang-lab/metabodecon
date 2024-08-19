@@ -2,7 +2,8 @@
 
 #' @export
 #' @title Evaluate an expression with predefined global state
-#' @description Evaluates an expression with a predefined global state, including the:
+#' @description
+#' Evaluates an expression with a predefined global state, including the:
 #'
 #' - working directory (set via [setwd()])
 #' - global options (set via [options()])
@@ -11,10 +12,12 @@
 #' In addition to that, `evalwith` allows to:
 #'
 #' - Redirect or capture the output and/or message stream via [sink()]
-#' - Measure the runtime of the evaluated expression vi a[system.time()]
-#' - Creating a the test directory (inside [tmpdir()]) and populating it with input files according to `inputs`
+#' - Measure the runtime of the evaluated expression via [system.time()]
+#' - Creating a temporary test directory (inside [tmpdir()]) and populating it with input files according to `inputs`
 #' - Predefine answers for calls to [readline()] happening during evaluation of `expr`
-#' - Cache the result of the expression
+#' - Caching the result of the expression
+#'
+#' All changes to the global state are reverted after the expression has been evaluated.
 #'
 #' @param expr Expression to be evaluated.
 #' @param testdir ID of the test directory. E.g. `"xyz/2"`. Will be created and populated with `inputs`. To clear, use `clear(testdir("xyz/2"))`.
@@ -116,7 +119,6 @@ evalwith <- function(expr, # nolint: cyclocomp_linter.
         else if (grepl("\\.png$", plot)) png(plot)
         else stop("plot must be an expression opening a device or a path ending in .pdf, .svg, or .png")
     }
-    if (!identical(dev_cur, dev.cur())) on.exit(dev.off(), add = TRUE)
     if (!is.null(opts)) {
         oldopts <- options(opts)
         on.exit(options(oldopts), add = TRUE)
@@ -124,6 +126,10 @@ evalwith <- function(expr, # nolint: cyclocomp_linter.
     if (!is.null(pars)) {
         oldpars <- par(pars)
         on.exit(par(oldpars), add = TRUE)
+    }
+    if (!identical(dev_cur, dev.cur())) {
+        # This must be done after both arguments `plot` and `pars` have been evaluated, as both can lead to a change in the graphical device.
+        on.exit(while (!identical(dev_cur, dev.cur())) dev.off(), add = TRUE)
     }
     withCallingHandlers(
         testthat::with_mocked_bindings(
@@ -258,7 +264,8 @@ loaded_via_devtools <- function() {
 #'          svgdir = "vignettes/Datasets/svg",
 #'          rdsdir = "inst/example_datasets/rds/sim",
 #'          brukerdir = "inst/example_datasets/bruker/sim",
-#'          verbose = TRUE
+#'          verbose = TRUE,
+#'          noise_method = "SFR"
 #'      )
 #' }
 simulate_spectra <- function(pngdir = NULL,
@@ -266,7 +273,8 @@ simulate_spectra <- function(pngdir = NULL,
                              svgdir = NULL,
                              rdsdir = NULL,
                              brukerdir = NULL,
-                             verbose = TRUE) {
+                             verbose = TRUE,
+                             noise_method = "SFR") {
     deconvs <- glc("blood", debug = FALSE)$rv
     if (is.null(pngdir)) pngdir <- tmpdir("simulate_spectra/png", create = TRUE)
     if (is.null(pdfdir)) pdfdir <- tmpdir("simulate_spectra/pdf", create = TRUE)
@@ -290,7 +298,9 @@ simulate_spectra <- function(pngdir = NULL,
             pdfpath = file.path(pdfdir, paste0(new_name, ".pdf")),
             svgpath = file.path(svgdir, paste0(new_name, ".svg")),
             rdspath = file.path(rdsdir, paste0(new_name, ".rds")),
-            brukerdir = file.path(brukerdir, new_name)
+            brukerdir = file.path(brukerdir, new_name),
+            verbose = verbose,
+            noise_method = noise_method
         )
     })
     invisible(named(sim, pngdir, pdfdir, rdsdir))
@@ -318,17 +328,18 @@ simulate_spectra <- function(pngdir = NULL,
 #'      brukerdir <- "inst/example_datasets/bruker/sim/sim_11"
 #'      simulate_spectrum(deconv, show, pngpath, pdfpath, svgpath, rdspath, brukerdir)
 #' }
-simulate_spectrum <- function(deconv = glc("blood_01")$rv$blood_01$ret,
+simulate_spectrum <- function(deconv = glc("blood_01")$rv$ret,
                               show = TRUE,
                               pngpath = NULL,
                               pdfpath = NULL,
                               svgpath = NULL,
                               rdspath = NULL,
                               brukerdir = NULL,
-                              verbose = TRUE) {
+                              verbose = TRUE,
+                              noise_method = "SFR") {
     logv <- if (verbose) logf else function(...) NULL
-    logv("Creating simulated spectrum based on deconvolution results of %s", deconv$filename)
-    simspec <- create_sim_spec(deconv, verbose)
+    logv("Creating simulated spectrum from '%s' (noise method = '%s')", deconv$filename, noise_method)
+    simspec <- create_sim_spec(deconv, verbose, noise_method)
     if (show) plot_sim_spec(simspec)
     store_sim_spec(simspec, pngpath, pdfpath, svgpath, rdspath, brukerdir, verbose)
     logv("Finished creation of simulated spectrum")
@@ -380,26 +391,18 @@ create_sim_spec <- function(deconv = glc(dp = "blood_01", debug = FALSE)$rv,
         sum(abs(P$A * (P$lambda / (P$lambda^2 + (csi - P$x_0)^2))))
     })
 
-    if (noise_method == "RND") {
+    if (noise_method == "RND") { # ToSc, 2024-08-02: noise_method 'RND' turned out to be a bad idea, because the true noise is not normally distributed, but has long stretches of continuous increase or decrease that would be incredibly unlikely to occur with a normal distribution. This can be seen by running `analyze_noise_methods()`.
         logv("Adding noise to simulated data, with noise-SD being equal to SFR-SD.")
-        # The true SFR covers approx. the first and last 20k datapoints. However, to
-        # be on the safe side, only use the first and last 10k datapoints for the
-        # calculation.
-        sfr_sd <- sd(si_raw[c(1:10000, 121073:131072)] * 1e-6)
+        sfr_sd <- sd(si_raw[c(1:10000, 121073:131072)] * 1e-6) # The true SFR covers approx. the first and last 20k datapoints. However, to be on the safe side, only use the first and last 10k datapoints for the calculation.
         noise <- rnorm(n = length(X$si_sim), mean = 0, sd = sfr_sd)
         X$si_sim <- X$si_sim + noise
-        # ToSc, 2024-08-02: noise_method 'RND' turned out to be a bad idea,
-        # because the true noise is not normally distributed, but has long
-        # stretches of continuous increase or decrease that would be incredibly
-        # unlikely to occur with a normal distribution. This can be seen by
-        # running `analyze_noise_methods()`.
     } else {
         logv("Adding noise to simulated data, with noise taken from SFR.")
-        idx <- ix - min(ix) + 5000 # use SI of datapoints 5000:6308 for noise
+        idx <- ix - min(ix) + 5000 # Use SI of datapoints 5000:6308 for noise
         noise <- si_raw[idx] * 1e-6
         X$si_sim <- X$si_sim + noise
     }
-    X$si_sim_raw <- as.integer(X$si_sim * 1e6) # This looses precision but will be the "ground truth" that we can also write to disk ==> we need to recalculate si_sim from si_sim_raw, so that si_sim and si_sim_raw are consistent.
+    X$si_sim_raw <- as.integer(X$si_sim * 1e6) # We need to convert to integers, because that's how the data gets written to disc. However, because this conversion loses precision, we need to recalculate `si_sim` from the less precise `si_sim_raw` as well, so that `si_sim` and `si_sim_raw` are consistent.
     X$si_sim <- X$si_sim_raw / 1.e6
     named(X, P, filename = deconv$filename)
 }
@@ -561,7 +564,7 @@ analyze_noise_methods <- function(ask = TRUE) {
         ymin <- min(c(min(siRND), min(siSFR)))
         ymax <- max(c(max(siRND), max(siSFR)))
         ylim <- c(ymin, ymax)
-        opar <- par(mfrow = c(5, 1), mar = c(0, 4, 0, 1))
+        opar <- par(mfrow = c(5, 1), mar = c(3, 4, 0, 1))
         on.exit(par(opar), add = TRUE)
         for (i in 1:5) {
             redT <- rgb(1, 0, 0, 0.1)
@@ -569,7 +572,8 @@ analyze_noise_methods <- function(ask = TRUE) {
             idx <- ((i - 1) * n + 1):(i * n) + start
             ysiRND <- siRND[idx]
             ysiSFR <- siSFR[idx]
-            plot(1:n, ysiRND, type = "n", ylim = ylim, ylab = "", xlab = "")
+            plot(1:n, ysiRND, type = "n", ylim = ylim, ylab = "", xlab = "", xaxt = "n")
+            axis(1, at = seq(1, n, by = 50), labels = idx[seq(1, n, by = 50)])
             points(1:n, ysiRND, col = "red", pch = 20)
             points(1:n, ysiSFR, col = "blue", pch = 20)
             lines(1:n, ysiRND, col = "red")

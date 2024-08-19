@@ -26,7 +26,10 @@ figcaption {
 }
 </style>
 
-This article shows how Metabodecon can be used for deconvoluting and aligning one-dimensional NMR spectra using the pre-installed [Sim](https://spang-lab.github.io/metabodecon/articles/Datasets.html#sim) dataset as an example. The Sim dataset includes 16 simulated spectra, each with 1309 data points ranging from 3.6 to 3.4 ppm. These simulations closely mimic the resolution and signal strength of real NMR experiments on blood plasma from 16 individuals. For more information on the Sim and Blood datasets, refer to the [Datasets](https://spang-lab.github.io/metabodecon/articles/Datasets.html) article.
+This article shows how Metabodecon can be used for deconvoluting and aligning one-dimensional NMR spectra using the pre-installed [Sim] dataset as an example. The Sim dataset includes 16 simulated spectra, each with 1309 data points ranging from 3.6 to 3.4 ppm. These simulations closely mimic the resolution and signal strength of real NMR experiments on blood plasma from 16 individuals. For more information on the Sim and Blood datasets, refer to the [Datasets] article.
+
+[Sim]: https://spang-lab.github.io/metabodecon/articles/Datasets.html#sim
+[Datasets]: https://spang-lab.github.io/metabodecon/articles/Datasets.html
 
 # Deconvolute spectra
 
@@ -41,25 +44,6 @@ deconvs <- metabodecon::generate_lorentz_curves(
     smopts = c(1, 5),    # Smooth by applying 1 time a moving average of size 5
     delta = 0.1          # Configure threshold for peak filtering
 )
-```
-
-```R
-urine_dir <- metabodecon_file("bruker/urine")
-urine_01_dir <- file.path(urine_dir, "urine_1")
-urine_01_deconv <- generate_lorentz_curves(
-    urine_01_dir, ask = FALSE
-)
-plot_spectrum(urine_01_deconv, foc_rgn = c(-1.9, -1.8), foc_unit = "ppm", trp_pch = c(17, 4, 4, 124))
-plot_spectrum(urine_01_deconv, foc_rgn = c(0.25, 0.50))
-
-sim_dir <- metabodecon::metabodecon_file("bruker/sim")
-sim_01_dir <- file.path(sim_dir, "sim_01")
-sim_01_deconv <- metabodecon::generate_lorentz_curves(
-    sim_01_dir, sfr = c(3.42, 3.58), wshw = 0, smopts = c(1, 1), delta = 0.1, ask = FALSE
-)
-metabodecon::plot_spectrum(sim_01_deconv, foc_rgn = c(0, 1), sub_show = FALSE)
-metabodecon::plot_spectrum(sim_01_deconv, foc_rgn = c(0.25, 0.50))
-metabodecon::plot_spectrum(sim_01_deconv, foc_rgn = c(0.00, 0.25))
 ```
 
 After calling `generate_lorentz_curves()`, the function will prompt you with the following questions to determine the optimal deconvolution parameters:
@@ -94,8 +78,7 @@ After completing the deconvolution, it is advisable to visualize the extracted s
 
 ```R
 # Visualize the first spectrum only
-metabodecon::plot_spectrum(deconvs[[1]], foc_rgn = c(0.25, 0.50))
-metabodecon::plot_spectrum(deconvs[[1]], foc_rgn = c(0.00, 0.25))
+metabodecon::plot_spectrum(deconvs[[1]], foc_rgn = c(0.5, 0.2))
 
 # Visualize all spectra and save them to a pdf file
 pdfpath <- tempfile(fileext = ".pdf")
@@ -113,10 +96,15 @@ dev.off()
 Out of the 16 generated plots, the first two are shown as examples in [Figure 2](#fig-sim1-plots).
 
 <figure id="fig-sim1-plots">
-<img src="Get_Started\sim_01_spectrum.svg" alt="sim_01_spectrum.svg" width = 49%>
+<a href="Get_Started/sim_01_spectrum.svg">
+  <img src="Get_Started/sim_01_spectrum.svg" alt="sim_01_spectrum.svg" width="49%">
+</a>
+<a href="Get_Started/sim_02_spectrum.svg">
+  <img src="Get_Started/sim_02_spectrum.svg" alt="sim_02_spectrum.svg" width="49%">
+</a>
 <figcaption>
 <strong>Figure 2.</strong>
-TODO
+Deconvolution results for the first two spectra of the Sim dataset.
 </figcaption>
 </figure>
 
@@ -135,15 +123,14 @@ The following code snippet shows, how the above steps can be done using the 'met
 
 &#9888; Attention: below code snippet requires object `deconvs`, generated in section [Deconvolute spectra](#deconvolute-spectra). If you haven't run the code snippet from this section yet, please do so before continuing.
 
-```{r}
+```R
 ppm_range <- get_ppm_range(spectrum_data = deconvs)
 ppm_range
 ```
 
-
 ## 2. Generate feature matrix
 
-```{r}
+```R
 feat <- gen_feat_mat(
   data_path = data_path,
   ppm_range = ppm_range,
@@ -162,7 +149,7 @@ In the above code snippet:
 
 ## 3. Align spectra
 
-```{r}
+```R
 after_speaq_mat <- speaq_align(feat = feat, maxShift = 50)
 head(after_speaq_mat)
 ```
@@ -171,7 +158,7 @@ Parameter `maxShift` of `speaq_align()` gives the maximum number of points along
 
 ## 4. Combine peaks
 
-```{r}
+```R
 aligned_res <- combine_peaks(
   shifted_mat = after_speaq_mat,
   range = 5, # Number of adjacent columns to be used for improving alignment

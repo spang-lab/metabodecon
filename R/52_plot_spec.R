@@ -2,24 +2,7 @@
 
 #' @noRd
 #' @title Plot Spectrum Internal
-#' @description Plot a spectrum based on the provided chemical shift and signal intensity data. Helper of public function [plot_spectrum()]. Should not be called directly by the user.
-#' @param decon An object as returned by [generate_lorentz_curves()], containing the deconvolution data. Must include either `x_values_ppm` or `ppm` for the x-axis values, and either `y_values` or `y_smooth` for the y-axis values.
-#' @param foc_rgn Focus region in ppm.
-#' @param foc_only If TRUE, only the focused region is drawn. If FALSE, the full spectrum is drawn.
-#' @param mar Number of lines below/left/above/right plot region.
-#' @param line_col Color of spectrum line.
-#' @param box_col Color of box around plot region.
-#' @param axis_col Color of tickmarks and ticklabels.
-#' @param fill_col Background color of plot region.
-#' @param foc_fill Fill color of rectangle around foc_rgn region.
-#' @param foc_col Border color of rectangle around foc_rgn region.
-#' @param ysquash Fraction of plot height to squash y-values into.
-#' @param fig Region to draw into, given as normalized device coordinates
-#' @param add If TRUE, the new plot is added to the existing plot.
-#' @return A list with the following 3 elements:
-#' - plt: List with 12 elements used for creating the main plot, in particular `xlim_ndc` and `ylim_ndc`, which are the normalized device coordinates of the x- and y-axis limits.
-#' - rct: List of 10 elements used for creating the rectangle around the focus region, in particular `xleft_ndc`, `xright_ndc`, `ybottom_ndc`, and `ytop_ndc`, which are the normalized device coordinates of the rectangle.
-#' - par: List of the 72 graphical parameters ([graphics::par()]) used for creating the plot.
+#' @description Helper for [plot_spectrum()]. For arguments see [plot_spectrum()].
 #' @examples
 #' sim_01 <- metabodecon_file("sim/sim_01")
 #' decon <- generate_lorentz_curves(
@@ -52,59 +35,64 @@
 #'     p
 #' })
 plot_spec <- function(
-    decon,
+    # Mandatory
+    decon, # Output of [generate_lorentz_curves()]
     # Figure Region
-    fig = NULL,
-    add = !is.null(fig),
+    fig = NULL, # Drawing region in NDC.
+    add = !is.null(fig), # If TRUE, the plot is added to the current figure.
     # Plot Region
-    main = "",
-    xlab = "Chemical Shift [ppm]",
-    ylab = "Signal Intensity [au]",
-    mar = c(4.1, 4.1, 0.1, 0.1),
-    box_col = "black",
-    axis_col = "black",
-    fill_col = NULL,
+    main = "", # Title of the plot.
+    lgd = TRUE, # If TRUE, a legend is drawn.
+    xlab = "Chemical Shift [ppm]", # Label for the x-axis.
+    ylab = "Signal Intensity [au]", # Label for the y-axis.
+    mar = c(4.1, 4.1, 0.1, 0.1), # Lines below/left/above/right plot region.
+    box_col = "black", # Color of box surrounding plot region.
+    axis_col = "black", # Color of tickmarks and ticklabels.
+    fill_col = NULL, # Background color of plot region.
     # Focus Region
-    foc_rgn = NULL,
-    foc_unit = "ppm",
-    foc_only = FALSE,
-    foc_fill = trans("yellow"),
-    foc_col = "black",
+    foc_rgn = NULL, # Start and end of focus region.
+    foc_unit = "ppm", # Unit of `foc_rgn`. Either "fraction" or "ppm".
+    foc_only = FALSE, # If TRUE, draw focusregion, else full spectrum.
+    foc_fill = trans("yellow"), # Bg color of rectangle around focus region.
+    foc_col = "black", # Border color of rectangle around the focus region.
     # Spectrum Lines
-    line_col = "black",
-    sm_col = "blue",
-    ysquash = 0.96,
-    yscale10 = TRUE,
-    d2_show = FALSE,
+    line_col = "black", # Color of raw signal intensities.
+    sm_show = TRUE, # If TRUE, smoothed signal intensities are shown.
+    sm_col = "blue", # Color of smoothed signal intensities.
+    ysquash = 0.96, # Fraction of plot height to squash y-values into.
+    yscale10 = TRUE, # If TRUE, scales SI into [0, 100] range using n^10.
+    d2_show = FALSE, # If TRUE, shows the second derivative of SIs.
     # Lorentzians
-    lc_show = TRUE,
-    lc_col = "black",
-    lc_lty = 1,
-    lc_fill = trans("black"),
-    sup_show = TRUE,
-    sup_col = "red",
-    sup_lty = 1,
+    lc_show = TRUE, # If TRUE, the Lorentzian Curves (LCs) are shown.
+    lc_col = "black", # Color of the Lorentzian Curves.
+    lc_lty = 1, # Line type of the Lorentzian Curves.
+    lc_fill = trans("black"), # BG-color of rectangles shown at LC-center.
+    sup_show = TRUE, # If TRUE, the LC-Superposition (LC-Sup) is shown.
+    sup_col = "red", # Color of LC-Sup.
+    sup_lty = 1, # Line type of LC-Sup.
     # Peak Triplets
-    trp_show = TRUE,
-    trp_col = rep("black", 4),
-    trp_pch = c(17, 4, 4, NA),
+    trp_show = TRUE, # If TRUE, the peak triplets are shown.
+    trp_col = rep("black", 4), # Colors for center, left, right, non-peak DPs.
+    trp_pch = c(17, 4, 4, NA), # Pchars for center, left, right, non-peak DPs.
     # Unused
     ...) {
-    # ~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
+    #
     # Start Function Body
-    # ~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
+    #
     args <- psi_get_args()
 
-    old <- par(    mar = mar, new = add); on.exit(par(old), add = TRUE)
-    rst <- set_fig(fig = fig, add = add); on.exit(rst(), add = TRUE)
+    old <- par(mar = mar, new = add)
+    on.exit(par(old), add = TRUE)
+    rst <- set_fig(fig = fig, add = add)
+    on.exit(rst(), add = TRUE)
 
     dat <- psi_get_dat(args)
     plt <- psi_init_plot_region(dat)
     bgr <- psi_draw_bg(dat, fill_col)
-    lns <- psi_draw_lines(dat, line_col, d2_show, foc_only, sm_col)
-    trp <- if (trp_show) psi_draw_triplets(dat, trp_pch, trp_col)
+    lns <- psi_draw_lines(dat, line_col, d2_show, foc_only, sm_show, sm_col)
+    trp <- psi_draw_triplets(dat, trp_show, trp_pch, trp_col)
     lcs <- psi_draw_lorentz_curves(dat, args)
-    foc <- if (!foc_only) psi_draw_focus_region(dat, foc_fill, foc_col)
+    foc <- psi_draw_focus_rectangle(dat, !foc_only, foc_fill, foc_col)
     axs <- psi_draw_axis(dat, main, xlab, ylab, axis_col, box_col)
     lgd <- psi_draw_legend(args)
     named(dat, plt, bgr, axs, lns, trp, lcs, foc, par = par())
@@ -124,12 +112,12 @@ psi_get_args <- function(env = parent.frame()) {
 }
 
 psi_get_dat <- function(args) {
-    decon    = args$decon
-    foc_rgn  = args$foc_rgn
-    foc_unit = args$foc_unit
-    foc_only = args$foc_only
-    yscale10 = args$yscale10
-    ysquash  = args$ysquash
+    decon <- args$decon
+    foc_rgn <- args$foc_rgn
+    foc_unit <- args$foc_unit
+    foc_only <- args$foc_only
+    yscale10 <- args$yscale10
+    ysquash <- args$ysquash
 
     # Chemical Shift and Signal Intensity
     cs <- decon[["ppm"]] %||% decon[["x_values_ppm"]] %||% decon[["cs"]]
@@ -143,7 +131,7 @@ psi_get_dat <- function(args) {
         si <- si / 10^xp
         if (!is.null(sis)) {
             # Scale smoothed SI to same range as the raw SI
-            while (max(sis) > max(si)     ) sis <- sis / 10
+            while (max(sis) > max(si)) sis <- sis / 10
             while (max(sis) < max(si) / 10) sis <- sis * 10
         }
     }
@@ -191,6 +179,7 @@ psi_get_dat <- function(args) {
 }
 
 psi_init_plot_region <- function(dat = psi_get_dat()) {
+    logf("Initializing plot region")
     usr <- list(
         x    = dat$x,    y    = dat$y,
         xlim = dat$xlim, ylim = dat$ylim,
@@ -209,6 +198,7 @@ psi_init_plot_region <- function(dat = psi_get_dat()) {
 
 psi_draw_bg <- function(dat = psi_get_dat(),
                         fill_col = NULL) {
+    logf("Drawing background")
     bgr <- within(list(), {
         xleft <- dat$xlim[1]
         xright <- dat$xlim[2]
@@ -227,6 +217,7 @@ psi_draw_axis <- function(dat,
                           ylab = "Signal Intensity [au]",
                           axis_col = "black",
                           box_col = "black") {
+    logf("Drawing axis")
     xtks <- seq(dat$xlim[1], dat$xlim[2], length.out = 5)
     ytks <- seq(dat$ylim[1], max(dat$y), length.out = 5)
     for (i in 2:12) if (length(unique(xtklabs <- round(xtks, i))) >= 5) break
@@ -248,18 +239,28 @@ psi_draw_lines <- function(dat,
                            line_col = "black",
                            d2_show = FALSE,
                            foc_only = FALSE,
-                           sm_col = sm_col) {
-    x <- if (foc_only) dat$cs[dat$ifp] else dat$cs # Chemical Shift
-    y <- if (foc_only) dat$si[dat$ifp] else dat$si # Raw SI
-    ys <- if (foc_only) dat$sis[dat$ifp] else dat$sis # Smoothed SI
-    if (d2_show) message("TODO")
+                           sm_show = TRUE,
+                           sm_col = "blue") {
+    x <- if (foc_only) dat$cs[dat$ifp] else dat$cs
+    y <- if (foc_only) dat$si[dat$ifp] else dat$si
+    ys <- if (foc_only) dat$sis[dat$ifp] else dat$sis
+    logf("Drawing raw signal")
     lines(x, y, type = "l", col = line_col, lty = 1)
-    if (!is.null(ys)) lines(x, ys, type = "l", col = sm_col, lty = 1)
+    if (d2_show) {
+        logf("Drawing second derivative (TODO)")
+    }
+    if (sm_show && !is.null(ys)) {
+        logf("Drawing smoothed signal")
+        lines(x, ys, type = "l", col = sm_col, lty = 1)
+    }
 }
 
 psi_draw_triplets <- function(dat,
+                              show = TRUE,
                               pch = c(17, 4, 4, NA),
                               col = c("red", "blue", "blue", "black")) {
+    if (isFALSE(show)) return(NULL) # styler: off
+    logf("Drawing peak triplets")
     x <- dat$cs
     y <- dat$sis %||% dat$si
     p <- dat$ipc
@@ -272,19 +273,18 @@ psi_draw_triplets <- function(dat,
     points(x[q], y[q], col = col[4], pch = pch[4]) # 124 = vertical dash
 }
 
-psi_draw_focus_region <- function(dat,
-                                  foc_fill = rgb(0, 0, 1, alpha = 0.1),
-                                  foc_col = "blue") {
-    if (is.null(dat$foc_lim)) {
-        return(NULL)
-    }
+psi_draw_focus_rectangle <- function(dat,
+                                     show = TRUE,
+                                     fill = rgb(0, 0, 1, alpha = 0.1),
+                                     col = "blue") {
+    if (is.null(dat$foc_lim) || !show) return(NULL) # styler: off
     usr <- list(
         xleft = max(dat$foc_lim),
         xright = min(dat$foc_lim),
         ybottom = 0,
         ytop = max(dat$si[dat$ifp]) / 0.96,
-        col = foc_fill,
-        border = foc_col
+        col = fill,
+        border = col
     )
     ndc <- list(
         xleft = grconvertX(usr$xleft, to = "ndc"),
@@ -297,19 +297,20 @@ psi_draw_focus_region <- function(dat,
 }
 
 psi_draw_lorentz_curves <- function(dat, args = NULL) {
-    lc_show  = args$lc_show  %||% TRUE
-    lc_col   = args$lc_col   %||%"black"
-    lc_lty   = args$lc_lty   %||% 1
-    lc_fill  = args$lc_fill  %||% transp(lc_col)
-    sup_show = args$sup_show %||% TRUE
-    sup_col  = args$sup_col  %||%"red"
-    sup_lty  = args$sup_lty  %||% 1
-    foc_only = args$foc_only %||% FALSE
+    lc_show <- args$lc_show %||% TRUE
+    lc_col <- args$lc_col %||% "black"
+    lc_lty <- args$lc_lty %||% 1
+    lc_fill <- args$lc_fill %||% transp(lc_col)
+    sup_show <- args$sup_show %||% TRUE
+    sup_col <- args$sup_col %||% "red"
+    sup_lty <- args$sup_lty %||% 1
+    foc_only <- args$foc_only %||% FALSE
     if ((is.null(lc_show) && is.null(sup_show)) || is.null(dat$A)) {
         return(invisible(NULL))
     }
     x <- if (foc_only) dat$cs[dat$ifp] else dat$cs
     Y <- matrix(nrow = length(x), ncol = length(dat$A))
+    logf("Drawing individual Lorentzian Curves")
     for (i in seq_along(dat$A)) {
         Y[, i] <- psi_draw_lorentz_curve(
             x,
@@ -323,6 +324,7 @@ psi_draw_lorentz_curves <- function(dat, args = NULL) {
         )
     }
     if (sup_show) {
+        logf("Drawing superposition of Lorentzian Curves")
         lines(x = x, y = rowSums(Y), col = sup_col, lty = sup_lty, type = "l")
     }
     invisible(NULL)
@@ -350,72 +352,47 @@ psi_draw_lorentz_curve <- function(x,
             type = "l"
         )
     }
-    if (!is.null(lc_ctr_col)) segments(
-        x0 = x_0,
-        x1 = x_0,
-        y0 = par("usr")[3],
-        y1 = lc(x_0, x_0, A, lambda),
-        col = lc_col,
-        lty = 2
-    )
-    if (!is.null(lc_fill)) rect(
-        xleft = x_0 + lambda,
-        xright = x_0 - lambda,
-        ybottom = par("usr")[3],
-        ytop = lc(x_0, x_0, A, lambda),
-        col = lc_fill,
-        border = NA
-    )
+    if (!is.null(lc_ctr_col)) {
+        segments(
+            x0 = x_0,
+            x1 = x_0,
+            y0 = par("usr")[3],
+            y1 = lc(x_0, x_0, A, lambda),
+            col = lc_col,
+            lty = 2
+        )
+    }
+    if (!is.null(lc_fill)) {
+        rect(
+            xleft = x_0 + lambda,
+            xright = x_0 - lambda,
+            ybottom = par("usr")[3],
+            ytop = lc(x_0, x_0, A, lambda),
+            col = lc_fill,
+            border = NA
+        )
+    }
     return(y)
 }
 
 psi_draw_legend <- function(args) {
-    # decon   :List of 31
-    # fig     : NULL
-    # add     : logi FALSE
-    # main    : chr ""
-    # xlab    : chr "Chemical Shift [ppm]"
-    # ylab    : chr "Signal Intensity [au]"
-    # mar     : num [1:4] 4 4 0 1
-    # box_col : chr "black"
-    # axis_col: chr "black"
-    # fill_col: NULL
-    # foc_rgn : num [1:2] 0.2 0.8
-    # foc_unit: chr "fraction"
-    # foc_only: logi TRUE
-    # foc_fill: chr "#FFFF0014"
-    # foc_col : chr "black"
-    # line_col: chr "black"
-    # sm_col  : chr "blue"
-    # ysquash : num 0.96
-    # yscale10: logi TRUE
-    # d2_show : logi FALSE
-    # lc_show : logi TRUE
-    # lc_col  : chr "black"
-    # lc_lty  : num 1
-    # lc_fill : chr "#00000014"
-    # sup_show: logi TRUE
-    # sup_col : chr "red"
-    # sup_lty : num 1
-    # trp_show: logi TRUE
-    # trp_col : chr [1:4] "blue" "blue" "blue" "blue"
-    # trp_pch : num [1:4] 17 4 4 NA
+    if (isFALSE(args$lgd)) return(invisible(NULL)) # styler: off
+    logf("Drawing legend")
     legend(
-        "topright",
+        x = "topright",
         legend = c(
             "Raw Signal",
             "Smoothed Signal",
+            "Peak Triplets",
             "Single Lorentzian",
-            "Superposition",
-            "Peak Triplets"
+            "Sum of Lorentzians"
         ),
         col = c(
-            args$line_col, args$sm_col, args$lc_col, args$sup_col, args$trp_col[1]
+            args$line_col, args$sm_col, args$trp_col[1], args$lc_col, args$sup_col
         ),
-        lty =  c(1,  1,  1,  1,  NA),
-        pch =  c(NA, NA, NA, NA, args$trp_pch[1]),
+        lty = c(1, 1, NA, 1, 1),
+        pch = c(NA, NA, args$trp_pch[1], NA, NA),
     )
-
 }
 
 psi_setup_dev_env <- function() {

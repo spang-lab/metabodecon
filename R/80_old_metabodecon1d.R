@@ -1636,6 +1636,10 @@ deconvolution <- function(filepath,
 #' @export
 #' @title Plot peak triplets for variable range
 #' @description Plots the peak triplets for each peak detected by [MetaboDecon1D()] and stores the plots as png at `outdir`.
+#'
+#' Supersed by [plot_spectrum()] since metabodecon v1.2.0. Will be replaced with v2.
+#'
+#' `r lifecycle::badge("deprecated")`
 #' @author Martina Haeckl, Tobias Schmidt
 #' @param deconv_result Saved result of the MetaboDecon1D() function
 #' @param x_range Row vector with two entries consisting of the ppm start and the ppm end value to scale the range of the x-axis (optional)
@@ -1781,6 +1785,10 @@ plot_triplets <- function(deconv_result, x_range = c(), y_range = c(), out_dir =
 #' @export
 #' @title Plot lorentz curves for variable range
 #' @description Plots the original spectrum and all generated Lorentz curves and save the result as png under the filepath.
+#'
+#' Supersed by [plot_spectrum()] since metabodecon v1.2.0. Will be replaced with v2.
+#'
+#' `r lifecycle::badge("deprecated")`
 #' @param deconv_result Saved result of the MetaboDecon1D() function
 #' @param x_range Row vector with two entries consisting of the ppm start and the ppm end value to scale the range of the x-axis (optional)
 #' @param y_range Row vector with two entries consisting of the ppm start and the ppm end value to scale the range of the y-axis (optional)
@@ -1937,6 +1945,10 @@ plot_lorentz_curves_save_as_png <- function(deconv_result, x_range = c(), y_rang
 #' @export
 #' @title Plot spectrum approx for variable range
 #' @description Plots the original spectrum and the superposition of all generated Lorentz curves and saves the result as png under the specified filepath.
+#'
+#' Supersed by [plot_spectrum()] since metabodecon v1.2.0. Will be replaced with v2.
+#'
+#' `r lifecycle::badge("deprecated")`
 #' @author Martina Haeckl
 #' @param deconv_result Saved result of the MetaboDecon1D() function
 #' @param x_range Row vector with two entries consisting of the ppm start and the ppm end value to scale the range of the x-axis (optional)

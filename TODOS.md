@@ -1,59 +1,3 @@
-# Version Matrix
-
-| Topic | Function                                | 0.2 | 1.0 | 1.3 | 2.0 |
-| ----- | --------------------------------------- | --- | --- | --- | --- |
-| decon | MetaboDecon1D                           | s   | s   | d   | -   |
-| decon | calculate_lorentz_curves                | s   | s   | d   | -   |
-| decon | plot_lorentz_curves_save_as_png         | s   | s   | d   | -   |
-| decon | plot_triplets                           | s   | s   | s   | d   |
-| decon | generate_lorentz_curves                 | -   | s   | s   | d   |
-| decon | deconvolute_spectra                     | -   | -   | x   | s   |
-| ----- | --------------------------------------- | --- | --- | --- | --- |
-| align | combine_peaks                           | -   | s   | s   | ?   |
-| align | dohCluster                              | -   | s   | s   | ?   |
-| align | gen_feat_mat                            | -   | s   | s   | ?   |
-| align | get_ppm_range                           | -   | s   | s   | ?   |
-| align | speaq_align                             | -   | s   | s   | ?   |
-| ----- | --------------------------------------- | --- | --- | --- | --- |
-| data  | get_data_dir                            | -   | s   | d   | -   |
-| data  | datadir                                 | -   | -   | s   | s   |
-| data  | datadir_persistent                      | -   | -   | s   | s   |
-| data  | datadir_temp                            | -   | -   | s   | s   |
-| data  | download_example_datasets               | -   | -   | s   | s   |
-
-* -: internal or not available in package
-* ?: not yet decided
-* d: deprecated
-* s: stable
-* x: experimental
-
-# Feature Matrix
-
-| Feature                                   | BWCᵃ  | F1ᵇ | F2ᵇ | F3ᵇ | Issue      |
-| ----------------------------------------- | ----- | --- | --- | --- | ---------- |
-| Doesn't write to disk by default          | semiᶜ | xᵉ  | x   | x   | CRAN-8     |
-| Doesn't change wd or global opts          | semiᶜ | xᵉ  | x   | x   | CRAN-9     |
-| Uses faster peak selection implementation | yesᵈ  |     | x   | x   | CHECK-7    |
-| Batch Mode                                | yes   |     | x   | x   | FEATURE-3  |
-| Parallelized                              | yes   |     | x   | x   | FEATURE-4  |
-| Improved plotting speed                   | yes   |     | x   | x   | REFACTOR-4 |
-| Uses micro functions                      | yes   |     | x   | x   | REFACTOR-7 |
-| Doesn't show License                      | semiᶜ |     | x   | x   | REFACTOR-2 |
-| Prints timestamps                         | semiᶜ |     | x   | x   | REFACTOR-2 |
-| Uses correctly scaled raw y values        | no    |     |     | x   | CHECK-1    |
-| Uses correct sfr calculation              | no    |     |     | x   | CHECK-2    |
-| Uses correct ws calculation               | no    |     |     | x   | CHECK-3    |
-| Uses dynamic signal removal               | no    |     |     | x   | CHECK-5    |
-| Uses improved return list                 | no    |     |     | x   | FEATURE-7  |
-| Uses faster smoothing implementation      | no    |     |     | x   | REFACTOR-5 |
-| Does all calculations in the same unit    | no    |     |     | x   | REFACTOR-6 |
-
-- ᵃ BWC == backwards compatible
-- ᵇ F1 ==MetaboDecon1D, F2 == generate_lorentz_curves, F3 == deconvolute_spectra
-- ᶜ The change is backwards compatible if you ignore global state, such as files written to disk or output printed to STDOUT. However, if a script expects such side effects, it will fail. Therefore we set this to "semi".
-- ᵈ The faster implementation also fixes an indexing bug, which in most cases shouldn't have any effect, but in some rare cases it might cause one peak to be missed.
-- ᵉ Only true for MetaboDecon1D versions >= v1.0.0
-
 # v1.2.0
 
 ## FEATURE-18: Implement plot_decon
@@ -137,7 +81,7 @@ Implement `deconvolute_spectra()` which should be the successor of `generate_lor
 3. Uses the correct water signal calculation as described in [CHECK-3](#check-3-water-signal-calculation).
 4. Use 1-based indexing for data points as described in [CHECK-4](#check-4-data-point-format).
 5. Remove the scale factor and scaled data point numbers as described in [CHECK-4](#check-4-data-point-format).
-1. Remove negative values in a consistent way, as described by [CHECK-5](#check-5-signal-preprocessing)
+6. Remove negative values in a consistent way, as described by [CHECK-5](#check-5-signal-preprocessing)
 
 If possible, create a conversion function to convert the return value of `deconvolute_spectra()` to the return value of `generate_lorentz_curves()` (which is a *List of Lorentz Curves (LLC)*) and notice in the docs that users can replace `lc <- generate_lorentz_curves()` with `ds <- deconvolute_spectra(); lc <- as_llc(ds)`.
 
@@ -220,6 +164,8 @@ Further useful info from [Bruker_NMR_Data_Formats.pdf](http://www.nmragenda-leid
 Note: there are also images in *Bruker_NMR_Data_Formats.pdf* explaining how to
 interpret 64 bit float numbers.
 
+---
+
 2024/06/28: Checked and now traced by issue [FEATURE-9](#feature-9-implement-and-export-read_spectra).
 
 ## CHECK-2: Signal free region calculation
@@ -258,8 +204,9 @@ It's not a big deal as we have over 100000 data points in our examples and wheth
 
 The correct method of converting ppm to dp is `(sfrl_ppm - min(ppm)) / ppm_step` as done in function `ppm_to_dp` in `00_util.R`.
 
-> [!IMPORTANT] Check result:
-> Closed because we have a correct implementation in `ppm_to_dp` in `00_util.R`. However, in `generate_lorentz_curves()` we will continue to use the wrong calculation to stay backwards compatible. The new method will be used in the successor function `deconvolute_spectra()`, tracked by [FEATURE-10](#feature-10-implement-deconvolute_spectra)
+---
+
+Closed with v1.2 because we have a correct implementation in `ppm_to_dp` in `00_util.R`. However, in `generate_lorentz_curves()` we will continue to use the wrong calculation to stay backwards compatible. The new method will be used in the successor function `deconvolute_spectra()`, tracked by [FEATURE-10](#feature-10-implement-deconvolute_spectra)
 
 ## CHECK-3: Water signal calculation
 
