@@ -26,14 +26,18 @@ figcaption {
 }
 </style>
 
-This article shows how Metabodecon can be used for deconvoluting and aligning one-dimensional NMR spectra using the pre-installed [Sim] dataset as an example. The Sim dataset includes 16 simulated spectra, each with 1309 data points ranging from 3.6 to 3.4 ppm. These simulations closely mimic the resolution and signal strength of real NMR experiments on blood plasma from 16 individuals. For more information on the Sim and Blood datasets, refer to the [Datasets] article.
+This article shows how Metabodecon can be used for deconvoluting and aligning one-dimensional NMR spectra using the pre-installed [Sim] dataset as an example. The Sim dataset includes 16 simulated spectra, each with 1309 data points ranging from 3.6 to 3.4 ppm. These simulations closely mimic the resolution and signal strength of real NMR experiments on blood plasma from 16 individuals. The Sim dataset is used instead of the Blood dataset because it is smaller, faster to process, and comes pre-installed with the package.
+
+- For more information on the Sim and Blood datasets, refer to the [Datasets] article.
+- For a description of the problems that Metabodecon tries to solve, refer to the [Purpose] article.
+- For an introduction into NMR spectroscopy, refer to the [NMR-Basics] article.
 
 [Sim]: https://spang-lab.github.io/metabodecon/articles/Datasets.html#sim
 [Datasets]: https://spang-lab.github.io/metabodecon/articles/Datasets.html
 
 # Deconvolute spectra
 
-The function for deconvoluting one-dimensional NMR spectra is `generate_lorentz_curves()`, which you can use as follows:
+The function for deconvoluting one-dimensional NMR spectra is `generate_lorentz_curves()`. which you can use as follows:
 
 ```R
 sim_dir <- metabodecon::metabodecon_file("bruker/sim")
@@ -41,12 +45,12 @@ deconvs <- metabodecon::generate_lorentz_curves(
     data_path = sim_dir, # Path to directory containing spectra
     sfr = c(3.42, 3.58), # Borders of signal free region (SFR) in ppm
     wshw = 0,            # Half width of water signal (WS) in ppm
-    smopts = c(1, 5),    # Smooth by applying 1 time a moving average of size 5
-    delta = 0.1          # Configure threshold for peak filtering
+    smopts = c(2, 5),    # Configure smoothing parameters
+    delta = 0.2          # Configure threshold for peak filtering
 )
 ```
 
-After calling `generate_lorentz_curves()`, the function will prompt you with the following questions to determine the optimal deconvolution parameters:
+After calling `generate_lorentz_curves()`, the function will ask you to answer the following questions to determine the optimal deconvolution parameters:
 
 1. Use same parameters for all spectra? (y/n)
 2. Number of spectrum for adjusting parameters? (1: sim_01, 2: sim_02, ...)
@@ -70,7 +74,7 @@ Because the water signal half width is set to zero, the borders of the water sig
 </figcaption>
 </figure>
 
-When using the function in scripts, where interactive user input is not desired, you can disable the interactive prompts by setting parameter `ask` to `FALSE`. In this case, the provided parameters will be used for the deconvolution of all spectra automatically. [^askFALSE]
+When using the function in scripts, where interactive user input is not desired, you can disable the interactive prompting by setting parameter `ask` to `FALSE`. In this case, the provided parameters will be used for the deconvolution of all spectra automatically. [^askFALSE]
 
 # Visualize deconvoluted spectra
 
@@ -93,7 +97,11 @@ for (i in seq_along(deconvs)) {
 dev.off()
 ```
 
-Out of the 16 generated plots, the first two are shown as examples in [Figure 2](#fig-sim1-plots).
+Out of the 16 generated plots, the first two are shown as examples in [Figure 2](#fig-sim1-plots). Things to look out for are:
+
+1. That the smoothing does not remove any real signals. If the smoothing is too strong, i.e., the smoothed signal intensity (SI) is very different from the raw SI, you should adjust the smoothing parameters `smopts` in the call to `generate_lorentz_curves()`.
+2. That the superposition of the lorentz curves is a good approximation of the smoothed SI. If major peaks are missed by the algorithm, you should reduce the threshold `delta` in the call to `generate_lorentz_curves()`.
+
 
 <figure id="fig-sim1-plots">
 <a href="Get_Started/sim_01_spectrum.svg">
@@ -104,7 +112,7 @@ Out of the 16 generated plots, the first two are shown as examples in [Figure 2]
 </a>
 <figcaption>
 <strong>Figure 2.</strong>
-Deconvolution results for the first two spectra of the Sim dataset.
+Deconvolution results for the first two spectra of the Sim dataset. The raw SI (black), smoothed SI (blue), and superposition of Lorentz curves (red) are closely aligned, indicating that `smopts` and `delta` were chosen well and that the deconvolution was successful.
 </figcaption>
 </figure>
 
