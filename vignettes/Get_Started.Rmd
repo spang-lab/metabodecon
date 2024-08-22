@@ -15,7 +15,7 @@ figure {
   border: 1px solid #dee2e6;
   border-radius: .375rem;
   padding: 0;
-  background-color: #f1f3f5;
+  /* background-color: #f1f3f5; */
 }
 figcaption {
   text-align: center;
@@ -28,16 +28,18 @@ figcaption {
 
 This article shows how Metabodecon can be used for deconvoluting and aligning one-dimensional NMR spectra using the pre-installed [Sim] dataset as an example. The Sim dataset includes 16 simulated spectra, each with 1309 data points ranging from 3.6 to 3.4 ppm. These simulations closely mimic the resolution and signal strength of real NMR experiments on blood plasma from 16 individuals. The Sim dataset is used instead of the Blood dataset because it is smaller, faster to process, and comes pre-installed with the package.
 
-- For more information on the Sim and Blood datasets, refer to the [Datasets] article.
-- For a description of the problems that Metabodecon tries to solve, refer to the [Purpose] article.
-- For an introduction into NMR spectroscopy, refer to the [NMR-Basics] article.
+- For more information on the Sim and Blood datasets, see [Datasets].
+- For a description of the problems that Metabodecon tries to solve, see [Purpose].
+- For an introduction into NMR spectroscopy, see [NMR-Basics].
 
 [Sim]: https://spang-lab.github.io/metabodecon/articles/Datasets.html#sim
 [Datasets]: https://spang-lab.github.io/metabodecon/articles/Datasets.html
+[Purpose]: https://spang-lab.github.io/metabodecon/articles/Purpose.html
+[NMR-Basics]: https://spang-lab.github.io/metabodecon/articles/NMR-Basics.html
 
 # Deconvolute spectra
 
-The function for deconvoluting one-dimensional NMR spectra is `generate_lorentz_curves()`. which you can use as follows:
+To find the path to the Sim dataset, you can use the `metabodecon_file()` function, which returns the path to any file or directory within the package directory. To deconvolute the spectra within the Sim dataset you can use `generate_lorentz_curves()`:
 
 ```R
 sim_dir <- metabodecon::metabodecon_file("bruker/sim")
@@ -46,7 +48,7 @@ deconvs <- metabodecon::generate_lorentz_curves(
     sfr = c(3.42, 3.58), # Borders of signal free region (SFR) in ppm
     wshw = 0,            # Half width of water signal (WS) in ppm
     smopts = c(2, 5),    # Configure smoothing parameters
-    delta = 0.2          # Configure threshold for peak filtering
+    delta = 0.1          # Configure threshold for peak filtering
 )
 ```
 
@@ -59,13 +61,13 @@ After calling `generate_lorentz_curves()`, the function will ask you to answer t
 
 You can answer questions one and two with `y` and `1`, as the dataset is homogeneous, i.e., all spectra were measured in the same lab with the same acquisition and processing parameters. However, for heterogeneous datasets, it's advisable to optimize parameters for each batch of spectra individually.
 
-Questions three and four are accompanied by the plots from [Figure 1](#fig-sim01-sfr-and-wsr), which help you verify the accuracy of the selected signal-free region (SFR) and water signal half-width (WSHW) [^wshw]. In this case, the provided parameters are already fine, so you can answer both questions with `y`. If adjustments are needed, you can respond with `n` and input the correct values.
+Questions three and four are accompanied by two plots, shown in [Figure 1](#fig-sim01-sfr-and-wsr), which help you to verify the accuracy of the selected signal-free region (SFR) and water signal half-width (WSHW) [^wshw]. In this case, the provided parameters are already fine, so you can answer both questions with `y`. If adjustments are needed, you can respond with `n` and input the correct values.
 
 <figure id="fig-sim01-sfr-and-wsr">
 <img src="Get_Started\sim_01_param_checking.svg" alt="sim_01_param_checking.svg">
 <figcaption>
 <strong>Figure 1.</strong>
-The sim_01 spectrum.
+The first spectrum of the Sim dataset.
 The x-Axis gives the chemical shift of each datapoint in parts per million (ppm).
 The y-Axis gives the signal intensity of each datapoint in arbitrary units (au).
 The borders of the signal free region are shown as green vertical lines in the left plot.
@@ -86,22 +88,22 @@ metabodecon::plot_spectrum(deconvs[[1]], foc_rgn = c(0.5, 0.2))
 
 # Visualize all spectra and save them to a pdf file
 pdfpath <- tempfile(fileext = ".pdf")
-pdf(pdfpath)
+pdf(pdfpath, width = 12, height = 8)
 for (i in seq_along(deconvs)) {
     metabodecon::plot_spectrum(
         decon   = deconvs[[i]],
         main    = deconvs[[i]]$filename,
-        foc_rgn = c(0.4, 0.6)
+        foc_rgn = c(0.25, 0.75)
     )
 }
 dev.off()
+cat("Plots saved to", pdfpath, "\n")
 ```
 
 Out of the 16 generated plots, the first two are shown as examples in [Figure 2](#fig-sim1-plots). Things to look out for are:
 
 1. That the smoothing does not remove any real signals. If the smoothing is too strong, i.e., the smoothed signal intensity (SI) is very different from the raw SI, you should adjust the smoothing parameters `smopts` in the call to `generate_lorentz_curves()`.
 2. That the superposition of the lorentz curves is a good approximation of the smoothed SI. If major peaks are missed by the algorithm, you should reduce the threshold `delta` in the call to `generate_lorentz_curves()`.
-
 
 <figure id="fig-sim1-plots">
 <a href="Get_Started/sim_01_spectrum.svg">
@@ -112,7 +114,7 @@ Out of the 16 generated plots, the first two are shown as examples in [Figure 2]
 </a>
 <figcaption>
 <strong>Figure 2.</strong>
-Deconvolution results for the first two spectra of the Sim dataset. The raw SI (black), smoothed SI (blue), and superposition of Lorentz curves (red) are closely aligned, indicating that `smopts` and `delta` were chosen well and that the deconvolution was successful.
+Deconvolution results for the first two spectra of the Sim dataset. The raw SI (black), smoothed SI (blue), and superposition of Lorentz curves (red) are closely aligned, indicating that <code>smopts</code> and <code>delta</code> were chosen well and that the deconvolution was successful.
 </figcaption>
 </figure>
 
@@ -129,20 +131,33 @@ The following code snippet shows, how the above steps can be done using the 'met
 
 ## 1. Look up spectrum range
 
-&#9888; Attention: below code snippet requires object `deconvs`, generated in section [Deconvolute spectra](#deconvolute-spectra). If you haven't run the code snippet from this section yet, please do so before continuing.
+You can use function `get_ppm_range()` to determine the global maximum and minimum ppm values over all spectra. Setting `show = TRUE` will additionally create a plot showing the spectra overlayed on top of each other. The plot is shown in [Figure 3](#fig-sim-spectra-overlay).
+
 
 ```R
-ppm_range <- get_ppm_range(spectrum_data = deconvs)
-ppm_range
+ppm_range <- get_ppm_range(spectrum_data = deconvs, show = TRUE)
 ```
+
+<figure id="fig-sim1-plots">
+<a href="Get_Started/sim_spectra_overlayed.svg">
+  <img src="Get_Started/sim_spectra_overlayed.svg" alt="sim_spectra_overlayed.svg">
+</a>
+<figcaption>
+<strong>Figure 3.</strong>
+Overlay of all 16 deconvoluted spectra from the Sim dataset. The x-Axis gives the chemical shift of each datapoint in parts per million (ppm). The y-Axis gives the signal intensity of each datapoint in arbitrary units (au). All specta are pretty similar to each other except for Spetrum 2, which appears to be shifted approx. 0.01 ppm to the right.
+</figcaption>
+</figure>
+
 
 ## 2. Generate feature matrix
 
+To generate a matrix of features based on the spectrum data, you can use the `gen_feat_mat()` function. The resulting matrix will have one row for each spectrum and one column for each chemical shift. The following code snippet shows how to generate the feature matrix:
+
 ```R
 feat <- gen_feat_mat(
-  data_path = data_path,
+  data_path = deconvs,
   ppm_range = ppm_range,
-  si_size_real_spectrum = 131072,
+  si_size_real_spectrum = 1309,
   scale_factor_x = 1000
 )
 head(feat)

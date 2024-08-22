@@ -49,18 +49,20 @@ plot_spec <- function(
     box_col = "black", # Color of box surrounding plot region.
     axis_col = "black", # Color of tickmarks and ticklabels.
     fill_col = NULL, # Background color of plot region.
-    # Focus Region
-    foc_rgn = NULL, # Start and end of focus region.
+    # Focus Region (FR)
+    foc_rgn = NULL, # Start and end of FR.
     foc_unit = "ppm", # Unit of `foc_rgn`. Either "fraction" or "ppm".
     foc_only = FALSE, # If TRUE, draw focusregion, else full spectrum.
-    foc_fill = trans("yellow"), # Bg color of rectangle around focus region.
-    foc_col = "black", # Border color of rectangle around the focus region.
+    # Focus Rectangle
+    rct_show = !is.null(foc_rgn) && !foc_only, # Draw rectangle around FR?
+    rct_fill = trans("yellow"), # Background color of rectangle around FR.
+    rct_col = "black", # Border color of rectangle around FR.
     # Spectrum Lines
     line_col = "black", # Color of raw signal intensities.
     sm_show = TRUE, # If TRUE, smoothed signal intensities are shown.
     sm_col = "blue", # Color of smoothed signal intensities.
     ysquash = 0.96, # Fraction of plot height to squash y-values into.
-    yscale10 = TRUE, # If TRUE, scales SI into [0, 100] range using n^10.
+    sf_y_raw = 1e6, # Divide raw SI by this factor before drawing.
     d2_show = FALSE, # If TRUE, shows the second derivative of SIs.
     # Lorentzians
     lc_show = TRUE, # If TRUE, the Lorentzian Curves (LCs) are shown.
@@ -92,7 +94,7 @@ plot_spec <- function(
     lns <- psi_draw_lines(dat, line_col, d2_show, foc_only, sm_show, sm_col)
     trp <- psi_draw_triplets(dat, trp_show, trp_pch, trp_col)
     lcs <- psi_draw_lorentz_curves(dat, args)
-    foc <- psi_draw_focus_rectangle(dat, !foc_only, foc_fill, foc_col)
+    foc <- psi_draw_focus_rectangle(dat, rct_show, rct_fill, rct_col)
     axs <- psi_draw_axis(dat, main, xlab, ylab, axis_col, box_col)
     lgd <- psi_draw_legend(args)
     named(dat, plt, bgr, axs, lns, trp, lcs, foc, par = par())
@@ -116,25 +118,14 @@ psi_get_dat <- function(args) {
     foc_rgn <- args$foc_rgn
     foc_unit <- args$foc_unit
     foc_only <- args$foc_only
-    yscale10 <- args$yscale10
+    sf_y_raw <- args$sf_y_raw
     ysquash <- args$ysquash
 
     # Chemical Shift and Signal Intensity
     cs <- decon[["ppm"]] %||% decon[["x_values_ppm"]] %||% decon[["cs"]]
     si <- decon[["y_raw"]] %||% decon[["y_values_raw"]] %||% decon[["si"]]
     sis <- decon[["y_smooth"]] %||% decon[["y_values"]]
-    if (yscale10) {
-        # We do the scaling by powers of 10 because old MetaboDecon1D also
-        # scaled their data by 10e6, i.e. this way we can use the function
-        # to plot raw data as well as smoothed MetaboDecon1D data.
-        xp <- floor(log10(max(si))) - 1
-        si <- si / 10^xp
-        if (!is.null(sis)) {
-            # Scale smoothed SI to same range as the raw SI
-            while (max(sis) > max(si)) sis <- sis / 10
-            while (max(sis) < max(si) / 10) sis <- sis * 10
-        }
-    }
+    si <- si / sf_y_raw
 
     # Peak Indices
     ipc <- decon$index_peak_triplets_middle # Peak centers
