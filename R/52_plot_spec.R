@@ -76,6 +76,8 @@ plot_spec <- function(
     trp_show = TRUE, # If TRUE, the peak triplets are shown.
     trp_col = rep("black", 4), # Colors for center, left, right, non-peak DPs.
     trp_pch = c(17, 4, 4, NA), # Pchars for center, left, right, non-peak DPs.
+    # Misc
+    verbose = FALSE,
     # Unused
     ...) {
     #
@@ -89,14 +91,14 @@ plot_spec <- function(
     on.exit(rst(), add = TRUE)
 
     dat <- psi_get_dat(args)
-    plt <- psi_init_plot_region(dat)
-    bgr <- psi_draw_bg(dat, fill_col)
-    lns <- psi_draw_lines(dat, line_col, d2_show, foc_only, sm_show, sm_col)
-    trp <- psi_draw_triplets(dat, trp_show, trp_pch, trp_col)
-    lcs <- psi_draw_lorentz_curves(dat, args)
-    foc <- psi_draw_focus_rectangle(dat, rct_show, rct_fill, rct_col)
-    axs <- psi_draw_axis(dat, main, xlab, ylab, axis_col, box_col)
-    lgd <- psi_draw_legend(args)
+    plt <- psi_init_plot_region(dat, verbose)
+    bgr <- psi_draw_bg(dat, fill_col, verbose)
+    lns <- psi_draw_lines(dat, line_col, d2_show, foc_only, sm_show, sm_col, verbose)
+    trp <- psi_draw_triplets(dat, trp_show, trp_pch, trp_col, verbose)
+    lcs <- psi_draw_lorentz_curves(dat, args, verbose)
+    foc <- psi_draw_focus_rectangle(dat, rct_show, rct_fill, rct_col, verbose)
+    axs <- psi_draw_axis(dat, main, xlab, ylab, axis_col, box_col, verbose)
+    lgd <- psi_draw_legend(args, verbose)
     named(dat, plt, bgr, axs, lns, trp, lcs, foc, par = par())
 }
 
@@ -169,8 +171,9 @@ psi_get_dat <- function(args) {
     locals(without = c("decon"))
 }
 
-psi_init_plot_region <- function(dat = psi_get_dat()) {
-    logf("Initializing plot region")
+psi_init_plot_region <- function(dat = psi_get_dat(),
+                                 verbose = FALSE) {
+    if (verbose) logf("Initializing plot region")
     usr <- list(
         x    = dat$x,    y    = dat$y,
         xlim = dat$xlim, ylim = dat$ylim,
@@ -188,8 +191,9 @@ psi_init_plot_region <- function(dat = psi_get_dat()) {
 }
 
 psi_draw_bg <- function(dat = psi_get_dat(),
-                        fill_col = NULL) {
-    logf("Drawing background")
+                        fill_col = NULL,
+                        verbose = FALSE) {
+    if (verbose) logf("Drawing background")
     bgr <- within(list(), {
         xleft <- dat$xlim[1]
         xright <- dat$xlim[2]
@@ -207,8 +211,9 @@ psi_draw_axis <- function(dat,
                           xlab = "Chemical Shift [ppm]",
                           ylab = "Signal Intensity [au]",
                           axis_col = "black",
-                          box_col = "black") {
-    logf("Drawing axis")
+                          box_col = "black",
+                          verbose = FALSE) {
+    if (verbose) logf("Drawing axis")
     xtks <- seq(dat$xlim[1], dat$xlim[2], length.out = 5)
     ytks <- seq(dat$ylim[1], max(dat$y), length.out = 5)
     for (i in 2:12) if (length(unique(xtklabs <- round(xtks, i))) >= 5) break
@@ -231,17 +236,18 @@ psi_draw_lines <- function(dat,
                            d2_show = FALSE,
                            foc_only = FALSE,
                            sm_show = TRUE,
-                           sm_col = "blue") {
+                           sm_col = "blue",
+                           verbose = FALSE) {
     x <- if (foc_only) dat$cs[dat$ifp] else dat$cs
     y <- if (foc_only) dat$si[dat$ifp] else dat$si
     ys <- if (foc_only) dat$sis[dat$ifp] else dat$sis
-    logf("Drawing raw signal")
+    if (verbose) logf("Drawing raw signal")
     lines(x, y, type = "l", col = line_col, lty = 1)
     if (d2_show) {
-        logf("Drawing second derivative (TODO)")
+        if (verbose) logf("Drawing second derivative (TODO)")
     }
     if (sm_show && !is.null(ys)) {
-        logf("Drawing smoothed signal")
+        if (verbose) logf("Drawing smoothed signal")
         lines(x, ys, type = "l", col = sm_col, lty = 1)
     }
 }
@@ -249,9 +255,10 @@ psi_draw_lines <- function(dat,
 psi_draw_triplets <- function(dat,
                               show = TRUE,
                               pch = c(17, 4, 4, NA),
-                              col = c("red", "blue", "blue", "black")) {
+                              col = c("red", "blue", "blue", "black"),
+                              verbose = FALSE) {
     if (isFALSE(show)) return(NULL) # styler: off
-    logf("Drawing peak triplets")
+    if (verbose) logf("Drawing peak triplets")
     x <- dat$cs
     y <- dat$sis %||% dat$si
     p <- dat$ipc
@@ -267,7 +274,8 @@ psi_draw_triplets <- function(dat,
 psi_draw_focus_rectangle <- function(dat,
                                      show = TRUE,
                                      fill = rgb(0, 0, 1, alpha = 0.1),
-                                     col = "blue") {
+                                     col = "blue",
+                                     verbose = FALSE) {
     if (is.null(dat$foc_lim) || !show) return(NULL) # styler: off
     usr <- list(
         xleft = max(dat$foc_lim),
@@ -283,11 +291,12 @@ psi_draw_focus_rectangle <- function(dat,
         ybottom = grconvertY(usr$ybottom, to = "ndc"),
         ytop = grconvertY(usr$ytop, to = "ndc")
     )
+    if (verbose) logf("Drawing focus rectangle")
     do.call(rect, usr)
     named(usr, ndc)
 }
 
-psi_draw_lorentz_curves <- function(dat, args = NULL) {
+psi_draw_lorentz_curves <- function(dat, args = NULL, verbose = FALSE) {
     lc_show <- args$lc_show %||% TRUE
     lc_col <- args$lc_col %||% "black"
     lc_lty <- args$lc_lty %||% 1
@@ -301,7 +310,7 @@ psi_draw_lorentz_curves <- function(dat, args = NULL) {
     }
     x <- if (foc_only) dat$cs[dat$ifp] else dat$cs
     Y <- matrix(nrow = length(x), ncol = length(dat$A))
-    logf("Drawing individual Lorentzian Curves")
+    if (verbose) logf("Drawing individual Lorentzian Curves")
     for (i in seq_along(dat$A)) {
         Y[, i] <- psi_draw_lorentz_curve(
             x,
@@ -315,7 +324,7 @@ psi_draw_lorentz_curves <- function(dat, args = NULL) {
         )
     }
     if (sup_show) {
-        logf("Drawing superposition of Lorentzian Curves")
+        if (verbose) logf("Drawing superposition of Lorentzian Curves")
         lines(x = x, y = rowSums(Y), col = sup_col, lty = sup_lty, type = "l")
     }
     invisible(NULL)
@@ -328,8 +337,7 @@ psi_draw_lorentz_curve <- function(x,
                                    lc_show = TRUE,
                                    lc_col = "black",
                                    lc_lty = 1,
-                                   lc_fill = NULL,
-                                   lc_ctr_col = NULL) {
+                                   lc_fill = NULL) {
     y <- lc(x, x_0, A, lambda)
     if (lc_show) {
         near_zero <- abs(y) < 0.01
@@ -341,16 +349,6 @@ psi_draw_lorentz_curve <- function(x,
             col = lc_col,
             lty = lc_lty,
             type = "l"
-        )
-    }
-    if (!is.null(lc_ctr_col)) {
-        segments(
-            x0 = x_0,
-            x1 = x_0,
-            y0 = par("usr")[3],
-            y1 = lc(x_0, x_0, A, lambda),
-            col = lc_col,
-            lty = 2
         )
     }
     if (!is.null(lc_fill)) {
@@ -366,9 +364,9 @@ psi_draw_lorentz_curve <- function(x,
     return(y)
 }
 
-psi_draw_legend <- function(args) {
+psi_draw_legend <- function(args, verbose = FALSE) {
     if (isFALSE(args$lgd)) return(invisible(NULL)) # styler: off
-    logf("Drawing legend")
+    if (verbose) logf("Drawing legend")
     legend(
         x = "topright",
         legend = c(

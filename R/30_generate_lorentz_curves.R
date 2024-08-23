@@ -59,16 +59,16 @@
 #' # Define a little wrapper function so we don't have to provide all parameters
 #' # every time we want to start the deconvolution procedure:
 #' glc2 <- function(data_path) {
-#'      generate_lorentz_curves(
-#'          data_path = data_path,
-#'          ask = FALSE,
-#'          sfr = c(3.42, 3.58),
-#'          ws = 0,
-#'          smopts = c(1, 5),
-#'          delta = 0.1,
-#'          nworkers = 2,
-#'          verbose = FALSE
-#'      )
+#'     generate_lorentz_curves(
+#'         data_path = data_path,
+#'         ask = FALSE,
+#'         sfr = c(3.42, 3.58),
+#'         ws = 0,
+#'         smopts = c(1, 5),
+#'         delta = 0.1,
+#'         nworkers = 2,
+#'         verbose = FALSE
+#'     )
 #' }
 #'
 #' # Deconvolute each input:
@@ -79,9 +79,9 @@
 #'
 #' # Make sure the results for the first spectrum are the same:
 #' compare <- function(decon1, decon2) {
-#'      ignore <- which(names(decon1) %in% c("number_of_files", "filename"))
-#'      equal <- all.equal(decon1[-ignore], decon2[-ignore])
-#'      stopifnot(isTRUE(equal))
+#'     ignore <- which(names(decon1) %in% c("number_of_files", "filename"))
+#'     equal <- all.equal(decon1[-ignore], decon2[-ignore])
+#'     stopifnot(isTRUE(equal))
 #' }
 #' compare(decon_sim_1_dir, decon_sim_1_spec)
 #' compare(decon_sim_1_dir, decon_sim_12_specs[[1]])
@@ -92,9 +92,9 @@
 #' # `ask` is TRUE in this example (the default value), the user will be asked
 #' # for input during the deconvolution. To avoid this, set `ask = FALSE`.
 #' \dontrun{
-#'      example_datasets <- download_example_datasets()
-#'      urine_1 <- file.path(example_datasets, "bruker/urine/urine_1")
-#'      decon_urine_1 <- generate_lorentz_curves(urine_1)
+#' example_datasets <- download_example_datasets()
+#' urine_1 <- file.path(example_datasets, "bruker/urine/urine_1")
+#' decon_urine_1 <- generate_lorentz_curves(urine_1)
 #' }
 generate_lorentz_curves <- function(data_path = metabodecon_file("urine_1"),
                                     file_format = "bruker",
@@ -109,7 +109,7 @@ generate_lorentz_curves <- function(data_path = metabodecon_file("urine_1"),
                                     sf = c(1000, 1000000),
                                     ask = TRUE,
                                     debug = FALSE,
-                                    nworkers = "auto",
+                                    nworkers = 1,
                                     share_stdout = FALSE,
                                     force = FALSE,
                                     verbose = TRUE) {
@@ -283,9 +283,9 @@ smooth_signals <- function(spec, reps = 2, k = 5, verbose = TRUE) {
 #' @details The function first identifies peaks within the SFR by comparing their center positions against the SFR boundaries. If peaks are found within the SFR, it calculates the mean and standard deviation of their scores to establish a filtering threshold. Peaks with scores below this threshold are considered low and filtered out. If no peaks are found within the SFR and `force` is FALSE, the function stops and issues an error message. If `force` is TRUE, the function proceeds without filtering, potentially increasing runtime.
 #' @examples
 #' spec <- list(
-#'      peak = list(score = c(1, 5, 2), center = c(1, 2, 3)),
-#'      sdp = c(3, 2, 1),
-#'      sfr = list(left_sdp = 2.8, right_sdp = 1.2)
+#'     peak = list(score = c(1, 5, 2), center = c(1, 2, 3)),
+#'     sdp = c(3, 2, 1),
+#'     sfr = list(left_sdp = 2.8, right_sdp = 1.2)
 #' )
 #' rm3 <- filtered_spec <- filter_peaks(spec)
 #' rm2 <- filtered_spec <- filter_peaks(spec, delta = 1)
@@ -293,7 +293,7 @@ filter_peaks <- function(spec, delta = 6.4, force = FALSE) {
     logf("Removing peaks with low scores")
     peak_score <- spec$peak$score
     peak_defined <- !is.na(spec$peak$left) & !is.na(spec$peak$center) & !is.na(spec$peak$right)
-    in_left_sfr  <- spec$sdp[spec$peak$center] >= spec$sfr$left_sdp
+    in_left_sfr <- spec$sdp[spec$peak$center] >= spec$sfr$left_sdp
     in_right_sfr <- spec$sdp[spec$peak$center] <= spec$sfr$right_sdp
     in_sfr <- in_left_sfr | in_right_sfr
     if (any(in_sfr)) {
@@ -324,11 +324,16 @@ filter_peaks <- function(spec, delta = 6.4, force = FALSE) {
 #' @param debug Add debug info to the return list
 #' @return The input spectrum with an additional list element `ret` containing the deconvolution results in a backwards compatible format.
 add_return_list <- function(spec = glc(), nfiles = 1, nam = "urine_1", debug = TRUE) {
-
     # Prepare some shortcuts for later calculations
-    sdp <- spec$sdp; ppm <- spec$ppm; hz <- spec$hz; dp <- spec$dp
-    y_raw <- spec$y_raw; y_smooth <- spec$y_smooth
-    A <- spec$lcr$A; lambda <- spec$lcr$lambda; x_0 <- spec$lcr$w
+    sdp <- spec$sdp
+    ppm <- spec$ppm
+    hz <- spec$hz
+    dp <- spec$dp
+    y_raw <- spec$y_raw
+    y_smooth <- spec$y_smooth
+    A <- spec$lcr$A
+    lambda <- spec$lcr$lambda
+    x_0 <- spec$lcr$w
 
     # Calculate spectrum superposition
     s <- sapply(sdp, function(x_i) sum(abs(A * (lambda / (lambda^2 + (x_i - x_0)^2))))) # takes approx. 2.2 seconds for urine_1
@@ -365,14 +370,14 @@ add_return_list <- function(spec = glc(), nfiles = 1, nam = "urine_1", debug = T
         y_values_raw = spec$y_raw,
         x_values_hz = spec$hz,
         mse_normed_raw = mse_normed_raw,
-        x_0_hz  = convert_pos(x_0, sdp, hz),
-        x_0_dp  = convert_pos(x_0, sdp, dp),
+        x_0_hz = convert_pos(x_0, sdp, hz),
+        x_0_dp = convert_pos(x_0, sdp, dp),
         x_0_ppm = convert_pos(x_0, sdp, ppm),
-        A_hz  = convert_width(A, sdp, hz),
-        A_dp  = convert_width(A, sdp, dp),
+        A_hz = convert_width(A, sdp, hz),
+        A_dp = convert_width(A, sdp, dp),
         A_ppm = convert_width(A, sdp, ppm),
-        lambda_hz  = convert_width(lambda, sdp, hz),
-        lambda_dp  = convert_width(lambda, sdp, dp),
+        lambda_hz = convert_width(lambda, sdp, hz),
+        lambda_dp = convert_width(lambda, sdp, dp),
         lambda_ppm = convert_width(lambda, sdp, ppm)
     )
     class(spec$ret) <- "decon"
@@ -405,6 +410,28 @@ lcsp <- function(x, x0, A, lambda, iterover = "params") {
 lc <- function(x, x0, A, lambda) {
     # For details see formula below sentence "In physics, a three-parameter Lorentzian function is often used:" at [Wikipedia > Cauchy_distribution > #Properties_of_PDF](https://en.wikipedia.org/wiki/Cauchy_distribution#Properties_of_PDF).
     A * (lambda / (lambda^2 + (x - x0)^2))
+}
+
+#' @noRds
+#' @description Before version 1.2 of 'metabodecon', the deconvolution functions `generate_lorentz_curves` and `MetaboDecon1D` wrote their output partially as txt files to their input folder. The txt files were named "SPEC_NAME parameter.txt" and "SPEC_NAME approximated_spectrum.txt". Since version 1.2 these txt files are no longer created by default, to prevent accidental modifications of the input folders. However, to stay backwards compatible, functions that used to read "SPEC_NAME parameter.txt" and "SPEC_NAME approximated_spectrum.txt" still accept them as input (e.g. `gen_feat_mat()`). I.e., in order to test this functionality, we still need a way to create the corresponding txt files (which is no longer done by `generate_lorentz_curves()`). That's the purpose of this function: it takes the output of `generate_lorentz_curves()` as input and creates the (now deprecated) "SPEC_NAME parameter.txt" and "SPEC_NAME approximated_spectrum.txt" in folder `outdir`.
+write_parameters_txt <- function(decon, outdir, verbose = FALSE) {
+    if (is_decon_list(decon)) {
+        for (obj in decon) write_parameters_txt(obj, outdir)
+        return(invisible(NULL))
+    }
+    name <- decon$filename
+    w_new <- decon$x_0
+    lambda_new <- decon$lambda
+    A_new <- decon$A
+    noise_threshold <- rep(NA, length(A_new))
+    pardf <- data.frame(rbind(w_new, lambda_new, A_new, noise_threshold))
+    supdf <- data.frame(t(decon$spectrum_superposition))
+    parfile <- file.path(outdir, paste(name, "parameters.txt"))
+    supfile <- file.path(outdir, paste(name, "approximated_spectrum.txt"))
+    if (verbose) cat(sprintf("Creating: %s\n", parfile))
+    utils::write.table(pardf, parfile, sep = ",", col.names = FALSE, append = FALSE)
+    if (verbose) cat(sprintf("Creating: %s\n", parfile))
+    utils::write.table(supdf, supfile, sep = ",", col.names = FALSE, append = FALSE)
 }
 
 # Private Deprecated #####
@@ -448,7 +475,6 @@ generate_lorentz_curves_v12 <- function(data_path = file.path(download_example_d
                                         ask = TRUE,
                                         debug = FALSE,
                                         nworkers = 2) {
-
     # Read spectra and ask user for parameters
     spectra_ds <- read_spectra(data_path, file_format, expno, procno, ask, sf, raw = TRUE)
     spectra <- lapply(spectra_ds, convert_spectrum, sfx = sf[1], sfy = sf[2])

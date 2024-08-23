@@ -48,7 +48,8 @@ deconvs <- metabodecon::generate_lorentz_curves(
     sfr = c(3.42, 3.58), # Borders of signal free region (SFR) in ppm
     wshw = 0,            # Half width of water signal (WS) in ppm
     smopts = c(2, 5),    # Configure smoothing parameters
-    delta = 0.1          # Configure threshold for peak filtering
+    delta = 0.1,         # Configure threshold for peak filtering
+    verbose = FALSE      # Suppress status messages
 )
 ```
 
@@ -127,7 +128,7 @@ The general workflow for aligning a set of deconvoluted spectra is as follows:
 3. Align the spectra using the 'speaq' package
 4. Combine signals of peaks which are spread over adjacent columns
 
-The following code snippet shows, how the above steps can be done using the 'metabodecon' package:
+The following code snippets show how the above steps can be done using the 'metabodecon' package:
 
 ## 1. Look up spectrum range
 
@@ -136,6 +137,8 @@ You can use function `get_ppm_range()` to determine the global maximum and minim
 
 ```R
 ppm_range <- get_ppm_range(spectrum_data = deconvs, show = TRUE)
+print(ppm_range)
+## [1] 3.455208 3.546735
 ```
 
 <figure id="fig-sim1-plots">
@@ -151,30 +154,38 @@ Overlay of all 16 deconvoluted spectra from the Sim dataset. The x-Axis gives th
 
 ## 2. Generate feature matrix
 
-To generate a matrix of features based on the spectrum data, you can use the `gen_feat_mat()` function. The resulting matrix will have one row for each spectrum and one column for each chemical shift. The following code snippet shows how to generate the feature matrix:
+To generate a matrix of features based on the spectrum data, you can use `gen_feat_mat()`. The resulting matrix will have one row for each spectrum and one column for each chemical shift.
 
 ```R
-feat <- gen_feat_mat(
-  data_path = deconvs,
-  ppm_range = ppm_range,
-  si_size_real_spectrum = 1309,
-  scale_factor_x = 1000
-)
-head(feat)
+feat <- gen_feat_mat(deconvs)
+str(feat, 2)
+## List of 5
+##  $ data_matrix: num [1:16, 1:1309] 0.01351 0.02418 0.00798 0.00881 0.00514 ...
+##   ..- attr(*, "dimnames")=List of 2
+##  $ peakList   :List of 16
+##   ..$ sim_01: num [1:13] 351 417 458 584 684 ...
+##   ..$ sim_02: num [1:11] 371 413 478 519 644 ...
+##   ...
+##   ..$ sim_16: num [1:13] 0.959 0.893 0.852 0.727 0.628 ...
+##  $ w          :List of 16
+##   ...
+##  $ A          :List of 16
+##   ...
+##  $ lambda     :List of 16
+##   ...
 ```
-
-In the above code snippet:
-
-- Parameter `si_size_real_spectrum` of `gen_feat_mat()` gives the number of datapoints in each spectrum. [^si]
-- Parameter `scale_factor_x` of `gen_feat_mat()` gives the scaling factor that was used during the deconvolution to prevent rounding errors.
-
-[^si]: The name `si` is derived from the Bruker parameter "#SI" which gives the number of datapoints in the spectrum.
 
 ## 3. Align spectra
 
+Now that we have one single matrix containing all spectra, we can align them using `speaq_align()`. The resulting matrix will have one row for each spectrum and one column for each chemical shift.
+
 ```R
-after_speaq_mat <- speaq_align(feat = feat, maxShift = 50)
-head(after_speaq_mat)
+after_speaq_mat <- speaq_align(
+  feat = feat,
+  maxShift = 50,
+  spectrum_data = deconvs
+)
+str(after_speaq_mat, 2)
 ```
 
 Parameter `maxShift` of `speaq_align()` gives the maximum number of points along the x axis a value can be moved by the 'speaq' package. A value of 50 may be used as start value for plasma spectra. However, depending on your spectra and the used digital resolution this value may be be adapted.

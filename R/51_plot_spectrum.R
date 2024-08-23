@@ -122,6 +122,7 @@ plot_spectrum <- function(
     foc_only = FALSE,
     sub_show = if (foc_only) FALSE else TRUE,
     sub_rgn = c(x1 = 0.05, x2 = 0.95, y1 = 0.2, y2 = 0.95),
+    verbose = FALSE,
     # Focus Rectangle
     rct_show = sub_show,
     rct_col = "black",
