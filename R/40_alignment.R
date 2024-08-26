@@ -1,13 +1,13 @@
 # Exported Main #####
 
 #' @export
-#' @title Get ppm range
-#' @author Wolfram Gronwald, Tobias Schmidt
+#' @title Get PPM Range covered by Spectra
 #' @description Returns the ppm range across all peaks of the provided deconvoluted spectra.
 #' @param spectrum_data A list of deconvoluted spectra as returned by [generate_lorentz_curves()].
 #' @param show Whether to plot the ppm range on the spectrum plot.
 #' @param mar The margins of the plot. Passed on to `par()`.
 #' @return A vector containing the lowest and highest ppm value over all peaks of the provided deconvoluted spectra.
+#' @author Initial version from Wolfram Gronwald, 2021. Refactored by Tobias Schmidt in 2024.
 #' @examples
 #' sim <- metabodecon_file("bruker/sim_subset")
 #' decons <- generate_lorentz_curves(
@@ -17,7 +17,7 @@
 #' )
 #' ppm_rng <- get_ppm_range(decons, show = TRUE)
 #' print(ppm_rng)
-get_ppm_range <- function(spectrum_data,
+get_ppm_range <- function(spectrum_data = glc_sim(),
                           show = FALSE,
                           mar = c(4.1, 4.1, 1.1, 0.1)) {
     msg <- "spectrum_data must be a list of deconvoluted spectra."
@@ -26,33 +26,7 @@ get_ppm_range <- function(spectrum_data,
     ppm_min <- min(sapply(ss, function(s) min(s$peak_triplets_middle)))
     ppm_max <- max(sapply(ss, function(s) max(s$peak_triplets_middle)))
     ppm_rng <- c(ppm_min, ppm_max)
-    if (show) {
-        ymax <- max(sapply(ss, function(s) max(s$y_values)))
-        xrng <- range(c(sapply(ss, function(s) s$x_values_ppm)))
-        y0.8 <- ymax * 0.8
-        a <- ppm_rng[1]
-        b <- ppm_rng[2]
-        cols <- rainbow(length(ss))
-        alen <- (b - a) / 4
-        lgdtxt <- paste("Spectrum", 1:length(ss))
-        op <- par(mar = mar)
-        on.exit(par(op))
-        plot(NA, type = "n", xlim = xrng[2:1], ylim = c(0, ymax), ylab = "Signal Intensity [au]", xlab = "Chemical Shift [ppm]")
-        abline(v = ppm_rng, lty = 2)
-        for (i in 1:length(ss)) lines(ss[[i]]$x_values_ppm, ss[[i]]$y_values, col = cols[i])
-        arrows(
-            x0 = c(a + alen, b - alen),
-            x1 = c(a, b),
-            y0 = y0.8,
-            y1 = y0.8,
-            length = 0.1,
-            lty = 2,
-            col = "black"
-        )
-        text(mean(c(a, b)), y0.8, "ppm range")
-        mtext(round(c(a, b), 4), side = 3, line = 0, at = c(a, b))
-        legend("topright", legend = lgdtxt, col = cols, lty = 1)
-    }
+    if (show) plot_spectra(ss, mar = mar, ppm_rng = ppm_rng)
     ppm_rng
 }
 
@@ -117,12 +91,14 @@ gen_feat_mat <- function(data_path = generate_lorentz_curves(),
 #' @param si_size_real_spectrum Number of real data points in your original spectra.
 #' @return A matrix containing the aligned integral values of all spectra. Each row contains the data of each spectrum and each column corresponds to one data point. Each entry corresponds to the integral of a deconvoluted signal with the signal center at this specific position after alignment by speaq.
 #' @examples
-#' \dontrun{
-#' after_speaq_mat <- speaq_align(feat, maxShift)
-#' }
+#' spectrum_data <- glc_sim("bruker/sim")
+#' feat <- gen_feat_mat(spectrum_data)
+#' maxShift <- 100
+#' si_size_real_spectrum <- length(spectrum_data[[1]]$y_values)
+#' after_speaq_mat <- speaq_align(feat, maxShift, spectrum_data, si_size_real_spectrum)
 speaq_align <- function(feat = gen_feat_mat(spectrum_data),
                         maxShift = 50,
-                        spectrum_data,
+                        spectrum_data = glc_sim(),
                         si_size_real_spectrum = length(spectrum_data[[1]]$y_values)) {
 
     # Find reference spectrum, i.e the spectrum to which all others will be aligned to
@@ -140,14 +116,11 @@ speaq_align <- function(feat = gen_feat_mat(spectrum_data),
     )
     # > str(data_result_aligned, 2)
     # List of 2
-    # $ Y: num [1:16, 1:1309] 0.01356 0.02418 ... (matrix of aligned spectra)
-    # $ new_peakList: List of 16                  (aligned peaks of each spectrum)
-    # ..$ sim_01: num [1:13] 350 416 457 583 683 ...
-    # ..$ sim_02: num [1:11] 416 458 542 583 683 ...
+    # $ Y: num [1:16, 1:1309] 0.013 0.024 ... (matrix of aligned spectra)
+    # $ new_peakList: List of 16              (aligned peaks of each spectrum)
+    # ..$ sim_01: num [1:13] 350 416 457 ...
+    # ..$ sim_02: num [1:11] 416 458 542 ...
     # ...
-
-    # CONTINUE HERE
-    # TODO: plot `feat$data_matrix` and `data_result_aligned$Y, i.e. spectra before and after alignment
 
     # Aligned spectra values
     data_matrix_aligned <- data_result_aligned$Y
@@ -169,7 +142,7 @@ speaq_align <- function(feat = gen_feat_mat(spectrum_data),
         for (ent in 1:length(peakList_result[[spec]])) {
             # Calculate integral value for each entry which is unequal 0
             if (peakList_result[[spec]][ent] != 0) {
-                integral_results[[spec]][ent] <- feat$A[[spec]][ent] * (atan((-peakList_result[[spec]][ent] + 131072) / feat$lambda[[spec]][ent]) - atan((-peakList_result[[spec]][ent]) / feat$lambda[[spec]][ent]))
+                integral_results[[spec]][ent] <- feat$A[[spec]][ent] * (atan((-peakList_result[[spec]][ent] + si_size_real_spectrum) / feat$lambda[[spec]][ent]) - atan((-peakList_result[[spec]][ent]) / feat$lambda[[spec]][ent]))
             }
         }
     }
@@ -190,6 +163,76 @@ speaq_align <- function(feat = gen_feat_mat(spectrum_data),
         }
     }
     return(after_speaq_mat)
+}
+
+#' @export
+#' @title Align Signals using 'speaq'
+#' @description Performs signal alignment across the individual spectra using the 'speaq' package (Beirnaert C, Meysman P, Vu TN, Hermans N, Apers S, Pieters L, et al. (2018) speaq 2.0: A complete workflow for high-throughput 1D NMRspectra processing and quantification. PLoS Comput Biol 14(3): e1006018. https://www.doi.org/10.1371/journal.pcbi.1006018). The spectra deconvolution process yields the signals of all spectra. Due to slight changes in measurement conditions, e.g. pH variations, signal positions may vary slightly across spectra. As a consequence, prior to further analysis signals belonging to the same compound have to be aligned across spectra. This is the purpose of the 'speaq' package.
+#' @param feat Output of `gen_feat_mat()`.
+#' @param maxShift Maximum number of points along the "ppm-axis" which a value can be moved by speaq package e.g. 50. 50 is a suitable starting value for plasma spectra with a digital resolution of 128K. Note that this parameter has to be individually optimized depending on the type of analyzed spectra and the digital resolution. For urine which is more prone to chemical shift variations this value most probably has to be increased.
+#' @param spectrum_data Output of `generate_lorentz_curves()`.
+#' @param si_size_real_spectrum Number of real data points in your original spectra.
+#' @return A matrix containing the integral values of the spectra after alignment.
+#' There is one row per spectrum and one column per ppm value.
+#' The entry at postion `i, j` holds the integral value of the signal from spectrum `i` that has its center at position `j` after alignment by speaq.
+#' If there is no signal with center `j` in spectrum `i`, entry `i, j` is set to NA.
+#' The column names of the matrix are the ppm values of the original spectra.
+#'
+#' Example return matrix:
+#'
+#' ```
+#'      ...  3.59  3.58  3.57  3.56  3.55  3.54  3.53
+#'    .----------------------------------------------> PPM
+#'  1 | NA   NA    0.20  NA    NA    NA    0.25  NA
+#'  2 | NA   NA    0.15  NA    NA    NA    0.13  NA
+#'  3 | NA   NA    NA    0.2   NA    NA    0.18  NA
+#'  SpNr
+#' ```
+#'
+#' Spectrum 3 has a signal with an integral value of 0.2 at
+#' position 3.57 after alignment. Spectrum 1 and 2 have no
+#' signal at this position after alignment.
+#' ```
+#'
+#' @examples
+#' spectrum_data <- glc_sim("bruker/sim")
+#' feat <- gen_feat_mat(spectrum_data)
+#' maxShift <- 200
+#' si_size_real_spectrum <- length(spectrum_data[[1]]$y_values)
+#' M1 <- speaq_align(feat, maxShift, spectrum_data, si_size_real_spectrum)
+#' M2 <- speaq_align_v2(feat, maxShift, spectrum_data, si_size_real_spectrum, show = TRUE)
+#' all.equal(M1, M2)
+speaq_align_v2 <- function(feat = gen_feat_mat(spectrum_data),
+                           maxShift = 50,
+                           spectrum_data = glc_sim(),
+                           si_size_real_spectrum = length(spectrum_data[[1]]$y_values),
+                           verbose = TRUE,
+                           show = FALSE,
+                           mfrow = c(2, 1)) {
+    acceptLostPeak <- FALSE # Must be FALSE so we can assign A, lambda and x_0 to the respective peaks
+    Y <- feat$data_matrix
+    s <- nrow(Y) # Number of spectra
+    n <- ncol(Y) # Number of data points
+    U <- feat$peakList # Unaligned peak centers (UPCs) in increasing order, i.e. the leftmost value has data point number 1.
+    r <- speaq::findRef(U)$refInd # Reference spectrum
+    C <- dohCluster(Y, U, r, maxShift, acceptLostPeak, verbose) # list(Y, new_peakList)
+    Q <- C$new_peakList # Aligned peak centers (APCs) in increasing order.
+    P <- lapply(Q, function(p) n - p) # APCs in decreasing order.
+    integrals <- mapply(SIMPLIFY = FALSE, feat$A, feat$lambda, P, FUN = function(A, l, p) {
+        integral <- A * (atan((n - p) / l) - atan((0 - p) / l))
+        integral[p == 0] <- NA
+        integral
+    })
+    ppm <- spectrum_data[[1]]$x_values_ppm
+    Y2 <- matrix(nrow = s, ncol = n, dimnames = list(NULL, ppm))
+    for (i in seq_len(s)) Y2[i, round(Q[[i]]) - 1] <- integrals[[i]]
+    if (show) {
+        opar <- par(mfrow = mfrow)
+        on.exit(par(opar), add = TRUE)
+        plot_si_mat(Y = feat$data_matrix)
+        plot_si_mat(Y = C$Y)
+    }
+    return(Y2)
 }
 
 #' @export
@@ -260,29 +303,44 @@ combine_peaks <- function(shifted_mat,
     return(return_list)
 }
 
+# Private Helpers #####
+
 #' @export
-#' @title dohCluster
-#' @description Helper of [speaq_align()].
-#' @param X `data_matrix` as returned by [gen_feat_mat()]
-#' @param peakList `peakList` as returned by function [gen_feat_mat()]
+#' @title Cluster Based Peak Alignment
+#' @description Rewrite of `speaq::dohCluster()`, compatible with the data format returned by 'generate_lorentz_curves()' and 'gen_feat_mat()'. The function name "dohCluster" comes from "Do Hierarchical Clustering" which is part of the Alignment algorithm proposed by Vu et al. (2011) in <doi:10.1186/1471-2105-12-405>.
+#' @param X Dataframe of signal intensities from all spectra as returned by [gen_feat_mat()].
+#' @param peakList List of peak indices as returned [gen_feat_mat()].
 #' @param refInd Number of the reference spectrum i.e. the spectrum to which all signals will be aligned to.
-#' @param maxShift Maximum number of points along the "ppm-axis" which a value can be moved (e.g. 50).
-#' @param acceptLostPeak (logic) default is TRUE
-#' @param verbose (logic) default is TRUE
+#' @param maxShift Maximum number of points a value can be moved.
+#' @param acceptLostPeak Whether to allow the the alignment algorithm to ignore peaks that cannot easily be aligned with the reference spectrum.
+#' @param verbose Whether to print additional information during the alignment process.
 #' @return A list containing two data frames `Y` and `new_peakList`. The first one contains the aligned spectra, the second one contains the aligned signals of each spectrum.
-#' @details The function dohCluster of the 'speaq' package has been rewritten to be compatible with the data generated by 'metabodecon' and the function 'gen_feat_mat' and to return a new peakList of aligned spectra.
 #' @examples
-#' \dontrun{
-#' res <- dohCluster(X, peakList, refInd = 0, maxShift = 100, acceptLostPeak = TRUE, verbose = TRUE)
-#' }
-dohCluster <- function(X, peakList, refInd = 0, maxShift = 100, acceptLostPeak = TRUE, verbose = TRUE) {
-    if (is.null(maxShift)) {
+#' decons <- glc_sim()
+#' feat <- gen_feat_mat(decons)
+#' refObj <- speaq::findRef(feat$peakList)
+#' hclObj <- dohCluster(
+#'      X = feat$data_matrix,
+#'      peakList = feat$peakList,
+#'      refInd = refObj$refInd,
+#'      maxShift = 100,
+#'      acceptLostPeak = TRUE,
+#'      verbose = TRUE
+#' )
+#' str(hclObj, 1)
+dohCluster <- function(X,
+                       peakList,
+                       refInd = 0,
+                       maxShift = 100,
+                       acceptLostPeak = TRUE,
+                       verbose = TRUE) {
+    res <- if (is.null(maxShift)) {
         if (verbose) {
             cat("\n --------------------------------")
             cat("\n maxShift=NULL, thus dohCluster will automatically detect the optimal value of maxShift.")
             cat("\n --------------------------------\n")
         }
-        res <- dohCluster_withoutMaxShift(X = X, peakList = peakList, refInd = refInd, acceptLostPeak = acceptLostPeak, verbose = verbose)
+        dohCluster_withoutMaxShift(X, peakList, refInd, acceptLostPeak, verbose)
     } else {
         if (verbose) {
             cat("\n --------------------------------")
@@ -291,12 +349,10 @@ dohCluster <- function(X, peakList, refInd = 0, maxShift = 100, acceptLostPeak =
             cat("\n use dohCluster(..., maxShift = NULL, ...)")
             cat("\n --------------------------------\n")
         }
-        res <- dohCluster_withMaxShift(X = X, peakList = peakList, refInd = refInd, maxShift = maxShift, acceptLostPeak = acceptLostPeak, verbose = verbose)
+        dohCluster_withMaxShift(X, peakList, refInd, maxShift, acceptLostPeak, verbose)
     }
     return(res)
 }
-
-# Private Helpers #####
 
 #' @noRd
 dohCluster_withoutMaxShift <- function(X,
@@ -535,6 +591,83 @@ is_decon_obj <- function(x) {
 #' @noRd
 is_decon_list <- function(x) {
     if (is.list(x) && all(sapply(x, is_decon_obj))) TRUE else FALSE
+}
+
+plot_spectra <- function(ss = glc_sim(),
+                         mar = c(4.1, 4.1, 1.1, 0.1),
+                         peak_rng = get_ppm_range(ss, show = FALSE)) {
+    if (is_decon_obj(ss)) ss <- list(ss)
+    if (is_decon_list(ss)) {
+        xrng <- range(c(sapply(ss, function(s) s$x_values_ppm)))
+        ymax <- max(sapply(ss, function(s) max(s$y_values)))
+    } else if (is.data.frame(ss)) {
+        stop("ss must be a list of deconvoluted spectra.")
+    }
+    a <- peak_rng[1]
+    b <- peak_rng[2]
+    w <- (b - a) / 4
+    y8 <- ymax * 0.8
+    cols <- rainbow(length(ss))
+    ltxt <- paste("Spectrum", 1:length(ss))
+    opar <- par(mar = mar)
+    on.exit(par(opar))
+    plot(
+        x = NA,
+        type = "n",
+        xlim = xrng[2:1],
+        ylim = c(0, ymax),
+        xlab = "Chemical Shift [ppm]",
+        ylab = "Signal Intensity [au]"
+    )
+    abline(v = peak_rng, lty = 2)
+    for (i in 1:length(ss)) {
+        lines(
+            x = ss[[i]]$x_values_ppm,
+            y = ss[[i]]$y_values,
+            col = cols[i]
+        )
+    }
+    arrows(
+        x0 = c(a + w, b - w),
+        x1 = c(a, b),
+        y0 = y8,
+        y1 = y8,
+        length = 0.1,
+        lty = 2,
+        col = "black"
+    )
+    text(
+        x = mean(c(a, b)),
+        y = y8,
+        labels = "ppm range"
+    )
+    mtext(
+        text = round(c(a, b), 4),
+        side = 3,
+        line = 0,
+        at = c(a, b)
+    )
+    legend(
+        x = "topright",
+        legend = ltxt,
+        col = cols,
+        lty = 1
+    )
+}
+
+plot_si_mat <- function(Y = glc_sim("bruker/sim")) {
+    cols <- rainbow(nrow(Y)) # Colors
+    dpns <- seq_len(ncol(Y)) # Data Point Numbers
+    spns <- seq_len(nrow(Y)) # Spectrum Numbers
+    ltxt <- paste("Spectrum", spns)
+    xlab <- "Datapoint Number"
+    ylab <- "Signal Intensity"
+    xlim <- c(1, ncol(Y))
+    ylim <- c(0, max(Y))
+    args <- named(x = NA, type = "n", xlim, ylim, xlab, ylab)
+    do.call(plot, args)
+    for (i in spns) lines(x = dpns, y = Y[i, ], col = cols[i])
+    legend(x = "topright", legend = ltxt, col = cols, lty = 1)
 }
 
 # Deprecated #####

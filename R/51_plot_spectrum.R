@@ -11,7 +11,7 @@
 #' @param sub_show Logical. If TRUE, a sub figure is drawn within the main plot region. If FALSE, the sub figure is not drawn.
 #' @param sub_rgn Either NULL or a numeric vector of the form `c(x1, x2, y1, y2)` giving the left/right/bottom/top coordinates of the sub figure region in "normalized plot coordinates" (as described in [graphics::grconvertX()]). If provided, the focused region is drawn as sub figure within the main plot region. Setting `sub_rgn` to NULL will prevent the sub figure from being drawn.
 #' @param foc_only Logical. If TRUE, only the focused region is drawn. If FALSE, the full spectrum is drawn.
-#' @param foc_fill Background color of the rectangle around the focus region.
+#' @param rct_fill Background color of the rectangle around the focus region.
 #' @param rct_col Border color of the rectangle around the focus region.
 #' @param main Title of the plot.
 #' @param xlab Label for the x-axis.
@@ -87,7 +87,7 @@
 #'     if (4 %in% figs) {
 #'         plot_spectrum(decon,
 #'             sub_mar = c(4, 4, 0, 0),
-#'             foc_fill = rgb(0.9, 0.5, 0.9, alpha = 0.1),
+#'             rct_fill = rgb(0.9, 0.5, 0.9, alpha = 0.1),
 #'             rct_col = "violet",
 #'             sub_rgn = c(x1 = 0.1, x2 = 0.9, y1 = 0.4, y2 = 0.9)
 #'         )
@@ -96,7 +96,7 @@
 #'     # Remove connecting lines and fill colors
 #'     if (5 %in% figs) {
 #'         plot_spectrum(decon,
-#'             foc_fill = NULL,
+#'             rct_fill = NULL,
 #'             sub_fill_col = NULL,
 #'             cnct_col = NULL
 #'         )
@@ -303,7 +303,7 @@ ps_test <- function(figs = 1:5) {
     if (4 %in% figs) {
         plot_spectrum(decon,
             sub_mar = c(4, 4, 0, 0),
-            foc_fill = rgb(0.9, 0.5, 0.9, alpha = 0.1),
+            rct_fill = rgb(0.9, 0.5, 0.9, alpha = 0.1),
             rct_col = "violet",
             sub_rgn = c(x1 = 0.1, x2 = 0.9, y1 = 0.4, y2 = 0.9)
         )
@@ -312,7 +312,7 @@ ps_test <- function(figs = 1:5) {
     # Remove connecting lines and fill colors
     if (5 %in% figs) {
         plot_spectrum(decon,
-            foc_fill = NULL,
+            rct_fill = NULL,
             sub_fill_col = NULL,
             cnct_col = NULL
         )

@@ -319,13 +319,13 @@ simulate_spectra <- function(pngdir = NULL,
 #' @examples
 #' simulate_spectrum()
 #' \dontrun{
-#'      deconv <- glc("blood_11")$rv$ret
+#'      deconv <- glc("blood_02")$rv$ret
 #'      show = FALSE
-#'      pngpath <- "vignettes/Datasets/png/sim_11.png"
-#'      pdfpath <- "vignettes/Datasets/pdf/sim_11.pdf"
-#'      svgpath <- "vignettes/Datasets/svg/sim_11.svg"
-#'      rdspath <- "inst/example_datasets/rds/sim/sim_11.rds"
-#'      brukerdir <- "inst/example_datasets/bruker/sim/sim_11"
+#'      pngpath <- "vignettes/Datasets/png/sim_02.png"
+#'      pdfpath <- "vignettes/Datasets/pdf/sim_02.pdf"
+#'      svgpath <- "vignettes/Datasets/svg/sim_02.svg"
+#'      rdspath <- "inst/example_datasets/rds/sim/sim_02.rds"
+#'      brukerdir <- "inst/example_datasets/bruker/sim/sim_02"
 #'      simulate_spectrum(deconv, show, pngpath, pdfpath, svgpath, rdspath, brukerdir)
 #' }
 simulate_spectrum <- function(deconv = glc("blood_01")$rv$ret,
@@ -378,10 +378,14 @@ create_sim_spec <- function(deconv = glc(dp = "blood_01", debug = FALSE)$rv,
     X <- data.frame(cs, fq, si_raw, si_smooth)[ix, ]
 
     logv("Throwing away lorentz curves outside of 3.45 to 3.55 ppm range")
-    ip <- which(deconv$x_0_ppm >= 3.45 & deconv$x_0_ppm <= 3.55)
+    if (deconv$filename == "blood_02") {
+        ip <- which( deconv$x_0_ppm <= 3.54 & deconv$x_0_ppm >= 3.44) # Blood 02 is shifted approx. 0.01 ppm to the right, so we also need to shift the interval from which we pick our peaks so that we end up with signals from the same metabolites.
+    } else {
+        ip <- which(deconv$x_0_ppm <= 3.55 & deconv$x_0_ppm >= 3.45)
+    }
     P <- data.frame(
-        A     = -deconv$A_ppm[ip],
-        x_0   = +deconv$x_0_ppm[ip],
+        A      = -deconv$A_ppm[ip],
+        x_0    = +deconv$x_0_ppm[ip],
         lambda = -deconv$lambda_ppm[ip]
     )
 

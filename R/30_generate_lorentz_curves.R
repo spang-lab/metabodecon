@@ -113,6 +113,7 @@ generate_lorentz_curves <- function(data_path = metabodecon_file("urine_1"),
                                     share_stdout = FALSE,
                                     force = FALSE,
                                     verbose = TRUE) {
+
     if (isFALSE(verbose)) {
         opts <- options(toscutil.logf.file = nullfile())
         on.exit(options(opts), add = TRUE)
@@ -167,6 +168,7 @@ generate_lorentz_curves <- function(data_path = metabodecon_file("urine_1"),
     logf("Finished deconvolution of %d spectra in %s", nfiles, format(round(duration, 3)))
     names(spectra) <- nams
 
+
     # Prepare, store and return results
     ret <- if (debug) spectra else lapply(spectra, function(s) s$ret)
     if (isTRUE(make_rds)) {
@@ -182,6 +184,46 @@ generate_lorentz_curves <- function(data_path = metabodecon_file("urine_1"),
         saveRDS(ret, make_rds)
     }
     if (nfiles == 1) ret[[1]] else ret
+}
+
+#' @export
+#' @title Deconvolute the Sim Dataset
+#' @description The simulated 'Sim' dataset is much smaller than true NMR spectra (1309 datapoints instead of 131072) and lacks a water signal. This makes it ideal for use in examples or as a default value for functions. However, the default values for `sfr`, `wshw`, and `delta` in the `generate_lorentz_curves()` function are not optimal for this dataset. To avoid repeatedly defining the optimal parameters in examples, this function is provided to deconvolute the "Sim" dataset with suitable parameters. The actual parameters used for the deconvolution can be found in the 'Examples' section.
+#' @param name Name of the spectra to deconvolute. Use `'bruker/sim'` to deconvolute all spectra of the Sim dataset. Use `'bruker/sim_subset'` to deconvolute only the first two spectra of the Sim dataset. Use `'bruker/sim/sim_xx'`, with `xx` being a number between `01` and `16`, to deconvolute a single spectrum of the Sim dataset. The provided name is passed to `metabodecon_file()` to get the path to the spectra.
+#' @param ask Whether to ask for user input during the deconvolution process.
+#' @param verbose Whether to print log messages during the deconvolution process.
+#' @return A list representing the deconvoluted spectra. For details see the return value of `generate_lorentz_curves()`.
+#' @examples
+#' # Detailed version:
+#' name = "bruker/sim_subset"
+#' path <- metabodecon_file(name)
+#' decons1 <- generate_lorentz_curves(
+#'     data_path = path,    # Path to directory containing spectra
+#'     sfr = c(3.42, 3.58), # Borders of signal free region (SFR) in ppm
+#'     wshw = 0,            # Half width of water signal (WS) in ppm
+#'     delta = 0.1,         # Threshold for peak filtering
+#'     ask = FALSE,         # Don't ask for user input
+#'     verbose = FALSE      # Suppress status messages
+#' )
+#'
+#' # Short version with `glc_sim()`:
+#' decons2 <- glc_sim("bruker/sim_subset")
+#'
+#' # Comparison of results:
+#' all.equal(decons1, decons2)
+glc_sim <- function(name = "bruker/sim_subset", ask = FALSE, verbose = FALSE) {
+    pattern <- "^bruker/(sim|sim_subset|sim/sim_0[1-9]|sim/sim_1[0-6])$"
+    errmsg <- "Invalid name. Use 'bruker/sim', 'bruker/sim_subset' or 'bruker/sim/sim_xx' with xx being a number between 01 and 16."
+    if (!(is.character(name) && length(name) == 1 && grepl(pattern, name))) stop(errmsg)
+    path <- metabodecon_file(name)
+    generate_lorentz_curves(
+        data_path = path,    # Path to directory containing spectra
+        sfr = c(3.42, 3.58), # Borders of signal free region (SFR) in ppm
+        wshw = 0,            # Half width of water signal (WS) in ppm
+        delta = 0.1,         # Configure threshold for peak filtering
+        ask = ask,           # Don't ask for user input
+        verbose = verbose    # Suppress status messages
+    )
 }
 
 # Private Helpers #####
