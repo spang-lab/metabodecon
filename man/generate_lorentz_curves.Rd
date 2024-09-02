@@ -18,7 +18,7 @@ generate_lorentz_curves(
   sf = c(1000, 1e+06),
   ask = TRUE,
   debug = FALSE,
-  nworkers = "auto",
+  nworkers = 1,
   share_stdout = FALSE,
   force = FALSE,
   verbose = TRUE
@@ -105,16 +105,16 @@ sim_12_specs <- list(sim_1_spec, sim_2_spec)
 # Define a little wrapper function so we don't have to provide all parameters
 # every time we want to start the deconvolution procedure:
 glc2 <- function(data_path) {
-     generate_lorentz_curves(
-         data_path = data_path,
-         ask = FALSE,
-         sfr = c(3.42, 3.58),
-         ws = 0,
-         smopts = c(1, 5),
-         delta = 0.1,
-         nworkers = 2,
-         verbose = FALSE
-     )
+    generate_lorentz_curves(
+        data_path = data_path,
+        ask = FALSE,
+        sfr = c(3.42, 3.58),
+        ws = 0,
+        smopts = c(1, 5),
+        delta = 0.1,
+        nworkers = 2,
+        verbose = FALSE
+    )
 }
 
 # Deconvolute each input:
@@ -125,9 +125,9 @@ decon_sim_dir <- glc2(sim_dir)
 
 # Make sure the results for the first spectrum are the same:
 compare <- function(decon1, decon2) {
-     ignore <- which(names(decon1) \%in\% c("number_of_files", "filename"))
-     equal <- all.equal(decon1[-ignore], decon2[-ignore])
-     stopifnot(isTRUE(equal))
+    ignore <- which(names(decon1) \%in\% c("number_of_files", "filename"))
+    equal <- all.equal(decon1[-ignore], decon2[-ignore])
+    stopifnot(isTRUE(equal))
 }
 compare(decon_sim_1_dir, decon_sim_1_spec)
 compare(decon_sim_1_dir, decon_sim_12_specs[[1]])
@@ -138,8 +138,8 @@ compare(decon_sim_1_dir, decon_sim_dir[[1]])
 # `ask` is TRUE in this example (the default value), the user will be asked
 # for input during the deconvolution. To avoid this, set `ask = FALSE`.
 \dontrun{
-     example_datasets <- download_example_datasets()
-     urine_1 <- file.path(example_datasets, "bruker/urine/urine_1")
-     decon_urine_1 <- generate_lorentz_curves(urine_1)
+example_datasets <- download_example_datasets()
+urine_1 <- file.path(example_datasets, "bruker/urine/urine_1")
+decon_urine_1 <- generate_lorentz_curves(urine_1)
 }
 }

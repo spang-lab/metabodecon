@@ -42,9 +42,9 @@ This article shows how Metabodecon can be used for deconvoluting and aligning on
 To find the path to the Sim dataset, you can use the `metabodecon_file()` function, which returns the path to any file or directory within the package directory. To deconvolute the spectra within the Sim dataset you can use `generate_lorentz_curves()`:
 
 ```R
-simdir <- metabodecon::metabodecon_file("bruker/sim")
-decons <- metabodecon::generate_lorentz_curves(
-    data_path = simdir,  # Path to directory containing spectra
+sim_dir <- metabodecon::metabodecon_file("bruker/sim")
+deconvoluted_spectra <- metabodecon::generate_lorentz_curves(
+    data_path = sim_dir, # Path to directory containing spectra
     sfr = c(3.42, 3.58), # Borders of signal free region (SFR) in ppm
     wshw = 0,            # Half width of water signal (WS) in ppm
     smopts = c(2, 5),    # Configure smoothing parameters
@@ -85,15 +85,15 @@ After completing the deconvolution, it is advisable to visualize the extracted s
 
 ```R
 # Visualize the first spectrum only
-metabodecon::plot_spectrum(decons[[1]], foc_rgn = c(0.5, 0.2))
+metabodecon::plot_spectrum(deconvoluted_spectra[[1]], foc_rgn = c(0.5, 0.2))
 
 # Visualize all spectra and save them to a pdf file
 pdfpath <- tempfile(fileext = ".pdf")
 pdf(pdfpath, width = 12, height = 8)
-for (i in seq_along(decons)) {
+for (i in seq_along(deconvoluted_spectra)) {
     metabodecon::plot_spectrum(
-        decon   = decons[[i]],
-        main    = decons[[i]]$filename,
+        decon   = deconvoluted_spectra[[i]],
+        main    = deconvoluted_spectra[[i]]$filename,
         foc_rgn = c(0.25, 0.75)
     )
 }
@@ -121,28 +121,19 @@ Deconvolution results for the first two spectra of the Sim dataset. The raw SI (
 
 # Align deconvoluted spectra
 
-The general workflow for aligning a set of deconvoluted spectra is as follows:
+The last step in the Metabodecon Workflow is to align the deconvoluted spectra. This is necessary because the chemical shifts of the peaks in the spectra may vary slightly due to differences in the measurement conditions.
 
-1. Look up global maximum and minimum ppm values over all spectra
-2. Generate a matrix of features based on the spectrum data
-3. Align the spectra using the 'speaq' package
-4. Combine signals of peaks which are spread over adjacent columns
-
-The following code snippets show how the above steps can be done using the 'metabodecon' package:
-
-## 1. Look up spectrum range
-
-You can use function `get_ppm_range()` to determine the global maximum and minimum ppm values over all spectra. Setting `show = TRUE` will additionally create a plot showing the spectra overlayed on top of each other. The plot is shown in [Figure 3](#fig-sim-spectra-overlay).
-
+To visualize the data before and after the alignment, you can use `plot_spectra()`. To do the alignment, you can use `align_spectra()`:
 
 ```R
-ppm_range <- metabodecon::get_ppm_range(spectrum_data = decons, show = TRUE)
-ppm_range_str <- paste(round(ppm_range, 3), collapse = " - ")
-cat(sprintf("PPM Range: %s\n", ppm_range_str))
-## PPM Range: 3.455 - 3.547
+metabodecon::plot_spectra(deconvoluted_spectra)
+aligned_spectra <- metabodecon::align_spectra(deconvoluted_spectra)
+metabodecon::plot_spectra(aligned_spectra)
 ```
 
-<figure id="fig-sim1-plots">
+The resulting plots are shown in [Figure 3](#fig-sim-spectra-overlayed)
+
+<figure id="fig-sim-spectra-overlayed">
 <a href="Get_Started/sim_spectra_overlayed.svg">
   <img src="Get_Started/sim_spectra_overlayed.svg" alt="sim_spectra_overlayed.svg">
 </a>
@@ -152,62 +143,6 @@ Overlay of all 16 deconvoluted spectra from the Sim dataset. The x-Axis gives th
 </figcaption>
 </figure>
 
-
-## 2. Generate feature matrix
-
-To generate a matrix of features based on the spectrum data, you can use `gen_feat_mat()`. This function will return a list containing
-
-- `data_matrix`: A data.frame where each row corresponds to one spectrum and each column to one data point, i.e. for 16 input spectra with 1309 data points we get dimension 16 x 1309.
-- `peakList`: A list of vectors, where each vector contains the indices of the peaks in the corresponding spectrum. The indices increase from left to right, i.e. the smallest index corresponds to the highest ppm value, as the ppm values decrease from left to right.
-- `w` / `lambda` / `lambda`: A list of vectors where each vector contains the "position / area / width paramater" of the peaks in the corresponding spectrum.
-
-```R
-feat <- metabodecon::gen_feat_mat(decons)
-str(feat, 1)
-## List of 5
-##  $ data_matrix: num [1:16, 1:1309] 0.01351 0.02418 ...
-##  $ peakList   :List of 16
-##  $ w          :List of 16
-##  $ A          :List of 16
-##  $ lambda     :List of 16
-```
-
-## 3. Align spectra
-
-Now that we have one single matrix containing all spectra, we can align them using `speaq_align()`. The resulting matrix will have one row for each spectrum and one column for each chemical shift.
-
-```R
-after_speaq_mat <- metabodecon::speaq_align(
-  feat = feat,
-  maxShift = 50,
-  spectrum_data = decons
-)
-str(after_speaq_mat, 2)
-```
-
-Parameter `maxShift` of `speaq_align()` give the maximum number of points along the x axis a value can be moved by the 'speaq' package. A value of 50 may be used as start value for plasma spectra. However, depending on your spectra and the used digital resolution this value may be be adapted.
-
-## 4. Combine peaks
-
-```R
-aligned_res <- metabodecon::combine_peaks(
-  shifted_mat = after_speaq_mat,
-  range = 5, # Number of adjacent columns to be used for improving alignment
-  lower_bound = 1 # Number of columns that need to be skipped
-  spectrum_data = spectrum_data,
-  data_path = data_path
-)
-str(aligned_res, 1)
-head(aligned_res$long)
-head(aligned_res$short)
-```
-
-The final result of the alignment `aligned_res` is a list containing two matrices:
-
-- `long`: the aligned matrix of signal intensities. Each row corresponds to a spectrum and each column to a chemical shift.
-- `short`: same as `long`, but all columns containing only zeros have been removed.
-
-Furthermore, results are written into two .csv files in your `data_path` directory "aligned_res_short.csv" and "aligned_res_long.csv".
 
 <!-- Footnotes -->
 

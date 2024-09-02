@@ -1,13 +1,34 @@
 # Exported Main #####
 
 #' @export
+#' @title Align Spectra
+#' @description Align signals across a list of deconvoluted spectra using the 'CluPA' algorithm from the 'speaq' package, described in Beirnaert et al. (2018) <doi:10.1371/journal.pcbi.1006018> and Vu et al. (2011) <doi:10.1186/1471-2105-12-405> plus the additional peak combination described in [combine_peaks()].
+#' @param deconvs An object of class [DeconvolutedSpectra] as returned by [generate_lorentz_curves()].
+#' @param maxShift Maximum number of points along the "ppm-axis" which a value can be moved by the 'speaq' package. 50 is a suitable starting value for plasma spectra with a digital resolution of 128K. Note that this parameter has to be individually optimized depending on the type of analyzed spectra and the digital resolution. For urine which is more prone to chemical shift variations this value most probably has to be increased. Passed as argument `maxShift` to [speaq_align()].
+#' @param maxCombine Amount of adjacent columns which may be combined for improving the alignment. Passed as argument `range` to [combine_peaks()].
+#' @return An object of class [AlignedSpectra]
+#' @examples
+#' sim_dir <- metabodecon_file("bruker/sim")
+#' spectra <- read_spectra(sim_dir)
+#' deconvs <- glc_sim(spectra = spectra)
+#' aligned <- align_spectra(deconvs)
+#' str(aligned)
+align_spectra <- function(deconvs, maxShift = 50, maxCombine = 5) {
+    smat <- speaq_align(spectrum_data = deconvs, maxShift = 50)
+    tmp <- combine_peaks(shifted_mat = smat, range = maxCombine, spectrum_data = deconvs)
+    tmp$long
+}
+
+# Exported Helpers #####
+
+#' @export
 #' @title Get PPM Range covered by Spectra
 #' @description Returns the ppm range across all peaks of the provided deconvoluted spectra.
 #' @param spectrum_data A list of deconvoluted spectra as returned by [generate_lorentz_curves()].
 #' @param show Whether to plot the ppm range on the spectrum plot.
 #' @param mar The margins of the plot. Passed on to `par()`.
 #' @return A vector containing the lowest and highest ppm value over all peaks of the provided deconvoluted spectra.
-#' @author Initial version from Wolfram Gronwald, 2021. Refactored by Tobias Schmidt in 2024.
+#' @author Initial version from Wolfram Gronwald. Refactored by Tobias Schmidt in 2024.
 #' @examples
 #' spectrum_data = glc_sim()
 #' ppm_rng <- get_ppm_range(spectrum_data, show = TRUE)
@@ -21,7 +42,7 @@ get_ppm_range <- function(spectrum_data = glc_sim(),
     ppm_min <- min(sapply(ss, function(s) min(s$peak_triplets_middle)))
     ppm_max <- max(sapply(ss, function(s) max(s$peak_triplets_middle)))
     ppm_rng <- c(ppm_min, ppm_max)
-    if (show) plot_spectra(ss, mar = mar, ppm_rng = ppm_rng)
+    if (show) plot_spectra(ss, mar = mar, peak_rng = ppm_rng)
     ppm_rng
 }
 
@@ -40,16 +61,12 @@ get_ppm_range <- function(spectrum_data = glc_sim(),
 #' - `w`: A list of vectors where each vector contains the "position paramater" of the peaks in the corresponding spectrum.
 #' - `A`: A list of vectors where each vector contains the "area parameter" of the peaks in the corresponding spectrum.
 #' - `lambda`: A list of vectors where each vector contains the "width parameter" of the peaks in the corresponding spectrum.
+#' @author Initial version from Wolfram Gronwald. Refactored by Tobias Schmidt in 2024.
 #' @examples
-#' sim <- metabodecon_file("bruker/sim_subset")
-#' decons <- generate_lorentz_curves(
-#'      sim,
-#'      sfr = c(3.58, 3.42), wshw = 0, delta = 0.1,
-#'      ask = FALSE, verbose = FALSE
-#' )
+#' decons <- glc_sim("bruker/sim")
 #' obj <- gen_feat_mat(decons)
 #' str(obj, 2, give.attr = FALSE)
-gen_feat_mat <- function(data_path = generate_lorentz_curves(),
+gen_feat_mat <- function(data_path = glc_sim(),
                          ppm_range = get_ppm_range(data_path),
                          si_size_real_spectrum = length(data_path$y_values),
                          scale_factor_x = 1000,
@@ -97,19 +114,15 @@ gen_feat_mat <- function(data_path = generate_lorentz_curves(),
 #' Example return matrix:
 #'
 #' ```
-#'      ...  3.59  3.58  3.57  3.56  3.55  3.54  3.53
-#'    .----------------------------------------------> PPM
-#'  1 | NA   NA    0.20  NA    NA    NA    0.25  NA
-#'  2 | NA   NA    0.15  NA    NA    NA    0.13  NA
-#'  3 | NA   NA    NA    0.2   NA    NA    0.18  NA
-#'  SpNr
+#'     ...  3.59  3.58  3.57  3.56  3.55  3.54  3.53
+#'   .----------------------------------------------> PPM
+#' 1 | NA   NA    0.20  NA    NA    NA    0.25  NA
+#' 2 | NA   NA    0.15  NA    NA    NA    0.13  NA
+#' 3 | NA   NA    NA    0.2   NA    NA    0.18  NA
+#' SpNr
 #' ```
 #'
-#' Spectrum 3 has a signal with an integral value of 0.2 at
-#' position 3.57 after alignment. Spectrum 1 and 2 have no
-#' signal at this position after alignment.
-#' ```
-#'
+#' @author Initial version from Wolfram Gronwald. Refactored by Tobias Schmidt in 2024.
 #' @examples
 #' spectrum_data <- glc_sim("bruker/sim")
 #' feat <- gen_feat_mat(spectrum_data)
@@ -150,43 +163,45 @@ speaq_align <- function(feat = gen_feat_mat(spectrum_data),
     return(M)
 }
 
-#' @noRd
+#' @export
 #' @title Combine Peaks
 #' @description Even after calling `speaq_align()`, the alignment of individual signals is not always perfect, as 'speaq' performs a segment-wise alignment i.e. groups of signals are aligned. For further improvements, partly filled neighboring columns are merged.
 #' @param shifted_mat The matrix returned by `speaq_align()`.
 #' @param range Amount of adjacent columns which are permitted to be used for improving the alignment.
-#' @param lower_bound Amount of columns that need to be skipped (e.g. because they contain rownames instead of values). Only modify in case of errors.
+#' @param lower_bound Minimum amount of non-zero elements per column to trigger the alignment improvement.
 #' @param spectrum_data The list of deconvoluted spectra as returned by `generate_lorentz_curves()`.
 #' @param data_path If not NULL, the returned dataframes `long` and `short` are written to `data_path` as "aligned_res_long.csv" and "aligned_res_short.csv".
 #' @return A list containing two data frames `long` and `short`. The first data frame contains one one column for each data point in the original spectrum. The second data frame contains only columns where at least one entry is non-zero.
 #' @details
-#' Example:
+#' Example of what the function does:
 #'
 #' ```txt
-#'               3.56   3.54  3.51  3.51   3.50
-#' Spectrum 1  | 0.13   0     0.11  0      0
-#' Spectrum 2  | 0.13   0     0.12  0      0
-#' Spectrum 3  | 0.07   0     0     0      0
-#' Spectrum 4  | 0.08   0     0     0.07   0
-#' Spectrum 5  | 0.04   0     0.04  0      0
+#' |            | 3.56 | 3.54 | 3.51 | 3.51 | 3.50 |
+#' |----------- |------|------|------|------|------|
+#' | Spectrum 1 | 0.13 | 0    | 0.11 | 0    | 0    |
+#' | Spectrum 2 | 0.13 | 0    | 0.12 | 0    | 0    |
+#' | Spectrum 3 | 0.07 | 0    | 0    | 0    | 0    |
+#' | Spectrum 4 | 0.08 | 0    | 0    | 0.07 | 0    |
+#' | Spectrum 5 | 0.04 | 0    | 0.04 | 0    | 0    |
 #'
 #' becomes
 #'
-#'               3.54   3.54  3.51  3.50
-#' Spectrum 1  | 0.13   0     0.11  0
-#' Spectrum 2  | 0.13   0     0.12  0
-#' Spectrum 3  | 0.07   0     0     0
-#' Spectrum 4  | 0.08   0     0.07  0
-#' Spectrum 5  | 0.04   0     0.04  0
+#' |            | 3.56 | 3.54 | 3.51 | 3.50 |
+#' |----------- |------|------|------|------|
+#' | Spectrum 1 | 0.13 | 0    | 0.11 | 0    |
+#' | Spectrum 2 | 0.13 | 0    | 0.12 | 0    |
+#' | Spectrum 3 | 0.07 | 0    | 0    | 0    |
+#' | Spectrum 4 | 0.08 | 0    | 0.07 | 0    |
+#' | Spectrum 5 | 0.04 | 0    | 0.04 | 0    |
 #'
-#' I.e. column 3 and 4 get merged, because they are adjacent
-#' and have no common non-zero entries.
+#' I.e. column 3 and 4 get merged, because they are in `range` of each other and have no common non-zero entries.
 #' ```
 #'
+#' @author Initial version from Wolfram Gronwald. Refactored by Tobias Schmidt in 2024.
 #' @examples
 #' shifted_mat <- speaq_align(spectrum_data = glc_sim("bruker/sim"))
 #' M2 <- combine_peaks(shifted_mat, spectrum_data = glc_sim("bruker/sim"))
-combine_peaks <- function(shifted_mat = speaq_align(spectrum_data = spectrum_data, show = TRUE),
+combine_peaks <- function(shifted_mat = speaq_align(spectrum_data = spectrum_data),
                           range = 5,
                           lower_bound = 1,
                           spectrum_data = glc_sim("bruker/sim"),
@@ -225,13 +240,14 @@ combine_peaks <- function(shifted_mat = speaq_align(spectrum_data = spectrum_dat
         }
     }
     colnames(S) <- as.character(round(spectrum_data[[1]]$x_values_ppm, digits = 4))
-    # removal of columns containing only zeros
-    kick.out <- apply(S, 2, function(z) {
-        all(z == 0)
-    })
+    kick.out <- apply(S, 2, function(z) all(z == 0))
     shifted_mat_no_na_s <- S[, !kick.out]
-    # utils::write.csv2(S, file = file.path(data_path, "aligned_res_long.csv"))
-    # utils::write.csv2(shifted_mat_no_na_s, file = file.path(data_path, "aligned_res_short.csv"))
+    if (!is.null(data_path)) {
+        long.csv <- file.path(data_path, "aligned_res_long.csv")
+        short.csv <- file.path(data_path, "aligned_res_short.csv")
+        utils::write.csv2(S, file = long.csv)
+        utils::write.csv2(shifted_mat_no_na_s, file = file.path(data_path, "aligned_res_short.csv"))
+    }
     return_list <- list("short" = shifted_mat_no_na_s, "long" = S)
     return(return_list)
 }
@@ -248,6 +264,7 @@ combine_peaks <- function(shifted_mat = speaq_align(spectrum_data = spectrum_dat
 #' @param acceptLostPeak Whether to allow the the alignment algorithm to ignore peaks that cannot easily be aligned with the reference spectrum.
 #' @param verbose Whether to print additional information during the alignment process.
 #' @return A list containing two data frames `Y` and `new_peakList`. The first one contains the aligned spectra, the second one contains the aligned signals of each spectrum.
+#' @author Initial version from Wolfram Gronwald. Refactored by Tobias Schmidt in 2024.
 #' @examples
 #' decons <- glc_sim()
 #' feat <- gen_feat_mat(decons)
@@ -287,6 +304,7 @@ dohCluster <- function(X,
     return(res)
 }
 
+#' @author Wolfram Gronwald.
 #' @noRd
 dohCluster_withoutMaxShift <- function(X,
                                        peakList,
@@ -378,6 +396,7 @@ dohCluster_withoutMaxShift <- function(X,
     return(return_list)
 }
 
+#' @author Wolfram Gronwald.
 #' @noRd
 dohCluster_withMaxShift <- function(X,
                                     peakList,
@@ -449,6 +468,7 @@ dohCluster_withMaxShift <- function(X,
 #' @param data_path A list of deconvoluted spectra as returned by [generate_lorentz_curves()] or a path to a folder containing ".* parameters.txt" and ".* approximated_spectrum.txt" files.
 #' @param warn (logical) Whether to print warning in case a file path is provided instead of a list of deconvoluted spectra.
 #' @param check (logical) Whether to sanity check the deconvolution parameters before returning them.
+#' @author Tobias Schmidt
 #' @return A list containing the deconvolution parameters, i.e. `w`, `lambda`, `A`, and `spectrum_superposition`.
 get_decon_params <- function(data_path, warn = TRUE, check = TRUE) {
     dd <- data_path
@@ -461,14 +481,15 @@ get_decon_params <- function(data_path, warn = TRUE, check = TRUE) {
         params <- named(w, lambda, A, spectrum_superposition)
     } else {
         if (!file.exists(dd)) stop(dd, " does not exist.") else if (warn) warning("You have provided a path to `gen_feat_mat()`. Since metabodecon v1.2 it is recommended to provide the output of `generate_lorentz_curves()` directly instead to speed up the computations. For details see section 'Details' after calling `help('gen_feat_mat')`.")
-        params <- read_decon_params_v2(dd)
+        params <- read_decon_params(dd)
     }
     if (check) check_decon_params(params)
     params
 }
 
+#' @author Tobias Schmidt
 #' @noRd
-read_decon_params_v2 <- function(data_path) {
+read_decon_params <- function(data_path) {
     par_txt <- dir(data_path, "(.*) parameters.txt", full.names = TRUE)
     spc_txt <- dir(data_path, "(.*) approximated_spectrum.txt", full.names = TRUE)
     par_nam <- sub(" parameters.txt", "", basename(par_txt))
@@ -492,12 +513,14 @@ read_decon_params_v2 <- function(data_path) {
     named(w, lambda, A, spectrum_superposition)
 }
 
+#' @author Tobias Schmidt
 #' @noRd
 check_decon_params <- function(params) {
     nulls <- unlist(sapply(params, function(pp) sapply(pp, is.null)))
     if (any(nulls)) warning("Detected missing params: ", names(nulls)[nulls])
 }
 
+#' @author Tobias Schmidt
 #' @noRd
 rm_zero_width_peaks <- function(params) {
     for (i in seq_len(params$A)) {
@@ -509,116 +532,13 @@ rm_zero_width_peaks <- function(params) {
     params
 }
 
-#' @noRd
-is_decon_obj <- function(x) {
-    keys <- c(
-        "number_of_files", "filename", "x_values", "x_values_ppm",
-        "y_values", "spectrum_superposition", "mse_normed", "index_peak_triplets_middle",
-        "index_peak_triplets_left", "index_peak_triplets_right", "peak_triplets_middle",
-        "peak_triplets_left", "peak_triplets_right", "integrals", "signal_free_region",
-        "range_water_signal_ppm", "A", "lambda", "x_0"
-    )
-    if (is.list(x) && all(keys %in% names(x))) TRUE else FALSE
-}
-
-#' @noRd
-is_decon_list <- function(x) {
-    if (is.list(x) && all(sapply(x, is_decon_obj))) TRUE else FALSE
-}
-
-plot_spectra <- function(ss = glc_sim(),
-                         mar = c(4.1, 4.1, 1.1, 0.1),
-                         peak_rng = get_ppm_range(ss, show = FALSE)) {
-    if (is_decon_obj(ss)) ss <- list(ss)
-    if (is_decon_list(ss)) {
-        xrng <- range(c(sapply(ss, function(s) s$x_values_ppm)))
-        ymax <- max(sapply(ss, function(s) max(s$y_values)))
-    } else if (is.data.frame(ss)) {
-        stop("ss must be a list of deconvoluted spectra.")
-    }
-    a <- peak_rng[1]
-    b <- peak_rng[2]
-    w <- (b - a) / 4
-    y8 <- ymax * 0.8
-    cols <- rainbow(length(ss))
-    ltxt <- paste("Spectrum", 1:length(ss))
-    opar <- par(mar = mar)
-    on.exit(par(opar))
-    plot(
-        x = NA,
-        type = "n",
-        xlim = xrng[2:1],
-        ylim = c(0, ymax),
-        xlab = "Chemical Shift [ppm]",
-        ylab = "Signal Intensity [au]"
-    )
-    abline(v = peak_rng, lty = 2)
-    for (i in 1:length(ss)) {
-        lines(
-            x = ss[[i]]$x_values_ppm,
-            y = ss[[i]]$y_values,
-            col = cols[i]
-        )
-    }
-    arrows(
-        x0 = c(a + w, b - w),
-        x1 = c(a, b),
-        y0 = y8,
-        y1 = y8,
-        length = 0.1,
-        lty = 2,
-        col = "black"
-    )
-    text(
-        x = mean(c(a, b)),
-        y = y8,
-        labels = "ppm range"
-    )
-    mtext(
-        text = round(c(a, b), 4),
-        side = 3,
-        line = 0,
-        at = c(a, b)
-    )
-    legend(
-        x = "topright",
-        legend = ltxt,
-        col = cols,
-        lty = 1
-    )
-}
-
-plot_si_mat <- function(Y = glc_sim("bruker/sim"),
-                        lgdcex = "auto",
-                        main = NULL,
-                        mar = par("mar")) {
-    n <- nrow(Y) # Number of Spectra
-    p <- ncol(Y) # Number of Datapoints
-    cols <- rainbow(n) # Colors
-    dpis <- seq_len(p) # Datapoint Indices
-    spis <- seq_len(n) # Spectrum Indices
-    ltxt <- paste("Spectrum", spis)
-    xlab <- "Datapoint Number"
-    ylab <- "Signal Intensity"
-    xlim <- c(1, p)
-    ylim <- c(0, max(Y))
-    args <- named(x = NA, type = "n", xlim, ylim, xlab, ylab)
-    opar <- par(mar = mar)
-    on.exit(par(opar))
-    do.call(plot, args)
-    for (i in spis) lines(x = dpis, y = Y[i, ], col = cols[i])
-    if (lgdcex == "auto") lgdcex <- 1 / max(1, log(n, base = 8))
-    legend(x = "topright", legend = ltxt, col = cols, lty = 1, cex = lgdcex)
-    if (!is.null(main)) title(main = main)
-}
-
 # Deprecated #####
 
+#' @author Initial version written by from Wolfram Gronwald as part of `gen_feat_mat`. Moved into seperate function in 2024 by Tobias Schmidt.
 #' @noRd
 read_decon_params_v1 <- function(data_path) {
     files <- list.files(data_path, ".txt", full.names = TRUE)
     num_spectra <- length(files) / 2
-
     spectrum_superposition <- vector(mode = "list", length = num_spectra)
     data_info <- vector(mode = "list", length = num_spectra)
     numerator_info <- 1
@@ -633,7 +553,6 @@ read_decon_params_v1 <- function(data_path) {
             numerator_spectrum <- numerator_spectrum + 1
         }
     }
-
     w <- vector(mode = "list", length = num_spectra)
     lambda <- vector(mode = "list", length = num_spectra)
     A <- vector(mode = "list", length = num_spectra)
@@ -653,6 +572,7 @@ read_decon_params_v1 <- function(data_path) {
 #' @param spectrum_data Output of `generate_lorentz_curves()`.
 #' @param si_size_real_spectrum Number of real data points in your original spectra.
 #' @return A matrix containing the aligned integral values of all spectra. Each row contains the data of each spectrum and each column corresponds to one data point. Each entry corresponds to the integral of a deconvoluted signal with the signal center at this specific position after alignment by speaq.
+#' @author Wolfram Gronwald
 #' @examples
 #' spectrum_data <- glc_sim("bruker/sim")
 #' feat <- gen_feat_mat(spectrum_data)
@@ -726,85 +646,4 @@ speaq_align_v1 <- function(feat = gen_feat_mat(spectrum_data),
         }
     }
     return(after_speaq_mat)
-}
-
-# Work in Progress #####
-
-plot_alignment <- function(Y, U, Q, C, mfrow) {
-    if (!is.null(mfrow)) {
-        opar <- par(mfrow = mfrow, mar = c(0, 2, 0, 0), oma = c(4.1, 2.1, 0, 0))
-        on.exit(par(opar), add = TRUE)
-    }
-    for (i in seq_len(s)) {
-        plot(x = seq_len(ncol(Y)), y = Y[i, ],
-            type = "l", lty = 1, col = "darkgrey",
-            xlim = c(1, ncol(Y)), ylim = c(0, max(Y)),
-            xaxt = if (i == s) "s" else "n",
-            xlab = "Datapoint Number", ylab = "Signal Intensity"
-        )
-        abline(v = U[[i]], col = transp("darkgrey", 0.5), lty = 2)
-        abline(v = Q[[i]], col = transp("blue", 0.5), lty = 2)
-        lines(x = seq_len(ncol(Y)), y = C$Y[i, ], col = "blue", lty = 1)
-    }
-    mtext("Datapoint Number", side = 1, outer = TRUE, line = 3)
-    mtext("Signal Intensity", side = 2, outer = TRUE, line = 1)
-}
-
-#' @export
-#' @title Combine Peaks
-#' @description Even after calling `speaq_align()`, the alignment of individual signals is not always perfect, as 'speaq' performs a segment-wise alignment i.e. groups of signals are aligned. For further improvements, partly filled neighboring columns are merged.
-#' @param shifted_mat The matrix returned by `speaq_align()`.
-#' @param range Amount of adjacent columns which are permitted to be used for improving the alignment.
-#' @param lower_bound Minimum amount of non-zero elements per column to trigger the alignment improvement.
-#' @param spectrum_data The list of deconvoluted spectra as returned by `generate_lorentz_curves()`.
-#' @param data_path If not NULL, the returned dataframes `long` and `short` are written to `data_path` as "aligned_res_long.csv" and "aligned_res_short.csv".
-#' @return A list containing two data frames `long` and `short`. The first one contains one for one column for each data point in the original spectrum. The second one contains only columns where at least one entry is non-zero. The returned data.frames are additionally written to disk as .csv files `aligned_res_long.csv` and `aligned_res_short.csv`.
-#' @examples
-#' shifted_mat <- speaq_align(spectrum_data = glc_sim("bruker/sim"))
-#' spectrum_data <- glc_sim("bruker/sim")
-#' system.time(M1 <- combine_peaks_v1(shifted_mat, spectrum_data = spectrum_data))
-#' system.time(M2 <- combine_peaks(shifted_mat, spectrum_data = spectrum_data))
-#' all.equal(M1, M2)
-combine_peaks_v2 <- function(shifted_mat = speaq_align(spectrum_data = spectrum_data, show = TRUE),
-                             lower_bound = 1,
-                             range = 5,
-                             spectrum_data = glc_sim("bruker/sim"),
-                             data_path = NULL) {
-    M <- replace(shifted_mat, is.na(shifted_mat), 0) # Shifted matrix with NAs replaced by 0
-    s <- nrow(M) # Number of spectra
-    nz <- apply(M, 2, function(x) sum(x != 0)) # Number of Non-zero Entries (NZs) per column
-    nzIDs <- which(nz >= lower_bound) # Columns IDs (CIDs) with at least `lower_bound` NZs.
-    nzIDs <- nzIDs[order(nz[nzIDs], decreasing = TRUE)] # Sort column IDs with most NZs first
-    for (j in nzIDs) {
-        if (nz[j] == 0) next # Can happen if column j has already been absorbed by another column
-        while (TRUE) {
-            nbIDs <- c((j - range):(j - 1), (j + 1):(j + range)) # Indices of Neighbour columns
-            nbIDs <- nbIDs[nbIDs > 0 & nbIDs <= ncol(M)] # Remove out-of-bounds indices
-            cvs <- nz[nbIDs] # Number of Combinable Values (CVs) per column
-            if (all(cvs %in% c(0, s))) break # Stop early if neighbour cols are empty or completely filled already
-            for (i in seq_along(cvs)[cvs > 0 & cvs < s]) {
-                n <- nbIDs[i] # Index of neighbour column
-                if (any(M[, n] != 0 & M[, j] != 0)) cvs[n] <- 0
-                # Example:
-                # c(0, 0, 3, 4, 0) -> M[, n]
-                # c(2, 3, 0, 2, 1) -> M[, j]
-                # c(F, F, F, T, F) -> M[, n] != 0 & M[, j] != 0
-                # Not combinable because there is a common non-zero element at index 4
-            }
-            if (all(cvs %in% c(0, nrow(M)))) break
-            x <- nbIDs[which.max(cvs)] # Index of column to combine with current column
-            if (any(M[, x] == 0.03336328)) browser()
-            M[, j] <- M[, j] + M[, x]
-            M[, x] <- 0
-            nz[x] <- 0
-        }
-    }
-    ppm_rounded <- round(spectrum_data[[1]]$x_values_ppm, 4)
-    colnames(M) <- as.character(ppm_rounded)
-    nz <- apply(M, 2, function(x) sum(x != 0))
-    nzIDs <- which(nz >= lower_bound)
-    S <- M[, nzIDs] # Shifted matrix without zero-only-columns
-    # utils::write.csv2(M2, file = file.path(data_path, "aligned_res_long.csv"))
-    # utils::write.csv2(M, file = file.path(data_path, "aligned_res_short.csv"))
-    list("short" = S, "long" = M)
 }

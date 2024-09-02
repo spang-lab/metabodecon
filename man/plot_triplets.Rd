@@ -28,6 +28,10 @@ No return value, called for side effect of plotting.
 }
 \description{
 Plots the peak triplets for each peak detected by \code{\link[=MetaboDecon1D]{MetaboDecon1D()}} and stores the plots as png at \code{outdir}.
+
+Supersed by \code{\link[=plot_spectrum]{plot_spectrum()}} since metabodecon v1.2.0. Will be replaced with v2.
+
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
 }
 \examples{
 sim <- metabodecon_file("bruker/sim_subset")

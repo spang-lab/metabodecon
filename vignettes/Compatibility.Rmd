@@ -7,30 +7,34 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-The original MetaboDecon1D package provided four functions for deconvoluting spectra and visualizing results. With the introduction of Metabdecon, new functions for aligning deconvoluted spectra were added, along with improved replacements for the deconvolution functions. To maintain backwards compatible, the old deconvolution functions are still available but marked as deprecated. These old functions will be removed entirely in Metabodecon 2.0, planned for 2025.
+The original MetaboDecon1D package provided four functions for deconvoluting spectra and visualizing results. With the introduction of Metabdecon, new functions for aligning deconvoluted spectra were added, along with improved replacements for the deconvolution functions. To maintain backwards compatibility, the old deconvolution functions are still available but marked as deprecated. These old functions will be removed entirely in Metabodecon 2.0, planned for 2025.
 
-This document provides an overview of function introductions, deprecations, and scheduled removals.
+A tabular overview of function introductions, deprecations, and scheduled removals is provided in [Table 1: Version Matrix](#table-1-version-matrix).
 
-# Version Matrix
+A similar graphical representation with additional information about accepted and returned types is provided in [Figure 1: Metabodecon Workflow](#figure-1-metabodecon-workflow).
 
-| Topic | Function                        | 0.2 | 1.0 | 1.3 | 2.0 |
-| ----- | ------------------------------- | --- | --- | --- | --- |
-| decon | MetaboDecon1D                   | s   | s   | d   | -   |
-| decon | calculate_lorentz_curves        | s   | s   | d   | -   |
-| decon | plot_lorentz_curves_save_as_png | s   | s   | d   | -   |
-| decon | plot_triplets                   | s   | s   | s   | d   |
-| decon | generate_lorentz_curves         | -   | s   | s   | d   |
-| decon | deconvolute_spectra             | -   | -   | x   | s   |
-| align | combine_peaks                   | -   | s   | s   | ?   |
-| align | dohCluster                      | -   | s   | s   | ?   |
-| align | gen_feat_mat                    | -   | s   | s   | ?   |
-| align | get_ppm_range                   | -   | s   | s   | ?   |
-| align | speaq_align                     | -   | s   | s   | ?   |
-| data  | get_data_dir                    | -   | s   | d   | -   |
-| data  | datadir                         | -   | -   | s   | s   |
-| data  | datadir_persistent              | -   | -   | s   | s   |
-| data  | datadir_temp                    | -   | -   | s   | s   |
-| data  | download_example_datasets       | -   | -   | s   | s   |
+# Table 1: Version Matrix
+
+| Topic | Function                        | 0.2 | 1.0 | 1.2 | 1.3 | 2.0 |
+| ----- | ------------------------------- | --- | --- | --- | --- | --- |
+| decon | MetaboDecon1D                   | s   | s   | s   | d   | -   |
+| decon | calculate_lorentz_curves        | s   | s   | s   | d   | -   |
+| decon | plot_lorentz_curves_save_as_png | s   | s   | s   | d   | -   |
+| decon | plot_triplets                   | s   | s   | s   | d   | -   |
+| decon | generate_lorentz_curves         | -   | s   | s   | s   | d   |
+| decon | deconvolute_spectra             | -   | -   | -   | x   | s   |
+| align | combine_peaks                   | -   | s   | s   | d   | -   |
+| align | gen_feat_mat                    | -   | s   | s   | d   | -   |
+| align | get_ppm_range                   | -   | s   | s   | d   | -   |
+| align | speaq_align                     | -   | s   | s   | d   | -   |
+| align | align_spectra                   | -   | -   | x   | s   | s   |
+| data  | get_data_dir                    | -   | s   | s   | d   | -   |
+| data  | datadir                         | -   | -   | s   | s   | s   |
+| data  | datadir_persistent              | -   | -   | s   | s   | s   |
+| data  | datadir_temp                    | -   | -   | s   | s   | s   |
+| data  | download_example_datasets       | -   | -   | s   | s   | s   |
+| plot  | plot_spectrum                   | -   | -   | x   | s   | s   |
+| plot  | plot_spectra                    | -   | -   | x   | s   | s   |
 
 * -: internal or not available in package
 * ?: not yet decided
@@ -38,7 +42,11 @@ This document provides an overview of function introductions, deprecations, and 
 * s: stable
 * x: experimental
 
-# Feature Matrix
+# Figure 1: Metabodecon Workflow
+
+![Metabodecon Workflow](Classes\spectra_classes.png)
+
+# Table 2: Feature Matrix
 
 | Feature                          | BWCᵃ  | F1ᵇ | F2ᵇ | F3ᵇ | Issue        |
 | -------------------------------- | ----- | --- | --- | --- | ------------ |

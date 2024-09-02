@@ -180,8 +180,15 @@ str2 <- function(...) {
 #' @examples
 #' collapse(c("a", "b", "c")) # "a, b, c"
 #' collapse(1:5, sep = "-") # "1-2-3-4-5"
-collapse <- function(x, sep = ", ") {
-    paste(x, collapse = sep)
+#' collapse(1:5, last = " and ") # "1, 2, 3, 4 and 5"
+collapse <- function(x, sep = ", ", last = NULL) {
+    if (is.null(last) || (n <- length(x)) == 1) {
+        txt <- paste(x, collapse = sep)
+    } else {
+        txt <- paste(x[-n], collapse = sep)
+        txt <- paste(txt, x[n], sep = last)
+    }
+    txt
 }
 
 #' @noRd

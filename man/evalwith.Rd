@@ -70,11 +70,13 @@ Evaluates an expression with a predefined global state, including the:
 In addition to that, \code{evalwith} allows to:
 \itemize{
 \item Redirect or capture the output and/or message stream via \code{\link[=sink]{sink()}}
-\item Measure the runtime of the evaluated expression vi a\code{\link[=system.time]{system.time()}}
-\item Creating a the test directory (inside \code{\link[=tmpdir]{tmpdir()}}) and populating it with input files according to \code{inputs}
+\item Measure the runtime of the evaluated expression via \code{\link[=system.time]{system.time()}}
+\item Creating a temporary test directory (inside \code{\link[=tmpdir]{tmpdir()}}) and populating it with input files according to \code{inputs}
 \item Predefine answers for calls to \code{\link[=readline]{readline()}} happening during evaluation of \code{expr}
-\item Cache the result of the expression
+\item Caching the result of the expression
 }
+
+All changes to the global state are reverted after the expression has been evaluated.
 }
 \details{
 The \code{datadir_temp} and \code{datadir_persistent} arguments accept values "missing", "filled" and "empty". Setting a value unequal NULL causes the functions \code{\link[=datadir_temp]{datadir_temp()}} and/or \code{\link[=datadir_persistent]{datadir_persistent()}} to be replaced with mock functions pointing to fake directories. Functions depending on these functions will then use the fake directories instead of the real ones. When set to "missing" the returned mock directory does not exist. When set to "empty" it exists and is guaranteed to be empty. When set to "filled", it is populated with example datasets.

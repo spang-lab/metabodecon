@@ -9,11 +9,13 @@ plot_spectrum(
   main = "",
   foc_rgn = c(0.4, 0.35),
   foc_unit = "fraction",
-  sub_show = TRUE,
+  foc_only = FALSE,
+  sub_show = if (foc_only) FALSE else TRUE,
   sub_rgn = c(x1 = 0.05, x2 = 0.95, y1 = 0.2, y2 = 0.95),
-  foc_only = if (sub_show) FALSE else TRUE,
-  foc_fill = rgb(1, 1, 0, alpha = 0.08),
-  foc_col = "black",
+  verbose = FALSE,
+  rct_show = sub_show,
+  rct_col = "black",
+  rct_fill = transp("yellow"),
   xlab = "Chemical Shift [ppm]",
   ylab = "Signal Intensity [au]",
   mar = c(4, 4, if (main == "") 0 else 4, 1),
@@ -28,20 +30,22 @@ plot_spectrum(
   sub_mar = c(2, 2, 0, 0),
   sub_line_col = line_col,
   sub_axis_col = axis_col,
-  sub_fill_col = foc_fill,
-  sub_box_col = foc_col,
+  sub_fill_col = rct_fill,
+  sub_box_col = rct_col,
   sub_trp_show = TRUE,
   sub_lc_show = TRUE,
   sub_sup_show = TRUE,
-  yscale10 = TRUE,
-  trp_col = c("red", "red", "red", "black"),
+  sf_y_raw = 1e+06,
+  sm_col = "blue",
   lc_col = "darkgrey",
-  trp_pch = c(17, 4, 4, NA),
   lc_lty = 1,
+  lc_fill = transp(lc_col, 0.25),
+  trp_col = rep(sm_col, 4),
+  trp_pch = c(17, 4, 4, NA),
   sup_col = "red",
   sup_lty = 1,
   cnct_show = if (sub_show) TRUE else FALSE,
-  cnct_col = foc_col
+  cnct_col = rct_col
 )
 }
 \arguments{
@@ -53,15 +57,15 @@ plot_spectrum(
 
 \item{foc_unit}{Character string specifying the unit in which \code{foc_rgn} is given. Can be "fraction" or "ppm".}
 
+\item{foc_only}{Logical. If TRUE, only the focused region is drawn. If FALSE, the full spectrum is drawn.}
+
 \item{sub_show}{Logical. If TRUE, a sub figure is drawn within the main plot region. If FALSE, the sub figure is not drawn.}
 
 \item{sub_rgn}{Either NULL or a numeric vector of the form \code{c(x1, x2, y1, y2)} giving the left/right/bottom/top coordinates of the sub figure region in "normalized plot coordinates" (as described in \code{\link[graphics:convertXY]{graphics::grconvertX()}}). If provided, the focused region is drawn as sub figure within the main plot region. Setting \code{sub_rgn} to NULL will prevent the sub figure from being drawn.}
 
-\item{foc_only}{Logical. If TRUE, only the focused region is drawn. If FALSE, the full spectrum is drawn.}
+\item{rct_col}{Border color of the rectangle around the focus region.}
 
-\item{foc_fill}{Background color of the rectangle around the focus region.}
-
-\item{foc_col}{Border color of the rectangle around the focus region.}
+\item{rct_fill}{Background color of the rectangle around the focus region.}
 
 \item{xlab}{Label for the x-axis.}
 
@@ -69,7 +73,7 @@ plot_spectrum(
 
 \item{mar}{Number of lines below/left/above/right plot region (used for axis annotations).}
 
-\item{line_col}{Color of the spectrum line.}
+\item{line_col}{Color of raw signal intensities.}
 
 \item{axis_col}{Color of tickmarks and ticklabels.}
 
@@ -101,15 +105,19 @@ plot_spectrum(
 
 \item{sub_sup_show}{Logical. If TRUE, the superposition of the Lorentzian Curves is shown in the sub figure.}
 
-\item{yscale10}{Logical. If TRUE, scales the y-axis by a power of 10 so that all y-values are between 0 and 100.}
+\item{sf_y_raw}{Numeric value to divide raw signal intensities by before drawing.}
 
-\item{trp_col}{Vector of length 4 giving the colors for the peak triplets. The first three colors specify the color used for each peak-center, left-border and right-border and the fourth color used for any non-peak data point.}
+\item{sm_col}{Color of smoothed signal intensities.}
 
 \item{lc_col}{Color of the Lorentzian Curves.}
 
-\item{trp_pch}{Vector of length 4 giving the plotting characters for the peak triplets.}
-
 \item{lc_lty}{Line type of the Lorentzian Curves.}
+
+\item{lc_fill}{Color of the rectangles shown at center of each lorentzian curve. The width of the rectangle equals the half width at half height.}
+
+\item{trp_col}{Vector of length 4 giving the colors for the peak triplets. The first three colors specify the color used for each peak-center, left-border and right-border and the fourth color used for any non-peak data point.}
+
+\item{trp_pch}{Vector of length 4 giving the plotting characters for the peak triplets.}
 
 \item{sup_col}{Color of the superposition of the Lorentzian Curves.}
 
@@ -167,8 +175,8 @@ testfunc <- function(figs = 1:6) {
     if (4 \%in\% figs) {
         plot_spectrum(decon,
             sub_mar = c(4, 4, 0, 0),
-            foc_fill = rgb(0.9, 0.5, 0.9, alpha = 0.1),
-            foc_col = "violet",
+            rct_fill = rgb(0.9, 0.5, 0.9, alpha = 0.1),
+            rct_col = "violet",
             sub_rgn = c(x1 = 0.1, x2 = 0.9, y1 = 0.4, y2 = 0.9)
         )
     }
@@ -176,7 +184,7 @@ testfunc <- function(figs = 1:6) {
     # Remove connecting lines and fill colors
     if (5 \%in\% figs) {
         plot_spectrum(decon,
-            foc_fill = NULL,
+            rct_fill = NULL,
             sub_fill_col = NULL,
             cnct_col = NULL
         )

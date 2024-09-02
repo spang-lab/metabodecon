@@ -10,11 +10,10 @@
 #' @param file_format The file_format of the spectrum file. E.g. `"bruker"` or `"jcampdx"`.
 #' @param expno The experiment number for the file. E.g. `"10"`. Only relevant if `file_format` equals `"bruker"`.
 #' @param procno The processing number for the file. E.g. `"10"`. Only relevant if `file_format` equals `"bruker"`.
-#' @param raw If `TRUE`, scales the returned signal intensities based on information available in the spectrum metadata, in particular `NC_proc`. For details see `processing-reference.pdf`, available at <https://www.bruker.com/en.html> at section 'Services & Support > Documentation & Manuals > Magnetic Resonance > Acquisition & Processing > TopSpin Processing Commands and Parameters' (requires login).
+#' @param raw If `FALSE`, scales the returned signal intensities based on information available in the spectrum metadata, in particular `NC_proc`. For details see `processing-reference.pdf`, available at <https://www.bruker.com/en.html> at section 'Services & Support > Documentation & Manuals > Magnetic Resonance > Acquisition & Processing > TopSpin Processing Commands and Parameters' (requires login).
 #' @param silent If `TRUE`, no output will be printed to the console.
 #' @param force If `TRUE`, try to continue when encountering errors and print info messages instead. To hide these messages as well, set `silent = TRUE`.
-#' @return
-#' For `read_spectrum`, a dataframe with following columns:
+#' @return For `read_spectrum` a 'spectrum' object as described in `make_spectrum()`. The object is a list with class `spectrum` and the following elements:
 #'
 #' - `si`: signal intensities in arbitrary units
 #' - `cs`: chemical shifts in ppm
@@ -42,7 +41,7 @@
 #' X1_dx <- read_spectrum(urine_1_dx, file_format = "jcampdx")
 #' stopifnot(all.equal(X1, X1_dx))
 #' }
-read_spectrum <- function(path = pkg_file("example_datasets/bruker/urine/urine_1"),
+read_spectrum <- function(path = metabodecon_file("bruker/sim/sim_01"),
                           file_format = "bruker",
                           expno = 10,
                           procno = 10,
@@ -158,102 +157,6 @@ read_jcampdx_spectrum <- function(path, raw = FALSE, silent = TRUE, force = FALS
     )
 }
 
-# Make spectra #####
-
-#' @noRd
-#' @title Create a spectrum data frame from metadata
-#' @description Creates a data frame from the signal intensities and metadata.
-#' @param si The signal intensities.
-#' @param cs_max The highest chemical shift value in ppm, i.e. the left border of the spectrum.
-#' @param cs_width The width of the spectrum in ppm.
-#' @param fq_ref The reference frequency in Hz.
-#' @param fq_width The width of the spectrum in Hz. Only used to check whether the values calculated from `cs_max`, `cs_width` and `fq_ref` match the provided value. If `NULL`, this check will be skipped.
-#' @param force If `TRUE`, the function will not raise an error in case of discrepancies between the calculated and the provided spectrum width in Hz, but will print a info message instead. To hide this message as well, set `silent = TRUE`.
-#' @param silent If `TRUE`, no output will be printed to the console.
-#' @return A data frame containing the following columns:
-#' - `si`: signal intensities in arbitrary units
-#' - `cs`: chemical shifts in ppm
-#' - `fq`: frequencies in Hz
-#' @examples
-#' si <- c(1, 1, 3, 7, 8, 3, 8, 5, 2, 1)
-#' cs_max <- 14.8
-#' cs_width <- 20.0
-#' fq_ref <- 600.25 * 1e6
-#' fq_width <- 12005
-#' df <- make_spectrum(si, cs_max, cs_width, fq_ref, fq_width)
-#' df2 <- make_spectrum(si, cs_max, cs_width, fq_ref, fq_width = 12010, force = FALSE)
-make_spectrum <- function(si,
-                          cs_max,
-                          cs_width,
-                          fq_ref,
-                          fq_width = NULL,
-                          force = FALSE,
-                          silent = FALSE) {
-    cs_min <- cs_max - cs_width # lowest ppm value
-    cs <- seq(cs_max, cs_max - cs_width, length.out = length(si)) # chemical shift in parts per million
-    fq_max <- fq_ref - (cs_min * 1e-6 * fq_ref)  # highest frequency in Hz (corresponds to lowest ppm value)
-    fq_min <- fq_ref - (cs_max * 1e-6 * fq_ref)  # lowest frequency in Hz
-    fq <- seq(fq_min, fq_max, length.out = length(si)) # frequency in Hz
-    fq_width_calc <- fq_max - fq_min
-    if (!is.null(fq_width) && !isTRUE(all.equal(fq_width_calc, fq_width))) { # check if calculated spectrum width in Hz matches the value from the metadata
-        if (!force) {
-            stop(logf("Calculated spectrum width in Hz (%s) does not match the provided value (%s). Please read in the data manually or set `force = TRUE` to ignore this error. Please note that by doing so, all downstream calculations using frequencies might be wrong, so be sure to double check the results.", round(fq_width_calc, 5), round(fq_width, 5)))
-        } else {
-            if (!silent) logf(sprintf("Calculated spectrum width in Hz (%s) does not match the provided value (%s). Continuing anyways, because `force` equals `TRUE`. Please note that all downstream calculations using frequencies might be wrong, so be sure to double check the results.", round(fq_width_calc, 5), round(fq_width, 5)))
-        }
-    }
-    data.frame(si, cs, fq)
-}
-
-#' @noRd
-#' @title Convert spectrum data to format for generate_lorentz_curves
-#' @description Takes a spectrum as returned by [read_topspin3_spectrum()] or [read_jcampdx_spectrum] and formats it so that it can be used as input for [generate_lorentz_curves()].
-#' @param X The spectrum data as returned by [read_topspin3_spectrum()] or [read_jcampdx_spectrum].
-#' @param sfx The scaling factor for the x-axis.
-#' @param sfy The scaling factor for the y-axis.
-#' @return A named list containing the following elements:
-#' - `y_raw`: The raw signal intensities.
-#' - `y_scaled`: The scaled signal intensities.
-#' - `n`: The number of data points.
-#' - `sfx`: The scaling factor for the x-axis.
-#' - `sfy`: The scaling factor for the y-axis.
-#' - `dp`: The data point numbers.
-#' - `sdp`: The scaled data point numbers.
-#' - `ppm`: The chemical shifts in ppm.
-#' - `fq`: The frequencies in Hz.
-#' - `ppm_min`: The minimum chemical shift in ppm.
-#' - `ppm_max`: The maximum chemical shift in ppm.
-#' - `ppm_range`: The range of the chemical shifts in ppm.
-#' - `ppm_step`: The step size of the chemical shifts in ppm.
-#' - `ppm_nstep`: The step size of the chemical shifts in ppm, calculated as `ppm_range / n`.
-#' @examples
-#' spldir <- pkg_file("example_datasets/bruker/urine/urine_1")
-#' X <- read_topspin3_spectrum(spldir)
-#' X_glc <- convert_spectrum(X, 1e3, 1e6)
-convert_spectrum <- function(X, sfx, sfy) {
-    y_raw <- X$si
-    y_scaled <- y_raw / sfy
-    n <- length(y_raw)
-    ppm_range <- diff(range(X$cs))
-    ppm_max <- max(X$cs)
-    ppm_min <- min(X$cs)
-    ppm_step <- ppm_range / (n - 1)
-    ppm_nstep <- ppm_range / n
-    # Example: data points in ppm = 1.1, 2.3, 3.5, 4.7
-    # ==> ppm_step == 1.2
-    # ==> ppm_nstep ~= 1.06 (not really useful, but we need it for backwards compatibility with MetaboDecon1D results)
-    ppm <- X$cs # Parts per million
-    hz <- X$fq # Frequency in Hz
-    dp <- seq(n - 1, 0, -1) # Data point numbers
-    sdp <- seq((n - 1) / sfx, 0, -1 / sfx) # Scaled data point numbers. (Same as `dp / sfx`, but with slight numeric differences, so we stick with the old calculation method for backwards compatibility)
-    named(
-        y_raw, y_scaled, # y-axis
-        n, sfx, sfy, # misc
-        dp, sdp, ppm, hz,# x-axis
-        ppm_min, ppm_max, ppm_range, ppm_step, ppm_nstep # additional ppm info
-    )
-}
-
 # File Reading #####
 
 #' @noRd
@@ -263,7 +166,7 @@ convert_spectrum <- function(X, sfx, sfy) {
 #' @details For a detailed description of the format of burker parameter files, refer to 'Bruker_NMR_Data_Formats.pdf'.
 #' @return A named list containing the metadata read from the file.
 #' @examples
-#' path <- pkg_file("example_datasets/bruker/blood/blood_01/10/acqus")
+#' path <- pkg_file("example_datasets/bruker/urine/urine_1/10/acqus")
 #' lines <- readLines(path)
 #' acqus1 <- parse_metadata_file(path)
 #' acqus2 <- parse_metadata_file(lines = lines)

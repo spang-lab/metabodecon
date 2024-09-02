@@ -28,6 +28,10 @@ NULL, called for side effects.
 }
 \description{
 Plots the original spectrum and the superposition of all generated Lorentz curves and saves the result as png under the specified filepath.
+
+Supersed by \code{\link[=plot_spectrum]{plot_spectrum()}} since metabodecon v1.2.0. Will be replaced with v2.
+
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
 }
 \examples{
 sim <- metabodecon_file("bruker/sim_subset")

@@ -2,14 +2,20 @@
 % Please edit documentation in R/40_alignment.R
 \name{get_ppm_range}
 \alias{get_ppm_range}
-\title{Get ppm range}
+\title{Get PPM Range covered by Spectra}
 \usage{
-get_ppm_range(spectrum_data, show = FALSE)
+get_ppm_range(
+  spectrum_data = glc_sim(),
+  show = FALSE,
+  mar = c(4.1, 4.1, 1.1, 0.1)
+)
 }
 \arguments{
 \item{spectrum_data}{A list of deconvoluted spectra as returned by \code{\link[=generate_lorentz_curves]{generate_lorentz_curves()}}.}
 
 \item{show}{Whether to plot the ppm range on the spectrum plot.}
+
+\item{mar}{The margins of the plot. Passed on to \code{par()}.}
 }
 \value{
 A vector containing the lowest and highest ppm value over all peaks of the provided deconvoluted spectra.
@@ -18,14 +24,10 @@ A vector containing the lowest and highest ppm value over all peaks of the provi
 Returns the ppm range across all peaks of the provided deconvoluted spectra.
 }
 \examples{
-sim <- metabodecon_file("bruker/sim_subset")
-decons <- generate_lorentz_curves(
-     sim, sfr = c(3.58, 3.42), wshw = 0,
-     ask = FALSE, verbose = FALSE
-)
-ppm_rng <- get_ppm_range(decons, show = TRUE)
+spectrum_data = glc_sim()
+ppm_rng <- get_ppm_range(spectrum_data, show = TRUE)
 print(ppm_rng)
 }
 \author{
-Wolfram Gronwald, Tobias Schmidt
+Initial version from Wolfram Gronwald. Refactored by Tobias Schmidt in 2024.
 }

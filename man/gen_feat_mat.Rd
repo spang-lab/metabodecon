@@ -4,28 +4,46 @@
 \alias{gen_feat_mat}
 \title{Generate Feature Matrix.}
 \usage{
-gen_feat_mat(data_path, ppm_range, size_real_spectrum, scale_factor_x)
+gen_feat_mat(
+  data_path = glc_sim(),
+  ppm_range = get_ppm_range(data_path),
+  si_size_real_spectrum = length(data_path$y_values),
+  scale_factor_x = 1000,
+  warn = TRUE
+)
 }
 \arguments{
-\item{data_path}{Path to the parent folder of where the original spectra are stored. After deconvolution this folder also contains for each spectrum two .txt files which contain for each spectrum the spectrum approximated from all deconvoluted signals and a parameter file that contains all numerical values of the deconvolution}
+\item{data_path}{A list of deconvoluted spectra as returned by \code{generate_lorentz_curves()}. In older versions, this could also be the path passed to \code{generate_lorentz_curves()}, but this is deprecated and will trigger a warning. See 'Details' for more information.}
 
-\item{ppm_range}{(numeric) this is the result from the function \code{\link[=get_ppm_range]{get_ppm_range()}} i.e the ppm range over which your signals are distributed.}
+\item{ppm_range}{The ppm range over which your signals are distributed.}
 
-\item{size_real_spectrum}{(positive integer) number of real data points in your original spectra, e.g. 128k = 131072 data points}
+\item{si_size_real_spectrum}{Number of data points in your spectra.}
 
-\item{scale_factor_x}{(positive integer): A factor which is used to avoid rounding errors e.g. 1000}
+\item{scale_factor_x}{The x scale factor used during the deconvolution.}
+
+\item{warn}{Whether to print a warning in case a file path is passed to \code{data_path} instead of a list of deconvoluted spectra.}
 }
 \value{
-A list containing the data matrix, the peakList, the w, A and lambda values.
+A list with the following elements:
+\itemize{
+\item \code{data_matrix}: A data.frame where each row corresponds to one spectrum and each column to one data point, i.e. for 10 input spectra with 131072 data points each \code{data_matrix} would have dimensions 10 x 131072.
+\item \code{peakList}: A list of vectors, where each vector contains the indices of the peaks in the corresponding spectrum. The indices increase from left to right, i.e. the smallest index corresponds to the highest ppm value, as the ppm values decrease from left to right.
+\item \code{w}: A list of vectors where each vector contains the "position paramater" of the peaks in the corresponding spectrum.
+\item \code{A}: A list of vectors where each vector contains the "area parameter" of the peaks in the corresponding spectrum.
+\item \code{lambda}: A list of vectors where each vector contains the "width parameter" of the peaks in the corresponding spectrum.
+}
 }
 \description{
 Generate a feature matrix.
 }
 \details{
-The output of this function is a data frame containing a matrix of all integral values found in your spectra (data_matrix). Here, each row corresponds to one spectrum and each column to one data point of the spectra, for example 128k data points in each spectrum correspond to 128K columns in the data matrix. Furthermore, a list of all signals(peakList), and individual parameters of the signals are stored in the data structure.
+Before version 1.2 of 'metabodecon', the deconvolution functions \code{generate_lorentz_curves} and \code{MetaboDecon1D} wrote their output partially as txt files to their input folder. Back then, \code{gen_feat_mat()} used those txt files as input to generate the feature matrix. Since version 1.2 these txt files are no longer created by default, to prevent accidental modifications of the input folders. Therefore, the recommended way to pass the required information to \code{gen_feat_mat()} is to directly pass the output of \code{generate_lorentz_curves()} to \code{gen_feat_mat()}. However, to stay backwards compatible, the name of parameter \code{data_path} was not changed and passing an actual path to \code{data_path} is still possible, but will result in a warning (unless \code{warn} is set to \code{FALSE}).
 }
 \examples{
-\dontrun{
-res <- gen_feat_mat(data_path, ppm_range, size_real_spectrum, scale_factor_x)
+decons <- glc_sim("bruker/sim")
+obj <- gen_feat_mat(decons)
+str(obj, 2, give.attr = FALSE)
 }
+\author{
+Initial version from Wolfram Gronwald. Refactored by Tobias Schmidt in 2024.
 }

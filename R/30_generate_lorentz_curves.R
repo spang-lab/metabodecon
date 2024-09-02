@@ -133,7 +133,7 @@ generate_lorentz_curves <- function(data_path = metabodecon_file("urine_1"),
         stop("'data_path' must be a directory, a dataframe or a list of dataframes")
     }
     if (is.null(names(spectra_ds))) names(spectra_ds) <- paste0("spectrum_", seq_along(spectra_ds))
-    spectra <- lapply(spectra_ds, convert_spectrum, sfx = sf[1], sfy = sf[2])
+    spectra <- lapply(spectra_ds, as.glc_spectrum, sfx = sf[1], sfy = sf[2])
     adjno <- get_adjno(spectra, sfr, wshw, ask)
     spectra <- get_sfrs(spectra, sfr, ask, adjno)
     spectra <- get_wsrs(spectra, wshw, ask, adjno)
@@ -188,8 +188,9 @@ generate_lorentz_curves <- function(data_path = metabodecon_file("urine_1"),
 
 #' @export
 #' @title Deconvolute the Sim Dataset
-#' @description The simulated 'Sim' dataset is much smaller than true NMR spectra (1309 datapoints instead of 131072) and lacks a water signal. This makes it ideal for use in examples or as a default value for functions. However, the default values for `sfr`, `wshw`, and `delta` in the `generate_lorentz_curves()` function are not optimal for this dataset. To avoid repeatedly defining the optimal parameters in examples, this function is provided to deconvolute the "Sim" dataset with suitable parameters. The actual parameters used for the deconvolution can be found in the 'Examples' section.
+#' @description The simulated 'Sim' dataset is much smaller than real NMR spectra (1309 datapoints instead of 131072) and lacks a water signal. This makes it ideal for use in examples or as a default value for functions. However, the default values for `sfr`, `wshw`, and `delta` in the `generate_lorentz_curves()` function are not optimal for this dataset. To avoid repeatedly defining the optimal parameters in examples, this function is provided to deconvolute the "Sim" dataset with suitable parameters. The actual parameters used for the deconvolution can be found in the 'Examples' section.
 #' @param name Name of the spectra to deconvolute. Use `'bruker/sim'` to deconvolute all spectra of the Sim dataset. Use `'bruker/sim_subset'` to deconvolute only the first two spectra of the Sim dataset. Use `'bruker/sim/sim_xx'`, with `xx` being a number between `01` and `16`, to deconvolute a single spectrum of the Sim dataset. The provided name is passed to `metabodecon_file()` to get the path to the spectra.
+#' @param spectra List of spectra or path to spectra directory. If `NULL`, the spectra are read from the path obtained by passing `name` to `metabodecon_file()`.
 #' @param ask Whether to ask for user input during the deconvolution process.
 #' @param verbose Whether to print log messages during the deconvolution process.
 #' @return A list representing the deconvoluted spectra. For details see the return value of `generate_lorentz_curves()`.
@@ -211,13 +212,15 @@ generate_lorentz_curves <- function(data_path = metabodecon_file("urine_1"),
 #'
 #' # Comparison of results:
 #' all.equal(decons1, decons2)
-glc_sim <- function(name = "bruker/sim_subset", ask = FALSE, verbose = FALSE) {
-    pattern <- "^bruker/(sim|sim_subset|sim/sim_0[1-9]|sim/sim_1[0-6])$"
-    errmsg <- "Invalid name. Use 'bruker/sim', 'bruker/sim_subset' or 'bruker/sim/sim_xx' with xx being a number between 01 and 16."
-    if (!(is.character(name) && length(name) == 1 && grepl(pattern, name))) stop(errmsg)
-    path <- metabodecon_file(name)
+glc_sim <- function(name = "bruker/sim_subset", spectra = NULL, ask = FALSE, verbose = FALSE) {
+    if (is.null(spectra)) {
+        pattern <- "^bruker/(sim|sim_subset|sim/sim_0[1-9]|sim/sim_1[0-6])$"
+        errmsg <- "Invalid name. Use 'bruker/sim', 'bruker/sim_subset' or 'bruker/sim/sim_xx' with xx being a number between 01 and 16."
+        if (!(is.character(name) && length(name) == 1 && grepl(pattern, name))) stop(errmsg)
+        spectra <- metabodecon_file(name)
+    }
     generate_lorentz_curves(
-        data_path = path,    # Path to directory containing spectra
+        data_path = spectra, # List of spectra or path to spectra directory
         sfr = c(3.42, 3.58), # Borders of signal free region (SFR) in ppm
         wshw = 0,            # Half width of water signal (WS) in ppm
         delta = 0.1,         # Configure threshold for peak filtering
@@ -454,7 +457,7 @@ lc <- function(x, x0, A, lambda) {
     A * (lambda / (lambda^2 + (x - x0)^2))
 }
 
-#' @noRds
+#' @noRd
 #' @description Before version 1.2 of 'metabodecon', the deconvolution functions `generate_lorentz_curves` and `MetaboDecon1D` wrote their output partially as txt files to their input folder. The txt files were named "SPEC_NAME parameter.txt" and "SPEC_NAME approximated_spectrum.txt". Since version 1.2 these txt files are no longer created by default, to prevent accidental modifications of the input folders. However, to stay backwards compatible, functions that used to read "SPEC_NAME parameter.txt" and "SPEC_NAME approximated_spectrum.txt" still accept them as input (e.g. `gen_feat_mat()`). I.e., in order to test this functionality, we still need a way to create the corresponding txt files (which is no longer done by `generate_lorentz_curves()`). That's the purpose of this function: it takes the output of `generate_lorentz_curves()` as input and creates the (now deprecated) "SPEC_NAME parameter.txt" and "SPEC_NAME approximated_spectrum.txt" in folder `outdir`.
 write_parameters_txt <- function(decon, outdir, verbose = FALSE) {
     if (is_decon_list(decon)) {
@@ -519,7 +522,7 @@ generate_lorentz_curves_v12 <- function(data_path = file.path(download_example_d
                                         nworkers = 2) {
     # Read spectra and ask user for parameters
     spectra_ds <- read_spectra(data_path, file_format, expno, procno, ask, sf, raw = TRUE)
-    spectra <- lapply(spectra_ds, convert_spectrum, sfx = sf[1], sfy = sf[2])
+    spectra <- lapply(spectra_ds, as.glc_spectrum, sfx = sf[1], sfy = sf[2])
     adjno <- get_adjno(spectra, sfr, wshw, ask)
     spectra <- get_sfrs(spectra, sfr, ask, adjno)
     spectra <- get_wsrs(spectra, wshw, ask, adjno)
