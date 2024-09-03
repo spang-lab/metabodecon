@@ -2,11 +2,12 @@
 
 #' @title Plot Aligned Spectra
 #' @description Plots the aligned and unaligned spectra for comparison.
-#' @param YA Matrix. YA[i,j] == Signal Intensity of spectrum i at index j AFTER alignmnent.
+#' @param YA Matrix. YA[i,j] == Signal Intensity of spectrum i at index j AFTER alignment.
 #' @param YB Matrix. YB[i,j] == Signal Intensity of spectrum i at index j BEFORE alignment.
 #' @param PA List of vectors. PA[[i]][j] == index of peak j of spectrum i AFTER alignment.
 #' @param PB List of vectors. PB[[i]][j] == index of peak j of spectrum i BEFORE alignment.
 #' @param mfcol Vector of two integers specifying the number of rows and columns of the plot grid
+#' @return NULL. Called for the side effect of plotting.
 #' @examples
 #' x <- seq(1.5 * pi, 9.5 * pi, length.out = 90)
 #' y <- 10 * sin(x) # y without noise

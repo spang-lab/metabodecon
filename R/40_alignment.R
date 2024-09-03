@@ -1,3 +1,15 @@
+#' @export
+#' @title Aligned Spectra Class
+#' @description Each object of this class:
+#' - Represents a set of one or more one-dimensional,
+#' deconvoluted and aligned NMR spectra.
+#' - Is a [data.frame] where element i,j gives the integral value of the signal from spectrum i and chemical shift j.
+#' Objects of this class can be created using [align_spectra()].
+aligned_spectra <- function(...) {
+    stop("Not implemented")
+}
+
+
 # Exported Main #####
 
 #' @export
@@ -6,7 +18,7 @@
 #' @param deconvs An object of class [DeconvolutedSpectra] as returned by [generate_lorentz_curves()].
 #' @param maxShift Maximum number of points along the "ppm-axis" which a value can be moved by the 'speaq' package. 50 is a suitable starting value for plasma spectra with a digital resolution of 128K. Note that this parameter has to be individually optimized depending on the type of analyzed spectra and the digital resolution. For urine which is more prone to chemical shift variations this value most probably has to be increased. Passed as argument `maxShift` to [speaq_align()].
 #' @param maxCombine Amount of adjacent columns which may be combined for improving the alignment. Passed as argument `range` to [combine_peaks()].
-#' @return An object of class [AlignedSpectra]
+#' @return An object of class [aligned_spectra]
 #' @examples
 #' sim_dir <- metabodecon_file("bruker/sim")
 #' spectra <- read_spectra(sim_dir)
@@ -38,7 +50,7 @@ get_ppm_range <- function(spectrum_data = glc_sim(),
                           mar = c(4.1, 4.1, 1.1, 0.1)) {
     msg <- "spectrum_data must be a list of deconvoluted spectra."
     ss <- spectrum_data
-    ss <- if (is_decon_list(ss)) ss else if (is_decon_obj(ss)) list(ss) else stop(msg)
+    ss <- if (is_metabodecon1d_spectra(ss)) ss else if (is_metabodecon1d_spectrum(ss)) list(ss) else stop(msg)
     ppm_min <- min(sapply(ss, function(s) min(s$peak_triplets_middle)))
     ppm_max <- max(sapply(ss, function(s) max(s$peak_triplets_middle)))
     ppm_rng <- c(ppm_min, ppm_max)
@@ -58,7 +70,7 @@ get_ppm_range <- function(spectrum_data = glc_sim(),
 #' @return A list with the following elements:
 #' - `data_matrix`: A data.frame where each row corresponds to one spectrum and each column to one data point, i.e. for 10 input spectra with 131072 data points each `data_matrix` would have dimensions 10 x 131072.
 #' - `peakList`: A list of vectors, where each vector contains the indices of the peaks in the corresponding spectrum. The indices increase from left to right, i.e. the smallest index corresponds to the highest ppm value, as the ppm values decrease from left to right.
-#' - `w`: A list of vectors where each vector contains the "position paramater" of the peaks in the corresponding spectrum.
+#' - `w`: A list of vectors where each vector contains the "position parameter" of the peaks in the corresponding spectrum.
 #' - `A`: A list of vectors where each vector contains the "area parameter" of the peaks in the corresponding spectrum.
 #' - `lambda`: A list of vectors where each vector contains the "width parameter" of the peaks in the corresponding spectrum.
 #' @author Initial version from Wolfram Gronwald. Refactored by Tobias Schmidt in 2024.
@@ -107,7 +119,7 @@ gen_feat_mat <- function(data_path = glc_sim(),
 #' @param mfcol Layout to use for the plot. Passed on to `par()`. Use `mfcol = NULL` if the plot layout should not be changed.
 #' @return A matrix containing the integral values of the spectra after alignment.
 #' There is one row per spectrum and one column per ppm value.
-#' The entry at postion `i, j` holds the integral value of the signal from spectrum `i` that has its center at position `j` after alignment by speaq.
+#' The entry at position `i, j` holds the integral value of the signal from spectrum `i` that has its center at position `j` after alignment by speaq.
 #' If there is no signal with center `j` in spectrum `i`, entry `i, j` is set to NA.
 #' The column names of the matrix are the ppm values of the original spectra.
 #'
@@ -473,7 +485,7 @@ dohCluster_withMaxShift <- function(X,
 get_decon_params <- function(data_path, warn = TRUE, check = TRUE) {
     dd <- data_path
     if (is.list(dd)) {
-        dd <- if (is_decon_list(dd)) dd else if (is_decon_obj(dd)) list(dd) else stop("data_path must be a list of deconvoluted spectra.")
+        dd <- if (is_metabodecon1d_spectra(dd)) dd else if (is_metabodecon1d_spectrum(dd)) list(dd) else stop("data_path must be a list of deconvoluted spectra.")
         w <- lapply(dd, function(d) d$x_0)
         lambda <- lapply(dd, function(d) d$lambda)
         A <- lapply(dd, function(d) d$A)

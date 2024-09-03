@@ -1,7 +1,3 @@
-as.glc_spectrum <- function(X, ...) {
-    UseMethod("as.glc_spectrum", X)
-}
-
 #' @noRd
 #' @title Convert normal Spectrum to GLC Spectrum
 #' @description Takes a normal spectrum as returned by [read_spectrum()], [make_spectrum] or [simulate_spectrum] and converts it to a GLC spectrum, as expected by [generate_lorentz_curves()].
@@ -25,8 +21,8 @@ as.glc_spectrum <- function(X, ...) {
 #' - `ppm_nstep`: The step size of the chemical shifts in ppm, calculated as `ppm_range / n`.
 #' @examples
 #' nrm_spec <- read_spectrum()
-#' glc_spec <- as.glc_spectrum.spectrum(nrm_spec, 1e3, 1e6)
-as.glc_spectrum.spectrum <- function(X, sfx, sfy) {
+#' glc_spec <- as_glc_spectrum.spectrum(nrm_spec, 1e3, 1e6)
+as_glc_spectrum <- function(X, sfx, sfy) {
     y_raw <- X$si
     y_scaled <- y_raw / sfy
     n <- length(y_raw)

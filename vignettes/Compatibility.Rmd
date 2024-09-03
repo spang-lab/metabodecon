@@ -7,7 +7,7 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-The original MetaboDecon1D package provided four functions for deconvoluting spectra and visualizing results. With the introduction of Metabdecon, new functions for aligning deconvoluted spectra were added, along with improved replacements for the deconvolution functions. To maintain backwards compatibility, the old deconvolution functions are still available but marked as deprecated. These old functions will be removed entirely in Metabodecon 2.0, planned for 2025.
+The original MetaboDecon1D package provided four functions for deconvoluting spectra and visualizing results. With the introduction of Metabodecon, new functions for aligning deconvoluted spectra were added, along with improved replacements for the deconvolution functions. To maintain backwards compatibility, the old deconvolution functions are still available but marked as deprecated. These old functions will be removed entirely in Metabodecon 2.0, planned for 2025.
 
 A tabular overview of function introductions, deprecations, and scheduled removals is provided in [Table 1: Version Matrix](#table-1-version-matrix).
 

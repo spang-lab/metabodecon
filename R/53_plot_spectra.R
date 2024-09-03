@@ -1,8 +1,8 @@
 plot_spectra <- function(ss = glc_sim(),
                          mar = c(4.1, 4.1, 1.1, 0.1),
                          peak_rng = get_ppm_range(ss, show = FALSE)) {
-    if (is_decon_obj(ss)) ss <- list(ss)
-    if (is_decon_list(ss)) {
+    if (is_metabodecon1d_spectrum(ss)) ss <- list(ss)
+    if (is_metabodecon1d_spectra(ss)) {
         xrng <- range(c(sapply(ss, function(s) s$x_values_ppm)))
         ymax <- max(sapply(ss, function(s) max(s$y_values)))
     } else if (is.data.frame(ss)) {

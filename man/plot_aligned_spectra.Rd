@@ -7,7 +7,7 @@
 plot_aligned_spectra(YA, YB, PA, PB, mfcol = c(nrow(YA), 1))
 }
 \arguments{
-\item{YA}{Matrix. YA\link{i,j} == Signal Intensity of spectrum i at index j AFTER alignmnent.}
+\item{YA}{Matrix. YA\link{i,j} == Signal Intensity of spectrum i at index j AFTER alignment.}
 
 \item{YB}{Matrix. YB\link{i,j} == Signal Intensity of spectrum i at index j BEFORE alignment.}
 
@@ -16,6 +16,9 @@ plot_aligned_spectra(YA, YB, PA, PB, mfcol = c(nrow(YA), 1))
 \item{PB}{List of vectors. PB[\link{i}][j] == index of peak j of spectrum i BEFORE alignment.}
 
 \item{mfcol}{Vector of two integers specifying the number of rows and columns of the plot grid}
+}
+\value{
+NULL. Called for the side effect of plotting.
 }
 \description{
 Plots the aligned and unaligned spectra for comparison.

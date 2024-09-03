@@ -133,7 +133,7 @@ generate_lorentz_curves <- function(data_path = metabodecon_file("urine_1"),
         stop("'data_path' must be a directory, a dataframe or a list of dataframes")
     }
     if (is.null(names(spectra_ds))) names(spectra_ds) <- paste0("spectrum_", seq_along(spectra_ds))
-    spectra <- lapply(spectra_ds, as.glc_spectrum, sfx = sf[1], sfy = sf[2])
+    spectra <- lapply(spectra_ds, as_glc_spectrum, sfx = sf[1], sfy = sf[2])
     adjno <- get_adjno(spectra, sfr, wshw, ask)
     spectra <- get_sfrs(spectra, sfr, ask, adjno)
     spectra <- get_wsrs(spectra, wshw, ask, adjno)
@@ -460,7 +460,7 @@ lc <- function(x, x0, A, lambda) {
 #' @noRd
 #' @description Before version 1.2 of 'metabodecon', the deconvolution functions `generate_lorentz_curves` and `MetaboDecon1D` wrote their output partially as txt files to their input folder. The txt files were named "SPEC_NAME parameter.txt" and "SPEC_NAME approximated_spectrum.txt". Since version 1.2 these txt files are no longer created by default, to prevent accidental modifications of the input folders. However, to stay backwards compatible, functions that used to read "SPEC_NAME parameter.txt" and "SPEC_NAME approximated_spectrum.txt" still accept them as input (e.g. `gen_feat_mat()`). I.e., in order to test this functionality, we still need a way to create the corresponding txt files (which is no longer done by `generate_lorentz_curves()`). That's the purpose of this function: it takes the output of `generate_lorentz_curves()` as input and creates the (now deprecated) "SPEC_NAME parameter.txt" and "SPEC_NAME approximated_spectrum.txt" in folder `outdir`.
 write_parameters_txt <- function(decon, outdir, verbose = FALSE) {
-    if (is_decon_list(decon)) {
+    if (is_metabodecon1d_spectra(decon)) {
         for (obj in decon) write_parameters_txt(obj, outdir)
         return(invisible(NULL))
     }
@@ -522,7 +522,7 @@ generate_lorentz_curves_v12 <- function(data_path = file.path(download_example_d
                                         nworkers = 2) {
     # Read spectra and ask user for parameters
     spectra_ds <- read_spectra(data_path, file_format, expno, procno, ask, sf, raw = TRUE)
-    spectra <- lapply(spectra_ds, as.glc_spectrum, sfx = sf[1], sfy = sf[2])
+    spectra <- lapply(spectra_ds, as_glc_spectrum, sfx = sf[1], sfy = sf[2])
     adjno <- get_adjno(spectra, sfr, wshw, ask)
     spectra <- get_sfrs(spectra, sfr, ask, adjno)
     spectra <- get_wsrs(spectra, wshw, ask, adjno)

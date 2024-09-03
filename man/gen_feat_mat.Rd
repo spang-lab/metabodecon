@@ -28,7 +28,7 @@ A list with the following elements:
 \itemize{
 \item \code{data_matrix}: A data.frame where each row corresponds to one spectrum and each column to one data point, i.e. for 10 input spectra with 131072 data points each \code{data_matrix} would have dimensions 10 x 131072.
 \item \code{peakList}: A list of vectors, where each vector contains the indices of the peaks in the corresponding spectrum. The indices increase from left to right, i.e. the smallest index corresponds to the highest ppm value, as the ppm values decrease from left to right.
-\item \code{w}: A list of vectors where each vector contains the "position paramater" of the peaks in the corresponding spectrum.
+\item \code{w}: A list of vectors where each vector contains the "position parameter" of the peaks in the corresponding spectrum.
 \item \code{A}: A list of vectors where each vector contains the "area parameter" of the peaks in the corresponding spectrum.
 \item \code{lambda}: A list of vectors where each vector contains the "width parameter" of the peaks in the corresponding spectrum.
 }

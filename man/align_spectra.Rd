@@ -14,7 +14,7 @@ align_spectra(deconvs, maxShift = 50, maxCombine = 5)
 \item{maxCombine}{Amount of adjacent columns which may be combined for improving the alignment. Passed as argument \code{range} to \code{\link[=combine_peaks]{combine_peaks()}}.}
 }
 \value{
-An object of class \link{AlignedSpectra}
+An object of class \link{aligned_spectra}
 }
 \description{
 Align signals across a list of deconvoluted spectra using the 'CluPA' algorithm from the 'speaq' package, described in Beirnaert et al. (2018) \url{doi:10.1371/journal.pcbi.1006018} and Vu et al. (2011) \url{doi:10.1186/1471-2105-12-405} plus the additional peak combination described in \code{\link[=combine_peaks]{combine_peaks()}}.

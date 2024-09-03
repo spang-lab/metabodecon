@@ -1637,7 +1637,7 @@ deconvolution <- function(filepath,
 #' @title Plot peak triplets for variable range
 #' @description Plots the peak triplets for each peak detected by [MetaboDecon1D()] and stores the plots as png at `outdir`.
 #'
-#' Supersed by [plot_spectrum()] since metabodecon v1.2.0. Will be replaced with v2.
+#' Superseded by [plot_spectrum()] since metabodecon v1.2. Will be removed with metabodecon v2.
 #'
 #' `r lifecycle::badge("deprecated")`
 #' @author Martina Haeckl, Tobias Schmidt
@@ -1786,7 +1786,7 @@ plot_triplets <- function(deconv_result, x_range = c(), y_range = c(), out_dir =
 #' @title Plot lorentz curves for variable range
 #' @description Plots the original spectrum and all generated Lorentz curves and save the result as png under the filepath.
 #'
-#' Supersed by [plot_spectrum()] since metabodecon v1.2.0. Will be replaced with v2.
+#' Superseded by [plot_spectrum()] since metabodecon v1.2. Will be removed with metabodecon v2.
 #'
 #' `r lifecycle::badge("deprecated")`
 #' @param deconv_result Saved result of the MetaboDecon1D() function
@@ -1946,7 +1946,7 @@ plot_lorentz_curves_save_as_png <- function(deconv_result, x_range = c(), y_rang
 #' @title Plot spectrum approx for variable range
 #' @description Plots the original spectrum and the superposition of all generated Lorentz curves and saves the result as png under the specified filepath.
 #'
-#' Supersed by [plot_spectrum()] since metabodecon v1.2.0. Will be replaced with v2.
+#' Superseded by [plot_spectrum()] since metabodecon v1.2. Will be removed with metabodecon v2.
 #'
 #' `r lifecycle::badge("deprecated")`
 #' @author Martina Haeckl

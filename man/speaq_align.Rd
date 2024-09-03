@@ -32,7 +32,7 @@ speaq_align(
 \value{
 A matrix containing the integral values of the spectra after alignment.
 There is one row per spectrum and one column per ppm value.
-The entry at postion \verb{i, j} holds the integral value of the signal from spectrum \code{i} that has its center at position \code{j} after alignment by speaq.
+The entry at position \verb{i, j} holds the integral value of the signal from spectrum \code{i} that has its center at position \code{j} after alignment by speaq.
 If there is no signal with center \code{j} in spectrum \code{i}, entry \verb{i, j} is set to NA.
 The column names of the matrix are the ppm values of the original spectra.
 
