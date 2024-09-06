@@ -155,7 +155,7 @@ refine_lorentz_curves_v13 <- function(x, y, pc, pl, pr, A, lambda, w, nfit = 3) 
     # Calculate the integrals for each lorentz curve
     integrals <- matrix(nrow = 1, ncol = length(l))
     for (i in seq_along(l)) {
-        integrals[1, i] <- A_new[i] * (atan((-w[i] + (spec$n / spec$sfx)) / l[i]) - atan((-w[i]) / l[i]))
+        integrals[1, i] <- A_new[i] * (atan((-w[i] + (spec$n / spec$sf[1])) / l[i]) - atan((-w[i]) / l[i]))
     }
 
     spec$lcr <- list(

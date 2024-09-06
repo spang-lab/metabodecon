@@ -111,7 +111,7 @@ get_wsrs <- function(spectra, wshw, ask, adjno) {
 
 #' @title Confirm signal free region (SFR)
 #' @description Repeatedly asks the user to refine and/or confirm the borders of the SFR.
-#' @param spec A list containing the spectrum details including 'n', 'ppm_max', 'ppm_nstep', and 'sfx'.
+#' @param spec A list containing the spectrum details including 'n', 'ppm_max', 'ppm_nstep', and 'sf'.
 #' @param sfr A vector of length 2 containing the initial left and right borders of the SFR in ppm.
 #' @return A list containing the final left and right borders of the SFR in both ppm and dp units.
 #' @noRd
@@ -155,9 +155,9 @@ convert_sfr <- function(spec, sfr) {
         left_ppm <- sfr[1]
         right_ppm <- sfr[2]
         left_dp <- (spec$n + 1) - (spec$ppm_max - left_ppm) / spec$ppm_nstep
-        left_sdp <- left_dp / spec$sfx # nolint: object_usage_linter
+        left_sdp <- left_dp / spec$sf[1] # nolint: object_usage_linter
         right_dp <- (spec$n + 1) - (spec$ppm_max - right_ppm) / spec$ppm_nstep
-        right_sdp <- right_dp / spec$sfx # nolint: object_usage_linter
+        right_sdp <- right_dp / spec$sf[2] # nolint: object_usage_linter
     })
 }
 

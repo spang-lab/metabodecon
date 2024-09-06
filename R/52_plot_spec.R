@@ -338,7 +338,7 @@ psi_draw_lorentz_curve <- function(x,
                                    lc_col = "black",
                                    lc_lty = 1,
                                    lc_fill = NULL) {
-    y <- lc(x, x_0, A, lambda)
+    y <- lorentz(x, x_0, A, lambda)
     if (lc_show) {
         near_zero <- abs(y) < 0.01
         y_big <- y[!near_zero]
@@ -356,7 +356,7 @@ psi_draw_lorentz_curve <- function(x,
             xleft = x_0 + lambda,
             xright = x_0 - lambda,
             ybottom = par("usr")[3],
-            ytop = lc(x_0, x_0, A, lambda),
+            ytop = lorentz(x_0, x_0, A, lambda),
             col = lc_fill,
             border = NA
         )

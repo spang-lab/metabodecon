@@ -9,7 +9,7 @@ fit_lorentz_curves <- function(spec, nfit = 3) {
         spec$lca[[i]] <- lc <- refine_lc_v14(spec, lc$Z)
     }
     A <- lc$A; lambda <- lc$lambda; w <- lc$w
-    integrals <- A * (atan((-w + (spec$n / spec$sfx)) / lambda) - atan((-w) / lambda))
+    integrals <- A * (atan((-w + (spec$n / spec$sf[1])) / lambda) - atan((-w) / lambda))
     spec$lcr <- list(A = A, lambda = lambda, w = w, integrals = integrals)
     spec
 }
@@ -580,7 +580,7 @@ refine_lorentz_curves_v12 <- function(spec, nfit) {
     # Calculate the integrals for each lorentz curve
     integrals <- matrix(nrow = 1, ncol = length(lambda_new))
     for (i in seq_along(lambda_new)) {
-        integrals[1, i] <- A_new[i] * (atan((-w_new[i] + (spec$n / spec$sfx)) / lambda_new[i]) - atan((-w_new[i]) / lambda_new[i]))
+        integrals[1, i] <- A_new[i] * (atan((-w_new[i] + (spec$n / spec$sf[1])) / lambda_new[i]) - atan((-w_new[i]) / lambda_new[i]))
     }
 
     spec$lcr <- list(

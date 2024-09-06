@@ -3,20 +3,25 @@
 #' @export
 #' @title Align Spectra
 #' @description Align signals across a list of deconvoluted spectra using the 'CluPA' algorithm from the 'speaq' package, described in Beirnaert et al. (2018) <doi:10.1371/journal.pcbi.1006018> and Vu et al. (2011) <doi:10.1186/1471-2105-12-405> plus the additional peak combination described in [combine_peaks()].
-#' @param deconvs An object of class [DeconvolutedSpectra] as returned by [generate_lorentz_curves()].
-#' @param maxShift Maximum number of points along the "ppm-axis" which a value can be moved by the 'speaq' package. 50 is a suitable starting value for plasma spectra with a digital resolution of 128K. Note that this parameter has to be individually optimized depending on the type of analyzed spectra and the digital resolution. For urine which is more prone to chemical shift variations this value most probably has to be increased. Passed as argument `maxShift` to [speaq_align()].
+#' @param decons An object of type `MD1Decons` or `GLCDecons` as returned by [MetaboDecon1D()] or [generate_lorentz_curves()].
+#' @param maxShift Maximum number of points along the "ppm-axis" a value can be moved by the 'speaq' package. 50 is a suitable starting value for plasma spectra with a digital resolution of 128K. Note that this parameter has to be individually optimized depending on the type of analyzed spectra and the digital resolution. For urine which is more prone to chemical shift variations this value most probably has to be increased. Passed as argument `maxShift` to [speaq_align()].
 #' @param maxCombine Amount of adjacent columns which may be combined for improving the alignment. Passed as argument `range` to [combine_peaks()].
-#' @return An object of class [AlignedSpectra]
+#' @return An object of type `AlignedSpectra` as described in [Metabodecon Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
 #' @examples
 #' sim_dir <- metabodecon_file("bruker/sim")
 #' spectra <- read_spectra(sim_dir)
-#' deconvs <- glc_sim(spectra = spectra)
-#' aligned <- align_spectra(deconvs)
+#' decons <- generate_lorentz_curves(spectra, sfr = c(3.42, 3.58), wshw = 0, delta = 0.1, ask = FALSE)
+#' aligned <- align_spectra(decons)
 #' str(aligned)
-align_spectra <- function(deconvs, maxShift = 50, maxCombine = 5) {
-    smat <- speaq_align(spectrum_data = deconvs, maxShift = 50)
-    tmp <- combine_peaks(shifted_mat = smat, range = maxCombine, spectrum_data = deconvs)
-    tmp$long
+align_spectra <- function(decons, maxShift = 50, maxCombine = 5) {
+    smat <- speaq_align(spectrum_data = decons, maxShift = 50)
+    tmp <- combine_peaks(shifted_mat = smat, range = maxCombine, spectrum_data = decons)
+    # - `decons`: The deconvoluted NMR spectra before alignment. This can be an object of class `DeconvolutedSpectra`, `MD1Decons` or `GLCDecons`.
+    # - `lc`: Lorentz curves after alignment:
+    #   - `am`: Amplitude parameter.
+    #   - `hw`: Halfwidth parameter.
+    #   - `ct`: Center parameter.
+    # - `si`: Signal intensities after alignment.
 }
 
 # Exported Helpers #####
@@ -530,6 +535,25 @@ rm_zero_width_peaks <- function(params) {
         params$A[[i]] <- params$A[[i]][not_zero]
     }
     params
+}
+
+#' @author Tobias Schmidt
+#' @noRd
+is_decon_obj <- function(x) {
+    keys <- c(
+        "number_of_files", "filename", "x_values", "x_values_ppm",
+        "y_values", "spectrum_superposition", "mse_normed", "index_peak_triplets_middle",
+        "index_peak_triplets_left", "index_peak_triplets_right", "peak_triplets_middle",
+        "peak_triplets_left", "peak_triplets_right", "integrals", "signal_free_region",
+        "range_water_signal_ppm", "A", "lambda", "x_0"
+    )
+    if (is.list(x) && all(keys %in% names(x))) TRUE else FALSE
+}
+
+#' @author Tobias Schmidt
+#' @noRd
+is_decon_list <- function(x) {
+    if (is.list(x) && all(sapply(x, is_decon_obj))) TRUE else FALSE
 }
 
 # Deprecated #####

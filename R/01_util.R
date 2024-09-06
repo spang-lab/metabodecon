@@ -347,6 +347,10 @@ is_list_of_nums <- function(x, nl, nv) {
     }
 }
 
+is_str_or_null <- function(x) {
+    is.null(x) || (is.character(x) && length(x) == 1)
+}
+
 all_identical <- function(x) {
     all(sapply(x, identical, x[[1]]))
 }
@@ -439,3 +443,26 @@ calc_B <- function(X = read_spectrum()) {
     B <- (2 * pi * fq_ref) / gamma
     B
 }
+
+# Classes #####
+
+#' @title Metabodecon Classes
+#' @description
+#'  Metabodecon introduces a set of classes to highlight the presence of certain elements in corresponding objects.
+#'
+#'  The order of elements may vary between different versions of Metabodecon, thus elements should always be accessed by name, for example, using `x$si` or `x[["cs"]]`.
+#'  A short description of each class is given in the listing below.
+#'
+#'  -  `spectrum`: One NMR spectrum
+#'  -  `decon1`: One deconvoluted NMR spectrum stored in [MetaboDecon1D()] format
+#'  -  `decon2`: One deconvoluted NMR spectrum stored in [generate_lorentz_curves()] format
+#'  -  `decon3`: One deconvoluted NMR spectrum stored in [deconvolute_spectrum()] format
+#'  -  `alignment`: One aligned NMR spectrum
+#'  -  `spectra`: List of multiple NMR spectra
+#'  -  `decons1`: List of multiple deconvoluted NMR stored in [MetaboDecon1D()] format
+#'  -  `decons2`: List of multiple deconvoluted NMR stored in [generate_lorentz_curves()] format
+#'  -  `decons3`: List of multiple deconvoluted NMR stored in [deconvolute_spectrum()] format
+#'  -  `alignments`: List of multiple aligned NMR spectra
+#'
+#'  More details can be found in Metabodecon's online documentation at [Metabodecon Classes](https://spang-lab.github.io/metabodecon/articles/Metabodecon-Classes.html).
+metabodecon_classes <- NULL

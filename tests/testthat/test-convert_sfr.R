@@ -11,8 +11,7 @@ test_that("convert_sfr works", {
         ppm_max <- max(ppm)
         ppm_step <- (max(ppm) - min(ppm)) / (n - 1)
         ppm_nstep <- (max(ppm) - min(ppm)) / (n)
-        sfx <- 1000
-        sfy <- 1000000
+        sf <- c(1e3, 1e6)
     })
     sfr <- convert_sfr(spec, sfr = c(2.0, -3.0))
     expect_equal(sfr, list(

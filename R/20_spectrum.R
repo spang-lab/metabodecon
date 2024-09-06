@@ -1,33 +1,105 @@
+# Public API #####
+
 #' @export
-#' @title Create a Spectrum Object
-#' @description Creates a spectrum object from the provided signal intensities, frequencies and chemical shifts.
-#' @param si Numeric vector of signal intensities, ordered from highest to lowest corresponding chemical shift.
-#' @param cs_max The highest chemical shift value in ppm, usually shown as left end of the spectrum.
-#' @param cs_width The width of the spectrum in ppm.
-#' @param fq_ref The reference frequency in Hz.
-#' @param fq_width The width of the spectrum in Hz. Only used to check whether the values calculated from `cs_max`, `cs_width` and `fq_ref` match the provided value. If `NULL`, this check will be skipped.
-#' @param force If `TRUE`, the function will not raise an error in case of discrepancies between the calculated and the provided spectrum width in Hz, but will print a info message instead. To hide this message as well, set `silent = TRUE`.
-#' @param silent If `TRUE`, no output will be printed to the console.
-#' @param name The name of the spectrum, e.g. "Blood 1" or "Urine Mouse X23D".
-#' @param path The path to the spectrum file, e.g. "/example_datasets/bruker/urine/urine_1".
-#' @param type The type of experiment, e.g. "H1 CPMG" or "H1 NOESY".
-#' @param mfs The magnetic field strength in Tesla.
-#' @return A list with class `spectrum` and the following elements:
-#' - `si`: Signal intensities in Arbitrary Units.
-#' - `cs`: Chemical shifts in ppm.
-#' - `fq`: Frequencies in Hz.
-#' - `name`: Name of the spectrum.
-#' - `path`: Path to the spectrum file.
-#' - `type`: Type of the spectrum.
-#' - `mfs`: Magnetic field strength in Tesla.
+#' @family {spectrum functions}
+#'
+#' @title Read a spectrum from Disk
+#'
+#' @description
+#'  Read a single spectrum file or folder from disk and return it as `spectrum` object.
+#'
+#' @param data_path
+#'  The path of the file/folder containing the spectrum data. E.g. `"example_datasets/jcampdx/urine/urine_1.dx"` or `"example_datasets/bruker/urine/urine"`.
+#' @param file_format
+#'  The file_format of the spectrum file. E.g. `"bruker"` or `"jcampdx"`.
+#' @param expno,procno
+#'  The experiment/processing number for the file. E.g. `"10"`. Only relevant if `file_format` equals `"bruker"`. For details see section [File Structure](https://spang-lab.github.io/metabodecon/articles/FAQ.html#file-structure) in the metabodecon FAQ.
+#' @param raw
+#'  If `FALSE`, scales the returned signal intensities based on information available in the spectrum metadata, in particular `NC_proc`. For details see `processing-reference.pdf`, available at <https://www.bruker.com/en.html> at section 'Services & Support > Documentation & Manuals > Magnetic Resonance > Acquisition & Processing > TopSpin Processing Commands and Parameters' (requires login).
+#' @param silent
+#'  If `TRUE`, no output will be printed to the console.
+#' @param force
+#'  If `TRUE`, try to continue when encountering errors and print info messages instead. To hide these messages as well, set `silent = TRUE`.
+#'
+#' @return
+#'  A `spectrum` object as described in [Metabodecon Classes](https://spang-lab.github.io/metabodecon/articles/Metabodecon-Classes.html).
+#'
 #' @examples
-#' si <- c(1, 1, 3, 7, 8, 3, 8, 5, 2, 1)
-#' cs_max <- 14.8
-#' cs_width <- 20.0
-#' fq_ref <- 600.25 * 1e6
-#' fq_width <- 12005
-#' spectrum <- make_spectrum(si, cs_max, cs_width, fq_ref, fq_width)
-#' spectrum2 <- make_spectrum(si, cs_max, cs_width, fq_ref, fq_width = 12010, force = FALSE)
+#' urine <- system.file("example_datasets/bruker/urine", package = "metabodecon")
+#' urine_1 <- file.path(urine, "urine_1")
+#' urine_2 <- file.path(urine, "urine_2")
+#' X1 <- read_spectrum(urine_1)
+#' X2 <- read_spectrum(urine_2)
+#' XX <- read_spectra(urine)
+#' str(XX)
+#' str(X1)
+#' stopifnot(all.equal(X1, XX$urine_1))
+#'
+#' # Below code shows how a spectrum stored in JCAMP-DX format can be read.
+#' # Reading files in this format is very slow (about 30s on the development
+#' # machine). So if possible, you should stick with the original Bruker
+#' # data storage format.
+#' \dontrun{
+#' urine_1_dx <- system.file("example_datasets/jcampdx/urine/urine_1.dx", package = "metabodecon")
+#' X1_dx <- read_spectrum(urine_1_dx, file_format = "jcampdx")
+#' stopifnot(all.equal(X1, X1_dx))
+#' }
+#'
+read_spectrum <- function(data_path = metabodecon_file("bruker/sim/sim_01"),
+                          file_format = "bruker",
+                          expno = 10,
+                          procno = 10,
+                          raw = FALSE,
+                          silent = TRUE,
+                          force = FALSE) {
+    file_format <- match.arg(file_format, c("bruker", "jcampdx"))
+    X <- switch(file_format,
+        "bruker" = read_topspin3_spectrum(data_path, expno, procno, raw, silent, force),
+        "jcampdx" = read_jcampdx_spectrum(data_path, silent, force)
+    )
+}
+
+#' @export
+#' @family {spectrum functions}
+#'
+#' @title Create a Spectrum Object
+#'
+#' @description
+#'  Creates a spectrum object from the provided signal intensities, frequencies and chemical shifts.
+#' @param si
+#'  Numeric vector of signal intensities, ordered from highest to lowest corresponding chemical shift.
+#' @param cs_max
+#'  The highest chemical shift value in ppm, usually shown as left end of the spectrum.
+#' @param cs_width
+#'  The width of the spectrum in ppm.
+#' @param fq_ref
+#'  The reference frequency in Hz.
+#' @param fq_width
+#'  The width of the spectrum in Hz. Only used to check whether the values calculated from `cs_max`, `cs_width` and `fq_ref` match the provided value. If `NULL`, this check will be skipped.
+#' @param force
+#'  If `TRUE`, the function will not raise an error in case of discrepancies between the calculated and the provided spectrum width in Hz, but will print a info message instead. To hide this message as well, set `silent = TRUE`.
+#' @param silent
+#'  If `TRUE`, no output will be printed to the console.
+#' @param name
+#'  The name of the spectrum, e.g. "Blood 1" or "Urine Mouse X23D".
+#' @param path
+#'  The path to the spectrum file, e.g. "/example_datasets/bruker/urine/urine_1".
+#' @param type
+#'  The type of experiment, e.g. "H1 CPMG" or "H1 NOESY".
+#' @param mfs
+#'  The magnetic field strength in Tesla.
+#'
+#' @return
+#'  A `spectrum` object as described in [Metabodecon Classes](https://spang-lab.github.io/metabodecon/articles/Metabodecon-Classes.html).
+#'
+#' @examples
+#'  si <- c(1, 1, 3, 7, 8, 3, 8, 5, 2, 1)
+#'  cs_max <- 14.8
+#'  cs_width <- 20.0
+#'  fq_ref <- 600.25 * 1e6
+#'  fq_width <- 12005
+#'  spectrum <- make_spectrum(si, cs_max, cs_width, fq_ref, fq_width)
+#'  spectrum2 <- make_spectrum(si, cs_max, cs_width, fq_ref, fq_width = 12010, force = FALSE)
 make_spectrum <- function(si,
                           cs_max,
                           cs_width,
@@ -41,8 +113,8 @@ make_spectrum <- function(si,
                           mfs = NULL) {
     cs_min <- cs_max - cs_width # Lowest ppm value
     cs <- seq(cs_max, cs_max - cs_width, length.out = length(si)) # Chemical shift in parts per million
-    fq_max <- fq_ref - (cs_min * 1e-6 * fq_ref)  # Highest frequency in Hz (corresponds to lowest ppm value)
-    fq_min <- fq_ref - (cs_max * 1e-6 * fq_ref)  # Lowest frequency in Hz
+    fq_max <- fq_ref - (cs_min * 1e-6 * fq_ref) # Highest frequency in Hz (corresponds to lowest ppm value)
+    fq_min <- fq_ref - (cs_max * 1e-6 * fq_ref) # Lowest frequency in Hz
     fq <- seq(fq_min, fq_max, length.out = length(si)) # Frequency in Hz
     fq_width_calc <- fq_max - fq_min
     if (!is.null(fq_width) && !isTRUE(all.equal(fq_width_calc, fq_width))) { # Check if calculated spectrum width in Hz matches the value provided by the user
@@ -53,53 +125,6 @@ make_spectrum <- function(si,
         }
     }
     structure(named(si, cs, fq, name, path, type, mfs), class = "spectrum")
-}
-
-#' @export
-#' @title Check whether an Object is a Spectrum
-#' @description An object is considered a 'Spectrum', if it
-#'
-#' - is a list
-#' - has all 'Mandatory Elements' listed below
-#' - fulfills all 'Constraints' listed below
-#'
-#' # Mandatory Elements
-#'
-#' - `si`: Measured signal intensities in arbitrary units (au)
-#' - `cs`: Corresponding "chemical shifts" in parts per pillion (ppm)
-#' - `fq`: Corresponding frequencies in Hertz (Hz)
-#'
-#' # Optional Elements
-#'
-#' - `name`: Name of the spectrum, e.g. "Blood 1" or "Urine Mouse X23D"
-#' - `path` are character vectors of length 1, e.g. "/example_datasets/bruker/urine/urine_1"
-#' - `type`: Type of the spectrum, e.g. "H1 CPMG" or "H1 NOESY"
-#' - `mfs`: Magnetic field strength in Tesla
-#'
-#' # Constraints
-#'
-#' - Elements `si`, `fq` and `cs` must have the same length.
-#' - Each of the elements `name`, `type` and `path` must be a character vector of length 1 or NULL.
-#' - Element `mfs` must be a numeric vector of length 1 or NULL.
-#'
-#' @examples
-#' spectrum <- read_spectrum()
-#' is.spectrum(spectrum)
-is.spectrum <- function(xx, check.class = TRUE, check.contents = FALSE) {
-    if (check.class) {
-        if (!inherits(xx, "spectrum")) return(FALSE)
-    }
-    if (check.contents) {
-        if (!is.list(xx)) return(FALSE)
-        mandatory <- c("si", "fq", "cs")
-        if (!all(mandatory %in% names(xx))) return(FALSE)
-        lengths <- sapply(xx[mandatory], length)
-        if (length(unique(lengths)) != 1) return(FALSE)
-        optional <- c("name", "type", "path", "mfs")
-        ok <- sapply(xx[optional], function(x) is.null(x) || (is.character(x) && length(x) == 1))
-        if (!all(ok)) return(FALSE)
-    }
-    return(TRUE)
 }
 
 #' @export
@@ -116,18 +141,248 @@ is.spectrum <- function(xx, check.class = TRUE, check.contents = FALSE) {
 #' print.spectrum(spectrum)
 print.spectrum <- function(x, ...) {
     catf("Spectrum with %d data points\n", length(x$si))
-    catf("- Signal Intensity Range: %.1f - %.1f\n", min(x$si), max(x$si))
-    catf("- Frequency Range: %.1f - %.1f Hz\n", min(x$fq), max(x$fq))
-    catf("- Chemical Shift Range: %.4f - %.4f ppm\n", max(x$cs), min(x$cs))
-    catf("- Magnetic Field Stregth: %s\n", if (is.null(x$mfs)) "NULL" else paste(x$mfs, "T"))
-    catf("- Name: %s\n", x$name %||% "NULL")
-    catf("- Path: %s\n", x$path %||% "NULL")
-    catf("- Type: %s\n", x$type %||% "NULL")
+    catf("Signal Intensity Range: %.1f - %.1f\n", min(x$si), max(x$si))
+    catf("Frequency Range: %.1f - %.1f Hz\n", min(x$fq), max(x$fq))
+    catf("Chemical Shift Range: %.4f - %.4f ppm\n", max(x$cs), min(x$cs))
+    catf("Magnetic Field Strength: %s\n", if (is.null(x$mfs)) "NULL" else paste(x$mfs, "T"))
+    catf("Name: %s\n", x$name %||% "NULL")
+    catf("Path: %s\n", x$path %||% "NULL")
+    catf("Type: %s\n", x$type %||% "NULL")
+}
+
+#' @export
+is_spectrum <- function(x,
+                        check_class = TRUE,
+                        check_contents = FALSE) {
+    # styler: off
+    if (check_class && !inherits(x, "spectrum")) return(FALSE)
+    if (!check_contents) return(TRUE)
+    if (!is.list(x)) return(FALSE)
+    mandatory <- c("si", "fq", "cs")
+    if (!all(mandatory %in% names(x))) return(FALSE)
+    if (any(lengths(x[mandatory])) != 1) return(FALSE)
+    optional <- c("name", "type", "path", "mfs")
+    if (!all(sapply(x[optional], is_str_or_null))) return(FALSE)
+    # styler: on
+    return(TRUE)
 }
 
 
+# Private Helpers #####
 
-# Conversion functions
-as.spectrum <- function(x) {
-    UseMethod("as.my_class_a")
+#' @noRd
+#' @title Read single Bruker TopSpin 3 Spectrum
+#' @inheritParams read_spectrum
+#' @examples
+#' spldir <- pkg_file("example_datasets/bruker/urine/urine_1")
+#' X <- read_topspin3_spectrum(spldir)
+#' fq_ref <- X$fq[1] / (1 - (X$cs[1] / 1e6))
+#' print(head(X))
+#' cat("Frequency of reference in MHz:", fq_ref / 1e6)
+read_topspin3_spectrum <- function(spldir = file.path(download_example_datasets(), "bruker/urine/urine_1"),
+                                   expno = 10,
+                                   procno = 10,
+                                   raw = FALSE,
+                                   silent = TRUE,
+                                   force = FALSE) {
+    acqus <- read_acqus_file(spldir, expno)
+    procs <- read_procs_file(spldir, expno, procno)
+    one_r <- read_1r_file(spldir, expno, procno, procs, silent = TRUE)[c("raw", "scaled")]
+    make_spectrum(
+        si = if (raw) one_r$raw else one_r$scaled, # Signal intensities
+        cs_max = procs$OFFSET, # Spectrum offset in PPM
+        cs_width = acqus$SW, # Spectrum width in PPM
+        fq_ref = acqus$SFO1 * 1e6, # Reference Frequency in Hz (better than procs$SF, because it fulfills `all.equal` check of `make_spectrum`)
+        fq_width = acqus$SW_h, # Spectrum width in Hz
+        force = force,
+        silent = silent,
+        name = basename(spldir),
+        path = spldir
+    )
+}
+
+#' @noRd
+#' @title Read single JCAMPDX Spectrum
+#' @inheritParams read_spectrum
+#' @examples
+#' \dontrun{
+#' # Example Usage (took 30s on the development machine)
+#' xds_path <- download_example_datasets()
+#' path <- file.path(xds_path, "jcampdx/urine/urine_1.dx")
+#' spectrum_data <- read_jcampdx_spectrum(path)
+#' str(spectrum_data, 1)
+#' }
+read_jcampdx_spectrum <- function(path, raw = FALSE, silent = TRUE, force = FALSE) {
+    data <- readJDX::readJDX(file = path, SOFC = TRUE, debug = 0) # Example return: [dataGuide=df(3*3), metadata=chr(2180), commentLines=int(10053), real=df(131072*2), imaginary=df(131072*2)] with colnames(data$real) = c("x", "y"). Takes about 30s on machine r31 for urine_1.dx (1MB).
+    meta <- parse_metadata_file(lines = data$metadata)
+    si_raw <- data$real$y
+    si_scaled <- if (meta$DTYPP == 0) data$real$y * 2^meta$NC_proc else data$real$y
+    make_spectrum(
+        si = if (raw) si_raw else si_scaled, # Signal intensities
+        cs_max = meta$OFFSET, # Spectrum offset in PPM
+        cs_width = meta$SW, # Spectrum width in PPM
+        fq_ref = meta$SFO1 * 1e6, # Reference Frequency in Hz (better than meta$SF, because it fulfills `all.equal` check of `make_spectrum`)
+        fq_width = meta$SW_h, # Spectrum width in Hz
+        force = force,
+        silent = silent
+    )
+}
+
+#' @noRd
+#' @title Parse Metadata File
+#' @description Parses a metadata file like Bruker's `acqu[s]` or `proc[s]` files and return the metadata as a named list.
+#' @param path The path of the file containing the parameter data. E.g. `"example_datasets/bruker/urine/urine_1/10/acqus"` or `"example_datasets/bruker/urine/urine_1/10/pdata/10/procs"`.
+#' @return A named list containing the metadata read from the file.
+#' @details For a detailed description of the format of burker parameter files, refer to 'Bruker_NMR_Data_Formats.pdf'.
+#' @examples
+#' path <- pkg_file("example_datasets/bruker/urine/urine_1/10/acqus")
+#' lines <- readLines(path)
+#' acqus1 <- parse_metadata_file(path)
+#' acqus2 <- parse_metadata_file(lines = lines)
+#' stopifnot(all.equal(acqus1, acqus2))
+parse_metadata_file <- function(path = NULL, lines = NULL) {
+    if (is.null(path) && is.null(lines)) stop("Either `path` or `lines` must be provided.")
+    if (is.null(lines)) lines <- readLines(path)
+    lines <- lines[!startsWith(lines, "$$")] # strip comments
+    content <- paste(lines, collapse = "") # Example: "##TITLE= Parameter file, TopSpin 3.6.2##JCAMPDX= 5.0"
+    pattern <- "(##\\$?.+?= ?)([^#]*)"
+    matches <- gregexpr(pattern, content, perl = TRUE)
+    keyvals <- regmatches(content, matches)[[1]]
+    tmp <- strsplit(keyvals, "= ?")
+    keys <- sapply(tmp, "[", 1)
+    keys <- gsub("^##\\$?", "", keys)
+    vals <- sapply(tmp, "[", 2)
+    ret <- structure(as.list(vals), names = keys)
+    flt <- is_float_str(vals)
+    int <- is_int_str(vals)
+    ret[flt] <- as.numeric(vals[flt])
+    ret[int] <- as.integer(vals[int])
+    ret
+}
+
+#' @noRd
+#' @title Read Bruker TopSpin Acquistion Parameters
+#' @param spldir The path of the directory holding the NMR measurements for a individual sample. E.g. `"example_datasets/bruker/urine/urine_1/"`.
+#' @param procno The processing number for the file. E.g. `"10"`.
+#' @return The signals acquisition parameters read from the file as named list.
+#' @examples
+#' blood1_dir <- pkg_file("example_datasets/bruker/urine/urine_1")
+#' acqus <- read_acqus_file(blood1_dir)
+#' str(acqus, 0)
+#' cat("spectrum width ppm:", as.numeric(acqus$SW))
+#' cat("spectrum width Hz:", as.numeric(acqus$SW_h))
+read_acqus_file <- function(spldir = pkg_file("example_datasets/bruker/urine/urine_1"),
+                            expno = 10) {
+    path <- file.path(spldir, expno, "acqus")
+    acqus <- parse_metadata_file(path)
+    acqus
+}
+
+#' @noRd
+#' @title Read Bruker TopSpin Processing Parameters
+#' @param spldir The path of the directory holding the NMR measurements for a individual sample. E.g. `"example_datasets/bruker/urine/urine_1/"`.
+#' @param expno The experiment number for the file. E.g. `"10"`.
+#' @param procno The processing number for the file. E.g. `"10"`.
+#' @return The processing parameters read from the file as named list.
+#' @examples
+#' blood1_dir <- pkg_file("example_datasets/bruker/urine/urine_1")
+#' procs <- read_procs_file(blood1_dir)
+read_procs_file <- function(spldir = pkg_file("example_datasets/bruker/urine/urine_1"),
+                            expno = 10,
+                            procno = 10) {
+    path <- file.path(spldir, expno, "pdata", procno, "procs")
+    procs <- parse_metadata_file(path)
+    procs
+}
+
+#' @noRd
+#' @title Read signal intensities from Bruker TopSpin 1r file
+#' @param spldir spldir The path of the directory holding the NMR measurements for a individual sample. E.g. `"example_datasets/bruker/urine/urine_1/"`.
+#' @param procno The processing number for the file. E.g. `"10"`.
+#' @param expno The experiment number for the file. E.g. `"10"`.
+#' @param procs The parsed content of the `procs` file as returned by `read_procs_file()`.
+#' @param force If `TRUE`, the function will try to read the file as 64 bit floating point numbers if the processing parameter `DTYPP` is unequal 0. This behaviour is untested, so should be used with caution.
+#' @param silent If `TRUE`, no output will be printed to the console.
+#' @examples
+#' spldir <- pkg_file("example_datasets/bruker/urine/urine_1")
+#' oneR <- read_1r_file(spldir, 10, 10)
+#' str(oneR, 1)
+read_1r_file <- function(spldir = pkg_file("example_datasets/bruker/urine/urine_1"),
+                         expno = 10,
+                         procno = 10,
+                         procs = read_procs_file(spldir, expno, procno),
+                         force = FALSE,
+                         silent = FALSE) {
+    # Bruker_NMR_Data_Formats.pdf:
+    #
+    # > The raw data files `fid` and `ser` contain one dimensional or multi-dimensional
+    # > acquired data, respectively. They consist of a sequence of acquired data point
+    # > values in binary format. The acquisition status parameter `DTYPA` defines, how
+    # > the data values are stored. If the `DTYPA` is "int" the stored value represents
+    # > a mantissa of the data point value, the acquisition parameter NC is the
+    # > exponent. All data points share in this case the same exponent. If `DTYPA` is
+    # > "double", the data points are stored as a double precision 64 bit floating
+    # > number, parameter NC is not used.
+    # >
+    # > | FIGURE A (TopSpin 3)         | FIGURE B (TopSin 4)       |
+    # > |------------------------------|---------------------------|
+    # > | DTYPA/DTYPP = 0 (int) ==>    | DTYPA/DTYPP = ? (dbl) ==> |
+    # > | Value = 32BitInt * 2^NC      | Value = 64BitDouble with  |
+    # > |                              | bits 00 - 51 = fraction   |
+    # > |                              | bits 52 - 62 = exponent   |
+    # > |                              | bit  63      = sign       |
+    # >
+    # > The processing status parameter `DTYPP` defines how the data values are stored. If
+    # > the `DTYPP` is 0 ("int"), the stored value represents a mantissa of the data
+    # > point value, the processing status parameter `NC_proc` is the exponent. In this
+    # > case all data points share the same exponent.
+    # >
+    # > Their format is given by the parameter `DTYPP`, the byte ordering is given by
+    # > the parameter `BYTORDP`, both may be read from the processing status parameter
+    # > file `procs`.
+    #
+    path_1r <- file.path(spldir, expno, "pdata", procno, "1r")
+    path_procs <- file.path(spldir, expno, "pdata", procno, "procs")
+    byteordp <- procs$BYTORDP
+    endian <- if (byteordp == 0) "little" else "big"
+    ncproc <- procs$NC_proc
+    dtypp <- procs$DTYPP
+    n <- procs$SI
+    if (dtypp == 0) {
+        msg <- sprintf("Reading '%s' as 32 bit integers", path_1r)
+        type <- "integer"
+        nbytes <- 4
+    } else if (force) {
+        msg <- sprintf("Reading '%s' as 64 bit floating point numbers, because processing parameter DTYPP equals '%s' and `force == TRUE`. This behaviour is untested, so please double check the returned values. For details see Bruker_NMR_Data_Formats.pdf.", path_1r, dtypp)
+        type <- "double"
+        nbytes <- 8
+    } else {
+        msg <- sprintf("Processing parameter `DTYPP` has value '%s' but only '0' is supported. This indicates that the intensity values in file '%s' are stored doubles and not as integers. To read the file nonetheless, set `force = TRUE`, but note that this behaviour is completely untested, so please double check the returned values.", dtypp, path_1r)
+        stop(msg)
+    }
+    if (!silent) logf(msg)
+    con <- file(path_1r, "rb")
+    on.exit(close(con), add = TRUE)
+    raw <- readBin(con, what = type, n = n, size = nbytes, signed = TRUE, endian = endian)
+    scaled <- if (type == "integer") raw * 2^ncproc else raw
+    named(
+        # Path related variables
+        spldir, # Path of the dir holding NMR measurements for a individual sample.
+        expno, # Experiment number for the file.
+        procno, # Processing number for the file.
+        path_1r, # Path of the 1r file.
+        path_procs, # Path of the procs file.
+        # Processing parameters and derived values
+        procs, # The parsed content of the `procs` file as returned by `read_procs_file()`.
+        byteordp, # The byte ordering of the data. 0 = little endian, 1 = big endian.
+        dtypp, # The data type of the data. 0 = integer, not 0 = double.
+        endian, # The endianess of the data. Either "little" or "big".
+        nbytes, # The number of bytes used to store a single value. Either 4 or 8.
+        ncproc, # The exponent of the data. Only relevant if `dtypp` is 0, i.e. the data is stored as integer values.
+        type, # The type of the data. Either "integer" or "double", derived from `dtypp`.
+        n, # The number of data points.
+        # Raw and scaled signal intensity values
+        raw, # The raw signal intensity values.
+        scaled # The scaled signal intensity values.
+    )
 }
