@@ -1,5 +1,5 @@
 
-plot_si_mat <- function(Y = glc_sim("bruker/sim"),
+plot_si_mat <- function(Y = generate_lorentz_curves_sim("bruker/sim"),
                         lgdcex = "auto",
                         main = NULL,
                         mar = par("mar")) {

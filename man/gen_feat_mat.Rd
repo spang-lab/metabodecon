@@ -5,7 +5,7 @@
 \title{Generate Feature Matrix.}
 \usage{
 gen_feat_mat(
-  data_path = glc_sim(),
+  data_path = generate_lorentz_curves_sim(),
   ppm_range = get_ppm_range(data_path),
   si_size_real_spectrum = length(data_path$y_values),
   scale_factor_x = 1000,
@@ -40,7 +40,7 @@ Generate a feature matrix.
 Before version 1.2 of 'metabodecon', the deconvolution functions \code{generate_lorentz_curves} and \code{MetaboDecon1D} wrote their output partially as txt files to their input folder. Back then, \code{gen_feat_mat()} used those txt files as input to generate the feature matrix. Since version 1.2 these txt files are no longer created by default, to prevent accidental modifications of the input folders. Therefore, the recommended way to pass the required information to \code{gen_feat_mat()} is to directly pass the output of \code{generate_lorentz_curves()} to \code{gen_feat_mat()}. However, to stay backwards compatible, the name of parameter \code{data_path} was not changed and passing an actual path to \code{data_path} is still possible, but will result in a warning (unless \code{warn} is set to \code{FALSE}).
 }
 \examples{
-decons <- glc_sim("bruker/sim")
+decons <- generate_lorentz_curves_sim("bruker/sim")
 obj <- gen_feat_mat(decons)
 str(obj, 2, give.attr = FALSE)
 }

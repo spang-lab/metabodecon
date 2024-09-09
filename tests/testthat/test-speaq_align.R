@@ -1,7 +1,7 @@
 library(testthat)
 
 test_that("speaq_align works", {
-    spectrum_data <- glc_sim("bruker/sim")
+    spectrum_data <- generate_lorentz_curves_sim("bruker/sim")
     feat <- gen_feat_mat(spectrum_data)
     maxShift <- 200
     si_size_real_spectrum <- length(spectrum_data[[1]]$y_values)

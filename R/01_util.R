@@ -149,61 +149,6 @@ get_yn_input <- function(prompt) {
     return(y)
 }
 
-# Print #####
-
-capture.output2 <- function(..., collapse = "\n", trim = FALSE) {
-    x <- utils::capture.output(...)
-    if (trim) {
-        x <- sapply(x, trimws)
-    }
-    if (!(identical(collapse, FALSE))) {
-        x <- paste(x, collapse = collapse)
-    }
-    return(x)
-}
-
-dput2 <- function(..., collapse = " ", trim = TRUE) {
-    x <- capture.output2(dput(...), collapse = collapse, trim = trim)
-    return(x)
-}
-
-str2 <- function(...) {
-    capture.output(str(...))
-}
-
-#' @noRd
-#' @title Collapse a vector into a string
-#' @description Collapses a vector into a single string, with elements separated by a specified separator. Essentially a shorthand for `paste(x, collapse = sep)`.
-#' @param x A vector to collapse.
-#' @param sep A string to use as the separator between elements. Default is ", ".
-#' @return A single string with elements of x separated by sep.
-#' @examples
-#' collapse(c("a", "b", "c")) # "a, b, c"
-#' collapse(1:5, sep = "-") # "1-2-3-4-5"
-#' collapse(1:5, last = " and ") # "1, 2, 3, 4 and 5"
-collapse <- function(x, sep = ", ", last = NULL) {
-    if (is.null(last) || (n <- length(x)) == 1) {
-        txt <- paste(x, collapse = sep)
-    } else {
-        txt <- paste(x[-n], collapse = sep)
-        txt <- paste(txt, x[n], sep = last)
-    }
-    txt
-}
-
-#' @noRd
-#' @description Fixed copy of [toscutil::logf()]. Can be replaced with original after issue [Fix: logf ignores file and append arguments](https://github.com/toscm/toscutil/issues/10) has been fixed.
-logf <- function(fmt,
-                 ...,
-                 file = .Options$toscutil.logf.file %||% "",
-                 append = .Options$toscutil.logf.append %||% FALSE,
-                 prefix = .Options$toscutil.logf.prefix %||% function() now_ms(usetz = FALSE, color = "\033[1;30m"),
-                 sep1 = .Options$toscutil.logf.sep1 %||% " ",
-                 sep2 = .Options$toscutil.logf.sep2 %||% "",
-                 end = .Options$toscutil.logf.end %||% "\n") {
-    cat(prefix(), sep1, sprintf(fmt, ...), sep2, end, sep = "", file = file, append = append)
-}
-
 # Interactive #####
 
 #' @noRd
@@ -284,76 +229,7 @@ tree <- function(path, max.level = 2, level = 0, prefix = "") {
     }
     invisible(NULL)
 }
-#' @noRd
-#' @title Check if strings represent integer values
-#' @description Tests each element of a character vector to determine if it represents an integer value. It allows for optional leading and trailing whitespace, and optional leading + or - signs.
-#' @param x A character vector where each element is tested to determine if it represents an integer.
-#' @return A logical vector indicating TRUE for elements that represent integer values and FALSE otherwise.
-#' @examples
-#' fixed_point_notation <- c("2.0", "3.", ".4", "-5.", "-.6")
-#' scientific_notation <- c("0.45e+04", "66e-05", "0.2e-3", "-33.e-1")
-#' floats <- c(fixed_point_notation, scientific_notation)
-#' ints <- c("5", "-5", "1234")
-#' words <- c("Hello", "world", "!", "It was nice seeing you", ".")
-#'
-#' x <- is_float_str(floats)
-#' y <- is_int_str(floats)
-#' if (!all(x == TRUE) && all(y == FALSE)) stop("Test failed")
-#'
-#' x <- is_float_str(ints)
-#' y <- is_int_str(ints)
-#' if (!all(x == FALSE) && all(y = TRUE)) stop("Test failed")
-#'
-#' x <- is_float_str(words)
-#' y <- is_int_str(words)
-#' if (!all(x == FALSE) && all(y = FALSE)) stop("Test failed")
-is_int_str <- function(x) {
-    grepl("^\\s*[+-]?\\s*[0-9]+$", x, perl = TRUE)
-}
 
-#' @noRd
-#' @inherit is_int_str
-#' @title Check if strings represent floating-point numbers
-#' @description Tests each element of a character vector to determine if it represents a floating-point number. It handles numbers in fixed-point notation (with or without a decimal point) and scientific notation. Allows for optional leading and trailing whitespace, and optional leading + or - signs.
-is_float_str <- function(x) {
-    grepl(
-        paste0(
-            "^\\s*[+-]?", # Optional leading spaces and sign at start of string
-            "(\\d+\\.\\d*([eE][+-]?\\d+)?", # 1.e-3,  1.0e-3, 1.0e+3
-            "|\\.\\d+([eE][+-]?\\d+)?", # .1e-2, .1.0e-2,  .1e+4
-            "|\\d+([eE][+-]?\\d+)", # 1e-3,   1.0e-3,   1e+3
-            ")$" # End of string
-        ),
-        x,
-        perl = TRUE
-    )
-}
-
-is_num <- function(x, n = NULL) {
-    if (is.null(n)) {
-        is.numeric(x)
-    } else {
-        is.numeric(x) && length(x) == n
-    }
-}
-
-is_list_of_nums <- function(x, nl, nv) {
-    if (is.null(nl) && is.null(nv)) {
-        is.list(x) && all(sapply(x, is.numeric))
-    } else if (is.null(nv)) {
-        is.list(x) && length(x) == nl && all(sapply(x, is.numeric))
-    } else {
-        is.list(x) && length(x) == nl && all(sapply(x, is_num, n = nv))
-    }
-}
-
-is_str_or_null <- function(x) {
-    is.null(x) || (is.character(x) && length(x) == 1)
-}
-
-all_identical <- function(x) {
-    all(sapply(x, identical, x[[1]]))
-}
 
 `%||%` <- function(x, y) {
     if (is.null(x)) y else x
@@ -444,7 +320,7 @@ calc_B <- function(X = read_spectrum()) {
     B
 }
 
-# Classes #####
+# Doc Pages #####
 
 #' @title Metabodecon Classes
 #' @description

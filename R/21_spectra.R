@@ -108,7 +108,7 @@ set_names <- function(x, nams) {
 }
 
 get_names <- function(x, default = "spectrum_%d") {
-    if (!is_spectra(x)) stop("Input must be a spectra object, not ", class(x))
+    if (!is_spectra(x) && !is_gdecons(x)) stop("Input must be a spectra or gdecons object, not ", class(x))
     dn <- get_default_names(x, default)
     en <- names(x) # Element name
     sn <- sapply(x, `[[`, "name") # Spectrum name

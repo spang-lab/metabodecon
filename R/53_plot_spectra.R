@@ -1,4 +1,4 @@
-plot_spectra <- function(ss = glc_sim(),
+plot_spectra <- function(ss = generate_lorentz_curves_sim(),
                          mar = c(4.1, 4.1, 1.1, 0.1),
                          peak_rng = get_ppm_range(ss, show = FALSE)) {
     if (is_decon_obj(ss)) ss <- list(ss)

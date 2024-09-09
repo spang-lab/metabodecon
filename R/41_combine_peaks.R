@@ -34,7 +34,7 @@
 #'
 #' @author Initial version from Wolfram Gronwald. Refactored by Tobias Schmidt in 2024.
 #' @examples
-#' spectrum_data <- glc_sim("bruker/sim")
+#' spectrum_data <- generate_lorentz_curves_sim("bruker/sim")
 #' shifted_mat <- speaq_align(spectrum_data = spectrum_data, verbose = FALSE)
 #' range <- 5
 #' lower_bound <- 1

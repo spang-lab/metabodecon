@@ -54,8 +54,8 @@ I.e. column 3 and 4 get merged, because they are in `range` of each other and ha
 }\if{html}{\out{</div>}}
 }
 \examples{
-shifted_mat <- speaq_align(spectrum_data = glc_sim("bruker/sim"))
-M2 <- combine_peaks(shifted_mat, spectrum_data = glc_sim("bruker/sim"))
+shifted_mat <- speaq_align(spectrum_data = generate_lorentz_curves_sim("bruker/sim"))
+M2 <- combine_peaks(shifted_mat, spectrum_data = generate_lorentz_curves_sim("bruker/sim"))
 }
 \author{
 Initial version from Wolfram Gronwald. Refactored by Tobias Schmidt in 2024.

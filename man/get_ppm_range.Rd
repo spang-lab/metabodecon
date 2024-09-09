@@ -5,7 +5,7 @@
 \title{Get PPM Range covered by Spectra}
 \usage{
 get_ppm_range(
-  spectrum_data = glc_sim(),
+  spectrum_data = generate_lorentz_curves_sim(),
   show = FALSE,
   mar = c(4.1, 4.1, 1.1, 0.1)
 )
@@ -24,7 +24,7 @@ A vector containing the lowest and highest ppm value over all peaks of the provi
 Returns the ppm range across all peaks of the provided deconvoluted spectra.
 }
 \examples{
-spectrum_data = glc_sim()
+spectrum_data = generate_lorentz_curves_sim()
 ppm_rng <- get_ppm_range(spectrum_data, show = TRUE)
 print(ppm_rng)
 }

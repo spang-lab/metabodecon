@@ -1,4 +1,31 @@
-# Exported Main #####
+# Public API #####
+
+#' @export
+#' @title Return Path to File or Directory in metabodecon Package
+#' @description Recursively searches for files or directories within the 'metabodecon' package that match the given name.
+#' @param name The name to search for.
+#' @return The file or directory path.
+#' @examples
+#' # Unambiguous paths
+#' metabodecon_file("urine_1")
+#' metabodecon_file("urine_1.dx")
+#' metabodecon_file("sim/sim_01")
+#'
+#' # Ambiguous paths (i.e. multiple matches)
+#' metabodecon_file("sim")
+#' metabodecon_file("urine")
+#'
+#' # Non-existing paths (i.e. a character vector of length zero gets returned)
+#' metabodecon_file("asdfasdf")
+metabodecon_file <- function(name = "sim_01") {
+    paths <- list.files(
+        path = system.file(package = "metabodecon"),
+        full.names = TRUE,
+        recursive = TRUE,
+        include.dirs = TRUE
+    )
+    paths[grepl(paste0(name, "$"), paths)]
+}
 
 #' @export
 #' @title Return path to metabodecon's data directory
@@ -35,35 +62,6 @@ datadir <- function(file = NULL, warn = TRUE, persistent = NULL) {
     }
     normalizePath(file_path, "/", mustWork = FALSE)
 }
-
-#' @export
-#' @title Return Path to File or Directory in metabodecon Package
-#' @description Recursively searches for files or directories within the 'metabodecon' package that match the given name.
-#' @param name The name to search for.
-#' @return The file or directory path.
-#' @examples
-#' # Unambiguous paths
-#' metabodecon_file("urine_1")
-#' metabodecon_file("urine_1.dx")
-#' metabodecon_file("sim/sim_01")
-#'
-#' # Ambiguous paths (i.e. multiple matches)
-#' metabodecon_file("sim")
-#' metabodecon_file("urine")
-#'
-#' # Non-existing paths (i.e. a character vector of length zero gets returned)
-#' metabodecon_file("asdfasdf")
-metabodecon_file <- function(name = "sim_01") {
-    paths <- list.files(
-        path = system.file(package = "metabodecon"),
-        full.names = TRUE,
-        recursive = TRUE,
-        include.dirs = TRUE
-    )
-    paths[grepl(paste0(name, "$"), paths)]
-}
-
-# Exported Helpers #####
 
 #' @export
 #' @title Persistent Data Directory
@@ -108,20 +106,6 @@ tmpdir <- function(subdir = NULL, create = FALSE) {
 
 }
 
-# Private Helpers #####
-
-zip_temp <- function() {
-    p <- file.path(datadir_temp(), "example_datasets.zip")
-    normalizePath(p, "/", mustWork = FALSE)
-}
-
-zip_persistent <- function() {
-    p <- file.path(datadir_persistent(), "example_datasets.zip")
-    normalizePath(p, "/", mustWork = FALSE)
-}
-
-# Exported Deprecated #####
-
 #' @export
 #' @title Retrieve directory path of an example dataset
 #' @description
@@ -147,3 +131,16 @@ get_data_dir <- function(dataset_name = c("", "blood", "test", "urine"), warn = 
   }
   return(data_dir)
 }
+
+# Private Helpers #####
+
+zip_temp <- function() {
+    p <- file.path(datadir_temp(), "example_datasets.zip")
+    normalizePath(p, "/", mustWork = FALSE)
+}
+
+zip_persistent <- function() {
+    p <- file.path(datadir_persistent(), "example_datasets.zip")
+    normalizePath(p, "/", mustWork = FALSE)
+}
+

@@ -35,10 +35,10 @@ align_spectra <- function(decons, maxShift = 50, maxCombine = 5) {
 #' @return A vector containing the lowest and highest ppm value over all peaks of the provided deconvoluted spectra.
 #' @author Initial version from Wolfram Gronwald. Refactored by Tobias Schmidt in 2024.
 #' @examples
-#' spectrum_data = glc_sim()
+#' spectrum_data = generate_lorentz_curves_sim()
 #' ppm_rng <- get_ppm_range(spectrum_data, show = TRUE)
 #' print(ppm_rng)
-get_ppm_range <- function(spectrum_data = glc_sim(),
+get_ppm_range <- function(spectrum_data = generate_lorentz_curves_sim(),
                           show = FALSE,
                           mar = c(4.1, 4.1, 1.1, 0.1)) {
     msg <- "spectrum_data must be a list of deconvoluted spectra."
@@ -68,10 +68,10 @@ get_ppm_range <- function(spectrum_data = glc_sim(),
 #' - `lambda`: A list of vectors where each vector contains the "width parameter" of the peaks in the corresponding spectrum.
 #' @author Initial version from Wolfram Gronwald. Refactored by Tobias Schmidt in 2024.
 #' @examples
-#' decons <- glc_sim("bruker/sim")
+#' decons <- generate_lorentz_curves_sim("bruker/sim")
 #' obj <- gen_feat_mat(decons)
 #' str(obj, 2, give.attr = FALSE)
-gen_feat_mat <- function(data_path = glc_sim(),
+gen_feat_mat <- function(data_path = generate_lorentz_curves_sim(),
                          ppm_range = get_ppm_range(data_path),
                          si_size_real_spectrum = length(data_path$y_values),
                          scale_factor_x = 1000,
@@ -129,14 +129,14 @@ gen_feat_mat <- function(data_path = glc_sim(),
 #'
 #' @author Initial version from Wolfram Gronwald. Refactored by Tobias Schmidt in 2024.
 #' @examples
-#' spectrum_data <- glc_sim("bruker/sim")
+#' spectrum_data <- generate_lorentz_curves_sim("bruker/sim")
 #' feat <- gen_feat_mat(spectrum_data)
 #' maxShift <- 200
 #' M <- speaq_align(feat, maxShift, spectrum_data, show = TRUE)
 #' str(M)
 speaq_align <- function(feat = gen_feat_mat(spectrum_data),
                         maxShift = 50,
-                        spectrum_data = glc_sim(),
+                        spectrum_data = generate_lorentz_curves_sim(),
                         si_size_real_spectrum = length(spectrum_data[[1]]$y_values),
                         verbose = TRUE,
                         show = FALSE,
@@ -204,12 +204,12 @@ speaq_align <- function(feat = gen_feat_mat(spectrum_data),
 #'
 #' @author Initial version from Wolfram Gronwald. Refactored by Tobias Schmidt in 2024.
 #' @examples
-#' shifted_mat <- speaq_align(spectrum_data = glc_sim("bruker/sim"))
-#' M2 <- combine_peaks(shifted_mat, spectrum_data = glc_sim("bruker/sim"))
+#' shifted_mat <- speaq_align(spectrum_data = generate_lorentz_curves_sim("bruker/sim"))
+#' M2 <- combine_peaks(shifted_mat, spectrum_data = generate_lorentz_curves_sim("bruker/sim"))
 combine_peaks <- function(shifted_mat = speaq_align(spectrum_data = spectrum_data),
                           range = 5,
                           lower_bound = 1,
-                          spectrum_data = glc_sim("bruker/sim"),
+                          spectrum_data = generate_lorentz_curves_sim("bruker/sim"),
                           data_path = NULL) {
     S <- replace(shifted_mat, is.na(shifted_mat), 0)
     nz <- numeric(ncol(S))
@@ -271,7 +271,7 @@ combine_peaks <- function(shifted_mat = speaq_align(spectrum_data = spectrum_dat
 #' @return A list containing two data frames `Y` and `new_peakList`. The first one contains the aligned spectra, the second one contains the aligned signals of each spectrum.
 #' @author Initial version from Wolfram Gronwald. Refactored by Tobias Schmidt in 2024.
 #' @examples
-#' decons <- glc_sim()
+#' decons <- generate_lorentz_curves_sim()
 #' feat <- gen_feat_mat(decons)
 #' refObj <- speaq::findRef(feat$peakList)
 #' hclObj <- dohCluster(
@@ -598,14 +598,14 @@ read_decon_params_v1 <- function(data_path) {
 #' @return A matrix containing the aligned integral values of all spectra. Each row contains the data of each spectrum and each column corresponds to one data point. Each entry corresponds to the integral of a deconvoluted signal with the signal center at this specific position after alignment by speaq.
 #' @author Wolfram Gronwald
 #' @examples
-#' spectrum_data <- glc_sim("bruker/sim")
+#' spectrum_data <- generate_lorentz_curves_sim("bruker/sim")
 #' feat <- gen_feat_mat(spectrum_data)
 #' maxShift <- 100
 #' si_size_real_spectrum <- length(spectrum_data[[1]]$y_values)
 #' after_speaq_mat <- speaq_align(feat, maxShift, spectrum_data, si_size_real_spectrum)
 speaq_align_v1 <- function(feat = gen_feat_mat(spectrum_data),
                            maxShift = 50,
-                           spectrum_data = glc_sim(),
+                           spectrum_data = generate_lorentz_curves_sim(),
                            si_size_real_spectrum = length(spectrum_data[[1]]$y_values)) {
 
     # Find reference spectrum, i.e the spectrum to which all others will be aligned to

@@ -3,7 +3,7 @@ library(testthat)
 testdir_name <- "read_decon_params"
 testdir_path <- testdir(testdir_name)
 testdata_path <- pkg_file("tests/testthat/testdata")
-decons <- glc_sim()
+decons <- generate_lorentz_curves_sim()
 
 test_that("read_decon_params stops without input files", {
     clear(testdir_path)

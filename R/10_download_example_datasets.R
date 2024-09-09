@@ -1,4 +1,4 @@
-# Exported #####
+# Public API #####
 
 #' @export
 #' @title Download metabodecon Example Datasets
@@ -41,7 +41,7 @@ download_example_datasets <- function(dst_dir = NULL,
     }
 }
 
-# Private #####
+# Private Helpers #####
 
 #' @noRd
 #' @title Example Datasets Information

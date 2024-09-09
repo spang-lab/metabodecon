@@ -7,7 +7,7 @@
 speaq_align(
   feat = gen_feat_mat(spectrum_data),
   maxShift = 50,
-  spectrum_data = glc_sim(),
+  spectrum_data = generate_lorentz_curves_sim(),
   si_size_real_spectrum = length(spectrum_data[[1]]$y_values),
   verbose = TRUE,
   show = FALSE,
@@ -50,7 +50,7 @@ SpNr
 Performs signal alignment across the individual spectra using the 'speaq' package (Beirnaert C, Meysman P, Vu TN, Hermans N, Apers S, Pieters L, et al. (2018) speaq 2.0: A complete workflow for high-throughput 1D NMRspectra processing and quantification. PLoS Comput Biol 14(3): e1006018. https://www.doi.org/10.1371/journal.pcbi.1006018). The spectra deconvolution process yields the signals of all spectra. Due to slight changes in measurement conditions, e.g. pH variations, signal positions may vary slightly across spectra. As a consequence, prior to further analysis signals belonging to the same compound have to be aligned across spectra. This is the purpose of the 'speaq' package.
 }
 \examples{
-spectrum_data <- glc_sim("bruker/sim")
+spectrum_data <- generate_lorentz_curves_sim("bruker/sim")
 feat <- gen_feat_mat(spectrum_data)
 maxShift <- 200
 M <- speaq_align(feat, maxShift, spectrum_data, show = TRUE)

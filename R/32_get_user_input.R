@@ -2,10 +2,6 @@
 
 #' @title Get the spectrum number for adjusting parameters
 #' @description Asks the user which spectrum should be used for adjusting signal free region (SFR) and water signal half width (WSHW) and returns the corresponding spectrum number. If `ask` is `FALSE` or the user chooses to use different parameters for each spectrum, 0 is returned.
-#' @param spectra A list of spectra.
-#' @param sfr A numeric value or a list specifying the SFR for each spectrum.
-#' @param wshw A numeric value or a list specifying the WSHW for each spectrum.
-#' @param ask A logical value indicating whether to ask the user to confirm the spectrum number. Default is TRUE.
 #' @return The spectrum number chosen by the user for adjusting parameters, or 0 if `ask` is `FALSE` or the user chooses to use different parameters for each spectrum.
 #' @noRd
 get_adjno <- function(spectra, sfr, wshw, ask) {
