@@ -1,43 +1,29 @@
-# Public API #####
+# Internal #####
 
-#' @export
+#' @name deconvolute
 #'
 #' @title
 #'  Generate Lorentz Curves from NMR Spectra
 #'
 #' @description
 #'  Deconvolutes NMR spectra by modeling each detected signal within a spectrum as Lorentz Curve.
+#'  \loadmathjax
 #'
 #' @inheritParams read_spectrum
-#' @param data_path
-#'  Either the path to a directory containing measured NMR spectra, a dataframe as returned by [read_spectrum()], or a list of such dataframes.
-#' @param make_rds
-#'  Logical or character. If TRUE, stores results as an RDS file on disk. If a character string, saves the RDS file with the specified name. Should be set to TRUE if many spectra are evaluated to decrease computation time.
-#' @param nfit
-#'  Number of iterations for approximating the parameters for the Lorentz curves.
-#' @param wshw
-#'  Half-width of the water artifact in ppm.
-#' @param sfr
-#'  Numeric vector with two entries: the ppm positions for the left and right border of the signal-free region of the spectrum.
-#' @param smopts
-#'  Numeric vector with two entries: the number of smoothing iterations and the number of data points to use for smoothing (must be odd).
-#' @param delta
-#'  Threshold value to distinguish between signal and noise. The higher the value, the more peaks get filtered out. The exact definition is as follows: a peak `i` gets filtered out, if his score is lower than `mu + s * delta`, where `mu` is the average peak score within the signal free region (SFR) and `s` is the standard deviation of peak scores in the SFR.
-#' @param delta
-#'  \loadmathjax Threshold for peak filtering. Higher values result in more peaks being filtered out. A peak is filtered if its score is below \mjeqn{\mu + \sigma \cdot \delta}{mu + s * delta}, where \mjeqn{\mu}{mu} is the average peak score in the signal-free region (SFR), and \mjeqn{\sigma}{s} is the standard deviation of peak scores in the SFR.
-#' @param sf
-#'  Numeric vector with two entries: the factors to scale the x-axis and y-axis.
-#' @param ask
-#'  Logical. Whether to ask for user input during the deconvolution process. If FALSE, the provided default values will be used.
-#' @param debug
-#'  Logical. Whether to return additional intermediate results for debugging purposes.
-#' @param nworkers
-#'  Number of workers to use for parallel processing. If `"auto"`, the number of workers will be determined automatically. If a number greater than 1, it will be limited to the number of spectra.
-#' @param force
-#'  If FALSE, the function stops with an error message if no peaks are found in the signal free region (SFR), as these peaks are required as a reference for peak filtering. If TRUE, the function instead proceeds without peak filtering, potentially increasing runtime and memory usage significantly.
-#' @param verbose
-#'  Logical. Whether to print log messages during the deconvolution process.
 #' @param ...
+#' @param ask Logical. Whether to ask for user input during the deconvolution process. If FALSE, the provided default values will be used.
+#' @param data_path Either the path to a directory containing measured NMR spectra, a dataframe as returned by [read_spectrum()], or a list of such dataframes.
+#' @param debug Logical. Whether to return additional intermediate results for debugging purposes.
+#' @param delta Threshold for peak filtering. Higher values result in more peaks being filtered out. A peak is filtered if its score is below \mjeqn{\mu + \sigma \cdot \delta}{mu + s * delta}, where \mjeqn{\mu}{mu} is the average peak score in the signal-free region (SFR), and \mjeqn{\sigma}{s} is the standard deviation of peak scores in the SFR.
+#' @param force If FALSE, the function stops with an error message if no peaks are found in the signal free region (SFR), as these peaks are required as a reference for peak filtering. If TRUE, the function instead proceeds without peak filtering, potentially increasing runtime and memory usage significantly.
+#' @param make_rds Logical or character. If TRUE, stores results as an RDS file on disk. If a character string, saves the RDS file with the specified name. Should be set to TRUE if many spectra are evaluated to decrease computation time.
+#' @param nfit Number of iterations for approximating the parameters for the Lorentz curves.
+#' @param nworkers Number of workers to use for parallel processing. If `"auto"`, the number of workers will be determined automatically. If a number greater than 1, it will be limited to the number of spectra.
+#' @param sf Numeric vector with two entries: the factors to scale the x-axis and y-axis.
+#' @param sfr Numeric vector with two entries: the ppm positions for the left and right border of the signal-free region of the spectrum.
+#' @param smopts Numeric vector with two entries: the number of smoothing iterations and the number of data points to use for smoothing (must be odd).
+#' @param verbose Logical. Whether to print log messages during the deconvolution process.
+#' @param wshw Half-width of the water artifact in ppm.
 #'  Further arguments to be passed to [generate_lorentz_curves()].
 #'
 #' @return
@@ -64,12 +50,12 @@
 #' ## Show that `generate_lorentz_curves()` and `generate_lorentz_curves_sim()`
 #' ## produce the same results:
 #' sim_1_decon1 <- generate_lorentz_curves(
-#'     data_path = path,    # Path to directory containing spectra
+#'     data_path = path, # Path to directory containing spectra
 #'     sfr = c(3.58, 3.42), # Borders of signal free region (SFR) in ppm
-#'     wshw = 0,            # Half width of water signal (WS) in ppm
-#'     delta = 0.1,         # Threshold for peak filtering
-#'     ask = FALSE,         # Don't ask for user input
-#'     verbose = FALSE      # Suppress status messages
+#'     wshw = 0, # Half width of water signal (WS) in ppm
+#'     delta = 0.1, # Threshold for peak filtering
+#'     ask = FALSE, # Don't ask for user input
+#'     verbose = FALSE # Suppress status messages
 #' )
 #' sim_1_decon2 <- generate_lorentz_curves_sim(path)
 #' stopifnot(all.equal(sim_1_decon1, sim_1_decon2))
@@ -98,47 +84,101 @@
 #' urine_1 <- file.path(example_datasets, "bruker/urine/urine_1")
 #' decon_urine_1 <- generate_lorentz_curves(urine_1)
 #' }
-#'
-deconvolute <- function(x, rtyp, sfr, wshw, smopts, delta, nfit, nworkers, force, ...) {
-    if (!verbose) {
-        opts <- options(toscutil.logf.file = nullfile())
-        on.exit(options(opts), add = TRUE)
-    }
-    spectra <- if (is_spectrum(x)) list(x) else x
-    if (!is_spectra(spectra)) {
-        stop("Input must be of class `spectra` or `spectrum`, not ", class(x))
-    }
-    adjno <- get_adjno(spectra, sfr, wshw, ask)
-    sfrs <- get_sfrs(spectra, sfr, ask, adjno)
-    wsrs <- get_wsrs(spectra, wshw, ask, adjno)
-    gspecs <- as_gspecs(spectra, sfrs, wsrs)
+NULL
 
-    nf <- length(gspecs)
-    nw <- if (nworkers == "auto") ceiling(parallel::detectCores() / 2) else nworkers
-    nw <- min(nw, length(gspecs))
-    nfstr <- if (nf == 1) "1 spectrum" else sprintf("%d spectra", nf)
-    nwstr <- if (nw == 1) "1 worker" else sprintf("%d workers", nw)
-    starttime <- Sys.time()
-    logf("Starting deconvolution of %s using %s", nfstr, nwstr)
-    gdecons <- if (nw == 1) {
-        lapply(gspecs, deconvolute_spectrum, smopts, delta, nfit, force)
+#' @noRd
+deconvolute_x <- function(x, nfit, smopts, delta, sfr, wsr, rtyp, rmwsv, force) {
+    deconvolute_x_check_args(x, nfit, smopts, delta, sfr, wsr, rtyp, rmwsv, force)
+    logf("Starting deconvolution of %s", g$name)
+    g <- as_gspec(x)
+    # TODO: rewrite all following function call to work with `spectrum` objects instead of `gspec` objects. As soon as one function is finished, move the `as_gspec()` call below that function.
+    g <- rm_water_signal(g, wsr, version = rmwsv)
+    g <- rm_negative_signals(g)
+    g <- smooth_signals(g, reps = smopts[1], k = smopts[2])
+    g <- find_peaks(g)
+    g <- filter_peaks(g, delta, force)
+    g <- fit_lorentz_curves(g, nfit)
+    logf("Finished deconvolution of %s", g$name)
+    structure(g, class = "decon3")
+}
+
+#' @noRd
+deconvolute_x_check_args <- function(x, nfit, smopts, delta, sfr, wsr, rtyp, rmwsv, force) {
+    if (!is_gspec(x) && !is_spectrum(x)) stop("x must be a spectrum or gspec, not ", type(x))
+    if (!is_int(nfit, 1)) stop("nfit must be a integer(1), not ", type(nfit))
+    if (!is_int(smopts, 2)) stop("smopts must be a integer(2), not ", type(smopts))
+    if (!is_num(delta, 1)) stop("delta must be a numeric(1), not ", type(delta))
+    if (!is_num(sfr, 2)) stop("sfr must be a numeric(2), not ", type(sfr))
+    if (!is_num(wsr, 2)) stop("wsr must be a numeric(2), not ", type(wsr))
+    if (!is_char(rtyp, 1, "decons[1-3]")) stop("rtyp must match 'decons[1-3]', but is ", rtyp)
+    if (!is_int(rmwsv, 1)) stop("rmwsv must be a integer(1), not ", type(rmwsv))
+    if (!is_bool(force, 1)) stop("force must be a logical(1), not ", type(force))
+}
+
+deconvolute_xx <- function(xx,
+                           sfrs,
+                           wsrs,
+                           nfit,
+                           smopts,
+                           delta,
+                           nworkers,
+                           force,
+                           rtyp,
+                           cnvpar) {
+    decons <- if (nworkers == 1) {
+        lapply(xx, function(x) {
+            deconvolute_x(x, sfrs, wsrsm, smopts, delta, nfit, force)
+        })
     } else {
-        cl <- parallel::makeCluster(nw, outfile = nullfile())
+        cl <- parallel::makeCluster(nworkers, outfile = nullfile())
         on.exit(parallel::stopCluster(cl), add = TRUE)
-        export <- c("logf", "fg", "deconvolute_spectrum", "smopts", "delta", "nfit", "force")
+        export <- c("logf", "fg", ".deconvolute_spectrum", "smopts", "delta", "nfit", "force")
         parallel::clusterExport(cl, export, envir = environment())
-        parallel::parLapply(cl, gspecs, function(gspec) {
+        parallel::parLapply(cl, xx, function(x) {
             opts <- options(toscutil.logf.sep1 = sprintf(" PID %d ", Sys.getpid()))
             on.exit(options(opts), add = TRUE)
-            deconvolute_spectrum(gspec, smopts, delta, nfit, force)
+            deconvolute_x(x, sfrs, wsrsm, smopts, delta, nfit, force)
         })
     }
-    names(gdecons) <- names(gspecs)
-    class(gdecons) <- "gdecons"
-    duration <- format(round(Sys.time() - starttime, 3))
     logf("Converting deconvolution results to class '%s'", rtyp)
     convert_func <- get("as_%s", rtyp)
-    obj <- convert_func(gdecons)
+    do.call(convert_func, c(decons, cnvpar))
+}
+
+# Public API #####
+
+#' @export
+#' @rdname deconvolute
+deconvolute_spectra <- function(x,
+                                rtyp,
+                                sfr,
+                                wsr,
+                                wshw,
+                                nfit,
+                                smopts,
+                                delta,
+                                ask,
+                                nworkers,
+                                verbose,
+                                force,
+                                ...) {
+    opts <- if (!verbose) options(toscutil.logf.file = nullfile())
+    on.exit(options(opts), add = TRUE)
+    rtyp <- match.arg(rtyp, c("decons1", "decons2", "decons3"))
+    xx <- if (is_spectrum(x)) list(x) else x
+    if (!is_spectra(xx)) stop("Input must be of class `spectra` or `spectrum`, not ", class(x))
+    adjno <- get_adjno(xx, sfr, wshw, ask)
+    sfrs <- get_sfrs(xx, sfr, ask, adjno)
+    wsrs <- get_wsrs(xx, wshw, ask, adjno)
+    nf <- length(xx)
+    nw <- if (nworkers == "auto") ceiling(parallel::detectCores() / 2) else nworkers
+    nw <- min(nw, length(xx))
+    nfstr <- if (nf == 1) "1 spectrum" else sprintf("%d spectra", nf)
+    nwstr <- if (nw == 1) "1 worker" else sprintf("%d workers", nw)
+    logf("Starting deconvolution of %s using %s", nfstr, nwstr)
+    starttime <- Sys.time()
+    obj <- deconvolute_xx(xx, sfrs, wsrs, smopts, delta, nfit, nw, force, ...)
+    duration <- format(round(Sys.time() - starttime, 3))
     logf("Finished deconvolution of %s in %s", nfstr, duration)
     obj
 }
@@ -162,49 +202,65 @@ generate_lorentz_curves <- function(# Parameters for getting spectra objects
                                     rtyp = "decons2",
                                     sf = c(1e3, 1e6),
                                     ...) {
-    spectra <- as_spectra(data_path, file_format, expno, procno)
-    decons2 <- deconvolute_spectra(
-        spectra = spectra,
+    dd <- deconvolute(
+        x = as_spectra(data_path, file_format, expno, procno),
+        rtyp = rtyp,
+        sfr = sfr,
+        wshw = wshw,
         smopts = smopts,
         delta = delta,
         nfit = nfit,
         nworkers = nworkers,
         force = force,
+        sf = sf,
         ...
     )
-    store_as_rds(decons2, make_rds, data_path)
-    retobj <- if (length(decons2) == 1) decons2[[1]] else decons2
-    retobj
+    store_as_rds(dd, make_rds, data_path)
+    if (length(dd) == 1) dd[[1]] else dd
 }
 
 #' @export
 #' @rdname deconvolute
-generate_lorentz_curves_sim <- function(data_path, wshw = 0.0, sfr = c(3.58, 3.42), delta = 0.1, ask = FALSE, ...) {
-    generate_lorentz_curves(data_path, sfr = wshw, wshw = sfr, delta = delta, ask = ask, verbose = verbose, ...)
+generate_lorentz_curves_sim <- function( # Parameters for getting spectra objects
+                                        data_path,
+                                        # Parameters for deconvolution
+                                        sfr = c(3.58, 3.42),
+                                        wshw = 0,
+                                        delta = 0.1,
+                                        ask = FALSE,
+                                        ...) {
+    generate_lorentz_curves(
+        data_path = data_path,
+        sfr = sfr,
+        wshw = wshw,
+        delta = delta,
+        ask = ask,
+        verbose = verbose,
+        ...
+    )
 }
 
-deconvolute_spectrum <- function(spec, smopts, delta, nfit, force) {
-    logf("Starting deconvolution of %s", spec$name)
-    spec <- rm_water_signal(spec)
-    spec <- rm_negative_signals(spec)
-    spec <- smooth_signals(spec, reps = smopts[1], k = smopts[2])
-    spec <- find_peaks(spec)
-    spec <- filter_peaks(spec, delta, force)
-    spec <- fit_lorentz_curves(spec, nfit)
-    logf("Finished deconvolution of %s", spec$name)
-    structure(spec, class = "gdecon")
-}
 
 # Private Helpers #####
 
-rm_water_signal <- function(spec) {
+rm_water_signal <- function(g, wsr, version, warn) {
+    if (!is_gspec(g)) stop("Input must be a gspec object, not ", class(g))
     logf("Removing water signal")
-    y <- spec$y_scaled
-    left <- spec$wsr$left_dp
-    right <- spec$wsr$right_dp
-    y[right:left] <- 0.01 / spec$sf[2] # Order, i.e. `right:left` instead of `left:right`, is important here, because `right` and `left` are floats. Example: `right <- 3.3; left <- 1.4` ==> `right:left == c(3.3, 2.3)` and `left:right == c(1.4, 2.4)`.
-    spec$y_nows <- y
-    spec
+    cs <- g$ppm
+    if (version == 2) {
+        in_wsr <- NULL # CONTINUE HERE
+        left <- max(wsr)
+        right <- min(wsr)
+    } else if (version == 1) {
+        left <- wsr$left_dp
+        right <- wsr$right_dp
+    } else {
+        stop("Invalid version number. Must be either 1 or 2.")
+    }
+    y <- g$y_scaled
+    y[right:left] <- 0.01 / g$sf[2] # Order, i.e. `right:left` instead of `left:right`, is important here, because `right` and `left` are floats. Example: `right <- 3.3; left <- 1.4` ==> `right:left == c(3.3, 2.3)` and `left:right == c(1.4, 2.4)`.
+    g$y_nows <- y
+    g
 }
 
 rm_negative_signals <- function(spec) {
@@ -320,7 +376,7 @@ filter_peaks_v13 <- function(ppm, # x values in ppm
                              sfrl, # signal free region left in ppm
                              sfrr, # signal free region right in ppm
                              delta = 6.4 # peak filter threshold parameter
-                             ) {
+) {
     if (any(is.na(ps))) stop("Peak scores must never be NA")
     logf("Removing peaks with low scores")
     in_sfr <- which(ppm[pc] >= ppm || ppm[pc] <= ppm)

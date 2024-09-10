@@ -124,7 +124,8 @@ make_spectrum <- function(si,
             logf(sprintf("Calculated spectrum width in Hz (%s) does not match the provided value (%s). Continuing anyways, because `force` equals `TRUE`. Please note that all downstream calculations using frequencies might be wrong, so be sure to double check the results.", round(fq_width_calc, 5), round(fq_width, 5)))
         }
     }
-    structure(named(si, cs, fq, name, path, type, mfs), class = "spectrum")
+    meta <- named(fq, name, path, type, mfs)
+    structure(named(si, cs, meta), class = "spectrum")
 }
 
 #' @export
@@ -188,7 +189,7 @@ read_topspin3_spectrum <- function(spldir = file.path(download_example_datasets(
     acqus <- read_acqus_file(spldir, expno)
     procs <- read_procs_file(spldir, expno, procno)
     one_r <- read_1r_file(spldir, expno, procno, procs, silent = TRUE)[c("raw", "scaled")]
-    make_spectrum(
+    spectrum <- make_spectrum(
         si = if (raw) one_r$raw else one_r$scaled, # Signal intensities
         cs_max = procs$OFFSET, # Spectrum offset in PPM
         cs_width = acqus$SW, # Spectrum width in PPM

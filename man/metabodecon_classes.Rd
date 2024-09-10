@@ -19,12 +19,12 @@ A short description of each class is given in the listing below.
 \item \code{spectrum}: One NMR spectrum
 \item \code{decon1}: One deconvoluted NMR spectrum stored in \code{\link[=MetaboDecon1D]{MetaboDecon1D()}} format
 \item \code{decon2}: One deconvoluted NMR spectrum stored in \code{\link[=generate_lorentz_curves]{generate_lorentz_curves()}} format
-\item \code{decon3}: One deconvoluted NMR spectrum stored in \code{\link[=deconvolute_spectrum]{deconvolute_spectrum()}} format
+\item \code{decon3}: One deconvoluted NMR spectrum stored in \code{\link[=deconvolute_x]{deconvolute_x()}} format
 \item \code{alignment}: One aligned NMR spectrum
 \item \code{spectra}: List of multiple NMR spectra
 \item \code{decons1}: List of multiple deconvoluted NMR stored in \code{\link[=MetaboDecon1D]{MetaboDecon1D()}} format
 \item \code{decons2}: List of multiple deconvoluted NMR stored in \code{\link[=generate_lorentz_curves]{generate_lorentz_curves()}} format
-\item \code{decons3}: List of multiple deconvoluted NMR stored in \code{\link[=deconvolute_spectrum]{deconvolute_spectrum()}} format
+\item \code{decons3}: List of multiple deconvoluted NMR stored in \code{\link[=deconvolute_x]{deconvolute_x()}} format
 \item \code{alignments}: List of multiple aligned NMR spectra
 }
 

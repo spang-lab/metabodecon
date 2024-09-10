@@ -11,10 +11,11 @@
 #' sim_01_spectrum <- sim_spectra[[1]]
 #' sim_01_gspec <- as_gspec(sim_01_spectrum)
 as_gspec <- function(x, sf = c(1e3, 1e6)) {
+    if (is_gspec(x)) return(x)
     if (!is_spectrum(x)) stop("Input must be a spectrum object, not ", class(x))
-    y_raw <- x$si # Raw signal intensities
-    y_scaled <- y_raw / sf[2] # Scaled signal intensities
-    n <- length(y_raw) # Number of data points
+    si_raw <- x$si # Raw signal intensities
+    y_scaled <- si_raw / sf[2] # Scaled signal intensities
+    n <- length(si_raw) # Number of data points
     dp <- seq(n - 1, 0, -1) # Data point numbers
     sdp <- seq((n - 1) / sf[1], 0, -1 / sf[1]) # Scaled data point numbers [^1]
     ppm <- x$cs # Parts per million
@@ -54,7 +55,7 @@ as_decon2 <- function(x) {
     ppm <- x$ppm
     hz <- x$hz
     dp <- x$dp
-    y_raw <- x$y_raw
+    si_raw <- x$si_raw
     y_smooth <- x$y_smooth
     A <- x$lcr$A
     lambda <- x$lcr$lambda
@@ -66,7 +67,7 @@ as_decon2 <- function(x) {
 
     # Calculate MSE_normed and MSE_normed_raw
     y_normed <- y_smooth / sum(y_smooth)
-    y_raw_normed <- y_raw / sum(y_raw)
+    y_raw_normed <- si_raw / sum(si_raw)
     mse_normed <- mean((y_normed - s_normed)^2)
     mse_normed_raw <- mean((y_raw_normed - s_normed)^2)
 
@@ -92,7 +93,7 @@ as_decon2 <- function(x) {
         lambda = x$lcr$lambda,
         x_0 = x$lcr$w,
         # Fields only available in `decon2`, but not `decon1` (since v1.2.0)
-        y_values_raw = x$y_raw,
+        y_values_raw = x$si_raw,
         x_values_hz = x$hz,
         mse_normed_raw = mse_normed_raw,
         x_0_hz = convert_pos(x_0, sdp, hz),

@@ -125,7 +125,7 @@ psi_get_dat <- function(args) {
 
     # Chemical Shift and Signal Intensity
     cs <- decon[["ppm"]] %||% decon[["x_values_ppm"]] %||% decon[["cs"]]
-    si <- decon[["y_raw"]] %||% decon[["y_values_raw"]] %||% decon[["si"]]
+    si <- decon[["si_raw"]] %||% decon[["y_values_raw"]] %||% decon[["si"]]
     sis <- decon[["y_smooth"]] %||% decon[["y_values"]]
     si <- si / sf_y_raw
 

@@ -10,7 +10,7 @@
 plot_sfr <- function(spec, left_ppm, right_ppm) {
     plot(
         x = spec$ppm,
-        y = spec$y_scaled,
+        y = spec$si_scaled,
         type = "l",
         xlab = "Chemical Shift [ppm]",
         ylab = "Signal Intensity [au]",
@@ -31,7 +31,7 @@ plot_ws <- function(spec, hwidth_ppm) {
     xlim <- if (hw > 0) c(x0 + 5 * hw, x0 - 5 * hw) else range(spec$ppm)[2:1]
     plot(
         spec$ppm,
-        spec$y_scaled,
+        spec$si_scaled,
         type = "l",
         xlab = "Chemical Shift [ppm]",
         ylab = "Signal Intensity [au]",
@@ -40,7 +40,7 @@ plot_ws <- function(spec, hwidth_ppm) {
     graphics::abline(v = x0, col = "red", lty = 1) # center
     mtext("center", side = 3, line = 0, at = x0, col = "red")
     if (hw > 0) {
-        ya <- max(spec$y_scaled) * 0.8
+        ya <- max(spec$si_scaled) * 0.8
         abline(v = c(x0 + hw, x0 - hw), col = "red") # left/right border
         arrows(x0, ya, x0 + c(hw, -hw), ya, col = "red", length = 0.1)
         text(x0 + c(hw, -hw) / 2, ya, labels = "wshw", pos = 3, col = "red")

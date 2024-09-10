@@ -5,7 +5,7 @@ test_that("as_glci_spectrum works", {
     Z <- as_glci_spectrum(X, sf = c(1e3, 1e6))
     expect_str(Z, c(
         "List of 14",
-        " $ y_raw    : int [1:1309] 10151 10664 10496 9604 9056 9283 9401 8950 8822 9639 ...",
+        " $ si_raw    : int [1:1309] 10151 10664 10496 9604 9056 9283 9401 8950 8822 9639 ...",
         " $ y_scaled : num [1:1309] 0.01015 0.01066 0.0105 0.0096 0.00906 ...",
         " $ n        : int 1309",
         " $ sf       : num [1:2] 1000 1000000",
@@ -27,6 +27,6 @@ test_that("as_glci_spectrum produces same output as MetaboDecon1D did", {
     X <- read_spectrum(sim_1, raw = TRUE)
     Z <- as_glci_spectrum(X, sf = c(1e3, 1e6))
     Y <- md1d("sim_01", nfit = 1, cache = FALSE)$rv$debuglist
-    expect_equal(Z$y_raw, Y$data_read$spectrum_y_raw)
+    expect_equal(Z$si_raw, Y$data_read$spectrum_y_raw)
     expect_equal(Z$y_scaled, Y$data_read$spectrum_y)
 })

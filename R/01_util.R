@@ -9,11 +9,6 @@
 
 #' @import toscutil
 
-# Package envs #####
-
-tests <- list() # test cases (filled in later files directly after functions)
-penv <- as.environment(list())
-
 # File Handling #####
 
 #' @noRd
@@ -58,11 +53,6 @@ mkdirs <- function(path) {
 clear <- function(dir) {
     unlink(dir, recursive = TRUE, force = TRUE)
     mkdirs(dir)
-}
-
-dir.size <- function(dir) {
-    files <- list.files(dir, recursive = TRUE, full.names = TRUE)
-    sum(file.info(files)$size)
 }
 
 normPath <- function(path, winslash = "/", mustWork = FALSE) {
@@ -230,6 +220,7 @@ tree <- function(path, max.level = 2, level = 0, prefix = "") {
     invisible(NULL)
 }
 
+# Operators #####
 
 `%||%` <- function(x, y) {
     if (is.null(x)) y else x
@@ -299,25 +290,40 @@ convert_pos <- function(xa, ya, yb) {
 #' 1. The spectrum is a 1H spectrum
 #' 2. The chemical shift of the reference is at 0.0 ppm
 #' 3. The resonance frequency of the reference equals the resonance frequency of protons
-#' @param X A data frame containing the spectrum data with at least two columns: `cs` for chemical shifts and `fq` for frequencies.
+#' @param x A spectrum object as described in [metabodecon_classes].
 #' @return The magnetic field strength in Tesla.
 #' @examples
-#' X <- read_spectrum(pkg_file("example_datasets/bruker/urine/urine_1"))
-#' calc_B(X)
-calc_B <- function(X = read_spectrum()) {
+#' x <- read_spectrum(pkg_file("example_datasets/bruker/urine/urine_1"))
+#' calc_B(x)
+calc_B <- function(x = read_spectrum()) {
     # Example:
     # |---------------------------|----------------------|
     # 14.8 ppm (max)            0.0 (ref)       -5.2 (min)
     # 600.243 MHz (min)       600.252 (ref)  600.255 (max)
-    cs_maxmin <- max(X$cs) - min(X$cs)
-    cs_refmin <- 0.0000000 - min(X$cs)
+    cs_maxmin <- max(x$cs) - min(x$cs)
+    cs_refmin <- 0.0000000 - min(x$cs)
     ratio <- cs_refmin / cs_maxmin
-    fq_maxmin <- max(X$fq) - min(X$fq)
+    fq_maxmin <- max(x$fq) - min(x$fq)
     fq_refmax <- ratio * fq_maxmin
-    fq_ref <- max(X$fq) - fq_refmax # Frequency of the reference (which is equal the frequency of a proton)
+    fq_ref <- max(x$fq) - fq_refmax # Frequency of the reference (which is equal the frequency of a proton)
     gamma <- 2.675e8 # Gyromagnetic ratio for protons
     B <- (2 * pi * fq_ref) / gamma
     B
+}
+
+# Misc #####
+
+#' @noRd
+#' @examples
+#' xx <- list(a=1, b=2:5, d="a")
+#' set(xx, a=10, d=4, f=sqrt)
+set <- function(...) {
+    args <- list(...)
+    obj <- args[[1]]
+    vals <- args[-1]
+    keys <- names(vals)
+    mapply(function(k, v) obj[[k]] <<- v, keys, vals)
+    obj
 }
 
 # Doc Pages #####
@@ -332,12 +338,12 @@ calc_B <- function(X = read_spectrum()) {
 #'  -  `spectrum`: One NMR spectrum
 #'  -  `decon1`: One deconvoluted NMR spectrum stored in [MetaboDecon1D()] format
 #'  -  `decon2`: One deconvoluted NMR spectrum stored in [generate_lorentz_curves()] format
-#'  -  `decon3`: One deconvoluted NMR spectrum stored in [deconvolute_spectrum()] format
+#'  -  `decon3`: One deconvoluted NMR spectrum stored in [deconvolute_x()] format
 #'  -  `alignment`: One aligned NMR spectrum
 #'  -  `spectra`: List of multiple NMR spectra
 #'  -  `decons1`: List of multiple deconvoluted NMR stored in [MetaboDecon1D()] format
 #'  -  `decons2`: List of multiple deconvoluted NMR stored in [generate_lorentz_curves()] format
-#'  -  `decons3`: List of multiple deconvoluted NMR stored in [deconvolute_spectrum()] format
+#'  -  `decons3`: List of multiple deconvoluted NMR stored in [deconvolute_x()] format
 #'  -  `alignments`: List of multiple aligned NMR spectra
 #'
 #'  More details can be found in Metabodecon's online documentation at [Metabodecon Classes](https://spang-lab.github.io/metabodecon/articles/Metabodecon-Classes.html).

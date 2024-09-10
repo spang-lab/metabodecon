@@ -33,45 +33,77 @@ A grafical visualization of the classes and the corresponding functions is given
 
 ![Metabodecon Workflow](Classes/spectra_classes.png)
 
+## v1.2+ Elements
+
+1.  `cs`: Vector of "chemical shifts" in parts per pillion (ppm). Must be of the same length as `si`.
+2.  `si`: Signal intensities in arbitrary units (au), ordered from highest to lowest corresponding chemical shift. Must be of the same length as `cs`.
+3.  `meta`: Additional metadata about the spectrum, e.g.:
+    1. `name`: The name of the spectrum, e.g. `"Blood 1"` or `"Urine Mouse X23D"`.
+    2. `path`: The path of the file/folder containing the spectrum data. E.g. `"example_datasets/jcampdx/urine/urine_1.dx"` or `"example_datasets/bruker/urine/urine"`.
+    3. `type`: The type of experiment, e.g. `"H1 CPMG"` or `"H1 NOESY"`.
+    4. `fq`: Vector of "frequencies" in Hertz (Hz). Must be of the same length as `si` and `cs`.
+    5. `mfs`: Magnetic field strength in Tesla, e.g. `14.1`.
+4.  `dcp`: Deconvolution parameters:
+    1. `nfit`: The number of fitting iterations.
+    2. `smopts`: The smoothing parameters used for the deconvolution.
+    3. `delta`: The threshold used for peak filtering.
+    4. `sfr`: Borders of the signal free region in ppm.
+    5. `wsr`: Borders of the water signal region in ppm.
+5.  `si_sm`: Signal intensities after smoothing the raw signal intensities.
+6.  `ptp`: Peak triplets found during peak selection:
+    1. `ipc`: Index of peak centers.
+    2. `ilb`: Index of left borders.
+    3. `irb`: Index of right peak borders.
+7.  `lcp`: Lorentz curve parameters after parameter approximation:
+    1.  `A`: Amplitude parameter.
+    2.  `lambda`: Halfwidth parameter.
+    3.  `x_0`: Center parameter.
+8.  `si_sup`: Signal intensities as superposition of Lorentz curves.
+9.  `mse`: Mean squared error between the raw signal intensities `si` and the superposition of lorentz curves `si_sup`.
+10. `si_al`: Signal intensities after alignment.
+11. `x_0_al`: Center parameter of Lorentz Curves after alignment.
+
 # Single Object Classes
 
 ## spectrum
 
 A 'spectrum' object represents a single NMR spectrum.
-It is a list with class attribute `"spectrum"` and the following elements in arbitrary order:
+It is a list with class attribute `"spectrum"` and at least the following two elements in arbitrary order:
 
 - `si`: Signal intensities in arbitrary units (au), ordered from highest to lowest corresponding chemical shift.
 - `cs`: Vector of "chemical shifts" in parts per pillion (ppm). Must be of the same length as `si` and `fq`.
-- `fq`: Vector of "frequencies" in Hertz (Hz). Must be of the same length as `si` and `cs`.
+
+The following elements are optional, but must comply the specified structure, if provided:
+
 - `name`: The name of the spectrum, e.g. `"Blood 1"` or `"Urine Mouse X23D"`.
 - `path`: The path of the file/folder containing the spectrum data. E.g. `"example_datasets/jcampdx/urine/urine_1.dx"` or `"example_datasets/bruker/urine/urine"`.
+- `fq`: Vector of "frequencies" in Hertz (Hz). Must be of the same length as `si` and `cs`.
 - `type`: The type of experiment, e.g. `"H1 CPMG"` or `"H1 NOESY"`.
 - `mfs`: Magnetic field strength in Tesla, e.g. `14.1`.
+- `...`: Any further additional elements.
 
 ## decon3
 
 A 'Deconvoluted spectrum' object represents a single deconvoluted NMR spectrum.
 It is a list with class attribute `"decon3"` and the following elements in arbitrary order:
 
-- `spec`: The input NMR spectrum.
-- `args`: The parameters used for the deconvolution:
-  - `smopts`: The smoothing parameters used for the deconvolution.
-  - `delta`: The threshold used for peak filtering.
-  - `nfit`: The number of fitting iterations.
-  - `sfr`: Borders of the signal free region in ppm.
-  - `wsr`: Borders of the water signal region in ppm.
-- `pks`: Results of peak detection:
-  - `ct`: Index of peak centers.
-  - `bl`: Index of left peak borders.
-  - `br`: Index of right peak borders.
-- `si`: Signal intensities used during deconvolution:
-  - `sm`: After smoothing the raw signal intensities.
-  - `sup`: As superposition of Lorentz curves.
-- `lc`: Lorentz curve parameters fitted during parameter approximation:
-  - `am`: Amplitude parameter.
-  - `hw`: Halfwidth parameter.
-  - `ct`: Center parameter.
-- `mse`: Mean squared error between the raw signal intensities `spec$si` and the superposition of lorentz curves `sup$si`.
+- `si`: Signal intensities in arbitrary units (au), ordered from highest to lowest corresponding chemical shift.
+- `si_sm`: Signal intensities after smoothing the raw signal intensities.
+- `si_sup`: Signal intensities as superposition of Lorentz curves.
+- `cs`: Vector of "chemical shifts" in parts per pillion (ppm).
+- `smopts`: The smoothing parameters used for the deconvolution.
+- `delta`: The threshold used for peak filtering.
+- `nfit`: The number of fitting iterations.
+- `sfr`: Borders of the signal free region in ppm.
+- `wsr`: Borders of the water signal region in ppm.
+- `ipc`: Index of peak centers.
+- `ipl`: Index of left peak borders.
+- `ipr`: Index of right peak borders.
+- `A`: Amplitude parameter.
+- `lambda`: Halfwidth parameter.
+- `x_0`: Center parameter.
+- `mse`: Mean squared error between the raw signal intensities `si` and the superposition of lorentz curves `si_sup`.
+- `...`: Any further additional elements, in particular those defined in the [spectrum] class.
 
 ## alignment
 

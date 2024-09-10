@@ -1,3 +1,29 @@
+# Type #####
+
+#' @noRd
+#' @examples
+#' type(1:5) # "integer(5)"
+#' type(NULL) # "NULL(0)"
+#' type("Hello") # "character(1)"
+#' type(1.0) # "numeric(1)"
+#' type(NA) # "logical(1)"
+#' type(c(NaN, Inf)) # "numeric(2)"
+#' type(structure(list(a="a", b=1:5), class = "abc")) # "abc"
+type <- function(x) {
+    typ <- typeof(x)
+    if (typ %in% c("logical", "integer", "double", "complex", "character", "raw")) {
+        sprintf("%s(%d)", typ, length(x))
+    } else {
+        class(x)
+    }
+}
+
+# String checking #####
+
+is_str_or_null <- function(x) {
+    is.null(x) || (is.character(x) && length(x) == 1)
+}
+
 #' @noRd
 #' @title Check if strings represent integer values
 #' @description Tests each element of a character vector to determine if it represents an integer value. It allows for optional leading and trailing whitespace, and optional leading + or - signs.
@@ -43,6 +69,8 @@ is_float_str <- function(x) {
     )
 }
 
+# Vector checking #####
+
 is_num <- function(x, n = NULL) {
     if (is.null(n)) {
         is.numeric(x)
@@ -50,6 +78,23 @@ is_num <- function(x, n = NULL) {
         is.numeric(x) && length(x) == n
     }
 }
+
+is_int <- function(x, n = NULL) {
+    if (is.null(x)) return(FALSE)
+    x_is_int <- is.integer(x) || (is.numeric(x) && all(abs(x - round(x)) < sqrt(.Machine$double.eps)))
+    has_correct_length <- is.null(n) || length(x) == n
+    x_is_int && has_correct_length
+}
+
+is_char <- function(x, n = NULL, pattern = NULL) {
+    !is.null(x) && is.character(x) && (is.null(n) || length(x) == n ) && (is.null(pattern) || all(grepl(pattern, x)))
+}
+
+is_bool <- function(x, n = NULL) {
+    !is.null(x) && is.logical(x) && (is.null(n) || length(x) == n)
+}
+
+# List checking #####
 
 is_list_of_nums <- function(x, nl, nv) {
     if (is.null(nl) && is.null(nv)) {
@@ -61,13 +106,13 @@ is_list_of_nums <- function(x, nl, nv) {
     }
 }
 
-is_str_or_null <- function(x) {
-    is.null(x) || (is.character(x) && length(x) == 1)
-}
-
 all_identical <- function(x) {
     all(sapply(x, identical, x[[1]]))
 }
+
+# S3 Classes #####
+
+is_gspec <- function(x) inherits(x, "gspec")
 
 is_gdecon <- function(x) inherits(x, "gdecon")
 

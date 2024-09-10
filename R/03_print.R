@@ -49,7 +49,8 @@ logf <- function(fmt,
                  prefix = .Options$toscutil.logf.prefix %||% function() now_ms(usetz = FALSE, color = "\033[1;30m"),
                  sep1 = .Options$toscutil.logf.sep1 %||% " ",
                  sep2 = .Options$toscutil.logf.sep2 %||% "",
-                 end = .Options$toscutil.logf.end %||% "\n") {
+                 end = .Options$toscutil.logf.end %||% "\n",
+                 verbose = TRUE) {
     cat(prefix(), sep1, sprintf(fmt, ...), sep2, end, sep = "", file = file, append = append)
 }
 
@@ -69,16 +70,24 @@ human_readable <- function(x, unit, fmt = "%.1f") {
     sprintf(fmtstr, x, prefix, unit)
 }
 
-# S3 Methods #####
+# S3 Methods (Public Classes) #####
 
 #' @export
-print.gspec <- function(x, ...) {
-    catf("gspec object (%d dp, %.1f to %.1f ppm)\n", x$n, max(x$ppm), min(x$ppm))
-}
-
-#' @export
-print.gdecon <- function(x, ...) {
-    catf("gdecon object (%d dp, %.1f to %.1f ppm, %d peaks)\n", x$n, max(x$ppm), min(x$ppm), sum(x$peak$high))
+#' @title Print a Spectrum Object
+#' @description Prints the name, path, type, magnetic field strength, number of data points, chemical shifts and frequencies of a spectrum object.
+#' @param x A spectrum object as returned by [make_spectrum()].
+#' @examples
+#' si <- c(1, 1, 3, 7, 8, 3, 8, 5, 2, 1)
+#' cs_max <- 14.8
+#' cs_width <- 20.0
+#' fq_ref <- 600.25 * 1e6
+#' fq_width <- 12005
+#' spectrum <- read_spectrum()
+#' print.spectrum(spectrum)
+print.spectrum <- function(x, name = FALSE, ...) {
+    namestr <- if (name) paste0(x$meta$name %||% "NULL", ": ") else ""
+    fmt <- "%spectrum object (%d dp, %.1f to %.1f ppm)\n"
+    catf(fmt, namestr, n, max(x$cs), min(x$cs))
 }
 
 #' @export
@@ -91,9 +100,30 @@ print.decon2 <- function(x, name = FALSE, ...) {
 }
 
 #' @export
+print.decons2 <- function(x, ...) {
+    catf("decons2 object with %s decon2 elements\n", length(x))
+    invisible(sapply(x, print, name = TRUE, ...))
+}
+
+# S3 Methods (Private Classes) #####
+
+#' @export
+print.gspec <- function(x, ...) {
+    catf("gspec object (%d dp, %.1f to %.1f ppm)\n", length(x$ppm), max(x$ppm), min(x$ppm))
+}
+
+#' @export
 print.gspecs <- function(x, ...) {
     catf("gspecs object with %s gspec elements\n", length(x))
     invisible(sapply(x, print, ...))
+}
+
+#' @export
+print.gdecon <- function(x, ...) {
+    msg <- "gdecon object (%d dp, %.1f to %.1f ppm, %d peaks)\n"
+    n <- length(x$ppm)
+
+    catf(, x$n, max(x$ppm), min(x$ppm), sum(x$peak$high))
 }
 
 #' @export
@@ -104,10 +134,4 @@ print.gdecons <- function(x, ...) {
         catf("%s: ", nam)
         print(xi, ...)
     })
-}
-
-#' @export
-print.decons2 <- function(x, ...) {
-    catf("decons2 object with %s decon2 elements\n", length(x))
-    invisible(sapply(x, print, name = TRUE, ...))
 }
