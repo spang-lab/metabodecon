@@ -128,47 +128,6 @@ make_spectrum <- function(si,
     structure(named(si, cs, meta), class = "spectrum")
 }
 
-#' @export
-#' @title Print a Spectrum Object
-#' @description Prints the name, path, type, magnetic field strength, number of data points, chemical shifts and frequencies of a spectrum object.
-#' @param x A spectrum object as returned by [make_spectrum()].
-#' @examples
-#' si <- c(1, 1, 3, 7, 8, 3, 8, 5, 2, 1)
-#' cs_max <- 14.8
-#' cs_width <- 20.0
-#' fq_ref <- 600.25 * 1e6
-#' fq_width <- 12005
-#' spectrum <- read_spectrum()
-#' print.spectrum(spectrum)
-print.spectrum <- function(x, ...) {
-    catf("Spectrum with %d data points\n", length(x$si))
-    catf("Signal Intensity Range: %.1f - %.1f\n", min(x$si), max(x$si))
-    catf("Frequency Range: %.1f - %.1f Hz\n", min(x$fq), max(x$fq))
-    catf("Chemical Shift Range: %.4f - %.4f ppm\n", max(x$cs), min(x$cs))
-    catf("Magnetic Field Strength: %s\n", if (is.null(x$mfs)) "NULL" else paste(x$mfs, "T"))
-    catf("Name: %s\n", x$name %||% "NULL")
-    catf("Path: %s\n", x$path %||% "NULL")
-    catf("Type: %s\n", x$type %||% "NULL")
-}
-
-#' @export
-is_spectrum <- function(x,
-                        check_class = TRUE,
-                        check_contents = FALSE) {
-    # styler: off
-    if (check_class && !inherits(x, "spectrum")) return(FALSE)
-    if (!check_contents) return(TRUE)
-    if (!is.list(x)) return(FALSE)
-    mandatory <- c("si", "fq", "cs")
-    if (!all(mandatory %in% names(x))) return(FALSE)
-    if (any(lengths(x[mandatory])) != 1) return(FALSE)
-    optional <- c("name", "type", "path", "mfs")
-    if (!all(sapply(x[optional], is_str_or_null))) return(FALSE)
-    # styler: on
-    return(TRUE)
-}
-
-
 # Private Helpers #####
 
 #' @noRd

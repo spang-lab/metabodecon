@@ -336,14 +336,14 @@ set <- function(...) {
 #'  A short description of each class is given in the listing below.
 #'
 #'  -  `spectrum`: One NMR spectrum
-#'  -  `decon1`: One deconvoluted NMR spectrum stored in [MetaboDecon1D()] format
-#'  -  `decon2`: One deconvoluted NMR spectrum stored in [generate_lorentz_curves()] format
-#'  -  `decon3`: One deconvoluted NMR spectrum stored in [deconvolute_x()] format
+#'  -  `decon0`: One deconvoluted NMR spectrum stored in [MetaboDecon1D()] format
+#'  -  `decon1`: One deconvoluted NMR spectrum stored in [generate_lorentz_curves()] format
+#'  -  `decon2`: One deconvoluted NMR spectrum stored in [deconvolute_gspec()] format
 #'  -  `alignment`: One aligned NMR spectrum
 #'  -  `spectra`: List of multiple NMR spectra
 #'  -  `decons1`: List of multiple deconvoluted NMR stored in [MetaboDecon1D()] format
 #'  -  `decons2`: List of multiple deconvoluted NMR stored in [generate_lorentz_curves()] format
-#'  -  `decons3`: List of multiple deconvoluted NMR stored in [deconvolute_x()] format
+#'  -  `decons3`: List of multiple deconvoluted NMR stored in [deconvolute_gspec()] format
 #'  -  `alignments`: List of multiple aligned NMR spectra
 #'
 #'  More details can be found in Metabodecon's online documentation at [Metabodecon Classes](https://spang-lab.github.io/metabodecon/articles/Metabodecon-Classes.html).

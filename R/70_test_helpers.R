@@ -522,7 +522,7 @@ store_sim_spec <- function(simspec = create_sim_spec(),
             procs = paste(
                 sep = "\n",
                 "##$BYTORDP=0", # Byte order (0 = Little endian)
-                "##$NC_proc=0", # Exponent for intensity values (y_scaled = si_raw * 2^NC_proc)
+                "##$NC_proc=0", # Exponent for intensity values (y_scaled = y_raw * 2^NC_proc)
                 "##$DTYPP=0", # Data storage type (0=4-byte-integers, else=double)
                 sprintf("##$SI=%d", length(X$si_sim)), # Number of data points
                 sprintf("##$OFFSET=%.15f", max(X$cs)), # Offset in PPM, i.e. the maximum chemical shift
@@ -923,12 +923,12 @@ compare_spectra <- function(new = glc()$rv,
     o11 <- old$debuglist$params_saved # nolint: object_usage_linter.
 
     # [1-5] spectra <- read_spectra(data_path, file_format, expno, procno, ask, sf, bwc = TRUE)
-    # [6-7] spectra <- get_sfrs(spectra, sfr, ask, adjno)
-    # [8-9] spectra <- get_wsrs(spectra, wshw, ask, adjno)
+    # [6-7] spectra <- get_sfr(spectra, sfr, ask, adjno)
+    # [8-9] spectra <- get_wshw(spectra, wshw, ask, adjno)
     # [10] spec <- rm_water_signal(spec)
     # [11] spec <- rm_negative_signals(spec)
     # [12] spec <- smooth_signals(spec, reps = smopts[1], k = smopts[2])
-    r[1] <- comp(new$si_raw, o2$spectrum_y_raw)
+    r[1] <- comp(new$y_raw, o2$spectrum_y_raw)
     r[2] <- comp(new$y_scaled, o2$spectrum_y)
     r[3] <- comp(new$n, o3$spectrum_length)
     r[4] <- comp(new$sdp, o3$spectrum_x)
@@ -1035,7 +1035,7 @@ compare_spectra_v13 <- function(new = glc()$rv$urine_1,
     o3 <- old$debuglist$ws_rm
     o4 <- old$debuglist$neg_rm
     o5 <- old$debuglist$smoothed
-    r    <-  ident(new$si_raw,         o2$spectrum_y_raw)
+    r    <-  ident(new$y_raw,         o2$spectrum_y_raw)
     r[2] <-  ident(new$y_scaled,      o2$spectrum_y)
     r[3] <-  ident(new$n,             o3$spectrum_length)
     r[4] <-  ident(new$sdp,           o3$spectrum_x)

@@ -100,18 +100,20 @@ as_spectra <- function(x,
 # Helpers #####
 
 set_names <- function(x, nams) {
-    valid <- is.list(x) && all(sapply(x, function(e) "name" %in% names(e)))
-    if (!valid) stop("Input must be a list of lists with a 'name' element.")
+    if (!is.list(x)) stop("Input must be a list.")
+    has_names <- all(sapply(x, function(e) "name" %in% names(e)))
+    has_meta_names <- all(sapply(x, function(e) "name" %in% names(e$meta)))
     names(x) <- nams
-    for (i in seq_along(x)) x[[i]]$name <- nams[[i]]
+    if (has_names) for (i in seq_along(x)) x[[i]]$name <- nams[[i]]
+    if (has_meta_names) for (i in seq_along(x)) x[[i]]$meta$name <- nams[[i]]
     x
 }
 
 get_names <- function(x, default = "spectrum_%d") {
-    if (!is_spectra(x) && !is_gdecons(x)) stop("Input must be a spectra or gdecons object, not ", class(x))
+    stopifnot(class(x)[1] %in% c("gdecons", "gspecs", "spectra"))
     dn <- get_default_names(x, default)
     en <- names(x) # Element name
-    sn <- sapply(x, `[[`, "name") # Spectrum name
+    sn <- sapply(x, function(s) s$meta$name %||% s$name) # Spectrum name
     sapply(seq_along(x), function(i) sn[i] %||% en[i] %||% dn[i])
 }
 

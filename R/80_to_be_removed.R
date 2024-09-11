@@ -41,8 +41,8 @@ generate_lorentz_curves_v12 <- function(data_path = file.path(download_example_d
     spectra_ds <- read_spectra(data_path, file_format, expno, procno, ask, sf, raw = TRUE)
     spectra <- lapply(spectra_ds, as_glci_spectrum, sf = sf)
     adjno <- get_adjno(spectra, sfr, wshw, ask)
-    spectra <- get_sfrs(spectra, sfr, ask, adjno)
-    spectra <- get_wsrs(spectra, wshw, ask, adjno)
+    spectra <- get_sfr(spectra, sfr, ask, adjno)
+    spectra <- get_wshw(spectra, wshw, ask, adjno)
 
     # Deconvolute spectra
     n <- length(spectra)

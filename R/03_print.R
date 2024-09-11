@@ -86,44 +86,45 @@ human_readable <- function(x, unit, fmt = "%.1f") {
 #' print.spectrum(spectrum)
 print.spectrum <- function(x, name = FALSE, ...) {
     namestr <- if (name) paste0(x$meta$name %||% "NULL", ": ") else ""
-    fmt <- "%spectrum object (%d dp, %.1f to %.1f ppm)\n"
-    catf(fmt, namestr, n, max(x$cs), min(x$cs))
+    fmt <- "%sspectrum object (%d dp, %.1f to %.1f ppm)\n"
+    catf(fmt, namestr, length(x$cs), max(x$cs), min(x$cs))
 }
 
 #' @export
-print.decon2 <- function(x, name = FALSE, ...) {
+print.decon1 <- function(x, name = FALSE, ...) {
     ppm <- x$x_values_ppm
     n <- length(ppm)
     name <- if (name) paste0(x$filename %||% "NULL", ": ") else ""
-    fmt <- "%sdecon2 object (%d dp, %.1f to %.1f ppm, %d peaks)\n"
+    fmt <- "%sdecon1 object (%d dp, %.1f to %.1f ppm, %d peaks)\n"
     catf(fmt, name, n, max(ppm), min(ppm), length(x$A))
 }
 
 #' @export
 print.decons2 <- function(x, ...) {
-    catf("decons2 object with %s decon2 elements\n", length(x))
-    invisible(sapply(x, print, name = TRUE, ...))
+    catf("decons2 object with %s decon1 elements\n", length(x))
+    invisible(sapply(x, print, name = TRUE))
 }
 
 # S3 Methods (Private Classes) #####
 
 #' @export
-print.gspec <- function(x, ...) {
-    catf("gspec object (%d dp, %.1f to %.1f ppm)\n", length(x$ppm), max(x$ppm), min(x$ppm))
+print.gspec <- function(x, name = FALSE, ...) {
+    fmt <- "%sgspec object (%d dp, %.1f to %.1f ppm)\n"
+    namestr <- if (name) paste0(x$name %||% "NULL", ": ") else ""
+    catf(fmt, namestr, length(x$ppm), max(x$ppm), min(x$ppm))
 }
 
 #' @export
 print.gspecs <- function(x, ...) {
     catf("gspecs object with %s gspec elements\n", length(x))
-    invisible(sapply(x, print, ...))
+    invisible(sapply(x, print, name = TRUE))
 }
 
 #' @export
 print.gdecon <- function(x, ...) {
     msg <- "gdecon object (%d dp, %.1f to %.1f ppm, %d peaks)\n"
     n <- length(x$ppm)
-
-    catf(, x$n, max(x$ppm), min(x$ppm), sum(x$peak$high))
+    catf(msg, x$n, max(x$ppm), min(x$ppm), sum(x$peak$high))
 }
 
 #' @export

@@ -23,7 +23,7 @@ Calculates the lorentz curves of each investigated spectrum.
 # Lorentz Curves (specified via the parameters A, lambda and x_0).
 sim <- metabodecon_file("bruker/sim_subset")
 decons <- generate_lorentz_curves(sim, sfr = c(3.58, 3.42), wshw = 0, ask = FALSE, verbose = FALSE)
-decon1 <- decons[[1]]
+decon0 <- decons[[1]]
 
 # Calculate the corresponding y values at each ppm value for each Lorentz
 # Curve. I.e. you get a matrix of dimension n x m for each deconvolution,
@@ -36,8 +36,8 @@ dim(X1)
 nrs <- c(5, 9, 11)
 col <- c("red", "blue", "orange")
 desc <- paste("Lorentz curve", nrs)
-plot(decon1$x_values_ppm, decon1$y_values, type = "l", lty = 2)
-for (i in 1:3) lines(decon1$x_values_ppm, X1[nrs[i], ], col = col[i])
+plot(decon0$x_values_ppm, decon0$y_values, type = "l", lty = 2)
+for (i in 1:3) lines(decon0$x_values_ppm, X1[nrs[i], ], col = col[i])
 legend("topright", legend = desc, col = col, lty = 1)
 }
 \seealso{

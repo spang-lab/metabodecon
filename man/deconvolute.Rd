@@ -2,27 +2,10 @@
 % Please edit documentation in R/30_deconvolute.R
 \name{deconvolute}
 \alias{deconvolute}
-\alias{deconvolute_spectra}
 \alias{generate_lorentz_curves}
 \alias{generate_lorentz_curves_sim}
 \title{Generate Lorentz Curves from NMR Spectra}
 \usage{
-deconvolute_spectra(
-  x,
-  rtyp,
-  sfr,
-  wsr,
-  wshw,
-  nfit,
-  smopts,
-  delta,
-  ask,
-  nworkers,
-  verbose,
-  force,
-  ...
-)
-
 generate_lorentz_curves(
   data_path,
   file_format = "bruker",
@@ -34,9 +17,12 @@ generate_lorentz_curves(
   nfit = 10,
   smopts = c(2, 5),
   delta = 6.4,
-  ask = TRUE,
-  rtyp = "decons2",
   sf = c(1000, 1e+06),
+  ask = TRUE,
+  nworkers = 1,
+  force = FALSE,
+  verbose = TRUE,
+  rtyp = "decons3",
   ...
 )
 
@@ -50,6 +36,14 @@ generate_lorentz_curves_sim(
 )
 }
 \arguments{
+\item{data_path}{Either the path to a directory containing measured NMR spectra, a dataframe as returned by \code{\link[=read_spectrum]{read_spectrum()}}, or a list of such dataframes.}
+
+\item{file_format}{The file_format of the spectrum file. E.g. \code{"bruker"} or \code{"jcampdx"}.}
+
+\item{make_rds}{Logical or character. If TRUE, stores results as an RDS file on disk. If a character string, saves the RDS file with the specified name. Should be set to TRUE if many spectra are evaluated to decrease computation time.}
+
+\item{expno, procno}{The experiment/processing number for the file. E.g. \code{"10"}. Only relevant if \code{file_format} equals \code{"bruker"}. For details see section \href{https://spang-lab.github.io/metabodecon/articles/FAQ.html#file-structure}{File Structure} in the metabodecon FAQ.}
+
 \item{sfr}{Numeric vector with two entries: the ppm positions for the left and right border of the signal-free region of the spectrum.}
 
 \item{wshw}{Half-width of the water artifact in ppm.
@@ -61,23 +55,17 @@ Further arguments to be passed to \code{\link[=generate_lorentz_curves]{generate
 
 \item{delta}{Threshold for peak filtering. Higher values result in more peaks being filtered out. A peak is filtered if its score is below \mjeqn{\mu + \sigma \cdot \delta}{mu + s * delta}, where \mjeqn{\mu}{mu} is the average peak score in the signal-free region (SFR), and \mjeqn{\sigma}{s} is the standard deviation of peak scores in the SFR.}
 
+\item{sf}{Numeric vector with two entries: the factors to scale the x-axis and y-axis.}
+
 \item{ask}{Logical. Whether to ask for user input during the deconvolution process. If FALSE, the provided default values will be used.}
 
 \item{nworkers}{Number of workers to use for parallel processing. If \code{"auto"}, the number of workers will be determined automatically. If a number greater than 1, it will be limited to the number of spectra.}
 
-\item{verbose}{Logical. Whether to print log messages during the deconvolution process.}
-
 \item{force}{If FALSE, the function stops with an error message if no peaks are found in the signal free region (SFR), as these peaks are required as a reference for peak filtering. If TRUE, the function instead proceeds without peak filtering, potentially increasing runtime and memory usage significantly.}
 
-\item{data_path}{Either the path to a directory containing measured NMR spectra, a dataframe as returned by \code{\link[=read_spectrum]{read_spectrum()}}, or a list of such dataframes.}
+\item{verbose}{Logical. Whether to print log messages during the deconvolution process.}
 
-\item{file_format}{The file_format of the spectrum file. E.g. \code{"bruker"} or \code{"jcampdx"}.}
-
-\item{make_rds}{Logical or character. If TRUE, stores results as an RDS file on disk. If a character string, saves the RDS file with the specified name. Should be set to TRUE if many spectra are evaluated to decrease computation time.}
-
-\item{expno, procno}{The experiment/processing number for the file. E.g. \code{"10"}. Only relevant if \code{file_format} equals \code{"bruker"}. For details see section \href{https://spang-lab.github.io/metabodecon/articles/FAQ.html#file-structure}{File Structure} in the metabodecon FAQ.}
-
-\item{sf}{Numeric vector with two entries: the factors to scale the x-axis and y-axis.}
+\item{bwc}{Whether to produce results backwards compatible with \code{\link[=MetaboDecon1D]{MetaboDecon1D()}} and \code{\link[=generate_lorentz_curves]{generate_lorentz_curves()}}. If \code{bwc < 2}, a \code{decon1} object is returned instead of a \code{decon2} object. If \code{bwc < 1}, fixes/improvements introduced after version 'metabodecon v1.0' are not used. Support for \code{bwc < 1} will be removed in 'metabodecon v2.0' and will result in a warning for 'metabodecon v1.x' with \code{x >= 1.2}.}
 
 \item{debug}{Logical. Whether to return additional intermediate results for debugging purposes.}
 }
@@ -108,7 +96,7 @@ sim_spectra <- list(sim_1_spectrum, sim_2_spectrum)
 
 ## Show that `generate_lorentz_curves()` and `generate_lorentz_curves_sim()`
 ## produce the same results:
-sim_1_decon1 <- generate_lorentz_curves(
+sim_1_decon0 <- generate_lorentz_curves(
     data_path = path, # Path to directory containing spectra
     sfr = c(3.58, 3.42), # Borders of signal free region (SFR) in ppm
     wshw = 0, # Half width of water signal (WS) in ppm
@@ -116,8 +104,8 @@ sim_1_decon1 <- generate_lorentz_curves(
     ask = FALSE, # Don't ask for user input
     verbose = FALSE # Suppress status messages
 )
-sim_1_decon2 <- generate_lorentz_curves_sim(path)
-stopifnot(all.equal(sim_1_decon1, sim_1_decon2))
+sim_1_decon1 <- generate_lorentz_curves_sim(path)
+stopifnot(all.equal(sim_1_decon0, sim_1_decon1))
 
 ## Show that passing a spectrum produces the same results as passing the
 ## the corresponding directory:
@@ -125,9 +113,9 @@ decon_from_spectrum_dir <- generate_lorentz_curves_sim(sim_1_dir)
 decon_from_spectrum_obj <- generate_lorentz_curves_sim(sim_1_spectrum)
 decons_from_spectra_obj <- generate_lorentz_curves_sim(sim_spectra)
 decons_from_spectra_dir <- generate_lorentz_curves_sim(sim_dir)
-compare <- function(decon1, decon2) {
-    ignore <- which(names(decon1) \%in\% c("number_of_files", "filename"))
-    equal <- all.equal(decon1[-ignore], decon2[-ignore])
+compare <- function(d1, d2) {
+    ignore <- which(names(d1) \%in\% c("number_of_files", "filename"))
+    equal <- all.equal(d1[-ignore], d2[-ignore])
     stopifnot(isTRUE(equal))
 }
 compare(decon_from_spectrum_dir, decon_from_spectrum_obj)

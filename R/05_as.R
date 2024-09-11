@@ -13,9 +13,9 @@
 as_gspec <- function(x, sf = c(1e3, 1e6)) {
     if (is_gspec(x)) return(x)
     if (!is_spectrum(x)) stop("Input must be a spectrum object, not ", class(x))
-    si_raw <- x$si # Raw signal intensities
-    y_scaled <- si_raw / sf[2] # Scaled signal intensities
-    n <- length(si_raw) # Number of data points
+    y_raw <- x$si # Raw signal intensities
+    y_scaled <- y_raw / sf[2] # Scaled signal intensities
+    n <- length(y_raw) # Number of data points
     dp <- seq(n - 1, 0, -1) # Data point numbers
     sdp <- seq((n - 1) / sf[1], 0, -1 / sf[1]) # Scaled data point numbers [^1]
     ppm <- x$cs # Parts per million
@@ -25,7 +25,7 @@ as_gspec <- function(x, sf = c(1e3, 1e6)) {
     ppm_min <- min(x$cs) # Minimum chemical shift in ppm.
     ppm_step <- ppm_range / (n - 1) # Step size calculated correctly.
     ppm_nstep <- ppm_range / n # Wrong, but backwards compatible [^2].
-    name <- x$name # Name of the spectrum
+    name <- x$meta$name # Name of the spectrum
     g <- locals(without = "x")
     structure(g, class = "gspec")
     # [^1]: Same as `dp / sf[1]`, but with slight numeric differences, so we stick with the old calculation method for backwards compatibility.
@@ -35,9 +35,15 @@ as_gspec <- function(x, sf = c(1e3, 1e6)) {
 #' @noRd
 #' @rdname as_gspec
 as_gspecs <- function(x, sf = c(1e3, 1e6)) {
-    if (!is_spectra(x)) stop("Input must be of class spectra, not ", class(x))
-    gg <- structure(lapply(x, as_gspec, sf = sf), class = "gspecs")
-    gg <- set_names(gg, get_names(x))
+    gg <- if (is_gspec(x)) {
+        list(x)
+    } else if (is_spectra(x)) {
+        lapply(x, as_gspec, sf = sf)
+    } else {
+        stop("Input must be of class gspec of spectra, not ", class(x))
+    }
+    gg <- structure(gg, class = "gspecs")
+    gg <- set_names(gg, get_names(gg))
     gg
 }
 
@@ -47,7 +53,7 @@ as_gspecs <- function(x, sf = c(1e3, 1e6)) {
 #' @param nfiles Number of deconvoluted spectrum.
 #' @param nam Name of current spectrum.
 #' @return The input spectrum with an additional list element `ret` containing the deconvolution results in a backwards compatible format.
-as_decon2 <- function(x) {
+as_decon1 <- function(x) {
     if (!is_gdecon(x)) stop("Input must be a gdecon object, not ", class(x))
 
     # Prepare shortcuts to access the data
@@ -55,7 +61,7 @@ as_decon2 <- function(x) {
     ppm <- x$ppm
     hz <- x$hz
     dp <- x$dp
-    si_raw <- x$si_raw
+    y_raw <- x$y_raw
     y_smooth <- x$y_smooth
     A <- x$lcr$A
     lambda <- x$lcr$lambda
@@ -67,12 +73,12 @@ as_decon2 <- function(x) {
 
     # Calculate MSE_normed and MSE_normed_raw
     y_normed <- y_smooth / sum(y_smooth)
-    y_raw_normed <- si_raw / sum(si_raw)
+    y_raw_normed <- y_raw / sum(y_raw)
     mse_normed <- mean((y_normed - s_normed)^2)
     mse_normed_raw <- mean((y_raw_normed - s_normed)^2)
 
     # Create and return list
-    structure(class = "decon2", .Data = list(
+    structure(class = "decon1", .Data = list(
         number_of_files = 1,
         filename = x$name,
         x_values = x$sdp,
@@ -92,8 +98,8 @@ as_decon2 <- function(x) {
         A = x$lcr$A,
         lambda = x$lcr$lambda,
         x_0 = x$lcr$w,
-        # Fields only available in `decon2`, but not `decon1` (since v1.2.0)
-        y_values_raw = x$si_raw,
+        # Fields only available in `decon1`, but not `decon0` (since v1.2.0)
+        y_values_raw = x$y_raw,
         x_values_hz = x$hz,
         mse_normed_raw = mse_normed_raw,
         x_0_hz = convert_pos(x_0, sdp, hz),
@@ -110,7 +116,7 @@ as_decon2 <- function(x) {
 
 as_decons2 <- function(x) {
     if (!is_gdecons(x)) stop("Input must be a gdecons object, not ", class(x))
-    decons2 <- lapply(gdecons, as_decon2)
+    decons2 <- lapply(gdecons, as_decon1)
     names(decons2) <- names(x)
     class(decons2) <- "decons2"
     decons2

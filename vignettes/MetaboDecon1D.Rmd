@@ -7,7 +7,7 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-# Metabodecon1D Usage Example
+# MetaboDecon1D Usage Example
 
 The `MetaboDecon1D` package is the predecessor of this package and can be downloaded from [uni-regensburg.de/medicine/functional-genomics/staff/prof-wolfram-gronwald/software](https://www.uni-regensburg.de/medicine/functional-genomics/staff/prof-wolfram-gronwald/software/index.html). We include this usage example in here so we can easily reference old behaviour and point out added features in `metabodecon`.
 

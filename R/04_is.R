@@ -112,7 +112,23 @@ all_identical <- function(x) {
 
 # S3 Classes #####
 
+#' @export
+is_spectrum <- function(x,
+                        check_class = TRUE,
+                        check_contents = FALSE) {
+    # styler: off
+    if (check_class && !inherits(x, "spectrum")) return(FALSE)
+    if (!check_contents) return(TRUE)
+    if (!is.list(x)) return(FALSE)
+    mandatory <- c("si", "cs")
+    if (!all(mandatory %in% names(x))) return(FALSE)
+    # styler: on
+    return(TRUE)
+}
+
 is_gspec <- function(x) inherits(x, "gspec")
+
+is_gspecs <- function(x) inherits(x, "gspecs")
 
 is_gdecon <- function(x) inherits(x, "gdecon")
 
