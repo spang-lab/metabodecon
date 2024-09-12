@@ -13,7 +13,7 @@ test_that("deconvolute works", {
     delta <- 0.1
     sfr <- c(3.58, 3.42)
     wsr <- c(3.50, 3.50)
-    rtyp <- "decons3"
+    rtyp <- "decons2"
     rm_ws_version <- 1
     force <- FALSE
 

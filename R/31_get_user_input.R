@@ -44,6 +44,14 @@ get_wshw <- function(gspecs, wshw, ask, adjno) {
     wshw
 }
 
+get_smopts <- function(gspecs, smopts) {
+    n <- length(gspecs)
+    if (is_int(smopts, 2)) smopts <- rep(list(smopts), n)
+    if (!is_list_of_nums(smopts, n, 2)) stop("smopts should be a [list of] int(2)")
+    names(smopts) <- names(gspecs)
+    smopts
+}
+
 #' @description Repeatedly ask the user to confirm/refine SFR borders.
 #' @noRd
 confirm_sfr <- function(gspec, sfr = c(11.44494, -1.8828)) {
@@ -80,7 +88,7 @@ enrich_sfr <- function(gspec, sfr) {
     left_dp <- (gspec$n + 1) - (gspec$ppm_max - left_ppm) / gspec$ppm_nstep
     left_sdp <- left_dp / gspec$sf[1]
     right_dp <- (gspec$n + 1) - (gspec$ppm_max - right_ppm) / gspec$ppm_nstep
-    right_sdp <- right_dp / gspec$sf[2]
+    right_sdp <- right_dp / gspec$sf[1]
     named(left_ppm, right_ppm, left_dp, right_dp, left_sdp, right_sdp)
 }
 

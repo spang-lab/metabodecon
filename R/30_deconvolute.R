@@ -87,79 +87,62 @@
 #' }
 NULL
 
-deconvolute_gspec <- function(gspec, nfit, smopts, delta, sfr, wshw, force, bwc) {
-    check_args_deconvolute_gspec()
+deconvolute_gspec <- function(gspec,
+                              nfit, smopts, delta, sfr, wshw,
+                              force, bwc) {
+    check_args(deconvolute_gspec)
+    reps <- smopts[1]
+    k <- smopts[2]
     logf("Starting deconvolution of %s", gspec$name)
     gspec <- rm_water_signal(gspec, wshw, bwc)
-    gspec <- rm_negative_signals(gspec, sfr, bwc)
-    gspec <- smooth_signals(gspec, reps = smopts[1], k = smopts[2])
+    gspec <- rm_negative_signals(gspec)
+    gspec <- smooth_signals(gspec, reps, k, bwc)
     gspec <- find_peaks(gspec)
-    gspec <- filter_peaks(gspec, delta, force)
+    gspec <- filter_peaks(gspec, sfr, delta, force, bwc)
     gspec <- fit_lorentz_curves(gspec, nfit)
     logf("Finished deconvolution of %s", gspec$name)
-    structure(gspec, class = "decon2")
+    structure(gspec, class = "gdecon")
 }
 
 deconvolute_gspecs <- function(gspecs,
                                nfit, smopts, delta, sfr, wshw,
-                               ask, force, verbose, bwc) {
-    check_args_deconvolute_gspecs()
+                               ask, force, verbose, bwc,
+                               nworkers) {
+    # Check args & configure logging
+    check_args(deconvolute_gspecs)
     opts <- if (!verbose) options(toscutil.logf.file = nullfile())
     on.exit(options(opts), add = TRUE)
 
-    adjno <- get_adjno(gspecs, sfr, wshw, ask)
-    sfr <- get_sfr(gspecs, sfr, ask, adjno)
-    wshw <- get_wshw(gspecs, wshw, ask, adjno)
-
+    # Init local vars
     ns <- length(gspecs)
-    nw <- if (nworkers == "auto") ceiling(parallel::detectCores() / 2) else nworkers
+    nw <- if (nworkers == "auto") ceiling(detectCores() / 2) else nworkers
     nw <- min(nw, length(gspecs))
     nfstr <- if (ns == 1) "1 spectrum" else sprintf("%d spectra", ns)
     nwstr <- if (nw == 1) "1 worker" else sprintf("%d workers", nw)
+    rtyp <- if (bwc >= 2) "decons1" else "decons0"
+    as_rtyp <- if (bwc >= 2) as_decons2 else as_decons1
+    adjno <- get_adjno(gspecs, sfr, wshw, ask)
+    sfr <- get_sfr(gspecs, sfr, ask, adjno)
+    wshw <- get_wshw(gspecs, wshw, ask, adjno)
+    smopts <- get_smopts(gspecs, smopts)
 
+    # Deconvolute spectra
     logf("Starting deconvolution of %s using %s", nfstr, nwstr)
     starttime <- Sys.time()
-
-    decons <- if (nw == 1) {
-        lapply(seq_along(gspecs), function(i) {
-            deconvolute_gspec(
-                gspecs[[i]], nfit, smopts, delta, sfr[[i]],
-                wshw[[i]], force, bwc
-            )
-        })
-    } else {
-        cl <- parallel::makeCluster(nw, outfile = nullfile())
-        on.exit(parallel::stopCluster(cl), add = TRUE)
-        export <- c(
-            "logf", "fg", "deconvolute_gspec", "gspecs", "nfit",
-            "smopts", "delta", "sfr", "wshw", "force", "bwc"
-        )
-        parallel::clusterExport(cl, export, envir = environment())
-        parallel::parLapply(cl, seq_along(gspecs), function(i) {
-            opts <- options(toscutil.logf.sep1 = sprintf(" PID %d ", Sys.getpid()))
-            on.exit(options(opts), add = TRUE)
-            deconvolute_gspec(
-                gspecs[[i]], nfit, smopts, delta, sfr[[i]],
-                wshw[[i]], force, bwc
-            )
-        })
-    }
-
+    gdecons <- mcmapply(nw, deconvolute_gspec, gspecs, nfit, smopts, delta, sfr, wshw, force, bwc)
     logf("Converting deconvolution results to class '%s'", rtyp)
-    convert_func <- get("as_%s", rtyp)
-    do.call(convert_func, c(decons, cnvpar))
-
+    # robj <- as_rtyp(gdecons) # TODO
+    robj <- gdecons
     duration <- format(round(Sys.time() - starttime, 3))
     logf("Finished deconvolution of %s in %s", nfstr, duration)
-
-    obj
+    robj
 }
 
 # Public API #####
 
 #' @export
 #' @rdname deconvolute
-generate_lorentz_curves <- function(# Parameters for getting spectra objects
+generate_lorentz_curves <- function( # Parameters for getting spectra objects
                                     data_path,
                                     file_format = "bruker",
                                     make_rds = FALSE,
@@ -176,18 +159,18 @@ generate_lorentz_curves <- function(# Parameters for getting spectra objects
                                     nworkers = 1,
                                     force = FALSE,
                                     verbose = TRUE) {
-    args <- check_args()
+    args <- check_args_generate_lorentz_curves()
     args <- rm(data_path, file_format, expno, procno, envir = args)
     args$gspecs <- as_gspecs(data_path, file_format, expno, procno)
     gdecons <- do.call(deconvolute_gspecs, args)
-    decons2 <- as_decons2(gdecons)
-    store_as_rds(decons2, make_rds, data_path)
-    if (length(decons2) == 1) decons2[[1]] else decons2
+    decons1 <- as_decons1(gdecons)
+    store_as_rds(decons1, make_rds, data_path)
+    if (length(decons1) == 1) decons1[[1]] else decons1
 }
 
 #' @export
 #' @rdname deconvolute
-generate_lorentz_curves_sim <- function(# Parameters for getting spectra objects
+generate_lorentz_curves_sim <- function( # Parameters for getting spectra objects
                                         data_path,
                                         file_format = "bruker",
                                         make_rds = FALSE,
@@ -214,14 +197,17 @@ generate_lorentz_curves_sim <- function(# Parameters for getting spectra objects
 # Private Helpers #####
 
 rm_water_signal <- function(x, wshw, bwc) {
-    if (!is_gspec(x)) stop("Input must be a gspec object, not ", class(x))
-    if (!version %in% 1:2) stop("version be 1 or 2")
+    check_args(rm_water_signal)
     logf("Removing water signal")
     if (bwc) {
         wsr <- enrich_wshw(x, wshw)
         left <- wsr$left_dp
         right <- wsr$right_dp
-        idx_wsr <- right:left # Order, i.e. `right:left` instead of `left:right`, is important here, because `right` and `left` are floats. Example: `right <- 3.3; left <- 1.4` ==> `right:left == c(3.3, 2.3)` and `left:right == c(1.4, 2.4)`.
+        idx_wsr <- right:left
+        # Order, is important here, because right and left are floats. Example:
+        # right <- 3.3; left <- 1.4
+        # right:left == c(3.3, 2.3)
+        # left:right == c(1.4, 2.4)
     } else {
         ppm_center <- (x$ppm[1] + x$ppm[length(x$ppm)]) / 2
         idx_wsr <- which(min(wshw) < x$ppm & x$ppm < max(wshw))
@@ -304,39 +290,41 @@ smooth_signals <- function(spec, reps = 2, k = 5, verbose = TRUE) {
 #' @return Returns the modified `spec` list with the `peak` component updated to indicate which peaks are considered significant based on their score relative to the SFR and the `delta` parameter. Peaks within the SFR are marked with a specific region code ("sfrl" for peaks in the left SFR and "sfrr" for peaks in the right SFR). Peaks in the normal region have the region-code "norm".
 #' @details The function first identifies peaks within the SFR by comparing their center positions against the SFR boundaries. If peaks are found within the SFR, it calculates the mean and standard deviation of their scores to establish a filtering threshold. Peaks with scores below this threshold are considered low and filtered out. If no peaks are found within the SFR and `force` is FALSE, the function stops and issues an error message. If `force` is TRUE, the function proceeds without filtering, potentially increasing runtime.
 #' @examples
-#' spec <- list(
-#'     peak = list(score = c(1, 5, 2), center = c(1, 2, 3)),
-#'     sdp = c(3, 2, 1),
-#'     sfr = list(left_sdp = 2.8, right_sdp = 1.2)
-#' )
-#' rm3 <- filtered_spec <- filter_peaks(spec)
-#' rm2 <- filtered_spec <- filter_peaks(spec, delta = 1)
-filter_peaks <- function(gspec, delta = 6.4, force = FALSE, version = 1) {
-    check_args_filter_peaks()
-    logf("Removing peaks with low scores")
-    peak_score <- gspec$peak$score
-    peak_defined <- !is.na(gspec$peak$left) & !is.na(gspec$peak$center) & !is.na(gspec$peak$right)
-    if (version == 1) {
-        sfr <- enrich_sfr(gspec, gspec$sfr)
-    }
-
-    in_left_sfr <- gspec$sdp[gspec$peak$center] >= gspec$sfr$left_sdp
-    in_right_sfr <- gspec$sdp[gspec$peak$center] <= gspec$sfr$right_sdp
-    in_sfr <- in_left_sfr | in_right_sfr
-
-    if (any(in_sfr)) {
-        mu <- mean(peak_score[in_sfr])
-        sigma <- sd(peak_score[in_sfr])
+#' peak <- list(score = c(1, 5, 2), center = c(1, 2, 3))
+#' sdp <- c(3, 2, 1)
+#' gspec <- named(peak, sdp)
+#' sfr <- list(left_sdp = 2.8, right_sdp = 1.2)
+#' rm3 <- filtered_gspec <- filter_peaks(gspec, sfr)
+#' rm2 <- filtered_gspec <- filter_peaks(gspec, sfr, delta = 1)
+filter_peaks <- function(gspec, sfr, delta = 6.4, force = FALSE, bwc = 1) {
+    check_args(filter_peaks)
+    logf("Removing peaks with low pscores")
+    sdp <- gspec$sdp
+    ppm <- gspec$ppm
+    plb <- gspec$peak$left
+    prb <- gspec$peak$right
+    pct <- gspec$peak$center
+    psc <- gspec$peak$score
+    pok <- !is.na(plb) & !is.na(pct) & !is.na(prb)
+    if (bwc < 1) {
+        sfr <- enrich_sfr(gspec, sfr)
+        in_left_sfr <- sdp[pct] >= sfr$left_sdp
+        in_right_sfr <- sdp[pct] <= sfr$right_sdp
     } else {
-        if (force) {
-            logf("No signals found in signal free region. This is a clear indiciation that the deconvolution parameters are not set correctly. Continuing anyways without dynamic peak filtering, because `force` is TRUE. Note that this might increase runtime drastically.")
-            mu <- 0
-            sigma <- 0
-        } else {
-            stop("No signals found in signal free region. Please double check deconvolution parameters.")
-        }
+        in_left_sfr <- ppm[pct] >= max(sfr)
+        in_right_sfr <- ppm[pct] <= min(sfr)
     }
-    gspec$peak$high <- peak_defined & (peak_score > mu + delta * sigma)
+    in_sfr <- in_left_sfr | in_right_sfr
+    if (any(in_sfr)) {
+        mu <- mean(psc[in_sfr])
+        sigma <- sd(psc[in_sfr])
+    } else {
+        if (!force) stop("No signals found in signal free region. Please double check deconvolution parameters.")
+        logf("No signals found in signal free region. This is a clear indiciation that the deconvolution parameters are not set correctly. Continuing anyways without dynamic peak filtering, because `force` is TRUE. Note that this might increase runtime drastically.")
+        mu <- 0
+        sigma <- 0
+    }
+    gspec$peak$high <- pok & (psc > mu + delta * sigma)
     gspec$peak$region <- "norm"
     gspec$peak$region[in_left_sfr] <- "sfrl"
     gspec$peak$region[in_right_sfr] <- "sfrr"
@@ -420,3 +408,4 @@ store_as_rds <- function(decons, make_rds, data_path) {
         }
     }
 }
+

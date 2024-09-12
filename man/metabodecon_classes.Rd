@@ -22,9 +22,9 @@ A short description of each class is given in the listing below.
 \item \code{decon2}: One deconvoluted NMR spectrum stored in \code{\link[=deconvolute_gspec]{deconvolute_gspec()}} format
 \item \code{alignment}: One aligned NMR spectrum
 \item \code{spectra}: List of multiple NMR spectra
-\item \code{decons1}: List of multiple deconvoluted NMR stored in \code{\link[=MetaboDecon1D]{MetaboDecon1D()}} format
-\item \code{decons2}: List of multiple deconvoluted NMR stored in \code{\link[=generate_lorentz_curves]{generate_lorentz_curves()}} format
-\item \code{decons3}: List of multiple deconvoluted NMR stored in \code{\link[=deconvolute_gspec]{deconvolute_gspec()}} format
+\item \code{decons0}: List of multiple deconvoluted NMR stored in \code{\link[=MetaboDecon1D]{MetaboDecon1D()}} format
+\item \code{decons1}: List of multiple deconvoluted NMR stored in \code{\link[=generate_lorentz_curves]{generate_lorentz_curves()}} format
+\item \code{decons2}: List of multiple deconvoluted NMR stored in \code{\link[=deconvolute_gspec]{deconvolute_gspec()}} format
 \item \code{alignments}: List of multiple aligned NMR spectra
 }
 

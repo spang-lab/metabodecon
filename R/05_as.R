@@ -12,6 +12,7 @@
 #' sim_01_gspec <- as_gspec(sim_01_spectrum)
 as_gspec <- function(x, sf = c(1e3, 1e6)) {
     if (is_gspec(x)) return(x)
+    if (is_char(x)) x <- read_spectrum(x)
     if (!is_spectrum(x)) stop("Input must be a spectrum object, not ", class(x))
     y_raw <- x$si # Raw signal intensities
     y_scaled <- y_raw / sf[2] # Scaled signal intensities
@@ -114,10 +115,9 @@ as_decon1 <- function(x) {
     ))
 }
 
-as_decons2 <- function(x) {
-    if (!is_gdecons(x)) stop("Input must be a gdecons object, not ", class(x))
-    decons2 <- lapply(gdecons, as_decon1)
-    names(decons2) <- names(x)
-    class(decons2) <- "decons2"
-    decons2
+as_decons1 <- function(x) {
+    decons1 <- lapply(x, as_decon1)
+    names(decons1) <- names(x)
+    class(decons1) <- "decons1"
+    decons1
 }

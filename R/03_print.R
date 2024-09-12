@@ -45,7 +45,7 @@ collapse <- function(x, sep = ", ", last = NULL) {
 logf <- function(fmt,
                  ...,
                  file = .Options$toscutil.logf.file %||% "",
-                 append = .Options$toscutil.logf.append %||% FALSE,
+                 append = .Options$toscutil.logf.append %||% TRUE,
                  prefix = .Options$toscutil.logf.prefix %||% function() now_ms(usetz = FALSE, color = "\033[1;30m"),
                  sep1 = .Options$toscutil.logf.sep1 %||% " ",
                  sep2 = .Options$toscutil.logf.sep2 %||% "",
@@ -100,8 +100,8 @@ print.decon1 <- function(x, name = FALSE, ...) {
 }
 
 #' @export
-print.decons2 <- function(x, ...) {
-    catf("decons2 object with %s decon1 elements\n", length(x))
+print.decons1 <- function(x, ...) {
+    catf("decons1 object with %s decon1 elements\n", length(x))
     invisible(sapply(x, print, name = TRUE))
 }
 
@@ -109,22 +109,25 @@ print.decons2 <- function(x, ...) {
 
 #' @export
 print.gspec <- function(x, name = FALSE, ...) {
-    fmt <- "%sgspec object (%d dp, %.1f to %.1f ppm)\n"
-    namestr <- if (name) paste0(x$name %||% "NULL", ": ") else ""
-    catf(fmt, namestr, length(x$ppm), max(x$ppm), min(x$ppm))
+    # fmt <- "%sgspec object (%d dp, %.1f to %.1f ppm)\n"
+    # namestr <- if (name) paste0(x$name %||% "NULL", ": ") else ""
+    # catf(fmt, namestr, length(x$ppm), max(x$ppm), min(x$ppm))
+    str(x, 1)
 }
 
 #' @export
 print.gspecs <- function(x, ...) {
-    catf("gspecs object with %s gspec elements\n", length(x))
-    invisible(sapply(x, print, name = TRUE))
+    # catf("gspecs object with %s gspec elements\n", length(x))
+    # invisible(sapply(x, print, name = TRUE))
+    str(x, 2, give.attr = FALSE)
 }
 
 #' @export
 print.gdecon <- function(x, ...) {
-    msg <- "gdecon object (%d dp, %.1f to %.1f ppm, %d peaks)\n"
-    n <- length(x$ppm)
-    catf(msg, x$n, max(x$ppm), min(x$ppm), sum(x$peak$high))
+    # msg <- "gdecon object (%d dp, %.1f to %.1f ppm, %d peaks)\n"
+    # n <- length(x$ppm)
+    # catf(msg, x$n, max(x$ppm), min(x$ppm), sum(x$peak$high))
+    str(x, 1)
 }
 
 #' @export

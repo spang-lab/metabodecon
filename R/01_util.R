@@ -326,6 +326,71 @@ set <- function(...) {
     obj
 }
 
+
+# Parallelization #####
+
+#' @noRd
+#' @description Multi core version of mapply with automatic logging of worker output. For `nw == 1` normal `mapply` is used.
+mcmapply <- function(nw, FUN, ..., loadpkg = TRUE, log = TRUE) {
+    if (nw == 1) return(mapply(FUN, ..., SIMPLIFY = FALSE))
+    logf("Creating pool of worker processes")
+    cl <- makeCluster(nw)
+    on.exit(stopCluster(cl), add = TRUE)
+    if (loadpkg) {
+        clusterCall(cl, library, "metabodecon", character.only = TRUE)
+    }
+    if (log) {
+        logfiles <- get_worker_logs(nw)
+        logf("For progress output see:")
+        sapply(logfiles, logf)
+        clusterApply(cl, logfiles, sink, append = TRUE, type = "output")
+    }
+    clusterMap(cl, FUN, ..., SIMPLIFY = FALSE)
+}
+
+#' @noRd
+#' @description Like [mcmapply()], but with live output. Disadvantages:
+#' - color formatting is lost
+#' - feels not as stable as mcmapply
+mimapply <- function(nw, FUN, ..., loadpkg = FALSE, log = TRUE) {
+    if (nw == 1) return(mapply(FUN, ..., SIMPLIFY = FALSE))
+    mirai::daemons(nw)
+    on.exit(mirai::daemons(0))
+    if (loadpkg) mirai::everywhere(library(metabodecon))
+    logfiles <- get_worker_logs(nw)
+    m <- mirai::mirai_map(logfiles, sink, append = TRUE, type = "output")
+    argslist <- mapply(list, ..., SIMPLIFY = FALSE)
+    lognames <- sapply(logfiles, basename, USE.NAMES = FALSE)
+    bytes_of_log <- bytes_printed <- rep(0, nw)
+    m <- mirai::mirai_map(argslist, function(args) do.call(FUN, args), FUN = FUN)
+    i <- 1
+    while (TRUE) {
+        mirai_resolved <- !mirai::unresolved(m)
+        bytes_of_log <- sapply(logfiles, function(x) file.info(x)$size)
+        if (mirai_resolved && all(bytes_of_log == bytes_printed)) break
+        for (j in seq_along(logfiles)) {
+            if (bytes_of_log[j] == bytes_printed[j]) next
+            new_lines <- readLines_from_pos(logfiles[j], bytes_printed[j])
+            for (line in new_lines) cat(paste(lognames[j], line, sep = ": "), "\n")
+            bytes_printed[j] <- bytes_of_log[j]
+        }
+        if (mirai_resolved && all(bytes_of_log == bytes_printed)) break
+        Sys.sleep(0.01)
+        i <- i + 1
+    }
+    obj <- m[]
+    names(obj) <- NULL
+    invisible(obj)
+}
+
+readLines_from_pos <- function(file, pos) {
+    con <- file(file, "r")
+    seek(con, where = pos, origin = "start")
+    lines <- readLines(con)
+    close(con)
+    lines
+}
+
 # Doc Pages #####
 
 #' @title Metabodecon Classes
@@ -341,9 +406,9 @@ set <- function(...) {
 #'  -  `decon2`: One deconvoluted NMR spectrum stored in [deconvolute_gspec()] format
 #'  -  `alignment`: One aligned NMR spectrum
 #'  -  `spectra`: List of multiple NMR spectra
-#'  -  `decons1`: List of multiple deconvoluted NMR stored in [MetaboDecon1D()] format
-#'  -  `decons2`: List of multiple deconvoluted NMR stored in [generate_lorentz_curves()] format
-#'  -  `decons3`: List of multiple deconvoluted NMR stored in [deconvolute_gspec()] format
+#'  -  `decons0`: List of multiple deconvoluted NMR stored in [MetaboDecon1D()] format
+#'  -  `decons1`: List of multiple deconvoluted NMR stored in [generate_lorentz_curves()] format
+#'  -  `decons2`: List of multiple deconvoluted NMR stored in [deconvolute_gspec()] format
 #'  -  `alignments`: List of multiple aligned NMR spectra
 #'
 #'  More details can be found in Metabodecon's online documentation at [Metabodecon Classes](https://spang-lab.github.io/metabodecon/articles/Metabodecon-Classes.html).

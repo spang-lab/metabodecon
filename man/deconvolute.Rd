@@ -21,18 +21,25 @@ generate_lorentz_curves(
   ask = TRUE,
   nworkers = 1,
   force = FALSE,
-  verbose = TRUE,
-  rtyp = "decons3",
-  ...
+  verbose = TRUE
 )
 
 generate_lorentz_curves_sim(
   data_path,
+  file_format = "bruker",
+  make_rds = FALSE,
+  expno = 10,
+  procno = 10,
   sfr = c(3.58, 3.42),
   wshw = 0,
+  nfit = 10,
+  smopts = c(2, 5),
   delta = 0.1,
+  sf = c(1000, 1e+06),
   ask = FALSE,
-  ...
+  nworkers = 1,
+  force = FALSE,
+  verbose = TRUE
 )
 }
 \arguments{
@@ -64,6 +71,8 @@ Further arguments to be passed to \code{\link[=generate_lorentz_curves]{generate
 \item{force}{If FALSE, the function stops with an error message if no peaks are found in the signal free region (SFR), as these peaks are required as a reference for peak filtering. If TRUE, the function instead proceeds without peak filtering, potentially increasing runtime and memory usage significantly.}
 
 \item{verbose}{Logical. Whether to print log messages during the deconvolution process.}
+
+\item{...}{Further arguments to be passed to internal subfunctions.}
 
 \item{bwc}{Whether to produce results backwards compatible with \code{\link[=MetaboDecon1D]{MetaboDecon1D()}} and \code{\link[=generate_lorentz_curves]{generate_lorentz_curves()}}. If \code{bwc < 2}, a \code{decon1} object is returned instead of a \code{decon2} object. If \code{bwc < 1}, fixes/improvements introduced after version 'metabodecon v1.0' are not used. Support for \code{bwc < 1} will be removed in 'metabodecon v2.0' and will result in a warning for 'metabodecon v1.x' with \code{x >= 1.2}.}
 

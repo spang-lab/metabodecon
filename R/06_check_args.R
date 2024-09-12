@@ -1,54 +1,70 @@
-check_args <- function(fn = caller(), env = parent.frame()) {
-    browser()
-    cn <- paste0("check_args_", fn)
-    cf <- get(cn, envir = environment(check_args))
-    cf(env)
+check_args <- function(func,
+                       envir = parent.frame(),
+                       asenv = TRUE) {
+    name <- deparse(substitute(func))
+    check <- check[[name]]
+    if (is.null(check)) stop("No check defined for", name)
+    check(envir)
+    if (asenv) return(invisible(envir))
+    keys <- names(formals(func))
+    sapply(keys, get, envir = envir, simplify = FALSE)
 }
 
-check_args_generate_lorentz_curves <- function(e = parent.frame()) {
-    stopifnot(
-        is_char(data_path, 1) ||
-        is_spectrum(data_path) || is_spectra(data_path) ||
-        is_gspec(data_path) || is_gspecs(data_path)
-    )
-    stopifnot(is_char(file_format, 1, "(bruker|jcampdx)"))
-    stopifnot(is_bool(make_rds, 1) || is_char(make_rds, 1))
-    stopifnot(is_int(expno, 1))
-    stopifnot(is_int(procno, 1))
+# checks #####
+check <- list()
+
+## rm_water_signal #####
+check$rm_water_signal <- function(e) {
+    stopifnot(is_gspec(e$x))
+    stopifnot(is_num(e$bwc, 1))
+}
+
+## generate_lorentz_curves #####
+check$generate_lorentz_curves <- function(e) {
+    x <- e$data_path
+    stopifnot(is_char(x, 1) || is_spectrum(x) || is_spectra(x) || is_gspec(x) || is_gspecs(x))
+    stopifnot(is_char(e$file_format, 1, "(bruker|jcampdx)"))
+    stopifnot(is_bool(e$make_rds, 1) || is_char(e$make_rds, 1))
+    stopifnot(is_int(e$expno, 1))
+    stopifnot(is_int(e$procno, 1))
     stopifnot(is_int(e$nfit, 1))
     stopifnot(is_int(e$smopts, 2))
     stopifnot(is_num(e$delta, 1))
     stopifnot(is_num(e$sfr, 2))
     stopifnot(is_num(e$wshw, 1))
-    stopifnot(is_bool(e$bwc, 1))
+    stopifnot(is_num(e$bwc, 1))
     stopifnot(is_int(e$rm_ws_version, 1))
     stopifnot(is_bool(e$force, 1))
 }
 
-check_args_deconvolute_gspec <- function(e = parent.frame()) {
+## deconvolute_gspec #####
+check$deconvolute_gspec <- function(e) {
     stopifnot(is_gspec(e$gspec))
     stopifnot(is_int(e$nfit, 1))
     stopifnot(is_int(e$smopts, 2))
     stopifnot(is_num(e$delta, 1))
     stopifnot(is_num(e$sfr, 2))
     stopifnot(is_num(e$wshw, 1))
-    stopifnot(is_bool(e$bwc, 1))
-    stopifnot(is_int(e$rm_ws_version, 1))
     stopifnot(is_bool(e$force, 1))
+    stopifnot(is_num(e$bwc, 1))
 }
 
-check_args_deconvolute_gspecs <- function(e = parent.frame()) {
+## deconvolute_gspecs #####
+check$deconvolute_gspecs <- function(e) {
+    n <- length(e$gspecs)
     stopifnot(is_gspecs(e$gspecs))
     stopifnot(is_int(e$nfit, 1))
     stopifnot(is_int(e$smopts, 2))
     stopifnot(is_num(e$delta, 1))
-    stopifnot(is_num(e$sfr, 2) || is_list_of_nums(sfr, length(e$x), 2))
-    stopifnot(is_num(e$wsr, 2) || is_list_of_nums(wsr, length(e$x), 2))
-    stopifnot(is_bool(e$bwc, 1))
-    stopifnot(is_int(e$rm_ws_version, 1))
+    stopifnot(is_num(e$sfr, 2) || is_list_of_nums(sfr, n, 2))
+    stopifnot(is_num(e$wshw, 1) || is_list_of_nums(wshw, n, 1))
+    stopifnot(is_bool(e$ask, 1))
     stopifnot(is_bool(e$force, 1))
+    stopifnot(is_bool(e$verbose, 1))
+    stopifnot(is_num(e$bwc, 1))
 }
 
-check_args_filter_peaks <- function(e = parent.frame()) {
+## filter_peaks #####
+check$filter_peaks <- function(e) {
     stopifnot(is_gspec(e$gspec))
 }

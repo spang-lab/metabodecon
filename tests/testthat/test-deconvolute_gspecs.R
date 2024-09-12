@@ -1,19 +1,22 @@
 library(testthat)
 
 test_that("deconvolute works", {
-    x <- read_spectra(metabodecon_file("sim_subset"))
-    gspecs <- as_gspecs(x)
-    rtyp <- "decons3"
-    sfrs <- list(sim_01 = c(3.58, 3.42), sim_02 = c(3.58, 3.42))
-    wsrs <- list(sim_01 = c(3.50, 3.50), sim_02 = c(3.50, 3.50))
+    gspecs <- as_gspecs(read_spectra(metabodecon_file("bruker/urine")))
     nfit <- 3
     smopts <- c(1, 5)
     delta <- 0.1
+    sfr <- c(3.58, 3.42)
+    wshw <- 0
     ask <- FALSE
-    nworkers <- 1
+    nworkers <- 2
     verbose <- TRUE
     force <- FALSE
-    obj <- deconvolute_gspecs(gspecs, rtyp, sfrs, wsrs, nfit, smopts, delta, ask, nworkers, verbose, force)
+    bwc <- 1
+    rt(obj <- deconvolute_gspecs(
+        gspecs, nfit, smopts, delta, sfr, wshw,
+        ask, force, verbose, bwc,
+        nworkers
+    ))
     expect_true(inherits(x, "spectra"))
     expect_true(inherits(obj, rtyp))
     expect_true(length(obj, length(x)))

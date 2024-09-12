@@ -144,3 +144,17 @@ zip_persistent <- function() {
     normalizePath(p, "/", mustWork = FALSE)
 }
 
+tmpfile <- function(pattern = "file", fileext = "") {
+    tempfile(pattern, tmpdir(create = TRUE), fileext)
+}
+
+get_worker_logs <- function(n, create = TRUE) {
+    timestamp <- format(Sys.time(), "%Y%m%d_%H%M%OS3")
+    timestamp <- gsub(".", "_", timestamp, fixed = TRUE)
+    logdirrel <- file.path("logs", timestamp)
+    logdir <- tmpdir(subdir = logdirrel, create = TRUE)
+    logfiles <- paste0("worker_", seq_len(n), ".log")
+    logpaths <- file.path(logdir, logfiles)
+    if (create) file.create(logpaths)
+    logpaths
+}
