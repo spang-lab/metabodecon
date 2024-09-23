@@ -1,15 +1,15 @@
-# Internal #####
+# Public API #####
 
 #' @name deconvolute
 #'
-#' @title
-#'  Generate Lorentz Curves from NMR Spectra
+#' @title Deconvolute one or more NMR spectra
 #'
 #' @description
-#'  Deconvolutes NMR spectra by modeling each detected signal within a spectrum as Lorentz Curve.
-#'  \loadmathjax
+#' Deconvolutes NMR spectra by modeling each detected signal within a spectrum as Lorentz Curve.
+#' \loadmathjax
 #'
 #' @inheritParams read_spectrum
+#'
 #' @param ... Further arguments to be passed to internal subfunctions.
 #' @param ask Logical. Whether to ask for user input during the deconvolution process. If FALSE, the provided default values will be used.
 #' @param bwc Whether to produce results backwards compatible with [MetaboDecon1D()] and [generate_lorentz_curves()]. If `bwc < 2`, a `decon1` object is returned instead of a `decon2` object. If `bwc < 1`, fixes/improvements introduced after version 'metabodecon v1.0' are not used. Support for `bwc < 1` will be removed in 'metabodecon v2.0' and will result in a warning for 'metabodecon v1.x' with `x >= 1.2`.
@@ -25,18 +25,16 @@
 #' @param smopts Numeric vector with two entries: the number of smoothing iterations and the number of data points to use for smoothing (must be odd).
 #' @param verbose Logical. Whether to print log messages during the deconvolution process.
 #' @param wshw Half-width of the water artifact in ppm.
-#'  Further arguments to be passed to [generate_lorentz_curves()].
 #'
 #' @return
-#'  A 'GLCDecon' as described in [Metabodecon Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
+#' A 'GLCDecon' as described in [Metabodecon Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
 #'
 #' @details
-#'  First, an automated curvature based signal selection is performed. Each signal is represented by 3 data points to allow the determination of initial Lorentz curves. These Lorentz curves are then iteratively adjusted to optimally approximate the measured spectrum.
+#' First, an automated curvature based signal selection is performed. Each signal is represented by 3 data points to allow the determination of initial Lorentz curves. These Lorentz curves are then iteratively adjusted to optimally approximate the measured spectrum.
 #'
-#'  [generate_lorentz_curves_sim()] is identical to [generate_lorentz_curves()] except for the defaults, which are optimized for deconvoluting the 'Sim' dataset, shipped with 'metabodecon'. The 'Sim' dataset is a simulated dataset, which is much smaller than real NMR spectra (1309 datapoints instead of 131072) and lacks a water signal. This makes it ideal for use in examples or as a default value for functions. However, the default values for `sfr`, `wshw`, and `delta` in the "normal" [generate_lorentz_curves()] function are not optimal for this dataset. To avoid having to define the optimal parameters repeatedly in examples, this function is provided to deconvolute the "Sim" dataset with suitable parameters.
+#' [generate_lorentz_curves_sim()] is identical to [generate_lorentz_curves()] except for the defaults, which are optimized for deconvoluting the 'Sim' dataset, shipped with 'metabodecon'. The 'Sim' dataset is a simulated dataset, which is much smaller than real NMR spectra (1309 datapoints instead of 131072) and lacks a water signal. This makes it ideal for use in examples or as a default value for functions. However, the default values for `sfr`, `wshw`, and `delta` in the "normal" [generate_lorentz_curves()] function are not optimal for this dataset. To avoid having to define the optimal parameters repeatedly in examples, this function is provided to deconvolute the "Sim" dataset with suitable parameters.
 #'
 #' @examples
-#'
 #' ## Define the paths to the example datasets we want to deconvolute:
 #' ## `sim_dir`: directory containing 16 simulated spectra
 #' ## `sim_01`: path to the first spectrum in the `sim` directory
@@ -87,29 +85,81 @@
 #' }
 NULL
 
-deconvolute_gspec <- function(gspec,
-                              nfit, smopts, delta, sfr, wshw,
-                              force, bwc) {
-    check_args(deconvolute_gspec)
-    reps <- smopts[1]
-    k <- smopts[2]
-    logf("Starting deconvolution of %s", gspec$name)
-    gspec <- rm_water_signal(gspec, wshw, bwc)
-    gspec <- rm_negative_signals(gspec)
-    gspec <- smooth_signals(gspec, reps, k, bwc)
-    gspec <- find_peaks(gspec)
-    gspec <- filter_peaks(gspec, sfr, delta, force, bwc)
-    gspec <- fit_lorentz_curves(gspec, nfit)
-    logf("Finished deconvolution of %s", gspec$name)
-    structure(gspec, class = "gdecon")
+#' @export
+#' @rdname deconvolute
+generate_lorentz_curves <- function(data_path,
+                                    file_format = "bruker",
+                                    make_rds = FALSE,
+                                    expno = 10,
+                                    procno = 10,
+                                    raw = TRUE,
+                                    nfit = 10,
+                                    smopts = c(2, 5),
+                                    delta = 6.4,
+                                    sfr = c(11.44494, -1.8828),
+                                    wshw = 0.1527692,
+                                    ask = TRUE,
+                                    force = FALSE,
+                                    verbose = TRUE,
+                                    nworkers = 1) {
+    check_args_generate_lorentz_curves()
+    spectra <- as_spectra(
+        data_path, file_format, expno, procno, raw,
+        silent = !verbose, force = force
+    )
+    gdecons <- deconvolute_gspecs(
+        gspecs = as_gspecs(x = spectra),
+        nfit, smopts, delta, sfr, wshw,
+        ask, force, verbose,
+        bwc = 1, nworkers = nworkers, rtyp = "decons1"
+    )
+    decons1 <- as_decons1(gdecons)
+    store_as_rds(decons1, make_rds, data_path)
+    if (length(decons1) == 1) decons1[[1]] else decons1
 }
 
+#' @export
+#' @rdname deconvolute
+generate_lorentz_curves_sim <- function(data_path,
+                                        file_format = "bruker",
+                                        make_rds = FALSE,
+                                        expno = 10,
+                                        procno = 10,
+                                        raw = TRUE,
+                                        nfit = 10,
+                                        smopts = c(2, 5),
+                                        delta = 0.1,
+                                        sfr = c(3.58, 3.42),
+                                        wshw = 0,
+                                        ask = FALSE,
+                                        force = FALSE,
+                                        verbose = TRUE,
+                                        nworkers = 1) {
+    generate_lorentz_curves(
+        data_path, file_format, make_rds, expno, procno, raw,
+        nfit, smopts, delta, sfr, wshw,
+        ask, force, verbose, nworkers
+    )
+}
+
+# Internal #####
+
 deconvolute_gspecs <- function(gspecs,
-                               nfit, smopts, delta, sfr, wshw,
-                               ask, force, verbose, bwc,
-                               nworkers) {
+                               nfit = 3,
+                               smopts = c(2, 5),
+                               delta = 0.1,
+                               sfr = c(3.58, 3.42),
+                               wshw = 0,
+                               ask = FALSE,
+                               force = FALSE,
+                               verbose = TRUE,
+                               bwc = 2,
+                               nworkers = 1,
+                               rtyp = "gdecons") {
+
     # Check args & configure logging
-    check_args(deconvolute_gspecs)
+    args <- check_args(deconvolute_gspecs)
+    gspecs <- as_gspecs(gspecs)
     opts <- if (!verbose) options(toscutil.logf.file = nullfile())
     on.exit(options(opts), add = TRUE)
 
@@ -119,101 +169,82 @@ deconvolute_gspecs <- function(gspecs,
     nw <- min(nw, length(gspecs))
     nfstr <- if (ns == 1) "1 spectrum" else sprintf("%d spectra", ns)
     nwstr <- if (nw == 1) "1 worker" else sprintf("%d workers", nw)
-    rtyp <- if (bwc >= 2) "decons1" else "decons0"
-    as_rtyp <- if (bwc >= 2) as_decons2 else as_decons1
     adjno <- get_adjno(gspecs, sfr, wshw, ask)
     sfr <- get_sfr(gspecs, sfr, ask, adjno)
     wshw <- get_wshw(gspecs, wshw, ask, adjno)
     smopts <- get_smopts(gspecs, smopts)
+    rtypsub <- gsub("decons", "decon", rtyp)
 
     # Deconvolute spectra
     logf("Starting deconvolution of %s using %s", nfstr, nwstr)
     starttime <- Sys.time()
-    gdecons <- mcmapply(nw, deconvolute_gspec, gspecs, nfit, smopts, delta, sfr, wshw, force, bwc)
-    logf("Converting deconvolution results to class '%s'", rtyp)
-    # robj <- as_rtyp(gdecons) # TODO
-    robj <- gdecons
+    gdecon_list <- mcmapply(nw, deconvolute_gspec, gspecs,
+        nfit, smopts, delta, sfr, wshw,
+        ask, force, verbose, bwc, nworkers, rtypsub)
+    robj <- convert(gdecon_list, to = args$rtyp)
     duration <- format(round(Sys.time() - starttime, 3))
     logf("Finished deconvolution of %s in %s", nfstr, duration)
     robj
 }
 
-# Public API #####
+deconvolute_gspec <- function(gspec,
+                              nfit = 3,
+                              smopts = c(2, 5),
+                              delta = 0.1,
+                              sfr = c(3.58, 3.42),
+                              wshw = 0,
+                              ask = FALSE,
+                              force = FALSE,
+                              verbose = TRUE,
+                              bwc = 2,
+                              nworkers = 1,
+                              rtyp = "gdecon") {
 
-#' @export
-#' @rdname deconvolute
-generate_lorentz_curves <- function( # Parameters for getting spectra objects
-                                    data_path,
-                                    file_format = "bruker",
-                                    make_rds = FALSE,
-                                    expno = 10,
-                                    procno = 10,
-                                    # Parameters for deconvolution
-                                    sfr = c(11.44494, -1.8828),
-                                    wshw = 0.1527692,
-                                    nfit = 10,
-                                    smopts = c(2, 5),
-                                    delta = 6.4,
-                                    sf = c(1e3, 1e6),
-                                    ask = TRUE,
-                                    nworkers = 1,
-                                    force = FALSE,
-                                    verbose = TRUE) {
-    args <- check_args_generate_lorentz_curves()
-    args <- rm(data_path, file_format, expno, procno, envir = args)
-    args$gspecs <- as_gspecs(data_path, file_format, expno, procno)
-    gdecons <- do.call(deconvolute_gspecs, args)
-    decons1 <- as_decons1(gdecons)
-    store_as_rds(decons1, make_rds, data_path)
-    if (length(decons1) == 1) decons1[[1]] else decons1
+    # Check args & configure logging
+    gspec <- as_gspec(gspec)
+    args <- check_args(deconvolute_gspec, asenv = FALSE)
+    gspec$dcp <- args[names(args) != "gspec"]
+    reps <- smopts[1]
+    k <- smopts[2]
+    opts <- if (!verbose) options(toscutil.logf.file = nullfile())
+    on.exit(options(opts), add = TRUE)
+
+    # Deconvolute gspec
+    logf("Starting deconvolution of %s", gspec$name)
+    gspec <- rm_water_signal(gspec, wshw, bwc)
+    gspec <- rm_negative_signals(gspec)
+    gspec <- smooth_signals(gspec, reps, k, bwc)
+    gspec <- find_peaks(gspec)
+    gspec <- filter_peaks(gspec, sfr, delta, force, bwc)
+    gspec <- fit_lorentz_curves(gspec, nfit)
+    gdecon <- as_gdecon(gspec)
+    robj <- convert(gdecon, to = rtyp)
+    logf("Finished deconvolution of %s", gspec$name)
+    robj
 }
-
-#' @export
-#' @rdname deconvolute
-generate_lorentz_curves_sim <- function( # Parameters for getting spectra objects
-                                        data_path,
-                                        file_format = "bruker",
-                                        make_rds = FALSE,
-                                        expno = 10,
-                                        procno = 10,
-                                        # Parameters for deconvolution
-                                        sfr = c(3.58, 3.42),
-                                        wshw = 0,
-                                        nfit = 10,
-                                        smopts = c(2, 5),
-                                        delta = 0.1,
-                                        sf = c(1e3, 1e6),
-                                        ask = FALSE,
-                                        nworkers = 1,
-                                        force = FALSE,
-                                        verbose = TRUE) {
-    generate_lorentz_curves(
-        data_path, file_format, make_rds, expno, procno, sfr, wshw,
-        nfit, smopts, delta, sf, ask, nworkers, force, verbose
-    )
-}
-
 
 # Private Helpers #####
 
-rm_water_signal <- function(x, wshw, bwc) {
+rm_water_signal <- function(x, wshw, bwc, sf = c(1e3, 1e6)) {
     check_args(rm_water_signal)
     logf("Removing water signal")
-    if (bwc) {
+    if (bwc >= 2) {
+        ppm_center <- (x$ppm[1] + x$ppm[length(x$ppm)]) / 2
+        idx_wsr <- which(min(wshw) < x$ppm & x$ppm < max(wshw))
+        x$y_nows <- x$y_scaled
+        x$y_nows[idx_wsr] <- min(y_nows)
+    } else {
         wsr <- enrich_wshw(x, wshw)
         left <- wsr$left_dp
         right <- wsr$right_dp
-        idx_wsr <- right:left
-        # Order, is important here, because right and left are floats. Example:
+        idx_wsr <- right:left # (1)
+        x$y_nows <- x$y_scaled
+        x$y_nows[idx_wsr] <- 0.01 / x$sf[2]
+        # (1) Order is important here, because right and left are floats. Example:
         # right <- 3.3; left <- 1.4
         # right:left == c(3.3, 2.3)
         # left:right == c(1.4, 2.4)
-    } else {
-        ppm_center <- (x$ppm[1] + x$ppm[length(x$ppm)]) / 2
-        idx_wsr <- which(min(wshw) < x$ppm & x$ppm < max(wshw))
     }
-    x$y_nows <- x$y_scaled
-    x$y_nows[idx_wsr] <- 0.01 / x$sf[2]
     x
 }
 
@@ -370,6 +401,19 @@ filter_peaks_v13 <- function(ppm, # x values in ppm
 lorentz <- function(x, x0, A, lambda) {
     # For details see [Wikipedia > Cauchy_distribution > #Properties_of_PDF](https://en.wikipedia.org/wiki/Cauchy_distribution#Properties_of_PDF), in particular the formula below sentence "In physics, a three-parameter Lorentzian function is often used".
     A * (lambda / (lambda^2 + (x - x0)^2))
+}
+
+lorentz_sup <- function(x, x0, A, lambda, lcp = NULL) {
+    if (is.list(lcp)) {
+        nams <- names(lcp)
+        if ("A" %in% nams) A <- lcp$A
+        if ("lambda" %in% nams) lambda <- lcp$lambda
+        if ("x_0" %in% nams) x0 <- lcp$x_0
+        if ("x0" %in% nams) x0 <- lcp$x0
+    }
+    sapply(x, function(xi) {
+        sum(abs(A * (lambda / (lambda^2 + (xi - x0)^2))))
+    })
 }
 
 #' @noRd

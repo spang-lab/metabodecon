@@ -1,4 +1,4 @@
-# Public #####
+# Public API #####
 
 #' @export
 #' @title Plot Spectrum

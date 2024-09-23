@@ -1,14 +1,21 @@
-# Type #####
+# Any type #####
 
-#' @noRd
+#' @name type_checking
+#' @title Check the type of an object
+#' @description Functions starting with `is_*` check objects for a specific type. Function `type()` is similar to `typeof` but also returns the length of the object for logical, integer, double, complex, character, and raw vectors. For other objects, it returns the class of the object.
+#' @param x The object to check.
+#' @param check_class Logical indicating whether to check the class of the object.
+#' @param check_contents Logical indicating whether to check the contents of the object.
+#' @return For `type()`, a character string indicating the type of the object. For `is_*` functions, a logical indicating whether the object is of the specified type.
 #' @examples
-#' type(1:5) # "integer(5)"
-#' type(NULL) # "NULL(0)"
-#' type("Hello") # "character(1)"
-#' type(1.0) # "numeric(1)"
-#' type(NA) # "logical(1)"
-#' type(c(NaN, Inf)) # "numeric(2)"
-#' type(structure(list(a="a", b=1:5), class = "abc")) # "abc"
+#' obj <- structure(list(a="a", b=1:5), class = "abc")
+#' type(obj)   # "abc"
+#' type(1:5)   # "integer(5)"
+#' type(NULL)  # "NULL(0)"
+#' type("Hi")  # "character(1)"
+#' type(1.0)   # "numeric(1)"
+#' type(NA)    # "logical(1)"
+#' type(NaN)   # "numeric(2)"
 type <- function(x) {
     typ <- typeof(x)
     if (typ %in% c("logical", "integer", "double", "complex", "character", "raw")) {
@@ -18,7 +25,85 @@ type <- function(x) {
     }
 }
 
-# String checking #####
+# S3 Singleton #####
+
+#' @export
+#' @rdname type_checking
+is_spectrum <- function(x,
+                        check_class = TRUE,
+                        check_contents = FALSE) {
+    # styler: off
+    if (check_class && !inherits(x, "spectrum")) return(FALSE)
+    if (!check_contents) return(TRUE)
+    if (!is.list(x)) return(FALSE)
+    mandatory <- c("si", "cs")
+    if (!all(mandatory %in% names(x))) return(FALSE)
+    # styler: on
+    return(TRUE)
+}
+
+#' @export
+#' @rdname type_checking
+
+is_gspec <- function(x) inherits(x, "gspec")
+
+#' @export
+#' @rdname type_checking
+is_gdecon <- function(x) inherits(x, "gdecon")
+
+#' @export
+#' @rdname type_checking
+is_decon0 <- function(x) {
+    is.list(x) && all(decon0_members %in% names(x))
+}
+
+#' @export
+#' @rdname type_checking
+is_decon1 <- function(x) inherits(x, "decon1")
+
+#' @export
+#' @rdname type_checking
+is_decon2 <- function(x) inherits(x, "decon1")
+
+# S3 Collection #####
+
+#' @export
+#' @rdname type_checking
+is_spectra <- function(x,
+                       check_class = TRUE,
+                       check_contents = FALSE,
+                       check_child_classes = FALSE) {
+    # styler: off
+    if (check_class && !inherits(x, "spectra")) return(FALSE)
+    if (check_child_classes && !all(sapply(x, is_spectrum))) return(FALSE)
+    if (!check_contents) return(TRUE)
+    if (!is.list(x)) return(FALSE)
+    if (!all(sapply(x, is_spectrum, check_contents = TRUE))) return(FALSE)
+    # styler: on
+    return(TRUE)
+}
+
+#' @export
+#' @rdname type_checking
+is_gspecs <- function(x) inherits(x, "gspecs")
+
+#' @export
+#' @rdname type_checking
+is_gdecons <- function(x) inherits(x, "gdecons")
+
+#' @export
+#' @rdname type_checking
+is_decons0 <- function(x) all(sapply(x, is_decon0))
+
+#' @export
+#' @rdname type_checking
+is_decons1 <- function(x) inherits(x, "decons1")
+
+#' @export
+#' @rdname type_checking
+is_decons2 <- function(x) inherits(x, "decons2")
+
+# String #####
 
 is_str_or_null <- function(x) {
     is.null(x) || (is.character(x) && length(x) == 1)
@@ -69,7 +154,7 @@ is_float_str <- function(x) {
     )
 }
 
-# Vector checking #####
+# Vector #####
 
 is_num <- function(x, n = NULL) {
     if (is.null(n)) {
@@ -94,7 +179,7 @@ is_bool <- function(x, n = NULL) {
     !is.null(x) && is.logical(x) && (is.null(n) || length(x) == n)
 }
 
-# List checking #####
+# List #####
 
 is_list_of_nums <- function(x, nl, nv) {
     if (is.null(nl) && is.null(nv)) {
@@ -110,26 +195,3 @@ all_identical <- function(x) {
     all(sapply(x, identical, x[[1]]))
 }
 
-# S3 Classes #####
-
-#' @export
-is_spectrum <- function(x,
-                        check_class = TRUE,
-                        check_contents = FALSE) {
-    # styler: off
-    if (check_class && !inherits(x, "spectrum")) return(FALSE)
-    if (!check_contents) return(TRUE)
-    if (!is.list(x)) return(FALSE)
-    mandatory <- c("si", "cs")
-    if (!all(mandatory %in% names(x))) return(FALSE)
-    # styler: on
-    return(TRUE)
-}
-
-is_gspec <- function(x) inherits(x, "gspec")
-
-is_gspecs <- function(x) inherits(x, "gspecs")
-
-is_gdecon <- function(x) inherits(x, "gdecon")
-
-is_gdecons <- function(x) inherits(x, "gdecons")

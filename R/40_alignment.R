@@ -10,7 +10,7 @@
 #' @examples
 #' sim_dir <- metabodecon_file("bruker/sim")
 #' spectra <- read_spectra(sim_dir)
-#' decons <- generate_lorentz_curves(spectra, sfr = c(3.42, 3.58), wshw = 0, delta = 0.1, ask = FALSE)
+#' decons <- generate_lorentz_curves_sim(spectra)
 #' aligned <- align_spectra(decons)
 #' str(aligned)
 align_spectra <- function(decons, maxShift = 50, maxCombine = 5) {

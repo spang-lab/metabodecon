@@ -48,13 +48,13 @@ A \code{spectrum} object as described in \href{https://spang-lab.github.io/metab
 Creates a spectrum object from the provided signal intensities, frequencies and chemical shifts.
 }
 \examples{
- si <- c(1, 1, 3, 7, 8, 3, 8, 5, 2, 1)
- cs_max <- 14.8
- cs_width <- 20.0
- fq_ref <- 600.25 * 1e6
- fq_width <- 12005
- spectrum <- make_spectrum(si, cs_max, cs_width, fq_ref, fq_width)
- spectrum2 <- make_spectrum(si, cs_max, cs_width, fq_ref, fq_width = 12010, force = FALSE)
+si <- c(1, 1, 3, 7, 8, 3, 8, 5, 2, 1)
+cs_max <- 14.8
+cs_width <- 20.0
+fq_ref <- 600.25 * 1e6
+fq_width <- 12005
+spectrum <- make_spectrum(si, cs_max, cs_width, fq_ref, fq_width)
+spectrum2 <- make_spectrum(si, cs_max, cs_width, fq_ref, fq_width = 12010, force = FALSE)
 }
 \seealso{
 Other {spectrum functions}: 

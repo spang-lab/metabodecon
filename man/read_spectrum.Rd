@@ -43,7 +43,6 @@ XX <- read_spectra(urine)
 str(XX)
 str(X1)
 stopifnot(all.equal(X1, XX$urine_1))
-
 # Below code shows how a spectrum stored in JCAMP-DX format can be read.
 # Reading files in this format is very slow (about 30s on the development
 # machine). So if possible, you should stick with the original Bruker
@@ -53,7 +52,6 @@ urine_1_dx <- system.file("example_datasets/jcampdx/urine/urine_1.dx", package =
 X1_dx <- read_spectrum(urine_1_dx, file_format = "jcampdx")
 stopifnot(all.equal(X1, X1_dx))
 }
-
 }
 \seealso{
 Other {spectrum functions}: 

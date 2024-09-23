@@ -1,4 +1,113 @@
-# General #####
+# S3 Methods for Singletons #####
+
+#' @name print_methods
+#' @title S3 Methods for Printing Metabodecon Objects
+#' @description S3 Methods for printing metabodecon objects as described in the [Metabodecon Classes].
+#' @param x The object to print.
+#' @param ... Not used. Only accepted to comply with generic [print()].
+#' @examples
+#' si <- c(1, 1, 3, 7, 8, 3, 8, 5, 2, 1)
+#' cs_max <- 14.8
+#' cs_width <- 20.0
+#' fq_ref <- 600.25 * 1e6
+#' fq_width <- 12005
+#' spectrum <- read_spectrum()
+#' print.spectrum(spectrum)
+NULL
+
+#' @export
+#' @rdname print_methods
+print.spectrum <- function(x, name = FALSE, ...) {
+    namestr <- if (name) paste0(x$meta$name %||% "NULL", ": ") else ""
+    fmt <- "%sspectrum object (%d dp, %.1f to %.1f ppm)\n"
+    catf(fmt, namestr, length(x$cs), max(x$cs), min(x$cs))
+}
+
+#' @export
+#' @rdname print_methods
+print.gspec <- function(x, name = FALSE, ...) {
+    # fmt <- "%sgspec object (%d dp, %.1f to %.1f ppm)\n"
+    # namestr <- if (name) paste0(x$name %||% "NULL", ": ") else ""
+    # catf(fmt, namestr, length(x$ppm), max(x$ppm), min(x$ppm))
+    str(x, 1)
+}
+
+#' @export
+#' @rdname print_methods
+print.gdecon <- function(x, name = FALSE, ...) {
+    # ppm <- x$ppm
+    # n <- length(ppm)
+    # name <- if (name) paste0(x$name %||% "NULL", ": ") else ""
+    # fmt <- "%sgdecon object (%d dp, %.1f to %.1f ppm, %d peaks)\n"
+    # catf(fmt, name, n, max(ppm), min(ppm), length(x$A))
+    str(x, 1)
+}
+
+#' @export
+#' @rdname print_methods
+print.decon1 <- function(x, name = FALSE, ...) {
+    ppm <- x$x_values_ppm
+    n <- length(ppm)
+    name <- if (name) paste0(x$filename %||% "NULL", ": ") else ""
+    fmt <- "%sdecon1 object (%d dp, %.1f to %.1f ppm, %d peaks)\n"
+    catf(fmt, name, n, max(ppm), min(ppm), length(x$A))
+}
+
+#' @export
+#' @rdname print_methods
+print.decon2 <- function(x, name = FALSE, ...) {
+    str(x, 1)
+}
+
+# S3 Methods for Collections #####
+
+#' @export
+#' @rdname print_methods
+print.spectra <- function(xx) {
+    msg <- "spectra object consisting of %d spectrum objects:\n"
+    catf(msg, length(xx))
+    nams <- get_names(xx)
+    msg <- "%s (%d datapoints from %.2f - %.2f ppm)\n"
+    mapply(xx, nams, FUN = function(x, nam) {
+        catf(msg, nam, length(x$si), min(x$cs), max(x$cs))
+    })
+    invisible(NULL)
+}
+
+#' @export
+#' @rdname print_methods
+print.gspecs <- function(x, ...) {
+    # catf("gspecs object with %s gspec elements\n", length(x))
+    # invisible(sapply(x, print, name = TRUE))
+    str(x, 2, give.attr = FALSE)
+}
+
+#' @export
+#' @rdname print_methods
+print.gdecons <- function(x, ...) {
+    catf("gdecons object with %s gdecon elements\n", length(x))
+    nams <- get_names(x)
+    mapply(x, nams, FUN = function(xi, nam) {
+        catf("%s: ", nam)
+        print(xi, ...)
+    })
+}
+
+#' @export
+#' @rdname print_methods
+print.decons1 <- function(x, ...) {
+    catf("decons1 object with %s decon1 elements\n", length(x))
+    invisible(sapply(x, print, name = TRUE))
+}
+
+#' @export
+#' @rdname print_methods
+print.decons2 <- function(x, ...) {
+    catf("decons1 object with %s decon1 elements\n", length(x))
+    invisible(sapply(x, print, name = TRUE))
+}
+
+# Internal Functions #####
 
 capture.output2 <- function(..., collapse = "\n", trim = FALSE) {
     x <- utils::capture.output(...)
@@ -68,74 +177,4 @@ human_readable <- function(x, unit, fmt = "%.1f") {
     xhr <- sprintf(fmt, x)
     fmtstr <- paste0(fmt, " %s%s")
     sprintf(fmtstr, x, prefix, unit)
-}
-
-# S3 Methods (Public Classes) #####
-
-#' @export
-#' @title Print a Spectrum Object
-#' @description Prints the name, path, type, magnetic field strength, number of data points, chemical shifts and frequencies of a spectrum object.
-#' @param x A spectrum object as returned by [make_spectrum()].
-#' @examples
-#' si <- c(1, 1, 3, 7, 8, 3, 8, 5, 2, 1)
-#' cs_max <- 14.8
-#' cs_width <- 20.0
-#' fq_ref <- 600.25 * 1e6
-#' fq_width <- 12005
-#' spectrum <- read_spectrum()
-#' print.spectrum(spectrum)
-print.spectrum <- function(x, name = FALSE, ...) {
-    namestr <- if (name) paste0(x$meta$name %||% "NULL", ": ") else ""
-    fmt <- "%sspectrum object (%d dp, %.1f to %.1f ppm)\n"
-    catf(fmt, namestr, length(x$cs), max(x$cs), min(x$cs))
-}
-
-#' @export
-print.decon1 <- function(x, name = FALSE, ...) {
-    ppm <- x$x_values_ppm
-    n <- length(ppm)
-    name <- if (name) paste0(x$filename %||% "NULL", ": ") else ""
-    fmt <- "%sdecon1 object (%d dp, %.1f to %.1f ppm, %d peaks)\n"
-    catf(fmt, name, n, max(ppm), min(ppm), length(x$A))
-}
-
-#' @export
-print.decons1 <- function(x, ...) {
-    catf("decons1 object with %s decon1 elements\n", length(x))
-    invisible(sapply(x, print, name = TRUE))
-}
-
-# S3 Methods (Private Classes) #####
-
-#' @export
-print.gspec <- function(x, name = FALSE, ...) {
-    # fmt <- "%sgspec object (%d dp, %.1f to %.1f ppm)\n"
-    # namestr <- if (name) paste0(x$name %||% "NULL", ": ") else ""
-    # catf(fmt, namestr, length(x$ppm), max(x$ppm), min(x$ppm))
-    str(x, 1)
-}
-
-#' @export
-print.gspecs <- function(x, ...) {
-    # catf("gspecs object with %s gspec elements\n", length(x))
-    # invisible(sapply(x, print, name = TRUE))
-    str(x, 2, give.attr = FALSE)
-}
-
-#' @export
-print.gdecon <- function(x, ...) {
-    # msg <- "gdecon object (%d dp, %.1f to %.1f ppm, %d peaks)\n"
-    # n <- length(x$ppm)
-    # catf(msg, x$n, max(x$ppm), min(x$ppm), sum(x$peak$high))
-    str(x, 1)
-}
-
-#' @export
-print.gdecons <- function(x, ...) {
-    catf("gdecons object with %s gdecon elements\n", length(x))
-    nams <- get_names(x)
-    mapply(x, nams, FUN = function(xi, nam) {
-        catf("%s: ", nam)
-        print(xi, ...)
-    })
 }

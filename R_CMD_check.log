@@ -1,0 +1,376 @@
+── R CMD check results ────────────────────────────────────────────────────────────────────────────────── metabodecon 1.2.0 ────
+Duration: 1m 23.2s
+
+❯ checking examples ... ERROR
+  Running examples in 'metabodecon-Ex.R' failed
+  The error most likely occurred in:
+
+  > base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+  > ### Name: align_spectra
+  > ### Title: Align Spectra
+  > ### Aliases: align_spectra
+  >
+  > ### ** Examples
+  >
+  > sim_dir <- metabodecon_file("bruker/sim")
+  > spectra <- read_spectra(sim_dir)
+  > decons <- generate_lorentz_curves(spectra, sfr = c(3.42, 3.58), wshw = 0, delta = 0.1, ask = FALSE)
+  Error in check_args_generate_lorentz_curves() :
+    is_num(e$sf, 2) is not TRUE
+  Calls: generate_lorentz_curves -> check_args_generate_lorentz_curves -> stopifnot
+  Execution halted
+
+❯ checking examples with --run-donttest ... ERROR
+  Running examples in 'metabodecon-Ex.R' failed
+  The error most likely occurred in:
+
+  > base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+  > ### Name: MetaboDecon1D
+  > ### Title: Deconvolute 1D NMR spectrum
+  > ### Aliases: MetaboDecon1D
+  >
+  > ### ** Examples
+  >
+  > ## No test:
+  > xds_path <- download_example_datasets()
+  > urine <- file.path(xds_path, "bruker/urine")
+  > urine_1 <- file.path(urine, "urine_1")
+  >
+  > ## Not run:
+  > ##D # Deprecated since metabodecon v1.2.0. Please use generate_lorentz_curves()
+  > ##D # instead. Shown below.
+  > ##D urine_1_deconv <- MetaboDecon1D(urine, "urine_1")
+  > ##D urine_all_deconv <- MetaboDecon1D(urine)
+  > ## End(Not run)
+  >
+  > urine_1_deconv <- generate_lorentz_curves(urine_1, ask = FALSE)
+  Error in check_args_generate_lorentz_curves() :
+    is_num(e$sf, 2) is not TRUE
+  Calls: generate_lorentz_curves -> check_args_generate_lorentz_curves -> stopifnot
+  Execution halted
+
+❯ checking tests ...
+  See below...
+
+❯ checking whether package 'metabodecon' can be installed ... [13s] WARNING
+  See below...
+
+❯ checking dependencies in R code ... WARNING
+  '::' or ':::' import not declared from: 'mirai'
+
+❯ checking S3 generic/method consistency ... WARNING
+  print:
+    function(x, ...)
+  print.spectra:
+    function(xx)
+  See section 'Generic functions and methods' in the 'Writing R
+  Extensions' manual.
+
+❯ checking Rd cross-references ... WARNING
+  Missing link or links in documentation object 'metabodecon_classes.Rd':
+    'deconvolute_gspec'
+
+  Missing link or links in documentation object 'plot_aligned_spectra.Rd':
+    'i,j' 'i'
+
+  Missing link or links in documentation object 'print_methods.Rd':
+    'Metabodecon Classes'
+
+  See section 'Cross-references' in the 'Writing R Extensions' manual.
+
+❯ checking for missing documentation entries ... WARNING
+  Undocumented code objects:
+    'as_decons1' 'as_decons2' 'as_gdecons' 'as_gspecs'
+  All user-level objects in a package should have documentation entries.
+  See chapter 'Writing R documentation files' in the 'Writing R
+  Extensions' manual.
+
+❯ checking Rd \usage sections ... WARNING
+  Undocumented arguments in documentation object 'convert'
+    'sf' '...' 'file_format' 'expno' 'procno' 'raw' 'silent' 'force'
+
+  Undocumented arguments in documentation object 'count_stretches'
+    'x'
+  Documented arguments not in \usage in documentation object 'count_stretches':
+    'vec'
+
+  Documented arguments not in \usage in documentation object 'deconvolute':
+    '...' 'bwc' 'debug' 'sf'
+
+  Undocumented arguments in documentation object 'plot_spectrum'
+    'verbose' 'rct_show'
+
+  Undocumented arguments in documentation object 'print_methods'
+    'name' 'xx'
+
+  Undocumented arguments in documentation object 'simulate_spectrum'
+    'csres' 'pkr'
+
+  Undocumented arguments in documentation object 'speaq_align'
+    'mfrow'
+  Documented arguments not in \usage in documentation object 'speaq_align':
+    'mfcol'
+
+  Undocumented arguments in documentation object 'type_checking'
+    'check_child_classes'
+
+  Functions with \usage entries need to have the appropriate \alias
+  entries, and all their arguments documented.
+  The \usage entries must correspond to syntactically valid R code.
+  See chapter 'Writing R documentation files' in the 'Writing R
+  Extensions' manual.
+
+❯ checking top-level files ... NOTE
+  Non-standard file/directory found at top level:
+    'tmp.txt'
+
+❯ checking R code for possible problems ... [21s] NOTE
+  Warning: <anonymous>: ... may be used in an incorrect context: 'store_spectrum(s, verbose = verbose, ...)'
+  
+  as_decons1: no visible global function definition for 'is_decons1'
+  as_decons2: no visible global function definition for 'is_decons2'
+  generate_lorentz_curves_v12: no visible binding for global variable
+    'as_glci_spectrum'
+  glc: possible error in generate_lorentz_curves(data_path = dp,
+    file_format = ff, nfit = nfit, debug = debug, nworkers = nworkers):
+    unused argument (debug = debug)
+  make_sim_dataset : <anonymous>: possible error in
+    simulate_spectrum(deconv, show = FALSE, pngpath = file.path(pngdir,
+    paste0(new_name, ".png")), pdfpath = file.path(pdfdir,
+    paste0(new_name, ".pdf")), svgpath = file.path(svgdir,
+    paste0(new_name, ".svg")), rdspath = file.path(rdsdir,
+    paste0(new_name, ".rds")), brukerdir = file.path(brukerdir,
+    new_name), verbose = verbose, noise_method = noise_method): unused
+    arguments (show = FALSE, pngpath = file.path(pngdir, paste0(new_name,
+    ".png")), pdfpath = file.path(pdfdir, paste0(new_name, ".pdf")),
+    svgpath = file.path(svgdir, paste0(new_name, ".svg")), rdspath =
+    file.path(rdsdir, paste0(new_name, ".rds")), brukerdir =
+    file.path(brukerdir, new_name), verbose = verbose, noise_method =
+    noise_method)
+  make_sim_dataset : <anonymous>: no visible binding for global variable
+    'verbose'
+  make_sim_dataset : <anonymous>: no visible binding for global variable
+    'noise_method'
+  plot_spec: no visible global function definition for 'trans'
+  simulate_from_decon: ... may be used in an incorrect context:
+    'store_spectrum(s, verbose = verbose, ...)'
+  Undefined global functions or variables:
+    as_glci_spectrum is_decons1 is_decons2 noise_method trans verbose
+
+  Found the following calls to attach():
+  File 'metabodecon/R/01_util.R':
+    attach(asNamespace("metabodecon"))
+    attach(asNamespace("metabodecon"))
+  See section 'Good practice' in '?attach'.
+
+  Warning: <anonymous>: ... may be used in an incorrect context: 'store_spectrum(s, verbose = verbose, ...)'
+
+── Test failures ───────────────────────────────────────────────────────────────────────────────────────────────── testthat ────
+
+> # This file is part of the standard setup for testthat.
+> # It is recommended that you do not modify it.
+> #
+> # Where should you do additional test configuration?
+> # Learn more about the roles of various files in:
+> # * https://r-pkgs.org/testing-design.html#sec-tests-files-overview
+> # * https://testthat.r-lib.org/articles/special-files.html
+>
+> library(testthat)
+Warning message:
+package 'testthat' was built under R version 4.3.3
+> library(metabodecon)
+>
+> test_check("metabodecon")
+Starting 8 test processes
+[ FAIL 21 | WARN 0 | SKIP 3 | PASS 90 ]
+
+══ Skipped tests (3) ═══════════════════════════════════════════════════════════
+• Slow tests are disabled. Use `Sys.setenv(RUN_SLOW_TESTS=TRUE)` or
+  `run_tests(all=TRUE)` to enable. (3): 'test-read_spectrum.R:18:1',
+  'test-download_example_datasets.R:11:1', 'test-cache_example_datasets.R:13:1'
+
+══ Failed tests ════════════════════════════════════════════════════════════════
+── Error ('test-read_spectrum.R:14:5'): read_spectrum works for bruker spectra ──
+Error in `X1[1, ]`: incorrect number of dimensions
+Backtrace:
+    ▆
+ 1. └─testthat::expect_equal(...) at test-read_spectrum.R:14:5
+ 2.   └─testthat::quasi_label(enquo(object), label, arg = "object")
+ 3.     └─rlang::eval_bare(expr, quo_get_env(quo))
+── Error ('test-convert_spectrum.R:5:5'): as_glci_spectrum works ───────────────
+Error in `as_glci_spectrum(X, sf = c(1000, 1e+06))`: could not find function "as_glci_spectrum"
+── Error ('test-convert_spectrum.R:28:5'): as_glci_spectrum produces same output as MetaboDecon1D did ──
+Error in `as_glci_spectrum(X, sf = c(1000, 1e+06))`: could not find function "as_glci_spectrum"
+── Error ('test-generate_lorentz_curves.R:6:5'): GLC works for 1 bruker ────────
+Error in `generate_lorentz_curves(data_path = dp, file_format = ff, nfit = nfit,
+    debug = debug, nworkers = nworkers)`: unused argument (debug = debug)
+Backtrace:
+    ▆
+ 1. └─metabodecon:::glc(...) at test-generate_lorentz_curves.R:6:5
+ 2.   └─metabodecon::evalwith(...)
+ 3.     ├─base::withCallingHandlers(...)
+ 4.     ├─testthat::with_mocked_bindings(...)
+ 5.     └─base::tryCatch(...)
+ 6.       └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 7.         └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 8.           └─value[[3L]](cond)
+── Error ('test-generate_lorentz_curves.R:13:5'): GLC works for bruker folder ──
+Error in `generate_lorentz_curves(data_path = dp, file_format = ff, nfit = nfit,
+    debug = debug, nworkers = nworkers)`: unused argument (debug = debug)
+Backtrace:
+    ▆
+ 1. └─metabodecon:::glc(...) at test-generate_lorentz_curves.R:13:5
+ 2.   └─metabodecon::evalwith(...)
+ 3.     ├─base::withCallingHandlers(...)
+ 4.     ├─testthat::with_mocked_bindings(...)
+ 5.     └─base::tryCatch(...)
+ 6.       └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 7.         └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 8.           └─value[[3L]](cond)
+── Error ('test-generate_lorentz_curves.R:25:5'): GLC works when no peaks are filtered out ──
+Error in `check_args_generate_lorentz_curves()`: is_char(x, 1) || is_spectrum(x) || is_spectra(x) || is_gspec(x) ||  .... is not TRUE
+Backtrace:
+    ▆
+ 1. └─metabodecon::generate_lorentz_curves(...) at test-generate_lorentz_curves.R:25:5
+ 2.   └─metabodecon:::check_args_generate_lorentz_curves()
+ 3.     └─base::stopifnot(...)
+── Error ('test-convert_wsr.R:6:5'): enrich_wshw works ─────────────────────────
+Error in `enrich_wshw(spec, wshw = 0.2)`: Input must be a `gspec`, not list
+Backtrace:
+    ▆
+ 1. └─metabodecon:::enrich_wshw(spec, wshw = 0.2) at test-convert_wsr.R:6:5
+── Error ('test-deconvolute.R:8:5'): deconvolute works ─────────────────────────
+Error in `check(envir)`: is_gspecs(e$gspecs) || is_gspec(e$gspecs) is not TRUE
+Backtrace:
+    ▆
+ 1. └─metabodecon:::deconvolute_gspecs(...) at test-deconvolute.R:8:5
+ 2.   └─metabodecon:::check_args(deconvolute_gspecs)
+ 3.     └─metabodecon:::check(envir)
+ 4.       └─base::stopifnot(is_gspecs(e$gspecs) || is_gspec(e$gspecs))
+── Failure ('test-convert_sfr.R:17:5'): enrich_sfr works ───────────────────────
+`sfr` (`actual`) not equal to list(...) (`expected`).
+
+    names(actual) | names(expected)
+[1] "left_ppm"    - "right_sdp"     [1]
+[2] "right_ppm"   - "right_dp"      [2]
+[3] "left_dp"     - "left_sdp"      [3]
+[4] "right_dp"    - "left_dp"       [4]
+[5] "left_sdp"    - "right_ppm"     [5]
+[6] "right_sdp"   - "left_ppm"      [6]
+── Failure ('test-deconvolute_gspec_check_args.R:22:13'): deconvolute works ────
+Expected `runf()` to run without any errors.
+i Actually got a <simpleError> with text:
+  unused arguments (x = list(list(c(600250660.251007, 600250660.342707, 600250660.434407, 600250660.526107, 600250660.617807, 600250660.709507, 600250660.801208, 600250660.892908, 600250660.984608, 600250661.076308, 600250661.168008, 600250661.259708, 600250661.351408, 600250661.443109, 600250661.534809, 600250661.626509, 600250661.718209, 600250661.809909, 600250661.901609, 600250661.993309, 600250662.08501, 600250662.17671, 600250662.26841, 600250662.36011, 600250662.45181, 600250662.54351, 600250662.635211,
+  600250662.726911, 600250662.818611, 600250662.910311, 600250663.002011, 600250663.093711, 600250663.185411, 600250663.277112, 600250663.368812, 600250663.460512, 600250663.552212, 600250663.643912, 600250663.735612, 600250663.827313, 600250663.919013, 600250664.010713, 600250664.102413, 600250664.194113, 600250664.285813, 600250664.377514, 600250664.469214, 600250664.560914, 600250664.652614, 600250664.744314, 600250664.836014, 600250664.927714, 600250665.019415, 600250665.111115, 600250665.202815,       
+  600250665.294515, 600250665.386215, 600250665.477915, 600250665.569615, 600250665.661316, 600250665.753016, 600250665.844716, 600250665.936416, 600250666.028116, 600250666.119816, 600250666.211516, 600250666.303217, 600250666.394917, 600250666.486617, 600250666.578317, 600250666.670017, 600250666.761717, 600250666.853418, 600250666.945118, 600250667.036818, 600250667.128518, 600250667.220218, 600250667.311918, 600250667.403619, 600250667.495319, 600250667.587019, 600250667.678719, 600250667.770419,       
+  600250667.862119, 600250667.95382, 600250668.04552, 600250668.13722, 600250668.22892, 600250668.32062, 600250668.41232, 600250668.50402, 600250668.595721, 600250668.687421, 600250668.779121, 600250668.870821, 600250668.962521, 600250669.054221, 600250669.145921, 600250669.237622, 600250669.329322, 600250669.421022, 600250669.512722, 600250669.604422, 600250669.696122, 600250669.787822, 600250669.879523, 600250669.971223, 600250670.062923, 600250670.154623, 600250670.246323, 600250670.338023, 600250670.429724,
+  600250670.521424, 600250670.613124, 600250670.704824, 600250670.796524, 600250670.888224, 600250670.979925, 600250671.071625, 600250671.163325, 600250671.255025, 600250671.346725, 600250671.438425, 600250671.530125, 600250671.621826, 600250671.713526, 600250671.805226, 600250671.896926, 600250671.988626, 600250672.080326, 600250672.172027, 600250672.263727, 600250672.355427, 600250672.447127, 600250672.538827, 600250672.630527, 600250672.722227, 600250672.813928, 600250672.905628, 600250672.997328,       
+  600250673.089028, 600250673.180728, 600250673.272428, 600250673.364128, 600250673.455829, 600250673.547529, 600250673.639229, 600250673.730929, 600250673.822629, 600250673.914329, 600250674.00603, 600250674.09773, 600250674.18943, 600250674.28113, 600250674.37283, 600250674.46453, 600250674.556231, 600250674.647931, 600250674.739631, 600250674.831331, 600250674.923031, 600250675.014731, 600250675.106431, 600250675.198132, 600250675.289832, 600250675.381532, 600250675.473232, 600250675.564932, 600250675.656632,
+  600250675.748333, 600250675.840033, 600250675.931733, 600250676.023433, 600250676.115133, 600250676.206833, 600250676.298533, 600250676.390234, 600250676.481934, 600250676.573634, 600250676.665334, 600250676.757034, 600250676.848734, 600250676.940434, 600250677.032135, 600250677.123835, 600250677.215535, 600250677.307235, 600250677.398935, 600250677.490635, 600250677.582336, 600250677.674036, 600250677.765736, 600250677.857436, 600250677.949136, 600250678.040836, 600250678.132536, 600250678.224237,       
+  600250678.315937, 600250678.407637, 600250678.499337, 600250678.591037, 600250678.682737, 600250678.774438, 600250678.866138, 600250678.957838, 600250679.049538, 600250679.141238, 600250679.232938, 600250679.324638, 600250679.416339, 600250679.508039, 600250679.599739, 600250679.691439, 600250679.783139, 600250679.874839, 600250679.96654, 600250680.05824, 600250680.14994, 600250680.24164, 600250680.33334, 600250680.42504, 600250680.51674, 600250680.608441, 600250680.700141, 600250680.791841, 600250680.883541,
+  600250680.975241, 600250681.066941, 600250681.158642, 600250681.250342, 600250681.342042, 600250681.433742, 600250681.525442, 600250681.617142, 600250681.708842, 600250681.800543, 600250681.892243, 600250681.983943, 600250682.075643, 600250682.167343, 600250682.259043, 600250682.350744, 600250682.442444, 600250682.534144, 600250682.625844, 600250682.717544, 600250682.809244, 600250682.900944, 600250682.992645, 600250683.084345, 600250683.176045, 600250683.267745, 600250683.359445, 600250683.451145,       
+  600250683.542845, 600250683.634546, 600250683.726246, 600250683.817946, 600250683.909646, 600250684.001346, 600250684.093046, 600250684.184747, 600250684.276447, 600250684.368147, 600250684.459847, 600250684.551547, 600250684.643247, 600250684.734947, 600250684.826648, 600250684.918348, 600250685.010048, 600250685.101748, 600250685.193448, 600250685.285148, 600250685.376849, 600250685.468549, 600250685.560249, 600250685.651949, 600250685.743649, 600250685.835349, 600250685.92705, 600250686.01875,
+  600250686.11045, 600250686.20215, 600250686.29385, 600250686.38555, 600250686.47725, 600250686.568951, 600250686.660651, 600250686.752351, 600250686.844051, 600250686.935751, 600250687.027451, 600250687.119151, 600250687.210852, 600250687.302552, 600250687.394252, 600250687.485952, 600250687.577652, 600250687.669352, 600250687.761053, 600250687.852753, 600250687.944453, 600250688.036153, 600250688.127853, 600250688.219553, 600250688.311253, 600250688.402954, 600250688.494654, 600250688.586354, 600250688.678054,
+  600250688.769754, 600250688.861454, 600250688.953155, 600250689.044855, 600250689.136555, 600250689.228255, 600250689.319955, 600250689.411655, 600250689.503356, 600250689.595056, 600250689.686756, 600250689.778456, 600250689.870156, 600250689.961856, 600250690.053556, 600250690.145257, 600250690.236957, 600250690.328657, 600250690.420357, 600250690.512057, 600250690.603757, 600250690.695457, 600250690.787158, 600250690.878858, 600250690.970558, 600250691.062258, 600250691.153958, 600250691.245658,       
+  600250691.337358, 600250691.429059, 600250691.520759, 600250691.612459, 600250691.704159, 600250691.795859, 600250691.887559, 600250691.97926, 600250692.07096, 600250692.16266, 600250692.25436, 600250692.34606, 600250692.43776, 600250692.529461, 600250692.621161, 600250692.712861, 600250692.804561, 600250692.896261, 600250692.987961, 600250693.079661, 600250693.171362, 600250693.263062, 600250693.354762, 600250693.446462, 600250693.538162, 600250693.629862, 600250693.721563, 600250693.813263, 600250693.904963,
+  600250693.996663, 600250694.088363, 600250694.180063, 600250694.271763, 600250694.363464, 600250694.455164, 600250694.546864, 600250694.638564, 600250694.730264, 600250694.821964, 600250694.913664, 600250695.005365, 600250695.097065, 600250695.188765, 600250695.280465, 600250695.372165, 600250695.463865, 600250695.555566, 600250695.647266, 600250695.738966, 600250695.830666, 600250695.922366, 600250696.014066, 600250696.105767, 600250696.197467, 600250696.289167, 600250696.380867, 600250696.472567,       
+  600250696.564267, 600250696.655967, 600250696.747668, 600250696.839368, 600250696.931068, 600250697.022768, 600250697.114468, 600250697.206168, 600250697.297868, 600250697.389569, 600250697.481269, 600250697.572969, 600250697.664669, 600250697.756369, 600250697.848069, 600250697.93977, 600250698.03147, 600250698.12317, 600250698.21487, 600250698.30657, 600250698.39827, 600250698.48997, 600250698.581671, 600250698.673371, 600250698.765071, 600250698.856771, 600250698.948471, 600250699.040171, 600250699.131872,
+  600250699.223572, 600250699.315272, 600250699.406972, 600250699.498672, 600250699.590372, 600250699.682073, 600250699.773773, 600250699.865473, 600250699.957173, 600250700.048873, 600250700.140573, 600250700.232273, 600250700.323974, 600250700.415674, 600250700.507374, 600250700.599074, 600250700.690774, 600250700.782474, 600250700.874174, 600250700.965875, 600250701.057575, 600250701.149275, 600250701.240975, 600250701.332675, 600250701.424375, 600250701.516075, 600250701.607776, 600250701.699476,       
+  600250701.791176, 600250701.8828
+── Error ('test-deconvolute_gspec_check_args.R:22:13'): deconvolute works ──────
+Error in `(function (func, envir = parent.frame(), asenv = TRUE)
+{
+    name <- deparse(substitute(func))
+    check <- check[[name]]
+    if (is.null(check))
+        stop(sprintf("No check defined for [%s()]", name))
+    check(envir)
+    if (asenv)
+        return(invisible(envir))
+    keys <- names(formals(func))
+    sapply(keys, get, envir = envir, simplify = FALSE)
+})(x = 0, nfit = 3, smopts = c(1, 5), delta = 0.1, sfr = c(3.58,
+3.42), wsr = c(3.5, 3.5), rtyp = "decons2", rm_ws_version = 1,
+    force = FALSE)`: unused arguments (x = 0, nfit = 3, smopts = c(1, 5), delta = 0.1, sfr = c(3.58, 3.42), wsr = c(3.5, 3.5), rtyp = "decons2", rm_ws_version = 1, force = FALSE)
+Backtrace:
+    ▆
+ 1. ├─testthat::expect_error(runf(x = 0), "x must be a spectrum or gspec, not .*") at test-deconvolute_gspec_check_args.R:25:5  
+ 2. │ └─testthat:::expect_condition_matching(...)
+ 3. │   └─testthat:::quasi_capture(...)
+ 4. │     ├─testthat (local) .capture(...)
+ 5. │     │ └─base::withCallingHandlers(...)
+ 6. │     └─rlang::eval_bare(quo_get_expr(.quo), quo_get_env(.quo))
+ 7. └─metabodecon (local) runf(x = 0)
+ 8.   └─base::do.call(check_args, set(args, ...)) at test-deconvolute_gspec_check_args.R:22:13
+── Error ('test-get_decon_params.R:26:5'): get_decon_params works ──────────────
+Error in `check_args_generate_lorentz_curves()`: is_num(e$sf, 2) is not TRUE
+Backtrace:
+    ▆
+ 1. └─metabodecon::generate_lorentz_curves(...) at test-get_decon_params.R:26:5
+ 2.   └─metabodecon:::check_args_generate_lorentz_curves()
+ 3.     └─base::stopifnot(is_num(e$sf, 2))
+── Failure ('test-deconvolute_gspecs.R:9:5'): deconvolute_gspecs for: 1 spec, 1 core ──
+length(obj) (`actual`) not equal to length(sim_subset) (`expected`).
+
+  `actual`: 1
+`expected`: 2
+── Failure ('test-deconvolute_gspecs.R:14:5'): deconvolute_gspecs for: 1 spec, 2 cores ──
+inherits(obj, "gspecs") is not TRUE
+
+`actual`:   FALSE
+`expected`: TRUE
+── Failure ('test-deconvolute_gspecs.R:15:5'): deconvolute_gspecs for: 1 spec, 2 cores ──
+length(obj) (`actual`) not equal to length(sim_subset) (`expected`).
+
+  `actual`: 1
+`expected`: 2
+── Error ('test-deconvolute_gspecs.R:20:5'): deconvolute_gspecs for: 2 specs, 1 core ──
+Error in `eval(code, test_env)`: object 'nfit' not found
+Backtrace:
+    ▆
+ 1. └─metabodecon:::deconvolute_gspecs(...) at test-deconvolute_gspecs.R:20:5
+ 2.   └─metabodecon:::check_args(deconvolute_gspecs)
+ 3.     └─metabodecon:::check(envir)
+ 4.       ├─base::stopifnot(is_int(e$nfit, 1))
+ 5.       └─metabodecon:::is_int(e$nfit, 1)
+── Error ('test-read_decon_params.R:6:1'): (code run outside of `test_that()`) ──
+Error in `generate_lorentz_curves_sim()`: argument "data_path" is missing, with no default
+Backtrace:
+    ▆
+ 1. └─metabodecon::generate_lorentz_curves_sim() at test-read_decon_params.R:6:1
+ 2.   └─metabodecon::generate_lorentz_curves(...)
+ 3.     └─metabodecon:::check_args_generate_lorentz_curves()
+── Error ('test-speaq_align.R:4:5'): speaq_align works ─────────────────────────
+Error in `check_args_generate_lorentz_curves()`: is_int(e$nfit, 1) is not TRUE
+Backtrace:
+    ▆
+ 1. └─metabodecon::generate_lorentz_curves_sim("bruker/sim") at test-speaq_align.R:4:5
+ 2.   └─metabodecon::generate_lorentz_curves(...)
+ 3.     └─metabodecon:::check_args_generate_lorentz_curves()
+ 4.       └─base::stopifnot(is_int(e$nfit, 1))
+── Failure ('test-read_topspin3_spectrum.R:6:5'): read_topspin3_spectrum works ──
+dim(S) (`actual`) not equal to c(131072, 3) (`expected`).
+
+`actual` is NULL
+`expected` is a double vector (131072, 3)
+── Failure ('test-read_topspin3_spectrum.R:7:5'): read_topspin3_spectrum works ──
+colnames(S) (`actual`) not equal to c("si", "cs", "fq") (`expected`).
+
+`actual` is NULL
+`expected` is a character vector ('si', 'cs', 'fq')
+── Error ('test-mcmapply.R:17:5'): mcmapply works ──────────────────────────────
+Error in `checkCluster(cl)`: not a valid cluster
+Backtrace:
+    ▆
+ 1. ├─base (local) rt(x4 <- mcmapply(2, f, list(3, 4), s0.01)) at test-mcmapply.R:17:5
+ 2. └─metabodecon:::mcmapply(2, f, list(3, 4), s0.01)
+ 3.   └─parallel::clusterEvalQ(attach(asNamespace("metabodecon")))
+ 4.     └─parallel::clusterCall(cl, eval, substitute(expr), env = .GlobalEnv)
+ 5.       └─parallel:::defaultCluster(cl)
+ 6.         └─parallel:::checkCluster(cl)
+
+[ FAIL 21 | WARN 0 | SKIP 3 | PASS 90 ]
+Error: Test failures
+Execution halted
+
+3 errors ✖ | 6 warnings ✖ | 2 notes ✖

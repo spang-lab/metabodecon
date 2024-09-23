@@ -4,7 +4,7 @@
 \alias{deconvolute}
 \alias{generate_lorentz_curves}
 \alias{generate_lorentz_curves_sim}
-\title{Generate Lorentz Curves from NMR Spectra}
+\title{Deconvolute one or more NMR spectra}
 \usage{
 generate_lorentz_curves(
   data_path,
@@ -12,16 +12,16 @@ generate_lorentz_curves(
   make_rds = FALSE,
   expno = 10,
   procno = 10,
-  sfr = c(11.44494, -1.8828),
-  wshw = 0.1527692,
+  raw = TRUE,
   nfit = 10,
   smopts = c(2, 5),
   delta = 6.4,
-  sf = c(1000, 1e+06),
+  sfr = c(11.44494, -1.8828),
+  wshw = 0.1527692,
   ask = TRUE,
-  nworkers = 1,
   force = FALSE,
-  verbose = TRUE
+  verbose = TRUE,
+  nworkers = 1
 )
 
 generate_lorentz_curves_sim(
@@ -30,12 +30,11 @@ generate_lorentz_curves_sim(
   make_rds = FALSE,
   expno = 10,
   procno = 10,
-  sfr = c(3.58, 3.42),
-  wshw = 0,
   nfit = 10,
   smopts = c(2, 5),
   delta = 0.1,
-  sf = c(1000, 1e+06),
+  sfr = c(3.58, 3.42),
+  wshw = 0,
   ask = FALSE,
   nworkers = 1,
   force = FALSE,
@@ -51,10 +50,7 @@ generate_lorentz_curves_sim(
 
 \item{expno, procno}{The experiment/processing number for the file. E.g. \code{"10"}. Only relevant if \code{file_format} equals \code{"bruker"}. For details see section \href{https://spang-lab.github.io/metabodecon/articles/FAQ.html#file-structure}{File Structure} in the metabodecon FAQ.}
 
-\item{sfr}{Numeric vector with two entries: the ppm positions for the left and right border of the signal-free region of the spectrum.}
-
-\item{wshw}{Half-width of the water artifact in ppm.
-Further arguments to be passed to \code{\link[=generate_lorentz_curves]{generate_lorentz_curves()}}.}
+\item{raw}{If \code{FALSE}, scales the returned signal intensities based on information available in the spectrum metadata, in particular \code{NC_proc}. For details see \code{processing-reference.pdf}, available at \url{https://www.bruker.com/en.html} at section 'Services & Support > Documentation & Manuals > Magnetic Resonance > Acquisition & Processing > TopSpin Processing Commands and Parameters' (requires login).}
 
 \item{nfit}{Number of iterations for approximating the parameters for the Lorentz curves.}
 
@@ -62,21 +58,25 @@ Further arguments to be passed to \code{\link[=generate_lorentz_curves]{generate
 
 \item{delta}{Threshold for peak filtering. Higher values result in more peaks being filtered out. A peak is filtered if its score is below \mjeqn{\mu + \sigma \cdot \delta}{mu + s * delta}, where \mjeqn{\mu}{mu} is the average peak score in the signal-free region (SFR), and \mjeqn{\sigma}{s} is the standard deviation of peak scores in the SFR.}
 
-\item{sf}{Numeric vector with two entries: the factors to scale the x-axis and y-axis.}
+\item{sfr}{Numeric vector with two entries: the ppm positions for the left and right border of the signal-free region of the spectrum.}
+
+\item{wshw}{Half-width of the water artifact in ppm.}
 
 \item{ask}{Logical. Whether to ask for user input during the deconvolution process. If FALSE, the provided default values will be used.}
-
-\item{nworkers}{Number of workers to use for parallel processing. If \code{"auto"}, the number of workers will be determined automatically. If a number greater than 1, it will be limited to the number of spectra.}
 
 \item{force}{If FALSE, the function stops with an error message if no peaks are found in the signal free region (SFR), as these peaks are required as a reference for peak filtering. If TRUE, the function instead proceeds without peak filtering, potentially increasing runtime and memory usage significantly.}
 
 \item{verbose}{Logical. Whether to print log messages during the deconvolution process.}
+
+\item{nworkers}{Number of workers to use for parallel processing. If \code{"auto"}, the number of workers will be determined automatically. If a number greater than 1, it will be limited to the number of spectra.}
 
 \item{...}{Further arguments to be passed to internal subfunctions.}
 
 \item{bwc}{Whether to produce results backwards compatible with \code{\link[=MetaboDecon1D]{MetaboDecon1D()}} and \code{\link[=generate_lorentz_curves]{generate_lorentz_curves()}}. If \code{bwc < 2}, a \code{decon1} object is returned instead of a \code{decon2} object. If \code{bwc < 1}, fixes/improvements introduced after version 'metabodecon v1.0' are not used. Support for \code{bwc < 1} will be removed in 'metabodecon v2.0' and will result in a warning for 'metabodecon v1.x' with \code{x >= 1.2}.}
 
 \item{debug}{Logical. Whether to return additional intermediate results for debugging purposes.}
+
+\item{sf}{Numeric vector with two entries: the factors to scale the x-axis and y-axis.}
 }
 \value{
 A 'GLCDecon' as described in \href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{Metabodecon Classes}.
@@ -91,7 +91,6 @@ First, an automated curvature based signal selection is performed. Each signal i
 \code{\link[=generate_lorentz_curves_sim]{generate_lorentz_curves_sim()}} is identical to \code{\link[=generate_lorentz_curves]{generate_lorentz_curves()}} except for the defaults, which are optimized for deconvoluting the 'Sim' dataset, shipped with 'metabodecon'. The 'Sim' dataset is a simulated dataset, which is much smaller than real NMR spectra (1309 datapoints instead of 131072) and lacks a water signal. This makes it ideal for use in examples or as a default value for functions. However, the default values for \code{sfr}, \code{wshw}, and \code{delta} in the "normal" \code{\link[=generate_lorentz_curves]{generate_lorentz_curves()}} function are not optimal for this dataset. To avoid having to define the optimal parameters repeatedly in examples, this function is provided to deconvolute the "Sim" dataset with suitable parameters.
 }
 \examples{
-
 ## Define the paths to the example datasets we want to deconvolute:
 ## `sim_dir`: directory containing 16 simulated spectra
 ## `sim_01`: path to the first spectrum in the `sim` directory

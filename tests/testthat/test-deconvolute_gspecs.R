@@ -1,23 +1,23 @@
 library(testthat)
 
-test_that("deconvolute works", {
-    gspecs <- as_gspecs(read_spectra(metabodecon_file("bruker/urine")))
-    nfit <- 3
-    smopts <- c(1, 5)
-    delta <- 0.1
-    sfr <- c(3.58, 3.42)
-    wshw <- 0
-    ask <- FALSE
-    nworkers <- 2
-    verbose <- TRUE
-    force <- FALSE
-    bwc <- 1
-    rt(obj <- deconvolute_gspecs(
-        gspecs, nfit, smopts, delta, sfr, wshw,
-        ask, force, verbose, bwc,
-        nworkers
-    ))
-    expect_true(inherits(x, "spectra"))
-    expect_true(inherits(obj, rtyp))
-    expect_true(length(obj, length(x)))
+sim_subset <- as_gspecs(read_spectra(metabodecon_file("sim_subset")))
+sim_one <- sim_subset[[1]]
+
+test_that("deconvolute_gspecs for: 1 spec, 1 core", {
+    obj <- deconvolute_gspecs(sim_one)
+    expect_true(inherits(obj, "gdecons"))
+    expect_equal(length(obj), length(sim_subset))
+})
+
+test_that("deconvolute_gspecs for: 1 spec, 2 cores", {
+    obj <- deconvolute_gspecs(sim_one, nworkers = 2)
+    expect_true(inherits(obj, "gspecs"))
+    expect_equal(length(obj), length(sim_subset))
+})
+
+test_that("deconvolute_gspecs for: 2 specs, 1 core", {
+    nworkers <- 1
+    obj <- deconvolute_gspecs(sim_subset, nfit, smopts, delta, sfr, wshw, ask, force, verbose, bwc, nworkers)
+    expect_true(inherits(obj, "gspecs"))
+    expect_equal(length(obj), length(sim_subset))
 })

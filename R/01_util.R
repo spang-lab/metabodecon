@@ -337,7 +337,7 @@ mcmapply <- function(nw, FUN, ..., loadpkg = TRUE, log = TRUE) {
     cl <- makeCluster(nw)
     on.exit(stopCluster(cl), add = TRUE)
     if (loadpkg) {
-        clusterCall(cl, library, "metabodecon", character.only = TRUE)
+        clusterEvalQ(attach(asNamespace("metabodecon")))
     }
     if (log) {
         logfiles <- get_worker_logs(nw)
@@ -356,7 +356,7 @@ mimapply <- function(nw, FUN, ..., loadpkg = FALSE, log = TRUE) {
     if (nw == 1) return(mapply(FUN, ..., SIMPLIFY = FALSE))
     mirai::daemons(nw)
     on.exit(mirai::daemons(0))
-    if (loadpkg) mirai::everywhere(library(metabodecon))
+    if (loadpkg) mirai::everywhere(attach(asNamespace("metabodecon")))
     logfiles <- get_worker_logs(nw)
     m <- mirai::mirai_map(logfiles, sink, append = TRUE, type = "output")
     argslist <- mapply(list, ..., SIMPLIFY = FALSE)

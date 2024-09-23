@@ -1,92 +1,94 @@
-#' @noRd
-#' @title Convert to 'gspec' or 'gspecs'
-#' @description Convert an object to a `gspec` or `gspecs` object, which are objects used internally by `generate_lorentz_curves()` to represent one or more spectra. For details see [metabodecon_classes].
-#' @param x An object of type `spectrum` or `spectra`.
-#' @param sf Numeric vector with two entries: the factors to scale the x-axis and y-axis.
-#' @return An object of type `gspec` or `gspecs`.
+# Convert to anything #####
+
+#' @export
+#' @title Convert to a Metabodecon Class
+#' @description Convert an object to a Metabodecon class.
+#' @inheritParams read_spectrum deconvolute_gspec
+#' @param x The object to convert.
+#' @param to The class to convert to. For details see [metabodecon_classes].
+#' @param nams Names to overwrite the individual spectrum names with. Must be NULL or a character vector of same length as `list(x, ...)`. If not provided, the names of the individual spectrum objects will be used, if available, else a default name of the form "spectrum_%d" where "%d" equals the spectrum number.#' @return An object of the specified class.
 #' @examples
-#' sim <- metabodecon_file("sim_subset")
-#' sim_spectra <- read_spectra(sim)
-#' sim_gspecs <- as_gspecs(sim_spectra)
-#' sim_01_spectrum <- sim_spectra[[1]]
-#' sim_01_gspec <- as_gspec(sim_01_spectrum)
+#' dirpath <- metabodecon_file("sim_subset")
+#' spectra <- read_spectra(dirpath)
+#' gspecs <- as_gspecs(spectra)
+#' gdecons <- deconvolute_gspecs(gspecs)
+#' gspec <- as_gspec(spectrum)
+#' gdecon <- deconvolute_gspec(gspec)
+#' decon2 <- as_decon2(gdecon)
+convert <- function(x, to) {
+    as_class <- get(paste0("as_", to), envir = environment(convert))
+    as_class(x)
+}
+
+# Singular classes #####
+
+#' @export
+#' @rdname convert
+as_spectrum <- function(x, sf = c(1e3, 1e6)) {
+    if (is_spectrum(x)) {
+        return(x)
+    } else if (is_decon1(x)) {
+        cs = x$x_values_ppm
+        si = x$y_values_raw %||% (x$y_values * sf[2])
+        name = x$filename
+        fq = x$x_values_hz
+        meta <- named(name, fq)
+        obj <- named(cs, si, meta)
+        return(structure(obj, class = "spectrum"))
+    } else {
+        msg <- "Converting %s to spectrum is not suppoorted"
+        stop(sprintf(msg, class(x)[1]))
+    }
+}
+
+#' @export
+#' @rdname convert
 as_gspec <- function(x, sf = c(1e3, 1e6)) {
     if (is_gspec(x)) return(x)
     if (is_char(x)) x <- read_spectrum(x)
-    if (!is_spectrum(x)) stop("Input must be a spectrum object, not ", class(x))
-    y_raw <- x$si # Raw signal intensities
+    s <- if (is_spectrum(x)) x else as_spectrum(x)
+    y_raw <- s$si # Raw signal intensities
     y_scaled <- y_raw / sf[2] # Scaled signal intensities
     n <- length(y_raw) # Number of data points
     dp <- seq(n - 1, 0, -1) # Data point numbers
     sdp <- seq((n - 1) / sf[1], 0, -1 / sf[1]) # Scaled data point numbers [^1]
-    ppm <- x$cs # Parts per million
-    hz <- x$fq # Frequency in Hz
-    ppm_range <- diff(range(x$cs)) # Range of the chemical shifts in ppm.
-    ppm_max <- max(x$cs) # Maximum chemical shift in ppm.
-    ppm_min <- min(x$cs) # Minimum chemical shift in ppm.
+    ppm <- s$cs # Parts per million
+    hz <- s$meta$fq # Frequency in Hz
+    ppm_range <- diff(range(s$cs)) # Range of the chemical shifts in ppm.
+    ppm_max <- max(s$cs) # Maximum chemical shift in ppm.
+    ppm_min <- min(s$cs) # Minimum chemical shift in ppm.
     ppm_step <- ppm_range / (n - 1) # Step size calculated correctly.
     ppm_nstep <- ppm_range / n # Wrong, but backwards compatible [^2].
-    name <- x$meta$name # Name of the spectrum
+    name <- s$meta$name # Name of the spectrum
+    meta <- s$meta # Other Metadata to the spectrum
     g <- locals(without = "x")
     structure(g, class = "gspec")
     # [^1]: Same as `dp / sf[1]`, but with slight numeric differences, so we stick with the old calculation method for backwards compatibility.
     # [^2]: Example: ppm = 11, 23, 35, 47 ==> ppm_step == 12, ppm_nstep ~= 10.6 (not really useful, but we need it for backwards compatibility with MetaboDecon1D results)
 }
 
-#' @noRd
-#' @rdname as_gspec
-as_gspecs <- function(x, sf = c(1e3, 1e6)) {
-    gg <- if (is_gspec(x)) {
-        list(x)
-    } else if (is_spectra(x)) {
-        lapply(x, as_gspec, sf = sf)
-    } else {
-        stop("Input must be of class gspec of spectra, not ", class(x))
-    }
-    gg <- structure(gg, class = "gspecs")
-    gg <- set_names(gg, get_names(gg))
-    gg
+#' @export
+#' @rdname convert
+as_gdecon <- function(x) {
+    if (is_gdecon(x)) return(x)
+    stopifnot(is_gspec(x))
+    stopifnot(all(gdecon_members %in% names(x)))
+    gdecon <- structure(x, class = "gdecon")
 }
 
-#' @noRd
-#' @title create backwards compatible return list
-#' @param spec Deconvoluted spectrum as returned by [refine_lorentz_curves_v12()].
-#' @param nfiles Number of deconvoluted spectrum.
-#' @param nam Name of current spectrum.
-#' @return The input spectrum with an additional list element `ret` containing the deconvolution results in a backwards compatible format.
-as_decon1 <- function(x) {
-    if (!is_gdecon(x)) stop("Input must be a gdecon object, not ", class(x))
-
-    # Prepare shortcuts to access the data
-    sdp <- x$sdp
-    ppm <- x$ppm
-    hz <- x$hz
-    dp <- x$dp
-    y_raw <- x$y_raw
-    y_smooth <- x$y_smooth
-    A <- x$lcr$A
-    lambda <- x$lcr$lambda
-    x_0 <- x$lcr$w
-
-    # Calculate spectrum superposition (takes approx. 2.2 seconds for urine_1)
-    s <- sapply(sdp, function(x_i) sum(abs(A * (lambda / (lambda^2 + (x_i - x_0)^2)))))
-    s_normed <- s / sum(s)
-
-    # Calculate MSE_normed and MSE_normed_raw
-    y_normed <- y_smooth / sum(y_smooth)
-    y_raw_normed <- y_raw / sum(y_raw)
-    mse_normed <- mean((y_normed - s_normed)^2)
-    mse_normed_raw <- mean((y_raw_normed - s_normed)^2)
-
-    # Create and return list
+#' @export
+#' @rdname convert
+as_decon1 <- function(x, sf = NULL) {
+    if (is_decon1(x)) return(x)
+    x <- as_gdecon(x)
     structure(class = "decon1", .Data = list(
         number_of_files = 1,
         filename = x$name,
         x_values = x$sdp,
         x_values_ppm = x$ppm,
         y_values = x$y_smooth,
-        spectrum_superposition = s,
-        mse_normed = mse_normed,
+        spectrum_superposition = s <- lorentz_sup(x = x$sdp, x0 = x$lcr$w, A = x$lcr$A, lambda = x$lcr$lambda),
+        mse_normed = mean(((x$y_smooth / sum(x$y_smooth)) - (s / sum(s)))^2),
         index_peak_triplets_middle = x$peak$center[x$peak$high],
         index_peak_triplets_left = x$peak$right[x$peak$high],
         index_peak_triplets_right = x$peak$left[x$peak$high],
@@ -99,25 +101,207 @@ as_decon1 <- function(x) {
         A = x$lcr$A,
         lambda = x$lcr$lambda,
         x_0 = x$lcr$w,
-        # Fields only available in `decon1`, but not `decon0` (since v1.2.0)
-        y_values_raw = x$y_raw,
+        y_values_raw = x$y_raw, # Following fields only available in `decon1`, but not `decon0` (since v1.2.0)
         x_values_hz = x$hz,
-        mse_normed_raw = mse_normed_raw,
-        x_0_hz = convert_pos(x_0, sdp, hz),
-        x_0_dp = convert_pos(x_0, sdp, dp),
-        x_0_ppm = convert_pos(x_0, sdp, ppm),
-        A_hz = convert_width(A, sdp, hz),
-        A_dp = convert_width(A, sdp, dp),
-        A_ppm = convert_width(A, sdp, ppm),
-        lambda_hz = convert_width(lambda, sdp, hz),
-        lambda_dp = convert_width(lambda, sdp, dp),
-        lambda_ppm = convert_width(lambda, sdp, ppm)
+        mse_normed_raw = mean(((x$y_raw / sum(x$y_raw)) - (s / sum(s)))^2),
+        x_0_hz = convert_pos(x$lcr$w, x$sdp, x$hz),
+        x_0_dp = convert_pos(x$lcr$w, x$sdp, x$dp),
+        x_0_ppm = convert_pos(x$lcr$w, x$sdp, x$ppm),
+        A_hz = convert_width(x$lcr$A, x$sdp, x$hz),
+        A_dp = convert_width(x$lcr$A, x$sdp, x$dp),
+        A_ppm = convert_width(x$lcr$A, x$sdp, x$ppm),
+        lambda_hz = convert_width(x$lcr$lambda, x$sdp, x$hz),
+        lambda_dp = convert_width(x$lcr$lambda, x$sdp, x$dp),
+        lambda_ppm = convert_width(x$lcr$lambda, x$sdp, x$ppm)
     ))
 }
 
-as_decons1 <- function(x) {
+as_decon2 <- function(x) {
+    if (is_decon2(x)) return(x)
+    if (!is_gdecon(x)) stop("Input must be a gdecon object, not ", class(x))
+    cs <- x$ppm
+    si <- x$y_raw
+    meta <- x$meta
+    args <- x$args
+    sit <- list(wsrm = x$y_nows, nvrm = x$y_pos, smooth = x$y_smooth, sup = NULL)
+    peak <- x$peak
+    lcpar <- x$lcr
+    mse <- list(raw = NULL, normed = NULL)
+    obj <- named(cs, si, meta, args, sit, peak, lcpar, mse)
+    structure(obj, class = "decon2")
+}
+
+# Public Plural #####
+
+#' @export
+#' @inheritParams read_spectra
+#' @param x The object to convert.
+#' @rdname convert
+as_spectra <- function(x,
+                       file_format = "bruker",
+                       expno = 10,
+                       procno = 10,
+                       raw = FALSE,
+                       silent = TRUE,
+                       force = FALSE) {
+    if (all(sapply(x, is_spectrum))) {
+        xx <- structure(x, class = "spectra")
+        xx <- set_names(xx, get_names(xx))
+    } else if (is.character(x) && file.exists(x)) {
+        xx <- read_spectra(x, file_format, expno, procno, raw, silent, force)
+    } else {
+        stop("Input must be a path or a list of spectrum objects")
+    }
+    xx
+}
+
+#' @export
+#' @rdname as_gspec
+as_gspecs <- function(x, sf = c(1e3, 1e6)) {
+    if (is_gspecs(x)) return(x)
+    gg <- if (is_gspec(x)) {
+        list(x)
+    } else if (is_spectra(x)) {
+        lapply(x, as_gspec, sf = sf)
+    } else {
+        errmsg <- "Input must be gspec, gspecs or spectra, not "
+        stop(errmsg, class(x))
+    }
+    gg <- structure(gg, class = "gspecs")
+    gg <- set_names(gg, get_names(gg))
+    gg
+}
+
+#' @export
+#' @rdname as_gspec
+as_gdecons <- function(x) {
+    if (is_gdecons(x)) return(x)
+    stopifnot(is.list(x))
+    stopifnot(all(sapply(x, is_gdecon)))
+    structure(x, class = "gdecons")
+}
+
+#' @export
+#' @rdname as_gspec
+as_decons1 <- function(x, sf = c(1e3, 1e6)) {
+    if (is_decons1(x)) return(x)
     decons1 <- lapply(x, as_decon1)
     names(decons1) <- names(x)
     class(decons1) <- "decons1"
     decons1
 }
+
+#' @export
+#' @rdname as_gspec
+as_decons2 <- function(x) {
+    if (is_decons2(x)) return(x)
+    decons2 <- lapply(x, as_decon2)
+    names(decons2) <- names(x)
+    class(decons2) <- "decons2"
+    decons2
+}
+
+# Helpers #####
+
+set_names <- function(x, nams) {
+    if (!is.list(x)) stop("Input must be a list.")
+    has_names <- all(sapply(x, function(e) "name" %in% names(e)))
+    has_meta_names <- all(sapply(x, function(e) "name" %in% names(e$meta)))
+    names(x) <- nams
+    if (has_names) for (i in seq_along(x)) x[[i]]$name <- nams[[i]]
+    if (has_meta_names) for (i in seq_along(x)) x[[i]]$meta$name <- nams[[i]]
+    x
+}
+
+get_names <- function(x, default = "spectrum_%d") {
+    stopifnot(class(x)[1] %in% c("gdecons", "gspecs", "spectra"))
+    dn <- get_default_names(x, default)
+    en <- names(x) # Element name
+    sn <- sapply(x, function(s) s$meta$name %||% s$name) # Spectrum name
+    sapply(seq_along(x), function(i) sn[i] %||% en[i] %||% dn[i])
+}
+
+get_default_names <- function(x, default) {
+    if (length(default) == 1 && grepl("%d", default))
+        return(sprintf(default, seq_along(x)))
+    if (length(unique(default)) == length(x))
+        return(default)
+    stop("Default names must be a single string with a `%d` placeholder or a character vector of same length as the spectra object.")
+}
+
+# Class Members #####
+
+spectrum_members <- c(
+    "cs",
+    "si",
+    "meta"
+)
+
+gspec_members <- c(
+    "y_raw",
+    "y_scaled",
+    "n",
+    "dp",
+    "sdp",
+    "ppm",
+    "hz",
+    "ppm_range",
+    "ppm_max",
+    "ppm_min",
+    "ppm_step",
+    "ppm_nstep",
+    "name",
+    "meta"
+)
+
+gdecon_members <- c(
+    gspec_members,
+    "sf",
+    "y_nows",
+    "y_pos",
+    "Z",
+    "y_smooth",
+    "d",
+    "peak",
+    "lci",
+    "lca",
+    "lcr"
+)
+
+decon0_members <- c(
+    "number_of_files",
+    "filename",
+    "x_values",
+    "x_values_ppm",
+    "y_values",
+    "spectrum_superposition",
+    "mse_normed",
+    "index_peak_triplets_middle",
+    "index_peak_triplets_left",
+    "index_peak_triplets_right",
+    "peak_triplets_middle",
+    "peak_triplets_left",
+    "peak_triplets_right",
+    "integrals",
+    "signal_free_region",
+    "range_water_signal_ppm",
+    "A",
+    "lambda",
+    "x_0"
+)
+
+decon1_members <- c(
+    decon0_members,
+    "y_values_raw",
+    "x_values_hz",
+    "mse_normed_raw",
+    "x_0_hz",
+    "x_0_dp",
+    "x_0_ppm",
+    "A_hz",
+    "A_dp",
+    "A_ppm",
+    "lambda_hz",
+    "lambda_dp",
+    "lambda_ppm"
+)
