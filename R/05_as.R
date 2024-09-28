@@ -1,23 +1,23 @@
 # Convert to anything #####
 
 #' @export
+#' @name convert
 #' @title Convert to a Metabodecon Class
 #' @description Convert an object to a Metabodecon class.
-#' @inheritParams read_spectrum deconvolute_gspec
 #' @param x The object to convert.
 #' @param to The class to convert to. For details see [metabodecon_classes].
-#' @param nams Names to overwrite the individual spectrum names with. Must be NULL or a character vector of same length as `list(x, ...)`. If not provided, the names of the individual spectrum objects will be used, if available, else a default name of the form "spectrum_%d" where "%d" equals the spectrum number.#' @return An object of the specified class.
+#' @param ... Additional arguments passed to the conversion function.
+#' @return An object of the specified class.
 #' @examples
 #' dirpath <- metabodecon_file("sim_subset")
 #' spectra <- read_spectra(dirpath)
-#' gspecs <- as_gspecs(spectra)
-#' gdecons <- deconvolute_gspecs(gspecs)
-#' gspec <- as_gspec(spectrum)
-#' gdecon <- deconvolute_gspec(gspec)
-#' decon2 <- as_decon2(gdecon)
-convert <- function(x, to) {
+#' spectrum <- spectra[[1]]
+#' decons1 <- generate_lorentz_curves_sim(spectra)
+#' decon1 <- generate_lorentz_curves_sim(spectrum)
+#' decon2 <- as_decon2(decon1)
+convert <- function(x, to, ...) {
     as_class <- get(paste0("as_", to), envir = environment(convert))
-    as_class(x)
+    as_class(x, ...)
 }
 
 # Singular classes #####
@@ -43,6 +43,7 @@ as_spectrum <- function(x, sf = c(1e3, 1e6)) {
 
 #' @export
 #' @rdname convert
+#' @inheritParams as_decon1
 as_gspec <- function(x, sf = c(1e3, 1e6)) {
     if (is_gspec(x)) return(x)
     if (is_char(x)) x <- read_spectrum(x)
@@ -78,6 +79,7 @@ as_gdecon <- function(x) {
 
 #' @export
 #' @rdname convert
+#' @param sf Vector with two entries consisting of the factor to scale the x-axis and the factor to scale the y-axis.
 as_decon1 <- function(x, sf = NULL) {
     if (is_decon1(x)) return(x)
     x <- as_gdecon(x)
@@ -116,9 +118,62 @@ as_decon1 <- function(x, sf = NULL) {
     ))
 }
 
+#' @export
+#' @rdname convert
 as_decon2 <- function(x) {
-    if (is_decon2(x)) return(x)
-    if (!is_gdecon(x)) stop("Input must be a gdecon object, not ", class(x))
+    if (is_decon2(x)) {
+        return(x)
+    } else if (is_decon1(x)) {
+        cs <- x$x_values_ppm
+        si <- x$y_values_raw
+        meta <- list(
+            name = x$filename,
+            path = NULL, # TODO
+            type = NULL, # TODO
+            fq = NULL, # TODO (x_values_hz = x$hz,)
+            mfs = NULL, # TODO
+            lcpt = NULL, # TODO
+        )
+        args <- list(
+            wsrm = NULL, # TODO
+            nvrm = NULL, # TODO
+            # signal_free_region = c(x$sfr$left_sdp, x$sfr$right_sdp),
+            # range_water_signal_ppm = x$wsr$hwidth_ppm,
+        )
+        sits <- list(
+            smooth = x$y_values,
+            sup = x$spectrum_superposition
+        )
+        peak <- list(
+            center = x$index_peak_triplets_middle,
+            left = x$index_peak_triplets_left,
+            right = x$index_peak_triplets_right
+        )
+        lcpar <- list(
+            # A = x$lcr$A,
+            # lambda = x$lcr$lambda,
+            # x_0 = x$lcr$w,
+        )
+        mse <- list(
+            raw = NULL,
+            normed = NULL # TODO (mse_normed)
+        )
+        obj <- named(cs, si, meta, args, sit, peak, lcpar, mse)
+        structure(obj, class = "decon2")
+    }
+
+    # mse_normed_raw = mean(((x$y_raw / sum(x$y_raw)) - (s / sum(s)))^2),
+    # x_0_hz = convert_pos(x$lcr$w, x$sdp, x$hz),
+    # x_0_dp = convert_pos(x$lcr$w, x$sdp, x$dp),
+    # x_0_ppm = convert_pos(x$lcr$w, x$sdp, x$ppm),
+    # A_hz = convert_width(x$lcr$A, x$sdp, x$hz),
+    # A_dp = convert_width(x$lcr$A, x$sdp, x$dp),
+    # A_ppm = convert_width(x$lcr$A, x$sdp, x$ppm),
+    # lambda_hz = convert_width(x$lcr$lambda, x$sdp, x$hz),
+    # lambda_dp = convert_width(x$lcr$lambda, x$sdp, x$dp),
+    # lambda_ppm = convert_width(x$lcr$lambda, x$sdp, x$ppm)
+
+    x <- as_decon1(x)
     cs <- x$ppm
     si <- x$y_raw
     meta <- x$meta
@@ -134,9 +189,8 @@ as_decon2 <- function(x) {
 # Public Plural #####
 
 #' @export
-#' @inheritParams read_spectra
-#' @param x The object to convert.
 #' @rdname convert
+#' @inheritParams read_spectra
 as_spectra <- function(x,
                        file_format = "bruker",
                        expno = 10,
@@ -144,19 +198,22 @@ as_spectra <- function(x,
                        raw = FALSE,
                        silent = TRUE,
                        force = FALSE) {
-    if (all(sapply(x, is_spectrum))) {
+    if (is_spectrum(x)) {
+        xx <- structure(list(x), class = "spectra")
+        xx <- set_names(xx, get_names(xx))
+    } else if (all(sapply(x, is_spectrum))) {
         xx <- structure(x, class = "spectra")
         xx <- set_names(xx, get_names(xx))
     } else if (is.character(x) && file.exists(x)) {
         xx <- read_spectra(x, file_format, expno, procno, raw, silent, force)
     } else {
-        stop("Input must be a path or a list of spectrum objects")
+        stop("Input must be a path, spectrum or list of spectrum objects")
     }
     xx
 }
 
 #' @export
-#' @rdname as_gspec
+#' @rdname convert
 as_gspecs <- function(x, sf = c(1e3, 1e6)) {
     if (is_gspecs(x)) return(x)
     gg <- if (is_gspec(x)) {
@@ -173,7 +230,7 @@ as_gspecs <- function(x, sf = c(1e3, 1e6)) {
 }
 
 #' @export
-#' @rdname as_gspec
+#' @rdname convert
 as_gdecons <- function(x) {
     if (is_gdecons(x)) return(x)
     stopifnot(is.list(x))
@@ -182,17 +239,18 @@ as_gdecons <- function(x) {
 }
 
 #' @export
-#' @rdname as_gspec
+#' @rdname convert
 as_decons1 <- function(x, sf = c(1e3, 1e6)) {
     if (is_decons1(x)) return(x)
     decons1 <- lapply(x, as_decon1)
     names(decons1) <- names(x)
     class(decons1) <- "decons1"
+    for (i in seq_along(decons1)) decons1[[i]]$number_of_files <- length(decons1)
     decons1
 }
 
 #' @export
-#' @rdname as_gspec
+#' @rdname convert
 as_decons2 <- function(x) {
     if (is_decons2(x)) return(x)
     decons2 <- lapply(x, as_decon2)

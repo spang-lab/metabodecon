@@ -2,9 +2,10 @@
 
 #' @name print_methods
 #' @title S3 Methods for Printing Metabodecon Objects
-#' @description S3 Methods for printing metabodecon objects as described in the [Metabodecon Classes].
+#' @description S3 Methods for printing metabodecon objects as described in the [Metabodecon Classes](https://spang-lab.github.io/metabodecon/articles/).
 #' @param x The object to print.
-#' @param ... Not used. Only accepted to comply with generic [print()].
+#' @param name Logical. If TRUE, the name of the object is printed before the object.
+#' @param ... Not used. Only accepted to comply with generic [base::print()].
 #' @examples
 #' si <- c(1, 1, 3, 7, 8, 3, 8, 5, 2, 1)
 #' cs_max <- 14.8
@@ -63,12 +64,12 @@ print.decon2 <- function(x, name = FALSE, ...) {
 
 #' @export
 #' @rdname print_methods
-print.spectra <- function(xx) {
+print.spectra <- function(x, ...) {
     msg <- "spectra object consisting of %d spectrum objects:\n"
-    catf(msg, length(xx))
-    nams <- get_names(xx)
+    catf(msg, length(x, ...))
+    nams <- get_names(x, ...)
     msg <- "%s (%d datapoints from %.2f - %.2f ppm)\n"
-    mapply(xx, nams, FUN = function(x, nam) {
+    mapply(x, ..., nams, FUN = function(x, nam) {
         catf(msg, nam, length(x$si), min(x$cs), max(x$cs))
     })
     invisible(NULL)

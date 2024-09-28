@@ -6,6 +6,7 @@
 #' @param x The object to check.
 #' @param check_class Logical indicating whether to check the class of the object.
 #' @param check_contents Logical indicating whether to check the contents of the object.
+#' @param check_child_classes Logical indicating whether to check the class of each element of the object.
 #' @return For `type()`, a character string indicating the type of the object. For `is_*` functions, a logical indicating whether the object is of the specified type.
 #' @examples
 #' obj <- structure(list(a="a", b=1:5), class = "abc")
@@ -44,7 +45,6 @@ is_spectrum <- function(x,
 
 #' @export
 #' @rdname type_checking
-
 is_gspec <- function(x) inherits(x, "gspec")
 
 #' @export
@@ -63,7 +63,7 @@ is_decon1 <- function(x) inherits(x, "decon1")
 
 #' @export
 #' @rdname type_checking
-is_decon2 <- function(x) inherits(x, "decon1")
+is_decon2 <- function(x) inherits(x, "decon2")
 
 # S3 Collection #####
 
@@ -105,8 +105,8 @@ is_decons2 <- function(x) inherits(x, "decons2")
 
 # String #####
 
-is_str_or_null <- function(x) {
-    is.null(x) || (is.character(x) && length(x) == 1)
+is_str <- function(x) {
+    is.character(x) && length(x) == 1
 }
 
 #' @noRd
@@ -152,6 +152,10 @@ is_float_str <- function(x) {
         x,
         perl = TRUE
     )
+}
+
+is_existing_path <- function(x) {
+    is_str(x) && file.exists(x)
 }
 
 # Vector #####

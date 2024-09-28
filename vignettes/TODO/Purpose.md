@@ -29,7 +29,3 @@ Metabodecon provides a set of functions for reversing the phenomena described in
 This results in a matrix of features where each row corresponds to a sample and each column to a concentration of H1 nuclei with a specific absorption energy.
 
 Tools for solving the mapping of signal intensities to molecule concentrations include:
-
-- TODO
-- TODO
-- TODO

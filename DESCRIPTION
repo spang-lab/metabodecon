@@ -41,12 +41,14 @@ Imports:
     mathjaxr,
     readJDX,
     speaq,
-    toscutil
+    toscutil,
+    withr
 Suggests:
     devtools,
     digest,
     knitr,
     lifecycle,
+    mirai,
     rmarkdown,
     testthat (>= 3.0.0)
 LazyData: true

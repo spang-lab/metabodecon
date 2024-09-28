@@ -24,7 +24,7 @@
 
 \method{print}{decon2}(x, name = FALSE, ...)
 
-\method{print}{spectra}(xx)
+\method{print}{spectra}(x, ...)
 
 \method{print}{gspecs}(x, ...)
 
@@ -37,10 +37,12 @@
 \arguments{
 \item{x}{The object to print.}
 
-\item{...}{Not used. Only accepted to comply with generic \code{\link[=print]{print()}}.}
+\item{name}{Logical. If TRUE, the name of the object is printed before the object.}
+
+\item{...}{Not used. Only accepted to comply with generic \code{\link[base:print]{base::print()}}.}
 }
 \description{
-S3 Methods for printing metabodecon objects as described in the \link{Metabodecon Classes}.
+S3 Methods for printing metabodecon objects as described in the \href{https://spang-lab.github.io/metabodecon/articles/}{Metabodecon Classes}.
 }
 \examples{
 si <- c(1, 1, 3, 7, 8, 3, 8, 5, 2, 1)

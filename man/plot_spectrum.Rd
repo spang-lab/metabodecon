@@ -63,6 +63,10 @@ plot_spectrum(
 
 \item{sub_rgn}{Either NULL or a numeric vector of the form \code{c(x1, x2, y1, y2)} giving the left/right/bottom/top coordinates of the sub figure region in "normalized plot coordinates" (as described in \code{\link[graphics:convertXY]{graphics::grconvertX()}}). If provided, the focused region is drawn as sub figure within the main plot region. Setting \code{sub_rgn} to NULL will prevent the sub figure from being drawn.}
 
+\item{verbose}{Logical. If TRUE, print additional information.}
+
+\item{rct_show}{Logical. If TRUE, the focus region is shown as a rectangle.}
+
 \item{rct_col}{Border color of the rectangle around the focus region.}
 
 \item{rct_fill}{Background color of the rectangle around the focus region.}

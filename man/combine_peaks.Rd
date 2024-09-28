@@ -54,8 +54,11 @@ I.e. column 3 and 4 get merged, because they are in `range` of each other and ha
 }\if{html}{\out{</div>}}
 }
 \examples{
-shifted_mat <- speaq_align(spectrum_data = generate_lorentz_curves_sim("bruker/sim"))
-M2 <- combine_peaks(shifted_mat, spectrum_data = generate_lorentz_curves_sim("bruker/sim"))
+path <- metabodecon_file("bruker/sim_subset")
+spectra <- read_spectra(path)
+decons = generate_lorentz_curves_sim(path, verbose = FALSE)
+aligned_mat <- speaq_align(spectrum_data = decons)
+combine_list <- combine_peaks(aligned_mat, spectrum_data = spectra)
 }
 \author{
 Initial version from Wolfram Gronwald. Refactored by Tobias Schmidt in 2024.

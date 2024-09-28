@@ -1,3 +1,12 @@
+# Not assigned
+
+1. Replace all [glc()] calls with [generate_lorentz_curves()] calls.
+2. Implement [make_sim_dataset()]
+2. Update [md1d()] to first source the old MetaboDecon1D code, then produce suitable answers and then call the old metabodecon1d code using these answers and [evalwith()].
+3. Rename [md1d()] to `MetaboDecon1D_original()`.
+4. Write testcases for `MetaboDecon1D()` and `generate_lorentz_curves()` and `deconvolute()` that test for a good PRARP as for the correct return type.
+5. Write testcases for `MetaboDecon1D()` and `generate_lorentz_curves()` that test for compliance with `MetaboDecon1D_original()` results.
+
 # v1.2.0
 
 ## FEATURE-18: Implement plot_decon

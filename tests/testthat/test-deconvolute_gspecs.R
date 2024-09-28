@@ -1,23 +1,19 @@
 library(testthat)
 
-sim_subset <- as_gspecs(read_spectra(metabodecon_file("sim_subset")))
-sim_one <- sim_subset[[1]]
-
-test_that("deconvolute_gspecs for: 1 spec, 1 core", {
-    obj <- deconvolute_gspecs(sim_one)
-    expect_true(inherits(obj, "gdecons"))
-    expect_equal(length(obj), length(sim_subset))
-})
-
-test_that("deconvolute_gspecs for: 1 spec, 2 cores", {
-    obj <- deconvolute_gspecs(sim_one, nworkers = 2)
-    expect_true(inherits(obj, "gspecs"))
-    expect_equal(length(obj), length(sim_subset))
-})
-
-test_that("deconvolute_gspecs for: 2 specs, 1 core", {
-    nworkers <- 1
-    obj <- deconvolute_gspecs(sim_subset, nfit, smopts, delta, sfr, wshw, ask, force, verbose, bwc, nworkers)
-    expect_true(inherits(obj, "gspecs"))
-    expect_equal(length(obj), length(sim_subset))
+test_that("deconvolute_gspecs works: ", {
+    sim_subset <- as_gspecs(read_spectra(metabodecon_file("sim_subset")))
+    sim_one <- sim_subset[[1]]
+    d1 <- deconvolute_gspecs(sim_one, nworkers = 1, verbose = FALSE)
+    d2 <- deconvolute_gspecs(sim_one, nworkers = 2, verbose = FALSE)
+    d3 <- deconvolute_gspecs(sim_subset, nworkers = 1, verbose = FALSE)
+    d4 <- deconvolute_gspecs(sim_subset, nworkers = 2, verbose = FALSE)
+    expect_true(inherits(d1, "gdecons"))
+    expect_true(inherits(d3, "gdecons"))
+    expect_equal(length(d1), 1)
+    expect_equal(length(d3), length(sim_subset))
+    d2$sim_01$dcp$nworkers <- 1
+    d4$sim_01$dcp$nworkers <- 1
+    d4$sim_02$dcp$nworkers <- 1
+    expect_identical(d1, d2)
+    expect_identical(d3, d4)
 })

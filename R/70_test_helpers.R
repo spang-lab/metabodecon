@@ -854,7 +854,7 @@ glc <- function(dp = "urine_1",
     if (file.exists(rds)) {
         logv("Reading %s", rds)
     } else {
-        call <- substitute(generate_lorentz_curves(data_path = dp, file_format = ff, nfit = nfit, debug = debug, nworkers = nworkers))
+        call <- substitute(generate_lorentz_curves(data_path = dp, file_format = ff, nfit = nfit, nworkers = nworkers))
         logv("Calling %s", collapse(format(call), ""))
     }
 
@@ -867,7 +867,7 @@ glc <- function(dp = "urine_1",
         plot = if (cplot) "plots.pdf" else NULL,
         output = if (cout) "captured" else NULL,
         message = if (cout) "captured" else NULL,
-        expr = generate_lorentz_curves(data_path = dp, file_format = ff, nfit = nfit, debug = debug, nworkers = nworkers)
+        expr = generate_lorentz_curves(data_path = dp, file_format = ff, nfit = nfit, nworkers = nworkers)
     ))
 }
 
@@ -886,7 +886,7 @@ md1d <- function(dp = "urine_1",
 
     logv("Parsing GLC arguments")
     tid <- get_tid("md1d", dp, ff, nfit, simple, debug)
-    if (dp %in% c("urine", "blood", "sim")) {
+    if (dp %in% c("urine", "blood", "sim", "sim_subset")) {
         inputs <- file.path(ff, dp) # e.g. 'bruker/urine'
         fp <- dp # e.g. 'urine', i.e. deconvolute all files in the 'urine' directory
         fn <- NA

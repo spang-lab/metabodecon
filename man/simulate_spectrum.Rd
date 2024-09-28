@@ -7,11 +7,12 @@
 simulate_spectrum(
   name = "sim_00",
   seed = sum(utf8ToInt(name)),
+  ndp = 2048,
   npks = 10,
   csres = 0.00015,
-  cs = seq(3.3, 3.60705, by = csres),
+  cs = seq(from = 3.6, length.out = ndp, by = -csres),
   pkr = quantile(cs, c(0.25, 0.75)),
-  x0 = sort(runif(npks, 3.4, 3.5)),
+  x0 = sort(runif(npks, pkr[1], pkr[2])),
   A = runif(npks, 2.5, 20) * 1000,
   lambda = runif(npks, 0.9, 1.3)/1000,
   noise = rnorm(length(cs), sd = 1200)
@@ -22,9 +23,15 @@ simulate_spectrum(
 
 \item{seed}{The seed for the random number generator.}
 
+\item{ndp}{The number of data points in the spectrum.}
+
 \item{npks}{The number of peaks in the spectrum.}
 
-\item{cs}{The chemical shifts in PPM.}
+\item{csres}{The chemical shift resolution in PPM.}
+
+\item{cs}{The vector of chemical shifts in PPM.}
+
+\item{pkr}{The start and stop of the peak region in PPM.}
 
 \item{x0}{The peak center positions in PPM.}
 

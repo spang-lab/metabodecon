@@ -27,7 +27,7 @@ speaq_align(
 
 \item{show}{Whether to plot the original and aligned spectra.}
 
-\item{mfcol}{Layout to use for the plot. Passed on to \code{par()}. Use \code{mfcol = NULL} if the plot layout should not be changed.}
+\item{mfrow}{Layout to use for the plot. Passed on to \code{par()}. Use \code{mfrow = NULL} if the plot layout should not be changed.}
 }
 \value{
 A matrix containing the integral values of the spectra after alignment.

@@ -14,7 +14,7 @@ get_adjno <- function(gspecs, sfr, wshw, ask) {
     get_num_input(prompt, min = 1, max = length(gspecs), int = TRUE)
 }
 
-#' @description Convert SFR to list of correct length and let user confirm.
+#' @description Convert to list of correct length (one per spectrum) and let user confirm each entry.
 #' @noRd
 get_sfr <- function(gspecs, sfr, ask, adjno) {
     n <- length(gspecs)
@@ -31,7 +31,7 @@ get_sfr <- function(gspecs, sfr, ask, adjno) {
     sfr
 }
 
-#' @description Convert WSHW to list of correct length and let user confirm.
+#' @description Convert to list of correct length (one per spectrum) and let user confirm each entry.
 #' @noRd
 get_wshw <- function(gspecs, wshw, ask, adjno) {
     n <- length(gspecs)
@@ -44,6 +44,8 @@ get_wshw <- function(gspecs, wshw, ask, adjno) {
     wshw
 }
 
+#' @description Convert to list of correct length (one per spectrum).
+#' @noRd
 get_smopts <- function(gspecs, smopts) {
     n <- length(gspecs)
     if (is_int(smopts, 2)) smopts <- rep(list(smopts), n)
@@ -66,7 +68,7 @@ confirm_sfr <- function(gspec, sfr = c(11.44494, -1.8828)) {
     sfr
 }
 
-#' @description Repeatly ask the user to confirm/refine the WSHW.
+#' @description Repeatedly ask the user to confirm/refine the WSHW.
 #' @noRd
 confirm_wshw <- function(gspec, wshw) {
     plot_ws(gspec, wshw)

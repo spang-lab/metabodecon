@@ -76,23 +76,6 @@ A list with parameters \code{A}, \code{lambda} and \code{x_0} required to calcul
 
 \bold{Notice}: It is feasible to load all spectra of a folder at once. Here the filename needs to be "NA" which is the default value. One selected spectrum could then be used to adjust the parameters (\code{signal_free_region} and \code{range_water_signal_ppm}) for the analysis of all spectra. Furthermore it is possible to adjust these parameters for each spectrum separate.
 }
-\examples{
-\donttest{
-xds_path <- download_example_datasets()
-urine <- file.path(xds_path, "bruker/urine")
-urine_1 <- file.path(urine, "urine_1")
-
-\dontrun{
-# Deprecated since metabodecon v1.2.0. Please use generate_lorentz_curves()
-# instead. Shown below.
-urine_1_deconv <- MetaboDecon1D(urine, "urine_1")
-urine_all_deconv <- MetaboDecon1D(urine)
-}
-
-urine_1_deconv <- generate_lorentz_curves(urine_1, ask = FALSE)
-urine_all_deconv <- generate_lorentz_curves(urine, ask = FALSE)
-}
-}
 \references{
 Haeckl, M.; Tauber, P.; Schweda, F.; Zacharias, H.U.; Altenbuchinger, M.; Oefner, P.J.; Gronwald, W. An R-Package for the Deconvolution and Integration of 1D NMR Data: MetaboDecon1D. Metabolites 2021, 11, 452. https://doi.org/10.3390/metabo11070452
 }

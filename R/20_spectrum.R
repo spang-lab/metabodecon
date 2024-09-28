@@ -289,8 +289,11 @@ store_spectrum <- function(simspec = get_sim_params(),
 #' `r lifecycle::badge("experimental")`
 #' @param name The name of the spectrum.
 #' @param seed The seed for the random number generator.
+#' @param ndp The number of data points in the spectrum.
 #' @param npks The number of peaks in the spectrum.
-#' @param cs The chemical shifts in PPM.
+#' @param csres The chemical shift resolution in PPM.
+#' @param cs The vector of chemical shifts in PPM.
+#' @param pkr The start and stop of the peak region in PPM.
 #' @param x0 The peak center positions in PPM.
 #' @param A The peak area parameter.
 #' @param lambda The peak width parameter.
@@ -305,11 +308,12 @@ store_spectrum <- function(simspec = get_sim_params(),
 #' if (identical(simA, simB)) stop()
 simulate_spectrum <- function(name = "sim_00",
                               seed = sum(utf8ToInt(name)), # (1)
+                              ndp = 2048,
                               npks = 10,
                               csres = 0.00015,
-                              cs = seq(3.3, 3.60705, by = csres),
+                              cs = seq(from = 3.6, length.out = ndp, by = - csres),
                               pkr = quantile(cs, c(0.25, 0.75)),
-                              x0 = sort(runif(npks, 3.4, 3.5)),
+                              x0 = sort(runif(npks, pkr[1], pkr[2])),
                               A = runif(npks, 2.5, 20) * 1e3,
                               lambda = runif(npks, 0.9, 1.3) / 1e3,
                               noise = rnorm(length(cs), sd = 1200)) {
@@ -384,7 +388,9 @@ read_jcampdx_spectrum <- function(path, raw = FALSE, silent = TRUE, force = FALS
         fq_ref = meta$SFO1 * 1e6, # Reference Frequency in Hz (better than meta$SF, because it fulfills `all.equal` check of `make_spectrum`)
         fq_width = meta$SW_h, # Spectrum width in Hz
         force = force,
-        silent = silent
+        silent = silent,
+        path = path,
+        name = basename(path)
     )
 }
 
@@ -549,9 +555,10 @@ read_1r_file <- function(spldir = pkg_file("example_datasets/bruker/urine/urine_
 
 # Development Helpers #####
 
+#' @noRd
 #' @title Count Stretches of Increases and Decreases
 #' @description Counts the lengths of consecutive increases and decreases in a numeric vector.
-#' @param vec A numeric vector.
+#' @param x A numeric vector.
 #' @return A numeric vector containing the lengths of stretches of increases and decreases.
 #' @examples
 #' #
@@ -602,9 +609,6 @@ get_sim_params <- function(x, pkr = c(3.4, 3.5)) {
     named(A, x0, lambda, noiseSD)
 }
 
-# CONTINUE HERE: change `simulate_spectra()` to `make_sim_dataset()`
-# Notes:
-#   ip <- which( decon0$x_0_ppm <= 3.54 & decon0$x_0_ppm >= 3.44) # Blood 02 is shifted approx. 0.01 ppm to the right, so we also need to shift the interval from which we pick our peaks so that we end up with signals from the same metabolites.
 
 make_sim_dataset <- function(overwrite = FALSE) {
 
@@ -618,25 +622,13 @@ make_sim_dataset <- function(overwrite = FALSE) {
     rdsdir <- "inst/example_datasets/rds/sim"
     brukerdir <- "inst/example_datasets/bruker/sim"
 
-    deconvs <- glc("blood", debug = FALSE)$rv
+    # NOTES:
+    # ip <- which( decon0$x_0_ppm <= 3.54 & decon0$x_0_ppm >= 3.44)
+    # Blood 02 is shifted approx. 0.01 ppm to the right, so we also need to shift the
+    # interval from which we pick our peaks so that we end up with signals from
+    # the same metabolites.
 
-    sim <- lapply(deconvs, function(deconv) {
-        logf(deconv$filename)
-        old_name <- deconv$filename
-        new_name <- gsub("blood", "sim", old_name)
-        simulate_spectrum(
-            deconv,
-            show = FALSE,
-            pngpath = file.path(pngdir, paste0(new_name, ".png")),
-            pdfpath = file.path(pdfdir, paste0(new_name, ".pdf")),
-            svgpath = file.path(svgdir, paste0(new_name, ".svg")),
-            rdspath = file.path(rdsdir, paste0(new_name, ".rds")),
-            brukerdir = file.path(brukerdir, new_name),
-            verbose = verbose,
-            noise_method = noise_method
-        )
-    })
-    invisible(named(sim, pngdir, pdfdir, rdsdir))
+    stop("Not implemented yet")
 }
 
 #' @noRd
@@ -707,7 +699,8 @@ simulate_from_decon <- function(x,
                                 # Output params
                                 show = TRUE,
                                 store = FALSE,
-                                verbose = TRUE) {
+                                verbose = TRUE,
+                                ...) {
 
     if (!isFALSE(verbose)) logf("Checking function inputs")
     stopifnot(is_num(cs_min, 1))

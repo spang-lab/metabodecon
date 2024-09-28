@@ -12,6 +12,9 @@
 \alias{is_spectra}
 \alias{is_gspecs}
 \alias{is_gdecons}
+\alias{is_decons0}
+\alias{is_decons1}
+\alias{is_decons2}
 \title{Check the type of an object}
 \usage{
 type(x)
@@ -38,6 +41,12 @@ is_spectra(
 is_gspecs(x)
 
 is_gdecons(x)
+
+is_decons0(x)
+
+is_decons1(x)
+
+is_decons2(x)
 }
 \arguments{
 \item{x}{The object to check.}
@@ -45,6 +54,8 @@ is_gdecons(x)
 \item{check_class}{Logical indicating whether to check the class of the object.}
 
 \item{check_contents}{Logical indicating whether to check the contents of the object.}
+
+\item{check_child_classes}{Logical indicating whether to check the class of each element of the object.}
 }
 \value{
 For \code{type()}, a character string indicating the type of the object. For \verb{is_*} functions, a logical indicating whether the object is of the specified type.

@@ -10,17 +10,14 @@
 #'
 #' @inheritParams read_spectrum
 #'
-#' @param ... Further arguments to be passed to internal subfunctions.
 #' @param ask Logical. Whether to ask for user input during the deconvolution process. If FALSE, the provided default values will be used.
-#' @param bwc Whether to produce results backwards compatible with [MetaboDecon1D()] and [generate_lorentz_curves()]. If `bwc < 2`, a `decon1` object is returned instead of a `decon2` object. If `bwc < 1`, fixes/improvements introduced after version 'metabodecon v1.0' are not used. Support for `bwc < 1` will be removed in 'metabodecon v2.0' and will result in a warning for 'metabodecon v1.x' with `x >= 1.2`.
+#' @param x A `spectra` or `spectrum` object as described in [metabodecon_classes].
 #' @param data_path Either the path to a directory containing measured NMR spectra, a dataframe as returned by [read_spectrum()], or a list of such dataframes.
-#' @param debug Logical. Whether to return additional intermediate results for debugging purposes.
 #' @param delta Threshold for peak filtering. Higher values result in more peaks being filtered out. A peak is filtered if its score is below \mjeqn{\mu + \sigma \cdot \delta}{mu + s * delta}, where \mjeqn{\mu}{mu} is the average peak score in the signal-free region (SFR), and \mjeqn{\sigma}{s} is the standard deviation of peak scores in the SFR.
 #' @param force If FALSE, the function stops with an error message if no peaks are found in the signal free region (SFR), as these peaks are required as a reference for peak filtering. If TRUE, the function instead proceeds without peak filtering, potentially increasing runtime and memory usage significantly.
 #' @param make_rds Logical or character. If TRUE, stores results as an RDS file on disk. If a character string, saves the RDS file with the specified name. Should be set to TRUE if many spectra are evaluated to decrease computation time.
 #' @param nfit Number of iterations for approximating the parameters for the Lorentz curves.
 #' @param nworkers Number of workers to use for parallel processing. If `"auto"`, the number of workers will be determined automatically. If a number greater than 1, it will be limited to the number of spectra.
-#' @param sf Numeric vector with two entries: the factors to scale the x-axis and y-axis.
 #' @param sfr Numeric vector with two entries: the ppm positions for the left and right border of the signal-free region of the spectrum.
 #' @param smopts Numeric vector with two entries: the number of smoothing iterations and the number of data points to use for smoothing (must be odd).
 #' @param verbose Logical. Whether to print log messages during the deconvolution process.
@@ -87,6 +84,20 @@ NULL
 
 #' @export
 #' @rdname deconvolute
+deconvolute <- function(x, nfit, smopts, delta, sfr, wshw, ask, force, verbose, nworkers) {
+    check_args_generate_lorentz_curves()
+    gdecons <- deconvolute_gspecs(
+        gspecs = as_gspecs(x),
+        nfit, smopts, delta, sfr, wshw,
+        ask, force, verbose,
+        bwc = 2, nworkers = nworkers, rtyp = "decons2"
+    )
+    decons2 <- as_decons2(gdecons)
+    if (length(decons2) == 1) decons2[[1]] else decons2
+}
+
+#' @export
+#' @rdname deconvolute
 generate_lorentz_curves <- function(data_path,
                                     file_format = "bruker",
                                     make_rds = FALSE,
@@ -133,7 +144,7 @@ generate_lorentz_curves_sim <- function(data_path,
                                         wshw = 0,
                                         ask = FALSE,
                                         force = FALSE,
-                                        verbose = TRUE,
+                                        verbose = FALSE,
                                         nworkers = 1) {
     generate_lorentz_curves(
         data_path, file_format, make_rds, expno, procno, raw,
@@ -144,6 +155,9 @@ generate_lorentz_curves_sim <- function(data_path,
 
 # Internal #####
 
+#' @noRd
+#' @inheritParams deconvolute
+#' @param bwc Whether to produce results backwards compatible with [MetaboDecon1D()] and [generate_lorentz_curves()]. If `bwc < 2`, a `decon1` object is returned instead of a `decon2` object. If `bwc < 1`, fixes/improvements introduced after version 'metabodecon v1.0' are not used. Support for `bwc < 1` will be removed in 'metabodecon v2.0' and will result in a warning for 'metabodecon v1.x' with `x >= 1.2`.
 deconvolute_gspecs <- function(gspecs,
                                nfit = 3,
                                smopts = c(2, 5),
@@ -158,7 +172,7 @@ deconvolute_gspecs <- function(gspecs,
                                rtyp = "gdecons") {
 
     # Check args & configure logging
-    args <- check_args(deconvolute_gspecs)
+    args <- check_args_deconvolute_gspecs()
     gspecs <- as_gspecs(gspecs)
     opts <- if (!verbose) options(toscutil.logf.file = nullfile())
     on.exit(options(opts), add = TRUE)
@@ -170,16 +184,16 @@ deconvolute_gspecs <- function(gspecs,
     nfstr <- if (ns == 1) "1 spectrum" else sprintf("%d spectra", ns)
     nwstr <- if (nw == 1) "1 worker" else sprintf("%d workers", nw)
     adjno <- get_adjno(gspecs, sfr, wshw, ask)
-    sfr <- get_sfr(gspecs, sfr, ask, adjno)
-    wshw <- get_wshw(gspecs, wshw, ask, adjno)
-    smopts <- get_smopts(gspecs, smopts)
+    sfrlist <- get_sfr(gspecs, sfr, ask, adjno)
+    wshwlist <- get_wshw(gspecs, wshw, ask, adjno)
+    smoptslist <- get_smopts(gspecs, smopts)
     rtypsub <- gsub("decons", "decon", rtyp)
 
     # Deconvolute spectra
     logf("Starting deconvolution of %s using %s", nfstr, nwstr)
     starttime <- Sys.time()
     gdecon_list <- mcmapply(nw, deconvolute_gspec, gspecs,
-        nfit, smopts, delta, sfr, wshw,
+        nfit, smoptslist, delta, sfrlist, wshwlist,
         ask, force, verbose, bwc, nworkers, rtypsub)
     robj <- convert(gdecon_list, to = args$rtyp)
     duration <- format(round(Sys.time() - starttime, 3))
@@ -202,7 +216,7 @@ deconvolute_gspec <- function(gspec,
 
     # Check args & configure logging
     gspec <- as_gspec(gspec)
-    args <- check_args(deconvolute_gspec, asenv = FALSE)
+    args <- check_args_deconvolute_gspec()
     gspec$dcp <- args[names(args) != "gspec"]
     reps <- smopts[1]
     k <- smopts[2]
@@ -226,13 +240,13 @@ deconvolute_gspec <- function(gspec,
 # Private Helpers #####
 
 rm_water_signal <- function(x, wshw, bwc, sf = c(1e3, 1e6)) {
-    check_args(rm_water_signal)
+    check_args_rm_water_signal()
     logf("Removing water signal")
     if (bwc >= 2) {
         ppm_center <- (x$ppm[1] + x$ppm[length(x$ppm)]) / 2
         idx_wsr <- which(min(wshw) < x$ppm & x$ppm < max(wshw))
         x$y_nows <- x$y_scaled
-        x$y_nows[idx_wsr] <- min(y_nows)
+        x$y_nows[idx_wsr] <- min(x$y_nows)
     } else {
         wsr <- enrich_wshw(x, wshw)
         left <- wsr$left_dp
@@ -328,7 +342,7 @@ smooth_signals <- function(spec, reps = 2, k = 5, verbose = TRUE) {
 #' rm3 <- filtered_gspec <- filter_peaks(gspec, sfr)
 #' rm2 <- filtered_gspec <- filter_peaks(gspec, sfr, delta = 1)
 filter_peaks <- function(gspec, sfr, delta = 6.4, force = FALSE, bwc = 1) {
-    check_args(filter_peaks)
+    check_args_filter_peaks()
     logf("Removing peaks with low pscores")
     sdp <- gspec$sdp
     ppm <- gspec$ppm

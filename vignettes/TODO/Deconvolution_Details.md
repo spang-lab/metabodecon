@@ -17,13 +17,11 @@ Consider a spectrum of a mixture of water, ethanol, acetate, alanine and lactate
 
 PICTURE
 
-As you can see, the peaks of ethanol and lactate overlap, making it hard to identify the individual absorption patterns of these two metabolites. To solve this problem, one can try to model the spectrum as a sum of peaks, where each peak has the shape of a Lorentzian function. For an explanation of why lorentz curves are the best choice for this task, see TODO from TODO et al.
+As you can see, the peaks of ethanol and lactate overlap, making it hard to identify the individual absorption patterns of these two metabolites. To solve this problem, one can try to model the spectrum as a sum of peaks, where each peak has the shape of a Lorentzian function. For an explanation of why lorentz curves are the best choice for this task, see PAPER from AUTHOR.
 
 E.g. the spectrum above could be written as:
 
-```
-TODO
-```
+FORMULA
 
 where $A_i$ is the amplitude of the $i$-th peak, $f_i$ is the frequency of the $i$-th peak, $w_i$ is the width of the $i$-th peak and $c$ is a constant offset.
 
@@ -36,12 +34,6 @@ Subproblem 1 could be solved naively by searching for local maxima in the spectr
 
 # Levenberg-Marqardt-Peak-selection
 
-TODO
-
 # Koh-et-al-Peak-Selection
 
-TODO
-
 # Koh-et-al-Parameter-Approximation
-
-TODO

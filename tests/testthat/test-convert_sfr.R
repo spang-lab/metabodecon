@@ -15,8 +15,11 @@ test_that("enrich_sfr works", {
     })
     sfr <- enrich_sfr(spec, sfr = c(2.0, -3.0))
     expect_equal(sfr, list(
-        right_sdp = 0.00223076923076923, right_dp = 2.23076923076923,
-        left_sdp = 0.00662637362637363, left_dp = 6.62637362637363,
-        right_ppm = -3, left_ppm = 2
+        left_ppm = 2,
+        right_ppm = -3,
+        left_dp = 6.62637362637363,
+        right_dp = 2.23076923076923,
+        left_sdp = 0.00662637362637363,
+        right_sdp = 0.00223076923076923
     ))
 })

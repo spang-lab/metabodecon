@@ -55,7 +55,7 @@ plot_spec <- function(
     foc_only = FALSE, # If TRUE, draw focusregion, else full spectrum.
     # Focus Rectangle
     rct_show = !is.null(foc_rgn) && !foc_only, # Draw rectangle around FR?
-    rct_fill = trans("yellow"), # Background color of rectangle around FR.
+    rct_fill = transp("yellow"), # Background color of rectangle around FR.
     rct_col = "black", # Border color of rectangle around FR.
     # Spectrum Lines
     line_col = "black", # Color of raw signal intensities.
@@ -63,12 +63,11 @@ plot_spec <- function(
     sm_col = "blue", # Color of smoothed signal intensities.
     ysquash = 0.96, # Fraction of plot height to squash y-values into.
     sf_y_raw = 1e6, # Divide raw SI by this factor before drawing.
-    d2_show = FALSE, # If TRUE, shows the second derivative of SIs.
     # Lorentzians
     lc_show = TRUE, # If TRUE, the Lorentzian Curves (LCs) are shown.
     lc_col = "black", # Color of the Lorentzian Curves.
     lc_lty = 1, # Line type of the Lorentzian Curves.
-    lc_fill = trans("black"), # BG-color of rectangles shown at LC-center.
+    lc_fill = transp("black"), # BG-color of rectangles shown at LC-center.
     sup_show = TRUE, # If TRUE, the LC-Superposition (LC-Sup) is shown.
     sup_col = "red", # Color of LC-Sup.
     sup_lty = 1, # Line type of LC-Sup.
@@ -93,7 +92,7 @@ plot_spec <- function(
     dat <- psi_get_dat(args)
     plt <- psi_init_plot_region(dat, verbose)
     bgr <- psi_draw_bg(dat, fill_col, verbose)
-    lns <- psi_draw_lines(dat, line_col, d2_show, foc_only, sm_show, sm_col, verbose)
+    lns <- psi_draw_lines(dat, line_col, foc_only, sm_show, sm_col, verbose)
     trp <- psi_draw_triplets(dat, trp_show, trp_pch, trp_col, verbose)
     lcs <- psi_draw_lorentz_curves(dat, args, verbose)
     foc <- psi_draw_focus_rectangle(dat, rct_show, rct_fill, rct_col, verbose)
@@ -233,7 +232,6 @@ psi_draw_axis <- function(dat,
 
 psi_draw_lines <- function(dat,
                            line_col = "black",
-                           d2_show = FALSE,
                            foc_only = FALSE,
                            sm_show = TRUE,
                            sm_col = "blue",
@@ -243,9 +241,6 @@ psi_draw_lines <- function(dat,
     ys <- if (foc_only) dat$sis[dat$ifp] else dat$sis
     if (verbose) logf("Drawing raw signal")
     lines(x, y, type = "l", col = line_col, lty = 1)
-    if (d2_show) {
-        if (verbose) logf("Drawing second derivative (TODO)")
-    }
     if (sm_show && !is.null(ys)) {
         if (verbose) logf("Drawing smoothed signal")
         lines(x, ys, type = "l", col = sm_col, lty = 1)

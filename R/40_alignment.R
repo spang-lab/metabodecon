@@ -109,7 +109,7 @@ gen_feat_mat <- function(data_path = generate_lorentz_curves_sim(),
 #' @param si_size_real_spectrum Number of real data points in your original spectra.
 #' @param verbose Whether to print additional information during the alignment process.
 #' @param show Whether to plot the original and aligned spectra.
-#' @param mfcol Layout to use for the plot. Passed on to `par()`. Use `mfcol = NULL` if the plot layout should not be changed.
+#' @param mfrow Layout to use for the plot. Passed on to `par()`. Use `mfrow = NULL` if the plot layout should not be changed.
 #' @return A matrix containing the integral values of the spectra after alignment.
 #' There is one row per spectrum and one column per ppm value.
 #' The entry at postion `i, j` holds the integral value of the signal from spectrum `i` that has its center at position `j` after alignment by speaq.
@@ -204,8 +204,11 @@ speaq_align <- function(feat = gen_feat_mat(spectrum_data),
 #'
 #' @author Initial version from Wolfram Gronwald. Refactored by Tobias Schmidt in 2024.
 #' @examples
-#' shifted_mat <- speaq_align(spectrum_data = generate_lorentz_curves_sim("bruker/sim"))
-#' M2 <- combine_peaks(shifted_mat, spectrum_data = generate_lorentz_curves_sim("bruker/sim"))
+#' path <- metabodecon_file("bruker/sim_subset")
+#' spectra <- read_spectra(path)
+#' decons = generate_lorentz_curves_sim(path, verbose = FALSE)
+#' aligned_mat <- speaq_align(spectrum_data = decons)
+#' combine_list <- combine_peaks(aligned_mat, spectrum_data = spectra)
 combine_peaks <- function(shifted_mat = speaq_align(spectrum_data = spectrum_data),
                           range = 5,
                           lower_bound = 1,
@@ -560,7 +563,7 @@ is_decon_list <- function(x) {
 
 #' @author Initial version written by from Wolfram Gronwald as part of `gen_feat_mat`. Moved into seperate function in 2024 by Tobias Schmidt.
 #' @noRd
-read_decon_params_v1 <- function(data_path) {
+read_decon_params_original <- function(data_path) {
     files <- list.files(data_path, ".txt", full.names = TRUE)
     num_spectra <- length(files) / 2
     spectrum_superposition <- vector(mode = "list", length = num_spectra)
@@ -603,7 +606,7 @@ read_decon_params_v1 <- function(data_path) {
 #' maxShift <- 100
 #' si_size_real_spectrum <- length(spectrum_data[[1]]$y_values)
 #' after_speaq_mat <- speaq_align(feat, maxShift, spectrum_data, si_size_real_spectrum)
-speaq_align_v1 <- function(feat = gen_feat_mat(spectrum_data),
+speaq_align_original <- function(feat = gen_feat_mat(spectrum_data),
                            maxShift = 50,
                            spectrum_data = generate_lorentz_curves_sim(),
                            si_size_real_spectrum = length(spectrum_data[[1]]$y_values)) {

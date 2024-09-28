@@ -7,9 +7,13 @@
 \alias{as_gdecon}
 \alias{as_decon1}
 \alias{as_spectra}
+\alias{as_gspecs}
+\alias{as_gdecons}
+\alias{as_decons1}
+\alias{as_decons2}
 \title{Convert to a Metabodecon Class}
 \usage{
-convert(x, to)
+convert(x, to, ...)
 
 as_spectrum(x, sf = c(1000, 1e+06))
 
@@ -21,8 +25,6 @@ as_decon1(x, sf = NULL)
 
 as_spectra(
   x,
-  ...,
-  nams = NULL,
   file_format = "bruker",
   expno = 10,
   procno = 10,
@@ -30,13 +32,36 @@ as_spectra(
   silent = TRUE,
   force = FALSE
 )
+
+as_gspecs(x, sf = c(1000, 1e+06))
+
+as_gdecons(x)
+
+as_decons1(x, sf = c(1000, 1e+06))
+
+as_decons2(x)
 }
 \arguments{
 \item{x}{The object to convert.}
 
 \item{to}{The class to convert to. For details see \link{metabodecon_classes}.}
 
-\item{nams}{Names to overwrite the individual spectrum names with. Must be NULL or a character vector of same length as \code{list(x, ...)}. If not provided, the names of the individual spectrum objects will be used, if available, else a default name of the form "spectrum_\%d" where "\%d" equals the spectrum number.#' @return An object of the specified class.}
+\item{...}{Additional arguments passed to the conversion function.}
+
+\item{sf}{Vector with two entries consisting of the factor to scale the x-axis and the factor to scale the y-axis.}
+
+\item{file_format}{The file_format of the spectrum file. E.g. \code{"bruker"} or \code{"jcampdx"}.}
+
+\item{expno, procno}{The experiment/processing number for the file. E.g. \code{"10"}. Only relevant if \code{file_format} equals \code{"bruker"}. For details see section \href{https://spang-lab.github.io/metabodecon/articles/FAQ.html#file-structure}{File Structure} in the metabodecon FAQ.}
+
+\item{raw}{If \code{FALSE}, scales the returned signal intensities based on information available in the spectrum metadata, in particular \code{NC_proc}. For details see \code{processing-reference.pdf}, available at \url{https://www.bruker.com/en.html} at section 'Services & Support > Documentation & Manuals > Magnetic Resonance > Acquisition & Processing > TopSpin Processing Commands and Parameters' (requires login).}
+
+\item{silent}{If \code{TRUE}, no output will be printed to the console.}
+
+\item{force}{If \code{TRUE}, try to continue when encountering errors and print info messages instead. To hide these messages as well, set \code{silent = TRUE}.}
+}
+\value{
+An object of the specified class.
 }
 \description{
 Convert an object to a Metabodecon class.
@@ -44,9 +69,8 @@ Convert an object to a Metabodecon class.
 \examples{
 dirpath <- metabodecon_file("sim_subset")
 spectra <- read_spectra(dirpath)
-gspecs <- as_gspecs(spectra)
-gdecons <- deconvolute_gspecs(gspecs)
-gspec <- as_gspec(spectrum)
-gdecon <- deconvolute_gspec(gspec)
-decon2 <- as_decon2(gdecon)
+spectrum <- spectra[[1]]
+decons1 <- generate_lorentz_curves_sim(spectra)
+decon1 <- generate_lorentz_curves_sim(spectrum)
+decon2 <- as_decon2(decon1)
 }

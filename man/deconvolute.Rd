@@ -6,6 +6,8 @@
 \alias{generate_lorentz_curves_sim}
 \title{Deconvolute one or more NMR spectra}
 \usage{
+deconvolute(x, nfit, smopts, delta, sfr, wshw, ask, force, verbose, nworkers)
+
 generate_lorentz_curves(
   data_path,
   file_format = "bruker",
@@ -30,27 +32,20 @@ generate_lorentz_curves_sim(
   make_rds = FALSE,
   expno = 10,
   procno = 10,
+  raw = TRUE,
   nfit = 10,
   smopts = c(2, 5),
   delta = 0.1,
   sfr = c(3.58, 3.42),
   wshw = 0,
   ask = FALSE,
-  nworkers = 1,
   force = FALSE,
-  verbose = TRUE
+  verbose = FALSE,
+  nworkers = 1
 )
 }
 \arguments{
-\item{data_path}{Either the path to a directory containing measured NMR spectra, a dataframe as returned by \code{\link[=read_spectrum]{read_spectrum()}}, or a list of such dataframes.}
-
-\item{file_format}{The file_format of the spectrum file. E.g. \code{"bruker"} or \code{"jcampdx"}.}
-
-\item{make_rds}{Logical or character. If TRUE, stores results as an RDS file on disk. If a character string, saves the RDS file with the specified name. Should be set to TRUE if many spectra are evaluated to decrease computation time.}
-
-\item{expno, procno}{The experiment/processing number for the file. E.g. \code{"10"}. Only relevant if \code{file_format} equals \code{"bruker"}. For details see section \href{https://spang-lab.github.io/metabodecon/articles/FAQ.html#file-structure}{File Structure} in the metabodecon FAQ.}
-
-\item{raw}{If \code{FALSE}, scales the returned signal intensities based on information available in the spectrum metadata, in particular \code{NC_proc}. For details see \code{processing-reference.pdf}, available at \url{https://www.bruker.com/en.html} at section 'Services & Support > Documentation & Manuals > Magnetic Resonance > Acquisition & Processing > TopSpin Processing Commands and Parameters' (requires login).}
+\item{x}{A \code{spectra} or \code{spectrum} object as described in \link{metabodecon_classes}.}
 
 \item{nfit}{Number of iterations for approximating the parameters for the Lorentz curves.}
 
@@ -70,13 +65,15 @@ generate_lorentz_curves_sim(
 
 \item{nworkers}{Number of workers to use for parallel processing. If \code{"auto"}, the number of workers will be determined automatically. If a number greater than 1, it will be limited to the number of spectra.}
 
-\item{...}{Further arguments to be passed to internal subfunctions.}
+\item{data_path}{Either the path to a directory containing measured NMR spectra, a dataframe as returned by \code{\link[=read_spectrum]{read_spectrum()}}, or a list of such dataframes.}
 
-\item{bwc}{Whether to produce results backwards compatible with \code{\link[=MetaboDecon1D]{MetaboDecon1D()}} and \code{\link[=generate_lorentz_curves]{generate_lorentz_curves()}}. If \code{bwc < 2}, a \code{decon1} object is returned instead of a \code{decon2} object. If \code{bwc < 1}, fixes/improvements introduced after version 'metabodecon v1.0' are not used. Support for \code{bwc < 1} will be removed in 'metabodecon v2.0' and will result in a warning for 'metabodecon v1.x' with \code{x >= 1.2}.}
+\item{file_format}{The file_format of the spectrum file. E.g. \code{"bruker"} or \code{"jcampdx"}.}
 
-\item{debug}{Logical. Whether to return additional intermediate results for debugging purposes.}
+\item{make_rds}{Logical or character. If TRUE, stores results as an RDS file on disk. If a character string, saves the RDS file with the specified name. Should be set to TRUE if many spectra are evaluated to decrease computation time.}
 
-\item{sf}{Numeric vector with two entries: the factors to scale the x-axis and y-axis.}
+\item{expno, procno}{The experiment/processing number for the file. E.g. \code{"10"}. Only relevant if \code{file_format} equals \code{"bruker"}. For details see section \href{https://spang-lab.github.io/metabodecon/articles/FAQ.html#file-structure}{File Structure} in the metabodecon FAQ.}
+
+\item{raw}{If \code{FALSE}, scales the returned signal intensities based on information available in the spectrum metadata, in particular \code{NC_proc}. For details see \code{processing-reference.pdf}, available at \url{https://www.bruker.com/en.html} at section 'Services & Support > Documentation & Manuals > Magnetic Resonance > Acquisition & Processing > TopSpin Processing Commands and Parameters' (requires login).}
 }
 \value{
 A 'GLCDecon' as described in \href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{Metabodecon Classes}.

@@ -1,12 +1,18 @@
 library(testthat)
 
-test_that("deconvolute works", {
-    x <- read_spectra(metabodecon_file("sim_subset"))
-    rtyp <- "decons2"; sfr <- c(3.58, 3.42); wshw <- 0;
-    nfit <- 3; smopts <- c(1, 5); delta <- 0.1;
-    ask <- FALSE; nworkers <- 1; verbose <- TRUE; force <- FALSE;
-    obj <- deconvolute_gspecs(x, rtyp, sfr, wshw, nfit, smopts, delta, ask, nworkers, verbose, force)
-    expect_true(inherits(x, "spectra"))
-    expect_true(inherits(obj, rtyp))
-    expect_true(length(obj, length(x)))
+test_that("deconvolute_gspecs works", {
+    obj <- deconvolute_gspecs(
+        gspecs = as_gspecs(read_spectra(metabodecon_file("sim_subset"))),
+        nfit = 3,
+        smopts = c(1, 5),
+        delta = 0.1,
+        sfr = c(3.58, 3.42),
+        wshw = 0,
+        ask = FALSE,
+        force = FALSE,
+        verbose = TRUE,
+        rtyp = "decons1"
+    )
+    expect_equal(class(obj), "decons1")
+    expect_equal(length(obj), length(x))
 })

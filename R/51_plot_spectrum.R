@@ -8,9 +8,11 @@
 #' @param decon An object as returned by [generate_lorentz_curves()], containing the deconvolution data. Must include either `x_values_ppm` or `ppm` for the x-axis values, and either `y_values` or `y_smooth` for the y-axis values.
 #' @param foc_rgn Numeric vector specifying the start and end of focus region.
 #' @param foc_unit Character string specifying the unit in which `foc_rgn` is given. Can be "fraction" or "ppm".
+#' @param foc_only Logical. If TRUE, only the focused region is drawn. If FALSE, the full spectrum is drawn.
 #' @param sub_show Logical. If TRUE, a sub figure is drawn within the main plot region. If FALSE, the sub figure is not drawn.
 #' @param sub_rgn Either NULL or a numeric vector of the form `c(x1, x2, y1, y2)` giving the left/right/bottom/top coordinates of the sub figure region in "normalized plot coordinates" (as described in [graphics::grconvertX()]). If provided, the focused region is drawn as sub figure within the main plot region. Setting `sub_rgn` to NULL will prevent the sub figure from being drawn.
-#' @param foc_only Logical. If TRUE, only the focused region is drawn. If FALSE, the full spectrum is drawn.
+#' @param verbose Logical. If TRUE, print additional information.
+#' @param rct_show Logical. If TRUE, the focus region is shown as a rectangle.
 #' @param rct_fill Background color of the rectangle around the focus region.
 #' @param rct_col Border color of the rectangle around the focus region.
 #' @param main Title of the plot.
