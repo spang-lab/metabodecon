@@ -128,21 +128,25 @@ as_decon2 <- function(x) {
         si <- x$y_values_raw
         meta <- list(
             name = x$filename,
-            path = NULL, # TODO
-            type = NULL, # TODO
-            fq = NULL, # TODO (x_values_hz = x$hz,)
-            mfs = NULL, # TODO
-            lcpt = NULL, # TODO
+            path = NULL,
+            type = NULL,
+            fq = x$x_values_hz,
+            mfs = NULL,
+            lcpt = NULL,
         )
         args <- list(
-            wsrm = NULL, # TODO
-            nvrm = NULL, # TODO
-            # signal_free_region = c(x$sfr$left_sdp, x$sfr$right_sdp),
-            # range_water_signal_ppm = x$wsr$hwidth_ppm,
+            nfit = NA,
+            smopts = NA,
+            delta = NA,
+            sfr = x$signal_free_region,
+            wsr = x$range_water_signal_ppm,
         )
-        sits <- list(
-            smooth = x$y_values,
+        sit <- list(
+            wsrm = NA,
+            nvrm = NA,
+            sm = x$y_values,
             sup = x$spectrum_superposition
+            al = NULL
         )
         peak <- list(
             center = x$index_peak_triplets_middle,
@@ -150,13 +154,15 @@ as_decon2 <- function(x) {
             right = x$index_peak_triplets_right
         )
         lcpar <- list(
-            # A = x$lcr$A,
-            # lambda = x$lcr$lambda,
-            # x_0 = x$lcr$w,
+            A = x$A,
+            lambda = x$lambda,
+            x0 = x$x_0
         )
         mse <- list(
-            raw = NULL,
-            normed = NULL # TODO (mse_normed)
+            raw = NA,
+            norm = x$mse_normed_raw,
+            sm = NA,
+            smnorm = x$msw_normed
         )
         obj <- named(cs, si, meta, args, sit, peak, lcpar, mse)
         structure(obj, class = "decon2")

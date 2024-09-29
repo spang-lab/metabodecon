@@ -15,23 +15,23 @@ A classes itself are described in section [Class Overview].  The elements associ
 
 ## spectrum
 
-Represents one NMR spectrum.  Objects of class spectrum have at least elements 1-3 from section [Elements v1.2+].
+Represents one NMR spectrum.  Objects of class 'spectrum' have at least elements 1-3 from section [Elements v1.2+].
 
 ## decon0
 
-Represents one deconvoluted NMR spectrum stored in the old [MetaboDecon1D()] format.  Objects of class decon0 have at least elements 1-18 from section [Elements v0.2+].
+Represents one deconvoluted NMR spectrum stored in the old [MetaboDecon1D()] format.  Objects of class 'decon0' have at least elements 1-18 from section [Elements v0.2+].
 
 ## decon1
 
-Represents one deconvoluted NMR spectrum stored in the backwards compatible [generate_lorentz_curves()] format.  Objects of class decon0 have all elements from section [Elements v0.2+].
+Represents one deconvoluted NMR spectrum stored in the backwards compatible [generate_lorentz_curves()] format.  Objects of class 'decon1' have all elements from section [Elements v0.2+].
 
 ## decon2
 
-Represents one deconvoluted NMR spectrum stored in the new [deconvolute()] format.  Objects of class decon2 have at least elements 1-9 from section [Elements v1.2+].
+Represents one deconvoluted NMR spectrum stored in the new [deconvolute()] format.  Objects of class 'decon2' have all elements from section [Elements v1.2+] with elements `sit$al` and `lcpar$x0al` set to `NULL`.
 
 ## almnt
 
-One aligned NMR spectrum
+Represents one deconvoluted NMR spectrum for which the individual peaks have been aligned using [align()]. Objects of class 'almnt' have all elements from section [Elements v1.2+].
 
 ## Collections
 
@@ -42,26 +42,27 @@ The classes mentioned above represent individual objects, such as a single spect
 
 ## Elements v1.2+
 
-1.  `cs`: Vector of "chemical shifts" in parts per pillion (ppm). Must be of the same length as `si`.
-2.  `si`: Vector of signal intensities in arbitrary units (au). Element `si[i]` is the signal intensity measured at chemical shift `cs[i]`, i.e. `si` must be of the same length as `cs`.
+1.  `cs`: Vector of chemical shifts (CS) in parts per pillion (ppm). Must be of the same length as `si`.
+2.  `si`: Vector of signal intensities (SI) in arbitrary units (au). Element `si[i]` is the signal intensity measured at chemical shift `cs[i]`, i.e. `si` must be of the same length as `cs`.
 3.  `meta`: Additional metadata about the spectrum, e.g.:
     - `name`: The name of the spectrum, e.g. `"Blood 1"` or `"Urine Mouse X23D"`.
     - `path`: The path of the file/folder containing the spectrum data. E.g. `"example_datasets/jcampdx/urine/urine_1.dx"` or `"example_datasets/bruker/urine/urine"`.
     - `type`: The type of experiment, e.g. `"H1 CPMG"` or `"H1 NOESY"`.
-    - `fq`: Vector of "frequencies" in Hertz (Hz). Must be of the same length as `si` and `cs`.
+    - `fq`: Vector of signal frequencies in Hertz (Hz). Must be of the same length as `si` and `cs`.
     - `mfs`: Magnetic field strength in Tesla, e.g. `14.1`.
-    - `lcpt`: True lorentz curve parameters. List with elements `A`, `lambda` and `x_0`. Only available if a spectrum has been simulated (from these parameters). For details see element `lcp`.
+    - `lcpt`: True lorentz curve parameters. List with elements `A`, `lambda` and `x0`. For details see element `lcp`. Only available if a spectrum has been simulated.
 4.  `args`: Deconvolution parameters:
     - `nfit`: The number of fitting iterations.
     - `smopts`: The smoothing parameters used for the deconvolution.
     - `delta`: The threshold used for peak filtering.
     - `sfr`: Borders of the signal free region in ppm.
     - `wsr`: Borders of the water signal region in ppm.
-5.  `sits`: Signal Intensities (SIs) after applying various transformations.
+5.  `sit`: Signal Intensities (SI) after applying various transformations:
     1.  `wsrm`: SIs after Water Signal Removal (WSRM),
     2.  `nvrm`: SIs after WSRM and Negative Value Removal (NVRM).
-    3.  `smooth`: SIs after WSRM, NVRM and smoothing.
-    4.  `si_sup`: SIs as superposition of Lorentz curves.
+    3.  `sm`: SIs after WSRM, NVRM and smoothing.
+    4.  `sup`: SIs as superposition of Lorentz curves.
+    5.  `al`: SIs after alignment.
 6.  `peak`: Peak triplets found during peak selection:
     - `center`: Indices of peak centers.
     - `left`: Indices of left borders.
@@ -69,10 +70,13 @@ The classes mentioned above represent individual objects, such as a single spect
 7.  `lcpar`: Lorentz curve parameters after parameter approximation:
     - `A`: Amplitude parameter.
     - `lambda`: Halfwidth parameter.
-    - `x_0`: Center parameter.
-8.  `mse`: Mean squared error between the raw signal intensities `si` and the superposition of lorentz curves `si_sup`.
-9.  `si_al`: Signal intensities after alignment.
-10. `x_0_al`: Center parameter of Lorentz Curves after alignment.
+    - `x0`: Center parameter.
+    - `x0al`: Center parameter after the spectrum has been aligned.
+8.  `mse`: Mean squared error (MSE):
+    1.  `raw`: MSE between `si` and `sit$sup`
+    2.  `norm`: MSE between `si` and `sit$sup`, divided by `sum(sit$sup)`
+    3.  `sm`: MSE between `sit$sm` and `sit$sup`
+    4.  `smnorm`: MSE between `sit$sm` and `sit$sup`, divided by `sum(sit$sup)`. Equals `mse_normed` in [Elements v0.2+].
 
 ## Elements v0.2+
 
