@@ -6,7 +6,18 @@
 \alias{generate_lorentz_curves_sim}
 \title{Deconvolute one or more NMR spectra \loadmathjax}
 \usage{
-deconvolute(x, nfit, smopts, delta, sfr, wshw, ask, force, verbose, nworkers)
+deconvolute(
+  x,
+  nfit = NULL,
+  smopts = NULL,
+  delta = NULL,
+  sfr = NULL,
+  wshw = NULL,
+  ask = FALSE,
+  force = FALSE,
+  verbose = FALSE,
+  nworkers = 1
+)
 
 generate_lorentz_curves(
   data_path,
@@ -47,15 +58,15 @@ generate_lorentz_curves_sim(
 \arguments{
 \item{x}{A \code{spectra} or \code{spectrum} object as described in \link{metabodecon_classes}.}
 
-\item{nfit}{Number of iterations for approximating the parameters for the Lorentz curves.}
+\item{nfit}{Integer. Number of iterations for approximating the parameters for the Lorentz curves. See 'Details'.}
 
-\item{smopts}{Numeric vector with two entries: the number of smoothing iterations and the number of data points to use for smoothing (must be odd).}
+\item{smopts}{Numeric vector with two entries: the number of smoothing iterations and the number of data points to use for smoothing (must be odd). See 'Details'.}
 
-\item{delta}{Threshold for peak filtering. Higher values result in more peaks being filtered out. A peak is filtered if its score is below \mjeqn{\mu + \sigma \cdot \delta}{mu + s * delta}, where \mjeqn{\mu}{mu} is the average peak score in the signal-free region (SFR), and \mjeqn{\sigma}{s} is the standard deviation of peak scores in the SFR.}
+\item{delta}{Threshold for peak filtering. Higher values result in more peaks being filtered out. A peak is filtered if its score is below \mjeqn{\mu + \sigma \cdot \delta}{mu + s * delta}, where \mjeqn{\mu}{mu} is the average peak score in the signal-free region (SFR), and \mjeqn{\sigma}{s} is the standard deviation of peak scores in the SFR. See 'Details'.}
 
-\item{sfr}{Numeric vector with two entries: the ppm positions for the left and right border of the signal-free region of the spectrum.}
+\item{sfr}{Numeric vector with two entries: the ppm positions for the left and right border of the signal-free region of the spectrum. See 'Details'.}
 
-\item{wshw}{Half-width of the water artifact in ppm.}
+\item{wshw}{Half-width of the water artifact in ppm.  See 'Details'.}
 
 \item{ask}{Logical. Whether to ask for user input during the deconvolution process. If FALSE, the provided default values will be used. \loadmathjax}
 
@@ -86,7 +97,9 @@ Deconvolutes NMR spectra by modeling each detected signal within a spectrum as L
 
 First, an automated curvature based signal selection is performed. Each signal is represented by 3 data points to allow the determination of initial Lorentz curves. These Lorentz curves are then iteratively adjusted to optimally approximate the measured spectrum.
 
-\code{\link[=generate_lorentz_curves_sim]{generate_lorentz_curves_sim()}} is identical to \code{\link[=generate_lorentz_curves]{generate_lorentz_curves()}} except for the defaults, which are optimized for deconvoluting the 'Sim' dataset, shipped with 'metabodecon'. The 'Sim' dataset is a simulated dataset, which is much smaller than real NMR spectra (1309 datapoints instead of 131072) and lacks a water signal. This makes it ideal for use in examples or as a default value for functions. However, the default values for \code{sfr}, \code{wshw}, and \code{delta} in the "normal" \code{\link[=generate_lorentz_curves]{generate_lorentz_curves()}} function are not optimal for this dataset. To avoid having to define the optimal parameters repeatedly in examples, this function is provided to deconvolute the "Sim" dataset with suitable parameters.
+\code{\link[=generate_lorentz_curves_sim]{generate_lorentz_curves_sim()}} is identical to \code{\link[=generate_lorentz_curves]{generate_lorentz_curves()}} except for the defaults, which are optimized for deconvoluting the 'Sim' dataset, shipped with 'metabodecon'. The 'Sim' dataset is a simulated dataset, which is much smaller than a real NMR spectra and lacks a water signal. This makes it ideal for use in examples or as a default value for functions. However, the default values for \code{sfr}, \code{wshw}, and \code{delta} in the "normal" \code{\link[=generate_lorentz_curves]{generate_lorentz_curves()}} function are not optimal for this dataset. To avoid having to define the optimal parameters repeatedly in examples, this function is provided to deconvolute the "Sim" dataset with suitable parameters.
+
+In \code{\link[=generate_lorentz_curves]{generate_lorentz_curves()}} the parameters \code{nfit}, \code{smopts}, \code{delta}, \code{sfr} and \code{wshw} must be fully specified. In \code{\link[=deconvolute]{deconvolute()}}, these parameters can be set to \code{NULL} (the default value). In this case, the function will try to determine the optimal values for these parameters automatically. The values chosen are stored in field \code{args} of the returned \code{decon2} object.
 }
 \examples{
 ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~

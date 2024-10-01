@@ -1,10 +1,10 @@
 check_args_deconvolute <- function(e = parent.frame()) {
     stopifnot(is_char(e$x, 1) || is_spectrum(e$x) || is_spectra(e$x) || is_gspec(e$x) || is_gspecs(e$x))
-    stopifnot(is_int(e$nfit, 1))
-    stopifnot(is_int(e$smopts, 2))
-    stopifnot(is_num(e$delta, 1))
-    stopifnot(is_num(e$sfr, 2))
-    stopifnot(is_num(e$wshw, 1))
+    stopifnot(is_int(e$nfit, 1) || is.null(e$nfit))
+    stopifnot(is_int(e$smopts, 2) || is.null(e$smopts))
+    stopifnot(is_num(e$delta, 1) || is.null(e$delta))
+    stopifnot(is_num(e$sfr, 2) || is.null(e$sfr))
+    stopifnot(is_num(e$wshw, 1) || is.null(e$wshw))
     stopifnot(is_bool(e$ask, 1))
     stopifnot(is_bool(e$force, 1))
     stopifnot(is_bool(e$verbose, 1))
@@ -68,7 +68,7 @@ check_args_deconvolute_gspecs <- function(e = parent.frame()) {
     stopifnot(is_bool(e$force, 1))
     stopifnot(is_bool(e$verbose, 1))
     stopifnot(is_num(e$bwc, 1))
-    stopifnot(is_char(e$rtyp, 1, "(gdecons|decons0|decons1)"))
+    stopifnot(is_char(e$rtyp, 1, "(gdecons|decons0|decons1|decons2)"))
     return(e)
 }
 

@@ -170,7 +170,6 @@ as_decon2 <- function(x) {
             smnorm = x$msw_normed
         )
     } else if (is_gdecon(x)) {
-        x <- as_decon1(x)
         cs <- x$ppm
         si <- x$y_raw
         meta <- x$meta
@@ -185,13 +184,15 @@ as_decon2 <- function(x) {
         lcpar <- x$lcr
         mse <- list(
             raw = NULL,
-            normed = NULL
+            normed = NULL,
+            sm = NULL,
+            smnorm = NULL
         )
+    } else {
+        stop(sprintf("Converting %s to decon2 is not supported", class(x)[1]))
     }
     obj <- named(cs, si, meta, args, sit, peak, lcpar, mse)
-    structure(obj, class = "decon2")
-    # TODO: check whether all members of decon2 are really defined using
-    # is_decon2(check_content = TRUE)
+    class(obj) <- "decon2"
     obj
 }
 

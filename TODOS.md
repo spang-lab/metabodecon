@@ -2,10 +2,6 @@
 
 ## v1.2.0
 
-### REFACTOR-9: Replace glc with generate_lorentz_curves
-
-Replace all `glc()` calls with calls to `generate_lorentz_curves()`.
-
 ### FEATURE-20: Implement deconvolute_blood
 
 Implement function `deconvolute_blood()` which should roughly do the following
@@ -75,7 +71,12 @@ should be controllable via function arguments.
 
 ### FEATURE-13: Merge into main
 
-Merge the existing functionality into main as v1.2.0. Start a new branch v1.3.0 for the remaining todos.
+Merge branch `v1.2.0` into `main`.
+Start a new branch `v1.3.0` for the remaining todos.
+
+### DOC-2: Add author descriptions to every function
+
+### REFACTOR-13: Remove unused functions
 
 ### DOC-1: Document whole package
 
@@ -640,7 +641,13 @@ Output variables of MetaboDecon1D (These variables will be obtained for each ana
 - __X_0:__ center of all estimated Lorentz curves. Provided in data points divided by scale factor (see also x_values).
 - __Scale_factor:__ scale factor for x- and y-axis to reduce numerical instabilities, default 1000 and 1000000. Toy example for TSP signal (note numbers will differ for each spectrum): TSP is signal 979, `index_peak_triplets_middle[979]=96955`, `x_0[979]=34.11715` (Note `(131072-96955)/1000=34.117)`, `peak_triplets_middle=0.000` ppm, `lambda[979]=-0.00525` corresponds to 0.48 Hz. `A[979]=-1.218312`; `A* Pi=-3.82`, `integrals[979]=3.82`)
 
-2024/06/30: Implemented with ab20d64.
+*2024-06-30: Done with commit ab20d64*
+
+### REFACTOR-9: Replace glc with generate_lorentz_curves
+
+Replace all `glc()` calls with calls to `generate_lorentz_curves()`.
+
+*2024-10-01 17:43: Done in branch v1.2.0 with commit 0b52023*
 
 ## CRAN
 

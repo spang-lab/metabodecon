@@ -104,7 +104,7 @@ print.decons1 <- function(x, ...) {
 #' @export
 #' @rdname print_methods
 print.decons2 <- function(x, ...) {
-    catf("decons1 object with %s decon1 elements\n", length(x))
+    catf("decons2 object with %s decon2 elements\n", length(x))
     invisible(sapply(x, print, name = TRUE))
 }
 

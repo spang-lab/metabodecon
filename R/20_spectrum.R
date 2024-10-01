@@ -190,10 +190,10 @@ store_spectrum <- function(simspec = get_sim_params(),
                            rdspath = NULL,
                            brukerdir = NULL,
                            verbose = TRUE) {
-
     X <- simspec$X
     logv <- if (verbose) logf else function(...) NULL
-    opts <- options(digits = 15); on.exit(options(opts), add = TRUE)
+    opts <- options(digits = 15)
+    on.exit(options(opts), add = TRUE)
     pdfpath <- normPath(pdfpath)
     pngpath <- normPath(pngpath)
     rdspath <- normPath(rdspath)
@@ -310,7 +310,7 @@ simulate_spectrum <- function(name = "sim_00",
                               ndp = 2048,
                               npks = 10,
                               csres = 0.00015,
-                              cs = seq(from = 3.6, length.out = ndp, by = - csres),
+                              cs = seq(from = 3.6, length.out = ndp, by = -csres),
                               pkr = quantile(cs, c(0.25, 0.75)),
                               x0 = sort(runif(npks, pkr[1], pkr[2])),
                               A = runif(npks, 2.5, 20) * 1e3,
@@ -426,10 +426,16 @@ parse_metadata_file <- function(path = NULL, lines = NULL) {
 }
 
 #' @noRd
+#'
 #' @title Read Bruker TopSpin Acquistion Parameters
-#' @param spldir The path of the directory holding the NMR measurements for a individual sample. E.g. `"example_datasets/bruker/urine/urine_1/"`.
-#' @param procno The processing number for the file. E.g. `"10"`.
-#' @return The signals acquisition parameters read from the file as named list.
+#'
+#' @inheritParams read_spectrum
+#' @param spldir The path of the directory holding the NMR measurements for a
+#' individual sample. E.g. `"example_datasets/bruker/urine/urine_1/"`.
+#'
+#' @return
+#' The signals acquisition parameters read from the file as named list.
+#'
 #' @examples
 #' blood1_dir <- pkg_file("example_datasets/bruker/urine/urine_1")
 #' acqus <- read_acqus_file(blood1_dir)
@@ -445,9 +451,7 @@ read_acqus_file <- function(spldir = pkg_file("example_datasets/bruker/urine/uri
 
 #' @noRd
 #' @title Read Bruker TopSpin Processing Parameters
-#' @param spldir The path of the directory holding the NMR measurements for a individual sample. E.g. `"example_datasets/bruker/urine/urine_1/"`.
-#' @param expno The experiment number for the file. E.g. `"10"`.
-#' @param procno The processing number for the file. E.g. `"10"`.
+#' @inheritParams read_spectrum read_acqus_file
 #' @return The processing parameters read from the file as named list.
 #' @examples
 #' blood1_dir <- pkg_file("example_datasets/bruker/urine/urine_1")
@@ -462,12 +466,7 @@ read_procs_file <- function(spldir = pkg_file("example_datasets/bruker/urine/uri
 
 #' @noRd
 #' @title Read signal intensities from Bruker TopSpin 1r file
-#' @param spldir spldir The path of the directory holding the NMR measurements for a individual sample. E.g. `"example_datasets/bruker/urine/urine_1/"`.
-#' @param procno The processing number for the file. E.g. `"10"`.
-#' @param expno The experiment number for the file. E.g. `"10"`.
-#' @param procs The parsed content of the `procs` file as returned by `read_procs_file()`.
-#' @param force If `TRUE`, the function will try to read the file as 64 bit floating point numbers if the processing parameter `DTYPP` is unequal 0. This behaviour is untested, so should be used with caution.
-#' @param silent If `TRUE`, no output will be printed to the console.
+#' @inheritParams read_spectrum read_acqus_file
 #' @examples
 #' spldir <- pkg_file("example_datasets/bruker/urine/urine_1")
 #' oneR <- read_1r_file(spldir, 10, 10)
@@ -555,6 +554,59 @@ read_1r_file <- function(spldir = pkg_file("example_datasets/bruker/urine/urine_
 # Development Helpers #####
 
 #' @noRd
+#'
+#' @title Deconvolute the Blood Dataset
+#'
+#' @description
+#' Downloads and deconvolutes the Blood Dataset.
+#'
+#' @param read_cache If TRUE the function will try to read the results from a
+#' cache file instead of downloading and deconvoluting the dataset again.
+#'
+#' @param write_cache If TRUE, the results will be written to the cache file path.
+#' If the cache file already exists and the results from the deconvolution
+#' and the stored object differ, a warning will be issued and the new results will
+#' only be stored if force is TRUE.
+#'
+#' @param force If TRUE, the results will be written to the cache file path even
+#' if the results from the deconvolution and the stored object differ.
+#'
+#' @return
+#' A `decons2` object containing the deconvolution results. For details
+#' see [deconvolute()].
+#'
+#' @examples
+#' deconvolute_blood() # Use cache file if it exists
+#' deconvolute_blood(read_cache = FALSE) # Deconvolute from scratch
+#' deconvolute_blood(force = TRUE) # Force update of cache file
+deconvolute_blood <- function(read_cache = TRUE,
+                              write_cache = TRUE,
+                              force = FALSE,
+                              verbose = TRUE,
+                              nworkers = 4) {
+    rds <- file.path(cachedir(), "deconvolute_blood.rds")
+    new <- old <- if (file.exists(rds)) readRDS(rds) else NULL # 62.6 MB == 0.6s
+    if (!read_cache || is.null(new)) {
+        download_example_datasets()
+        path <- datadir("example_datasets/bruker/blood")
+        spectra <- read_spectra(path)
+        new <- deconvolute(
+            x = spectra,
+            nworkers = nworkers,
+            verbose = verbose
+        )
+    }
+    if (!(identical(new, old) || is.null(old))) {
+        warning("Cache and deconvolution differ.", immediate. = TRUE)
+    }
+    if (write_cache && (is.null(old) || force)) {
+        logf("Writing results to cache file %s", rds)
+        saveRDS(new, rds)
+    }
+    return(new)
+}
+
+#' @noRd
 #' @title Count Stretches of Increases and Decreases
 #' @description Counts the lengths of consecutive increases and decreases in a numeric vector.
 #' @param x A numeric vector.
@@ -569,27 +621,29 @@ read_1r_file <- function(spldir = pkg_file("example_datasets/bruker/urine/urine_
 #' # |   |###|###|###|###|   |###|###|
 #' # |###|###|###|###|###|###|###|###|
 #' # |-------------------------------|
-#' # |   +   +   +   -   -   +   +   |
-#' # |-------------------------------|
+#' # |   +   +   +   -   -   +   +   | + means "increase"
+#' # |-------------------------------| - means "decrease"
 #' #
 #' x <- c(1.0, 2.2, 3.0, 4.4, 2.0, 1.0, 3.0, 4.0)
-#' count_stretches(x) # Returns c(3, 2, 2) because we have 3+, 2-, 2+
+#' count_stretches(x) # Returns c(3, 2, 2) because we have + + + - - + +
 count_stretches <- function(x) {
-  if (length(x) < 2) return(integer(0))
-  ss <- numeric(length(x))
-  s <- 1
-  inc <- x[2] > x[1]
-  for (i in 3:length(x)) {
-    if ((inc && x[i] > x[i - 1]) || (!inc && x[i] < x[i - 1])) {
-      s <- s + 1
-    } else {
-      ss[i - 1] <- s
-      s <- 1
-      inc <- x[i] > x[i - 1]
+    if (length(x) < 2) {
+        return(integer(0))
     }
-  }
-  ss[i] <- s
-  return(ss[ss != 0])
+    ss <- numeric(length(x))
+    s <- 1
+    inc <- x[2] > x[1]
+    for (i in 3:length(x)) {
+        if ((inc && x[i] > x[i - 1]) || (!inc && x[i] < x[i - 1])) {
+            s <- s + 1
+        } else {
+            ss[i - 1] <- s
+            s <- 1
+            inc <- x[i] > x[i - 1]
+        }
+    }
+    ss[i] <- s
+    return(ss[ss != 0])
 }
 
 #' @noRd
@@ -610,7 +664,6 @@ get_sim_params <- function(x, pkr = c(3.4, 3.5)) {
 }
 
 make_sim_dataset <- function(overwrite = FALSE) {
-
     download_example_datasets()
     data_path <- datadir("example_datasets/bruker/blood")
     decons <- generate_lorentz_curves(data_path, nworkers = 1)
@@ -633,7 +686,6 @@ make_sim_dataset <- function(overwrite = FALSE) {
 #' @noRd
 #' @description Used during development of `simulate_spectra()` to find a realistic method for noise generation.
 analyze_noise_methods <- function(ask = TRUE) {
-
     download_example_datasets()
     blood_1 <- datadir("example_datasets/bruker/blood/blood_01")
     deconv <- generate_lorentz_curves(blood_1, ask = FALSE)
@@ -668,13 +720,17 @@ analyze_noise_methods <- function(ask = TRUE) {
         }
     }
     visualize(siRND, siSFR)
-    if (!get_yn_input("Continue?")) return()
+    if (!get_yn_input("Continue?")) {
+        return()
+    }
 
     logf("Visualizing smoothed SIs for noise methods RND and SFR")
     siRND_sm <- smooth_signals(list(y_pos = siRND))$y_smooth
     siSFR_sm <- smooth_signals(list(y_pos = siSFR))$y_smooth
     visualize(siRND_sm, siSFR_sm)
-    if (!get_yn_input("Continue?")) return()
+    if (!get_yn_input("Continue?")) {
+        return()
+    }
 
     logf("Visualizing lengths of intervals of continuous increase and/or decrease")
     slRND <- count_stretches(siRND) # stretch lengths of siRND
@@ -685,7 +741,6 @@ analyze_noise_methods <- function(ask = TRUE) {
     on.exit(par(opar), add = TRUE)
     hist(slRND, breaks = 0:20 + 0.5, xlim = c(0, 20))
     hist(slSFR, breaks = 0:20 + 0.5, xlim = c(0, 20))
-
 }
 
 # Deprecated #####
@@ -702,7 +757,6 @@ simulate_from_decon <- function(x,
                                 store = FALSE,
                                 verbose = TRUE,
                                 ...) {
-
     if (!isFALSE(verbose)) logf("Checking function inputs")
     stopifnot(is_num(cs_min, 1))
     stopifnot(is_num(cs_max, 1))

@@ -111,14 +111,6 @@ The classes mentioned above represent individual objects, such as a single spect
 29. `lambda_dp`: Half width of the Lorentz curves in data points.
 30. `lambda_ppm`: Half width of the Lorentz curves in ppm.
 
-Objects with elements 1-19 and class are considered to be of class `decon0`.
-Objects with elements 1-30 are considered to be of class `decon1`.
-
-
-# Metabodecon Workflow
-
-![Metabodecon Workflow](../Classes/spectra_classes.png)
-
 <!-- Reference Links -->
 
 [alignment]: #alignment

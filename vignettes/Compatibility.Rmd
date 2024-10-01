@@ -7,7 +7,7 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-The original MetaboDecon1D package provided four functions for deconvoluting spectra and visualizing results. With the introduction of Metabdecon, new functions for aligning deconvoluted spectra were added, along with improved replacements for the deconvolution functions. To maintain backwards compatibility, the old deconvolution functions are still available but marked as deprecated. These old functions will be removed entirely in Metabodecon 2.0, planned for 2025.
+The original MetaboDecon1D package provided four functions for deconvoluting spectra and visualizing results. With the introduction of metabdecon, new functions for aligning deconvoluted spectra were added, along with improved replacements for the deconvolution functions. To maintain backwards compatibility, the old deconvolution functions are still available but marked as deprecated. These old functions will be removed entirely in Metabodecon 2.0, planned for 2025.
 
 A tabular overview of function introductions, deprecations, and scheduled removals is provided in [Table 1: Version Matrix](#table-1-version-matrix).
 
@@ -22,7 +22,7 @@ A similar graphical representation with additional information about accepted an
 | decon | plot_lorentz_curves_save_as_png | s   | s   | s   | d   | -   |
 | decon | plot_triplets                   | s   | s   | s   | d   | -   |
 | decon | generate_lorentz_curves         | -   | s   | s   | s   | d   |
-| decon | deconvolute_gspecs             | -   | -   | -   | x   | s   |
+| decon | deconvolute_gspecs              | -   | -   | -   | x   | s   |
 | align | combine_peaks                   | -   | s   | s   | d   | -   |
 | align | gen_feat_mat                    | -   | s   | s   | d   | -   |
 | align | get_ppm_range                   | -   | s   | s   | d   | -   |

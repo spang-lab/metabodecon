@@ -171,7 +171,10 @@ mockdir <- function() {
 }
 
 #' @noRd
-#' @description Create and return cache dir. If existing, the persistent cache dir is returned, else the temp cache dir. To force creation of the persistent cache dir, call once with `persistent=TRUE`.
+#' @description
+#' Create and return cache dir. If existing, the persistent cache dir is
+#' returned, else the temp cache dir. To force creation of the persistent cache
+#' dir, call once with `persistent=TRUE`.
 cachedir <- function(persistent = NULL) {
     tcd <- file.path(tmpdir(), "cache") # temporary cache dir
     pcd <- file.path(tools::R_user_dir("metabodecon", "cache")) # persistent cache dir

@@ -2,14 +2,39 @@
 
 #' @export
 #' @rdname deconvolute
-deconvolute <- function(x, nfit, smopts, delta, sfr, wshw, ask, force, verbose, nworkers) {
-    check_args_generate_lorentz_curves()
+deconvolute <- function(x,
+                        nfit = NULL,
+                        smopts = NULL,
+                        delta = NULL,
+                        sfr = NULL,
+                        wshw = NULL,
+                        ask = FALSE,
+                        force = FALSE,
+                        verbose = FALSE,
+                        nworkers = 1) {
+
+    # Check and convert input
+    check_args_deconvolute()
+    gspecs <- as_gspecs(x)
+
+    # Set defaults for not specified args
+    cs <- gspecs[[1]]$ppm
+    n <- length(cs)
+    nfit <- nfit %||% 3
+    smopts <- smopts %||% c(2, 5)
+    delta <- delta %||% if (n >= 32768) 6.4 else 0.1
+    sfr <- sfr %||% if (n >= 32768) c(11.44494, -1.8828) else quantile(cs, c(0.9, 0.1))
+    wshw <- wshw %||% 0
+
+    # Deconvolute
     gdecons <- deconvolute_gspecs(
-        gspecs = as_gspecs(x),
+        gspecs,
         nfit, smopts, delta, sfr, wshw,
         ask, force, verbose,
         bwc = 2, nworkers = nworkers, rtyp = "decons2"
     )
+
+    # Convert and return
     decons2 <- as_decons2(gdecons)
     if (length(decons2) == 1) decons2[[1]] else decons2
 }
@@ -31,17 +56,22 @@ generate_lorentz_curves <- function(data_path,
                                     force = FALSE,
                                     verbose = TRUE,
                                     nworkers = 1) {
+    # Check and convert input
     check_args_generate_lorentz_curves()
     spectra <- as_spectra(
         data_path, file_format, expno, procno, raw,
         silent = !verbose, force = force
     )
+
+    # Deconvolute
     gdecons <- deconvolute_gspecs(
         gspecs = as_gspecs(x = spectra),
         nfit, smopts, delta, sfr, wshw,
         ask, force, verbose,
         bwc = 1, nworkers = nworkers, rtyp = "decons1"
     )
+
+    # Convert, store and return
     decons1 <- as_decons1(gdecons)
     store_as_rds(decons1, make_rds, data_path)
     if (length(decons1) == 1) decons1[[1]] else decons1
@@ -406,23 +436,23 @@ store_as_rds <- function(decons, make_rds, data_path) {
 #'
 #' @param data_path Either the path to a directory containing measured NMR spectra, a dataframe as returned by [read_spectrum()], or a list of such dataframes.
 #'
-#' @param delta Threshold for peak filtering. Higher values result in more peaks being filtered out. A peak is filtered if its score is below \mjeqn{\mu + \sigma \cdot \delta}{mu + s * delta}, where \mjeqn{\mu}{mu} is the average peak score in the signal-free region (SFR), and \mjeqn{\sigma}{s} is the standard deviation of peak scores in the SFR.
+#' @param delta Threshold for peak filtering. Higher values result in more peaks being filtered out. A peak is filtered if its score is below \mjeqn{\mu + \sigma \cdot \delta}{mu + s * delta}, where \mjeqn{\mu}{mu} is the average peak score in the signal-free region (SFR), and \mjeqn{\sigma}{s} is the standard deviation of peak scores in the SFR. See 'Details'.
 #'
 #' @param force If FALSE, the function stops with an error message if no peaks are found in the signal free region (SFR), as these peaks are required as a reference for peak filtering. If TRUE, the function instead proceeds without peak filtering, potentially increasing runtime and memory usage significantly.
 #'
 #' @param make_rds Logical or character. If TRUE, stores results as an RDS file on disk. If a character string, saves the RDS file with the specified name. Should be set to TRUE if many spectra are evaluated to decrease computation time.
 #'
-#' @param nfit Number of iterations for approximating the parameters for the Lorentz curves.
+#' @param nfit Integer. Number of iterations for approximating the parameters for the Lorentz curves. See 'Details'.
 #'
 #' @param nworkers Number of workers to use for parallel processing. If `"auto"`, the number of workers will be determined automatically. If a number greater than 1, it will be limited to the number of spectra.
 #'
-#' @param sfr Numeric vector with two entries: the ppm positions for the left and right border of the signal-free region of the spectrum.
+#' @param sfr Numeric vector with two entries: the ppm positions for the left and right border of the signal-free region of the spectrum. See 'Details'.
 #'
-#' @param smopts Numeric vector with two entries: the number of smoothing iterations and the number of data points to use for smoothing (must be odd).
+#' @param smopts Numeric vector with two entries: the number of smoothing iterations and the number of data points to use for smoothing (must be odd). See 'Details'.
 #'
 #' @param verbose Logical. Whether to print log messages during the deconvolution process.
 #'
-#' @param wshw Half-width of the water artifact in ppm.
+#' @param wshw Half-width of the water artifact in ppm.  See 'Details'.
 #'
 #' @return
 #' A 'GLCDecon' as described in [Metabodecon Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
@@ -433,7 +463,9 @@ store_as_rds <- function(decons, make_rds, data_path) {
 #'
 #' First, an automated curvature based signal selection is performed. Each signal is represented by 3 data points to allow the determination of initial Lorentz curves. These Lorentz curves are then iteratively adjusted to optimally approximate the measured spectrum.
 #'
-#' [generate_lorentz_curves_sim()] is identical to [generate_lorentz_curves()] except for the defaults, which are optimized for deconvoluting the 'Sim' dataset, shipped with 'metabodecon'. The 'Sim' dataset is a simulated dataset, which is much smaller than real NMR spectra (1309 datapoints instead of 131072) and lacks a water signal. This makes it ideal for use in examples or as a default value for functions. However, the default values for `sfr`, `wshw`, and `delta` in the "normal" [generate_lorentz_curves()] function are not optimal for this dataset. To avoid having to define the optimal parameters repeatedly in examples, this function is provided to deconvolute the "Sim" dataset with suitable parameters.
+#' [generate_lorentz_curves_sim()] is identical to [generate_lorentz_curves()] except for the defaults, which are optimized for deconvoluting the 'Sim' dataset, shipped with 'metabodecon'. The 'Sim' dataset is a simulated dataset, which is much smaller than a real NMR spectra and lacks a water signal. This makes it ideal for use in examples or as a default value for functions. However, the default values for `sfr`, `wshw`, and `delta` in the "normal" [generate_lorentz_curves()] function are not optimal for this dataset. To avoid having to define the optimal parameters repeatedly in examples, this function is provided to deconvolute the "Sim" dataset with suitable parameters.
+#'
+#' In [generate_lorentz_curves()] the parameters `nfit`, `smopts`, `delta`, `sfr` and `wshw` must be fully specified. In [deconvolute()], these parameters can be set to `NULL` (the default value). In this case, the function will try to determine the optimal values for these parameters automatically. The values chosen are stored in field `args` of the returned `decon2` object.
 #'
 #' @examples
 #' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
