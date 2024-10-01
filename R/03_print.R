@@ -13,7 +13,7 @@
 #' fq_ref <- 600.25 * 1e6
 #' fq_width <- 12005
 #' spectrum <- read_spectrum()
-#' print.spectrum(spectrum)
+#' print(spectrum)
 NULL
 
 #' @export

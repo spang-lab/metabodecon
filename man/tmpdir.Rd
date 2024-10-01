@@ -15,13 +15,15 @@ tmpdir(subdir = NULL, create = FALSE)
 Returns the path to the temporary session directory.
 }
 \description{
-Returns the path to metabodecon's temporary session directory.
-This directory equals subdirectory 'metabodecon' of R's temporary session directory \code{\link[base:tempfile]{base::tempdir()}} plus additional path normalization.
+Returns the path to metabodecon's temporary session directory. This directory
+equals subdirectory 'metabodecon' of R's temporary session directory
+\code{\link[base:tempfile]{base::tempdir()}} plus additional path normalization.
 }
 \examples{
 tmpdir()
 tmpdir("simulate_spectra")
 }
 \seealso{
-\code{\link[=datadir_temp]{datadir_temp()}}, \code{\link[=datadir_persistent]{datadir_persistent()}}
+\code{\link[=datadir_temp]{datadir_temp()}}
+\code{\link[=datadir_persistent]{datadir_persistent()}}
 }

@@ -308,11 +308,24 @@ run_tests <- function(all = FALSE) {
 
 #' @noRd
 #' @title Check the quality of a deconvolution by comparing with the true parameters
-#' @description Checks the quality of a deconvolution by comparing the deconvolution results with the true parameters (which are only known for simulated spectra). See 'Details' for more information on how the quality is assessed.
-#' @param decon A list containing the deconvolution results, as returned by [generate_lorentz_curves()].
-#' @param lcpar A data frame containing the true parameters of the peaks, as returned by `get_sim_params()`.
-#' @return A quality score for the deconvolution. In addition, a plot is created to visualize the deconvolution results.
-#' @details The function first plots the deconvolution results for visual inspection and then returns a quality score for the deconvolution.
+#'
+#' @description
+#' Checks the quality of a deconvolution by comparing the deconvolution results
+#' with the true parameters (which are only known for simulated spectra). See
+#' 'Details' for more information on how the quality is assessed.
+#'
+#' @param decon A list containing the deconvolution results, as returned by
+#' [generate_lorentz_curves()].
+#'
+#' @param lcp A data frame containing the true parameters of the peaks, as
+#' returned by `get_sim_params()`.
+#'
+#' @return A quality score for the deconvolution. In addition, a plot is created
+#' to visualize the deconvolution results.
+#'
+#' @details
+#' The function first plots the deconvolution results for visual inspection and
+#' then returns a quality score for the deconvolution.
 #'
 #' The plotting is done as follows:
 #'
@@ -321,8 +334,11 @@ run_tests <- function(all = FALSE) {
 #' 3. Draw red circles around missed peaks [^1].
 #' 4. Draw red rectangles around falsely detected peaks. [^2]
 #'
-#' [^1]: we consider a peak as 'found' if there is at least one detected peak center within 0.001 ppm of the true peak position. If this is not the case, the peak is considered as 'missed'.
-#' [^2]: we consider a peak as 'falsely detected' if there is no true peak center within 0.001 ppm of the detected peak position.
+#' [^1]: we consider a peak as 'found' if there is at least one detected peak
+#'       center within 0.001 ppm of the true peak position. If this is not the
+#'       case, the peak is considered as 'missed'.
+#' [^2]: we consider a peak as 'falsely detected' if there is no true peak
+#'       center within 0.001 ppm of the detected peak position.
 #'
 #' In addition, a quality score is calculated as follows:
 #'
@@ -330,10 +346,11 @@ run_tests <- function(all = FALSE) {
 #' peak_ratio = min(peaks_true, peaks_found) / max(peaks_true, peaks_found)
 #' area_ratio = min(area_true,  area_found)  / max(area_true,  area_found)
 #'
-#' I.e., the score is close to 1 if the number of peaks and the area of the peaks are similar in the true and found spectra and the score is close to 0 if the number of peaks and/or the area of the peaks are very different.
-check_decon_quality <- function(decon = glc("sim_01", debug = FALSE)$rv,
-                                lcpar = readRDS(metabodecon_file("sim_01.rds"))$P) {
-    true <- lcpar # True Params
+#' I.e., the score is close to 1 if the number of peaks and the area of the
+#' peaks are similar in the true and found spectra and the score is close to 0
+#' if the number of peaks and/or the area of the peaks are very different.
+check_decon_quality <- function(decon, lcp) {
+    true <- lcp # True Params
     found <- data.frame( # Found Params
         A      = decon$A_ppm,
         x_0    = decon$x_0_ppm,
@@ -391,8 +408,6 @@ check_decon_quality <- function(decon = glc("sim_01", debug = FALSE)$rv,
             border = NA
         )
     }
-
-
 
     found$x_0_closest <- sapply(found$x_0, function(x_0) which.min(abs(true$x_0 - x_0)))
     true$x_0_assign <- sapply(seq_len(nrow(true)), function(i)
@@ -491,13 +506,12 @@ vcomp <- function(x, y, xpct = 0, silent = FALSE) {
 #' @param x Result of [generate_lorentz_curves_v12()].
 #' @param y Result of [MetaboDecon1D()].
 #' @examples \donttest{
-#' new <- glc()$rv
-#' old <- MetaboDecon1D_urine1_1010yy_ni3_dbg()$rv
+#' sim_01 <- metabodecon_file("sim_01")[1]
+#' new <- generate_lorentz_curves_sim(sim_01)
+#' old <- MetaboDecon1D(sim_01)
 #' compare_spectra(new, old)
 #' }
-compare_spectra <- function(new = glc()$rv,
-                            old = md1d()$rv,
-                            silent = FALSE) {
+compare_spectra <- function(new, old, silent = FALSE) {
     # Define comparison function
     comp <- vcomp
     arglist <- formals(comp)
@@ -615,12 +629,12 @@ compare_spectra <- function(new = glc()$rv,
 #' @param x Result of [generate_lorentz_curves_v12()].
 #' @param y Result of [MetaboDecon1D()].
 #' @examples
-#' new <- glc(dp = "urine_1", ff = "bruker", nfit = 3, simple = TRUE, cache = FALSE)$rv$urine_1
-#' old <- md1d(dp = "urine_1", ff = "bruker", nfit = 3, simple = TRUE)$rv
+#' sim_01 <- metabodecon_file("sim_01")[1]
+#' new <- generate_lorentz_curves_sim(sim_01)
+#' old <- MetaboDecon1D(sim_01)
 #' r <- compare_spectra_v13(new, old, silent = FALSE)
-compare_spectra_v13 <- function(new = glc()$rv$urine_1,
-                                old = md1d()$rv,
-                                silent = FALSE) {
+compare_spectra_v13 <- function(new, old, silent = FALSE) {
+
     # styler: off
     # Define comparison functions
     ident <- update_defaults(vcomp, xpct = 0, silent = silent)
@@ -941,8 +955,6 @@ get_md1d_answers <- function(fn, ff, simple, inputs) {
     answers
 }
 
-#' @noRd
-#' @description Helper function for [glc()].
 get_glc_answers <- function(fn, ff, simple, inputs) {
     if (grepl("sim", inputs)) {
         answers <- c(SFRok = "n", Left = "3.58", Right = "3.42", SFRok = "y", WSok = "n", WSHW = "0.0", WSok = "y", SaveResults = "n")
@@ -967,32 +979,4 @@ get_testmatrix <- function() {
 #' @noRd
 get_tid <- function(func, dp, ff, nfit, simple, debug) {
     paste(func, dp, ff, nfit, simple, debug, sep = "-")
-}
-
-#' @description Calls `func` for each row in `testmatrix` and caches the results
-#' @param func Either "glc" or "md1d"
-#' @param overwrite Logical indicating whether to overwrite cached results if they already exist
-#' @noRd
-cache_func_results <- function(func = "glc", overwrite = FALSE) {
-    df <- get_testmatrix()
-    cdir <- cachedir()
-    tid <- get_tid(func, df$dp, df$ff, df$nfit, df$simple)
-    rds <- file.path(cdir, paste0(tid, ".rds"))
-    status <- ifelse(file.exists(rds), "cached", "todo")
-    status[df$skip] <- "skip"
-    callstr <- sprintf("%s(dp='%s', ff='%s', nfit=%d, simple=%s, overwrite=%s)", func, df$dp, df$ff, df$nfit, df$simple, overwrite)
-    col <- ifelse(status == "cached", GREEN,  YELLOW)
-    col[df$skip] <- BLUE
-    df[, c("rds", "status", "col", "callstr")] <- list(rds, status, col, callstr)
-    idxtodo <- which(status == "todo")
-    idxdone <- which(status != "todo")
-    process_row <- function(i) {
-        row <- as.list(df[i, colnames(df)])
-        cat2(row$callstr, " ", row$col, row$status, RESET, sep = "")
-        x <- if (row$status == "todo") try(eval(parse(text = row$callstr))) else 0
-        return(if (inherits(x, "try-error")) x else 0)
-    }
-    x <- lapply(idxdone, process_row) # dont spawn new processes for cached or skipped function calls
-    y <- parallel::mclapply(idxtodo, process_row, mc.cores = ceiling(parallel::detectCores() / 2))
-    return(unlist(c(x, y)))
 }

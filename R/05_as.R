@@ -89,7 +89,12 @@ as_decon1 <- function(x, sf = NULL) {
         x_values = x$sdp,
         x_values_ppm = x$ppm,
         y_values = x$y_smooth,
-        spectrum_superposition = s <- lorentz_sup(x = x$sdp, x0 = x$lcr$w, A = x$lcr$A, lambda = x$lcr$lambda),
+        spectrum_superposition = s <- lorentz_sup(
+            x = x$sdp,
+            x0 = x$lcr$w,
+            A = x$lcr$A,
+            lambda = x$lcr$lambda
+        ),
         mse_normed = mean(((x$y_smooth / sum(x$y_smooth)) - (s / sum(s)))^2),
         index_peak_triplets_middle = x$peak$center[x$peak$high],
         index_peak_triplets_left = x$peak$right[x$peak$high],
@@ -132,20 +137,20 @@ as_decon2 <- function(x) {
             type = NULL,
             fq = x$x_values_hz,
             mfs = NULL,
-            lcpt = NULL,
+            lcpt = NULL
         )
         args <- list(
             nfit = NA,
             smopts = NA,
             delta = NA,
             sfr = x$signal_free_region,
-            wsr = x$range_water_signal_ppm,
+            wsr = x$range_water_signal_ppm
         )
         sit <- list(
             wsrm = NA,
             nvrm = NA,
             sm = x$y_values,
-            sup = x$spectrum_superposition
+            sup = x$spectrum_superposition,
             al = NULL
         )
         peak <- list(
@@ -164,32 +169,30 @@ as_decon2 <- function(x) {
             sm = NA,
             smnorm = x$msw_normed
         )
-        obj <- named(cs, si, meta, args, sit, peak, lcpar, mse)
-        structure(obj, class = "decon2")
+    } else if (is_gdecon(x)) {
+        x <- as_decon1(x)
+        cs <- x$ppm
+        si <- x$y_raw
+        meta <- x$meta
+        args <- x$args
+        sit <- list(
+            wsrm = x$y_nows,
+            nvrm = x$y_pos,
+            smooth = x$y_smooth,
+            sup = NULL
+        )
+        peak <- x$peak
+        lcpar <- x$lcr
+        mse <- list(
+            raw = NULL,
+            normed = NULL
+        )
     }
-
-    # mse_normed_raw = mean(((x$y_raw / sum(x$y_raw)) - (s / sum(s)))^2),
-    # x_0_hz = convert_pos(x$lcr$w, x$sdp, x$hz),
-    # x_0_dp = convert_pos(x$lcr$w, x$sdp, x$dp),
-    # x_0_ppm = convert_pos(x$lcr$w, x$sdp, x$ppm),
-    # A_hz = convert_width(x$lcr$A, x$sdp, x$hz),
-    # A_dp = convert_width(x$lcr$A, x$sdp, x$dp),
-    # A_ppm = convert_width(x$lcr$A, x$sdp, x$ppm),
-    # lambda_hz = convert_width(x$lcr$lambda, x$sdp, x$hz),
-    # lambda_dp = convert_width(x$lcr$lambda, x$sdp, x$dp),
-    # lambda_ppm = convert_width(x$lcr$lambda, x$sdp, x$ppm)
-
-    x <- as_decon1(x)
-    cs <- x$ppm
-    si <- x$y_raw
-    meta <- x$meta
-    args <- x$args
-    sit <- list(wsrm = x$y_nows, nvrm = x$y_pos, smooth = x$y_smooth, sup = NULL)
-    peak <- x$peak
-    lcpar <- x$lcr
-    mse <- list(raw = NULL, normed = NULL)
     obj <- named(cs, si, meta, args, sit, peak, lcpar, mse)
     structure(obj, class = "decon2")
+    # TODO: check whether all members of decon2 are really defined using
+    # is_decon2(check_content = TRUE)
+    obj
 }
 
 # Public Plural #####

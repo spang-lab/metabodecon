@@ -6,6 +6,7 @@
 \alias{as_gspec}
 \alias{as_gdecon}
 \alias{as_decon1}
+\alias{as_decon2}
 \alias{as_spectra}
 \alias{as_gspecs}
 \alias{as_gdecons}
@@ -22,6 +23,8 @@ as_gspec(x, sf = c(1000, 1e+06))
 as_gdecon(x)
 
 as_decon1(x, sf = NULL)
+
+as_decon2(x)
 
 as_spectra(
   x,

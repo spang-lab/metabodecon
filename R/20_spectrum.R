@@ -181,9 +181,8 @@ make_spectrum <- function(si,
 #' @param rdspath Path to save the simulated spectrum as an RDS file.
 #' @param brukerdir Path to the directory where the Bruker files should be saved.
 #' @examples
-#' deconv = glc(dp = "blood_01")$rv$blood_01$ret
-#' X <- get_sim_params(deconv)
-#' store_spectrum(X)
+#' x <- simulate_spectrum()
+#' store_spectrum(x)
 store_spectrum <- function(simspec = get_sim_params(),
                            pngpath = NULL,
                            pdfpath = NULL,
@@ -593,6 +592,7 @@ count_stretches <- function(x) {
   return(ss[ss != 0])
 }
 
+#' @noRd
 #' @examples
 #' xdir <- download_example_datasets()
 #' path <- file.path(xdir, "bruker/blood/blood_01")
@@ -608,7 +608,6 @@ get_sim_params <- function(x, pkr = c(3.4, 3.5)) {
     noiseSD <- sd(d$y_values_raw[c(1:10000, 121073:131072)])
     named(A, x0, lambda, noiseSD)
 }
-
 
 make_sim_dataset <- function(overwrite = FALSE) {
 
@@ -635,7 +634,9 @@ make_sim_dataset <- function(overwrite = FALSE) {
 #' @description Used during development of `simulate_spectra()` to find a realistic method for noise generation.
 analyze_noise_methods <- function(ask = TRUE) {
 
-    deconv = glc(dp = "blood_01", debug = FALSE)$rv
+    download_example_datasets()
+    blood_1 <- datadir("example_datasets/bruker/blood/blood_01")
+    deconv <- generate_lorentz_curves(blood_1, ask = FALSE)
     si_raw <- deconv$y_values_raw
     sd_sfr <- sd(si_raw[c(1:10000, 121073:131072)] * 1e-6)
     siRND <- rnorm(n = 10000, mean = 0, sd = sd_sfr)

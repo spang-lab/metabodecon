@@ -290,7 +290,7 @@ ps_test <- function(figs = 1:5) {
     nr <- ceiling(sqrt(n))
     nc <- if (nr^2 > n) nr - 1 else nr
     spec <- read_spectrum(metabodecon_file("sim/sim_01"))
-    decon <- glc("sim_01", debug = FALSE)$rv
+    decon <- generate_lorentz_curves_sim(spec)
     opar <- par(mfrow = c(nr, nc))
     on.exit(par(opar))
 

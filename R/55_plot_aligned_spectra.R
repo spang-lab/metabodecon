@@ -1,5 +1,6 @@
 # Work in Progress #####
 
+#' @noRd
 #' @title Plot Aligned Spectra
 #' @description Plots the aligned and unaligned spectra for comparison.
 #' @param YA Matrix. `YA[i,j]` == Signal Intensity of spectrum i at index j AFTER alignmnent.

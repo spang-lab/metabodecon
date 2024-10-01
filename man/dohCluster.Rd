@@ -33,7 +33,8 @@ A list containing two data frames \code{Y} and \code{new_peakList}. The first on
 Rewrite of \code{speaq::dohCluster()}, compatible with the data format returned by 'generate_lorentz_curves()' and 'gen_feat_mat()'. The function name "dohCluster" comes from "Do Hierarchical Clustering" which is part of the Alignment algorithm proposed by Vu et al. (2011) in \url{doi:10.1186/1471-2105-12-405}.
 }
 \examples{
-decons <- generate_lorentz_curves_sim()
+sim_subset <- metabodecon_file("bruker/sim_subset")
+decons <- generate_lorentz_curves_sim(sim_subset)
 feat <- gen_feat_mat(decons)
 refObj <- speaq::findRef(feat$peakList)
 hclObj <- dohCluster(

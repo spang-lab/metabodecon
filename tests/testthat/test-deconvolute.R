@@ -1,8 +1,9 @@
 library(testthat)
 
 test_that("deconvolute_gspecs works", {
+    gspecs <- as_gspecs(read_spectra(metabodecon_file("sim_subset")))
     obj <- deconvolute_gspecs(
-        gspecs = as_gspecs(read_spectra(metabodecon_file("sim_subset"))),
+        gspecs = gspecs,
         nfit = 3,
         smopts = c(1, 5),
         delta = 0.1,
@@ -14,5 +15,5 @@ test_that("deconvolute_gspecs works", {
         rtyp = "decons1"
     )
     expect_equal(class(obj), "decons1")
-    expect_equal(length(obj), length(x))
+    expect_equal(length(obj), length(gspecs))
 })

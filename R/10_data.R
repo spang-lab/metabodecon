@@ -129,13 +129,27 @@ datadir_temp <- function() {
 }
 
 #' @export
+#'
 #' @title Temporary Session Directory
-#' @description Returns the path to metabodecon's temporary session directory.
-#' This directory equals subdirectory 'metabodecon' of R's temporary session directory [base::tempdir()] plus additional path normalization.
-#' @param subdir Optional subdirectory within the temporary session directory.
-#' @param create Whether to create the directory if it does not yet exist.
-#' @return Returns the path to the temporary session directory.
-#' @seealso [datadir_temp()], [datadir_persistent()]
+#'
+#' @description
+#' Returns the path to metabodecon's temporary session directory. This directory
+#' equals subdirectory 'metabodecon' of R's temporary session directory
+#' [base::tempdir()] plus additional path normalization.
+#'
+#' @param subdir
+#' Optional subdirectory within the temporary session directory.
+#'
+#' @param create
+#' Whether to create the directory if it does not yet exist.
+#'
+#' @return
+#' Returns the path to the temporary session directory.
+#'
+#' @seealso
+#' [datadir_temp()]
+#' [datadir_persistent()]
+#'
 #' @examples
 #' tmpdir()
 #' tmpdir("simulate_spectra")

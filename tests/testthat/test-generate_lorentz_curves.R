@@ -5,7 +5,7 @@
 # test_that("GLC works for 1 bruker", {
 #     data_path <- metabodecon_file("bruker/sim_subset")
 #     x <- generate_lorentz_curves_sim(data_path, verbose = FALSE)
-#     # new <- glc(dp = "sim_01", ff = "bruker", nfit = 3, simple = TRUE, cache = FALSE)$rv
+#     # new <- generate_lorentz_curves_sim(dp = "sim_01", ff = "bruker", nfit = 3, simple = TRUE, cache = FALSE)$rv
 #     # old <- md1d(dp = "sim_01", ff = "bruker", nfit = 3, simple = TRUE, cache = FALSE)$rv
 #     # r <- compare_spectra_v13(new, old, silent = TRUE)
 #     # expect_true(sum(r %in% 0:1) >= 60 && sum(r %in% 2:3) == 0) # >=60 identical/equal && no diffs/errors

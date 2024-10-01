@@ -35,7 +35,8 @@ align_spectra <- function(decons, maxShift = 50, maxCombine = 5) {
 #' @return A vector containing the lowest and highest ppm value over all peaks of the provided deconvoluted spectra.
 #' @author Initial version from Wolfram Gronwald. Refactored by Tobias Schmidt in 2024.
 #' @examples
-#' spectrum_data = generate_lorentz_curves_sim()
+#' sim_subset <- metabodecon_file("sim_subset")
+#' spectrum_data = generate_lorentz_curves_sim(sim_subset)
 #' ppm_rng <- get_ppm_range(spectrum_data, show = TRUE)
 #' print(ppm_rng)
 get_ppm_range <- function(spectrum_data = generate_lorentz_curves_sim(),
@@ -68,7 +69,8 @@ get_ppm_range <- function(spectrum_data = generate_lorentz_curves_sim(),
 #' - `lambda`: A list of vectors where each vector contains the "width parameter" of the peaks in the corresponding spectrum.
 #' @author Initial version from Wolfram Gronwald. Refactored by Tobias Schmidt in 2024.
 #' @examples
-#' decons <- generate_lorentz_curves_sim("bruker/sim")
+#' sim_subset <- metabodecon_file("sim_subset")
+#' decons <- generate_lorentz_curves_sim(sim_subset)
 #' obj <- gen_feat_mat(decons)
 #' str(obj, 2, give.attr = FALSE)
 gen_feat_mat <- function(data_path = generate_lorentz_curves_sim(),
@@ -129,7 +131,8 @@ gen_feat_mat <- function(data_path = generate_lorentz_curves_sim(),
 #'
 #' @author Initial version from Wolfram Gronwald. Refactored by Tobias Schmidt in 2024.
 #' @examples
-#' spectrum_data <- generate_lorentz_curves_sim("bruker/sim")
+#' sim_subset <- metabodecon_file("bruker/sim_subset")
+#' spectrum_data <- generate_lorentz_curves_sim(sim_subset)
 #' feat <- gen_feat_mat(spectrum_data)
 #' maxShift <- 200
 #' M <- speaq_align(feat, maxShift, spectrum_data, show = TRUE)
@@ -274,7 +277,8 @@ combine_peaks <- function(shifted_mat = speaq_align(spectrum_data = spectrum_dat
 #' @return A list containing two data frames `Y` and `new_peakList`. The first one contains the aligned spectra, the second one contains the aligned signals of each spectrum.
 #' @author Initial version from Wolfram Gronwald. Refactored by Tobias Schmidt in 2024.
 #' @examples
-#' decons <- generate_lorentz_curves_sim()
+#' sim_subset <- metabodecon_file("bruker/sim_subset")
+#' decons <- generate_lorentz_curves_sim(sim_subset)
 #' feat <- gen_feat_mat(decons)
 #' refObj <- speaq::findRef(feat$peakList)
 #' hclObj <- dohCluster(

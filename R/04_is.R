@@ -17,6 +17,10 @@
 #' type(1.0)   # "numeric(1)"
 #' type(NA)    # "logical(1)"
 #' type(NaN)   # "numeric(2)"
+NULL
+
+#' @export
+#' @rdname type_checking
 type <- function(x) {
     typ <- typeof(x)
     if (typ %in% c("logical", "integer", "double", "complex", "character", "raw")) {

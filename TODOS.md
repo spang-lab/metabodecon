@@ -1,15 +1,62 @@
-# Not assigned
+# Open
 
-1. Replace all [glc()] calls with [generate_lorentz_curves()] calls.
-2. Implement [make_sim_dataset()]
-2. Update [md1d()] to first source the old MetaboDecon1D code, then produce suitable answers and then call the old metabodecon1d code using these answers and [evalwith()].
-3. Rename [md1d()] to `MetaboDecon1D_original()`.
-4. Write testcases for `MetaboDecon1D()` and `generate_lorentz_curves()` and `deconvolute()` that test for a good PRARP as for the correct return type.
-5. Write testcases for `MetaboDecon1D()` and `generate_lorentz_curves()` that test for compliance with `MetaboDecon1D_original()` results.
+## v1.2.0
 
-# v1.2.0
+### REFACTOR-9: Replace glc with generate_lorentz_curves
 
-## FEATURE-18: Implement plot_decon
+Replace all `glc()` calls with calls to `generate_lorentz_curves()`.
+
+### FEATURE-20: Implement deconvolute_blood
+
+Implement function `deconvolute_blood()` which should roughly do the following
+
+```R
+deconvolute_blood <- function(cache = TRUE, force = FALSE, ...) {
+   rds <- file.path(cachedir(), "deconvolute_blood.rds")
+   new <- old <- if (file.exists(rds)) readRDS(rds) else NULL
+   if (cache && is.null(old)) {
+      path <- download_example_datasets(...)
+      new <- deconvolute(path)
+   }
+   if (!(identical(new, old) || is.null(old))) {
+      warning("Cache and deconvolution differ.", immediate. = TRUE)
+   }
+   if (cache && (is.null(old) || force)) {
+      logf("Writing results to cache file %s", rds)
+      saveRDS(new, rds)
+   }
+   return(new)
+}
+```
+
+### FEATURE-21: Implement make_sim_dataset
+
+Implement `make_sim_dataset()` which should
+
+1. Deconvolute the `blood` dataset using `deconvolute_blood()` (see FEATURE-20)
+2. Use `get_sim_params()` to extract the simulation parameters
+3. Pass the simulation parameters to `simulate_spectrum()` to create the sim dataset
+4. Call `store_spectra()` to store the sim dataset
+
+All functions participating in this process should be private, but still linked in the Datasets vignette for reference.
+
+### REFACTOR-10: Replace all md1d calls with MetaboDecon1D
+
+Replace all examples that use `md1d` with `evalwith(MetaboDecon1(...))`. This makes it directly visible how cumbersome it is to use the old function.
+
+### REFACTOR-11: Write PRARP tests for deconvolution functions
+
+Write testcases for `MetaboDecon1D()`, `generate_lorentz_curves()` and
+`deconvolute()` that test for a good PRARP as well as for the correct return
+type.
+
+See function `check_decon_quality()` for existing code to reuse.
+
+### REFACTOR-12: Write compliance tests
+
+Write tests to check whether functions `generate_lorentz_curves()` and `deconvolute()` produe results that are compliant with `MetaboDecon1D()`.
+
+### FEATURE-18: Implement plot_decon
 
 Implement `plot_decon` which should be the successor of the following functions:
 
@@ -26,21 +73,21 @@ All the functionality, i.e.
 
 should be controllable via function arguments.
 
-## DOC-1: Document whole package
-
-Document the whole package in vignettes, including chapters about alignment and a short introduction into all datasets. Also go over each function and make sure it is used or mentioned at least once in a vignette. While doing so, also add lifecycle badges to the functions.
-
-## FEATURE-13: Merge into main
+### FEATURE-13: Merge into main
 
 Merge the existing functionality into main as v1.2.0. Start a new branch v1.3.0 for the remaining todos.
 
-# v1.3.0
+### DOC-1: Document whole package
 
-## FEATURE-8: Warn user if peaks are found in SFR
+Document the whole package in vignettes, including chapters about alignment and a short introduction into all datasets. Also go over each function and make sure it is used or mentioned at least once in a vignette. While doing so, also add lifecycle badges to the functions.
+
+## v1.3.0
+
+### FEATURE-8: Warn user if peaks are found in SFR
 
 If delta is small (e.g. 1), peaks in SFR might not be filtered out. Either implement this and warn user about it (this is a strong indication that delta was chosen too small).
 
-## REFACTOR-9: Improve mse_normed calculation
+### REFACTOR-9: Improve mse_normed calculation
 
 In function `add_return_list`:
 
@@ -50,27 +97,27 @@ In function `add_return_list`:
 
 2. Return `mse_normed_raw` in addition to `mse_normed` (which is calculated based on `y <- spec$y_smooth`). `mse_normed_raw` should be based on `y <- spec$y_raw`.
 
-## CHECK-10: Negative values for estimated A
+### CHECK-10: Negative values for estimated A
 
 Check why there are negative values for the estimated lorentz curve area A.
 
-## CRAN-7: Check dontrun examples
+### CRAN-7: Check dontrun examples
 
 Remove `dontrun` from examples if they are executable in < 5 sec, or create additionally small toy examples to allow automatic testing in < 5 sec. Reason: `\dontrun{}` should only be used if the example really cannot be executed by the user, e.g. because of missing additional software, missing API keys, etc. That's why wrapping examples in `\dontrun{}` adds the comment ("# Not run:") as a warning for the user. Alternative: You could also replace `\dontrun{}` with `\donttest`, if it takes longer than 5 sec to be executed, but it would be preferable to have automatic checks for functions. Otherwise, you can also write some tests.
 
-# v1.3.1
+## v1.3.1
 
-## CRAN-10: Resubmit to CRAN
+### CRAN-10: Resubmit to CRAN
 
 Fix all R CMD check findings and resubmit the package to CRAN.
 
-## DOC-2: Write paper
+### DOC-2: Write paper
 
 Reformat the vignettes as paper and send to Wolfram for proofreading.
 
-# v1.3.2
+## v1.3.2
 
-## FEATURE-19: make SFR and WS defaults dynamic
+### FEATURE-19: make SFR and WS defaults dynamic
 
 Replace the default values `wshw = 0.1527692` and `sfr = c(11.44494, -1.8828)` in `generate_lorentz_curves()` with `wshw = "auto"` and `sfr = "auto"`, which should be calculated as follows:
 
@@ -79,9 +126,9 @@ If `c(11.44494, -1.8828)` is part of the ppm range, use these values, otherwise 
 1. `wshw = 0.01 * width(cs)` (where `0.01` is `round(0.007629452, 2)` and `0.007629452` equals `0.1527692 / 20.0236144338963` which is the width of the default WSHW dividided by the width of the `urine_1` spectrum. I.e., the new calculation would give approximately the same proportion of the spectrum width as the default value.)
 2. `sfr = max(cs) - c(1/6, 5/6) * width(cs)`
 
-# v1.4.0
+## v1.4.0
 
-## FEATURE-10: Implement deconvolute_spectra
+### FEATURE-10: Implement deconvolute_spectra
 
 Implement `deconvolute_spectra()` which should be the successor of `generate_lorentz_curves()` and `MetaboDecon1D` without trying to maintain backwards compatibility. In particular it should:
 
@@ -94,13 +141,15 @@ Implement `deconvolute_spectra()` which should be the successor of `generate_lor
 
 If possible, create a conversion function to convert the return value of `deconvolute_spectra()` to the return value of `generate_lorentz_curves()` (which is a *List of Lorentz Curves (LLC)*) and notice in the docs that users can replace `lc <- generate_lorentz_curves()` with `ds <- deconvolute_spectra(); lc <- as_llc(ds)`.
 
-## FEATURE-16: Improve multiprocessing
+### FEATURE-16: Improve multiprocessing
 
 Right now, output gets scrambled because all procs share one stdout. We can fix this by not using parLapply, but distributing the tasks ourselver over the cores and in a mainloop collecting outputs and results.
 
-# Done
+# DONE
 
-## CHECK-1: Use of DTYPP in load_spectrum
+## CHECK
+
+### CHECK-1: Use of DTYPP in load_spectrum
 
 In function `deconvolution` from `MetaboDecon1D_deconvolution.R:121` or the extracted version `read_1r_file`, the y values are read as follows:
 
@@ -177,7 +226,7 @@ interpret 64 bit float numbers.
 
 2024/06/28: Checked and now traced by issue [FEATURE-9](#feature-9-implement-and-export-read_spectra).
 
-## CHECK-2: Signal free region calculation
+### CHECK-2: Signal free region calculation
 
 In function `deconvolution` of file [MetaboDecon1D.R](R/MetaboDecon1D.R#1372), the signal free region border in data points is calculated as follows:
 
@@ -217,7 +266,7 @@ The correct method of converting ppm to dp is `(sfrl_ppm - min(ppm)) / ppm_step`
 
 Closed with v1.2 because we have a correct implementation in `ppm_to_dp` in `00_util.R`. However, in `generate_lorentz_curves()` we will continue to use the wrong calculation to stay backwards compatible. The new method will be used in the successor function `deconvolute_spectra()`, tracked by [FEATURE-10](#feature-10-implement-deconvolute_spectra)
 
-## CHECK-3: Water signal calculation
+### CHECK-3: Water signal calculation
 
 In function `deconvolution` of file [MetaboDecon1D_deconvolution.R](R/MetaboDecon1D_deconvolution.R#443), the water signal border in data points is calculated as follows:
 
@@ -255,7 +304,7 @@ ws_ppm <- (max(ppm) + min(ppm)) / 2 # 0.8 and also works for odd ((n - 1) / 2)
 > [!IMPORTANT] Check result:
 > Will be fixed with function `deconvolute_spectra` in [FEATURE-10](#check-10-negative-values-for-estimated-a).
 
-## CHECK-4: Data point format
+### CHECK-4: Data point format
 
 1. Why do we count data points starting from 0 instead of 1? That makes programming in R complicated, as R starts counting at 1.
 2. Why do we use "scaled data points" as x values? That's unintuitive and (as far as I can see) unnecessary.
@@ -268,7 +317,7 @@ ws_ppm <- (max(ppm) + min(ppm)) / 2 # 0.8 and also works for odd ((n - 1) / 2)
 > 2. Intention was to prevent rounding errors, but as far as I can see that's not necessary. For `deconvolute_spectra` we completely remove the scale factor and scaled data point numbers. Tracked by [FEATURE-10](#feature-10-implement-deconvolute_spectra).
 > 3. That's the general convention in NMR spectroscopy and stems from the fact that in the early days of NMR the frequency was kept contant and the magnetic field was changed instead. To keep the way the spectra looked like, the frequency had to be shown from high to low values. We will keep this convention.
 
-## CHECK-5: Signal preprocessing
+### CHECK-5: Signal preprocessing
 
 ```R
 # Remove water signal
@@ -287,7 +336,7 @@ ToSc:
 - WS: check if other zeros. If no, use `min(spectrum$y)`.
 - Negatives: leave as is
 
-## CHECK-6: Negative value removal
+### CHECK-6: Negative value removal
 
 Why do we "remove negative values" using `abs` instead of setting them to zero or the minimum value of the spectrum? See [R/MetaboDecon1D.R#1781](R/MetaboDecon1D.R#1781)
 
@@ -301,7 +350,7 @@ for(i in 1:length(spectrum_y)){
 > [!IMPORTANT] Check result:
 > Discussed with Wolfram and decided that it doesn't matter whether we use `abs` for negative removal or something else, as these signals should be filtered out anyways by the algorithm.
 
-## CHECK-7: Peak selection procedure
+### CHECK-7: Peak selection procedure
 
 Currently the [peak selection procedure]((R/MetaboDecon1D.R#1825))
 
@@ -339,34 +388,36 @@ for(i in 2:second_derivative_border){
 > [!IMPORTANT] Check result:
 > Implemented in function [select_peaks_v2](R/generate_lorentz_curves.R#1325).
 
-## CHECK-8: Fix name of samples in blood dataset
+### CHECK-8: Fix name of samples in blood dataset
 
 It should be `Blood` not `Bood`.
 
 > [!IMPORTANT] Check result:
 > Fixed in branch `test-glc`
 
-## CHECK-9: Ask Wolfram about peak selection
+### CHECK-9: Ask Wolfram about peak selection
 
 Ask Wolfram whether it's ok that the peak selection sometimes selects two peaks for one local maximum.
 
 > [!IMPORTANT] Check result:
 > That's ok and by intention.
 
-## FEATURE-1: Use temp dirs for full example data
+## FEATURE
+
+### FEATURE-1: Use temp dirs for full example data
 
 Function `download_example_data` should allow users to specify a temp dir instead the usual XDG directory. This is useful to pass CRAN checks as CRAN doesn't allow writing to th user' home directory.
 
 _Done with [1.1.0+d65098c](https://github.com/spang-lab/metabodecon/tree/d65098cf869e8959055b16570b5d41b5a5c9b46b)._
 
 
-## FEATURE-2: Add minimal example dataset
+### FEATURE-2: Add minimal example dataset
 
 Add a minimal dataset to the package, so that the user can run the examples without having to download the full example data. The minimal dataset should be smaller than 1MB. Idea: remove every second or third datapoint from two example spectra, this be enough to get below 1MB.
 
 _Canceled because with [1.1.0+d65098c](https://github.com/spang-lab/metabodecon/tree/d65098cf869e8959055b16570b5d41b5a5c9b46b) we introduced caching for `download_example_data`, so there is no need for including the minimal dataset anymore._
 
-## FEATURE-3: Batch Mode
+### FEATURE-3: Batch Mode
 
 We should have a batch mode, that does all the above steps truly automatically and creates a pdf containing all quality control images. The pdf can be inspected later on and based on the findings the function call can be adjusted.
 
@@ -379,15 +430,15 @@ We should have a batch mode, that does all the above steps truly automatically a
 6. [x] __PR batch-mode__: Implement the ask parameter in `generate_lorentz_curves` until all tests pass
 7. [x] __PR clear-helpers__: Remove helper functions that are not used anymore
 
-## FEATURE-4: Parallelize
+### FEATURE-4: Parallelize
 
 Batch mode can also run in parallel to speed up calculations. Instead of waiting 1h we need to wait 3 or 6 minutes then.
 
-## FEATURE-5: Add test suite to ensure correct behaviour after updates
+### FEATURE-5: Add test suite to ensure correct behaviour after updates
 
 Write test cases for every function to ensure that future updates don't break any existing behaviour. Tests should be run automatically upon pull requests and pushes to main.
 
-## FEATURE-6: Return lambda in hertz
+### FEATURE-6: Return lambda in hertz
 
 Original Teams Messages:
 
@@ -427,7 +478,7 @@ lw_hz <- function(spectrum_data, sw_hz) {
 
 2024/07/09: Done in branch `v1.2.0` with commit `5a9ed6ab00d8e641a2aa82d209de6604d86bf9be`.
 
-## FEATURE-7: Improve return value
+### FEATURE-7: Improve return value
 
 The complete history of transformations, e.g. "removal of water signal", "removal of negative values" or "smoothing" should be traceable from the return value of `generate_lorentz_curves`. Therefore I propose the following changes to the return value of `generate_lorentz_curves`:
 
@@ -476,7 +527,7 @@ For the "??"" values I haven't yet checked how they're calculated, so I cannot r
 
 2024/06/28: Closed without implementation, as we will keep the return value of `generate_lorentz_curves` backwards compatible with `MetabDecon1D` and instead fix it in `deconvolute_spectra`.
 
-## FEATURE-9 Implement and export read_spectra
+### FEATURE-9 Implement and export read_spectra
 
 Implement and export `read_spectra` and `read_spectrum` in a way that
 
@@ -487,47 +538,49 @@ This function can then be used to read spectra if a character string is provided
 
 2024/07/03: done in branch `v1.2.0` with commit `e3c35dce9965cf9a3a44383be818a8f5ab1b0c6e`. Note: the Magnetic Field Strength is not returned directly, but can be calculated via function `calc_B()`.
 
-## FEATURE-11: Accept dataframes in GLC
+### FEATURE-11: Accept dataframes in GLC
 
 Let `generate_lorentz_curves` accept dataframes as input. This is useful for Maximilians Bachelorthesis and also makes testing easier. If necessary, implement a private wrapper around `read_spectra`, called `read_spectra_glc` that converts the return value of `read_spectra` to a format that can be used by `deconvolute_spectra`.
 
 2024/07/15: done in branch `v1.2.0` with commit `fa3c427cc1680925c6a12a0eab17f14673c6ee0f`.
 
-## FEATURE-14: Provide simulated datasets from blood spectra
+### FEATURE-14: Provide simulated datasets from blood spectra
 
 Provide simulated datasets from blood spectra
 
 2024/17/15: Done in branch `v1.2.0` with commit `d01706c1f5885b6e965b55c6db53c041c866ed47`
 
-## FEATURE-15: Add lifecycle badges
+### FEATURE-15: Add lifecycle badges
 
 Add lifecycle badges to all non-stable exported functions. Functions which are exported but should not be used should be marked as "experimental" or (if possible) as "internal" (idea: check where other badges are stored and whether they can be modified).
 
 2024/07/15: Closed. Will be done with [DOC-1: Document whole package](#doc-1-document-whole-package).
 
-## FEATURE-17: Discard output
+### FEATURE-17: Discard output
 
 By default output of `generate_lorentz_curves` should be discarded during parallel phase. Before this phase, print a message that the remaining task might take up to a few minutes and that live output can be disabled by settings `share_stdout = TRUE`, but that the output might be scrambled depending on configuration of the R installation and the operating system.
 
 2024/07/09: Done in branch `v1.2.0` with commit `f9bf57a5e4c7167dfc3231cfe0ee515b40ad12bf`.
 
-## REFACTOR-1: Combine load_xxx_spectrum functions
+## REFACTOR
+
+### REFACTOR-1: Combine load_xxx_spectrum functions
 
 Combine `load_jcampdx_spectrum` and `load_bruker_spectrum` into one function, which calls `read_jcampdx_spectrum` or `read_bruker_spectrum` depending on the `type` argument. The `read_*_spectrum` function should return the measured signal strengths as vector `y_ss` and the corresponding ppm values as vector `x_ppm`. All other elements returned by the `load_*_spectrum` functions can be calculated from those. This makes the code more maintainable and easier to understand.
 
 Useful info for reading bruker files: according to `Bruker_NMR_Data_Formats.pdf` (available through Google), the text files `acqu?` and `proc?` contain acquisition and processing parameters. Files ending with `s` (`acqus`, `proc2s`, ...) describe the status of the dataset. Other files (`acqu`, `proc2`, ...) contain parameter values used in later processing or acquisition steps. Format of all parameter files corresponds to the JCAMP-DX standard, which allows the inclusion of vendor specific parameters by prefixing them with the character sequence `##$`. For this reason, all TopSpin parameters in the file are preceded by this sequence.
 
-## REFACTOR-2: Text Output (-License, +Timestamps)
+### REFACTOR-2: Text Output (-License, +Timestamps)
 
 The output should be improved. The License should not be printed after every function execution, unless there is a strong reason to do so. Timestamps should be added to the output, so the user automatically has a rough idea how long the function will take to finish.
 
-## REFACTOR-4: Plotting speed
+### REFACTOR-4: Plotting speed
 
 Function `plot_lorentz_curves_save_as_png` is suuuuper slow. We should try to make this quicker.
 
 2024/06/28: Closed without implementation, as the function was never exported and is now also properly marked with `noRd`.
 
-## REFACTOR-5: Speedup smoothing
+### REFACTOR-5: Speedup smoothing
 
 
 Currently, [smoothing of the spectra](R/MetaboDecon1D.R#1797) is done in a for-loop in R, which is slow. We can speed this up by using the `filter` function, which is implemented in C and therefore much faster.
@@ -541,7 +594,7 @@ identical(s1, s2) == FALSE
 all.equal(s1, s2) == TRUE
 ```
 
-## REFACTOR-6: Use a single unit as source of truth
+### REFACTOR-6: Use a single unit as source of truth
 
 Function `generate_lorentz_curves` and `MetaboDecon1D` use different units for their calculations and in their returned list, e.g.
  `ppm` (parts per million), `dp` (data points) and `sdp` (scaled data points) as x values and `si` (signal intensity), `ssi` (scaled signal intensity) as y values. Thats not good, as each conversion introduces numeric rounding errors and whenever we do a transformation, e.g. "removal of water signal", "removal of negative values" or "smoothing", we need to do the transformation for all units. Instead, we should use only one unit as single source of truth and provide conversion functions for the user, e.g. `ppm_to_hz` or `ppm_to_dp`. In the final returned list, it's ok to have all units, but at least during the calculation we should stick to `ppm` and `si` I think.
@@ -550,13 +603,13 @@ This also makes input for the user much easier, because something like the follo
 
 2024/06/30: Tracked by [FEATURE-10](#feature-10-implement-deconvolute_spectra) instead.
 
-## REFACTOR-7: Split monolithic functions into smaller parts
+### REFACTOR-7: Split monolithic functions into smaller parts
 
 The original `MetaboDecon1D` function has approx. 350 lines of code and the original `deconvolution` function has approx 1000 lines of code. This is way too much for testing and modifying. We should extract copy-pasted parts into indivual functions and test these functions separately.
 
 2024/06/30: Done in function `generate_lorentz_curves` in branch `v1.2.0`.
 
-## REFACTOR-8: Improve docs for Metabodecon1D return value
+### REFACTOR-8: Improve docs for Metabodecon1D return value
 
 Original Teams Message from Wolfram from `2023/11/08 3:29 PM`
 
@@ -589,36 +642,37 @@ Output variables of MetaboDecon1D (These variables will be obtained for each ana
 
 2024/06/30: Implemented with ab20d64.
 
+## CRAN
 
-## CRAN-0: Omit "Functions for" in title
+### CRAN-0: Omit "Functions for" in title
 
 Omit the redundant "Functions for" in your title.
 
-## CRAN-1: Omit "Functions for" in DESCRIPTION
+### CRAN-1: Omit "Functions for" in DESCRIPTION
 
 Do not start the description with "Functions for", "This package", package name, title or similar.
 
-## CRAN-2: Explain acronyms like NMR
+### CRAN-2: Explain acronyms like NMR
 
 Always explain all acronyms in the description text. e.g.: NMR
 
-## CRAN-3: Use correct reference format in DESCRIPTION
+### CRAN-3: Use correct reference format in DESCRIPTION
 
 Write references in the description of the DESCRIPTION file in the form `authors (year) <doi:...>` with no space after 'doi:' and angle brackets for auto-linking. (If you want to add a title as well please put it in quotes: "Title")
 
-## CRAN-4: Explain return value in function docs
+### CRAN-4: Explain return value in function docs
 
 Please add `\value` to .Rd files regarding exported methods and explain the functions results in the documentation. Please write about the structure of the output (class) and also what the output means. (If a function does not return a value, please document that too, e.g. `\value{No return value, called for side effects}` or similar). Missing Rd-tags in up to 11 .Rd files, e.g.: `combine_peaks.Rd: \value`, `dohCluster.Rd: \value`, ...
 
-## CRAN-5: Remove examples from unexported functions
+### CRAN-5: Remove examples from unexported functions
 
 You have examples for unexported functions. Please either omit these examples or export these functions. Examples for unexported function with example: plot_spectrum_superposition_save_as_png().
 
-## CRAN-6: Fix vignettes
+### CRAN-6: Fix vignettes
 
 In addition, we see: "Unexecutable code in vignettes/metabodecon.Rmd": the `#` should be before `"2)"` instead of afterwards, I guess.
 
-## CRAN-8: Functions should not write to disk by default
+### CRAN-8: Functions should not write to disk by default
 
 Please ensure that your functions do not write by default or in your `examples/vignettes/tests` in the user's home filespace (including the package directory and `getwd()`). This is not allowed by CRAN policies. Please omit any default path in writing functions. In your examples/vignettes/tests you can write to `tempdir()`.
 
@@ -629,11 +683,13 @@ ToSc: affected functions are:
 
 2024/06/28: Implemented with f5d63f7, 6491b42 and 76b8c4d.
 
-## CRAN-9: Functions should not change working dir or global options
+### CRAN-9: Functions should not change working dir or global options
 
  Please make sure that you do not change the user's options, par or working directory. If you really have to do so within functions, please ensure with an *immediate* call of on.exit() that the settings are reset when the function is exited. E.g. `R/MetaboDecon1D.R`. If you're not familiar with the function, please check `?on.exit`. This function makes it possible to restore options before exiting a function even if the function breaks. Therefore it needs to be called immediately after the option change within a function.
 
-## FIX-1: Prevent crashes for high smoothing
+## FIX
+
+### FIX-1: Prevent crashes for high smoothing
 
 > From: Maximilian Sombke <Maximilian.Sombke@stud.uni-regensburg.de>
 > Sent: Friday, July 12, 2024 2:59 PM

@@ -1,87 +1,5 @@
 # Public API #####
 
-#' @name deconvolute
-#'
-#' @title Deconvolute one or more NMR spectra
-#'
-#' @description
-#' Deconvolutes NMR spectra by modeling each detected signal within a spectrum as Lorentz Curve.
-#' \loadmathjax
-#'
-#' @inheritParams read_spectrum
-#'
-#' @param ask Logical. Whether to ask for user input during the deconvolution process. If FALSE, the provided default values will be used.
-#' @param x A `spectra` or `spectrum` object as described in [metabodecon_classes].
-#' @param data_path Either the path to a directory containing measured NMR spectra, a dataframe as returned by [read_spectrum()], or a list of such dataframes.
-#' @param delta Threshold for peak filtering. Higher values result in more peaks being filtered out. A peak is filtered if its score is below \mjeqn{\mu + \sigma \cdot \delta}{mu + s * delta}, where \mjeqn{\mu}{mu} is the average peak score in the signal-free region (SFR), and \mjeqn{\sigma}{s} is the standard deviation of peak scores in the SFR.
-#' @param force If FALSE, the function stops with an error message if no peaks are found in the signal free region (SFR), as these peaks are required as a reference for peak filtering. If TRUE, the function instead proceeds without peak filtering, potentially increasing runtime and memory usage significantly.
-#' @param make_rds Logical or character. If TRUE, stores results as an RDS file on disk. If a character string, saves the RDS file with the specified name. Should be set to TRUE if many spectra are evaluated to decrease computation time.
-#' @param nfit Number of iterations for approximating the parameters for the Lorentz curves.
-#' @param nworkers Number of workers to use for parallel processing. If `"auto"`, the number of workers will be determined automatically. If a number greater than 1, it will be limited to the number of spectra.
-#' @param sfr Numeric vector with two entries: the ppm positions for the left and right border of the signal-free region of the spectrum.
-#' @param smopts Numeric vector with two entries: the number of smoothing iterations and the number of data points to use for smoothing (must be odd).
-#' @param verbose Logical. Whether to print log messages during the deconvolution process.
-#' @param wshw Half-width of the water artifact in ppm.
-#'
-#' @return
-#' A 'GLCDecon' as described in [Metabodecon Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
-#'
-#' @details
-#' First, an automated curvature based signal selection is performed. Each signal is represented by 3 data points to allow the determination of initial Lorentz curves. These Lorentz curves are then iteratively adjusted to optimally approximate the measured spectrum.
-#'
-#' [generate_lorentz_curves_sim()] is identical to [generate_lorentz_curves()] except for the defaults, which are optimized for deconvoluting the 'Sim' dataset, shipped with 'metabodecon'. The 'Sim' dataset is a simulated dataset, which is much smaller than real NMR spectra (1309 datapoints instead of 131072) and lacks a water signal. This makes it ideal for use in examples or as a default value for functions. However, the default values for `sfr`, `wshw`, and `delta` in the "normal" [generate_lorentz_curves()] function are not optimal for this dataset. To avoid having to define the optimal parameters repeatedly in examples, this function is provided to deconvolute the "Sim" dataset with suitable parameters.
-#'
-#' @examples
-#' ## Define the paths to the example datasets we want to deconvolute:
-#' ## `sim_dir`: directory containing 16 simulated spectra
-#' ## `sim_01`: path to the first spectrum in the `sim` directory
-#' ## `sim_01_spec`: the first spectrum in the `sim` directory as a dataframe
-#' sim_dir <- metabodecon_file("sim_subset")
-#' sim_1_dir <- file.path(sim_dir, "sim_01")
-#' sim_2_dir <- file.path(sim_dir, "sim_02")
-#' sim_1_spectrum <- read_spectrum(sim_1_dir)
-#' sim_2_spectrum <- read_spectrum(sim_2_dir)
-#' sim_spectra <- list(sim_1_spectrum, sim_2_spectrum)
-#'
-#' ## Show that `generate_lorentz_curves()` and `generate_lorentz_curves_sim()`
-#' ## produce the same results:
-#' sim_1_decon0 <- generate_lorentz_curves(
-#'     data_path = path, # Path to directory containing spectra
-#'     sfr = c(3.58, 3.42), # Borders of signal free region (SFR) in ppm
-#'     wshw = 0, # Half width of water signal (WS) in ppm
-#'     delta = 0.1, # Threshold for peak filtering
-#'     ask = FALSE, # Don't ask for user input
-#'     verbose = FALSE # Suppress status messages
-#' )
-#' sim_1_decon1 <- generate_lorentz_curves_sim(path)
-#' stopifnot(all.equal(sim_1_decon0, sim_1_decon1))
-#'
-#' ## Show that passing a spectrum produces the same results as passing the
-#' ## the corresponding directory:
-#' decon_from_spectrum_dir <- generate_lorentz_curves_sim(sim_1_dir)
-#' decon_from_spectrum_obj <- generate_lorentz_curves_sim(sim_1_spectrum)
-#' decons_from_spectra_obj <- generate_lorentz_curves_sim(sim_spectra)
-#' decons_from_spectra_dir <- generate_lorentz_curves_sim(sim_dir)
-#' compare <- function(d1, d2) {
-#'     ignore <- which(names(d1) %in% c("number_of_files", "filename"))
-#'     equal <- all.equal(d1[-ignore], d2[-ignore])
-#'     stopifnot(isTRUE(equal))
-#' }
-#' compare(decon_from_spectrum_dir, decon_from_spectrum_obj)
-#' compare(decon_from_spectrum_dir, decons_from_spectra_obj[[1]])
-#' compare(decon_from_spectrum_dir, decons_from_spectra_dir[[1]])
-#'
-#' ## Below example uses data from a real NMR experiment, instead of (small)
-#' ## simulated datasets and therefor requires multiple seconds to run. Because
-#' ## `ask` is TRUE in this example (the default value), the user will be asked
-#' ## for input during the deconvolution. To avoid this, set `ask = FALSE`.
-#' \dontrun{
-#' example_datasets <- download_example_datasets()
-#' urine_1 <- file.path(example_datasets, "bruker/urine/urine_1")
-#' decon_urine_1 <- generate_lorentz_curves(urine_1)
-#' }
-NULL
-
 #' @export
 #' @rdname deconvolute
 deconvolute <- function(x, nfit, smopts, delta, sfr, wshw, ask, force, verbose, nworkers) {
@@ -467,3 +385,114 @@ store_as_rds <- function(decons, make_rds, data_path) {
     }
 }
 
+# Docs #####
+
+## deconvolute #####
+## generate_lorentz_curves #####
+## generate_lorentz_curves_sim #####
+
+#' @name deconvolute
+#'
+#' @title Deconvolute one or more NMR spectra \loadmathjax
+#'
+#' @description
+#' Deconvolutes NMR spectra by modeling each detected signal within a spectrum as Lorentz Curve.
+#'
+#' @inheritParams read_spectrum
+#'
+#' @param ask Logical. Whether to ask for user input during the deconvolution process. If FALSE, the provided default values will be used. \loadmathjax
+#'
+#' @param x A `spectra` or `spectrum` object as described in [metabodecon_classes].
+#'
+#' @param data_path Either the path to a directory containing measured NMR spectra, a dataframe as returned by [read_spectrum()], or a list of such dataframes.
+#'
+#' @param delta Threshold for peak filtering. Higher values result in more peaks being filtered out. A peak is filtered if its score is below \mjeqn{\mu + \sigma \cdot \delta}{mu + s * delta}, where \mjeqn{\mu}{mu} is the average peak score in the signal-free region (SFR), and \mjeqn{\sigma}{s} is the standard deviation of peak scores in the SFR.
+#'
+#' @param force If FALSE, the function stops with an error message if no peaks are found in the signal free region (SFR), as these peaks are required as a reference for peak filtering. If TRUE, the function instead proceeds without peak filtering, potentially increasing runtime and memory usage significantly.
+#'
+#' @param make_rds Logical or character. If TRUE, stores results as an RDS file on disk. If a character string, saves the RDS file with the specified name. Should be set to TRUE if many spectra are evaluated to decrease computation time.
+#'
+#' @param nfit Number of iterations for approximating the parameters for the Lorentz curves.
+#'
+#' @param nworkers Number of workers to use for parallel processing. If `"auto"`, the number of workers will be determined automatically. If a number greater than 1, it will be limited to the number of spectra.
+#'
+#' @param sfr Numeric vector with two entries: the ppm positions for the left and right border of the signal-free region of the spectrum.
+#'
+#' @param smopts Numeric vector with two entries: the number of smoothing iterations and the number of data points to use for smoothing (must be odd).
+#'
+#' @param verbose Logical. Whether to print log messages during the deconvolution process.
+#'
+#' @param wshw Half-width of the water artifact in ppm.
+#'
+#' @return
+#' A 'GLCDecon' as described in [Metabodecon Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
+#'
+#' @details
+#'
+#' \loadmathjax
+#'
+#' First, an automated curvature based signal selection is performed. Each signal is represented by 3 data points to allow the determination of initial Lorentz curves. These Lorentz curves are then iteratively adjusted to optimally approximate the measured spectrum.
+#'
+#' [generate_lorentz_curves_sim()] is identical to [generate_lorentz_curves()] except for the defaults, which are optimized for deconvoluting the 'Sim' dataset, shipped with 'metabodecon'. The 'Sim' dataset is a simulated dataset, which is much smaller than real NMR spectra (1309 datapoints instead of 131072) and lacks a water signal. This makes it ideal for use in examples or as a default value for functions. However, the default values for `sfr`, `wshw`, and `delta` in the "normal" [generate_lorentz_curves()] function are not optimal for this dataset. To avoid having to define the optimal parameters repeatedly in examples, this function is provided to deconvolute the "Sim" dataset with suitable parameters.
+#'
+#' @examples
+#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
+#' ## Define the paths to the example datasets we want to deconvolute:
+#' ## `sim_dir`: directory containing 16 simulated spectra
+#' ## `sim_01`: path to the first spectrum in the `sim` directory
+#' ## `sim_01_spec`: the first spectrum in the `sim` directory as a dataframe
+#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
+#' sim_dir <- metabodecon_file("sim_subset")
+#' sim_1_dir <- file.path(sim_dir, "sim_01")
+#' sim_2_dir <- file.path(sim_dir, "sim_02")
+#' sim_1_spectrum <- read_spectrum(sim_1_dir)
+#' sim_2_spectrum <- read_spectrum(sim_2_dir)
+#' sim_spectra <- read_spectra(sim_dir)
+#'
+#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
+#' ## Show that `generate_lorentz_curves()` and `generate_lorentz_curves_sim()`
+#' ## produce the same results:
+#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
+#' sim_1_decon0 <- generate_lorentz_curves(
+#'     data_path = sim_1_dir, # Path to directory containing spectra
+#'     sfr = c(3.58, 3.42), # Borders of signal free region (SFR) in ppm
+#'     wshw = 0, # Half width of water signal (WS) in ppm
+#'     delta = 0.1, # Threshold for peak filtering
+#'     ask = FALSE, # Don't ask for user input
+#'     verbose = FALSE # Suppress status messages
+#' )
+#' sim_1_decon1 <- generate_lorentz_curves_sim(sim_1_dir)
+#' stopifnot(all.equal(sim_1_decon0, sim_1_decon1))
+#'
+#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
+#' ## Show that passing a spectrum produces the same results as passing the
+#' ## the corresponding directory:
+#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
+#' decon_from_spectrum_dir <- generate_lorentz_curves_sim(sim_1_dir)
+#' decon_from_spectrum_obj <- generate_lorentz_curves_sim(sim_1_spectrum)
+#' decons_from_spectra_obj <- generate_lorentz_curves_sim(sim_spectra)
+#' decons_from_spectra_dir <- generate_lorentz_curves_sim(sim_dir)
+#'
+#' most.equal <- function(x1, x2) {
+#'     ignore <- which(names(x1) %in% c("number_of_files", "filename"))
+#'     equal <- all.equal(x1[-ignore], x2[-ignore])
+#'     invisible(stopifnot(isTRUE(equal)))
+#' }
+#'
+#' all.equal(  decon_from_spectrum_dir, decon_from_spectrum_obj     )
+#' all.equal(  decons_from_spectra_dir, decons_from_spectra_obj     )
+#' most.equal( decon_from_spectrum_dir, decons_from_spectra_obj[[1]])
+#' most.equal( decon_from_spectrum_dir, decons_from_spectra_dir[[1]])
+#'
+#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
+#' ## Below example uses data from a real NMR experiment, instead of (small)
+#' ## simulated datasets and therefor requires multiple seconds to run. Because
+#' ## `ask` is TRUE in this example (the default value), the user will be asked
+#' ## for input during the deconvolution. To avoid this, set `ask = FALSE`.
+#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
+#' \dontrun{
+#' example_datasets <- download_example_datasets()
+#' urine_1 <- file.path(example_datasets, "bruker/urine/urine_1")
+#' decon_urine_1 <- generate_lorentz_curves(urine_1)
+#' }
+NULL

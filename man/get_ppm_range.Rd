@@ -24,7 +24,8 @@ A vector containing the lowest and highest ppm value over all peaks of the provi
 Returns the ppm range across all peaks of the provided deconvoluted spectra.
 }
 \examples{
-spectrum_data = generate_lorentz_curves_sim()
+sim_subset <- metabodecon_file("sim_subset")
+spectrum_data = generate_lorentz_curves_sim(sim_subset)
 ppm_rng <- get_ppm_range(spectrum_data, show = TRUE)
 print(ppm_rng)
 }
