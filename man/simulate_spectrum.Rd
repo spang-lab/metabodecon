@@ -41,8 +41,12 @@ simulate_spectrum(
 
 \item{noise}{The noise to add to the spectrum.}
 }
+\value{
+A \code{spectrum} object as described in \link{metabodecon_classes}.
+}
 \description{
 Simulates a 1D NMR spectrum based on the provided parameters.
+
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 }
 \examples{

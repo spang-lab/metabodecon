@@ -25,6 +25,6 @@ test_that("evalwith works", {
     expect_true(x$runtime <= 1)
     expect_equal(x$output, "Helloworld!")
     expect_equal(x$message, c("Continue?y", "Continue?n", "Roar", "Warning: Blub"))
-    expect_equal(test_wd, file.path(testdir(), "with/1"))
+    expect_equal(test_wd, norm_path(file.path(testdir(), "with/1")))
     expect_equal(after_wd, before_wd)
 })

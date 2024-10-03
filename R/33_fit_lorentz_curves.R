@@ -16,8 +16,9 @@ fit_lorentz_curves <- function(spec, nfit = 3) {
 
 # Private Helpers #####
 
-#' @title Initialize Lorentz Curve parameters from a spectrum with selected peak triplets
-#' @param spec List with elements: `x`, `y`, `peak` where `peak` is a list with elements `center`, `left`, `right` and `high`.
+#' @title Initialize Lorentz Curve Parameters
+#' @param spec List with elements: `x`, `y`, `peak` where `peak` is a list with
+#' elements `center`, `left`, `right` and `high`.
 #' @noRd
 init_lc_v14 <- function(spec, verbose = TRUE) {
     # Init values
@@ -40,8 +41,8 @@ init_lc_v14 <- function(spec, verbose = TRUE) {
 
     # Calculate distances
     wr  <- xr - xr; wc  <- xc - xr; wl  <- xl - xr # express positions wr/wc/wl as "distance to right border"
-    wrc <- wr - wc; wrl <- wr - wl; wcl <- wc - wl # x-distance between PTPs
-    yrc <- yr - yc; yrl <- yr - yl; ycl <- yc - yl # y-distance between PTPs
+    wrc <- wr - wc; wrl <- wr - wl; wcl <- wc - wl # x - distance between PTPs
+    yrc <- yr - yc; yrl <- yr - yl; ycl <- yc - yl # y - distance between PTPs
 
     # Estimate parameters
     w <- calc_w_v14(wr, wc, wl, yr, yc, yl, wrc, wrl, wcl, yrc, yrl, ycl, xr)

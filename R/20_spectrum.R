@@ -22,7 +22,7 @@ read_spectra <- function(data_path = pkg_file("example_datasets/bruker/urine"),
     if (!file_format %in% c("bruker", "jcampdx")) {
         stop("Argument `file_format` should be either 'bruker' or 'jcampdx'")
     }
-    dp <- normPath(data_path)
+    dp <- norm_path(data_path)
     jcampdx <- file_format == "jcampdx"
     bruker <- file_format == "bruker"
     r1_path <- file.path(dp, expno, "pdata", procno, "1r")
@@ -95,7 +95,7 @@ read_spectrum <- function(data_path = metabodecon_file("bruker/sim/sim_01"),
                           force = FALSE) {
     file_format <- match.arg(file_format, c("bruker", "jcampdx"))
     X <- switch(file_format,
-        "bruker" = read_topspin3_spectrum(data_path, expno, procno, raw, silent, force),
+        "bruker" = read_bruker_spectrum(data_path, expno, procno, raw, silent, force),
         "jcampdx" = read_jcampdx_spectrum(data_path, silent, force)
     )
 }
@@ -152,140 +152,15 @@ make_spectrum <- function(si,
     structure(named(si, cs, meta), class = "spectrum")
 }
 
-#' @noRd
-#' @title Create a simulated spectrum based on a real deconvolution result
-#' @description Creates a simulated spectrum based on the deconvolution results of a real spectrum. The simulated spectrum is a superposition of Lorentzian functions from a small part of the original spectrum.
-#' @param deconv A list containing the deconvolution result, as returned by [generate_lorentz_curves()].
-#' @return A dataframe with following columns
-#' `si_smooth`: Smoothed signal intensities.
-#' `cs`: Chemical shifts in PPM.
-#' `fq`: Frequencies in Hz.
-#' `si_raw`: Raw signal intensities of base spectrum.
-#' `si_smooth`: Smoothed simulated signal intensities of base spectrum.
-#' `si_sim`: Simulated signal intensities of base spectrum (incl. noise).
-#' `si_sim_raw`: Raw simulated signal intensities in raw format, i.e. `as.integer(si_sim * 1e6)`.
-#' @examples
-#' example_datasets <- download_example_datasets()
-#' path <- datadir("example_datasets/bruker/blood/blood_01")
-#' spectrum <- read_spectrum(path)
-#' gspec <- as_gspec(spectrum)
-#' decon1 <- deconvolute_gspec(gspec, rtyp = "decon1")
-#' simspec <- get_sim_params(decon1)
-#' str(simspec)
-#' @noRd
-#' @title Stores a `simspec` object as generated using [get_sim_params()]
-#' @param simspec A simulated spectrum as returned by [get_sim_params()].
-#' @param pngpath Path to save the simulated spectrum as a PNG file.
-#' @param pdfpath Path to save the simulated spectrum as a PDF file.
-#' @param svgpath Path to save the simulated spectrum as a SVG file.
-#' @param rdspath Path to save the simulated spectrum as an RDS file.
-#' @param brukerdir Path to the directory where the Bruker files should be saved.
-#' @examples
-#' x <- simulate_spectrum()
-#' store_spectrum(x)
-store_spectrum <- function(simspec = get_sim_params(),
-                           pngpath = NULL,
-                           pdfpath = NULL,
-                           svgpath = NULL,
-                           rdspath = NULL,
-                           brukerdir = NULL,
-                           verbose = TRUE) {
-    X <- simspec$X
-    logv <- if (verbose) logf else function(...) NULL
-    opts <- options(digits = 15)
-    on.exit(options(opts), add = TRUE)
-    pdfpath <- normPath(pdfpath)
-    pngpath <- normPath(pngpath)
-    rdspath <- normPath(rdspath)
-    brukerdir <- normPath(brukerdir)
-
-    logv("Storing simulated spectrum")
-    if (is.null(pdfpath)) {
-        logv("No PDF path provided. Not saving PDF.")
-    } else {
-        logv("Saving PDF to %s", pdfpath)
-        if (!dir.exists(pdfdir <- dirname(normPath(pdfpath)))) mkdirs(pdfdir)
-        pdf(file = pdfpath)
-        tryCatch(plot_sim_spec(simspec), finally = dev.off())
-    }
-
-    if (is.null(pngpath)) {
-        logv("No PNG path provided. Not saving PNG")
-    } else {
-        logv("Saving PNG to %s", pngpath)
-        if (!dir.exists(pngdir <- dirname(normPath(pngpath)))) mkdirs(pngdir)
-        png(filename = pngpath)
-        tryCatch(plot_sim_spec(simspec), finally = dev.off())
-    }
-
-    if (is.null(svgpath)) {
-        logv("No SVG path provided. Not saving SVG")
-    } else {
-        logv("Saving SVG to %s", svgpath)
-        if (!dir.exists(svgdir <- dirname(normPath(svgpath)))) mkdirs(svgdir)
-        svg(filename = svgpath)
-        tryCatch(plot_sim_spec(simspec), finally = dev.off())
-    }
-
-
-    if (is.null(rdspath)) {
-        logv("No RDS path provided. Not saving RDS.")
-    } else {
-        logv("Saving RDS to %s", rdspath)
-        if (!dir.exists(rdsdir <- dirname(normPath(rdspath)))) mkdirs(rdsdir)
-        saveRDS(simspec, file = rdspath)
-    }
-
-    if (is.null(brukerdir)) {
-        logv("No bruker path provided. Not saving bruker.")
-    } else {
-        logv("Saving bruker files to %s", brukerdir)
-        mkdirs(file.path(brukerdir, "10", "pdata", "10"))
-        files <- list(
-            acqus = file.path(brukerdir, "10", "acqus"),
-            procs = file.path(brukerdir, "10", "pdata", "10", "procs"),
-            one_r = file.path(brukerdir, "10", "pdata", "10", "1r")
-        )
-        strs <- list(
-            procs = paste(
-                sep = "\n",
-                "##$BYTORDP=0", # Byte order (0 = Little endian)
-                "##$NC_proc=0", # Exponent for intensity values (y_scaled = y_raw * 2^NC_proc)
-                "##$DTYPP=0", # Data storage type (0=4-byte-integers, else=double)
-                sprintf("##$SI=%d", length(X$si_sim)), # Number of data points
-                sprintf("##$OFFSET=%.15f", max(X$cs)), # Offset in PPM, i.e. the maximum chemical shift
-                ""
-            ),
-            acqus = paste(
-                sep = "\n",
-                sprintf("##$SW=%.15f", width(X$cs)), # Spectrum width in PPM
-                sprintf("##$SFO1=%.15f", convert_pos(0, X$cs, X$fq) / 1e6), # Reference Frequency in MHz
-                sprintf("##$SW_h=%.15f", width(X$fq)), # Spectrum width in Hz
-                ""
-            )
-        )
-        logf("Saving files to:\n%s", collapse(files, "\n"))
-        cat(strs$acqus, file = files$acqus)
-        cat(strs$procs, file = files$procs)
-        writeBin(X$si_sim_raw, files$one_r)
-        logf("Reading back files to validate them")
-        cols <- c("cs", "fq", "si")
-        spec_written <- X[, c("cs", "fq", "si_sim_raw")]
-        colnames(spec_written) <- cols
-        spec_read <- read_spectrum(brukerdir)[cols]
-        if (!isTRUE(all.equal(spec_read, spec_written))) stop("The saved bruker files are not equal to the simulated spectrum")
-        logf("Validation successful")
-    }
-
-    logv("Finished storing simulated spectrum")
-    simspec
-}
-
 #' @export
+#'
 #' @title Simulate a 1D NMR Spectrum
+#'
 #' @description
 #' Simulates a 1D NMR spectrum based on the provided parameters.
+#'
 #' `r lifecycle::badge("experimental")`
+#'
 #' @param name The name of the spectrum.
 #' @param seed The seed for the random number generator.
 #' @param ndp The number of data points in the spectrum.
@@ -297,6 +172,9 @@ store_spectrum <- function(simspec = get_sim_params(),
 #' @param A The peak area parameter.
 #' @param lambda The peak width parameter.
 #' @param noise The noise to add to the spectrum.
+#'
+#' @return A `spectrum` object as described in [metabodecon_classes].
+#'
 #' @examples
 #' simA <- simulate_spectrum("simA")
 #' simA_copy <- simulate_spectrum("simA")
@@ -317,19 +195,20 @@ simulate_spectrum <- function(name = "sim_00",
                               lambda = runif(npks, 0.9, 1.3) / 1e3,
                               noise = rnorm(length(cs), sd = 1200)) {
     set.seed(seed) # (1)
-    call <- match.call()
     si <- lorentz_sup(cs, x0, A, lambda) + noise
     si <- round(si) # (2)
-    lcpt <- named(A, x0, lambda)
-    meta <- named(name, call, lcpt)
+    simpar <- named(A, x0, lambda, noise)
+    meta <- named(name, simpar)
     spectrum <- structure(named(si, cs, meta), class = "spectrum")
     spectrum
 }
 # Developer Notes:
-# (1) Setting seed in the function body also affects all runif / rnorm calls in
-#     the function defaults because they are only evaluated upon first use.
-# (2) Convert to integers to not lose precision later on when the data gets
+# (1) Setting seed in the function body also affects runif and rnorm calls in
+#     the function default values as they are only evaluated upon first use.
+# (2) We convert to integers to not lose precision later on when the data gets
 #     stored as integers on disk.
+
+
 
 # Private Helpers #####
 
@@ -338,11 +217,11 @@ simulate_spectrum <- function(name = "sim_00",
 #' @inheritParams read_spectrum
 #' @examples
 #' spldir <- pkg_file("example_datasets/bruker/urine/urine_1")
-#' X <- read_topspin3_spectrum(spldir)
+#' X <- read_bruker_spectrum(spldir)
 #' fq_ref <- X$fq[1] / (1 - (X$cs[1] / 1e6))
 #' print(head(X))
 #' cat("Frequency of reference in MHz:", fq_ref / 1e6)
-read_topspin3_spectrum <- function(spldir = file.path(download_example_datasets(), "bruker/urine/urine_1"),
+read_bruker_spectrum <- function(spldir = file.path(download_example_datasets(), "bruker/urine/urine_1"),
                                    expno = 10,
                                    procno = 10,
                                    raw = FALSE,
@@ -355,12 +234,14 @@ read_topspin3_spectrum <- function(spldir = file.path(download_example_datasets(
         si = if (raw) one_r$raw else one_r$scaled, # Signal intensities
         cs_max = procs$OFFSET, # Spectrum offset in PPM
         cs_width = acqus$SW, # Spectrum width in PPM
-        fq_ref = acqus$SFO1 * 1e6, # Reference Frequency in Hz (better than procs$SF, because it fulfills `all.equal` check of `make_spectrum`)
+        fq_ref = acqus$SFO1 * 1e6, # Reference Frequency in Hz (1)
         fq_width = acqus$SW_h, # Spectrum width in Hz
         force = force,
         silent = silent,
         name = basename(spldir),
         path = spldir
+        # (1) Better than procs$SF, because it fulfills `all.equal` check of
+        # `make_spectrum`.
     )
 }
 
@@ -551,7 +432,33 @@ read_1r_file <- function(spldir = pkg_file("example_datasets/bruker/urine/urine_
     )
 }
 
-# Development Helpers #####
+# Sim Dataset #####
+
+update_sim_dataset <- function() {
+    sim <- make_sim_dataset()
+}
+
+make_sim_dataset <- function() {
+    decons <- deconvolute_blood()
+    simpars <- lapply(decons, get_sim_params, pkr = c(3.52, 3.37))
+    simpars$blood_02 <- get_sim_params(decons$blood_02, pkr = c(3.51, 3.36)) # (1)
+    # (1) Blood 02 is shifted approx. 0.01 ppm to the right, so we also need to
+    # shift the interval from which we pick our peaks so that we end up with
+    # signals from the same metabolites.
+    sim <- lapply(simpars, function(simpar) {
+        simulate_spectrum(
+            name = gsub("blood", "sim", simpar$name),
+            ndp = 2048,
+            x0 = simpar$x0,
+            A = simpar$A,
+            lambda = simpar$lambda,
+            noise = rnorm(2048, sd = simpar$noiseSD)
+        )
+    })
+    names(sim) <- gsub("blood", "sim", names(sim))
+    class(sim) <- "spectra"
+    sim
+}
 
 #' @noRd
 #'
@@ -583,17 +490,17 @@ deconvolute_blood <- function(read_cache = TRUE,
                               write_cache = TRUE,
                               force = FALSE,
                               verbose = TRUE,
-                              nworkers = 4) {
+                              nworkers = 1) {
     rds <- file.path(cachedir(), "deconvolute_blood.rds")
     new <- old <- if (file.exists(rds)) readRDS(rds) else NULL # 62.6 MB == 0.6s
     if (!read_cache || is.null(new)) {
         download_example_datasets()
         path <- datadir("example_datasets/bruker/blood")
-        spectra <- read_spectra(path)
-        new <- deconvolute(
-            x = spectra,
+        new <- generate_lorentz_curves(
+            data_path = path,
             nworkers = nworkers,
-            verbose = verbose
+            verbose = verbose,
+            ask = FALSE
         )
     }
     if (!(identical(new, old) || is.null(old))) {
@@ -604,6 +511,154 @@ deconvolute_blood <- function(read_cache = TRUE,
         saveRDS(new, rds)
     }
     return(new)
+}
+
+#' @noRd
+#' @examples
+#' xdir <- download_example_datasets()
+#' path <- file.path(xdir, "bruker/blood/blood_01")
+#' spec <- read_spectrum(path)
+#' x <- deconvolute_gspec(spec, rtyp = "decon1")
+#' sim_params <- get_sim_params(x)
+get_sim_params <- function(x, pkr = c(3.4, 3.5)) {
+    d <- as_decon1(x)
+    p <- which(d$x_0_ppm <= max(pkr) & d$x_0_ppm >= min(pkr))
+    A <- -d$A_ppm[p] * 1e6
+    x0 <- d$x_0_ppm[p]
+    lambda <- -d$lambda_ppm[p]
+    noiseSD <- sd(d$y_values_raw[c(1:10000, 121073:131072)])
+    name <- d$filename
+    named(A, x0, lambda, noiseSD, name)
+}
+
+save_spectrum <- function(x,
+                          path,
+                          force = FALSE,
+                          verbose = TRUE) {
+
+    # Check input args, init temp dir and log function
+    stopifnot(is_spectrum(x))
+    stopifnot(length(dir(path)) == 0 || isTRUE(force))
+    stopifnot(is_bool(force))
+    stopifnot(is_bool(verbose))
+    temp <- tmpdir()
+    logv <- get_logv(verbose)
+    logv("Saving bruker files to %s", temp)
+
+    # Prepare processing parameters to write to procs file
+    BYTORDP <- "##$BYTORDP=0" # Byte order (0 = Little endian)
+    NC_proc <- "##$NC_proc=0" # Exponent for intensity values (si = y * 2^NC_proc)
+    DTYPP <- "##$DTYPP=0" # Data storage type (0=4-byte-integers, else=double)
+    SI <- sprintf("##$SI=%d", length(x$si)) # Number of data points
+    OFFSET <- sprintf("##$OFFSET=%.15f", max(x$cs)) # Maximum chemical shift in PPM
+    procs_str = paste(BYTORDP, NC_proc, DTYPP, SI, OFFSET, "", sep = "\n")
+    procs_path = file.path(temp, "10", "pdata", "10", "procs")
+
+    # Prepare aquistions parameters to write to acqus file
+    fq_ref <- convert_pos(0, x$cs, x$fq)
+    SW <- sprintf("##$SW=%.15f", width(x$cs)) # Spectrum width in PPM
+    SFO1 <- sprintf("##$SFO1=%.15f", fq_ref / 1e6) # Reference Frequency in MHz
+    SW_h <- sprintf("##$SW_h=%.15f", width(x$fq)) # Spectrum width in Hz
+    acqus_str = paste(SW, SFO1, SW_h, "", sep = "\n")
+    acqus_path = file.path(temp, "10", "acqus")
+
+    # Write files
+    one_r_path = file.path(temp, "10", "pdata", "10", "1r")
+    mkdirs(file.path(temp, "10", "pdata", "10"))
+    logf("Writing %s", procs_path); cat(procs_str, file = procs_path)
+    logf("Writing %s", acqus_path); cat(acqus_str, file = acqus_path)
+    logf("Writing %s", one_r_path); writeBin(x$si, one_r_path)
+
+    # Validate written files
+    logf("Reading back files to validate them")
+    y <- read_spectrum(temp)
+    if (!isTRUE(all.equal(x, y))) stop("Stored spectrum is corrupted")
+
+    # Move the files to the destination directory
+    logv("Moving files to %s", path)
+    file.copy(temp, path, recursive = TRUE, overwrite = TRUE)
+}
+
+#' @noRd
+#' @title Save Spectra to Disk in Bruker Format
+save_spectra <- function(x, path, force = FALSE, verbose = TRUE) {
+    stopifnot(is_spectra(x))
+    stopifnot(length(dir(path)) == 0 || isTRUE(force))
+    stopifnot(is_bool(force))
+    stopifnot(is_bool(verbose))
+    subpaths <- sapply(x, function(s) file.path(path, s$meta$name))
+    mkdirs(path)
+    for (i in seq_along(x)) {
+        save_spectrum(x[[i]], subpaths[i], force = force, verbose = verbose)
+    }
+}
+
+# Deprecated #####
+
+simulate_from_decon <- function(x,
+                                # Simulation Params
+                                cs_min = 3.4,
+                                cs_max = 3.6,
+                                pk_min = 3.45,
+                                pk_max = 3.55,
+                                noise_method = "SFR",
+                                # Output params
+                                show = TRUE,
+                                save = FALSE,
+                                verbose = TRUE,
+                                ...) {
+    if (!isFALSE(verbose)) logf("Checking function inputs")
+    stopifnot(is_num(cs_min, 1))
+    stopifnot(is_num(cs_max, 1))
+    stopifnot(is_num(pk_min, 1))
+    stopifnot(is_num(pk_max, 1))
+    stopifnot(is_char(noise_method, 1, "(RND|SFR)"))
+    stopifnot(is_bool(show, 1))
+    stopifnot(is_bool(save, 1))
+    stopifnot(is_bool(verbose, 1))
+    d <- as_decon1(x)
+    logv <- if (verbose) logf else function(...) NULL
+
+    logv("Simulating spectrum from '%s' (noise method = '%s')", d$filename, noise_method)
+    s <- as_spectrum(d)
+
+    logv("Throwing away datapoints outside of %.1f to %.1f", cs_min, cs_max)
+    ix <- which(s$cs >= cs_min & s$cs <= cs_max)
+    s$cs <- s$cs[ix]
+    s$si <- s$si[ix]
+    if (!is.null(s$meta$fq)) s$meta$fq <- s$meta$fq[ix]
+
+    logv("Keeping only within %.1f to %.1f", pk_min, pk_max)
+    ip <- which(d$x_0_ppm <= pk_max & d$x_0_ppm >= pk_min)
+    s$lcpt <- list(
+        A      = -d$A_ppm[ip],
+        x_0    = d$x_0_ppm[ip],
+        lambda = -d$lambda_ppm[ip]
+    )
+
+    logv("Calculating simulated signal intensities (si_sim) as superposition of lorentz curves")
+    rownames(s) <- NULL
+    si <- lorentz_sup(x = s$cs, lcp = s$lcpt)
+
+    logv("Adding %s noise to simulated data", noise_method)
+    if (noise_method == "RND") { # ToSc, 2024-08-02: noise_method 'RND' turned out to be a bad idea, because the true noise is not normally distributed, but has long stretches of continuous increase or decrease that would be incredibly unlikely to occur with a normal distribution. This can be seen by running `analyze_noise_methods()`.
+        sfr_sd <- sd(d$y_values_raw[c(1:10000, 121073:131072)] * 1e-6) # The true SFR covers approx. the first and last 20k datapoints. However, to be on the safe side, only use the first and last 10k datapoints for the calculation.
+        noise <- rnorm(n = length(si), mean = 0, sd = sfr_sd)
+        si <- si + noise
+    } else {
+        idx <- ix - min(ix) + 5000 # Use SI of datapoints 5000:6308 for noise
+        noise <- d$y_values_raw[idx] * 1e-6
+        si <- si + noise
+    }
+
+    logv("Discretize signal intensities to allow efficient storage as integers")
+    s$si <- as.integer(si * 1e6) / 1.e6 # Convert to integers and back. We do this to not lose precision later on when the data gets written to disc as integers.
+
+    if (show) plot_sim_spec(s)
+    if (store) save_spectrum(s, verbose = verbose, ...)
+
+    logv("Finished spectrum simulation")
+    invisible(s)
 }
 
 #' @noRd
@@ -644,43 +699,6 @@ count_stretches <- function(x) {
     }
     ss[i] <- s
     return(ss[ss != 0])
-}
-
-#' @noRd
-#' @examples
-#' xdir <- download_example_datasets()
-#' path <- file.path(xdir, "bruker/blood/blood_01")
-#' spec <- read_spectrum(path)
-#' x <- deconvolute_gspec(spec, rtyp = "decon1")
-#' sim_params <- get_sim_params(x)
-get_sim_params <- function(x, pkr = c(3.4, 3.5)) {
-    d <- as_decon1(x)
-    p <- which(d$x_0_ppm <= max(pkr) & d$x_0_ppm >= min(pkr))
-    A <- -d$A_ppm[p] * 1e6
-    x0 <- d$x_0_ppm[p]
-    lambda <- -d$lambda_ppm[p]
-    noiseSD <- sd(d$y_values_raw[c(1:10000, 121073:131072)])
-    named(A, x0, lambda, noiseSD)
-}
-
-make_sim_dataset <- function(overwrite = FALSE) {
-    download_example_datasets()
-    data_path <- datadir("example_datasets/bruker/blood")
-    decons <- generate_lorentz_curves(data_path, nworkers = 1)
-
-    pngdir <- "vignettes/Datasets/png"
-    pdfdir <- "vignettes/Datasets/pdf"
-    svgdir <- "vignettes/Datasets/svg"
-    rdsdir <- "inst/example_datasets/rds/sim"
-    brukerdir <- "inst/example_datasets/bruker/sim"
-
-    # NOTES:
-    # ip <- which( decon0$x_0_ppm <= 3.54 & decon0$x_0_ppm >= 3.44)
-    # Blood 02 is shifted approx. 0.01 ppm to the right, so we also need to shift the
-    # interval from which we pick our peaks so that we end up with signals from
-    # the same metabolites.
-
-    stop("Not implemented yet")
 }
 
 #' @noRd
@@ -741,72 +759,4 @@ analyze_noise_methods <- function(ask = TRUE) {
     on.exit(par(opar), add = TRUE)
     hist(slRND, breaks = 0:20 + 0.5, xlim = c(0, 20))
     hist(slSFR, breaks = 0:20 + 0.5, xlim = c(0, 20))
-}
-
-# Deprecated #####
-
-simulate_from_decon <- function(x,
-                                # Simulation Params
-                                cs_min = 3.4,
-                                cs_max = 3.6,
-                                pk_min = 3.45,
-                                pk_max = 3.55,
-                                noise_method = "SFR",
-                                # Output params
-                                show = TRUE,
-                                store = FALSE,
-                                verbose = TRUE,
-                                ...) {
-    if (!isFALSE(verbose)) logf("Checking function inputs")
-    stopifnot(is_num(cs_min, 1))
-    stopifnot(is_num(cs_max, 1))
-    stopifnot(is_num(pk_min, 1))
-    stopifnot(is_num(pk_max, 1))
-    stopifnot(is_char(noise_method, 1, "(RND|SFR)"))
-    stopifnot(is_bool(show, 1))
-    stopifnot(is_bool(store, 1))
-    stopifnot(is_bool(verbose, 1))
-    d <- as_decon1(x)
-    logv <- if (verbose) logf else function(...) NULL
-
-    logv("Simulating spectrum from '%s' (noise method = '%s')", d$filename, noise_method)
-    s <- as_spectrum(d)
-
-    logv("Throwing away datapoints outside of %.1f to %.1f", cs_min, cs_max)
-    ix <- which(s$cs >= cs_min & s$cs <= cs_max)
-    s$cs <- s$cs[ix]
-    s$si <- s$si[ix]
-    if (!is.null(s$meta$fq)) s$meta$fq <- s$meta$fq[ix]
-
-    logv("Keeping only within %.1f to %.1f", pk_min, pk_max)
-    ip <- which(d$x_0_ppm <= pk_max & d$x_0_ppm >= pk_min)
-    s$lcpt <- list(
-        A      = -d$A_ppm[ip],
-        x_0    = d$x_0_ppm[ip],
-        lambda = -d$lambda_ppm[ip]
-    )
-
-    logv("Calculating simulated signal intensities (si_sim) as superposition of lorentz curves")
-    rownames(s) <- NULL
-    si <- lorentz_sup(x = s$cs, lcp = s$lcpt)
-
-    logv("Adding %s noise to simulated data", noise_method)
-    if (noise_method == "RND") { # ToSc, 2024-08-02: noise_method 'RND' turned out to be a bad idea, because the true noise is not normally distributed, but has long stretches of continuous increase or decrease that would be incredibly unlikely to occur with a normal distribution. This can be seen by running `analyze_noise_methods()`.
-        sfr_sd <- sd(d$y_values_raw[c(1:10000, 121073:131072)] * 1e-6) # The true SFR covers approx. the first and last 20k datapoints. However, to be on the safe side, only use the first and last 10k datapoints for the calculation.
-        noise <- rnorm(n = length(si), mean = 0, sd = sfr_sd)
-        si <- si + noise
-    } else {
-        idx <- ix - min(ix) + 5000 # Use SI of datapoints 5000:6308 for noise
-        noise <- d$y_values_raw[idx] * 1e-6
-        si <- si + noise
-    }
-
-    logv("Discretize signal intensities to allow efficient storage as integers")
-    s$si <- as.integer(si * 1e6) / 1.e6 # Convert to integers and back. We do this to not lose precision later on when the data gets written to disc as integers.
-
-    if (show) plot_sim_spec(s)
-    if (store) store_spectrum(s, verbose = verbose, ...)
-
-    logv("Finished spectrum simulation")
-    invisible(s)
 }

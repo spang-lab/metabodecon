@@ -11,23 +11,30 @@ An object of class \code{NULL} of length 0.
 metabodecon_classes
 }
 \description{
-Metabodecon introduces a set of classes to highlight the presence of certain elements in corresponding objects.
+Metabodecon introduces a set of classes to highlight the presence of certain
+elements in corresponding objects.
 
-The order of elements may vary between different versions of Metabodecon, thus elements should always be accessed by name, for example, using \code{x$si} or \code{x[["cs"]]}.
-A short description of each class is given in the listing below.
+The order of elements may vary between different versions of Metabodecon,
+thus elements should always be accessed by name, for example, using \code{x$si}
+or \code{x[["cs"]]}. A short description of each class is given in the listing
+below.
 \itemize{
 \item \code{spectrum}: One NMR spectrum
 \item \code{decon0}: One deconvoluted NMR spectrum stored in \code{\link[=MetaboDecon1D]{MetaboDecon1D()}} format
-\item \code{decon1}: One deconvoluted NMR spectrum stored in \code{\link[=generate_lorentz_curves]{generate_lorentz_curves()}} format
+\item \code{decon1}: One deconvoluted NMR spectrum stored in
+\code{\link[=generate_lorentz_curves]{generate_lorentz_curves()}} format
 \item \code{decon2}: One deconvoluted NMR spectrum stored in \code{\link[=deconvolute]{deconvolute()}} format
-\item \code{alignment}: One aligned NMR spectrum
-\item \code{spectra}: List of multiple NMR spectra
-\item \code{decons0}: List of multiple deconvoluted NMR stored in \code{\link[=MetaboDecon1D]{MetaboDecon1D()}} format
-\item \code{decons1}: List of multiple deconvoluted NMR stored in \code{\link[=generate_lorentz_curves]{generate_lorentz_curves()}} format
-\item \code{decons2}: List of multiple deconvoluted NMR stored in \code{\link[=deconvolute]{deconvolute()}} format
-\item \code{alignments}: List of multiple aligned NMR spectra
+\item \code{align}: One aligned NMR spectrum
 }
 
-More details can be found in Metabodecon's online documentation at \href{https://spang-lab.github.io/metabodecon/articles/Metabodecon-Classes.html}{Metabodecon Classes}.
+The classes mentioned above represent individual objects, such as a single
+spectrum, deconvolution, or alignment. However, it is often useful to
+describe collections of these objects, such as a list of spectra or
+deconvolutions. Therefore, for each individual class, a corresponding
+"collection" class is provided. These collection classes are named:
+\code{spectra}, \code{decons0}, \code{decons1}, \code{decons2}, and \code{almnts}.
+
+More details can be found in Metabodecon's online documentation at
+\href{https://spang-lab.github.io/metabodecon/articles/Metabodecon-Classes.html}{Metabodecon Classes}.
 }
 \keyword{datasets}

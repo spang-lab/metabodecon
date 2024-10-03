@@ -192,7 +192,7 @@ rm_water_signal <- function(x, wshw, bwc, sf = c(1e3, 1e6)) {
     logf("Removing water signal")
     if (bwc >= 2) {
         ppm_center <- (x$ppm[1] + x$ppm[length(x$ppm)]) / 2
-        idx_wsr <- which(min(wshw) < x$ppm & x$ppm < max(wshw))
+        idx_wsr <- which(x$ppm > ppm_center - wshw & x$ppm < ppm_center + wshw)
         x$y_nows <- x$y_scaled
         x$y_nows[idx_wsr] <- min(x$y_nows)
     } else {
@@ -425,47 +425,86 @@ store_as_rds <- function(decons, make_rds, data_path) {
 #'
 #' @title Deconvolute one or more NMR spectra \loadmathjax
 #'
-#' @description
-#' Deconvolutes NMR spectra by modeling each detected signal within a spectrum as Lorentz Curve.
+#' @description Deconvolutes NMR spectra by modeling each detected signal within
+#' a spectrum as Lorentz Curve.
 #'
 #' @inheritParams read_spectrum
 #'
-#' @param ask Logical. Whether to ask for user input during the deconvolution process. If FALSE, the provided default values will be used. \loadmathjax
+#' @param ask Logical. Whether to ask for user input during the deconvolution
+#' process. If FALSE, the provided default values will be used. \loadmathjax
 #'
-#' @param x A `spectra` or `spectrum` object as described in [metabodecon_classes].
+#' @param x A `spectra` or `spectrum` object as described in
+#' [metabodecon_classes].
 #'
-#' @param data_path Either the path to a directory containing measured NMR spectra, a dataframe as returned by [read_spectrum()], or a list of such dataframes.
+#' @param data_path Either the path to a directory containing measured NMR
+#' spectra, a dataframe as returned by [read_spectrum()], or a list of such
+#' dataframes.
 #'
-#' @param delta Threshold for peak filtering. Higher values result in more peaks being filtered out. A peak is filtered if its score is below \mjeqn{\mu + \sigma \cdot \delta}{mu + s * delta}, where \mjeqn{\mu}{mu} is the average peak score in the signal-free region (SFR), and \mjeqn{\sigma}{s} is the standard deviation of peak scores in the SFR. See 'Details'.
+#' @param delta Threshold for peak filtering. Higher values result in more peaks
+#' being filtered out. A peak is filtered if its score is below \mjeqn{\mu +
+#' \sigma \cdot \delta}{mu + s * delta}, where \mjeqn{\mu}{mu} is the average
+#' peak score in the signal-free region (SFR), and \mjeqn{\sigma}{s} is the
+#' standard deviation of peak scores in the SFR. See 'Details'.
 #'
-#' @param force If FALSE, the function stops with an error message if no peaks are found in the signal free region (SFR), as these peaks are required as a reference for peak filtering. If TRUE, the function instead proceeds without peak filtering, potentially increasing runtime and memory usage significantly.
+#' @param force If FALSE, the function stops with an error message if no peaks
+#' are found in the signal free region (SFR), as these peaks are required as a
+#' reference for peak filtering. If TRUE, the function instead proceeds without
+#' peak filtering, potentially increasing runtime and memory usage
+#' significantly.
 #'
-#' @param make_rds Logical or character. If TRUE, stores results as an RDS file on disk. If a character string, saves the RDS file with the specified name. Should be set to TRUE if many spectra are evaluated to decrease computation time.
+#' @param make_rds Logical or character. If TRUE, stores results as an RDS file
+#' on disk. If a character string, saves the RDS file with the specified name.
+#' Should be set to TRUE if many spectra are evaluated to decrease computation
+#' time.
 #'
-#' @param nfit Integer. Number of iterations for approximating the parameters for the Lorentz curves. See 'Details'.
+#' @param nfit Integer. Number of iterations for approximating the parameters
+#' for the Lorentz curves. See 'Details'.
 #'
-#' @param nworkers Number of workers to use for parallel processing. If `"auto"`, the number of workers will be determined automatically. If a number greater than 1, it will be limited to the number of spectra.
+#' @param nworkers Number of workers to use for parallel processing. If
+#' `"auto"`, the number of workers will be determined automatically. If a number
+#' greater than 1, it will be limited to the number of spectra.
 #'
-#' @param sfr Numeric vector with two entries: the ppm positions for the left and right border of the signal-free region of the spectrum. See 'Details'.
+#' @param sfr Numeric vector with two entries: the ppm positions for the left
+#' and right border of the signal-free region of the spectrum. See 'Details'.
 #'
-#' @param smopts Numeric vector with two entries: the number of smoothing iterations and the number of data points to use for smoothing (must be odd). See 'Details'.
+#' @param smopts Numeric vector with two entries: the number of smoothing
+#' iterations and the number of data points to use for smoothing (must be odd).
+#' See 'Details'.
 #'
-#' @param verbose Logical. Whether to print log messages during the deconvolution process.
+#' @param verbose Logical. Whether to print log messages during the
+#' deconvolution process.
 #'
 #' @param wshw Half-width of the water artifact in ppm.  See 'Details'.
 #'
-#' @return
-#' A 'GLCDecon' as described in [Metabodecon Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
+#' @return A 'GLCDecon' as described in [Metabodecon
+#' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
 #'
 #' @details
 #'
 #' \loadmathjax
 #'
-#' First, an automated curvature based signal selection is performed. Each signal is represented by 3 data points to allow the determination of initial Lorentz curves. These Lorentz curves are then iteratively adjusted to optimally approximate the measured spectrum.
+#' First, an automated curvature based signal selection is performed. Each
+#' signal is represented by 3 data points to allow the determination of initial
+#' Lorentz curves. These Lorentz curves are then iteratively adjusted to
+#' optimally approximate the measured spectrum.
 #'
-#' [generate_lorentz_curves_sim()] is identical to [generate_lorentz_curves()] except for the defaults, which are optimized for deconvoluting the 'Sim' dataset, shipped with 'metabodecon'. The 'Sim' dataset is a simulated dataset, which is much smaller than a real NMR spectra and lacks a water signal. This makes it ideal for use in examples or as a default value for functions. However, the default values for `sfr`, `wshw`, and `delta` in the "normal" [generate_lorentz_curves()] function are not optimal for this dataset. To avoid having to define the optimal parameters repeatedly in examples, this function is provided to deconvolute the "Sim" dataset with suitable parameters.
+#' [generate_lorentz_curves_sim()] is identical to [generate_lorentz_curves()]
+#' except for the defaults, which are optimized for deconvoluting the 'Sim'
+#' dataset, shipped with 'metabodecon'. The 'Sim' dataset is a simulated
+#' dataset, which is much smaller than a real NMR spectra and lacks a water
+#' signal. This makes it ideal for use in examples or as a default value for
+#' functions. However, the default values for `sfr`, `wshw`, and `delta` in the
+#' "normal" [generate_lorentz_curves()] function are not optimal for this
+#' dataset. To avoid having to define the optimal parameters repeatedly in
+#' examples, this function is provided to deconvolute the "Sim" dataset with
+#' suitable parameters.
 #'
-#' In [generate_lorentz_curves()] the parameters `nfit`, `smopts`, `delta`, `sfr` and `wshw` must be fully specified. In [deconvolute()], these parameters can be set to `NULL` (the default value). In this case, the function will try to determine the optimal values for these parameters automatically. The values chosen are stored in field `args` of the returned `decon2` object.
+#' In [generate_lorentz_curves()] the parameters `nfit`, `smopts`, `delta`,
+#' `sfr` and `wshw` must be fully specified. In [deconvolute()], these
+#' parameters can be set to `NULL` (the default value). In this case, the
+#' function will try to determine the optimal values for these parameters
+#' automatically. The values chosen are stored in field `args` of the returned
+#' `decon2` object.
 #'
 #' @examples
 #' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~

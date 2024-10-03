@@ -22,7 +22,6 @@ list of such matrices is returned.
 Calculates the lorentz curves of each investigated spectrum.
 }
 \examples{
-## -------------------------------------------------------------------------
 ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
 ## Deconvolute the spectra in folder "bruker/sim_subset" into a list of
 ## Lorentz Curves (specified via the parameters A, lambda and x_0).

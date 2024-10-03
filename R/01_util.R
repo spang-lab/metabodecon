@@ -7,18 +7,41 @@
 #' @import grDevices
 #' @import mathjaxr
 
+#' @import withr
 #' @import toscutil
 
-# File Handling #####
+# File #####
 
 #' @noRd
 #' @title Calculate a checksum for all files in a directory or a single file
-#' @description Calculates a checksum for each file in a specified directory or a single file. If the input is a directory, the checksums are calculated recursively, meaning that it includes files in all subdirectories. The results are returned as a named vector, where the names are the relative file paths and the values are checksums.
+#'
+#' @description
+#' Calculates a checksum for each file in a specified directory or a single
+#' file. If the input is a directory, the checksums are calculated recursively,
+#' meaning that it includes files in all subdirectories. The results are
+#' returned as a named vector, where the names are the relative file paths and
+#' the values are checksums.
+#'
 #' @param path The directory or file to calculate checksums for.
-#' @param method The method to use for calculating the checksum. Can be "size" (default) or "md5". If "size", the function returns the file sizes. If "md5", the function returns the MD5 hashes of the files.
-#' @param ignore A character vector of regular expressions. Files matching any of these regular expressions will be ignored.
-#' @return A named vector with file paths as names and hashes as values. If the input is a directory, the names will be the file paths relative to the directory. If the input is a file, the name will be the file name.
-#' @details By default, the "checksum" calculated for each file is just its size. This method was chosen because it is the fastest available and typically sufficient for our needs. Traditional checksum methods, such as MD5, can present issues. For instance, PDF files may yield different checksums every time they are recreated, likely due to the inclusion of timestamps or similar metadata within the file.
+#'
+#' @param method The method to use for calculating the checksum. Can be "size"
+#' (default) or "md5". If "size", the function returns the file sizes. If "md5",
+#' the function returns the MD5 hashes of the files.
+#'
+#' @param ignore A character vector of regular expressions. Files matching any
+#' of these regular expressions will be ignored.
+#'
+#' @return A named vector with file paths as names and hashes as values. If the
+#' input is a directory, the names will be the file paths relative to the
+#' directory. If the input is a file, the name will be the file name.
+#'
+#' @details By default, the "checksum" calculated for each file is just its
+#' size. This method was chosen because it is the fastest available and
+#' typically sufficient for our needs. Traditional checksum methods, such as
+#' MD5, can present issues. For instance, PDF files may yield different
+#' checksums every time they are recreated, likely due to the inclusion of
+#' timestamps or similar metadata within the file.
+#'
 #' @examples
 #' checksum(pkg_file("R"))
 #' checksum(pkg_file("R"), method = "md5")
@@ -42,7 +65,8 @@ checksum <- function(path, method = "size", ignore = c()) {
 }
 
 #' @noRd
-#' @description Recursively create a dirctory without warnings and return its path.
+#' @description
+#' Recursively create a dirctory without warnings and return its path.
 mkdirs <- function(path) {
     if (!dir.exists(path)) {
         dir.create(path, showWarnings = FALSE, recursive = TRUE)
@@ -55,7 +79,7 @@ clear <- function(dir) {
     mkdirs(dir)
 }
 
-normPath <- function(path, winslash = "/", mustWork = FALSE) {
+norm_path <- function(path, winslash = "/", mustWork = FALSE) {
     normalizePath(path, winslash = winslash, mustWork = mustWork)
 }
 
@@ -71,15 +95,56 @@ pkg_file <- function(...) {
     system.file(..., package = "metabodecon")
 }
 
+#' @noRd
+#' @title Store Object in File
+#' @description Stores the object returned by the provided expression in the
+#' provided path.
+#' @param ... Additional arguments passed to the device function
+#' @examples
+#' tmp_png <- tempfile(fileext = ".png")
+#' tmp_pdf <- tempfile(fileext = ".pdf")
+#' store(plot(1:5), tmp_pdf)
+#' store(plot(1:10), tmp_png, width = 10, units = "in", res= 72)
+#' store(quote(plot(1:20)), quoted = TRUE)
+store <- function(expr,
+                  path = tempfile(fileext = ".pdf"),
+                  verbose = TRUE,
+                  quoted = FALSE,
+                  format = tolower(tools::file_ext(path)),
+                  ...) {
+    path <- norm_path(path)
+    devs <- c("png", "jpeg", "tiff", "bmp", "svg", "pdf")
+    call <- if (quoted) eval else force
+    if (verbose) logf("Writing %s", path)
+    if (format == "jpg") format <- "jpeg"
+    if (format == "rds") {
+        saveRDS(call(expr), path)
+    } else if (format == "brk") {
+        save_bruker(call(expr), path)
+    } else if (format %in% devs) {
+        with_dev <- asNamespace("withr")[[paste0("with_", format)]]
+        with_dev(path, call(expr), ...)
+    } else {
+        stop(sprintf("Unsupported format '%s'", format))
+    }
+}
+
 # Input #####
 
+# We must have our own copy of readline in the package namespace so we can mock
+# it in tests
 readline <- function(...) {
-    base::readline(...) # we must have our own copy of readline in the package namespace so we can mock it in tests
+    base::readline(...)
 }
 
 #' @noRd
 #' @title Get numeric input from user
-#' @description Prompts the user for input and checks if the input is a number between a minimum and maximum value. If the input is not valid, it keeps asking the user for input until they provide a valid response.
+#'
+#' @description
+#' Prompts the user for input and checks if the input is a number between a
+#' minimum and maximum value. If the input is not valid, it keeps asking the
+#' user for input until they provide a valid response.
+#'
 #' @param prompt The prompt to display to the user.
 #' @param min The minimum valid value. Default is -Inf.
 #' @param max The maximum valid value. Default is Inf.
@@ -122,7 +187,9 @@ get_str_input <- function(prompt, valid) {
 
 #' @noRd
 #' @title Get yes/no input from user
-#' @description Prompts the user for input until they enter either 'y' or no 'n'. Returns TRUE if the user entered 'y' and FALSE if they entered 'n'.
+#' @description
+#' Prompts the user for input until they enter either 'y' or no 'n'. Returns
+#' TRUE if the user entered 'y' and FALSE if they entered 'n'.
 #' @param prompt The prompt to display to the user.
 #' @return TRUE if the user entered 'y' and FALSE if they entered 'n'.
 #' @examples
@@ -139,7 +206,112 @@ get_yn_input <- function(prompt) {
     return(y)
 }
 
-# Interactive #####
+# Misc #####
+
+#' @export
+#' @title Calculate the Width of a Numeric Vector
+#' @description
+#' Calculates the width of a numeric vector by computing the difference between
+#' the maximum and minimum values in the vector.
+#' @param x A numeric vector.
+#' @return
+#' The width of the vector, calculated as the difference between its maximum and
+#' minimum values.
+#' @examples
+#' vec <- c(1, 3, 5, 7, 9)
+#' width(vec)
+width <- function(x) {
+    diff(range(x))
+}
+
+#' @export
+#' @title Convert from unit A to unit B
+#'
+#' @description
+#' Converts positions/widths from unit A to unit B. If the direction of units A
+#' and B is reversed, the width's sign will be reversed as well. To keep widths
+#' strictly positive, wrap the result with `abs()`.
+#'
+#' @param xa A numeric vector specifying widths/postions in unit A.
+#' @param ya,yb A numeric vector specifying the positions of at least two points
+#' in unit A / unit B.
+#'
+#' @return A numeric vector of values converted from unit A to unit B.
+#'
+#' @examples
+#' ya <- c(244, 246, 248, 250, 252)
+#' yb <- c(15, 10, 5, 0, -5)
+#' convert_width(c(2, 4, 8), ya, yb)
+#' convert_pos(c(247, 249), ya, yb)
+convert_width <- function(xa, ya, yb) {
+    n <- length(ya)
+    wa <- ya[n] - ya[1]
+    wb <- yb[n] - yb[1]
+    xa * (wb / wa)
+}
+
+#' @export
+#' @rdname convert_width
+convert_pos <- function(xa, ya, yb) {
+    # Example:
+    #     |-------------w----------|
+    #     |----d----|              |
+    # xa  |        247             |
+    # ya  244   246 | 248   250   252
+    # yb  15    10  | 5     0     -5
+    # ==>
+    # wa  =  ya[n] - ya[1] = 252 - 244   = 8
+    # wb  =  yb[n] - yb[1] = (-5) - 15   = 20
+    # da  =  xa    - ya[1] = 247 - 244   = 3
+    # db  =  da/wa * wb    = (3/8) * -20 = -7.5 (because da/wa == db/wb)
+    # xb  =  yb[1] + db    = 15 + (-7.5) = 7.5
+    if (length(ya) != length(yb)) stop("ya and yb must have the same length.")
+    n <- length(ya)
+    wa <- ya[n] - ya[1]
+    wb <- yb[n] - yb[1]
+    da <- xa - ya[1]
+    db <- (da / wa) * wb
+    xb <- yb[1] + db
+    xb
+}
+
+#' @noRd
+#'
+#' @title Calculate Magnetic Field Strength
+#'
+#' @description
+#' Calculates the magnetic field strength based on the measured frequencies and
+#' chemical shifts of a spectrum as well as the gyromagnetic ratio for protons.
+#'
+#' The function makes the following assumptions:
+#'
+#' 1. The spectrum is a 1H spectrum
+#' 2. The chemical shift of the reference is at 0.0 ppm
+#' 3. The resonance frequency of the reference equals the resonance frequency of
+#'    protons
+#'
+#' @param x A spectrum object as described in [metabodecon_classes].
+#'
+#' @return The magnetic field strength in Tesla.
+#'
+#' @examples
+#' x <- read_spectrum(pkg_file("example_datasets/bruker/urine/urine_1"))
+#' calc_B(x)
+calc_B <- function(x = read_spectrum()) {
+    # Example:
+    # |---------------------------|----------------------|
+    # 14.8 ppm (max)            0.0 (ref)       -5.2 (min)
+    # 600.243 MHz (min)       600.252 (ref)  600.255 (max)
+    cs_maxmin <- max(x$cs) - min(x$cs)
+    cs_refmin <- 0.0000000 - min(x$cs)
+    ratio <- cs_refmin / cs_maxmin
+    fq_maxmin <- max(x$fq) - min(x$fq)
+    fq_refmax <- ratio * fq_maxmin
+    fq_ref <- max(x$fq) - fq_refmax # Frequency of the reference (which is equal the frequency of a proton)
+    gamma <- 2.675e8 # Gyromagnetic ratio for protons
+    B <- (2 * pi * fq_ref) / gamma
+    B
+}
 
 #' @noRd
 #' @title Recursive Object Size Printer
@@ -189,13 +361,28 @@ du <- function(obj, pname = "", level = 0, max_level = 1, max_len = 50, unit = "
 }
 
 #' @export
+#'
 #' @title Print the Structure of a Directory Tree
-#' @description Prints the structure of a directory tree up to a specified maximum level of depth. It lists all files and directories under the specified path, displaying them in a tree-like structure.
-#' @param path The root path from which to start listing the directory structure.
+#'
+#' @description
+#' Prints the structure of a directory tree up to a specified maximum level of
+#' depth. It lists all files and directories under the specified path,
+#' displaying them in a tree-like structure.
+#'
+#' @param path The root path from which to start listing the directory
+#' structure.
+#'
 #' @param max.level The maximum depth of directories to list.
-#' @param level Internal parameter used for recursion, indicating the current level of depth.
-#' @param prefix Internal parameter used for formatting the printed tree structure.
-#' @return NULL, called for its side effect of printing the directory structure.
+#'
+#' @param level Internal parameter used for recursion, indicating the current
+#' level of depth.
+#'
+#' @param prefix Internal parameter used for formatting the printed tree
+#' structure.
+#'
+#' @return
+#' NULL, called for its side effect of printing the directory structure.
+#'
 #' @examples
 #' metabodecon_dir <- system.file(package = "metabodecon")
 #' tree(metabodecon_dir, max.level = 1)
@@ -220,99 +407,6 @@ tree <- function(path, max.level = 2, level = 0, prefix = "") {
     invisible(NULL)
 }
 
-# Operators #####
-
-`%||%` <- function(x, y) {
-    if (is.null(x)) y else x
-}
-
-# Convert #####
-
-#' @export
-#' @title Calculate the Width of a Numeric Vector
-#' @description Calculates the width of a numeric vector by computing the difference between the maximum and minimum values in the vector.
-#' @param x A numeric vector.
-#' @return The width of the vector, calculated as the difference between its maximum and minimum values.
-#' @examples
-#' vec <- c(1, 3, 5, 7, 9)
-#' width(vec)
-width <- function(x) {
-    diff(range(x))
-}
-
-#' @export
-#' @title Convert from unit A to unit B
-#' @description `convert_pos` converts positions from unit A to unit B. `convert_width` converts widths from unit A to unit B. If the direction of units A and B is reversed, the width's sign will be reversed as well. To keep widths strictly positive, wrap the result with `abs()`.
-#' @param xa For `convert_width` a numeric vector specifying widths in unit A. For `convert_pos` a numeric vector specifying positions in unit A.
-#' @param ya A numeric vector giving the positions of at least two points in unit A.
-#' @param yb A numeric vector giving the positions of the same points in unit B.
-#' @return A numeric vector of values converted from unit A to unit B.
-#' @examples
-#' ya <- c(244, 246, 248, 250, 252)
-#' yb <- c(15, 10, 5, 0, -5)
-#' convert_width(c(2, 4, 8), ya, yb)
-#' convert_pos(c(247, 249), ya, yb)
-convert_width <- function(xa, ya, yb) {
-    n <- length(ya)
-    wa <- ya[n] - ya[1]
-    wb <- yb[n] - yb[1]
-    xa * (wb / wa)
-}
-
-#' @export
-#' @rdname convert_width
-convert_pos <- function(xa, ya, yb) {
-    # Example:
-    #     |-------------w----------|
-    #     |----d----|              |
-    # xa  |        247             |
-    # ya  244   246 | 248   250   252
-    # yb  15    10  | 5     0     -5
-    # ==>
-    # wa  =  ya[n] - ya[1] = 252 - 244   = 8
-    # wb  =  yb[n] - yb[1] = (-5) - 15   = 20
-    # da  =  xa    - ya[1] = 247 - 244   = 3
-    # db  =  da/wa * wb    = (3/8) * -20 = -7.5 (because da/wa == db/wb)
-    # xb  =  yb[1] + db    = 15 + (-7.5) = 7.5
-    if (length(ya) != length(yb)) stop("ya and yb must have the same length.")
-    n <- length(ya)
-    wa <- ya[n] - ya[1]
-    wb <- yb[n] - yb[1]
-    da <- xa - ya[1]
-    db <- (da / wa) * wb
-    xb <- yb[1] + db
-    xb
-}
-
-#' @noRd
-#' @title Calculate Magnetic Field Strength
-#' @description Calculates the magnetic field strength based on the measured frequencies and chemical shifts of a spectrum as well as the gyromagnetic ratio for protons. For this to work, the following is assumed:
-#' 1. The spectrum is a 1H spectrum
-#' 2. The chemical shift of the reference is at 0.0 ppm
-#' 3. The resonance frequency of the reference equals the resonance frequency of protons
-#' @param x A spectrum object as described in [metabodecon_classes].
-#' @return The magnetic field strength in Tesla.
-#' @examples
-#' x <- read_spectrum(pkg_file("example_datasets/bruker/urine/urine_1"))
-#' calc_B(x)
-calc_B <- function(x = read_spectrum()) {
-    # Example:
-    # |---------------------------|----------------------|
-    # 14.8 ppm (max)            0.0 (ref)       -5.2 (min)
-    # 600.243 MHz (min)       600.252 (ref)  600.255 (max)
-    cs_maxmin <- max(x$cs) - min(x$cs)
-    cs_refmin <- 0.0000000 - min(x$cs)
-    ratio <- cs_refmin / cs_maxmin
-    fq_maxmin <- max(x$fq) - min(x$fq)
-    fq_refmax <- ratio * fq_maxmin
-    fq_ref <- max(x$fq) - fq_refmax # Frequency of the reference (which is equal the frequency of a proton)
-    gamma <- 2.675e8 # Gyromagnetic ratio for protons
-    B <- (2 * pi * fq_ref) / gamma
-    B
-}
-
-# Misc #####
-
 #' @noRd
 #' @examples
 #' xx <- list(a=1, b=2:5, d="a")
@@ -326,11 +420,28 @@ set <- function(...) {
     obj
 }
 
+timestamp <- function() {
+    format(Sys.time(), "%Y-%m-%d_%H-%M-%S")
+}
 
-# Parallelization #####
+#' @export
+#' @title Make transparent
+#' @description Make a color transparent by adding an alpha channel.
+#' @param col Character string specifying the color to make transparent.
+#' @param alpha Numeric value between 0 and 1 specifying the transparency level.
+#' @return A character string representing the color with an alpha channel.
+#' @examples
+#' transp("violet", 0.08)
+#' transp("black", 0.5)
+transp <- function(col = "violet", alpha = 0.08) {
+    col <- col2rgb(col)[, 1] / 255
+    rgb(col[1], col[2], col[3], alpha = alpha)
+}
 
 #' @noRd
-#' @description Multi core version of mapply with automatic logging of worker output. For `nw == 1` normal `mapply` is used.
+#' @description
+#' Multi core version of mapply with automatic logging of worker output.
+#' For `nw == 1` normal `mapply` is used.
 mcmapply <- function(nw, FUN, ..., loadpkg = TRUE, log = TRUE) {
     if (nw == 1) return(mapply(FUN, ..., SIMPLIFY = FALSE))
     logf("Creating pool of worker processes")
@@ -349,33 +460,37 @@ mcmapply <- function(nw, FUN, ..., loadpkg = TRUE, log = TRUE) {
     clusterMap(cl, FUN, ..., SIMPLIFY = FALSE)
 }
 
-readLines_from_pos <- function(file, pos) {
-    con <- file(file, "r")
-    seek(con, where = pos, origin = "start")
-    lines <- readLines(con)
-    close(con)
-    lines
+`%||%` <- function(x, y) {
+    if (is.null(x)) y else x
 }
 
-# Doc Pages #####
+# Docs #####
 
 #' @title Metabodecon Classes
 #' @description
-#'  Metabodecon introduces a set of classes to highlight the presence of certain elements in corresponding objects.
+#' Metabodecon introduces a set of classes to highlight the presence of certain
+#' elements in corresponding objects.
 #'
-#'  The order of elements may vary between different versions of Metabodecon, thus elements should always be accessed by name, for example, using `x$si` or `x[["cs"]]`.
-#'  A short description of each class is given in the listing below.
+#' The order of elements may vary between different versions of Metabodecon,
+#' thus elements should always be accessed by name, for example, using `x$si`
+#' or `x[["cs"]]`. A short description of each class is given in the listing
+#' below.
 #'
-#'  -  `spectrum`: One NMR spectrum
-#'  -  `decon0`: One deconvoluted NMR spectrum stored in [MetaboDecon1D()] format
-#'  -  `decon1`: One deconvoluted NMR spectrum stored in [generate_lorentz_curves()] format
-#'  -  `decon2`: One deconvoluted NMR spectrum stored in [deconvolute()] format
-#'  -  `alignment`: One aligned NMR spectrum
-#'  -  `spectra`: List of multiple NMR spectra
-#'  -  `decons0`: List of multiple deconvoluted NMR stored in [MetaboDecon1D()] format
-#'  -  `decons1`: List of multiple deconvoluted NMR stored in [generate_lorentz_curves()] format
-#'  -  `decons2`: List of multiple deconvoluted NMR stored in [deconvolute()] format
-#'  -  `alignments`: List of multiple aligned NMR spectra
+#' -  `spectrum`: One NMR spectrum
+#' -  `decon0`: One deconvoluted NMR spectrum stored in [MetaboDecon1D()] format
+#' -  `decon1`: One deconvoluted NMR spectrum stored in
+#'    [generate_lorentz_curves()] format
+#' -  `decon2`: One deconvoluted NMR spectrum stored in [deconvolute()] format
+#' -  `align`: One aligned NMR spectrum
 #'
-#'  More details can be found in Metabodecon's online documentation at [Metabodecon Classes](https://spang-lab.github.io/metabodecon/articles/Metabodecon-Classes.html).
+#' The classes mentioned above represent individual objects, such as a single
+#' spectrum, deconvolution, or alignment. However, it is often useful to
+#' describe collections of these objects, such as a list of spectra or
+#' deconvolutions. Therefore, for each individual class, a corresponding
+#' "collection" class is provided. These collection classes are named:
+#' `spectra`, `decons0`, `decons1`, `decons2`, and `almnts`.
+#'
+#' More details can be found in Metabodecon's online documentation at
+#' [Metabodecon Classes](
+#' https://spang-lab.github.io/metabodecon/articles/Metabodecon-Classes.html).
 metabodecon_classes <- NULL

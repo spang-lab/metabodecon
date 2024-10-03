@@ -17,7 +17,7 @@ Internal:
 
 * Added helper functions `load_jcampdx_spectrum()` and `load_bruker_spectrum()` and corresponding test cases. These functions are more of less directly extract from `deconvolute_spectrum()`.
 * Added improved versions of `load_jcampdx_spectrum()` and `load_bruker_spectrum()` named `load_jcampdx_spectrum_v2()` and `load_bruker_spectrum_v2()` incl. test cases
-* Added util function `normPath()`.
+* Added util function `norm_path()`.
 * Added test cases for `deconvolute_spectrum()`
 * Moved helper function `.deconvolute_spectrum()` into separate file `deconvolute_spectrum_v2` for development and renamed it to `deconvolute_spectrum_v2()`.
 * Added helper function `get_signal_free_region_in_su()`

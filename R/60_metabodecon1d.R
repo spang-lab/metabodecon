@@ -1681,7 +1681,7 @@ deconvolution <- function(filepath,
 #' plot_triplets(sim_decon, out_dir = png_dir, ask = FALSE)
 #' dir(png_dir, full.names = TRUE)
 plot_triplets <- function(deconv_result, x_range = c(), y_range = c(), out_dir = ".", ask = TRUE) {
-    out_dir <- normPath(out_dir)
+    out_dir <- norm_path(out_dir)
     if (ask) {
         continue <- get_yn_input(sprintf("Continue creating pngs in %s?", out_dir))
         if (!continue) {
@@ -1828,7 +1828,7 @@ plot_triplets <- function(deconv_result, x_range = c(), y_range = c(), out_dir =
 #' plot_lorentz_curves_save_as_png(sim_decon, out_dir = png_dir, ask = FALSE)
 #' dir(png_dir, full.names = TRUE)
 plot_lorentz_curves_save_as_png <- function(deconv_result, x_range = c(), y_range = c(), out_dir = ".", ask = TRUE) {
-    out_dir <- normPath(out_dir)
+    out_dir <- norm_path(out_dir)
     if (ask) {
         continue <- get_yn_input(sprintf("Continue creating pngs in %s?", out_dir))
         if (!continue) {
@@ -2018,7 +2018,7 @@ plot_spectrum_superposition_save_as_png <- function(deconv_result,
                                                     y_range = c(),
                                                     out_dir = ".",
                                                     ask = TRUE) {
-    out_dir <- normPath(out_dir)
+    out_dir <- norm_path(out_dir)
     if (ask) {
         prompt <- sprintf("Continue creating pngs in %s?", out_dir)
         continue <- get_yn_input(prompt)
@@ -2160,7 +2160,6 @@ plot_spectrum_superposition_save_as_png <- function(deconv_result,
 #' [plot_spectrum_superposition_save_as_png()]
 #'
 #' @examples
-#' ## -------------------------------------------------------------------------
 #' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
 #' ## Deconvolute the spectra in folder "bruker/sim_subset" into a list of
 #' ## Lorentz Curves (specified via the parameters A, lambda and x_0).

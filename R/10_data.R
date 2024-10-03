@@ -30,8 +30,8 @@ download_example_datasets <- function(dst_dir = NULL,
     if (is.null(dst_dir)) {
         return(if (extract) cached_xds else cached_zip)
     } else {
-        dst_zip <- normPath(file.path(dst_dir, "example_datasets.zip"))
-        dst_xds <- normPath(file.path(dst_dir, "example_datasets"))
+        dst_zip <- norm_path(file.path(dst_dir, "example_datasets.zip"))
+        dst_xds <- norm_path(file.path(dst_dir, "example_datasets"))
         if (overwrite || !file.exists(dst_zip) || isTRUE(file.size(dst_zip) != xds$zip_size)) {
             if (!dir.exists(dst_dir)) dir.create(dst_dir, recursive = TRUE)
             file.copy(from = cached_zip, to = dst_dir, overwrite = overwrite)
@@ -155,10 +155,9 @@ datadir_temp <- function() {
 #' tmpdir("simulate_spectra")
 tmpdir <- function(subdir = NULL, create = FALSE) {
     p <- file.path(base::tempdir(), "metabodecon")
-    if (!is.null(subdir)) p <- file.path(p, subdir)
+    p <- if (is.null(subdir)) tempfile("", p) else file.path(p, subdir)
     if (create) base::dir.create(p, recursive = TRUE, showWarnings = FALSE)
     normalizePath(p, "/", mustWork = FALSE)
-
 }
 
 #' @export

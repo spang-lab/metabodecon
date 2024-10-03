@@ -2,29 +2,6 @@
 
 ## v1.2.0
 
-### FEATURE-20: Implement deconvolute_blood
-
-Implement function `deconvolute_blood()` which should roughly do the following
-
-```R
-deconvolute_blood <- function(cache = TRUE, force = FALSE, ...) {
-   rds <- file.path(cachedir(), "deconvolute_blood.rds")
-   new <- old <- if (file.exists(rds)) readRDS(rds) else NULL
-   if (cache && is.null(old)) {
-      path <- download_example_datasets(...)
-      new <- deconvolute(path)
-   }
-   if (!(identical(new, old) || is.null(old))) {
-      warning("Cache and deconvolution differ.", immediate. = TRUE)
-   }
-   if (cache && (is.null(old) || force)) {
-      logf("Writing results to cache file %s", rds)
-      saveRDS(new, rds)
-   }
-   return(new)
-}
-```
-
 ### FEATURE-21: Implement make_sim_dataset
 
 Implement `make_sim_dataset()` which should
@@ -32,7 +9,7 @@ Implement `make_sim_dataset()` which should
 1. Deconvolute the `blood` dataset using `deconvolute_blood()` (see FEATURE-20)
 2. Use `get_sim_params()` to extract the simulation parameters
 3. Pass the simulation parameters to `simulate_spectrum()` to create the sim dataset
-4. Call `store_spectra()` to store the sim dataset
+4. Call `save_spectra()` to store the sim dataset
 
 All functions participating in this process should be private, but still linked in the Datasets vignette for reference.
 
@@ -69,11 +46,6 @@ All the functionality, i.e.
 
 should be controllable via function arguments.
 
-### FEATURE-13: Merge into main
-
-Merge branch `v1.2.0` into `main`.
-Start a new branch `v1.3.0` for the remaining todos.
-
 ### DOC-2: Add author descriptions to every function
 
 ### REFACTOR-13: Remove unused functions
@@ -81,6 +53,11 @@ Start a new branch `v1.3.0` for the remaining todos.
 ### DOC-1: Document whole package
 
 Document the whole package in vignettes, including chapters about alignment and a short introduction into all datasets. Also go over each function and make sure it is used or mentioned at least once in a vignette. While doing so, also add lifecycle badges to the functions.
+
+### FEATURE-13: Merge into main
+
+Merge branch `v1.2.0` into `main`.
+Start a new branch `v1.3.0` for the remaining todos.
 
 ## v1.3.0
 
@@ -112,7 +89,7 @@ Remove `dontrun` from examples if they are executable in < 5 sec, or create addi
 
 Fix all R CMD check findings and resubmit the package to CRAN.
 
-### DOC-2: Write paper
+### DOC-3: Write paper
 
 Reformat the vignettes as paper and send to Wolfram for proofreading.
 
@@ -131,20 +108,14 @@ If `c(11.44494, -1.8828)` is part of the ppm range, use these values, otherwise 
 
 ### FEATURE-10: Implement deconvolute_spectra
 
-Implement `deconvolute_spectra()` which should be the successor of `generate_lorentz_curves()` and `MetaboDecon1D` without trying to maintain backwards compatibility. In particular it should:
+Implement `deconvolute_spectra()` and `deconvolute_spectrum()` which should be the successors of `deconvolute_gspec()` and `deconvolute_gspecs()`. In particular it should:
 
-1. Accept `nmr_spectrum` objects as input (as returned by `read_spectra`). See [FEATURE-9](#feature-9-implement-and-export-read_spectra).
+1. Accept `spectrum` objects as input (as returned by `read_spectra`). See [FEATURE-9](#feature-9-implement-and-export-read_spectra).
 2. Use the correct SFR calculation as described in [CHECK-2](#check-2-signal-free-region-calculation).
 3. Uses the correct water signal calculation as described in [CHECK-3](#check-3-water-signal-calculation).
 4. Use 1-based indexing for data points as described in [CHECK-4](#check-4-data-point-format).
 5. Remove the scale factor and scaled data point numbers as described in [CHECK-4](#check-4-data-point-format).
 6. Remove negative values in a consistent way, as described by [CHECK-5](#check-5-signal-preprocessing)
-
-If possible, create a conversion function to convert the return value of `deconvolute_spectra()` to the return value of `generate_lorentz_curves()` (which is a *List of Lorentz Curves (LLC)*) and notice in the docs that users can replace `lc <- generate_lorentz_curves()` with `ds <- deconvolute_spectra(); lc <- as_llc(ds)`.
-
-### FEATURE-16: Improve multiprocessing
-
-Right now, output gets scrambled because all procs share one stdout. We can fix this by not using parLapply, but distributing the tasks ourselver over the cores and in a mainloop collecting outputs and results.
 
 # DONE
 
@@ -562,6 +533,37 @@ Add lifecycle badges to all non-stable exported functions. Functions which are e
 By default output of `generate_lorentz_curves` should be discarded during parallel phase. Before this phase, print a message that the remaining task might take up to a few minutes and that live output can be disabled by settings `share_stdout = TRUE`, but that the output might be scrambled depending on configuration of the R installation and the operating system.
 
 2024/07/09: Done in branch `v1.2.0` with commit `f9bf57a5e4c7167dfc3231cfe0ee515b40ad12bf`.
+
+### FEATURE-20: Implement deconvolute_blood
+
+Implement function `deconvolute_blood()` which should roughly do the following
+
+```R
+deconvolute_blood <- function(cache = TRUE, force = FALSE, ...) {
+   rds <- file.path(cachedir(), "deconvolute_blood.rds")
+   new <- old <- if (file.exists(rds)) readRDS(rds) else NULL
+   if (cache && is.null(old)) {
+      path <- download_example_datasets(...)
+      new <- deconvolute(path)
+   }
+   if (!(identical(new, old) || is.null(old))) {
+      warning("Cache and deconvolution differ.", immediate. = TRUE)
+   }
+   if (cache && (is.null(old) || force)) {
+      logf("Writing results to cache file %s", rds)
+      saveRDS(new, rds)
+   }
+   return(new)
+}
+```
+
+*2024-10-01 20:21: Done in branch v1.2.0 with commit 9b7d65d*
+
+### FEATURE-16: Improve multiprocessing
+
+Right now, output gets scrambled because all procs share one stdout. We can fix this by not using parLapply, but distributing the tasks ourselver over the cores and in a mainloop collecting outputs and results.
+
+*Done in branch v1.2 with commit bea9348 at Thu Sep 12 17:14:20 2024 +0200*
 
 ## REFACTOR
 

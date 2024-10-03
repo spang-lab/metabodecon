@@ -162,12 +162,12 @@ evalwith <- function(expr, # nolint: cyclocomp_linter.
 }
 
 testdir <- function(p = NULL) {
-    normPath(paste(tmpdir(), "tests", p, sep = "/"))
+    norm_path(paste(tmpdir("tests"), p, sep = "/"))
     # use paste instead of file.path, because it can deal with NULL
 }
 
 mockdir <- function() {
-    normPath(file.path(tmpdir(), "mocks"))
+    norm_path(file.path(tmpdir(), "mocks"))
 }
 
 #' @noRd
@@ -232,7 +232,7 @@ get_datadir_mock <- function(type = "temp", state = "default") {
     if (state == "default" && type == "temp") {
         return(datadir_temp)
     }
-    p <- normPath(file.path(mockdir(), "datadir", type, state))
+    p <- norm_path(file.path(mockdir(), "datadir", type, state))
     if (state %in% c("missing", "empty")) unlink(p, recursive = TRUE, force = TRUE)
     if (state == "empty") mkdirs(p)
     if (state == "filled") download_example_datasets(dst_dir = p)

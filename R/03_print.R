@@ -164,6 +164,10 @@ logf <- function(fmt,
     cat(prefix(), sep1, sprintf(fmt, ...), sep2, end, sep = "", file = file, append = append)
 }
 
+get_logv <- function(verbose) {
+    if (verbose) logf else function(...) NULL
+}
+
 human_readable <- function(x, unit, fmt = "%.1f") {
     m <- max(abs(x))
     # styler: off
