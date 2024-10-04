@@ -185,7 +185,7 @@ deconvolute_gspec <- function(gspec,
     robj
 }
 
-# Private Helpers #####
+# Helpers for deconvolute_gspec #####
 
 rm_water_signal <- function(x, wshw, bwc, sf = c(1e3, 1e6)) {
     check_args_rm_water_signal()
@@ -344,14 +344,23 @@ filter_peaks_v13 <- function(ppm, # x values in ppm
     list(in_sfr, above_threshold)
 }
 
+# General Helpers #####
+
 #' @noRd
 #' @title Calculate Lorentz Curve values
-#' @description Calculates the values of a Lorentz Curve for a vector of input values `x`. The Lorentz Curve is defined as \mjeqn{A \cdot \frac{\lambda}{\lambda^2 + (x_i - x_0)^2}}.
+#'
+#' @description
+#' Calculates the values of a Lorentz Curve for a vector of input values `x`.
+#' The Lorentz Curve is defined as \mjeqn{A \cdot \frac{\lambda}{\lambda^2 +
+#' (x_i - x_0)^2}}.
+#'
 #' @param x Numeric vector of x values.
 #' @param x0 Center of the Lorentz curve.
 #' @param A Amplitude parameter of the Lorentz curve.
 #' @param lambda Half width at half height of the Lorentz curve.
+#'
 #' @return Numeric vector of y values.
+#'
 #' @examples
 #' x <- 1:10
 #' x0 <- 5
@@ -507,12 +516,12 @@ store_as_rds <- function(decons, make_rds, data_path) {
 #' `decon2` object.
 #'
 #' @examples
-#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
+#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
 #' ## Define the paths to the example datasets we want to deconvolute:
 #' ## `sim_dir`: directory containing 16 simulated spectra
 #' ## `sim_01`: path to the first spectrum in the `sim` directory
 #' ## `sim_01_spec`: the first spectrum in the `sim` directory as a dataframe
-#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
+#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
 #' sim_dir <- metabodecon_file("sim_subset")
 #' sim_1_dir <- file.path(sim_dir, "sim_01")
 #' sim_2_dir <- file.path(sim_dir, "sim_02")
@@ -520,10 +529,10 @@ store_as_rds <- function(decons, make_rds, data_path) {
 #' sim_2_spectrum <- read_spectrum(sim_2_dir)
 #' sim_spectra <- read_spectra(sim_dir)
 #'
-#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
+#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
 #' ## Show that `generate_lorentz_curves()` and `generate_lorentz_curves_sim()`
 #' ## produce the same results:
-#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
+#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
 #' sim_1_decon0 <- generate_lorentz_curves(
 #'     data_path = sim_1_dir, # Path to directory containing spectra
 #'     sfr = c(3.58, 3.42), # Borders of signal free region (SFR) in ppm
@@ -535,10 +544,10 @@ store_as_rds <- function(decons, make_rds, data_path) {
 #' sim_1_decon1 <- generate_lorentz_curves_sim(sim_1_dir)
 #' stopifnot(all.equal(sim_1_decon0, sim_1_decon1))
 #'
-#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
+#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
 #' ## Show that passing a spectrum produces the same results as passing the
 #' ## the corresponding directory:
-#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
+#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
 #' decon_from_spectrum_dir <- generate_lorentz_curves_sim(sim_1_dir)
 #' decon_from_spectrum_obj <- generate_lorentz_curves_sim(sim_1_spectrum)
 #' decons_from_spectra_obj <- generate_lorentz_curves_sim(sim_spectra)
@@ -555,12 +564,12 @@ store_as_rds <- function(decons, make_rds, data_path) {
 #' most.equal( decon_from_spectrum_dir, decons_from_spectra_obj[[1]])
 #' most.equal( decon_from_spectrum_dir, decons_from_spectra_dir[[1]])
 #'
-#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
+#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
 #' ## Below example uses data from a real NMR experiment, instead of (small)
 #' ## simulated datasets and therefor requires multiple seconds to run. Because
 #' ## `ask` is TRUE in this example (the default value), the user will be asked
 #' ## for input during the deconvolution. To avoid this, set `ask = FALSE`.
-#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
+#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
 #' \dontrun{
 #' example_datasets <- download_example_datasets()
 #' urine_1 <- file.path(example_datasets, "bruker/urine/urine_1")

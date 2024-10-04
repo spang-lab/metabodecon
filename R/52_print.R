@@ -164,6 +164,10 @@ logf <- function(fmt,
     cat(prefix(), sep1, sprintf(fmt, ...), sep2, end, sep = "", file = file, append = append)
 }
 
+stopf <- function(fmt, ...) {
+    stop(sprintf(fmt, ...))
+}
+
 get_logv <- function(verbose) {
     if (verbose) logf else function(...) NULL
 }

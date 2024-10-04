@@ -32,11 +32,11 @@ read_spectra <- function(data_path = pkg_file("example_datasets/bruker/urine"),
         files <- basename(dp)
         paths <- dp
     } else if (jcampdx) {
-        files <- dir(dp, pattern = "\\.dx$") # `.dx` files inside `path`
+        files <- dir(dp, pattern = "\\.dx$")
         paths <- dir(dp, pattern = "\\.dx$", full.names = TRUE)
     } else if (bruker) {
         files <- list.dirs(dp, recursive = FALSE, full.names = FALSE)
-        paths <- list.dirs(dp, recursive = FALSE, full.names = TRUE) # folders inside `path`
+        paths <- list.dirs(dp, recursive = FALSE, full.names = TRUE)
         r1_paths <- file.path(paths, expno, "pdata", procno, "1r")
         r1_paths_exists <- file.exists(r1_paths)
         paths <- paths[r1_paths_exists]
@@ -44,7 +44,8 @@ read_spectra <- function(data_path = pkg_file("example_datasets/bruker/urine"),
     }
     if (length(files) == 0) {
         msg <- sprintf("No spectra found in directory '%s'.", data_path)
-        if (file_format == "bruker") msg <- paste(msg, "Did you specify the correct `expno` and `procno`?")
+        msg2 <- "Did you specify the correct `expno` and `procno`?"
+        if (file_format == "bruker") msg <- paste(msg, ms2)
         stop(msg)
     }
     spectra <- lapply(paths, function(path) {
@@ -58,33 +59,64 @@ read_spectra <- function(data_path = pkg_file("example_datasets/bruker/urine"),
 
 #' @export
 #' @family {spectrum functions}
+#'
 #' @title Read a spectrum from Disk
-#' @description Read a single spectrum file or folder from disk and return it as `spectrum` object.
-#' @param data_path The path of the file/folder containing the spectrum data. E.g. `"example_datasets/jcampdx/urine/urine_1.dx"` or `"example_datasets/bruker/urine/urine"`.
-#' @param file_format The file_format of the spectrum file. E.g. `"bruker"` or `"jcampdx"`.
-#' @param expno,procno The experiment/processing number for the file. E.g. `"10"`. Only relevant if `file_format` equals `"bruker"`. For details see section [File Structure](https://spang-lab.github.io/metabodecon/articles/FAQ.html#file-structure) in the metabodecon FAQ.
-#' @param raw If `FALSE`, scales the returned signal intensities based on information available in the spectrum metadata, in particular `NC_proc`. For details see `processing-reference.pdf`, available at <https://www.bruker.com/en.html> at section 'Services & Support > Documentation & Manuals > Magnetic Resonance > Acquisition & Processing > TopSpin Processing Commands and Parameters' (requires login).
+#'
+#' @description
+#' Read a single spectrum file or folder from disk and return it as `spectrum`
+#' object.
+#'
+#' @param data_path The path of the file/folder containing the spectrum data.
+#' E.g. `"example_datasets/jcampdx/urine/urine_1.dx"` or
+#' `"example_datasets/bruker/urine/urine"`.
+#'
+#' @param file_format The file_format of the spectrum file. E.g. `"bruker"` or
+#' `"jcampdx"`.
+#'
+#' @param expno,procno The experiment/processing number for the file. E.g.
+#' `"10"`. Only relevant if `file_format` equals `"bruker"`. For details see
+#' section [File Structure](
+#' https://spang-lab.github.io/metabodecon/articles/FAQ.html#file-structure
+#' ) in the metabodecon FAQ.
+#'
+#' @param raw If `FALSE`, scales the returned signal intensities based on
+#' information available in the spectrum metadata, in particular `NC_proc`. For
+#' details see `processing-reference.pdf`, available at
+#' <https://www.bruker.com/en.html> at section 'Services & Support >
+#' Documentation & Manuals > Magnetic Resonance > Acquisition & Processing >
+#' TopSpin Processing Commands and Parameters' (requires login).
+#'
 #' @param silent If `TRUE`, no output will be printed to the console.
-#' @param force If `TRUE`, try to continue when encountering errors and print info messages instead. To hide these messages as well, set `silent = TRUE`.
-#' @return A `spectrum` object as described in [Metabodecon Classes](https://spang-lab.github.io/metabodecon/articles/Metabodecon-Classes.html).
+#'
+#' @param force If `TRUE`, try to continue when encountering errors and print
+#' info messages instead. To hide these messages as well, set `silent = TRUE`.
+#'
+#' @return
+#' A `spectrum` object as described in [Metabodecon Classes](
+#' https://spang-lab.github.io/metabodecon/articles/Metabodecon-Classes.html
+#' ).
+#'
 #' @examples
-#' urine <- system.file("example_datasets/bruker/urine", package = "metabodecon")
+#' relpath <- "example_datasets/bruker/urine/urine_1"
+#' urine <- system.file(relpath, package = "metabodecon")
 #' urine_1 <- file.path(urine, "urine_1")
 #' urine_2 <- file.path(urine, "urine_2")
-#' X1 <- read_spectrum(urine_1)
-#' X2 <- read_spectrum(urine_2)
-#' XX <- read_spectra(urine)
-#' str(XX)
-#' str(X1)
-#' stopifnot(all.equal(X1, XX$urine_1))
-#' # Below code shows how a spectrum stored in JCAMP-DX format can be read.
-#' # Reading files in this format is very slow (about 30s on the development
-#' # machine). So if possible, you should stick with the original Bruker
-#' # data storage format.
+#' x1 <- read_spectrum(urine_1)
+#' x2 <- read_spectrum(urine_2)
+#' xx <- read_spectra(urine)
+#' str(xx)
+#' str(x1)
+#' stopifnot(all.equal(x1, xx$urine_1))
+#'
+#' ## Below code shows how a spectrum stored in JCAMP-DX format can be read.
+#' ## Reading files in this format is very slow (about 30s on the development
+#' ## machine). So if possible, you should stick with the original Bruker
+#' ## data storage format.
 #' \dontrun{
-#' urine_1_dx <- system.file("example_datasets/jcampdx/urine/urine_1.dx", package = "metabodecon")
+#' relpath <- "example_datasets/jcampdx/urine/urine_1.dx"
+#' urine_1_dx <- system.file(relpath, package = "metabodecon")
 #' X1_dx <- read_spectrum(urine_1_dx, file_format = "jcampdx")
-#' stopifnot(all.equal(X1, X1_dx))
+#' stopifnot(all.equal(x1, X1_dx))
 #' }
 read_spectrum <- function(data_path = metabodecon_file("bruker/sim/sim_01"),
                           file_format = "bruker",
@@ -100,22 +132,50 @@ read_spectrum <- function(data_path = metabodecon_file("bruker/sim/sim_01"),
     )
 }
 
+#'
 #' @export
+#'
 #' @family {spectrum functions}
+#'
 #' @title Create a Spectrum Object
-#' @description Creates a spectrum object from the provided signal intensities, frequencies and chemical shifts.
-#' @param si Numeric vector of signal intensities, ordered from highest to lowest corresponding chemical shift.
-#' @param cs_max The highest chemical shift value in ppm, usually shown as left end of the spectrum.
+#'
+#' @description
+#' Creates a spectrum object from the provided signal intensities, frequencies
+#' and chemical shifts.
+#'
+#' @param si Numeric vector of signal intensities, ordered from highest to
+#' lowest corresponding chemical shift.
+#'
+#' @param cs_max The highest chemical shift value in ppm, usually shown as left
+#' end of the spectrum.
+#'
 #' @param cs_width The width of the spectrum in ppm.
+#'
 #' @param fq_ref The reference frequency in Hz.
-#' @param fq_width The width of the spectrum in Hz. Only used to check whether the values calculated from `cs_max`, `cs_width` and `fq_ref` match the provided value. If `NULL`, this check will be skipped.
-#' @param force If `TRUE`, the function will not raise an error in case of discrepancies between the calculated and the provided spectrum width in Hz, but will print a info message instead. To hide this message as well, set `silent = TRUE`.
+#'
+#' @param fq_width The width of the spectrum in Hz. Only used to check whether
+#' the values calculated from `cs_max`, `cs_width` and `fq_ref` match the
+#' provided value. If `NULL`, this check will be skipped.
+#'
+#' @param force If `TRUE`, the function will not raise an error in case of
+#' discrepancies between the calculated and the provided spectrum width in Hz,
+#' but will print a info message instead. To hide this message as well, set
+#' `silent = TRUE`.
+#'
 #' @param silent If `TRUE`, no output will be printed to the console.
+#'
 #' @param name The name of the spectrum, e.g. "Blood 1" or "Urine Mouse X23D".
-#' @param path The path to the spectrum file, e.g. "/example_datasets/bruker/urine/urine_1".
+#'
+#' @param path The path to the spectrum file, e.g.
+#' "/example_datasets/bruker/urine/urine_1".
+#'
 #' @param type The type of experiment, e.g. "H1 CPMG" or "H1 NOESY".
+#'
 #' @param mfs The magnetic field strength in Tesla.
-#' @return A `spectrum` object as described in [Metabodecon Classes](https://spang-lab.github.io/metabodecon/articles/Metabodecon-Classes.html).
+#'
+#' @return A `spectrum` object as described in [Metabodecon
+#' Classes](https://spang-lab.github.io/metabodecon/articles/Metabodecon-Classes.html).
+#'
 #' @examples
 #' si <- c(1, 1, 3, 7, 8, 3, 8, 5, 2, 1)
 #' cs_max <- 14.8
@@ -141,11 +201,13 @@ make_spectrum <- function(si,
     fq_min <- fq_ref - (cs_max * 1e-6 * fq_ref) # Lowest frequency in Hz
     fq <- seq(fq_min, fq_max, length.out = length(si)) # Frequency in Hz
     fq_width_calc <- fq_max - fq_min
-    if (!is.null(fq_width) && !isTRUE(all.equal(fq_width_calc, fq_width))) { # Check if calculated spectrum width in Hz matches the value provided by the user
+    if (!is.null(fq_width) && !isTRUE(all.equal(fq_width_calc, fq_width))) {
         if (force) {
-            stop(sprintf("Calculated spectrum width in Hz (%s) does not match the provided value (%s). Please read in the data manually or set `force = TRUE` to ignore this error. Please note that by doing so, all downstream calculations involving frequencies might be wrong, so be sure to double check the results.", round(fq_width_calc, 5), round(fq_width, 5)))
+            msg <- "Calculated spectrum width in Hz (%s) does not match the provided value (%s). Please read in the data manually or set `force = TRUE` to ignore this error. Please note that by doing so, all downstream calculations involving frequencies might be wrong, so be sure to double check the results."
+            stopf(msg, round(fq_width_calc, 5), round(fq_width, 5))
         } else if (!silent) {
-            logf(sprintf("Calculated spectrum width in Hz (%s) does not match the provided value (%s). Continuing anyways, because `force` equals `TRUE`. Please note that all downstream calculations using frequencies might be wrong, so be sure to double check the results.", round(fq_width_calc, 5), round(fq_width, 5)))
+            msg <- "Calculated spectrum width in Hz (%s) does not match the provided value (%s). Continuing anyways, because `force` equals `TRUE`. Please note that all downstream calculations using frequencies might be wrong, so be sure to double check the results."
+            logf(msg, round(fq_width_calc, 5), round(fq_width, 5))
         }
     }
     meta <- named(fq, name, path, type, mfs)
@@ -221,15 +283,16 @@ simulate_spectrum <- function(name = "sim_00",
 #' fq_ref <- X$fq[1] / (1 - (X$cs[1] / 1e6))
 #' print(head(X))
 #' cat("Frequency of reference in MHz:", fq_ref / 1e6)
-read_bruker_spectrum <- function(spldir = file.path(download_example_datasets(), "bruker/urine/urine_1"),
-                                   expno = 10,
-                                   procno = 10,
-                                   raw = FALSE,
-                                   silent = TRUE,
-                                   force = FALSE) {
+read_bruker_spectrum <- function(spldir,
+                                 expno = 10,
+                                 procno = 10,
+                                 raw = FALSE,
+                                 silent = TRUE,
+                                 force = FALSE) {
     acqus <- read_acqus_file(spldir, expno)
     procs <- read_procs_file(spldir, expno, procno)
-    one_r <- read_1r_file(spldir, expno, procno, procs, silent = TRUE)[c("raw", "scaled")]
+    one_r <- read_1r_file(spldir, expno, procno, procs, silent = silent)
+    one_r <- one_r[c("raw", "scaled")]
     spectrum <- make_spectrum(
         si = if (raw) one_r$raw else one_r$scaled, # Signal intensities
         cs_max = procs$OFFSET, # Spectrum offset in PPM
@@ -257,7 +320,15 @@ read_bruker_spectrum <- function(spldir = file.path(download_example_datasets(),
 #' str(spectrum_data, 1)
 #' }
 read_jcampdx_spectrum <- function(path, raw = FALSE, silent = TRUE, force = FALSE) {
-    data <- readJDX::readJDX(file = path, SOFC = TRUE, debug = 0) # Example return: [dataGuide=df(3*3), metadata=chr(2180), commentLines=int(10053), real=df(131072*2), imaginary=df(131072*2)] with colnames(data$real) = c("x", "y"). Takes about 30s on machine r31 for urine_1.dx (1MB).
+    data <- readJDX::readJDX(file = path, SOFC = TRUE, debug = 0)
+    # Object `data` is a list with following elements:
+    # - dataGuide = df (3*3)
+    # - metadata = chr (2180)
+    # - commentLines = int (10053),
+    # - real = df (131072*2)
+    # - imaginary = df (131072*2)]
+    # Colnames(data$real) are c("x", "y")
+    # Reading takes about 30s on machine r31 for urine_1.dx (1MB).
     meta <- parse_metadata_file(lines = data$metadata)
     si_raw <- data$real$y
     si_scaled <- if (meta$DTYPP == 0) data$real$y * 2^meta$NC_proc else data$real$y
@@ -265,21 +336,33 @@ read_jcampdx_spectrum <- function(path, raw = FALSE, silent = TRUE, force = FALS
         si = if (raw) si_raw else si_scaled, # Signal intensities
         cs_max = meta$OFFSET, # Spectrum offset in PPM
         cs_width = meta$SW, # Spectrum width in PPM
-        fq_ref = meta$SFO1 * 1e6, # Reference Frequency in Hz (better than meta$SF, because it fulfills `all.equal` check of `make_spectrum`)
+        fq_ref = meta$SFO1 * 1e6, # Reference Frequency in Hz (1)
         fq_width = meta$SW_h, # Spectrum width in Hz
         force = force,
         silent = silent,
         path = path,
         name = basename(path)
+        # (1) Better than meta$SF, because it fulfills `all.equal` check of
+        #     [make_spectrum()]
     )
 }
 
 #' @noRd
 #' @title Parse Metadata File
-#' @description Parses a metadata file like Bruker's `acqu[s]` or `proc[s]` files and return the metadata as a named list.
-#' @param path The path of the file containing the parameter data. E.g. `"example_datasets/bruker/urine/urine_1/10/acqus"` or `"example_datasets/bruker/urine/urine_1/10/pdata/10/procs"`.
+#' @description
+#' Parses a metadata file like Bruker's `acqu[s]` or `proc[s]` files and return
+#' the metadata as a named list.
+#'
+#' @param path The path of the file containing the parameter data. E.g.
+#' `"example_datasets/bruker/urine/urine_1/10/acqus"` or
+#' `"example_datasets/bruker/urine/urine_1/10/pdata/10/procs"`.
+#'
 #' @return A named list containing the metadata read from the file.
-#' @details For a detailed description of the format of burker parameter files, refer to 'Bruker_NMR_Data_Formats.pdf'.
+#'
+#' @details
+#' For a detailed description of the format of burker parameter files, refer to
+#' 'Bruker_NMR_Data_Formats.pdf'.
+#'
 #' @examples
 #' path <- pkg_file("example_datasets/bruker/urine/urine_1/10/acqus")
 #' lines <- readLines(path)
@@ -290,7 +373,7 @@ parse_metadata_file <- function(path = NULL, lines = NULL) {
     if (is.null(path) && is.null(lines)) stop("Either `path` or `lines` must be provided.")
     if (is.null(lines)) lines <- readLines(path)
     lines <- lines[!startsWith(lines, "$$")] # strip comments
-    content <- paste(lines, collapse = "") # Example: "##TITLE= Parameter file, TopSpin 3.6.2##JCAMPDX= 5.0"
+    content <- paste(lines, collapse = "") # (1)
     pattern <- "(##\\$?.+?= ?)([^#]*)"
     matches <- gregexpr(pattern, content, perl = TRUE)
     keyvals <- regmatches(content, matches)[[1]]
@@ -304,6 +387,7 @@ parse_metadata_file <- function(path = NULL, lines = NULL) {
     ret[flt] <- as.numeric(vals[flt])
     ret[int] <- as.integer(vals[int])
     ret
+    # (1) Example content: "##TITLE= Parameter file, TopSpin 3.6\n##JCAMPDX= 5.0"
 }
 
 #' @noRd
@@ -323,8 +407,7 @@ parse_metadata_file <- function(path = NULL, lines = NULL) {
 #' str(acqus, 0)
 #' cat("spectrum width ppm:", as.numeric(acqus$SW))
 #' cat("spectrum width Hz:", as.numeric(acqus$SW_h))
-read_acqus_file <- function(spldir = pkg_file("example_datasets/bruker/urine/urine_1"),
-                            expno = 10) {
+read_acqus_file <- function(spldir, expno = 10) {
     path <- file.path(spldir, expno, "acqus")
     acqus <- parse_metadata_file(path)
     acqus
@@ -337,9 +420,7 @@ read_acqus_file <- function(spldir = pkg_file("example_datasets/bruker/urine/uri
 #' @examples
 #' blood1_dir <- pkg_file("example_datasets/bruker/urine/urine_1")
 #' procs <- read_procs_file(blood1_dir)
-read_procs_file <- function(spldir = pkg_file("example_datasets/bruker/urine/urine_1"),
-                            expno = 10,
-                            procno = 10) {
+read_procs_file <- function(spldir, expno = 10, procno = 10) {
     path <- file.path(spldir, expno, "pdata", procno, "procs")
     procs <- parse_metadata_file(path)
     procs
@@ -352,7 +433,7 @@ read_procs_file <- function(spldir = pkg_file("example_datasets/bruker/urine/uri
 #' spldir <- pkg_file("example_datasets/bruker/urine/urine_1")
 #' oneR <- read_1r_file(spldir, 10, 10)
 #' str(oneR, 1)
-read_1r_file <- function(spldir = pkg_file("example_datasets/bruker/urine/urine_1"),
+read_1r_file <- function(spldir,
                          expno = 10,
                          procno = 10,
                          procs = read_procs_file(spldir, expno, procno),
@@ -360,14 +441,15 @@ read_1r_file <- function(spldir = pkg_file("example_datasets/bruker/urine/urine_
                          silent = FALSE) {
     # Bruker_NMR_Data_Formats.pdf:
     #
-    # > The raw data files `fid` and `ser` contain one dimensional or multi-dimensional
-    # > acquired data, respectively. They consist of a sequence of acquired data point
-    # > values in binary format. The acquisition status parameter `DTYPA` defines, how
-    # > the data values are stored. If the `DTYPA` is "int" the stored value represents
-    # > a mantissa of the data point value, the acquisition parameter NC is the
-    # > exponent. All data points share in this case the same exponent. If `DTYPA` is
-    # > "double", the data points are stored as a double precision 64 bit floating
-    # > number, parameter NC is not used.
+    # > The raw data files `fid` and `ser` contain one dimensional or
+    # > multi-dimensional acquired data, respectively. They consist of a
+    # > sequence of acquired data point values in binary format. The acquisition
+    # > status parameter `DTYPA` defines, how the data values are stored. If the
+    # > `DTYPA` is "int" the stored value represents a mantissa of the data
+    # > point value, the acquisition parameter NC is the exponent. All data
+    # > points share in this case the same exponent. If `DTYPA` is "double", the
+    # > data points are stored as a double precision 64 bit floating number,
+    # > parameter NC is not used.
     # >
     # > | FIGURE A (TopSpin 3)         | FIGURE B (TopSin 4)       |
     # > |------------------------------|---------------------------|
@@ -377,14 +459,15 @@ read_1r_file <- function(spldir = pkg_file("example_datasets/bruker/urine/urine_
     # > |                              | bits 52 - 62 = exponent   |
     # > |                              | bit  63      = sign       |
     # >
-    # > The processing status parameter `DTYPP` defines how the data values are stored. If
-    # > the `DTYPP` is 0 ("int"), the stored value represents a mantissa of the data
-    # > point value, the processing status parameter `NC_proc` is the exponent. In this
-    # > case all data points share the same exponent.
+    # > The processing status parameter `DTYPP` defines how the data values are
+    # > stored. If the `DTYPP` is 0 ("int"), the stored value represents a
+    # > mantissa of the data point value, the processing status parameter
+    # > `NC_proc` is the exponent. In this case all data points share the same
+    # > exponent.
     # >
-    # > Their format is given by the parameter `DTYPP`, the byte ordering is given by
-    # > the parameter `BYTORDP`, both may be read from the processing status parameter
-    # > file `procs`.
+    # > Their format is given by the parameter `DTYPP`, the byte ordering is
+    # > given by the parameter `BYTORDP`, both may be read from the processing
+    # > status parameter file `procs`.
     #
     path_1r <- file.path(spldir, expno, "pdata", procno, "1r")
     path_procs <- file.path(spldir, expno, "pdata", procno, "procs")
@@ -470,10 +553,10 @@ make_sim_dataset <- function() {
 #' @param read_cache If TRUE the function will try to read the results from a
 #' cache file instead of downloading and deconvoluting the dataset again.
 #'
-#' @param write_cache If TRUE, the results will be written to the cache file path.
-#' If the cache file already exists and the results from the deconvolution
-#' and the stored object differ, a warning will be issued and the new results will
-#' only be stored if force is TRUE.
+#' @param write_cache If TRUE, the results will be written to the cache file
+#' path. If the cache file already exists and the results from the deconvolution
+#' and the stored object differ, a warning will be issued and the new results
+#' will only be stored if force is TRUE.
 #'
 #' @param force If TRUE, the results will be written to the cache file path even
 #' if the results from the deconvolution and the stored object differ.
@@ -641,8 +724,16 @@ simulate_from_decon <- function(x,
     si <- lorentz_sup(x = s$cs, lcp = s$lcpt)
 
     logv("Adding %s noise to simulated data", noise_method)
-    if (noise_method == "RND") { # ToSc, 2024-08-02: noise_method 'RND' turned out to be a bad idea, because the true noise is not normally distributed, but has long stretches of continuous increase or decrease that would be incredibly unlikely to occur with a normal distribution. This can be seen by running `analyze_noise_methods()`.
-        sfr_sd <- sd(d$y_values_raw[c(1:10000, 121073:131072)] * 1e-6) # The true SFR covers approx. the first and last 20k datapoints. However, to be on the safe side, only use the first and last 10k datapoints for the calculation.
+    if (noise_method == "RND") {
+        # ToSc, 2024-08-02: noise_method 'RND' turned out to be a bad idea,
+        # because the true noise is not normally distributed, but has long
+        # stretches of continuous increase or decrease that would be incredibly
+        # unlikely to occur with a normal distribution. This can be seen by
+        # running `analyze_noise_methods()`.
+        sfr_sd <- sd(d$y_values_raw[c(1:10000, 121073:131072)] * 1e-6) # (1)
+        # (1) The true SFR covers approx. the first and last 20k datapoints.
+        # However, to be on the safe side, only use the first and last 10k
+        # datapoints for the calculation.
         noise <- rnorm(n = length(si), mean = 0, sd = sfr_sd)
         si <- si + noise
     } else {
@@ -652,7 +743,9 @@ simulate_from_decon <- function(x,
     }
 
     logv("Discretize signal intensities to allow efficient storage as integers")
-    s$si <- as.integer(si * 1e6) / 1.e6 # Convert to integers and back. We do this to not lose precision later on when the data gets written to disc as integers.
+    s$si <- as.integer(si * 1e6) / 1.e6 # (2)
+    # (2) Convert to integers and back. We do this to not lose precision later
+    # on when the data gets written to disc as integers.
 
     if (show) plot_sim_spec(s)
     if (store) save_spectrum(s, verbose = verbose, ...)
@@ -663,9 +756,11 @@ simulate_from_decon <- function(x,
 
 #' @noRd
 #' @title Count Stretches of Increases and Decreases
-#' @description Counts the lengths of consecutive increases and decreases in a numeric vector.
+#' @description Counts the lengths of consecutive increases and decreases in a
+#' numeric vector.
 #' @param x A numeric vector.
-#' @return A numeric vector containing the lengths of stretches of increases and decreases.
+#' @return A numeric vector containing the lengths of stretches of increases and
+#' decreases.
 #' @examples
 #' #
 #' # Example Data (x)
@@ -702,7 +797,8 @@ count_stretches <- function(x) {
 }
 
 #' @noRd
-#' @description Used during development of `simulate_spectra()` to find a realistic method for noise generation.
+#' @description Used during development of `simulate_spectra()` to find a
+#' realistic method for noise generation.
 analyze_noise_methods <- function(ask = TRUE) {
     download_example_datasets()
     blood_1 <- datadir("example_datasets/bruker/blood/blood_01")
