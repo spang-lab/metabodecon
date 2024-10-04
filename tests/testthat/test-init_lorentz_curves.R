@@ -12,7 +12,7 @@ test_that("init_lorentz_curves_v14 works", {
             high <- rep(TRUE, length(center))
         })
     })
-    y14 <- init_lc_v14(spec, verbose = FALSE)
+    y14 <- init_lc(spec, verbose = FALSE)
     expect_equal(y14$A, obj$debuglist$params_init$A)
     expect_equal(y14$lambda, obj$debuglist$params_init$lambda)
     expect_equal(y14$w, obj$debuglist$params_init$w)

@@ -203,3 +203,6 @@ all_identical <- function(x) {
     all(sapply(x, identical, x[[1]]))
 }
 
+is_equal <- function(x, y) {
+    isTRUE(all.equal(x, y))
+}

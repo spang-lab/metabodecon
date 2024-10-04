@@ -989,3 +989,28 @@ plot_spectra <- function(ss = generate_lorentz_curves_sim(),
     mtext(text = round(c(a, b), 4), side = 3, line = 0, at = c(a, b))
     legend(x = "topright", legend = ltxt, col = cols, lty = 1)
 }
+
+plot_noise_methods <- function(siRND, siSFR, n = 300, start = 5000) {
+    ymin <- min(c(min(siRND), min(siSFR)))
+    ymax <- max(c(max(siRND), max(siSFR)))
+    ylim <- c(ymin, ymax)
+    opar <- par(mfrow = c(5, 1), mar = c(3, 4, 0, 1))
+    on.exit(par(opar), add = TRUE)
+    for (i in 1:5) {
+        redT <- rgb(1, 0, 0, 0.1)
+        bluT <- rgb(0, 0, 1, 0.1)
+        idx <- ((i - 1) * n + 1):(i * n) + start
+        ysiRND <- siRND[idx]
+        ysiSFR <- siSFR[idx]
+        plot(1:n, ysiRND, type = "n", ylim = ylim, ylab = "", xlab = "", xaxt = "n")
+        axis(1, at = seq(1, n, by = 50), labels = idx[seq(1, n, by = 50)])
+        points(1:n, ysiRND, col = "red", pch = 20)
+        points(1:n, ysiSFR, col = "blue", pch = 20)
+        lines(1:n, ysiRND, col = "red")
+        lines(1:n, ysiSFR, col = "blue")
+        lines(1:n, rep(0, n), col = "black", lty = 2)
+        polygon(c(1:n, n:1), c(ysiRND, rep(0, n)), col = redT, border = NA)
+        polygon(c(1:n, n:1), c(ysiSFR, rep(0, n)), col = bluT, border = NA)
+        legend("topleft", NULL, c("RND", "SFR"), col = c("red", "blue"), lty = 1)
+    }
+}

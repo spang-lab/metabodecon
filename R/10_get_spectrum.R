@@ -1,4 +1,6 @@
+# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
 # Public API #####
+# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
 
 #' @export
 #' @family {spectra functions}
@@ -97,7 +99,7 @@ read_spectra <- function(data_path = pkg_file("example_datasets/bruker/urine"),
 #' ).
 #'
 #' @examples
-#' relpath <- "example_datasets/bruker/urine/urine_1"
+#' relpath <- "example_datasets/bruker/urine"
 #' urine <- system.file(relpath, package = "metabodecon")
 #' urine_1 <- file.path(urine, "urine_1")
 #' urine_2 <- file.path(urine, "urine_2")
@@ -115,8 +117,8 @@ read_spectra <- function(data_path = pkg_file("example_datasets/bruker/urine"),
 #' \dontrun{
 #' relpath <- "example_datasets/jcampdx/urine/urine_1.dx"
 #' urine_1_dx <- system.file(relpath, package = "metabodecon")
-#' X1_dx <- read_spectrum(urine_1_dx, file_format = "jcampdx")
-#' stopifnot(all.equal(x1, X1_dx))
+#' x1_dx <- read_spectrum(urine_1_dx, file_format = "jcampdx")
+#' stopifnot(all.equal(x1, x1_dx))
 #' }
 read_spectrum <- function(data_path = metabodecon_file("bruker/sim/sim_01"),
                           file_format = "bruker",
@@ -126,7 +128,7 @@ read_spectrum <- function(data_path = metabodecon_file("bruker/sim/sim_01"),
                           silent = TRUE,
                           force = FALSE) {
     file_format <- match.arg(file_format, c("bruker", "jcampdx"))
-    X <- switch(file_format,
+    switch(file_format,
         "bruker" = read_bruker_spectrum(data_path, expno, procno, raw, silent, force),
         "jcampdx" = read_jcampdx_spectrum(data_path, silent, force)
     )
@@ -173,8 +175,9 @@ read_spectrum <- function(data_path = metabodecon_file("bruker/sim/sim_01"),
 #'
 #' @param mfs The magnetic field strength in Tesla.
 #'
-#' @return A `spectrum` object as described in [Metabodecon
-#' Classes](https://spang-lab.github.io/metabodecon/articles/Metabodecon-Classes.html).
+#' @return A `spectrum` object as described in [Metabodecon Classes](
+#' https://spang-lab.github.io/metabodecon/articles/Metabodecon-Classes.html
+#' ).
 #'
 #' @examples
 #' si <- c(1, 1, 3, 7, 8, 3, 8, 5, 2, 1)
@@ -194,14 +197,13 @@ make_spectrum <- function(si,
                           name = NULL,
                           path = NULL,
                           type = NULL,
+                          simpar = NULL,
                           mfs = NULL) {
     cs_min <- cs_max - cs_width # Lowest ppm value
     cs <- seq(cs_max, cs_max - cs_width, length.out = length(si)) # Chemical shift in parts per million
-    fq_max <- fq_ref - (cs_min * 1e-6 * fq_ref) # Highest frequency in Hz (corresponds to lowest ppm value)
-    fq_min <- fq_ref - (cs_max * 1e-6 * fq_ref) # Lowest frequency in Hz
-    fq <- seq(fq_min, fq_max, length.out = length(si)) # Frequency in Hz
-    fq_width_calc <- fq_max - fq_min
-    if (!is.null(fq_width) && !isTRUE(all.equal(fq_width_calc, fq_width))) {
+    fq <- as_frequency(cs, fq_ref)
+    fq_width_calc <- max(fq) - min(fq)
+    if (!is.null(fq_width) && !is_equal(fq_width_calc, fq_width)) {
         if (force) {
             msg <- "Calculated spectrum width in Hz (%s) does not match the provided value (%s). Please read in the data manually or set `force = TRUE` to ignore this error. Please note that by doing so, all downstream calculations involving frequencies might be wrong, so be sure to double check the results."
             stopf(msg, round(fq_width_calc, 5), round(fq_width, 5))
@@ -210,7 +212,7 @@ make_spectrum <- function(si,
             logf(msg, round(fq_width_calc, 5), round(fq_width, 5))
         }
     }
-    meta <- named(fq, name, path, type, mfs)
+    meta <- named(fq, name, path, type, simpar, mfs)
     structure(named(si, cs, meta), class = "spectrum")
 }
 
@@ -226,10 +228,11 @@ make_spectrum <- function(si,
 #' @param name The name of the spectrum.
 #' @param seed The seed for the random number generator.
 #' @param ndp The number of data points in the spectrum.
-#' @param npks The number of peaks in the spectrum.
+#' @param npk The number of peaks in the spectrum.
 #' @param csres The chemical shift resolution in PPM.
 #' @param cs The vector of chemical shifts in PPM.
 #' @param pkr The start and stop of the peak region in PPM.
+#' @param fqref The reference frequency in Hz.
 #' @param x0 The peak center positions in PPM.
 #' @param A The peak area parameter.
 #' @param lambda The peak width parameter.
@@ -241,47 +244,49 @@ make_spectrum <- function(si,
 #' simA <- simulate_spectrum("simA")
 #' simA_copy <- simulate_spectrum("simA")
 #' simB <- simulate_spectrum("simB")
-#' simC <- simulate_spectrum("simC", npks = 20)
+#' simC <- simulate_spectrum("simC", npk = 20)
 #' plot_spectrum(simC, foc_rgn = c(0.25, 0.75))
 #' if (!identical(simA, simA_copy)) stop()
 #' if (identical(simA, simB)) stop()
 simulate_spectrum <- function(name = "sim_00",
                               seed = sum(utf8ToInt(name)), # (1)
                               ndp = 2048,
-                              npks = 10,
+                              npk = 10,
                               csres = 0.00015,
                               cs = seq(from = 3.6, length.out = ndp, by = -csres),
                               pkr = quantile(cs, c(0.25, 0.75)),
-                              x0 = sort(runif(npks, pkr[1], pkr[2])),
-                              A = runif(npks, 2.5, 20) * 1e3,
-                              lambda = runif(npks, 0.9, 1.3) / 1e3,
+                              fqref = 600252806.95,
+                              x0 = sort(runif(npk, pkr[1], pkr[2])),
+                              A = runif(npk, 2.5, 20) * 1e3,
+                              lambda = runif(npk, 0.9, 1.3) / 1e3,
                               noise = rnorm(length(cs), sd = 1200)) {
     set.seed(seed) # (1)
-    si <- lorentz_sup(cs, x0, A, lambda) + noise
-    si <- round(si) # (2)
-    simpar <- named(A, x0, lambda, noise)
-    meta <- named(name, simpar)
+    si <- round(lorentz_sup(cs, x0, A, lambda) + noise) # (2)
+    fq <- as_frequency(cs, fqref)
+    simpar <- named(name, cs, pkr, x0, A, lambda, noise)
+    meta <- named(name, fq, simpar)
     spectrum <- structure(named(si, cs, meta), class = "spectrum")
     spectrum
+    # (1) Setting the seed in the function also affects runif and rnorm calls in
+    #     the function default values as they are only evaluated upon first use.
+    # (2) We convert to integers to not lose precision later on when the data
+    #     gets stored as integers on disk.
 }
-# Developer Notes:
-# (1) Setting seed in the function body also affects runif and rnorm calls in
-#     the function default values as they are only evaluated upon first use.
-# (2) We convert to integers to not lose precision later on when the data gets
-#     stored as integers on disk.
 
 
 
+# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
 # Private Helpers #####
+# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
 
 #' @noRd
 #' @title Read single Bruker TopSpin 3 Spectrum
 #' @inheritParams read_spectrum
 #' @examples
 #' spldir <- pkg_file("example_datasets/bruker/urine/urine_1")
-#' X <- read_bruker_spectrum(spldir)
-#' fq_ref <- X$fq[1] / (1 - (X$cs[1] / 1e6))
-#' print(head(X))
+#' x <- read_bruker_spectrum(spldir)
+#' fq_ref <- x$fq[1] / (1 - (x$cs[1] / 1e6))
+#' print(head(x))
 #' cat("Frequency of reference in MHz:", fq_ref / 1e6)
 read_bruker_spectrum <- function(spldir,
                                  expno = 10,
@@ -291,9 +296,10 @@ read_bruker_spectrum <- function(spldir,
                                  force = FALSE) {
     acqus <- read_acqus_file(spldir, expno)
     procs <- read_procs_file(spldir, expno, procno)
-    one_r <- read_1r_file(spldir, expno, procno, procs, silent = silent)
+    simpar <- read_simpar_file(spldir, expno, procno)
+    one_r <- read_one_r_file(spldir, expno, procno, procs, silent = silent)
     one_r <- one_r[c("raw", "scaled")]
-    spectrum <- make_spectrum(
+    x <- make_spectrum(
         si = if (raw) one_r$raw else one_r$scaled, # Signal intensities
         cs_max = procs$OFFSET, # Spectrum offset in PPM
         cs_width = acqus$SW, # Spectrum width in PPM
@@ -302,6 +308,7 @@ read_bruker_spectrum <- function(spldir,
         force = force,
         silent = silent,
         name = basename(spldir),
+        simpar = simpar,
         path = spldir
         # (1) Better than procs$SF, because it fulfills `all.equal` check of
         # `make_spectrum`.
@@ -319,7 +326,10 @@ read_bruker_spectrum <- function(spldir,
 #' spectrum_data <- read_jcampdx_spectrum(path)
 #' str(spectrum_data, 1)
 #' }
-read_jcampdx_spectrum <- function(path, raw = FALSE, silent = TRUE, force = FALSE) {
+read_jcampdx_spectrum <- function(path,
+                                  raw = FALSE,
+                                  silent = TRUE,
+                                  force = FALSE) {
     data <- readJDX::readJDX(file = path, SOFC = TRUE, debug = 0)
     # Object `data` is a list with following elements:
     # - dataGuide = df (3*3)
@@ -370,9 +380,10 @@ read_jcampdx_spectrum <- function(path, raw = FALSE, silent = TRUE, force = FALS
 #' acqus2 <- parse_metadata_file(lines = lines)
 #' stopifnot(all.equal(acqus1, acqus2))
 parse_metadata_file <- function(path = NULL, lines = NULL) {
-    if (is.null(path) && is.null(lines)) stop("Either `path` or `lines` must be provided.")
+    msg <- "Either `path` or `lines` must be provided."
+    if (is.null(path) && is.null(lines)) stop(msg)
     if (is.null(lines)) lines <- readLines(path)
-    lines <- lines[!startsWith(lines, "$$")] # strip comments
+    lines <- lines[!startsWith(lines, "$$")] # Strip comments
     content <- paste(lines, collapse = "") # (1)
     pattern <- "(##\\$?.+?= ?)([^#]*)"
     matches <- gregexpr(pattern, content, perl = TRUE)
@@ -387,7 +398,10 @@ parse_metadata_file <- function(path = NULL, lines = NULL) {
     ret[flt] <- as.numeric(vals[flt])
     ret[int] <- as.integer(vals[int])
     ret
-    # (1) Example content: "##TITLE= Parameter file, TopSpin 3.6\n##JCAMPDX= 5.0"
+    # (1) Example content of metadata file:
+    # >>> ##TITLE= Param file, TopSpin 3.6
+    # >>> ##JCAMPDX= 5.0
+    # >>> ...
 }
 
 #' @noRd
@@ -427,18 +441,38 @@ read_procs_file <- function(spldir, expno = 10, procno = 10) {
 }
 
 #' @noRd
+#' @title Read Simulation Parameters
+#' @details
+#' Usually, spectra stored in Bruker Format have three files that are relevant
+#' for metabodecon: `acqus`, `procs` and `1r`. However, if a spectrum is
+#' simulated using [simulate_spectrum()] and stored in Bruker format using
+#' [save_spectrum()], an additional file called `simpar` is created, containing
+#' the simulation parameters that were used to generate the spectrum. The file
+#' contains R code, as generated by `dput()`, that can be used to recreate the
+#' list object holding the simulation parameters.
+#' @inheritParams read_spectrum read_acqus_file
+#' @return The simulation parameters read from the file as named list.
+#' @examples
+#' sim_1_dir <- pkg_file("example_datasets/bruker/sim2/sim_01")
+#' simpar <- read_simpar_file(blood1_dir)
+read_simpar_file <- function(spldir, expno = 10, procno = 10) {
+    path <- file.path(spldir, expno, "pdata", procno, "simpar")
+    if (file.exists(path)) dget(path)
+}
+
+#' @noRd
 #' @title Read signal intensities from Bruker TopSpin 1r file
 #' @inheritParams read_spectrum read_acqus_file
 #' @examples
 #' spldir <- pkg_file("example_datasets/bruker/urine/urine_1")
-#' oneR <- read_1r_file(spldir, 10, 10)
+#' oneR <- read_one_r_file(spldir, 10, 10)
 #' str(oneR, 1)
-read_1r_file <- function(spldir,
-                         expno = 10,
-                         procno = 10,
-                         procs = read_procs_file(spldir, expno, procno),
-                         force = FALSE,
-                         silent = FALSE) {
+read_one_r_file <- function(spldir,
+                            expno = 10,
+                            procno = 10,
+                            procs = read_procs_file(spldir, expno, procno),
+                            force = FALSE,
+                            silent = FALSE) {
     # Bruker_NMR_Data_Formats.pdf:
     #
     # > The raw data files `fid` and `ser` contain one dimensional or
@@ -494,40 +528,67 @@ read_1r_file <- function(spldir,
     raw <- readBin(con, what = type, n = n, size = nbytes, signed = TRUE, endian = endian)
     scaled <- if (type == "integer") raw * 2^ncproc else raw
     named(
+        # -~-~-~-~-~-~-~-~-~-~-~
         # Path related variables
-        spldir, # Path of the dir holding NMR measurements for a individual sample.
+        # -~-~-~-~-~-~-~-~-~-~-~
+        spldir, # Path of dir holding NMR measurements of a individual sample.
         expno, # Experiment number for the file.
         procno, # Processing number for the file.
         path_1r, # Path of the 1r file.
         path_procs, # Path of the procs file.
+        # -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
         # Processing parameters and derived values
-        procs, # The parsed content of the `procs` file as returned by `read_procs_file()`.
-        byteordp, # The byte ordering of the data. 0 = little endian, 1 = big endian.
-        dtypp, # The data type of the data. 0 = integer, not 0 = double.
-        endian, # The endianess of the data. Either "little" or "big".
-        nbytes, # The number of bytes used to store a single value. Either 4 or 8.
-        ncproc, # The exponent of the data. Only relevant if `dtypp` is 0, i.e. the data is stored as integer values.
-        type, # The type of the data. Either "integer" or "double", derived from `dtypp`.
-        n, # The number of data points.
+        # -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
+        procs, # Parsed content of `procs` file from `read_procs_file()`.
+        byteordp, # Byte ordering of the data. 0/1 = little/big endian.
+        dtypp, # Type of the data. 0/not0 = integer/double.
+        endian, # Endianess of the data. Either "little" or "big".
+        nbytes, # Number of bytes used to store a single value. Either 4 or 8.
+        ncproc, # Exponent of the data. Only relevant if `dtypp` is 0.
+        type, # Type as string. Either "integer" or "double". Like `dtypp`.
+        n, # Number of data points.
+        # -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
         # Raw and scaled signal intensity values
+        # -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
         raw, # The raw signal intensity values.
         scaled # The scaled signal intensity values.
     )
 }
 
+#' @noRd
+#' @description
+#' Converts a vector of chemical shifts given in ppm to a vector of frequencies
+#' in Hz.
+#' @param cs Vector of chemical shifts in ppm.
+#' @param fqref Frequency of the reference molecule in Hz.
+as_frequency <- function(cs, fqref) {
+    fqmax <- fqref - (min(cs) * 1e-6 * fqref) # Highest frequency in Hz
+    fqmin <- fqref - (max(cs) * 1e-6 * fqref) # Lowest frequency in Hz
+    fq <- seq(fqmin, fqmax, length.out = length(cs))
+    fq <- fq[rev(order(cs))] # (1)
+    # (1) Sort frequencies in descending order of chemical shifts, as the
+    #     highest chemical shift corresponds to the lowest frequency.
+    fq
+}
+
+# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
 # Sim Dataset #####
+# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
 
 update_sim_dataset <- function() {
-    sim <- make_sim_dataset()
+    x <- make_sim_dataset()
+    path <- file.path(pkg_file("example_datasets/bruker"), "sim2")
+    save_spectra(x, path)
 }
 
 make_sim_dataset <- function() {
     decons <- deconvolute_blood()
     simpars <- lapply(decons, get_sim_params, pkr = c(3.52, 3.37))
-    simpars$blood_02 <- get_sim_params(decons$blood_02, pkr = c(3.51, 3.36)) # (1)
-    # (1) Blood 02 is shifted approx. 0.01 ppm to the right, so we also need to
-    # shift the interval from which we pick our peaks so that we end up with
-    # signals from the same metabolites.
+    simpars[[2]] <- get_sim_params(decons[[2]], pkr = c(3.51, 3.36)) # (1)
+    # (1) Blood_02 is shifted approx. 0.01 ppm to the right, so we also need to
+    # shift the interval from which we pick our peaks by 0.01 to end up with
+    # signals from the same metabolites. This was determined by visual
+    # inspection after deconvoluting the blood dataset.
     sim <- lapply(simpars, function(simpar) {
         simulate_spectrum(
             name = gsub("blood", "sim", simpar$name),
@@ -575,7 +636,7 @@ deconvolute_blood <- function(read_cache = TRUE,
                               verbose = TRUE,
                               nworkers = 1) {
     rds <- file.path(cachedir(), "deconvolute_blood.rds")
-    new <- old <- if (file.exists(rds)) readRDS(rds) else NULL # 62.6 MB == 0.6s
+    new <- old <- if (file.exists(rds)) readRDS(rds) else NULL # 62.6 MB ~= 0.6s
     if (!read_cache || is.null(new)) {
         download_example_datasets()
         path <- datadir("example_datasets/bruker/blood")
@@ -614,8 +675,13 @@ get_sim_params <- function(x, pkr = c(3.4, 3.5)) {
     named(A, x0, lambda, noiseSD, name)
 }
 
+#' @noRd
+#' @examples
+#' x <- simulate_spectrum()
+#' path <- save_spectrum(x)
+#' y <- read_spectrum(path)
 save_spectrum <- function(x,
-                          path,
+                          path = tmpdir(),
                           force = FALSE,
                           verbose = TRUE) {
 
@@ -634,32 +700,54 @@ save_spectrum <- function(x,
     DTYPP <- "##$DTYPP=0" # Data storage type (0=4-byte-integers, else=double)
     SI <- sprintf("##$SI=%d", length(x$si)) # Number of data points
     OFFSET <- sprintf("##$OFFSET=%.15f", max(x$cs)) # Maximum chemical shift in PPM
-    procs_str = paste(BYTORDP, NC_proc, DTYPP, SI, OFFSET, "", sep = "\n")
-    procs_path = file.path(temp, "10", "pdata", "10", "procs")
+    procs_str <- paste(BYTORDP, NC_proc, DTYPP, SI, OFFSET, "", sep = "\n")
+    procs_path <- file.path(temp, "10", "pdata", "10", "procs")
 
-    # Prepare aquistions parameters to write to acqus file
-    fq_ref <- convert_pos(0, x$cs, x$fq)
+    # Prepare aquisition parameters to write to acqus file
     SW <- sprintf("##$SW=%.15f", width(x$cs)) # Spectrum width in PPM
-    SFO1 <- sprintf("##$SFO1=%.15f", fq_ref / 1e6) # Reference Frequency in MHz
-    SW_h <- sprintf("##$SW_h=%.15f", width(x$fq)) # Spectrum width in Hz
-    acqus_str = paste(SW, SFO1, SW_h, "", sep = "\n")
-    acqus_path = file.path(temp, "10", "acqus")
+    acqus_str <- paste(SW, "", sep = "\n")
+    if (!is.null(x$meta$fq)) {
+        fq_ref <- convert_pos(0, x$cs, x$meta$fq)
+        SFO1 <- sprintf("##$SFO1=%.15f", fq_ref / 1e6) # Reference Frequency in MHz
+        SW_h <- sprintf("##$SW_h=%.15f", width(x$meta$fq)) # Spectrum width in Hz
+        acqus_str <- paste(SW, SFO1, SW_h, "", sep = "\n")
+    }
+    acqus_path <- file.path(temp, "10", "acqus")
+
+    # Prepare signal intensities to write to one_r file
+    if (!is_int(x$si)) stop("Signal intensities must be integers.")
+    x$si <- as.integer(x$si)
 
     # Write files
-    one_r_path = file.path(temp, "10", "pdata", "10", "1r")
+    one_r_path <- file.path(temp, "10", "pdata", "10", "1r")
     mkdirs(file.path(temp, "10", "pdata", "10"))
     logf("Writing %s", procs_path); cat(procs_str, file = procs_path)
     logf("Writing %s", acqus_path); cat(acqus_str, file = acqus_path)
     logf("Writing %s", one_r_path); writeBin(x$si, one_r_path)
+    if (!is.null(x$meta$simpar)) {
+        simpar_path <- file.path(temp, "10", "pdata", "10", "simpar")
+        simpar_str <- dput2(x$meta$simpar)
+        logf("Writing %s", simpar_path)
+        cat(simpar_str, file = simpar_path)
+    }
 
     # Validate written files
     logf("Reading back files to validate them")
-    y <- read_spectrum(temp)
-    if (!isTRUE(all.equal(x, y))) stop("Stored spectrum is corrupted")
+    y <- read_bruker_spectrum(spldir = temp)
+    is_valid <- all(
+        is_equal(x$si, y$si),
+        is_equal(x$cs, y$cs),
+        is_equal(x$meta$fq, y$meta$fq),
+        is_equal(x$meta$simpar, y$meta$simpar)
+    )
+    if (!is_valid) stop("Stored spectrum is corrupted")
 
     # Move the files to the destination directory
+    # CONTINUE HERE
     logv("Moving files to %s", path)
     file.copy(temp, path, recursive = TRUE, overwrite = TRUE)
+
+    return(path)
 }
 
 #' @noRd
@@ -672,11 +760,18 @@ save_spectra <- function(x, path, force = FALSE, verbose = TRUE) {
     subpaths <- sapply(x, function(s) file.path(path, s$meta$name))
     mkdirs(path)
     for (i in seq_along(x)) {
-        save_spectrum(x[[i]], subpaths[i], force = force, verbose = verbose)
+        save_spectrum(
+            x = x[[i]],
+            path = subpaths[i],
+            force = force,
+            verbose = verbose
+        )
     }
 }
 
+# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
 # Deprecated #####
+# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
 
 simulate_from_decon <- function(x,
                                 # Simulation Params
@@ -809,31 +904,7 @@ analyze_noise_methods <- function(ask = TRUE) {
     siSFR <- si_raw[1:10000] * 1e-6
 
     logf("Visualizing raw SIs for noise methods RND and SFR")
-    visualize <- function(siRND, siSFR, n = 300, start = 5000) {
-        ymin <- min(c(min(siRND), min(siSFR)))
-        ymax <- max(c(max(siRND), max(siSFR)))
-        ylim <- c(ymin, ymax)
-        opar <- par(mfrow = c(5, 1), mar = c(3, 4, 0, 1))
-        on.exit(par(opar), add = TRUE)
-        for (i in 1:5) {
-            redT <- rgb(1, 0, 0, 0.1)
-            bluT <- rgb(0, 0, 1, 0.1)
-            idx <- ((i - 1) * n + 1):(i * n) + start
-            ysiRND <- siRND[idx]
-            ysiSFR <- siSFR[idx]
-            plot(1:n, ysiRND, type = "n", ylim = ylim, ylab = "", xlab = "", xaxt = "n")
-            axis(1, at = seq(1, n, by = 50), labels = idx[seq(1, n, by = 50)])
-            points(1:n, ysiRND, col = "red", pch = 20)
-            points(1:n, ysiSFR, col = "blue", pch = 20)
-            lines(1:n, ysiRND, col = "red")
-            lines(1:n, ysiSFR, col = "blue")
-            lines(1:n, rep(0, n), col = "black", lty = 2)
-            polygon(c(1:n, n:1), c(ysiRND, rep(0, n)), col = redT, border = NA)
-            polygon(c(1:n, n:1), c(ysiSFR, rep(0, n)), col = bluT, border = NA)
-            legend("topleft", NULL, c("RND", "SFR"), col = c("red", "blue"), lty = 1)
-        }
-    }
-    visualize(siRND, siSFR)
+    plot_noise_methods(siRND, siSFR)
     if (!get_yn_input("Continue?")) {
         return()
     }
@@ -841,7 +912,7 @@ analyze_noise_methods <- function(ask = TRUE) {
     logf("Visualizing smoothed SIs for noise methods RND and SFR")
     siRND_sm <- smooth_signals(list(y_pos = siRND))$y_smooth
     siSFR_sm <- smooth_signals(list(y_pos = siSFR))$y_smooth
-    visualize(siRND_sm, siSFR_sm)
+    plot_noise_methods(siRND_sm, siSFR_sm)
     if (!get_yn_input("Continue?")) {
         return()
     }

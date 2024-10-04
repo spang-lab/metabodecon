@@ -13,35 +13,77 @@
 #'
 #' - Redirect or capture the output and/or message stream via [sink()]
 #' - Measure the runtime of the evaluated expression via [system.time()]
-#' - Creating a temporary test directory (inside [tmpdir()]) and populating it with input files according to `inputs`
-#' - Predefine answers for calls to [readline()] happening during evaluation of `expr`
+#' - Creating a temporary test directory (inside [tmpdir()]) and populating it
+#'   with input files according to `inputs`
+#' - Predefine answers for calls to [readline()] happening during evaluation of
+#'   `expr`
 #' - Caching the result of the expression
 #'
-#' All changes to the global state are reverted after the expression has been evaluated.
+#' All changes to the global state are reverted after the expression has been
+#' evaluated.
 #'
 #' @param expr Expression to be evaluated.
-#' @param testdir ID of the test directory. E.g. `"xyz/2"`. Will be created and populated with `inputs`. To clear, use `clear(testdir("xyz/2"))`.
+#'
+#' @param testdir ID of the test directory. E.g. `"xyz/2"`. Will be created and
+#' populated with `inputs`. To clear, use `clear(testdir("xyz/2"))`.
+#'
 #' @param answers Answers to be returned by readline().
-#' @param output Path to the file where output stream should be redirected to. Use `"captured"` to capture the output.
-#' @param message Path to the file where message stream be redirected to. Use `"captured"` to capture the messages.
+#'
+#' @param output Path to the file where output stream should be redirected to.
+#' Use `"captured"` to capture the output.
+#'
+#' @param message Path to the file where message stream be redirected to. Use
+#' `"captured"` to capture the messages.
+#'
 #' @param plot Path to the pdf file where plots should be saved to.
-#' @param datadir_temp State of the mocked temporary data directory. See details section.
-#' @param datadir_persistent State of the mocked persistent data directory. See details section.
-#' @param inputs Paths to be copied to the test directory before evaluating `expr`.
+#'
+#' @param datadir_temp State of the mocked temporary data directory. See details
+#' section.
+#'
+#' @param datadir_persistent State of the mocked persistent data directory. See
+#' details section.
+#'
+#' @param inputs Paths to be copied to the test directory before evaluating
+#' `expr`.
+#'
 #' @param opts Named list of options to be set. See [options()].
+#'
 #' @param pars Named list of parameters to be set. See [par()].
-#' @param cache Logical indicating whether to cache the result of the expression.
-#' @param overwrite Logical indicating whether to overwrite the cache file if it already exists.
-#' @details The `datadir_temp` and `datadir_persistent` arguments accept values "missing", "filled" and "empty". Setting a value unequal NULL causes the functions [datadir_temp()] and/or [datadir_persistent()] to be replaced with mock functions pointing to fake directories. Functions depending on these functions will then use the fake directories instead of the real ones. When set to "missing" the returned mock directory does not exist. When set to "empty" it exists and is guaranteed to be empty. When set to "filled", it is populated with example datasets.
-#' Attention: the mocked functions, i.e. [datadir_temp()] and [datadir_persistent()] cannot be used directly inside `expr` when called via `devtools::test()`. I'm not sure why, but it seems as if devtools and/or testthat have their own copies of the functions which are used when the expression is evaluated.
-#' @return A list containing with following elements:
+#'
+#' @param cache Logical indicating whether to cache the result of the
+#' expression.
+#'
+#' @param overwrite Logical indicating whether to overwrite the cache file if it
+#' already exists.
+#'
+#' @details
+#' The `datadir_temp` and `datadir_persistent` arguments accept values
+#' "missing", "filled" and "empty". Setting a value unequal NULL causes the
+#' functions [datadir_temp()] and/or [datadir_persistent()] to be replaced with
+#' mock functions pointing to fake directories. Functions depending on these
+#' functions will then use the fake directories instead of the real ones. When
+#' set to "missing" the returned mock directory does not exist. When set to
+#' "empty" it exists and is guaranteed to be empty. When set to "filled", it is
+#' populated with example datasets.
+#'
+#' Attention: the mocked functions, i.e. [datadir_temp()] and
+#' [datadir_persistent()] cannot be used directly inside `expr` when called via
+#' `devtools::test()`. I'm not sure why, but it seems as if devtools and/or
+#' testthat have their own copies of the functions which are used when the
+#' expression is evaluated.
+#'
+#' @return
+#' A list containing with following elements:
+#'
 #' - `rv`: The return value of the expression.
-#' - `runtime`: The "elapsed" runtime of the expression in seconds. Measured with [system.time()].
+#' - `runtime`: The "elapsed" runtime of the expression in seconds. Measured
+#'   with [system.time()].
 #' - `output`: The captured output.
 #' - `message`: The captured messages.
 #' - `plot`: The path to the saved plot.
 #' - `testdir`: The path to the test directory.
 #' - `inputs`: The paths to the copied input files.
+#'
 #' @examples
 #' x1 <- evalwith(output = "captured", cat("Helloworld\n"))
 #' str(x1)
@@ -185,10 +227,13 @@ cachedir <- function(persistent = NULL) {
 
 #' @noRd
 #' @title Creates a mock readline function for testing
-#' @description Creates a mock readline function that returns the next element from a character vector each time it's called.
+#' @description Creates a mock readline function that returns the next element
+#' from a character vector each time it's called.
 #' Used internally by [mock_readline()].
-#' @param texts A character vector of responses to be returned by the readline function.
-#' @return A function that mimics the readline function, returning the next element from `texts` each time it's called.
+#' @param texts A character vector of responses to be returned by the readline
+#' function.
+#' @return A function that mimics the readline function, returning the next
+#' element from `texts` each time it's called.
 #' @examples
 #' readline_mock <- get_readline_mock(c("yes", "no", "maybe"))
 #' readline_mock("Continue? ") # Returns "yes"
@@ -214,10 +259,15 @@ get_readline_mock <- function(texts, env = as.environment(list())) {
 
 #' @noRd
 #' @title Get a mock for the datadir functions
-#' @description Returns a function that, when called, returns a path to a mock data directory. The type and state of the mock data directory can be specified. Used internally by [mock_datadir()].
-#' @param type The type of data directory to mock. Can be "persistent" or "temp".
-#' @param state The state of the data directory to mock. Can be "missing", "empty", or "filled".
-#' @return A function that when called, returns a path to the mock data directory.
+#' @description Returns a function that, when called, returns a path to a mock
+#' data directory. The type and state of the mock data directory can be
+#' specified. Used internally by [mock_datadir()].
+#' @param type The type of data directory to mock. Can be "persistent" or
+#' "temp".
+#' @param state The state of the data directory to mock. Can be "missing",
+#' "empty", or "filled".
+#' @return A function that when called, returns a path to the mock data
+#' directory.
 #' @examples
 #' datadir_persistent_mock <- get_datadir_mock(type = "persistent", state = "missing")
 #' datadir_temp_mock <- get_datadir_mock(type = "temp", state = "empty")
@@ -253,11 +303,14 @@ skip_if_slow_tests_disabled <- function() {
     }
 }
 
-#' @title Check if the size of each file in a directory is within a certain range
-#' @description Check if the size of each file in a directory is within 90% to 110% of the expected size.
+#' @title Check if the size of each file in a directory is within a certain
+#' range
+#' @description Check if the size of each file in a directory is within 90% to
+#' 110% of the expected size.
 #' If a file size is not within this range, a message is printed and an error is thrown.
 #' @param testdir A character string specifying the directory to check.
-#' @param size_exp A named numeric vector where the names are filenames and the values are the expected file sizes.
+#' @param size_exp A named numeric vector where the names are filenames and the
+#' values are the expected file sizes.
 #' @examples
 #' \dontrun{
 #' testdir <- tmpdir()
@@ -282,8 +335,10 @@ expect_file_size <- function(testdir, size_exp) {
 #' @title Expect Structure
 #' @description Tests if the structure of an object matches the expected string
 #' @param obj The object to test
-#' @param expected_str The expected structure of the object as a string. Can be obtained by calling `dput(capture.output(str(obj)))`.
-#' @return A logical value indicating whether the structure of the object matches the expected string
+#' @param expected_str The expected structure of the object as a string. Can be
+#' obtained by calling `dput(capture.output(str(obj)))`.
+#' @return A logical value indicating whether the structure of the object
+#' matches the expected string
 #' @examples
 #' expect_str(list(a = 1, b = 2), c("List of 2", " $ a: num 1", " $ b: num 2"))
 #' @noRd
@@ -293,8 +348,12 @@ expect_str <- function(obj, expected_str) {
 
 #' @noRd
 #' @title Run tests with the option to skip slow tests
-#' @description Runs the tests in the current R package. If `all` is TRUE, it well set environment variable `RUN_SLOW_TESTS` to "TRUE" so that all tests are run. If `all` is FALSE, it will set `RUN_SLOW_TESTS` to "FALSE" so that slow tests are skipped.
-#' @param all Logical. If TRUE, all tests are run. If FALSE, slow tests are skipped.
+#' @description Runs the tests in the current R package. If `all` is TRUE, it
+#' well set environment variable `RUN_SLOW_TESTS` to "TRUE" so that all tests
+#' are run. If `all` is FALSE, it will set `RUN_SLOW_TESTS` to "FALSE" so that
+#' slow tests are skipped.
+#' @param all Logical. If TRUE, all tests are run. If FALSE, slow tests are
+#' skipped.
 #' @return The result of devtools::test()
 #' @examples
 #' if (interactive()) {
@@ -310,7 +369,8 @@ run_tests <- function(all = FALSE) {
 # compare #####
 
 #' @noRd
-#' @title Check the quality of a deconvolution by comparing with the true parameters
+#' @title Check the quality of a deconvolution by comparing with the true
+#' parameters
 #'
 #' @description
 #' Checks the quality of a deconvolution by comparing the deconvolution results
@@ -438,13 +498,18 @@ pairwise_identical <- function(x) {
 
 #' @noRd
 #' @title Compare two vectors
-#' @description Checks if `x` and `y` are identical, all.equal or different vectors. If differences are greated than expected, the differing elements are printed.
+#' @description Checks if `x` and `y` are identical, all.equal or different
+#' vectors. If differences are greated than expected, the differing elements are
+#' printed.
 #' @param x First vector.
 #' @param y Second vector.
-#' @param xpct Expected result. 0==identical, 1==all.equal, 2==different, 3==error.
+#' @param xpct Expected result. 0==identical, 1==all.equal, 2==different,
+#' 3==error.
 #' @param silent Logical indicating whether to print the results.
 #' @return 0==identical, 1==all.equal, 2==different, 3==error
-#' @details The function compares the vectors `x` and `y` and prints the results. If the vectors are different, the differing elements are printed as follows:
+#' @details The function compares the vectors `x` and `y` and prints the
+#' results. If the vectors are different, the differing elements are printed as
+#' follows:
 #'
 #' ```R
 #'              x       y  i  a                b                     z
@@ -505,7 +570,9 @@ vcomp <- function(x, y, xpct = 0, silent = FALSE) {
 }
 
 #' @noRd
-#' @description Compares a spectrum deconvoluted with [generate_lorentz_curves_v12()] with a spectrum deconvoluted with [MetaboDecon1D()].
+#' @description Compares a spectrum deconvoluted with
+#' [generate_lorentz_curves_v12()] with a spectrum deconvoluted with
+#' [MetaboDecon1D()].
 #' @param x Result of [generate_lorentz_curves_v12()].
 #' @param y Result of [MetaboDecon1D()].
 #' @examples \donttest{
@@ -561,10 +628,14 @@ compare_spectra <- function(new, old, silent = FALSE) {
     r[17] <- comp(new$peak$center, as.integer(o6$peaks_x + 1)) # (1)
     r[18] <- comp(new$peak$right, as.integer(o6$left_position[1, ]) + 1) # (1)
     r[19] <- comp(new$peak$left, as.integer(o6$right_position[1, ]) + 1) # (1)
-    # (1) MetaboDecon1D did not store NAs at the border, which is bad, because you need to shift every index by one when you switch from `second_derivative` to any other vector like `x_ppm` or `y_au`.
+    # (1) MetaboDecon1D did not store NAs at the border, which is bad, because
+    # you need to shift every index by one when you switch from
+    # `second_derivative` to any other vector like `x_ppm` or `y_au`.
 
     # spec <- filter_peaks(spec, delta)
-    border_is_na <- which(is.na(new$peak$left) | is.na(new$peak$right)) # the original MetaboDecon1D implementation throws away NAs, so for comparsion we need to do the same
+    border_is_na <- which(is.na(new$peak$left) | is.na(new$peak$right)) # (A)
+    # (A) The original MetaboDecon1D implementation throws away NAs, so for
+    # comparsion we need to do the same
     new_peak2 <- if (length(border_is_na) > 0) new$peak[-border_is_na, ] else new$peak
     r[20] <- comp(new_peak2$center, as.integer(o7$peaks_index + 1)) # (1) see above
     r[21] <- comp(new_peak2$right, as.integer(o7$left_position) + 1) # (1)
@@ -628,7 +699,9 @@ compare_spectra <- function(new, old, silent = FALSE) {
 }
 
 #' @noRd
-#' @description Compares a spectrum deconvoluted with [generate_lorentz_curves_v12()] with a spectrum deconvoluted with [MetaboDecon1D()].
+#' @description Compares a spectrum deconvoluted with
+#' [generate_lorentz_curves_v12()] with a spectrum deconvoluted with
+#' [MetaboDecon1D()].
 #' @param x Result of [generate_lorentz_curves_v12()].
 #' @param y Result of [MetaboDecon1D()].
 #' @examples
@@ -742,8 +815,11 @@ compare_spectra_v13 <- function(new, old, silent = FALSE) {
     }
 
     # styler: on
-    # (1) MetaboDecon1D did not store NAs at the border, which is bad, because you need to shift every index by one when you switch from `second_derivative` to any other vector like `x_ppm` or `y_au`.
-    # (2) The original MetaboDecon1D implementation throws away NAs, so for comparsion we need to do the same
+    # (1) MetaboDecon1D did not store NAs at the border, which is bad, because
+    #     you need to shift every index by one when you switch from
+    #     `second_derivative` to any other vector like `x_ppm` or `y_au`.
+    # (2) The original MetaboDecon1D implementation throws away NAs, so for
+    #     comparsion we need to do the same
 
     # Return results
     r[is.na(r)] <- 4
@@ -978,7 +1054,8 @@ get_testmatrix <- function() {
     df
 }
 
-#' @description Generates a unique identifier for a test of `generate_lorentz_curves_v12` or `MetaboDecon1D`
+#' @description Generates a unique identifier for a test of
+#' `generate_lorentz_curves_v12` or `MetaboDecon1D`
 #' @noRd
 get_tid <- function(func, dp, ff, nfit, simple, debug) {
     paste(func, dp, ff, nfit, simple, debug, sep = "-")

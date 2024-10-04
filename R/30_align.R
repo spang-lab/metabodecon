@@ -1,12 +1,34 @@
 # Exported Main #####
 
 #' @export
+#'
 #' @title Align Spectra
-#' @description Align signals across a list of deconvoluted spectra using the 'CluPA' algorithm from the 'speaq' package, described in Beirnaert et al. (2018) <doi:10.1371/journal.pcbi.1006018> and Vu et al. (2011) <doi:10.1186/1471-2105-12-405> plus the additional peak combination described in [combine_peaks()].
-#' @param decons An object of type `MD1Decons` or `GLCDecons` as returned by [MetaboDecon1D()] or [generate_lorentz_curves()].
-#' @param maxShift Maximum number of points along the "ppm-axis" a value can be moved by the 'speaq' package. 50 is a suitable starting value for plasma spectra with a digital resolution of 128K. Note that this parameter has to be individually optimized depending on the type of analyzed spectra and the digital resolution. For urine which is more prone to chemical shift variations this value most probably has to be increased. Passed as argument `maxShift` to [speaq_align()].
-#' @param maxCombine Amount of adjacent columns which may be combined for improving the alignment. Passed as argument `range` to [combine_peaks()].
-#' @return An object of type `AlignedSpectra` as described in [Metabodecon Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
+#'
+#' @description
+#' Align signals across a list of deconvoluted spectra using the 'CluPA'
+#' algorithm from the 'speaq' package, described in Beirnaert et al. (2018)
+#' <doi:10.1371/journal.pcbi.1006018> and Vu et al. (2011)
+#' <doi:10.1186/1471-2105-12-405> plus the additional peak combination described
+#' in [combine_peaks()].
+#'
+#' @param decons An object of type `MD1Decons` or `GLCDecons` as returned by
+#' [MetaboDecon1D()] or [generate_lorentz_curves()].
+#'
+#' @param maxShift Maximum number of points along the "ppm-axis" a value can be
+#' moved by the 'speaq' package. 50 is a suitable starting value for plasma
+#' spectra with a digital resolution of 128K. Note that this parameter has to be
+#' individually optimized depending on the type of analyzed spectra and the
+#' digital resolution. For urine which is more prone to chemical shift
+#' variations this value most probably has to be increased. Passed as argument
+#' `maxShift` to [speaq_align()].
+#'
+#' @param maxCombine Amount of adjacent columns which may be combined for
+#' improving the alignment. Passed as argument `range` to [combine_peaks()].
+#'
+#' @return
+#' An object of type `AlignedSpectra` as described in [Metabodecon
+#' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
+#'
 #' @examples
 #' sim_dir <- metabodecon_file("bruker/sim")
 #' spectra <- read_spectra(sim_dir)
@@ -15,25 +37,37 @@
 #' str(aligned)
 align_spectra <- function(decons, maxShift = 50, maxCombine = 5) {
     smat <- speaq_align(spectrum_data = decons, maxShift = 50)
-    tmp <- combine_peaks(shifted_mat = smat, range = maxCombine, spectrum_data = decons)
-    # - `decons`: The deconvoluted NMR spectra before alignment. This can be an object of class `DeconvolutedSpectra`, `MD1Decons` or `GLCDecons`.
-    # - `lc`: Lorentz curves after alignment:
-    #   - `am`: Amplitude parameter.
-    #   - `hw`: Halfwidth parameter.
-    #   - `ct`: Center parameter.
-    # - `si`: Signal intensities after alignment.
+    tmp <- combine_peaks(
+        shifted_mat = smat,
+        range = maxCombine,
+        spectrum_data = decons
+    )
 }
 
 # Exported Helpers #####
 
 #' @export
+#'
 #' @title Get PPM Range covered by Spectra
-#' @description Returns the ppm range across all peaks of the provided deconvoluted spectra.
-#' @param spectrum_data A list of deconvoluted spectra as returned by [generate_lorentz_curves()].
+#'
+#' @description
+#' Returns the ppm range across all peaks of the provided deconvoluted spectra.
+#'
+#' @param spectrum_data A list of deconvoluted spectra as returned by
+#' [generate_lorentz_curves()].
+#'
 #' @param show Whether to plot the ppm range on the spectrum plot.
+#'
 #' @param mar The margins of the plot. Passed on to `par()`.
-#' @return A vector containing the lowest and highest ppm value over all peaks of the provided deconvoluted spectra.
-#' @author Initial version from Wolfram Gronwald. Refactored by Tobias Schmidt in 2024.
+#'
+#' @return
+#' A vector containing the lowest and highest ppm value over all peaks of the
+#' provided deconvoluted spectra.
+#'
+#' @author
+#' Initial version from Wolfram Gronwald.
+#' Refactored by Tobias Schmidt in 2024.
+#'
 #' @examples
 #' sim_subset <- metabodecon_file("sim_subset")
 #' spectrum_data = generate_lorentz_curves_sim(sim_subset)
@@ -53,21 +87,63 @@ get_ppm_range <- function(spectrum_data = generate_lorentz_curves_sim(),
 }
 
 #' @export
+#'
 #' @title Generate Feature Matrix.
+#'
 #' @description Generate a feature matrix.
-#' @param data_path A list of deconvoluted spectra as returned by `generate_lorentz_curves()`. In older versions, this could also be the path passed to `generate_lorentz_curves()`, but this is deprecated and will trigger a warning. See 'Details' for more information.
+#'
+#' @param data_path A list of deconvoluted spectra as returned by
+#' `generate_lorentz_curves()`. In older versions, this could also be the path
+#' passed to `generate_lorentz_curves()`, but this is deprecated and will
+#' trigger a warning. See 'Details' for more information.
+#'
 #' @param ppm_range The ppm range over which your signals are distributed.
+#'
 #' @param si_size_real_spectrum Number of data points in your spectra.
+#'
 #' @param scale_factor_x The x scale factor used during the deconvolution.
-#' @param warn Whether to print a warning in case a file path is passed to `data_path` instead of a list of deconvoluted spectra.
-#' @details Before version 1.2 of 'metabodecon', the deconvolution functions `generate_lorentz_curves` and `MetaboDecon1D` wrote their output partially as txt files to their input folder. Back then, `gen_feat_mat()` used those txt files as input to generate the feature matrix. Since version 1.2 these txt files are no longer created by default, to prevent accidental modifications of the input folders. Therefore, the recommended way to pass the required information to `gen_feat_mat()` is to directly pass the output of `generate_lorentz_curves()` to `gen_feat_mat()`. However, to stay backwards compatible, the name of parameter `data_path` was not changed and passing an actual path to `data_path` is still possible, but will result in a warning (unless `warn` is set to `FALSE`).
+#'
+#' @param warn Whether to print a warning in case a file path is passed to
+#' `data_path` instead of a list of deconvoluted spectra.
+#'
+#' @details Before version 1.2 of 'metabodecon', the deconvolution functions
+#' `generate_lorentz_curves` and `MetaboDecon1D` wrote their output partially as
+#' txt files to their input folder. Back then, `gen_feat_mat()` used those txt
+#' files as input to generate the feature matrix. Since version 1.2 these txt
+#' files are no longer created by default, to prevent accidental modifications
+#' of the input folders. Therefore, the recommended way to pass the required
+#' information to `gen_feat_mat()` is to directly pass the output of
+#' `generate_lorentz_curves()` to `gen_feat_mat()`. However, to stay backwards
+#' compatible, the name of parameter `data_path` was not changed and passing an
+#' actual path to `data_path` is still possible, but will result in a warning
+#' (unless `warn` is set to `FALSE`).
+#'
 #' @return A list with the following elements:
-#' - `data_matrix`: A data.frame where each row corresponds to one spectrum and each column to one data point, i.e. for 10 input spectra with 131072 data points each `data_matrix` would have dimensions 10 x 131072.
-#' - `peakList`: A list of vectors, where each vector contains the indices of the peaks in the corresponding spectrum. The indices increase from left to right, i.e. the smallest index corresponds to the highest ppm value, as the ppm values decrease from left to right.
-#' - `w`: A list of vectors where each vector contains the "position paramater" of the peaks in the corresponding spectrum.
-#' - `A`: A list of vectors where each vector contains the "area parameter" of the peaks in the corresponding spectrum.
-#' - `lambda`: A list of vectors where each vector contains the "width parameter" of the peaks in the corresponding spectrum.
-#' @author Initial version from Wolfram Gronwald. Refactored by Tobias Schmidt in 2024.
+#'
+#' `data_matrix`: A data.frame where each row corresponds to one spectrum and
+#'                each column to one data point, i.e. for 10 input spectra
+#'                with 131072 data points each `data_matrix` would have
+#'                dimensions 10 x 131072.
+#'
+#' `peakList`: A list of vectors, where each vector contains the indices of
+#'             the peaks in the corresponding spectrum. The indices increase
+#'             from left to right, i.e. the smallest index corresponds to the
+#'             highest ppm value, as the ppm values decrease from left to
+#'             right.
+#'
+#' `w`: A list of vectors where each vector contains the "position paramater"
+#'      of the peaks in the corresponding spectrum.
+#'
+#' `A`: A list of vectors where each vector contains the "area parameter" of
+#'      the peaks in the corresponding spectrum.
+#'
+#' `lambda`: A list of vectors where each vector contains the "width
+#'           parameter" of the peaks in the corresponding spectrum.
+#'
+#' @author
+#' Initial version from Wolfram Gronwald.
+#' Refactored by Tobias Schmidt in 2024.
+#'
 #' @examples
 #' sim_subset <- metabodecon_file("sim_subset")
 #' decons <- generate_lorentz_curves_sim(sim_subset)
@@ -93,7 +169,7 @@ gen_feat_mat <- function(data_path = generate_lorentz_curves_sim(),
     # 3 = 8 - (0.005 * 1000)
     # 7 = 8 - (0.001 * 1000)
     #
-    # _____  _____  PPPPP  _____  _____  _____  PPPPP  _____
+    # _____  _____  Peak_  _____  _____  _____  Peak_  _____
     # 0.007  0.006  0.005  0.004  0.003  0.002  0.001  0.000
     # 1      2      3      4      5      6      7      8
     #
@@ -103,20 +179,51 @@ gen_feat_mat <- function(data_path = generate_lorentz_curves_sim(),
 }
 
 #' @export
+#'
 #' @title Align Signals using 'speaq'
-#' @description Performs signal alignment across the individual spectra using the 'speaq' package (Beirnaert C, Meysman P, Vu TN, Hermans N, Apers S, Pieters L, et al. (2018) speaq 2.0: A complete workflow for high-throughput 1D NMRspectra processing and quantification. PLoS Comput Biol 14(3): e1006018. https://www.doi.org/10.1371/journal.pcbi.1006018). The spectra deconvolution process yields the signals of all spectra. Due to slight changes in measurement conditions, e.g. pH variations, signal positions may vary slightly across spectra. As a consequence, prior to further analysis signals belonging to the same compound have to be aligned across spectra. This is the purpose of the 'speaq' package.
+#'
+#' @description
+#' Performs signal alignment across the individual spectra using the 'speaq'
+#' package (Beirnaert C, Meysman P, Vu TN, Hermans N, Apers S, Pieters L, et al.
+#' (2018) speaq 2.0: A complete workflow for high-throughput 1D NMRspectra
+#' processing and quantification. PLoS Comput Biol 14(3): e1006018.
+#' https://www.doi.org/10.1371/journal.pcbi.1006018). The spectra deconvolution
+#' process yields the signals of all spectra. Due to slight changes in
+#' measurement conditions, e.g. pH variations, signal positions may vary
+#' slightly across spectra. As a consequence, prior to further analysis signals
+#' belonging to the same compound have to be aligned across spectra. This is the
+#' purpose of the 'speaq' package.
+#'
 #' @param feat Output of `gen_feat_mat()`.
-#' @param maxShift Maximum number of points along the "ppm-axis" which a value can be moved by speaq package e.g. 50. 50 is a suitable starting value for plasma spectra with a digital resolution of 128K. Note that this parameter has to be individually optimized depending on the type of analyzed spectra and the digital resolution. For urine which is more prone to chemical shift variations this value most probably has to be increased.
+#'
+#' @param maxShift Maximum number of points along the "ppm-axis" which a value
+#' can be moved by speaq package e.g. 50. 50 is a suitable starting value for
+#' plasma spectra with a digital resolution of 128K. Note that this parameter
+#' has to be individually optimized depending on the type of analyzed spectra
+#' and the digital resolution. For urine which is more prone to chemical shift
+#' variations this value most probably has to be increased.
+#'
 #' @param spectrum_data Output of `generate_lorentz_curves()`.
-#' @param si_size_real_spectrum Number of real data points in your original spectra.
-#' @param verbose Whether to print additional information during the alignment process.
+#'
+#' @param si_size_real_spectrum Number of real data points in your original
+#' spectra.
+#'
+#' @param verbose Whether to print additional information during the alignment
+#' process.
+#'
 #' @param show Whether to plot the original and aligned spectra.
-#' @param mfrow Layout to use for the plot. Passed on to `par()`. Use `mfrow = NULL` if the plot layout should not be changed.
-#' @return A matrix containing the integral values of the spectra after alignment.
-#' There is one row per spectrum and one column per ppm value.
-#' The entry at postion `i, j` holds the integral value of the signal from spectrum `i` that has its center at position `j` after alignment by speaq.
-#' If there is no signal with center `j` in spectrum `i`, entry `i, j` is set to NA.
-#' The column names of the matrix are the ppm values of the original spectra.
+#'
+#' @param mfrow Layout to use for the plot. Passed on to `par()`. Use `mfrow =
+#' NULL` if the plot layout should not be changed.
+#'
+#' @return
+#' A matrix containing the integral values of the spectra after alignment.
+#'
+#' There is one row per spectrum and one column per ppm value. The entry at
+#' postion `i, j` holds the integral value of the signal from spectrum `i` that
+#' has its center at position `j` after alignment by speaq. If there is no
+#' signal with center `j` in spectrum `i`, entry `i, j` is set to NA. The column
+#' names of the matrix are the ppm values of the original spectra.
 #'
 #' Example return matrix:
 #'
@@ -129,7 +236,10 @@ gen_feat_mat <- function(data_path = generate_lorentz_curves_sim(),
 #' SpNr
 #' ```
 #'
-#' @author Initial version from Wolfram Gronwald. Refactored by Tobias Schmidt in 2024.
+#' @author
+#' Initial version from Wolfram Gronwald.
+#' Refactored by Tobias Schmidt in 2024.
+#'
 #' @examples
 #' sim_subset <- metabodecon_file("bruker/sim_subset")
 #' spectrum_data <- generate_lorentz_curves_sim(sim_subset)
@@ -173,34 +283,44 @@ speaq_align <- function(feat = gen_feat_mat(spectrum_data),
 
 #' @export
 #'
+#'
 #' @title Combine Peaks
 #'
+#'
 #' @description Even after calling `speaq_align()`, the alignment of individual
+#'
 #' signals is not always perfect, as 'speaq' performs a segment-wise alignment
 #' i.e. groups of signals are aligned. For further improvements, partly filled
 #' neighboring columns are merged.
 #'
 #' @param shifted_mat The matrix returned by `speaq_align()`.
 #'
+#'
 #' @param range Amount of adjacent columns which are permitted to be used for
+#'
 #' improving the alignment.
 #'
 #' @param lower_bound Minimum amount of non-zero elements per column to trigger
+#'
 #' the alignment improvement.
 #'
 #' @param spectrum_data The list of deconvoluted spectra as returned by
+#'
 #' `generate_lorentz_curves()` that was used to generate `shifted_mat`. No
 #' longer required since version 1.2 of Metabodecon.
 #'
 #' @param data_path If not NULL, the returned dataframes `long` and `short` are
+#'
 #' written to `data_path` as "aligned_res_long.csv" and "aligned_res_short.csv".
 #'
 #' @return A list containing two data frames `long` and `short`. The first data
+#'
 #' frame contains one one column for each data point in the original spectrum.
 #' The second data frame contains only columns where at least one entry is
 #' non-zero.
 #'
 #' @details
+#'
 #' Example of what the function does:
 #'
 #' ```txt
@@ -229,9 +349,11 @@ speaq_align <- function(feat = gen_feat_mat(spectrum_data),
 #' and have no common non-zero entries.
 #'
 #' @author Initial version from Wolfram Gronwald. Refactored by Tobias Schmidt
+#'
 #' in 2024.
 #'
 #' @examples
+#'
 #' spectrum_data <- generate_lorentz_curves_sim("bruker/sim")
 #' shifted_mat <- speaq_align(spectrum_data = spectrum_data, verbose = FALSE)
 #' range <- 5
@@ -339,16 +461,41 @@ combine_scores <- function(U, uu, j, nn) {
 # Private Helpers #####
 
 #' @export
+#'
 #' @title Cluster Based Peak Alignment
-#' @description Rewrite of `speaq::dohCluster()`, compatible with the data format returned by 'generate_lorentz_curves()' and 'gen_feat_mat()'. The function name "dohCluster" comes from "Do Hierarchical Clustering" which is part of the Alignment algorithm proposed by Vu et al. (2011) in <doi:10.1186/1471-2105-12-405>.
-#' @param X Dataframe of signal intensities from all spectra as returned by [gen_feat_mat()].
+#'
+#' @description
+#' Rewrite of `speaq::dohCluster()`, compatible with the data format returned by
+#' 'generate_lorentz_curves()' and 'gen_feat_mat()'. The function name
+#' "dohCluster" comes from "Do Hierarchical Clustering" which is part of the
+#' Alignment algorithm proposed by Vu et al. (2011) in
+#' <doi:10.1186/1471-2105-12-405>.
+#'
+#' @param X Dataframe of signal intensities from all spectra as returned by
+#' [gen_feat_mat()].
+#'
 #' @param peakList List of peak indices as returned [gen_feat_mat()].
-#' @param refInd Number of the reference spectrum i.e. the spectrum to which all signals will be aligned to.
+#'
+#' @param refInd Number of the reference spectrum i.e. the spectrum to which all
+#' signals will be aligned to.
+#'
 #' @param maxShift Maximum number of points a value can be moved.
-#' @param acceptLostPeak Whether to allow the the alignment algorithm to ignore peaks that cannot easily be aligned with the reference spectrum.
-#' @param verbose Whether to print additional information during the alignment process.
-#' @return A list containing two data frames `Y` and `new_peakList`. The first one contains the aligned spectra, the second one contains the aligned signals of each spectrum.
-#' @author Initial version from Wolfram Gronwald. Refactored by Tobias Schmidt in 2024.
+#'
+#' @param acceptLostPeak Whether to allow the the alignment algorithm to ignore
+#' peaks that cannot easily be aligned with the reference spectrum.
+#'
+#' @param verbose Whether to print additional information during the alignment
+#' process.
+#'
+#' @return
+#' A list containing two data frames `Y` and `new_peakList`. The first one
+#' contains the aligned spectra, the second one contains the aligned signals of
+#' each spectrum.
+#'
+#' @author
+#' Initial version from Wolfram Gronwald.
+#' Refactored by Tobias Schmidt in 2024.
+#'
 #' @examples
 #' sim_subset <- metabodecon_file("bruker/sim_subset")
 #' decons <- generate_lorentz_curves_sim(sim_subset)
@@ -390,7 +537,9 @@ dohCluster <- function(X,
 }
 
 #' @author Wolfram Gronwald.
+#'
 #' @noRd
+#'
 dohCluster_withoutMaxShift <- function(X,
                                        peakList,
                                        refInd = 0,
@@ -482,7 +631,9 @@ dohCluster_withoutMaxShift <- function(X,
 }
 
 #' @author Wolfram Gronwald.
+#'
 #' @noRd
+#'
 dohCluster_withMaxShift <- function(X,
                                     peakList,
                                     refInd = 0,
@@ -546,15 +697,32 @@ dohCluster_withMaxShift <- function(X,
 }
 
 #' @noRd
-#' @description Helper function of [gen_feat_mat()] to extract the deconvolution parameters from `data_path`, where `data_path` can be:
-#' 1. A single devonvolved spectrum as obtained by calling `generate_lorentz_curves(spectrum)`
-#' 2. A list of deconvoluted spectra as obtained by calling `generate_lorentz_curves(spectra)`
-#' 3. A folder containing ".* parameters.txt" and ".* approximated_spectrum.txt" files, as created by when calling `MetaboDecon1D(dd)`
-#' @param data_path A list of deconvoluted spectra as returned by [generate_lorentz_curves()] or a path to a folder containing ".* parameters.txt" and ".* approximated_spectrum.txt" files.
-#' @param warn (logical) Whether to print warning in case a file path is provided instead of a list of deconvoluted spectra.
-#' @param check (logical) Whether to sanity check the deconvolution parameters before returning them.
+#'
+#' @description Helper function of [gen_feat_mat()] to extract the deconvolution
+#' parameters from `data_path`, where `data_path` can be:
+#'
+#' 1. A single devonvolved spectrum as obtained by calling
+#'    `generate_lorentz_curves(spectrum)`
+#' 2. A list of deconvoluted spectra as obtained by calling
+#'    `generate_lorentz_curves(spectra)`
+#' 3. A folder containing ".* parameters.txt" and ".* approximated_spectrum.txt"
+#'    files, as created by when calling `MetaboDecon1D()` before version 1.2.
+#'
+#' @param data_path A list of deconvoluted spectra as returned by
+#' [generate_lorentz_curves()] or a path to a folder containing ".*
+#' parameters.txt" and ".* approximated_spectrum.txt" files.
+#'
+#' @param warn (logical) Whether to print warning in case a file path is
+#' provided instead of a list of deconvoluted spectra.
+#'
+#' @param check (logical) Whether to sanity check the deconvolution parameters
+#' before returning them.
+#'
 #' @author Tobias Schmidt
-#' @return A list containing the deconvolution parameters, i.e. `w`, `lambda`, `A`, and `spectrum_superposition`.
+#'
+#' @return A list containing the deconvolution parameters, i.e. `w`, `lambda`,
+#' `A`, and `spectrum_superposition`.
+#'
 get_decon_params <- function(data_path, warn = TRUE, check = TRUE) {
     dd <- data_path
     if (is.list(dd)) {
@@ -573,7 +741,9 @@ get_decon_params <- function(data_path, warn = TRUE, check = TRUE) {
 }
 
 #' @author Tobias Schmidt
+#'
 #' @noRd
+#'
 read_decon_params <- function(data_path) {
     par_txt <- dir(data_path, "(.*) parameters.txt", full.names = TRUE)
     spc_txt <- dir(data_path, "(.*) approximated_spectrum.txt", full.names = TRUE)
@@ -599,14 +769,18 @@ read_decon_params <- function(data_path) {
 }
 
 #' @author Tobias Schmidt
+#'
 #' @noRd
+#'
 check_decon_params <- function(params) {
     nulls <- unlist(sapply(params, function(pp) sapply(pp, is.null)))
     if (any(nulls)) warning("Detected missing params: ", names(nulls)[nulls])
 }
 
 #' @author Tobias Schmidt
+#'
 #' @noRd
+#'
 rm_zero_width_peaks <- function(params) {
     for (i in seq_len(params$A)) {
         not_zero <- params$w[[i]] != 0
@@ -618,7 +792,9 @@ rm_zero_width_peaks <- function(params) {
 }
 
 #' @author Tobias Schmidt
+#'
 #' @noRd
+#'
 is_decon_obj <- function(x) {
     keys <- c(
         "number_of_files", "filename", "x_values", "x_values_ppm",
@@ -631,15 +807,20 @@ is_decon_obj <- function(x) {
 }
 
 #' @author Tobias Schmidt
+#'
 #' @noRd
+#'
 is_decon_list <- function(x) {
     if (is.list(x) && all(sapply(x, is_decon_obj))) TRUE else FALSE
 }
 
 # Deprecated #####
 
-#' @author Initial version written by from Wolfram Gronwald as part of `gen_feat_mat`. Moved into seperate function in 2024 by Tobias Schmidt.
+#' @author Initial version written by from Wolfram Gronwald as part of
+#' `gen_feat_mat`. Moved into seperate function in 2024 by Tobias Schmidt.
+#'
 #' @noRd
+#'
 read_decon_params_original <- function(data_path) {
     files <- list.files(data_path, ".txt", full.names = TRUE)
     num_spectra <- length(files) / 2
@@ -669,15 +850,43 @@ read_decon_params_original <- function(data_path) {
 }
 
 #' @noRd
+#'
 #' @title Align Signals using 'speaq'
-#' @description Performs signal alignment across the individual spectra using the 'speaq' package (Beirnaert C, Meysman P, Vu TN, Hermans N, Apers S, Pieters L, et al. (2018) speaq 2.0: A complete workflow for high-throughput 1D NMRspectra processing and quantification. PLoS Comput Biol 14(3): e1006018. https://www.doi.org/10.1371/journal.pcbi.1006018). The spectra deconvolution process yields the signals of all spectra. Due to slight changes in measurement conditions, e.g. pH variations, signal positions may vary slightly across spectra. As a consequence, prior to further analysis signals belonging to the same compound have to be aligned across spectra. This is the purpose of the 'speaq' package.
+#'
+#' @description Performs signal alignment across the individual spectra using
+#' the 'speaq' package (Beirnaert C, Meysman P, Vu TN, Hermans N, Apers S,
+#' Pieters L, et al. (2018) speaq 2.0: A complete workflow for high-throughput
+#' 1D NMRspectra processing and quantification. PLoS Comput Biol 14(3):
+#' e1006018. https://www.doi.org/10.1371/journal.pcbi.1006018). The spectra
+#' deconvolution process yields the signals of all spectra. Due to slight
+#' changes in measurement conditions, e.g. pH variations, signal positions may
+#' vary slightly across spectra. As a consequence, prior to further analysis
+#' signals belonging to the same compound have to be aligned across spectra.
+#' This is the purpose of the 'speaq' package.
+#'
 #' @param feat Output of `gen_feat_mat()`.
-#' @param maxShift Maximum number of points along the "ppm-axis" which a value can be moved by speaq package e.g. 50. 50 is a suitable starting value for plasma spectra with a digital resolution of 128K. Note that this parameter has to be individually optimized depending on the type of analyzed spectra and the digital resolution. For urine which is more prone to chemical shift variations this value most probably has to be increased.
+#'
+#' @param maxShift Maximum number of points along the "ppm-axis" which a value
+#' can be moved by speaq package e.g. 50. 50 is a suitable starting value for
+#' plasma spectra with a digital resolution of 128K. Note that this parameter
+#' has to be individually optimized depending on the type of analyzed spectra
+#' and the digital resolution. For urine which is more prone to chemical shift
+#' variations this value most probably has to be increased.
+#'
 #' @param spectrum_data Output of `generate_lorentz_curves()`.
-#' @param si_size_real_spectrum Number of real data points in your original spectra.
-#' @return A matrix containing the aligned integral values of all spectra. Each row contains the data of each spectrum and each column corresponds to one data point. Each entry corresponds to the integral of a deconvoluted signal with the signal center at this specific position after alignment by speaq.
+#'
+#' @param si_size_real_spectrum Number of real data points in your original
+#' spectra.
+#'
+#' @return A matrix containing the aligned integral values of all spectra. Each
+#' row contains the data of each spectrum and each column corresponds to one
+#' data point. Each entry corresponds to the integral of a deconvoluted signal
+#' with the signal center at this specific position after alignment by speaq.
+#'
 #' @author Wolfram Gronwald
+#'
 #' @examples
+#'
 #' spectrum_data <- generate_lorentz_curves_sim("bruker/sim")
 #' feat <- gen_feat_mat(spectrum_data)
 #' maxShift <- 100

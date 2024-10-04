@@ -9,7 +9,13 @@ Implement `make_sim_dataset()` which should
 1. Deconvolute the `blood` dataset using `deconvolute_blood()` (see FEATURE-20)
 2. Use `get_sim_params()` to extract the simulation parameters
 3. Pass the simulation parameters to `simulate_spectrum()` to create the sim dataset
-4. Call `save_spectra()` to store the sim dataset
+4. Return the sim dataset
+
+Implement `update_sim_dataset()` which should
+
+1. Call `make_sim_dataset()` to generate the sim dataset
+2. Store it in bruker format in `inst\example_datasets\bruker\sim`
+3. Store it as `rda` in `data`
 
 All functions participating in this process should be private, but still linked in the Datasets vignette for reference.
 
