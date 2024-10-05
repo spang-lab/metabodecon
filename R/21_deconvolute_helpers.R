@@ -361,13 +361,13 @@ lorentz <- function(x, x0, A, lambda) {
     A * (lambda / (lambda^2 + (x - x0)^2))
 }
 
-lorentz_sup <- function(x, x0, A, lambda, lcp = NULL) {
-    if (is.list(lcp)) {
-        nams <- names(lcp)
-        if ("A" %in% nams) A <- lcp$A
-        if ("lambda" %in% nams) lambda <- lcp$lambda
-        if ("x_0" %in% nams) x0 <- lcp$x_0
-        if ("x0" %in% nams) x0 <- lcp$x0
+lorentz_sup <- function(x, x0, A, lambda, lcpar = NULL) {
+    if (is.list(lcpar)) {
+        nams <- names(lcpar)
+        if ("A" %in% nams) A <- lcpar$A
+        if ("lambda" %in% nams) lambda <- lcpar$lambda
+        if ("x_0" %in% nams) x0 <- lcpar$x_0
+        if ("x0" %in% nams) x0 <- lcpar$x0
     }
     sapply(x, function(xi) {
         sum(abs(A * (lambda / (lambda^2 + (xi - x0)^2))))

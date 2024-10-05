@@ -2,38 +2,31 @@
 
 ## v1.2.0
 
-### FEATURE-21: Implement make_sim_dataset
-
-Implement `make_sim_dataset()` which should
-
-1. Deconvolute the `blood` dataset using `deconvolute_blood()` (see FEATURE-20)
-2. Use `get_sim_params()` to extract the simulation parameters
-3. Pass the simulation parameters to `simulate_spectrum()` to create the sim dataset
-4. Return the sim dataset
-
-Implement `update_sim_dataset()` which should
-
-1. Call `make_sim_dataset()` to generate the sim dataset
-2. Store it in bruker format in `inst\example_datasets\bruker\sim`
-3. Store it as `rda` in `data`
-
-All functions participating in this process should be private, but still linked in the Datasets vignette for reference.
-
 ### REFACTOR-10: Replace all md1d calls with MetaboDecon1D
 
-Replace all examples that use `md1d` with `evalwith(MetaboDecon1(...))`. This makes it directly visible how cumbersome it is to use the old function.
+1. Implement a function `get_MetaboDecon1D_answers` that takes the path to the spectra as well as the required `sfr`, `wshw` values as as input and returns a vecotr with the corresponding answers to the questions asked by `MetaboDecon1D`.
+
+2. Then replace all `md1d` calls with code snippets as shown below:
+
+   ```R
+   answers <- get_MetaboDecon1D_answers(path, sfr = c(3.5, 3.4), wshw = 0)
+   decons <- evalwith(answers = answers, MetaboDecon1D(...))
+   ```
+
+   This makes it directly visible how cumbersome it is to use the old function and also can be applied to any input folder (in contrast to the current `md1d` function).
 
 ### REFACTOR-11: Write PRARP tests for deconvolution functions
 
-Write testcases for `MetaboDecon1D()`, `generate_lorentz_curves()` and
-`deconvolute()` that test for a good PRARP as well as for the correct return
-type.
+1. Implement a function `get_prarp` that takes a `decon` object and optionally a `truepar` object. If `truepar` is not given, it shall be taken from `decon$meta$simpar`. The function then calculates the PRARP (peak ratio area ratio product) from it, by comparing the estimated parameters with the true parameters.
 
-See function `check_decon_quality()` for existing code to reuse.
+   See function `check_decon_quality()` for existing code to reuse.
+
+2. Write testcases for `MetaboDecon1D()`, `generate_lorentz_curves()` and `deconvolute()` that test for a good PRARP as well as for the correct return type.
+
 
 ### REFACTOR-12: Write compliance tests
 
-Write tests to check whether functions `generate_lorentz_curves()` and `deconvolute()` produe results that are compliant with `MetaboDecon1D()`.
+Write tests to check whether functions `generate_lorentz_curves()` and `deconvolute()` produce results that are compliant with `MetaboDecon1D()`.
 
 ### FEATURE-18: Implement plot_decon
 

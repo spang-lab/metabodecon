@@ -50,7 +50,7 @@ The classes mentioned above represent individual objects, such as a single spect
     - `type`: The type of experiment, e.g. `"H1 CPMG"` or `"H1 NOESY"`.
     - `fq`: Vector of signal frequencies in Hertz (Hz). Must be of the same length as `si` and `cs`.
     - `mfs`: Magnetic field strength in Tesla, e.g. `14.1`.
-    - `lcpt`: True lorentz curve parameters. List with elements `A`, `lambda` and `x0`. For details see element `lcp`. Only available if a spectrum has been simulated.
+    - `simpar`: True lorentz curve parameters. List with elements `A`, `lambda` and `x0`. For details see element `lcpar`. Only available if a spectrum has been simulated.
 4.  `args`: Deconvolution parameters:
     - `nfit`: The number of fitting iterations.
     - `smopts`: The smoothing parameters used for the deconvolution.

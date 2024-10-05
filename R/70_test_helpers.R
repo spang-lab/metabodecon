@@ -380,7 +380,7 @@ run_tests <- function(all = FALSE) {
 #' @param decon A list containing the deconvolution results, as returned by
 #' [generate_lorentz_curves()].
 #'
-#' @param lcp A data frame containing the true parameters of the peaks, as
+#' @param lcpar A data frame containing the true parameters of the peaks, as
 #' returned by `get_sim_params()`.
 #'
 #' @return A quality score for the deconvolution. In addition, a plot is created
@@ -412,8 +412,8 @@ run_tests <- function(all = FALSE) {
 #' I.e., the score is close to 1 if the number of peaks and the area of the
 #' peaks are similar in the true and found spectra and the score is close to 0
 #' if the number of peaks and/or the area of the peaks are very different.
-check_decon_quality <- function(decon, lcp) {
-    true <- lcp # True Params
+check_decon_quality <- function(decon, lcpar) {
+    true <- lcpar # True Params
     found <- data.frame( # Found Params
         A      = decon$A_ppm,
         x_0    = decon$x_0_ppm,

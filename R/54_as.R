@@ -137,7 +137,7 @@ as_decon2 <- function(x) {
             type = NULL,
             fq = x$x_values_hz,
             mfs = NULL,
-            lcpt = NULL
+            simpar = NULL
         )
         args <- list(
             nfit = NA,

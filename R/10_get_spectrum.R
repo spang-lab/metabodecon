@@ -819,7 +819,7 @@ simulate_from_decon <- function(x,
 
     logv("Keeping only within %.1f to %.1f", pk_min, pk_max)
     ip <- which(d$x_0_ppm <= pk_max & d$x_0_ppm >= pk_min)
-    s$lcpt <- list(
+    s$simpar <- list(
         A      = -d$A_ppm[ip],
         x_0    = d$x_0_ppm[ip],
         lambda = -d$lambda_ppm[ip]
@@ -827,7 +827,7 @@ simulate_from_decon <- function(x,
 
     logv("Calculating simulated signal intensities (si_sim) as superposition of lorentz curves")
     rownames(s) <- NULL
-    si <- lorentz_sup(x = s$cs, lcp = s$lcpt)
+    si <- lorentz_sup(x = s$cs, lcpar = s$simpar)
 
     logv("Adding %s noise to simulated data", noise_method)
     if (noise_method == "RND") {
