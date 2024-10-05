@@ -457,7 +457,8 @@ read_procs_file <- function(spldir, expno = 10, procno = 10) {
 #' simpar <- read_simpar_file(blood1_dir)
 read_simpar_file <- function(spldir, expno = 10, procno = 10) {
     path <- file.path(spldir, expno, "pdata", procno, "simpar")
-    if (file.exists(path)) dget(path)
+    read <- switch(simpar_format, "rds" = readRDS, "ascii" = dget)
+    if (file.exists(path)) read(path)
 }
 
 #' @noRd
@@ -575,10 +576,13 @@ as_frequency <- function(cs, fqref) {
 # Sim Dataset #####
 # =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
 
-update_sim_dataset <- function() {
+update_sim_dataset <- function(dry_run = TRUE, verbose = TRUE) {
+    parent <- if (dry_run) tmpdir() else pkg_file("example_datasets/bruker")
+    path <- file.path(parent, "sim2")
+    if (verbose) logf("Dry_run %s. Updating %s." , dry_run, path)
     x <- make_sim_dataset()
-    path <- file.path(pkg_file("example_datasets/bruker"), "sim2")
-    save_spectra(x, path)
+    save_spectra(x, path, force = FALSE, verbose = verbose)
+    if (verbose) logf("Finished update of %s." , path)
 }
 
 make_sim_dataset <- function() {
@@ -721,18 +725,22 @@ save_spectrum <- function(x,
     # Write files
     one_r_path <- file.path(temp, "10", "pdata", "10", "1r")
     mkdirs(file.path(temp, "10", "pdata", "10"))
-    logf("Writing %s", procs_path); cat(procs_str, file = procs_path)
-    logf("Writing %s", acqus_path); cat(acqus_str, file = acqus_path)
-    logf("Writing %s", one_r_path); writeBin(x$si, one_r_path)
+    logv("Writing %s", procs_path); cat(procs_str, file = procs_path)
+    logv("Writing %s", acqus_path); cat(acqus_str, file = acqus_path)
+    logv("Writing %s", one_r_path); writeBin(x$si, one_r_path)
     if (!is.null(x$meta$simpar)) {
         simpar_path <- file.path(temp, "10", "pdata", "10", "simpar")
-        simpar_str <- dput2(x$meta$simpar)
-        logf("Writing %s", simpar_path)
-        cat(simpar_str, file = simpar_path)
+        logv("Writing %s", simpar_path)
+        if (simpar_format == "rds") {
+            saveRDS(x$meta$simpar, simpar_path)
+        } else {
+            simpar_str <- dput2(x$meta$simpar)
+            cat(simpar_str, file = simpar_path)
+        }
     }
 
     # Validate written files
-    logf("Reading back files to validate them")
+    logv("Reading back files to validate them")
     y <- read_bruker_spectrum(spldir = temp)
     is_valid <- all(
         is_equal(x$si, y$si),
@@ -743,9 +751,10 @@ save_spectrum <- function(x,
     if (!is_valid) stop("Stored spectrum is corrupted")
 
     # Move the files to the destination directory
-    # CONTINUE HERE
     logv("Moving files to %s", path)
-    file.copy(temp, path, recursive = TRUE, overwrite = TRUE)
+    mkdirs(path)
+    from = file.path(temp, "10")
+    file.copy(from, path, recursive = TRUE, overwrite = TRUE)
 
     return(path)
 }
@@ -768,6 +777,8 @@ save_spectra <- function(x, path, force = FALSE, verbose = TRUE) {
         )
     }
 }
+
+simpar_format <- "rds"
 
 # =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
 # Deprecated #####
