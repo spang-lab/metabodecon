@@ -2,7 +2,7 @@
 
 ## v1.2.0
 
-### REFACTOR-10: Replace all md1d calls with MetaboDecon1D
+### REFACTOR-10: Replace all md1d with MetaboDecon1D calls
 
 1. Implement a function `get_MetaboDecon1D_answers` that takes the path to the spectra as well as the required `sfr`, `wshw` values as as input and returns a vecotr with the corresponding answers to the questions asked by `MetaboDecon1D`.
 
@@ -45,13 +45,16 @@ All the functionality, i.e.
 
 should be controllable via function arguments.
 
-### DOC-2: Add author descriptions to every function
-
-### REFACTOR-13: Remove unused functions
-
 ### DOC-1: Document whole package
 
-Document the whole package in vignettes, including chapters about alignment and a short introduction into all datasets. Also go over each function and make sure it is used or mentioned at least once in a vignette. While doing so, also add lifecycle badges to the functions.
+Document the whole package in vignettes, including chapters about alignment and a short introduction into all datasets.
+
+### DOC-2: Improve function docs
+
+1. Add author descriptions to each function
+2. Add lifecycle badges to each exported function
+3. Ensure each exported function is used at least once in a vignette
+4. Remove unused functions
 
 ### FEATURE-13: Merge into main
 

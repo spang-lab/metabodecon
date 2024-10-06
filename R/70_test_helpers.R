@@ -156,10 +156,15 @@ evalwith <- function(expr, # nolint: cyclocomp_linter.
     if (identical(dev_cur, dev.cur()) && !is.null(plot)) {
         if (is.expression(plot)) eval(plot) # plot == `quote(svg("abc.svg", width = 10))`
         if (identical(plot, "captured")) plot <- tempfile(fileext = ".png")
-        if (grepl("\\.pdf$", plot)) pdf(plot)
-        else if (grepl("\\.svg$", plot)) svg(plot)
-        else if (grepl("\\.png$", plot)) png(plot)
-        else stop("plot must be an expression opening a device or a path ending in .pdf, .svg, or .png")
+        if (grepl("\\.pdf$", plot)) {
+            pdf(plot)
+        } else if (grepl("\\.svg$", plot)) {
+            svg(plot)
+        } else if (grepl("\\.png$", plot)) {
+            png(plot)
+        } else {
+            stop("plot must be an expression opening a device or a path ending in .pdf, .svg, or .png")
+        }
     }
     if (!is.null(opts)) {
         oldopts <- options(opts)
@@ -176,13 +181,15 @@ evalwith <- function(expr, # nolint: cyclocomp_linter.
     withCallingHandlers(
         testthat::with_mocked_bindings(
             code = {
-                tryCatch({
-                    runtime <- system.time(rv <- expr)[["elapsed"]]
-                },
-                error = function(e) {
-                    sink(NULL, type = "message")
-                    stop(e)
-                })
+                tryCatch(
+                    {
+                        runtime <- system.time(rv <- expr)[["elapsed"]]
+                    },
+                    error = function(e) {
+                        sink(NULL, type = "message")
+                        stop(e)
+                    }
+                )
             },
             datadir_temp = get_datadir_mock(type = "temp", state = datadir_temp),
             datadir_persistent = get_datadir_mock(type = "persistent", state = datadir_persistent),
@@ -200,7 +207,7 @@ evalwith <- function(expr, # nolint: cyclocomp_linter.
         testdir = testdir, inputs = inputs
     ))
     if (isTRUE(cache) && (!file.exists(cachefile) || isTRUE(overwrite))) saveRDS(retobj, cachefile)
-    retobj
+    invisible(retobj)
 }
 
 testdir <- function(p = NULL) {
@@ -290,9 +297,9 @@ get_datadir_mock <- function(type = "temp", state = "default") {
 }
 
 loaded_via_devtools <- function() {
-  pkg_dir <- dirname(system.file("DESCRIPTION", package = "metabodecon"))
-  loaded_via_devtools <- dir.exists(file.path(pkg_dir, "inst"))
-  return(loaded_via_devtools)
+    pkg_dir <- dirname(system.file("DESCRIPTION", package = "metabodecon"))
+    loaded_via_devtools <- dir.exists(file.path(pkg_dir, "inst"))
+    return(loaded_via_devtools)
 }
 
 # testthat #####
@@ -457,7 +464,7 @@ check_decon_quality <- function(decon, lcpar) {
     symbols(
         x = found$x_0,
         y = found$y_0,
-        circles = rep(0.01, length(found$x_0)),  # Radius is half the width
+        circles = rep(0.01, length(found$x_0)), # Radius is half the width
         fg = "green"
     )
 
@@ -466,16 +473,16 @@ check_decon_quality <- function(decon, lcpar) {
             xleft = true$x_0[i] - true$lambda[i] / 2,
             ybottom = 0,
             xright = true$x_0[i] + true$lambda[i] / 2,
-            ytop = par("usr")[4],  # Full y height
-            col = rgb(0.5, 0.5, 0.5, 0.1),  # Transparent grey
+            ytop = par("usr")[4], # Full y height
+            col = rgb(0.5, 0.5, 0.5, 0.1), # Transparent grey
             border = NA
         )
     }
 
     found$x_0_closest <- sapply(found$x_0, function(x_0) which.min(abs(true$x_0 - x_0)))
-    true$x_0_assign <- sapply(seq_len(nrow(true)), function(i)
+    true$x_0_assign <- sapply(seq_len(nrow(true)), function(i) {
         collapse(which(found$x_0_closest == i))
-    )
+    })
     plot_spectrum(found, foc_rgn = c(0, 1), sub_show = FALSE)
 
     # Draw vertical lines at T$x_0
@@ -933,7 +940,6 @@ glc <- function(dp = "urine_1",
                 debug = TRUE,
                 nworkers = "auto",
                 verbose = FALSE) {
-
     logv <- if (verbose) logf else function(...) NULL
 
     logv("Parsing GLC arguments")
@@ -1018,10 +1024,12 @@ md1d <- function(dp = "urine_1",
 #' @description Helper function for [md1d()].
 get_md1d_answers <- function(fn, ff, simple, inputs) {
     if (simple) {
+        answers <- c(SFRok = "y", WSok = "y", SaveResults = "n")
         if (any(grepl("sim", inputs))) {
-           answers <- c(SFRok = "n", Left = "3.58", Right = "3.42", SFRok = "y", WSok = "n", WSHW = "0.0", WSok = "y", SaveResults = "n")
-        } else {
-            answers <- c(SFRok = "y", WSok = "y", SaveResults = "n")
+            answers <- c(
+                SFRok = "n", Left = "3.58", Right = "3.42", SFRok = "y",
+                WSok = "n", WSHW = "0.0", WSok = "y", SaveResults = "n"
+            )
         }
         if (is.na(fn)) answers <- c(SameParam = "y", AdjNo = "1", answers)
     } else {
@@ -1034,11 +1042,43 @@ get_md1d_answers <- function(fn, ff, simple, inputs) {
     answers
 }
 
+#' @examples
+#' sim <- metabodecon_file("bruker/sim_subset")
+#' ansrs_01 <- get_MetaboDecon1D_answers(sim, "sim_01", 0, c(3.58, 3.42))
+#' x <- evalwith(
+#'     answers = ansrs_01,
+#'     output = "captured",
+#'     message = "captured",
+#'     expr = { decon_01 <- MetaboDecon1D(sim, "sim_01") }
+#' )
+#' str(decon_01, 1)
+get_MetaboDecon1D_answers <- function(path,
+                                      name = NA,
+                                      wshw = 0.1527692,
+                                      sfr = c(11.44494, -1.8828),
+                                      format = "bruker",
+                                      expno = 10,
+                                      procno = 10) {
+    n <- if (is.na(name)) length(list.dirs(file.path(path, name))) else 1
+    answers <- c(
+        SameParam = if (n > 1) "y" else NULL,
+        AdjNo = if (n > 1) "1" else NULL,
+        ExpNo = if (format == "bruker") expno else NULL,
+        ProcNo = if (format == "bruker") procno else NULL,
+        SFRok = "n", Left = max(sfr), Right = min(sfr), SFRok = "y",
+        WSok = "n", WSHW = wshw, WSok = "y",
+        SaveResults = "n"
+    )
+}
+
 get_glc_answers <- function(fn, ff, simple, inputs) {
+    answers <- c(SFRok = "y", WSok = "y", SaveResults = "n")
     if (grepl("sim", inputs)) {
-        answers <- c(SFRok = "n", Left = "3.58", Right = "3.42", SFRok = "y", WSok = "n", WSHW = "0.0", WSok = "y", SaveResults = "n")
-    } else {
-        answers <- c(SFRok = "y", WSok = "y", SaveResults = "n")
+        answers <- c(
+            SFRok = "n", Left = "3.58", Right = "3.42", SFRok = "y",
+            WSok = "n", WSHW = "0.0", WSok = "y",
+            SaveResults = "n"
+        )
     }
     if (grepl("(urine|blood|sim)$", inputs)) {
         answers <- c(SameParam = "y", AdjNo = "1", answers)
@@ -1047,10 +1087,20 @@ get_glc_answers <- function(fn, ff, simple, inputs) {
 }
 
 get_testmatrix <- function() {
-    df <- expand.grid(dp = c("urine_1", "urine_2", "urine"), ff = c("bruker", "jcampdx"), nfit = c(1, 3, 10), simple = c(TRUE, FALSE), skip = TRUE, stringsAsFactors = FALSE)
-    df$skip[df$ff == "bruker" | (df$ff == "jcampdx" & df$nfit == 3 & df$simple == TRUE)] <- FALSE
-    x <- df$dp %in% c("urine_1", "urine_2") & df$ff == "jcampdx"
-    df$dp[x] <- paste0(df$dp[x], ".dx")
+    df <- expand.grid(
+        dp = c("urine_1", "urine_2", "urine"),
+        ff = c("bruker", "jcampdx"),
+        nfit = c(1, 3, 10),
+        simple = c(TRUE, FALSE),
+        skip = TRUE,
+        stringsAsFactors = FALSE
+    )
+    dont_skip_1 <- df$ff == "bruker"
+    dont_skip_2 <- (df$ff == "jcampdx" & df$nfit == 3 & df$simple == TRUE)
+    dont_skip <- dont_skip_1 | dont_skip_2
+    df$skip[dont_skip] <- FALSE
+    is_single_jdx <- df$dp %in% c("urine_1", "urine_2") & df$ff == "jcampdx"
+    df$dp[is_single_jdx] <- paste0(df$dp[is_single_jdx], ".dx")
     df
 }
 

@@ -123,7 +123,8 @@ MetaboDecon1D <- function(filepath,
         owd <- setwd(filepath)
         on.exit(setwd(owd), add = TRUE)
     } else {
-        # Get current working directory and concat with current filepath and save as new working directory
+        # Get current working directory and concat with current filepath and
+        # save as new working directory
         owd <- setwd(file.path(getwd(), filepath))
         on.exit(setwd(owd), add = TRUE)
         # Set afterwards filepath to global path
