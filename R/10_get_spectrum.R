@@ -173,6 +173,8 @@ read_spectrum <- function(data_path = metabodecon_file("bruker/sim/sim_01"),
 #'
 #' @param type The type of experiment, e.g. "H1 CPMG" or "H1 NOESY".
 #'
+#' @param simpar The simulation parameters used to generate the spectrum.
+#'
 #' @param mfs The magnetic field strength in Tesla.
 #'
 #' @return A `spectrum` object as described in [Metabodecon Classes](
@@ -834,7 +836,7 @@ simulate_from_decon <- function(x,
     }
 
     logv("Discretize signal intensities to allow efficient storage as integers")
-    s$si <- as.integer(si * 1e6) / 1.e6 # (2)
+    s$si <- as.integer(si * 1e6) / 1e6 # (2)
     # (2) Convert to integers and back. We do this to not lose precision later
     # on when the data gets written to disc as integers.
 
@@ -862,8 +864,8 @@ simulate_from_decon <- function(x,
 #' # |   |###|###|###|###|   |###|###|
 #' # |###|###|###|###|###|###|###|###|
 #' # |-------------------------------|
-#' # |   +   +   +   -   -   +   +   | + means "increase"
-#' # |-------------------------------| - means "decrease"
+#' # |   +   +   +   -   -   +   +   | + is increase
+#' # |-------------------------------| - is decrease
 #' #
 #' x <- c(1.0, 2.2, 3.0, 4.4, 2.0, 1.0, 3.0, 4.0)
 #' count_stretches(x) # Returns c(3, 2, 2) because we have + + + - - + +

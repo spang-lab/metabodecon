@@ -29,7 +29,16 @@ instead.
 \details{
 The decision to use a temporary data dir as default and a persistent
 one only optionally was made to conform to CRAN package policies, which state
-that:Packages should not write in the user's home filespace (includingclipboards), nor anywhere else on the file system apart from the Rsession's temporary directory [...] Limited exceptions may be allowed ininteractive sessions if the package obtains confirmation from the user. ForR version 4.0 or later [...] packages may store user-specific data,configuration and cache files in their respective user directories obtainedfrom tools::R_user_dir() [...].
+that:
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{Packages should not write in the user's home filespace (including
+clipboards), nor anywhere else on the file system apart from the R
+session's temporary directory \[...\] Limited exceptions may be allowed
+in interactive sessions if the package obtains confirmation from the
+user. For R version 4.0 or later \[...\] packages may store user-specific
+data, configuration and cache files in their respective user directories
+obtained from [tools::R_user_dir()] \[...\].
+}\if{html}{\out{</div>}}
 
 Source:
 \href{https://cran.r-project.org/web/packages/policies.html}{cran.r-project.org/web/packages/policies}.

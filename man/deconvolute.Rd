@@ -4,7 +4,7 @@
 \alias{deconvolute}
 \alias{generate_lorentz_curves}
 \alias{generate_lorentz_curves_sim}
-\title{Deconvolute one or more NMR spectra \loadmathjax}
+\title{Deconvolute one or more NMR spectra}
 \usage{
 deconvolute(
   x,
@@ -78,7 +78,7 @@ and right border of the signal-free region of the spectrum. See 'Details'.}
 \item{wshw}{Half-width of the water artifact in ppm.  See 'Details'.}
 
 \item{ask}{Logical. Whether to ask for user input during the deconvolution
-process. If FALSE, the provided default values will be used. \loadmathjax}
+process. If FALSE, the provided default values will be used.}
 
 \item{force}{If FALSE, the function stops with an error message if no peaks
 are found in the signal free region (SFR), as these peaks are required as a
@@ -122,6 +122,8 @@ A 'GLCDecon' as described in \href{https://spang-lab.github.io/metabodecon/artic
 \description{
 Deconvolutes NMR spectra by modeling each detected signal within
 a spectrum as Lorentz Curve.
+
+\loadmathjax
 }
 \details{
 \loadmathjax

@@ -2,15 +2,17 @@
 
 #' @name deconvolute
 #'
-#' @title Deconvolute one or more NMR spectra \loadmathjax
+#' @title Deconvolute one or more NMR spectra
 #'
 #' @description Deconvolutes NMR spectra by modeling each detected signal within
 #' a spectrum as Lorentz Curve.
 #'
+#' \loadmathjax
+#'
 #' @inheritParams read_spectrum
 #'
 #' @param ask Logical. Whether to ask for user input during the deconvolution
-#' process. If FALSE, the provided default values will be used. \loadmathjax
+#' process. If FALSE, the provided default values will be used.
 #'
 #' @param x A `spectra` or `spectrum` object as described in
 #' [metabodecon_classes].

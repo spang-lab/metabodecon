@@ -285,36 +285,31 @@ speaq_align <- function(feat = gen_feat_mat(spectrum_data),
 #'
 #' @title Combine Peaks
 #'
-#' @description Even after calling `speaq_align()`, the alignment of individual
-#'
-#' signals is not always perfect, as 'speaq' performs a segment-wise alignment
-#' i.e. groups of signals are aligned. For further improvements, partly filled
-#' neighboring columns are merged.
+#' @description
+#' Even after calling `speaq_align()`, the alignment of individual signals is
+#' not always perfect, as 'speaq' performs a segment-wise alignment i.e. groups
+#' of signals are aligned. For further improvements, partly filled neighboring
+#' columns are merged.
 #'
 #' @param shifted_mat The matrix returned by `speaq_align()`.
 #'
 #' @param range Amount of adjacent columns which are permitted to be used for
-#'
 #' improving the alignment.
 #'
 #' @param lower_bound Minimum amount of non-zero elements per column to trigger
-#'
 #' the alignment improvement.
 #'
 #' @param spectrum_data The list of deconvoluted spectra as returned by
-#'
 #' `generate_lorentz_curves()` that was used to generate `shifted_mat`. No
 #' longer required since version 1.2 of Metabodecon.
 #'
 #' @param data_path If not NULL, the returned dataframes `long` and `short` are
-#'
 #' written to `data_path` as "aligned_res_long.csv" and "aligned_res_short.csv".
 #'
-#' @return A list containing two data frames `long` and `short`. The first data
-#'
-#' frame contains one one column for each data point in the original spectrum.
-#' The second data frame contains only columns where at least one entry is
-#' non-zero.
+#' @return
+#' A list containing two data frames `long` and `short`. The first data frame
+#' contains one one column for each data point in the original spectrum. The
+#' second data frame contains only columns where at least one entry is non-zero.
 #'
 #' @details
 #'
@@ -346,12 +341,11 @@ speaq_align <- function(feat = gen_feat_mat(spectrum_data),
 #' and have no common non-zero entries.
 #'
 #' @author Initial version from Wolfram Gronwald. Refactored by Tobias Schmidt
-#'
 #' in 2024.
 #'
 #' @examples
-#'
-#' spectrum_data <- generate_lorentz_curves_sim("bruker/sim")
+#' sim_subset <- metabodecon_file("bruker/sim_subset")
+#' spectrum_data <- generate_lorentz_curves_sim(sim_subset)
 #' shifted_mat <- speaq_align(spectrum_data = spectrum_data, verbose = FALSE)
 #' range <- 5
 #' lower_bound <- 1

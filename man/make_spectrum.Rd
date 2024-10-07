@@ -48,6 +48,8 @@ but will print a info message instead. To hide this message as well, set
 
 \item{type}{The type of experiment, e.g. "H1 CPMG" or "H1 NOESY".}
 
+\item{simpar}{The simulation parameters used to generate the spectrum.}
+
 \item{mfs}{The magnetic field strength in Tesla.}
 }
 \value{

@@ -78,161 +78,6 @@ str_urine_deconvoluted <- function(nf = 2, dx = FALSE, nested = TRUE, ni = 10) {
     c("List of 2", u1[2:length(u1)], u2[2:length(u2)])
 }
 
-# Wrappers #####
-
-glc <- function(dp = "urine_1",
-                ff = "bruker",
-                nfit = 3,
-                simple = TRUE,
-                overwrite = FALSE,
-                cout = TRUE,
-                cplot = TRUE,
-                cache = TRUE,
-                debug = TRUE,
-                nworkers = "auto",
-                verbose = FALSE) {
-    logv <- if (verbose) logf else function(...) NULL
-
-    logv("Parsing GLC arguments")
-    tid <- get_tid("glc", dp, ff, nfit, simple, debug)
-    inputs <- if (dp %in% c("urine", "blood", "sim")) file.path(ff, dp) else file.path(ff, strsplit(dp, "_")[[1]][1], dp)
-    answers <- get_glc_answers(dp, ff, simple, inputs)
-    logv("Inputs: %s", collapse(inputs, "; "))
-    logv("Answers: %s", collapse(answers, "; "))
-
-    rds <- file.path(cachedir(), paste0(tid, ".rds"))
-    if (file.exists(rds)) {
-        logv("Reading %s", rds)
-    } else {
-        call <- substitute(generate_lorentz_curves(data_path = dp, file_format = ff, nfit = nfit, nworkers = nworkers))
-        logv("Calling %s", collapse(format(call), ""))
-    }
-
-    invisible(evalwith(
-        testdir = tid,
-        inputs = inputs,
-        answers = answers,
-        cache = cache,
-        overwrite = overwrite,
-        plot = if (cplot) "plots.pdf" else NULL,
-        output = if (cout) "captured" else NULL,
-        message = if (cout) "captured" else NULL,
-        expr = generate_lorentz_curves(data_path = dp, file_format = ff, nfit = nfit, nworkers = nworkers)
-    ))
-}
-
-md1d <- function(dp = "urine_1",
-                 ff = "bruker",
-                 nfit = 3,
-                 simple = TRUE,
-                 overwrite = FALSE,
-                 cout = TRUE,
-                 cplot = TRUE,
-                 cache = TRUE,
-                 debug = TRUE,
-                 verbose = FALSE) { # nolint: object_usage_linter.
-
-    logv <- if (verbose) logf else function(...) NULL
-
-    logv("Parsing GLC arguments")
-    tid <- get_tid("md1d", dp, ff, nfit, simple, debug)
-    if (dp %in% c("urine", "blood", "sim", "sim_subset")) {
-        inputs <- file.path(ff, dp) # e.g. 'bruker/urine'
-        fp <- dp # e.g. 'urine', i.e. deconvolute all files in the 'urine' directory
-        fn <- NA
-    } else {
-        pp <- strsplit(dp, "_")[[1]][1] # e.g. 'urine'
-        inputs <- file.path(ff, pp, dp) # e.g. 'bruker/urine/urine_1', i.e. copy folder 'urine_1' from 'bruker/urine/urine_1' to testdir
-        fp <- "." # i.e. deconvolute all files in the test directory, which is only 'urine_1'
-        fn <- dp
-    }
-    answers <- get_md1d_answers(fn, ff, simple, inputs)
-    logv("Inputs: %s", collapse(inputs, "; "))
-    logv("Answers: %s", collapse(answers, "; "))
-
-    rds <- file.path(cachedir(), paste0(tid, ".rds"))
-    if (file.exists(rds)) {
-        logv("Reading %s", rds)
-    } else {
-        call <- substitute(generate_lorentz_curves(data_path = dp, file_format = ff, nfit = nfit, debug = debug, nworkers = nworkers))
-        logv("Calling %s", collapse(format(call), ""))
-    }
-
-    invisible(evalwith(
-        testdir = tid,
-        inputs = inputs,
-        answers = answers,
-        cache = cache,
-        overwrite = overwrite,
-        plot = if (cplot) "plots.pdf" else NULL,
-        output = if (cout) "captured" else NULL,
-        message = if (cout) "captured" else NULL,
-        expr = MetaboDecon1D(filepath = fp, filename = fn, file_format = ff, number_iterations = nfit, debug = debug)
-    ))
-}
-
-#' @noRd
-#' @description Helper function for [md1d()].
-get_md1d_answers <- function(fn, ff, simple, inputs) {
-    if (simple) {
-        answers <- c(SFRok = "y", WSok = "y", SaveResults = "n")
-        if (any(grepl("sim", inputs))) {
-            answers <- c(
-                SFRok = "n", Left = "3.58", Right = "3.42", SFRok = "y",
-                WSok = "n", WSHW = "0.0", WSok = "y", SaveResults = "n"
-            )
-        }
-        if (is.na(fn)) answers <- c(SameParam = "y", AdjNo = "1", answers)
-    } else {
-        answers <- c(SFRok = "n", Left = "11", Right = "-1", SFRok = "y", WSok = "asdf", WSok = "n", WSHW = "0.13", WSok = "y", SaveResults = "n")
-        if (is.na(fn)) answers <- c(SameParam = "n", answers, answers, SaveResults = "n")
-    }
-    if (ff == "bruker") {
-        answers <- c(ExpNo = "10", ProcNo = "10", answers)
-    }
-    answers
-}
-
-get_glc_answers <- function(fn, ff, simple, inputs) {
-    answers <- c(SFRok = "y", WSok = "y", SaveResults = "n")
-    if (grepl("sim", inputs)) {
-        answers <- c(
-            SFRok = "n", Left = "3.58", Right = "3.42", SFRok = "y",
-            WSok = "n", WSHW = "0.0", WSok = "y",
-            SaveResults = "n"
-        )
-    }
-    if (grepl("(urine|blood|sim)$", inputs)) {
-        answers <- c(SameParam = "y", AdjNo = "1", answers)
-    }
-    answers
-}
-
-get_testmatrix <- function() {
-    df <- expand.grid(
-        dp = c("urine_1", "urine_2", "urine"),
-        ff = c("bruker", "jcampdx"),
-        nfit = c(1, 3, 10),
-        simple = c(TRUE, FALSE),
-        skip = TRUE,
-        stringsAsFactors = FALSE
-    )
-    dont_skip_1 <- df$ff == "bruker"
-    dont_skip_2 <- (df$ff == "jcampdx" & df$nfit == 3 & df$simple == TRUE)
-    dont_skip <- dont_skip_1 | dont_skip_2
-    df$skip[dont_skip] <- FALSE
-    is_single_jdx <- df$dp %in% c("urine_1", "urine_2") & df$ff == "jcampdx"
-    df$dp[is_single_jdx] <- paste0(df$dp[is_single_jdx], ".dx")
-    df
-}
-
-#' @description Generates a unique identifier for a test of
-#' `generate_lorentz_curves_v12` or `MetaboDecon1D`
-#' @noRd
-get_tid <- function(func, dp, ff, nfit, simple, debug) {
-    paste(func, dp, ff, nfit, simple, debug, sep = "-")
-}
-
 # Compare #####
 
 #' @noRd
@@ -458,16 +303,16 @@ compare_spectra <- function(new, old, silent = FALSE) {
 
     # Extract old data
     o1 <- old$debuglist$args # nolint: object_usage_linter.
-    o2 <- old$debuglist$data_read
-    o3 <- old$debuglist$ws_rm
-    o4 <- old$debuglist$neg_rm
-    o5 <- old$debuglist$smoothed
-    o6 <- old$debuglist$peaks_sel
-    o7 <- old$debuglist$peaks_wob_rm
-    o8 <- old$debuglist$peak_scores_calc
-    o9 <- old$debuglist$params_init
-    o10 <- old$debuglist$params_approx
-    o11 <- old$debuglist$params_saved # nolint: object_usage_linter.
+    o2 <- old$debuglist$data
+    o3 <- old$debuglist$wsrm
+    o4 <- old$debuglist$nvrm
+    o5 <- old$debuglist$smooth
+    o6 <- old$debuglist$peaksel
+    o7 <- old$debuglist$peakfilter
+    o8 <- old$debuglist$peakscore
+    o9 <- old$debuglist$parinit
+    o10 <- old$debuglist$parapprox
+    o11 <- old$debuglist$parsave # nolint: object_usage_linter.
 
     # [1-5] spectra <- read_spectra(data_path, file_format, expno, procno, ask, sf, bwc = TRUE)
     # [6-7] spectra <- get_sfr(spectra, sfr, ask, adjno)
@@ -584,10 +429,10 @@ compare_spectra_v13 <- function(new, old, silent = FALSE) {
     equal <- update_defaults(vcomp, xpct = 1, silent = silent)
 
     # Read and smooth spectrum
-    o2 <- old$debuglist$data_read
-    o3 <- old$debuglist$ws_rm
-    o4 <- old$debuglist$neg_rm
-    o5 <- old$debuglist$smoothed
+    o2 <- old$debuglist$data
+    o3 <- old$debuglist$wsrm
+    o4 <- old$debuglist$nvrm
+    o5 <- old$debuglist$smooth
     r    <-  ident(new$y_raw,         o2$spectrum_y_raw)
     r[2] <-  ident(new$y_scaled,      o2$spectrum_y)
     r[3] <-  ident(new$n,             o3$spectrum_length)
@@ -602,7 +447,7 @@ compare_spectra_v13 <- function(new, old, silent = FALSE) {
     r[12] <- ident(new$y_smooth,      o5$spectrum_y)
 
     # Find peaks
-    o6 <- old$debuglist$peaks_sel
+    o6 <- old$debuglist$peaksel
     r[13] <- ident(new$n,           o6$spectrum_length)
     r[16] <- equal(new$peak$center, o6$peaks_x + 1) # (1)
     r[15] <- equal(new$peak$center, o6$peaks_index + 1)
@@ -611,8 +456,8 @@ compare_spectra_v13 <- function(new, old, silent = FALSE) {
     r[14] <- equal(new$d,           c(NA, o6$second_derivative[2, ], NA))
 
     # Filter peaks
-    o7 <- old$debuglist$peaks_wob_rm
-    o8 <- old$debuglist$peak_scores_calc
+    o7 <- old$debuglist$peakfilter
+    o8 <- old$debuglist$peakscore
     border_is_na <- which(is.na(new$peak$left) | is.na(new$peak$right)) # (2)
     new_peak2    <- if (length(border_is_na) > 0) new$peak[-border_is_na, ] else new$peak
     left_pos     <- if (is.matrix(o7$left_position)) o7$left_position[1, ] else o7$left_position
@@ -637,7 +482,7 @@ compare_spectra_v13 <- function(new, old, silent = FALSE) {
     r[31] <- ident(new$peak$score[new$peak$high],  o8$save_scores)
 
     # Lorent Curve init values
-    o9    <- old$debuglist$params_init
+    o9    <- old$debuglist$parinit
     r[32] <- equal(new$lci$P$ic,   o9$filtered_peaks + 1) # (1)
     r[33] <- ident(new$lci$P$ir,   o9$filtered_left_position + 1)
     r[34] <- ident(new$lci$P$il,   o9$filtered_right_position + 1)
@@ -646,7 +491,7 @@ compare_spectra_v13 <- function(new, old, silent = FALSE) {
     r[37] <- equal(new$lci$w,      o9$w)
 
     # Lorent Curve refined values
-    o10 <- old$debuglist$params_approx
+    o10 <- old$debuglist$parapprox
     r[38] <- ident(new$lcr$w,         o10$w_new         )
     r[39] <- equal(new$lcr$lambda,    o10$lambda_new    )
     r[40] <- equal(new$lcr$A,         o10$A_new         )

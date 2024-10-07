@@ -1189,7 +1189,7 @@ deconvolution <- function(filepath,
         spectrum_y <- (data[[4]]$y) / factor_y
         if (debug) {
             logf("Read raw data from %s", name)
-            debuglist$data_read <- list(
+            debuglist$data <- list(
                 spectrum_y_raw = (data[[4]]$y),
                 spectrum_y = spectrum_y
             )
@@ -1281,7 +1281,7 @@ deconvolution <- function(filepath,
         spectrum_x <- seq((spectrum_length - 1) / factor_x, 0, -0.001)
         if (debug) {
             logf("Read raw data from %s", spec_file)
-            debuglist$data_read <- list(
+            debuglist$data <- list(
                 spectrum_y_raw = spectrum_y,
                 spectrum_y = spectrum_y / factor_y
             )
@@ -1688,7 +1688,7 @@ deconvolution <- function(filepath,
 
     if (debug) {
         logf("Removed water signal")
-        debuglist$ws_rm <- list(
+        debuglist$wsrm <- list(
             spectrum_length = spectrum_length,
             spectrum_x = spectrum_x,
             spectrum_x_ppm = spectrum_x_ppm,
@@ -1709,7 +1709,7 @@ deconvolution <- function(filepath,
     }
     if (debug) {
         logf("Removed negative values")
-        debuglist$neg_rm <- list(spectrum_y = spectrum_y)
+        debuglist$nvrm <- list(spectrum_y = spectrum_y)
     }
 
     # Variable Mean Filter
@@ -1746,7 +1746,7 @@ deconvolution <- function(filepath,
 
     if (debug) {
         logf("Smoothed spectrum")
-        debuglist$smoothed <- list(spectrum_y = spectrum_y)
+        debuglist$smooth <- list(spectrum_y = spectrum_y)
     }
 
     # Peak selection procedure
@@ -1813,7 +1813,7 @@ deconvolution <- function(filepath,
 
     if (debug) {
         logf("Selected peaks")
-        debuglist$peaks_sel <- list(
+        debuglist$peaksel <- list(
             spectrum_length = spectrum_length,
             second_derivative = second_derivative,
             peaks_index = peaks_index,
@@ -1835,7 +1835,7 @@ deconvolution <- function(filepath,
     }
     if (debug) {
         logf("Removed peaks without border")
-        debuglist$peaks_wob_rm <- list( # peaks without borders removed
+        debuglist$peakfilter <- list( # peaks without borders removed
             peaks_x = peaks_x,
             peaks_index = peaks_index,
             left_position = left_position,
@@ -1890,7 +1890,7 @@ deconvolution <- function(filepath,
     }
     if (debug) {
         logf("Filtered peaks by score")
-        debuglist$peak_scores_calc <- list(
+        debuglist$peakscore <- list(
             scores = scores,
             scores_left = scores_left,
             scores_right = scores_right,
@@ -2002,7 +2002,7 @@ deconvolution <- function(filepath,
 
     if (debug) {
         logf("Initialized lorentz curve parameters")
-        debuglist$params_init <- list(
+        debuglist$parinit <- list(
             A = A,
             filtered_left_position = filtered_left_position,
             filtered_peaks = filtered_peaks,
@@ -2171,7 +2171,7 @@ deconvolution <- function(filepath,
 
     if (debug) {
         logf("Approximated lorentz curve parameters")
-        debuglist$params_approx <- list(
+        debuglist$parapprox <- list(
             A_new = A_new,
             lambda_new = lambda_new,
             w_new = w_new,
@@ -2225,7 +2225,7 @@ deconvolution <- function(filepath,
 
     if (debug) {
         logf("Reached point where parameters were saved to txt documents previously")
-        debuglist$params_saved <- list(
+        debuglist$parsave <- list(
             index_peak_triplets_middle = index_peak_triplets_middle,
             index_peak_triplets_left = index_peak_triplets_left,
             index_peak_triplets_right = index_peak_triplets_right,
@@ -2314,6 +2314,35 @@ MetaboDecon1D_silent <- function(# Passed on to [MetaboDecon1D()]
         )
     )
     decon0
+}
+
+#' @noRd
+#' @author Tobias Schmidt
+MetaboDecon1D_silent_sim <- function(# Passed on to [MetaboDecon1D()]
+                                     filepath,
+                                     filename = NA,
+                                     file_format = "bruker",
+                                     number_iterations = 3,
+                                     range_water_signal_ppm = 0,
+                                     signal_free_region = c(3.58, 3.42),
+                                     smoothing_param = c(2, 5),
+                                     delta = 0.1,
+                                     scale_factor = c(1000, 1000000),
+                                     debug = FALSE,
+                                     store_results = NULL,
+                                     # Passed on to [evalwith()]
+                                     output = "captured",
+                                     message = "captured",
+                                     plot = "captured",
+                                     # Passed to [get_MetaboDecon1D_answers()]
+                                     expno = 10,
+                                     procno = 10) {
+    MetaboDecon1D_silent(
+        filepath, filename, file_format,
+        number_iterations, range_water_signal_ppm, signal_free_region,
+        smoothing_param, delta, scale_factor, debug, store_results,
+        output, message, plot, expno, procno
+    )
 }
 
 #' @noRd

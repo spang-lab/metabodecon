@@ -16,35 +16,28 @@ combine_peaks(
 \item{shifted_mat}{The matrix returned by \code{speaq_align()}.}
 
 \item{range}{Amount of adjacent columns which are permitted to be used for
-
 improving the alignment.}
 
 \item{lower_bound}{Minimum amount of non-zero elements per column to trigger
-
 the alignment improvement.}
 
 \item{spectrum_data}{The list of deconvoluted spectra as returned by
-
 \code{generate_lorentz_curves()} that was used to generate \code{shifted_mat}. No
 longer required since version 1.2 of Metabodecon.}
 
 \item{data_path}{If not NULL, the returned dataframes \code{long} and \code{short} are
-
 written to \code{data_path} as "aligned_res_long.csv" and "aligned_res_short.csv".}
 }
 \value{
-A list containing two data frames \code{long} and \code{short}. The first data
-
-frame contains one one column for each data point in the original spectrum.
-The second data frame contains only columns where at least one entry is
-non-zero.
+A list containing two data frames \code{long} and \code{short}. The first data frame
+contains one one column for each data point in the original spectrum. The
+second data frame contains only columns where at least one entry is non-zero.
 }
 \description{
-Even after calling \code{speaq_align()}, the alignment of individual
-
-signals is not always perfect, as 'speaq' performs a segment-wise alignment
-i.e. groups of signals are aligned. For further improvements, partly filled
-neighboring columns are merged.
+Even after calling \code{speaq_align()}, the alignment of individual signals is
+not always perfect, as 'speaq' performs a segment-wise alignment i.e. groups
+of signals are aligned. For further improvements, partly filled neighboring
+columns are merged.
 }
 \details{
 Example of what the function does:
@@ -73,8 +66,8 @@ I.e. column 3 and 4 get merged, because they are in \code{range} of each other
 and have no common non-zero entries.
 }
 \examples{
-
-spectrum_data <- generate_lorentz_curves_sim("bruker/sim")
+sim_subset <- metabodecon_file("bruker/sim_subset")
+spectrum_data <- generate_lorentz_curves_sim(sim_subset)
 shifted_mat <- speaq_align(spectrum_data = spectrum_data, verbose = FALSE)
 range <- 5
 lower_bound <- 1
@@ -83,6 +76,5 @@ str(obj)
 }
 \author{
 Initial version from Wolfram Gronwald. Refactored by Tobias Schmidt
-
 in 2024.
 }
