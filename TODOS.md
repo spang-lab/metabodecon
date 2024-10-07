@@ -2,20 +2,7 @@
 
 ## v1.2.0
 
-### REFACTOR-10: Replace all md1d with MetaboDecon1D calls
-
-1. Implement a function `get_MetaboDecon1D_answers` that takes the path to the spectra as well as the required `sfr`, `wshw` values as as input and returns a vecotr with the corresponding answers to the questions asked by `MetaboDecon1D`.
-
-2. Then replace all `md1d` calls with code snippets as shown below:
-
-   ```R
-   answers <- get_MetaboDecon1D_answers(path, sfr = c(3.5, 3.4), wshw = 0)
-   decons <- evalwith(answers = answers, MetaboDecon1D(...))
-   ```
-
-   This makes it directly visible how cumbersome it is to use the old function and also can be applied to any input folder (in contrast to the current `md1d` function).
-
-### REFACTOR-11: Write PRARP tests for deconvolution functions
+### REFACTOR-11: Write PRARP tests
 
 1. Implement a function `get_prarp` that takes a `decon` object and optionally a `truepar` object. If `truepar` is not given, it shall be taken from `decon$meta$simpar`. The function then calculates the PRARP (peak ratio area ratio product) from it, by comparing the estimated parameters with the true parameters.
 
@@ -378,7 +365,7 @@ Ask Wolfram whether it's ok that the peak selection sometimes selects two peaks 
 
 ## FEATURE
 
-### FEATURE-1: Use temp dirs for full example data
+### FEATURE-1: Use temp dirs for example data
 
 Function `download_example_data` should allow users to specify a temp dir instead the usual XDG directory. This is useful to pass CRAN checks as CRAN doesn't allow writing to th user' home directory.
 
@@ -408,7 +395,7 @@ We should have a batch mode, that does all the above steps truly automatically a
 
 Batch mode can also run in parallel to speed up calculations. Instead of waiting 1h we need to wait 3 or 6 minutes then.
 
-### FEATURE-5: Add test suite to ensure correct behaviour after updates
+### FEATURE-5: Add test suite
 
 Write test cases for every function to ensure that future updates don't break any existing behaviour. Tests should be run automatically upon pull requests and pushes to main.
 
@@ -501,7 +488,7 @@ For the "??"" values I haven't yet checked how they're calculated, so I cannot r
 
 2024/06/28: Closed without implementation, as we will keep the return value of `generate_lorentz_curves` backwards compatible with `MetabDecon1D` and instead fix it in `deconvolute_spectra`.
 
-### FEATURE-9 Implement and export read_spectra
+### FEATURE-9 Implement read_spectra
 
 Implement and export `read_spectra` and `read_spectrum` in a way that
 
@@ -518,7 +505,7 @@ Let `generate_lorentz_curves` accept dataframes as input. This is useful for Max
 
 2024/07/15: done in branch `v1.2.0` with commit `fa3c427cc1680925c6a12a0eab17f14673c6ee0f`.
 
-### FEATURE-14: Provide simulated datasets from blood spectra
+### FEATURE-14: Provide simulated datasets
 
 Provide simulated datasets from blood spectra
 
@@ -652,6 +639,21 @@ Output variables of MetaboDecon1D (These variables will be obtained for each ana
 Replace all `glc()` calls with calls to `generate_lorentz_curves()`.
 
 *2024-10-01 17:43: Done in branch v1.2.0 with commit 0b52023*
+
+### REFACTOR-10: Replace all md1d with MetaboDecon1D calls
+
+1. Implement a function `get_MetaboDecon1D_answers` that takes the path to the spectra as well as the required `sfr`, `wshw` values as as input and returns a vecotr with the corresponding answers to the questions asked by `MetaboDecon1D`.
+
+2. Then replace all `md1d` calls with code snippets as shown below:
+
+   ```R
+   answers <- get_MetaboDecon1D_answers(path, sfr = c(3.5, 3.4), wshw = 0)
+   decons <- evalwith(answers = answers, MetaboDecon1D(...))
+   ```
+
+   This makes it directly visible how cumbersome it is to use the old function and also can be applied to any input folder (in contrast to the current `md1d` function).
+
+*2024-10-07 09:21:34: Done in branch v1.2.0 with commits 18db936, 8f01fae and 6bdaa6f*
 
 ## CRAN
 
