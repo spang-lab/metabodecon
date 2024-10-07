@@ -217,19 +217,25 @@ evalwith <- function(expr, # nolint: cyclocomp_linter.
 
 #' @noRd
 #' @title Creates a mock readline function for testing
-#' @description Creates a mock readline function that returns the next element
-#' from a character vector each time it's called.
-#' Used internally by [mock_readline()].
+#'
+#' @description
+#' Creates a mock readline function that returns the next element from a
+#' character vector each time it's called. Used internally by [mock_readline()].
+#'
 #' @param texts A character vector of responses to be returned by the readline
 #' function.
-#' @return A function that mimics the readline function, returning the next
-#' element from `texts` each time it's called.
+#'
+#' @return
+#' A function that mimics the readline function, returning the next element from
+#' `texts` each time it's called.
+#'
 #' @examples
 #' readline_mock <- get_readline_mock(c("yes", "no", "maybe"))
 #' readline_mock("Continue? ") # Returns "yes"
 #' readline_mock("Continue? ") # Returns "no"
 #' readline_mock("Continue? ") # Returns "maybe"
-#' try(readline_mock("Continue? ")) # Throws error "readline called 4 times, but only 3 answers were provided"
+#' try(readline_mock("Continue? ")) # Throws error "readline called 4 times, but
+#' only 3 answers were provided"
 get_readline_mock <- function(texts, env = as.environment(list())) {
     if (is.null(texts)) {
         return(readline)
