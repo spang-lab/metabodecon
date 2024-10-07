@@ -567,8 +567,9 @@ update_sim <- function(dry_run = TRUE, verbose = TRUE) {
     parent <- if (dry_run) tmp else pkg
     path <- file.path(parent, "sim2")
     if (verbose) logf("Dry_run %s. Updating %s." , dry_run, path)
-    x <- make_sim()
-    save_spectra(x, path, force = FALSE, verbose = verbose)
+    sim <- make_sim()
+    save_spectra(sim, path, force = FALSE, verbose = verbose)
+    usethis::use_data(sim, overwrite = !dry_run)
     if (verbose) logf("Finished update of %s." , path)
 }
 

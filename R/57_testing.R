@@ -1,4 +1,6 @@
-# evalwith #####
+# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
+# Evalwith #####
+# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
 
 #' @export
 #' @title Evaluate an expression with predefined global state
@@ -213,7 +215,9 @@ evalwith <- function(expr, # nolint: cyclocomp_linter.
     invisible(retobj)
 }
 
-# evalwith Helpers #####
+# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
+# Evalwith Helpers #####
+# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
 
 #' @noRd
 #' @title Creates a mock readline function for testing
@@ -234,8 +238,7 @@ evalwith <- function(expr, # nolint: cyclocomp_linter.
 #' readline_mock("Continue? ") # Returns "yes"
 #' readline_mock("Continue? ") # Returns "no"
 #' readline_mock("Continue? ") # Returns "maybe"
-#' try(readline_mock("Continue? ")) # Throws error "readline called 4 times, but
-#' only 3 answers were provided"
+#' try(readline_mock("Continue? ")) # Throws error
 get_readline_mock <- function(texts, env = as.environment(list())) {
     if (is.null(texts)) {
         return(readline)
@@ -291,7 +294,9 @@ loaded_via_devtools <- function() {
     return(loaded_via_devtools)
 }
 
-# testthat #####
+# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
+# Testthat #####
+# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
 
 #' @noRd
 #' @title Run tests with the option to skip slow tests
@@ -360,4 +365,112 @@ expect_file_size <- function(testdir, size_exp) {
 #' @noRd
 expect_str <- function(obj, expected_str) {
     testthat::expect_identical(capture.output(str(obj)), expected_str)
+}
+
+# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
+# Misc #####
+# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
+
+#' @noRd
+#'
+#' @title Calculate the PRARP Score
+#'
+#' @description
+#' Calculates the PRARP score for a deconvolution. The PRARP score is the
+#' product of the peak ratio and the area ratio and can be used to assess the
+#' quality of a deconvolution. See 'Details' for more information on how the
+#' score is calculated.
+#'
+#' @param decon A list containing the deconvolution results, as returned by
+#' [generate_lorentz_curves()].
+#'
+#' @param lcpar A data frame containing the true parameters of the peaks.
+#'
+#' @return The PRARP score as numeric scalar. In addition, a plot is created to
+#' visualize the deconvolution results.
+#'
+#' @details
+#' The function first plots the deconvolution results for visual inspection and
+#' then returns the PRARP score for the deconvolution.
+#'
+#' The plotting is done as follows:
+#'
+#' 1. Plot the deconvoluted spectrum using `plot_spectrum()`.
+#' 2. Draw green circles around found peaks [^1].
+#' 3. Draw red circles around missed peaks [^1].
+#' 4. Draw red rectangles around falsely detected peaks. [^2]
+#'
+#' [^1]: we consider a peak as 'found' if there is at least one detected peak
+#'       center within 0.001 ppm of the true peak position. If this is not the
+#'       case, the peak is considered as 'missed'.
+#' [^2]: we consider a peak as 'falsely detected' if there is no true peak
+#'       center within 0.001 ppm of the detected peak position.
+#'
+#' In addition, a quality score is calculated as follows:
+#'
+#' quality    = peak_ratio * area_ratio
+#' peak_ratio = min(peaks_true, peaks_found) / max(peaks_true, peaks_found)
+#' area_ratio = min(area_true,  area_found)  / max(area_true,  area_found)
+#'
+#' I.e., the score is close to 1 if the number of peaks and the area of the
+#' peaks are similar in the true and found spectra and the score is close to 0
+#' if the number of peaks and/or the area of the peaks are very different.
+#'
+#' @examples
+#' decon <- generate_lorentz_curves_sim(sim[[1]])
+#' truepar <- sim[[1]]$meta$simpar
+#' calc_prarp(decon, truepar)
+calc_prarp <- function(decon,
+                       truepar = decon$meta$simpar,
+                       vlines = FALSE) {
+    d <- decon
+    x <- decon$x_values_ppm
+    y <- decon$y_values
+    truepar <- as.data.frame(truepar[c("A", "x0", "lambda")])
+    dcnvpar <- data.frame(A = d$A_ppm, x0 = d$x_0_ppm, lambda = d$lambda_ppm)
+    dcnvpar$y0 <- calc_y0(x, y, x0 = dcnvpar$x0)
+    truepar$y0 <- calc_y0(x, y, x0 = truepar$x0)
+
+    # Check which peaks are found correctly and which were missed
+    for (i in seq_along(truepar$x0)) {
+        j <- which.min(abs(dcnvpar$x0 - truepar$x0[i]))
+        d <- abs(dcnvpar$x0[j] - truepar$x0[i])
+        truepar[i, "closest"] <- j
+        truepar[i, "dist"] <- d
+        truepar[i, "found"] <- d < 0.001
+    }
+    for (i in seq_along(dcnvpar$x0)) {
+        j <- which.min(abs(truepar$x0 - dcnvpar$x0[i]))
+        d <- abs(truepar$x0[j] - dcnvpar$x0[i])
+        dcnvpar[i, "closest"] <- j
+        dcnvpar[i, "dist"] <- d
+        dcnvpar[i, "correct"] <- d < 0.001
+    }
+
+    plot_spectrum(decon, foc_rgn = c(0.25, 0.75), foc_only = TRUE)
+    points(
+        x = dcnvpar$x0, y = dcnvpar$y0,
+        pch = 21, cex = 3, bg = "transparent", lwd = 2,
+        col = ifelse(dcnvpar$correct, "green", "red")
+    )
+    points(
+        x = truepar$x0[!truepar$found], y = truepar$y0[!truepar$found],
+        pch = 21, cex = 3, bg = "transparent", lwd = 2,
+        col = "orange"
+    )
+    # CONTINUE HERE:
+    # 1. Add a legend (green = found, red = false finding, orange = missed)
+    # 2. Calculate the PRARP score
+    # 3. Write the PRARP and all MSEs to the plot
+    # 4. Return the PRARP score
+}
+
+calc_y0 <- function(x, y, x0) {
+    i0 <- convert_pos(x0, x, 1:length(x))
+    i0_floor <- floor(i0)
+    i0_ceil <- ceiling(i0)
+    i0_frac <- i0 - i0_floor
+    y_floor <- y[i0_floor]
+    y_ceil <- y[i0_ceil]
+    y0 <- y_floor + (y_ceil - y_floor) * i0_frac
 }

@@ -50,6 +50,7 @@ Suggests:
     lifecycle,
     mirai,
     rmarkdown,
+    usethis,
     testthat (>= 3.0.0)
 LazyData: true
 Config/testthat/edition: 3
