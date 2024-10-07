@@ -4,13 +4,14 @@
 
 #' @description Repeatedly ask the user to confirm/refine SFR borders.
 #' @noRd
-confirm_sfr <- function(gspec, sfr = c(11.44494, -1.8828)) {
-    plot_sfr(gspec, sfr[1], sfr[2])
+confirm_sfr <- function(x, sfr = c(11.44494, -1.8828)) {
+    plot_sfr(x, sfr[1], sfr[2])
     sfr_ok <- get_yn_input("Signal free region correctly selected?")
     while (!sfr_ok) {
-        sfr[1] <- get_num_input("Choose another left border: [e.g. 12]", min = gspec$ppm_min, max = gspec$ppm_max)
-        sfr[2] <- get_num_input("Choose another right border: [e.g. -2]", min = gspec$ppm_min, max = gspec$ppm_max)
-        plot_sfr(gspec, sfr[1], sfr[2])
+        get_border <- function(msg) get_num_input(msg, x$ppm_min, x$ppm_max)
+        sfr[1] <- get_border("Choose another left border: [e.g. 12]")
+        sfr[2] <- get_border("Choose another right border: [e.g. -2]")
+        plot_sfr(x, sfr[1], sfr[2])
         sfr_ok <- get_yn_input("Signal free region correctly selected?")
     }
     sfr
@@ -18,12 +19,12 @@ confirm_sfr <- function(gspec, sfr = c(11.44494, -1.8828)) {
 
 #' @description Repeatedly ask the user to confirm/refine the WSHW.
 #' @noRd
-confirm_wshw <- function(gspec, wshw) {
-    plot_ws(gspec, wshw)
+confirm_wshw <- function(x, wshw) {
+    plot_ws(x, wshw)
     ws_ok <- get_yn_input("Water artefact fully inside red vertical lines?")
     while (!ws_ok) {
         wshw <- get_num_input("Choose another half width range (in ppm) for the water artefact: [e.g. 0.1222154]")
-        plot_ws(gspec, wshw)
+        plot_ws(x, wshw)
         ws_ok <- get_yn_input("Water artefact fully inside red vertical lines?")
     }
     wshw
@@ -69,7 +70,10 @@ enrich_wshw <- function(gspec, wshw) {
     right_ppm <- gspec$ppm[right_dp]
     left_ppm <- gspec$ppm[left_dp]
     if (left_dp <= 1 || right_dp >= gspec$n) stop("WSR is out of range")
-    named(left_ppm, right_ppm, center_ppm, hwidth_ppm, left_dp, right_dp, center_dp, hwidth_dp)
+    named(
+        left_ppm, right_ppm, center_ppm, hwidth_ppm,
+        left_dp, right_dp, center_dp, hwidth_dp
+    )
 }
 
 # =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
