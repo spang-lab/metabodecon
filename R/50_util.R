@@ -119,8 +119,6 @@ store <- function(expr,
     if (format == "jpg") format <- "jpeg"
     if (format == "rds") {
         saveRDS(call(expr), path)
-    } else if (format == "brk") {
-        save_bruker(call(expr), path)
     } else if (format %in% devs) {
         with_dev <- asNamespace("withr")[[paste0("with_", format)]]
         with_dev(path, call(expr), ...)
@@ -458,6 +456,17 @@ mcmapply <- function(nw, FUN, ..., loadpkg = TRUE, log = TRUE) {
         clusterApply(cl, logfiles, sink, append = TRUE, type = "output")
     }
     clusterMap(cl, FUN, ..., SIMPLIFY = FALSE)
+}
+
+get_worker_logs <- function(nw, create = TRUE) {
+    timestamp <- format(Sys.time(), "%Y%m%d_%H%M%OS3")
+    timestamp <- gsub(".", "_", timestamp, fixed = TRUE)
+    logdirrel <- file.path("logs", timestamp)
+    logdir <- tmpdir(subdir = logdirrel, create = TRUE)
+    logfiles <- paste0("worker_", seq_len(nw), ".log")
+    logpaths <- file.path(logdir, logfiles)
+    if (create) file.create(logpaths)
+    logpaths
 }
 
 `%||%` <- function(x, y) {

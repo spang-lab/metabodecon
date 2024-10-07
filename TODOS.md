@@ -571,7 +571,7 @@ Right now, output gets scrambled because all procs share one stdout. We can fix 
 
 ### REFACTOR-1: Combine load_xxx_spectrum functions
 
-Combine `load_jcampdx_spectrum` and `load_bruker_spectrum` into one function, which calls `read_jcampdx_spectrum` or `read_bruker_spectrum` depending on the `type` argument. The `read_*_spectrum` function should return the measured signal strengths as vector `y_ss` and the corresponding ppm values as vector `x_ppm`. All other elements returned by the `load_*_spectrum` functions can be calculated from those. This makes the code more maintainable and easier to understand.
+Combine `load_jcampdx_spectrum` and `load_bruker_spectrum` into one function, which calls `read_jcampdx` or `read_bruker` depending on the `type` argument. The `read_*_spectrum` function should return the measured signal strengths as vector `y_ss` and the corresponding ppm values as vector `x_ppm`. All other elements returned by the `load_*_spectrum` functions can be calculated from those. This makes the code more maintainable and easier to understand.
 
 Useful info for reading bruker files: according to `Bruker_NMR_Data_Formats.pdf` (available through Google), the text files `acqu?` and `proc?` contain acquisition and processing parameters. Files ending with `s` (`acqus`, `proc2s`, ...) describe the status of the dataset. Other files (`acqu`, `proc2`, ...) contain parameter values used in later processing or acquisition steps. Format of all parameter files corresponds to the JCAMP-DX standard, which allows the inclusion of vendor specific parameters by prefixing them with the character sequence `##$`. For this reason, all TopSpin parameters in the file are preceded by this sequence.
 

@@ -1,3 +1,5 @@
+# Public API #####
+
 #' @export
 #'
 #' @title Deconvolute 1D NMR spectrum
@@ -527,6 +529,615 @@ MetaboDecon1D <- function(filepath,
         }
     }
 }
+
+#' @export
+#' @title Plot peak triplets for variable range
+#' @description Plots the peak triplets for each peak detected by [MetaboDecon1D()] and stores the plots as png at `outdir`.
+#'
+#' Supersed by [plot_spectrum()] since metabodecon v1.2.0. Will be replaced with v2.
+#'
+#' `r lifecycle::badge("deprecated")`
+#' @author Martina Haeckl, Tobias Schmidt
+#' @param deconv_result Saved result of the MetaboDecon1D() function
+#' @param x_range Row vector with two entries consisting of the ppm start and the ppm end value to scale the range of the x-axis (optional)
+#' @param y_range Row vector with two entries consisting of the ppm start and the ppm end value to scale the range of the y-axis (optional)
+#' @param out_dir Directory to save the png files (optional)
+#' @param ask Logical value to ask the user if the png files should be saved in the specified directory (optional)
+#' @return No return value, called for side effect of plotting.
+#' @seealso [MetaboDecon1D()], [calculate_lorentz_curves()], [plot_lorentz_curves_save_as_png()], [plot_spectrum_superposition_save_as_png()]
+#' @examples
+#' sim <- metabodecon_file("bruker/sim_subset")
+#' sim_decon <- generate_lorentz_curves_sim(sim)
+#' png_dir <- tmpdir("sim_decon/pngs", create = TRUE)
+#' plot_triplets(sim_decon, out_dir = png_dir, ask = FALSE)
+#' dir(png_dir, full.names = TRUE)
+plot_triplets <- function(deconv_result, x_range = c(), y_range = c(), out_dir = ".", ask = TRUE) {
+    out_dir <- norm_path(out_dir)
+    if (ask) {
+        continue <- get_yn_input(sprintf("Continue creating pngs in %s?", out_dir))
+        if (!continue) {
+            invisible(NULL)
+        }
+    }
+    owd <- setwd(out_dir)
+    on.exit(setwd(owd), add = TRUE)
+
+    number_in_folder <- 0
+    if ("number_of_files" %in% names(deconv_result)) {
+        number_of_files <- deconv_result$number_of_files
+    } else {
+        if ("number_of_files" %in% names(deconv_result[[1]])) {
+            number_of_files <- deconv_result[[1]]$number_of_files
+            if (number_of_files == 1) number_in_folder <- 1
+        }
+    }
+
+    if (number_of_files > 1 | number_in_folder == 1) {
+        # Check if user input comprise a $ sign
+        if (grepl("[$]", deparse(substitute(deconv_result)))) {
+            # User would like to plot triplets of only one spectrum
+            name <- deconv_result$filename
+            spectrum_x_ppm <- deconv_result$x_values_ppm
+            spectrum_y <- deconv_result$y_values
+            index_peaks_triplets <- deconv_result$index_peak_triplets_middle
+            index_left_position <- deconv_result$index_peak_triplets_left
+            index_right_position <- deconv_result$index_peak_triplets_right
+
+            message(paste("Plot triplets of", name))
+
+            # Check if x_range is adjusted or not
+            if (is.null(x_range)) {
+                filename <- paste(name, "_peak_triplets.png", sep = "")
+                # Save plot as png
+                grDevices::png(file = filename, width = 825, height = 525)
+                plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = rev(range(spectrum_x_ppm)), ylim = y_range)
+                graphics::points(spectrum_x_ppm[index_peaks_triplets], spectrum_y[index_peaks_triplets], col = "red", cex = 1.3)
+                graphics::points(spectrum_x_ppm[index_right_position], spectrum_y[index_right_position], col = "green", cex = 1.3)
+                graphics::points(spectrum_x_ppm[index_left_position], spectrum_y[index_left_position], col = "blue", cex = 1.3)
+                graphics::legend("topright", legend = c("x_left", "x_middle", "x_right"), col = c("green", "red", "blue"), pch = 1, bty = "n", cex = 1.3)
+                grDevices::dev.off()
+            } else {
+                filename <- paste(name, "_peak_triplets.png", sep = "")
+                # Save plot as png
+                grDevices::png(file = filename, width = 825, height = 525)
+                plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = x_range, ylim = y_range)
+                graphics::points(spectrum_x_ppm[index_peaks_triplets], spectrum_y[index_peaks_triplets], col = "red", cex = 1.3)
+                graphics::points(spectrum_x_ppm[index_right_position], spectrum_y[index_right_position], col = "green", cex = 1.3)
+                graphics::points(spectrum_x_ppm[index_left_position], spectrum_y[index_left_position], col = "blue", cex = 1.3)
+                graphics::legend("topright", legend = c("x_left", "x_middle", "x_right"), col = c("green", "red", "blue"), pch = 1, bty = "n", cex = 1.3)
+                grDevices::dev.off()
+            }
+        } else {
+            for (l in 1:number_of_files) {
+                # User would like to plot triplets of all investigated spectra
+                name <- deconv_result[[l]]$filename
+                spectrum_x_ppm <- deconv_result[[l]]$x_values_ppm
+                spectrum_y <- deconv_result[[l]]$y_values
+                index_peaks_triplets <- deconv_result[[l]]$index_peak_triplets_middle
+                index_left_position <- deconv_result[[l]]$index_peak_triplets_left
+                index_right_position <- deconv_result[[l]]$index_peak_triplets_right
+
+                message(paste("Plot triplets of", name))
+
+                # Check if x_range is adjusted or not
+                if (is.null(x_range)) {
+                    filename <- paste(name, "_peak_triplets.png", sep = "")
+                    # Save plot as png
+                    grDevices::png(file = filename, width = 825, height = 525)
+                    plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = rev(range(spectrum_x_ppm)), ylim = y_range)
+                    graphics::points(spectrum_x_ppm[index_peaks_triplets], spectrum_y[index_peaks_triplets], col = "red", cex = 1.3)
+                    graphics::points(spectrum_x_ppm[index_right_position], spectrum_y[index_right_position], col = "green", cex = 1.3)
+                    graphics::points(spectrum_x_ppm[index_left_position], spectrum_y[index_left_position], col = "blue", cex = 1.3)
+                    graphics::legend("topright", legend = c("x_left", "x_middle", "x_right"), col = c("green", "red", "blue"), pch = 1, bty = "n", cex = 1.3)
+                    grDevices::dev.off()
+                } else {
+                    filename <- paste(name, "_peak_triplets.png", sep = "")
+                    # Save plot as png
+                    grDevices::png(file = filename, width = 825, height = 525)
+                    plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = x_range, ylim = y_range)
+                    graphics::points(spectrum_x_ppm[index_peaks_triplets], spectrum_y[index_peaks_triplets], col = "red", cex = 1.3)
+                    graphics::points(spectrum_x_ppm[index_right_position], spectrum_y[index_right_position], col = "green", cex = 1.3)
+                    graphics::points(spectrum_x_ppm[index_left_position], spectrum_y[index_left_position], col = "blue", cex = 1.3)
+                    graphics::legend("topright", legend = c("x_left", "x_middle", "x_right"), col = c("green", "red", "blue"), pch = 1, bty = "n", cex = 1.3)
+                    grDevices::dev.off()
+                }
+            }
+        }
+    } else {
+        name <- deconv_result$filename
+        spectrum_x_ppm <- deconv_result$x_values_ppm
+        spectrum_y <- deconv_result$y_values
+        index_peaks_triplets <- deconv_result$index_peak_triplets_middle
+        index_left_position <- deconv_result$index_peak_triplets_left
+        index_right_position <- deconv_result$index_peak_triplets_right
+
+        message(paste("Plot triplets of", name))
+
+        # Check if x_range is adjusted or not
+        if (is.null(x_range)) {
+            filename <- paste(name, "_peak_triplets.png", sep = "")
+            # Save plot as png
+            grDevices::png(file = filename, width = 825, height = 525)
+            plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = rev(range(spectrum_x_ppm)), ylim = y_range)
+            graphics::points(spectrum_x_ppm[index_peaks_triplets], spectrum_y[index_peaks_triplets], col = "red", cex = 1.3)
+            graphics::points(spectrum_x_ppm[index_right_position], spectrum_y[index_right_position], col = "green", cex = 1.3)
+            graphics::points(spectrum_x_ppm[index_left_position], spectrum_y[index_left_position], col = "blue", cex = 1.3)
+            graphics::legend("topright", legend = c("x_left", "x_middle", "x_right"), col = c("green", "red", "blue"), pch = 1, bty = "n", cex = 1.3)
+            grDevices::dev.off()
+        } else {
+            filename <- paste(name, "_peak_triplets.png", sep = "")
+            # Save plot as png
+            grDevices::png(file = filename, width = 825, height = 525)
+            plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = x_range, ylim = y_range)
+            graphics::points(spectrum_x_ppm[index_peaks_triplets], spectrum_y[index_peaks_triplets], col = "red", cex = 1.3)
+            graphics::points(spectrum_x_ppm[index_right_position], spectrum_y[index_right_position], col = "green", cex = 1.3)
+            graphics::points(spectrum_x_ppm[index_left_position], spectrum_y[index_left_position], col = "blue", cex = 1.3)
+            graphics::legend("topright", legend = c("x_left", "x_middle", "x_right"), col = c("green", "red", "blue"), pch = 1, bty = "n", cex = 1.3)
+            grDevices::dev.off()
+        }
+    }
+}
+
+#' @export
+#' @title Plot lorentz curves for variable range
+#' @description Plots the original spectrum and all generated Lorentz curves and save the result as png under the filepath.
+#'
+#' Supersed by [plot_spectrum()] since metabodecon v1.2.0. Will be replaced with v2.
+#'
+#' `r lifecycle::badge("deprecated")`
+#' @param deconv_result Saved result of the MetaboDecon1D() function
+#' @param x_range Row vector with two entries consisting of the ppm start and the ppm end value to scale the range of the x-axis (optional)
+#' @param y_range Row vector with two entries consisting of the ppm start and the ppm end value to scale the range of the y-axis (optional)
+#' @param out_dir Path to the directory where the png files should be saved. Default is the current working directory.
+#' @param ask Logical value. Whether to ask for confirmation from the user before writing files to disk. Default is TRUE.
+#' @return NULL, called for side effects.
+#' @seealso [MetaboDecon1D()], [plot_triplets()], [plot_spectrum_superposition_save_as_png()]
+#' @examples
+#' sim <- metabodecon_file("bruker/sim_subset")
+#' sim_decon <- generate_lorentz_curves_sim(sim)
+#' png_dir <- tmpdir("sim_decon/pngs", create = TRUE)
+#' plot_lorentz_curves_save_as_png(sim_decon, out_dir = png_dir, ask = FALSE)
+#' dir(png_dir, full.names = TRUE)
+plot_lorentz_curves_save_as_png <- function(deconv_result, x_range = c(), y_range = c(), out_dir = ".", ask = TRUE) {
+    out_dir <- norm_path(out_dir)
+    if (ask) {
+        continue <- get_yn_input(sprintf("Continue creating pngs in %s?", out_dir))
+        if (!continue) {
+            invisible(NULL)
+        }
+    }
+    owd <- setwd(out_dir)
+    on.exit(setwd(owd), add = TRUE)
+
+    number_in_folder <- 0
+    # Get number of analyzed spectra
+    if ("number_of_files" %in% names(deconv_result)) {
+        number_of_files <- deconv_result$number_of_files
+    } else {
+        if ("number_of_files" %in% names(deconv_result[[1]])) {
+            number_of_files <- deconv_result[[1]]$number_of_files
+            # Check if only one spectrum is inside whole folder
+            if (number_of_files == 1) {
+                number_in_folder <- 1
+            }
+        }
+    }
+
+    # Check how many spectra are investigated
+    if (number_of_files > 1 | number_in_folder == 1) {
+        # Check if user input comprise a $ sign
+        if (grepl("[$]", deparse(substitute(deconv_result)))) {
+            # Get parameters
+            name <- deconv_result$filename
+            spectrum_x_ppm <- deconv_result$x_values_ppm
+            spectrum_y <- deconv_result$y_values
+
+            # Save additional parameter to know that $ sign was used by the user
+            number_of_files <- 1
+
+            # Calculate Lorentz curves
+            lorentz_curves_initial <- calculate_lorentz_curves(deconv_result, number_of_files)
+
+            message(paste("Plot Lorentz curves of", name))
+
+            # Check if x_range is adjusted or not
+            if (is.null(x_range)) {
+                filename <- paste(name, "_lorentz_curves.png", sep = "")
+                # Save plot as png
+                grDevices::png(file = filename, width = 825, height = 525)
+                plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = rev(range(spectrum_x_ppm)), ylim = y_range)
+                for (i in 1:dim(lorentz_curves_initial)[1]) {
+                    graphics::lines(spectrum_x_ppm, lorentz_curves_initial[i, ], col = "red")
+                }
+                graphics::legend("topright", legend = c("Original spectrum", "Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
+                grDevices::dev.off()
+            } else {
+                filename <- paste(name, "_lorentz_curves.png", sep = "")
+                # Save plot as png
+                grDevices::png(file = filename, width = 825, height = 525)
+                plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = x_range, ylim = y_range)
+                for (i in 1:dim(lorentz_curves_initial)[1]) {
+                    graphics::lines(spectrum_x_ppm, lorentz_curves_initial[i, ], col = "red")
+                }
+                graphics::legend("topright", legend = c("Original spectrum", "Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
+                grDevices::dev.off()
+            }
+        } else {
+            # Calculate Lorentz curves
+            lorentz_curves_matrix <- calculate_lorentz_curves(deconv_result)
+
+            for (l in 1:number_of_files) {
+                # Get necessary parameters
+                name <- deconv_result[[l]]$filename
+                spectrum_x_ppm <- deconv_result[[l]]$x_values_ppm
+                spectrum_y <- deconv_result[[l]]$y_values
+                lorentz_curves_initial <- lorentz_curves_matrix[[l]]
+                filtered_peaks <- deconv_result[[l]]$peak_triplets_middle
+
+                message(paste("Plot Lorentz curves of", name))
+
+                # Check if x_range is adjusted or not
+                if (is.null(x_range)) {
+                    filename <- paste(name, "_lorentz_curves.png", sep = "")
+                    # Save plot as png
+                    grDevices::png(file = filename, width = 825, height = 525)
+                    plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = rev(range(spectrum_x_ppm)), ylim = y_range)
+                    for (i in 1:length(filtered_peaks)) {
+                        graphics::lines(spectrum_x_ppm, lorentz_curves_initial[i, ], col = "red")
+                    }
+                    graphics::legend("topright", legend = c("Original spectrum", "Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
+                    grDevices::dev.off()
+                } else {
+                    filename <- paste(name, "_lorentz_curves.png", sep = "")
+                    # Save plot as png
+                    grDevices::png(file = filename, width = 825, height = 525)
+                    plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = x_range, ylim = y_range)
+                    for (i in 1:length(filtered_peaks)) {
+                        graphics::lines(spectrum_x_ppm, lorentz_curves_initial[i, ], col = "red")
+                    }
+                    graphics::legend("topright", legend = c("Original spectrum", "Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
+                    grDevices::dev.off()
+                }
+            }
+        }
+    } else {
+        # Calculate Lorentz curves
+        lorentz_curves_initial <- calculate_lorentz_curves(deconv_result)
+
+        # Get parameters
+        name <- deconv_result$filename
+        spectrum_x_ppm <- deconv_result$x_values_ppm
+        spectrum_y <- deconv_result$y_values
+        filtered_peaks <- deconv_result$peak_triplets_middle
+
+        message(paste("Plot Lorentz curves of", name))
+
+        # Check if x_range is adjusted or not
+        if (is.null(x_range)) {
+            filename <- paste(name, "_lorentz_curves.png", sep = "")
+            # Save plot as png
+            grDevices::png(file = filename, width = 825, height = 525)
+            plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = rev(range(spectrum_x_ppm)), ylim = y_range)
+            for (i in 1:length(filtered_peaks)) {
+                graphics::lines(spectrum_x_ppm, lorentz_curves_initial[i, ], col = "red")
+            }
+            graphics::legend("topright", legend = c("Original spectrum", "Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
+            grDevices::dev.off()
+        } else {
+            filename <- paste(name, "_lorentz_curves.png", sep = "")
+            # Save plot as png
+            grDevices::png(file = filename, width = 825, height = 525)
+            plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = x_range, ylim = y_range)
+            for (i in 1:length(filtered_peaks)) {
+                graphics::lines(spectrum_x_ppm, lorentz_curves_initial[i, ], col = "red")
+            }
+            graphics::legend("topright", legend = c("Original spectrum", "Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
+            grDevices::dev.off()
+        }
+    }
+}
+
+#' @export
+#'
+#' @title Plot spectrum approx for variable range
+#'
+#' @description
+#' Plots the original spectrum and the superposition of all generated Lorentz
+#' curves and saves the result as png under the specified filepath.
+#'
+#' Supersed by [plot_spectrum()] since metabodecon v1.2.0. Will be replaced with v2.
+#'
+#' `r lifecycle::badge("deprecated")`
+#'
+#' @author Martina Haeckl
+#'
+#' @param deconv_result
+#' Saved result of the MetaboDecon1D() function
+#'
+#' @param x_range
+#' Row vector with two entries consisting of the ppm start and the ppm end value
+#' to scale the range of the x-axis (optional)
+#'
+#' @param y_range
+#' Row vector with two entries consisting of the ppm start and the ppm end value
+#' to scale the range of the y-axis (optional)
+#'
+#' @param out_dir
+#' Path to the directory where the png files should be saved. Default is the
+#' current working directory.
+#'
+#' @param ask
+#' Logical value. Whether to ask for confirmation from the user before writing
+#' files to disk.
+#'
+#' @return NULL, called for side effects.
+#'
+#' @seealso
+#' [MetaboDecon1D()],
+#' [calculate_lorentz_curves()],
+#' [plot_triplets()],
+#' [plot_lorentz_curves_save_as_png()]
+#'
+#' @examples
+#' sim <- metabodecon_file("bruker/sim_subset")
+#' sim_decon <- generate_lorentz_curves_sim(sim)
+#' png_dir <- tmpdir("sim_decon/pngs", create = TRUE)
+#' plot_spectrum_superposition_save_as_png(sim_decon, out_dir = png_dir, ask = FALSE)
+#' dir(png_dir, full.names = TRUE)
+plot_spectrum_superposition_save_as_png <- function(deconv_result,
+                                                    x_range = c(),
+                                                    y_range = c(),
+                                                    out_dir = ".",
+                                                    ask = TRUE) {
+    out_dir <- norm_path(out_dir)
+    if (ask) {
+        prompt <- sprintf("Continue creating pngs in %s?", out_dir)
+        continue <- get_yn_input(prompt)
+        if (!continue) return(invisible(NULL)) # styler: off
+    }
+    owd <- setwd(out_dir)
+    on.exit(setwd(owd), add = TRUE)
+
+    number_in_folder <- 0 # Number of analyzed spectra
+    if ("number_of_files" %in% names(deconv_result)) {
+        number_of_files <- deconv_result$number_of_files
+    } else {
+        if ("number_of_files" %in% names(deconv_result[[1]])) {
+            number_of_files <- deconv_result[[1]]$number_of_files
+            if (number_of_files == 1) number_in_folder <- 1
+        }
+    }
+
+    # Check how many spectra are investigated
+    if (number_of_files > 1 || number_in_folder == 1) {
+        # Check if user input comprises a $ sign
+        if (grepl("[$]", deparse(substitute(deconv_result)))) {
+            name <- deconv_result$filename
+            spectrum_x_ppm <- deconv_result$x_values_ppm
+            spectrum_y <- deconv_result$y_values
+            spectrum_approx <- deconv_result$spectrum_superposition
+            mse <- deconv_result$mse_normed
+            filtered_peaks <- deconv_result$peak_triplets_middle
+
+            message(paste("Plot superposition of", name))
+
+            # Check if x_range is adjusted or not
+            if (is.null(x_range)) {
+                filename <- paste(name, "_sum_lorentz_curves.png", sep = "")
+                # Save plot as png
+                grDevices::png(file = filename, width = 825, height = 525)
+                plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = rev(range(spectrum_x_ppm)), ylim = y_range)
+                graphics::lines(spectrum_x_ppm, spectrum_approx, col = "red")
+                graphics::legend("topright", legend = c("Original spectrum", "Sum of Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
+                text <- paste("MSE_Normed = ", mse, sep = "")
+                graphics::mtext(text, side = 3)
+                grDevices::dev.off()
+            } else {
+                filename <- paste(name, "_sum_lorentz_curves.png", sep = "")
+                # Save plot as png
+                grDevices::png(file = filename, width = 825, height = 525)
+                plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = x_range, ylim = y_range)
+                graphics::lines(spectrum_x_ppm, spectrum_approx, col = "red")
+                graphics::legend("topright", legend = c("Original spectrum", "Sum of Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
+                text <- paste("MSE_Normed = ", mse, sep = "")
+                graphics::mtext(text, side = 3)
+                grDevices::dev.off()
+            }
+        } else {
+            for (l in 1:number_of_files) {
+                # Get necessary parameters
+                name <- deconv_result[[l]]$filename
+                spectrum_x_ppm <- deconv_result[[l]]$x_values_ppm
+                spectrum_y <- deconv_result[[l]]$y_values
+                spectrum_approx <- deconv_result[[l]]$spectrum_superposition
+                mse <- deconv_result[[l]]$mse_normed
+                filtered_peaks <- deconv_result[[l]]$peak_triplets_middle
+
+                message(paste("Plot superposition of", name))
+
+                # Check if x_range is adjusted or not
+                if (is.null(x_range)) {
+                    filename <- paste(name, "_sum_lorentz_curves.png", sep = "")
+                    # Save plot as png
+                    grDevices::png(file = filename, width = 825, height = 525)
+                    plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = rev(range(spectrum_x_ppm)), ylim = y_range)
+                    graphics::lines(spectrum_x_ppm, spectrum_approx, col = "red")
+                    graphics::legend("topright", legend = c("Original spectrum", "Sum of Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
+                    text <- paste("MSE_Normed = ", mse, sep = "")
+                    graphics::mtext(text, side = 3)
+                    grDevices::dev.off()
+                } else {
+                    filename <- paste(name, "_sum_lorentz_curves.png", sep = "")
+                    # Save plot as png
+                    grDevices::png(file = filename, width = 825, height = 525)
+                    plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = x_range, ylim = y_range)
+                    graphics::lines(spectrum_x_ppm, spectrum_approx, col = "red")
+                    graphics::legend("topright", legend = c("Original spectrum", "Sum of Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
+                    text <- paste("MSE_Normed = ", mse, sep = "")
+                    graphics::mtext(text, side = 3)
+                    grDevices::dev.off()
+                }
+            }
+        }
+    } else {
+        name <- deconv_result$filename
+        spectrum_x_ppm <- deconv_result$x_values_ppm
+        spectrum_y <- deconv_result$y_values
+        spectrum_approx <- deconv_result$spectrum_superposition
+        mse <- deconv_result$mse_normed
+        filtered_peaks <- deconv_result$peak_triplets_middle
+        x_range <- if (is.null(x_range)) rev(range(spectrum_x_ppm)) else x_range
+        message(paste("Plot superposition of", name))
+        filename <- paste(name, "_sum_lorentz_curves.png", sep = "")
+        grDevices::png(file = filename, width = 825, height = 525)
+        plot(
+            spectrum_x_ppm, spectrum_y,
+            main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]",
+            type = "l", cex = 1.3,
+            xlim = x_range,
+            ylim = y_range
+        )
+        graphics::lines(spectrum_x_ppm, spectrum_approx, col = "red")
+        graphics::legend("topright", legend = c("Original spectrum", "Sum of Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
+        text <- paste("MSE_Normed = ", mse, sep = "")
+        graphics::mtext(text, side = 3)
+        grDevices::dev.off()
+    }
+}
+
+#' @export
+#'
+#' @title Calculate lorentz curves for each analyzed spectrum
+#'
+#' @description Calculates the lorentz curves of each investigated spectrum.
+#'
+#' @author Martina Haeckl, Tobias Schmidt
+#'
+#' @param deconv_result A list as returned by [generate_lorentz_curves()] or
+#' [MetaboDecon1D].
+#'
+#' @param number_of_files Number of spectra to analyze
+#'
+#' @return
+#' If `deconv_result` holds the result of a single deconvolution, a matrix
+#' containing the generated Lorentz curves is returned, where each row depicts
+#' one Lorentz curve. If `deconv_result` is a list of deconvoluted spectra, a
+#' list of such matrices is returned.
+#'
+#' @seealso
+#' [MetaboDecon1D()],
+#' [plot_triplets()],
+#' [plot_lorentz_curves_save_as_png()],
+#' [plot_spectrum_superposition_save_as_png()]
+#'
+#' @examples
+#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+#' ## Deconvolute the spectra in folder "bruker/sim_subset" into a list of
+#' ## Lorentz Curves (specified via the parameters A, lambda and x_0).
+#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+#' sim <- metabodecon_file("bruker/sim_subset")
+#' decons <- generate_lorentz_curves_sim(sim)
+#' decon0 <- decons[[1]]
+#'
+#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+#' ## Calculate the corresponding y values at each ppm value for each Lorentz
+#' ## Curve. I.e. you get a matrix of dimension n x m for each deconvolution,
+#' ## where n is the number of Lorentz Curves and m is the number of ppm values.
+#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+#' yy <- calculate_lorentz_curves(decons)
+#' y1 <- yy[[1]]
+#' dim(y1)
+#'
+#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+#' ## Visualize the 5th, 9th and 11th Lorentz curve.
+#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+#' nrs <- c(5, 9, 11)
+#' col <- c("red", "blue", "orange")
+#' desc <- paste("Lorentz curve", nrs)
+#' plot(decon0$x_values_ppm, decon0$y_values, type = "l", lty = 2)
+#' for (i in 1:3) lines(decon0$x_values_ppm, y1[nrs[i], ], col = col[i])
+#' legend("topright", legend = desc, col = col, lty = 1)
+#'
+calculate_lorentz_curves <- function(deconv_result, number_of_files = NA) {
+    number_in_folder <- 0
+    if (is.na(number_of_files)) {
+        # Get number of analyzed spectra
+        if ("number_of_files" %in% names(deconv_result)) {
+            number_of_files <- deconv_result$number_of_files
+        } else {
+            if ("number_of_files" %in% names(deconv_result[[1]])) {
+                number_of_files <- deconv_result[[1]]$number_of_files
+                # Check if only one spectrum is inside whole folder
+                if (number_of_files == 1) {
+                    number_in_folder <- 1
+                }
+            }
+        }
+    }
+
+    # Check if more than one spectra was analyzed
+    if (number_of_files > 1 | number_in_folder == 1) {
+        # Check if user input comprise a $ sign
+        if (grepl("[$]", deparse(substitute(deconv_result)))) {
+            spectrum_x <- deconv_result$x_values
+            A_new <- deconv_result$A
+            lambda_new <- deconv_result$lambda
+            w_new <- deconv_result$x_0
+
+            # Calculate lorentz curves
+            lorentz_curves_initial <- matrix(nrow = length(A_new), ncol = length(spectrum_x))
+            for (i in 1:length(A_new)) {
+                if ((w_new[i] == 0) | (lambda_new[i] == 0) | (A_new[i] == 0)) {
+                    lorentz_curves_initial[i, ] <- 0
+                } else {
+                    lorentz_curves_initial[i, ] <- abs(A_new[i] * (lambda_new[i] / (lambda_new[i]^2 + (spectrum_x - w_new[i])^2)))
+                }
+            }
+            # Return matrix with each row contains one lorentz curve
+            return(lorentz_curves_initial)
+        } else {
+            lorentz_curves_list <- list()
+            for (l in 1:number_of_files) {
+                name <- deconv_result[[l]]$filename
+                spectrum_x <- deconv_result[[l]]$x_values
+                A_new <- deconv_result[[l]]$A
+                lambda_new <- deconv_result[[l]]$lambda
+                w_new <- deconv_result[[l]]$x_0
+
+                # Calculate lorentz curves
+                lorentz_curves_initial <- matrix(nrow = length(A_new), ncol = length(spectrum_x))
+                for (i in 1:length(A_new)) {
+                    if ((w_new[i] == 0) | (lambda_new[i] == 0) | (A_new[i] == 0)) {
+                        lorentz_curves_initial[i, ] <- 0
+                    } else {
+                        lorentz_curves_initial[i, ] <- abs(A_new[i] * (lambda_new[i] / (lambda_new[i]^2 + (spectrum_x - w_new[i])^2)))
+                    }
+                }
+                lorentz_curves_list[[paste0(name)]] <- lorentz_curves_initial
+            }
+            return(lorentz_curves_list)
+        }
+    } else {
+        spectrum_x <- deconv_result$x_values
+        A_new <- deconv_result$A
+        lambda_new <- deconv_result$lambda
+        w_new <- deconv_result$x_0
+
+        # Calculate lorentz curves
+        lorentz_curves_initial <- matrix(nrow = length(A_new), ncol = length(spectrum_x))
+        for (i in 1:length(A_new)) {
+            if ((w_new[i] == 0) | (lambda_new[i] == 0) | (A_new[i] == 0)) {
+                lorentz_curves_initial[i, ] <- 0
+            } else {
+                lorentz_curves_initial[i, ] <- abs(A_new[i] * (lambda_new[i] / (lambda_new[i]^2 + (spectrum_x - w_new[i])^2)))
+            }
+        }
+        # Return matrix with each row contains one lorentz curve
+        return(lorentz_curves_initial)
+    }
+}
+
+# Private Helpers #####
 
 #' @noRd
 #' @author Martina Haeckl
@@ -1660,609 +2271,77 @@ deconvolution <- function(filepath,
     return(return_list)
 }
 
-#' @export
-#' @title Plot peak triplets for variable range
-#' @description Plots the peak triplets for each peak detected by [MetaboDecon1D()] and stores the plots as png at `outdir`.
-#'
-#' Supersed by [plot_spectrum()] since metabodecon v1.2.0. Will be replaced with v2.
-#'
-#' `r lifecycle::badge("deprecated")`
-#' @author Martina Haeckl, Tobias Schmidt
-#' @param deconv_result Saved result of the MetaboDecon1D() function
-#' @param x_range Row vector with two entries consisting of the ppm start and the ppm end value to scale the range of the x-axis (optional)
-#' @param y_range Row vector with two entries consisting of the ppm start and the ppm end value to scale the range of the y-axis (optional)
-#' @param out_dir Directory to save the png files (optional)
-#' @param ask Logical value to ask the user if the png files should be saved in the specified directory (optional)
-#' @return No return value, called for side effect of plotting.
-#' @seealso [MetaboDecon1D()], [calculate_lorentz_curves()], [plot_lorentz_curves_save_as_png()], [plot_spectrum_superposition_save_as_png()]
-#' @examples
-#' sim <- metabodecon_file("bruker/sim_subset")
-#' sim_decon <- generate_lorentz_curves_sim(sim)
-#' png_dir <- tmpdir("sim_decon/pngs", create = TRUE)
-#' plot_triplets(sim_decon, out_dir = png_dir, ask = FALSE)
-#' dir(png_dir, full.names = TRUE)
-plot_triplets <- function(deconv_result, x_range = c(), y_range = c(), out_dir = ".", ask = TRUE) {
-    out_dir <- norm_path(out_dir)
-    if (ask) {
-        continue <- get_yn_input(sprintf("Continue creating pngs in %s?", out_dir))
-        if (!continue) {
-            invisible(NULL)
-        }
-    }
-    owd <- setwd(out_dir)
-    on.exit(setwd(owd), add = TRUE)
+# For Testing #####
 
-    number_in_folder <- 0
-    if ("number_of_files" %in% names(deconv_result)) {
-        number_of_files <- deconv_result$number_of_files
-    } else {
-        if ("number_of_files" %in% names(deconv_result[[1]])) {
-            number_of_files <- deconv_result[[1]]$number_of_files
-            if (number_of_files == 1) number_in_folder <- 1
-        }
-    }
-
-    if (number_of_files > 1 | number_in_folder == 1) {
-        # Check if user input comprise a $ sign
-        if (grepl("[$]", deparse(substitute(deconv_result)))) {
-            # User would like to plot triplets of only one spectrum
-            name <- deconv_result$filename
-            spectrum_x_ppm <- deconv_result$x_values_ppm
-            spectrum_y <- deconv_result$y_values
-            index_peaks_triplets <- deconv_result$index_peak_triplets_middle
-            index_left_position <- deconv_result$index_peak_triplets_left
-            index_right_position <- deconv_result$index_peak_triplets_right
-
-            message(paste("Plot triplets of", name))
-
-            # Check if x_range is adjusted or not
-            if (is.null(x_range)) {
-                filename <- paste(name, "_peak_triplets.png", sep = "")
-                # Save plot as png
-                grDevices::png(file = filename, width = 825, height = 525)
-                plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = rev(range(spectrum_x_ppm)), ylim = y_range)
-                graphics::points(spectrum_x_ppm[index_peaks_triplets], spectrum_y[index_peaks_triplets], col = "red", cex = 1.3)
-                graphics::points(spectrum_x_ppm[index_right_position], spectrum_y[index_right_position], col = "green", cex = 1.3)
-                graphics::points(spectrum_x_ppm[index_left_position], spectrum_y[index_left_position], col = "blue", cex = 1.3)
-                graphics::legend("topright", legend = c("x_left", "x_middle", "x_right"), col = c("green", "red", "blue"), pch = 1, bty = "n", cex = 1.3)
-                grDevices::dev.off()
-            } else {
-                filename <- paste(name, "_peak_triplets.png", sep = "")
-                # Save plot as png
-                grDevices::png(file = filename, width = 825, height = 525)
-                plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = x_range, ylim = y_range)
-                graphics::points(spectrum_x_ppm[index_peaks_triplets], spectrum_y[index_peaks_triplets], col = "red", cex = 1.3)
-                graphics::points(spectrum_x_ppm[index_right_position], spectrum_y[index_right_position], col = "green", cex = 1.3)
-                graphics::points(spectrum_x_ppm[index_left_position], spectrum_y[index_left_position], col = "blue", cex = 1.3)
-                graphics::legend("topright", legend = c("x_left", "x_middle", "x_right"), col = c("green", "red", "blue"), pch = 1, bty = "n", cex = 1.3)
-                grDevices::dev.off()
-            }
-        } else {
-            for (l in 1:number_of_files) {
-                # User would like to plot triplets of all investigated spectra
-                name <- deconv_result[[l]]$filename
-                spectrum_x_ppm <- deconv_result[[l]]$x_values_ppm
-                spectrum_y <- deconv_result[[l]]$y_values
-                index_peaks_triplets <- deconv_result[[l]]$index_peak_triplets_middle
-                index_left_position <- deconv_result[[l]]$index_peak_triplets_left
-                index_right_position <- deconv_result[[l]]$index_peak_triplets_right
-
-                message(paste("Plot triplets of", name))
-
-                # Check if x_range is adjusted or not
-                if (is.null(x_range)) {
-                    filename <- paste(name, "_peak_triplets.png", sep = "")
-                    # Save plot as png
-                    grDevices::png(file = filename, width = 825, height = 525)
-                    plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = rev(range(spectrum_x_ppm)), ylim = y_range)
-                    graphics::points(spectrum_x_ppm[index_peaks_triplets], spectrum_y[index_peaks_triplets], col = "red", cex = 1.3)
-                    graphics::points(spectrum_x_ppm[index_right_position], spectrum_y[index_right_position], col = "green", cex = 1.3)
-                    graphics::points(spectrum_x_ppm[index_left_position], spectrum_y[index_left_position], col = "blue", cex = 1.3)
-                    graphics::legend("topright", legend = c("x_left", "x_middle", "x_right"), col = c("green", "red", "blue"), pch = 1, bty = "n", cex = 1.3)
-                    grDevices::dev.off()
-                } else {
-                    filename <- paste(name, "_peak_triplets.png", sep = "")
-                    # Save plot as png
-                    grDevices::png(file = filename, width = 825, height = 525)
-                    plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = x_range, ylim = y_range)
-                    graphics::points(spectrum_x_ppm[index_peaks_triplets], spectrum_y[index_peaks_triplets], col = "red", cex = 1.3)
-                    graphics::points(spectrum_x_ppm[index_right_position], spectrum_y[index_right_position], col = "green", cex = 1.3)
-                    graphics::points(spectrum_x_ppm[index_left_position], spectrum_y[index_left_position], col = "blue", cex = 1.3)
-                    graphics::legend("topright", legend = c("x_left", "x_middle", "x_right"), col = c("green", "red", "blue"), pch = 1, bty = "n", cex = 1.3)
-                    grDevices::dev.off()
-                }
-            }
-        }
-    } else {
-        name <- deconv_result$filename
-        spectrum_x_ppm <- deconv_result$x_values_ppm
-        spectrum_y <- deconv_result$y_values
-        index_peaks_triplets <- deconv_result$index_peak_triplets_middle
-        index_left_position <- deconv_result$index_peak_triplets_left
-        index_right_position <- deconv_result$index_peak_triplets_right
-
-        message(paste("Plot triplets of", name))
-
-        # Check if x_range is adjusted or not
-        if (is.null(x_range)) {
-            filename <- paste(name, "_peak_triplets.png", sep = "")
-            # Save plot as png
-            grDevices::png(file = filename, width = 825, height = 525)
-            plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = rev(range(spectrum_x_ppm)), ylim = y_range)
-            graphics::points(spectrum_x_ppm[index_peaks_triplets], spectrum_y[index_peaks_triplets], col = "red", cex = 1.3)
-            graphics::points(spectrum_x_ppm[index_right_position], spectrum_y[index_right_position], col = "green", cex = 1.3)
-            graphics::points(spectrum_x_ppm[index_left_position], spectrum_y[index_left_position], col = "blue", cex = 1.3)
-            graphics::legend("topright", legend = c("x_left", "x_middle", "x_right"), col = c("green", "red", "blue"), pch = 1, bty = "n", cex = 1.3)
-            grDevices::dev.off()
-        } else {
-            filename <- paste(name, "_peak_triplets.png", sep = "")
-            # Save plot as png
-            grDevices::png(file = filename, width = 825, height = 525)
-            plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = x_range, ylim = y_range)
-            graphics::points(spectrum_x_ppm[index_peaks_triplets], spectrum_y[index_peaks_triplets], col = "red", cex = 1.3)
-            graphics::points(spectrum_x_ppm[index_right_position], spectrum_y[index_right_position], col = "green", cex = 1.3)
-            graphics::points(spectrum_x_ppm[index_left_position], spectrum_y[index_left_position], col = "blue", cex = 1.3)
-            graphics::legend("topright", legend = c("x_left", "x_middle", "x_right"), col = c("green", "red", "blue"), pch = 1, bty = "n", cex = 1.3)
-            grDevices::dev.off()
-        }
-    }
-}
-
-#' @export
-#' @title Plot lorentz curves for variable range
-#' @description Plots the original spectrum and all generated Lorentz curves and save the result as png under the filepath.
-#'
-#' Supersed by [plot_spectrum()] since metabodecon v1.2.0. Will be replaced with v2.
-#'
-#' `r lifecycle::badge("deprecated")`
-#' @param deconv_result Saved result of the MetaboDecon1D() function
-#' @param x_range Row vector with two entries consisting of the ppm start and the ppm end value to scale the range of the x-axis (optional)
-#' @param y_range Row vector with two entries consisting of the ppm start and the ppm end value to scale the range of the y-axis (optional)
-#' @param out_dir Path to the directory where the png files should be saved. Default is the current working directory.
-#' @param ask Logical value. Whether to ask for confirmation from the user before writing files to disk. Default is TRUE.
-#' @return NULL, called for side effects.
-#' @seealso [MetaboDecon1D()], [plot_triplets()], [plot_spectrum_superposition_save_as_png()]
-#' @examples
-#' sim <- metabodecon_file("bruker/sim_subset")
-#' sim_decon <- generate_lorentz_curves_sim(sim)
-#' png_dir <- tmpdir("sim_decon/pngs", create = TRUE)
-#' plot_lorentz_curves_save_as_png(sim_decon, out_dir = png_dir, ask = FALSE)
-#' dir(png_dir, full.names = TRUE)
-plot_lorentz_curves_save_as_png <- function(deconv_result, x_range = c(), y_range = c(), out_dir = ".", ask = TRUE) {
-    out_dir <- norm_path(out_dir)
-    if (ask) {
-        continue <- get_yn_input(sprintf("Continue creating pngs in %s?", out_dir))
-        if (!continue) {
-            invisible(NULL)
-        }
-    }
-    owd <- setwd(out_dir)
-    on.exit(setwd(owd), add = TRUE)
-
-    number_in_folder <- 0
-    # Get number of analyzed spectra
-    if ("number_of_files" %in% names(deconv_result)) {
-        number_of_files <- deconv_result$number_of_files
-    } else {
-        if ("number_of_files" %in% names(deconv_result[[1]])) {
-            number_of_files <- deconv_result[[1]]$number_of_files
-            # Check if only one spectrum is inside whole folder
-            if (number_of_files == 1) {
-                number_in_folder <- 1
-            }
-        }
-    }
-
-    # Check how many spectra are investigated
-    if (number_of_files > 1 | number_in_folder == 1) {
-        # Check if user input comprise a $ sign
-        if (grepl("[$]", deparse(substitute(deconv_result)))) {
-            # Get parameters
-            name <- deconv_result$filename
-            spectrum_x_ppm <- deconv_result$x_values_ppm
-            spectrum_y <- deconv_result$y_values
-
-            # Save additional parameter to know that $ sign was used by the user
-            number_of_files <- 1
-
-            # Calculate Lorentz curves
-            lorentz_curves_initial <- calculate_lorentz_curves(deconv_result, number_of_files)
-
-            message(paste("Plot Lorentz curves of", name))
-
-            # Check if x_range is adjusted or not
-            if (is.null(x_range)) {
-                filename <- paste(name, "_lorentz_curves.png", sep = "")
-                # Save plot as png
-                grDevices::png(file = filename, width = 825, height = 525)
-                plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = rev(range(spectrum_x_ppm)), ylim = y_range)
-                for (i in 1:dim(lorentz_curves_initial)[1]) {
-                    graphics::lines(spectrum_x_ppm, lorentz_curves_initial[i, ], col = "red")
-                }
-                graphics::legend("topright", legend = c("Original spectrum", "Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
-                grDevices::dev.off()
-            } else {
-                filename <- paste(name, "_lorentz_curves.png", sep = "")
-                # Save plot as png
-                grDevices::png(file = filename, width = 825, height = 525)
-                plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = x_range, ylim = y_range)
-                for (i in 1:dim(lorentz_curves_initial)[1]) {
-                    graphics::lines(spectrum_x_ppm, lorentz_curves_initial[i, ], col = "red")
-                }
-                graphics::legend("topright", legend = c("Original spectrum", "Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
-                grDevices::dev.off()
-            }
-        } else {
-            # Calculate Lorentz curves
-            lorentz_curves_matrix <- calculate_lorentz_curves(deconv_result)
-
-            for (l in 1:number_of_files) {
-                # Get necessary parameters
-                name <- deconv_result[[l]]$filename
-                spectrum_x_ppm <- deconv_result[[l]]$x_values_ppm
-                spectrum_y <- deconv_result[[l]]$y_values
-                lorentz_curves_initial <- lorentz_curves_matrix[[l]]
-                filtered_peaks <- deconv_result[[l]]$peak_triplets_middle
-
-                message(paste("Plot Lorentz curves of", name))
-
-                # Check if x_range is adjusted or not
-                if (is.null(x_range)) {
-                    filename <- paste(name, "_lorentz_curves.png", sep = "")
-                    # Save plot as png
-                    grDevices::png(file = filename, width = 825, height = 525)
-                    plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = rev(range(spectrum_x_ppm)), ylim = y_range)
-                    for (i in 1:length(filtered_peaks)) {
-                        graphics::lines(spectrum_x_ppm, lorentz_curves_initial[i, ], col = "red")
-                    }
-                    graphics::legend("topright", legend = c("Original spectrum", "Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
-                    grDevices::dev.off()
-                } else {
-                    filename <- paste(name, "_lorentz_curves.png", sep = "")
-                    # Save plot as png
-                    grDevices::png(file = filename, width = 825, height = 525)
-                    plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = x_range, ylim = y_range)
-                    for (i in 1:length(filtered_peaks)) {
-                        graphics::lines(spectrum_x_ppm, lorentz_curves_initial[i, ], col = "red")
-                    }
-                    graphics::legend("topright", legend = c("Original spectrum", "Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
-                    grDevices::dev.off()
-                }
-            }
-        }
-    } else {
-        # Calculate Lorentz curves
-        lorentz_curves_initial <- calculate_lorentz_curves(deconv_result)
-
-        # Get parameters
-        name <- deconv_result$filename
-        spectrum_x_ppm <- deconv_result$x_values_ppm
-        spectrum_y <- deconv_result$y_values
-        filtered_peaks <- deconv_result$peak_triplets_middle
-
-        message(paste("Plot Lorentz curves of", name))
-
-        # Check if x_range is adjusted or not
-        if (is.null(x_range)) {
-            filename <- paste(name, "_lorentz_curves.png", sep = "")
-            # Save plot as png
-            grDevices::png(file = filename, width = 825, height = 525)
-            plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = rev(range(spectrum_x_ppm)), ylim = y_range)
-            for (i in 1:length(filtered_peaks)) {
-                graphics::lines(spectrum_x_ppm, lorentz_curves_initial[i, ], col = "red")
-            }
-            graphics::legend("topright", legend = c("Original spectrum", "Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
-            grDevices::dev.off()
-        } else {
-            filename <- paste(name, "_lorentz_curves.png", sep = "")
-            # Save plot as png
-            grDevices::png(file = filename, width = 825, height = 525)
-            plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = x_range, ylim = y_range)
-            for (i in 1:length(filtered_peaks)) {
-                graphics::lines(spectrum_x_ppm, lorentz_curves_initial[i, ], col = "red")
-            }
-            graphics::legend("topright", legend = c("Original spectrum", "Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
-            grDevices::dev.off()
-        }
-    }
-}
-
-#' @export
-#'
-#' @title Plot spectrum approx for variable range
-#'
-#' @description
-#' Plots the original spectrum and the superposition of all generated Lorentz
-#' curves and saves the result as png under the specified filepath.
-#'
-#' Supersed by [plot_spectrum()] since metabodecon v1.2.0. Will be replaced with v2.
-#'
-#' `r lifecycle::badge("deprecated")`
-#'
-#' @author Martina Haeckl
-#'
-#' @param deconv_result
-#' Saved result of the MetaboDecon1D() function
-#'
-#' @param x_range
-#' Row vector with two entries consisting of the ppm start and the ppm end value
-#' to scale the range of the x-axis (optional)
-#'
-#' @param y_range
-#' Row vector with two entries consisting of the ppm start and the ppm end value
-#' to scale the range of the y-axis (optional)
-#'
-#' @param out_dir
-#' Path to the directory where the png files should be saved. Default is the
-#' current working directory.
-#'
-#' @param ask
-#' Logical value. Whether to ask for confirmation from the user before writing
-#' files to disk.
-#'
-#' @return NULL, called for side effects.
-#'
-#' @seealso
-#' [MetaboDecon1D()],
-#' [calculate_lorentz_curves()],
-#' [plot_triplets()],
-#' [plot_lorentz_curves_save_as_png()]
-#'
-#' @examples
-#' sim <- metabodecon_file("bruker/sim_subset")
-#' sim_decon <- generate_lorentz_curves_sim(sim)
-#' png_dir <- tmpdir("sim_decon/pngs", create = TRUE)
-#' plot_spectrum_superposition_save_as_png(sim_decon, out_dir = png_dir, ask = FALSE)
-#' dir(png_dir, full.names = TRUE)
-plot_spectrum_superposition_save_as_png <- function(deconv_result,
-                                                    x_range = c(),
-                                                    y_range = c(),
-                                                    out_dir = ".",
-                                                    ask = TRUE) {
-    out_dir <- norm_path(out_dir)
-    if (ask) {
-        prompt <- sprintf("Continue creating pngs in %s?", out_dir)
-        continue <- get_yn_input(prompt)
-        if (!continue) return(invisible(NULL)) # styler: off
-    }
-    owd <- setwd(out_dir)
-    on.exit(setwd(owd), add = TRUE)
-
-    number_in_folder <- 0 # Number of analyzed spectra
-    if ("number_of_files" %in% names(deconv_result)) {
-        number_of_files <- deconv_result$number_of_files
-    } else {
-        if ("number_of_files" %in% names(deconv_result[[1]])) {
-            number_of_files <- deconv_result[[1]]$number_of_files
-            if (number_of_files == 1) number_in_folder <- 1
-        }
-    }
-
-    # Check how many spectra are investigated
-    if (number_of_files > 1 || number_in_folder == 1) {
-        # Check if user input comprises a $ sign
-        if (grepl("[$]", deparse(substitute(deconv_result)))) {
-            name <- deconv_result$filename
-            spectrum_x_ppm <- deconv_result$x_values_ppm
-            spectrum_y <- deconv_result$y_values
-            spectrum_approx <- deconv_result$spectrum_superposition
-            mse <- deconv_result$mse_normed
-            filtered_peaks <- deconv_result$peak_triplets_middle
-
-            message(paste("Plot superposition of", name))
-
-            # Check if x_range is adjusted or not
-            if (is.null(x_range)) {
-                filename <- paste(name, "_sum_lorentz_curves.png", sep = "")
-                # Save plot as png
-                grDevices::png(file = filename, width = 825, height = 525)
-                plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = rev(range(spectrum_x_ppm)), ylim = y_range)
-                graphics::lines(spectrum_x_ppm, spectrum_approx, col = "red")
-                graphics::legend("topright", legend = c("Original spectrum", "Sum of Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
-                text <- paste("MSE_Normed = ", mse, sep = "")
-                graphics::mtext(text, side = 3)
-                grDevices::dev.off()
-            } else {
-                filename <- paste(name, "_sum_lorentz_curves.png", sep = "")
-                # Save plot as png
-                grDevices::png(file = filename, width = 825, height = 525)
-                plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = x_range, ylim = y_range)
-                graphics::lines(spectrum_x_ppm, spectrum_approx, col = "red")
-                graphics::legend("topright", legend = c("Original spectrum", "Sum of Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
-                text <- paste("MSE_Normed = ", mse, sep = "")
-                graphics::mtext(text, side = 3)
-                grDevices::dev.off()
-            }
-        } else {
-            for (l in 1:number_of_files) {
-                # Get necessary parameters
-                name <- deconv_result[[l]]$filename
-                spectrum_x_ppm <- deconv_result[[l]]$x_values_ppm
-                spectrum_y <- deconv_result[[l]]$y_values
-                spectrum_approx <- deconv_result[[l]]$spectrum_superposition
-                mse <- deconv_result[[l]]$mse_normed
-                filtered_peaks <- deconv_result[[l]]$peak_triplets_middle
-
-                message(paste("Plot superposition of", name))
-
-                # Check if x_range is adjusted or not
-                if (is.null(x_range)) {
-                    filename <- paste(name, "_sum_lorentz_curves.png", sep = "")
-                    # Save plot as png
-                    grDevices::png(file = filename, width = 825, height = 525)
-                    plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = rev(range(spectrum_x_ppm)), ylim = y_range)
-                    graphics::lines(spectrum_x_ppm, spectrum_approx, col = "red")
-                    graphics::legend("topright", legend = c("Original spectrum", "Sum of Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
-                    text <- paste("MSE_Normed = ", mse, sep = "")
-                    graphics::mtext(text, side = 3)
-                    grDevices::dev.off()
-                } else {
-                    filename <- paste(name, "_sum_lorentz_curves.png", sep = "")
-                    # Save plot as png
-                    grDevices::png(file = filename, width = 825, height = 525)
-                    plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = x_range, ylim = y_range)
-                    graphics::lines(spectrum_x_ppm, spectrum_approx, col = "red")
-                    graphics::legend("topright", legend = c("Original spectrum", "Sum of Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
-                    text <- paste("MSE_Normed = ", mse, sep = "")
-                    graphics::mtext(text, side = 3)
-                    grDevices::dev.off()
-                }
-            }
-        }
-    } else {
-        name <- deconv_result$filename
-        spectrum_x_ppm <- deconv_result$x_values_ppm
-        spectrum_y <- deconv_result$y_values
-        spectrum_approx <- deconv_result$spectrum_superposition
-        mse <- deconv_result$mse_normed
-        filtered_peaks <- deconv_result$peak_triplets_middle
-        x_range <- if (is.null(x_range)) rev(range(spectrum_x_ppm)) else x_range
-        message(paste("Plot superposition of", name))
-        filename <- paste(name, "_sum_lorentz_curves.png", sep = "")
-        grDevices::png(file = filename, width = 825, height = 525)
-        plot(
-            spectrum_x_ppm, spectrum_y,
-            main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]",
-            type = "l", cex = 1.3,
-            xlim = x_range,
-            ylim = y_range
+#' @noRd
+#' @author Tobias Schmidt
+MetaboDecon1D_silent <- function(# Passed on to [MetaboDecon1D()]
+                                 filepath,
+                                 filename = NA,
+                                 file_format = "bruker",
+                                 number_iterations = 10,
+                                 range_water_signal_ppm = 0.1527692,
+                                 signal_free_region = c(11.44494, -1.8828),
+                                 smoothing_param = c(2, 5),
+                                 delta = 6.4,
+                                 scale_factor = c(1000, 1000000),
+                                 debug = FALSE,
+                                 store_results = NULL,
+                                 # Passed on to [evalwith()]
+                                 output = "captured",
+                                 message = "captured",
+                                 plot = "captured",
+                                 # Passed on to [get_MetaboDecon1D_answers()]
+                                 expno = 10,
+                                 procno = 10) {
+    answers <- get_MetaboDecon1D_answers(
+        ns = if (is.na(filename)) length(list.dirs(filepath)) else 1,
+        wshw = range_water_signal_ppm,
+        sfr = signal_free_region,
+        format = file_format,
+        expno = expno,
+        procno = procno
+    )
+    evalwith(
+        answers = answers,
+        output = output,
+        message = output,
+        plot = plot,
+        decon0 <- MetaboDecon1D(
+            filepath, filename, file_format, number_iterations,
+            range_water_signal_ppm, signal_free_region, smoothing_param, delta,
+            scale_factor, debug, store_results
         )
-        graphics::lines(spectrum_x_ppm, spectrum_approx, col = "red")
-        graphics::legend("topright", legend = c("Original spectrum", "Sum of Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
-        text <- paste("MSE_Normed = ", mse, sep = "")
-        graphics::mtext(text, side = 3)
-        grDevices::dev.off()
-    }
+    )
+    decon0
 }
 
-#' @export
-#'
-#' @title Calculate lorentz curves for each analyzed spectrum
-#'
-#' @description Calculates the lorentz curves of each investigated spectrum.
-#'
-#' @author Martina Haeckl, Tobias Schmidt
-#'
-#' @param deconv_result A list as returned by [generate_lorentz_curves()] or
-#' [MetaboDecon1D].
-#'
-#' @param number_of_files Number of spectra to analyze
-#'
-#' @return
-#' If `deconv_result` holds the result of a single deconvolution, a matrix
-#' containing the generated Lorentz curves is returned, where each row depicts
-#' one Lorentz curve. If `deconv_result` is a list of deconvoluted spectra, a
-#' list of such matrices is returned.
-#'
-#' @seealso
-#' [MetaboDecon1D()],
-#' [plot_triplets()],
-#' [plot_lorentz_curves_save_as_png()],
-#' [plot_spectrum_superposition_save_as_png()]
-#'
+#' @noRd
+#' @author Tobias Schmidt
 #' @examples
-#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
-#' ## Deconvolute the spectra in folder "bruker/sim_subset" into a list of
-#' ## Lorentz Curves (specified via the parameters A, lambda and x_0).
-#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
 #' sim <- metabodecon_file("bruker/sim_subset")
-#' decons <- generate_lorentz_curves_sim(sim)
-#' decon0 <- decons[[1]]
-#'
-#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
-#' ## Calculate the corresponding y values at each ppm value for each Lorentz
-#' ## Curve. I.e. you get a matrix of dimension n x m for each deconvolution,
-#' ## where n is the number of Lorentz Curves and m is the number of ppm values.
-#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
-#' yy <- calculate_lorentz_curves(decons)
-#' y1 <- yy[[1]]
-#' dim(y1)
-#'
-#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
-#' ## Visualize the 5th, 9th and 11th Lorentz curve.
-#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
-#' nrs <- c(5, 9, 11)
-#' col <- c("red", "blue", "orange")
-#' desc <- paste("Lorentz curve", nrs)
-#' plot(decon0$x_values_ppm, decon0$y_values, type = "l", lty = 2)
-#' for (i in 1:3) lines(decon0$x_values_ppm, y1[nrs[i], ], col = col[i])
-#' legend("topright", legend = desc, col = col, lty = 1)
-#'
-calculate_lorentz_curves <- function(deconv_result, number_of_files = NA) {
-    number_in_folder <- 0
-    if (is.na(number_of_files)) {
-        # Get number of analyzed spectra
-        if ("number_of_files" %in% names(deconv_result)) {
-            number_of_files <- deconv_result$number_of_files
-        } else {
-            if ("number_of_files" %in% names(deconv_result[[1]])) {
-                number_of_files <- deconv_result[[1]]$number_of_files
-                # Check if only one spectrum is inside whole folder
-                if (number_of_files == 1) {
-                    number_in_folder <- 1
-                }
-            }
-        }
-    }
-
-    # Check if more than one spectra was analyzed
-    if (number_of_files > 1 | number_in_folder == 1) {
-        # Check if user input comprise a $ sign
-        if (grepl("[$]", deparse(substitute(deconv_result)))) {
-            spectrum_x <- deconv_result$x_values
-            A_new <- deconv_result$A
-            lambda_new <- deconv_result$lambda
-            w_new <- deconv_result$x_0
-
-            # Calculate lorentz curves
-            lorentz_curves_initial <- matrix(nrow = length(A_new), ncol = length(spectrum_x))
-            for (i in 1:length(A_new)) {
-                if ((w_new[i] == 0) | (lambda_new[i] == 0) | (A_new[i] == 0)) {
-                    lorentz_curves_initial[i, ] <- 0
-                } else {
-                    lorentz_curves_initial[i, ] <- abs(A_new[i] * (lambda_new[i] / (lambda_new[i]^2 + (spectrum_x - w_new[i])^2)))
-                }
-            }
-            # Return matrix with each row contains one lorentz curve
-            return(lorentz_curves_initial)
-        } else {
-            lorentz_curves_list <- list()
-            for (l in 1:number_of_files) {
-                name <- deconv_result[[l]]$filename
-                spectrum_x <- deconv_result[[l]]$x_values
-                A_new <- deconv_result[[l]]$A
-                lambda_new <- deconv_result[[l]]$lambda
-                w_new <- deconv_result[[l]]$x_0
-
-                # Calculate lorentz curves
-                lorentz_curves_initial <- matrix(nrow = length(A_new), ncol = length(spectrum_x))
-                for (i in 1:length(A_new)) {
-                    if ((w_new[i] == 0) | (lambda_new[i] == 0) | (A_new[i] == 0)) {
-                        lorentz_curves_initial[i, ] <- 0
-                    } else {
-                        lorentz_curves_initial[i, ] <- abs(A_new[i] * (lambda_new[i] / (lambda_new[i]^2 + (spectrum_x - w_new[i])^2)))
-                    }
-                }
-                lorentz_curves_list[[paste0(name)]] <- lorentz_curves_initial
-            }
-            return(lorentz_curves_list)
-        }
-    } else {
-        spectrum_x <- deconv_result$x_values
-        A_new <- deconv_result$A
-        lambda_new <- deconv_result$lambda
-        w_new <- deconv_result$x_0
-
-        # Calculate lorentz curves
-        lorentz_curves_initial <- matrix(nrow = length(A_new), ncol = length(spectrum_x))
-        for (i in 1:length(A_new)) {
-            if ((w_new[i] == 0) | (lambda_new[i] == 0) | (A_new[i] == 0)) {
-                lorentz_curves_initial[i, ] <- 0
-            } else {
-                lorentz_curves_initial[i, ] <- abs(A_new[i] * (lambda_new[i] / (lambda_new[i]^2 + (spectrum_x - w_new[i])^2)))
-            }
-        }
-        # Return matrix with each row contains one lorentz curve
-        return(lorentz_curves_initial)
-    }
+#' answers <- get_MetaboDecon1D_answers(ns = 1, wshw = 0, sfr = c(3.58, 3.42))
+#' x <- evalwith(
+#'     answers = answers,
+#'     output = "captured",
+#'     message = "captured",
+#'     plot = "captured",
+#'     expr = { decon_01 <- MetaboDecon1D(sim, "sim_01") }
+#' )
+#' str(decon_01, 1)
+get_MetaboDecon1D_answers <- function(ns = 1, # Number of spectra
+                                      wshw = 0.1527692,
+                                      sfr = c(11.44494, -1.8828),
+                                      format = "bruker",
+                                      expno = 10,
+                                      procno = 10) {
+    answers <- c(
+        SameParam = if (ns > 1) "y" else NULL,
+        AdjNo = if (ns > 1) "1" else NULL,
+        ExpNo = if (format == "bruker") expno else NULL,
+        ProcNo = if (format == "bruker") procno else NULL,
+        SFRok = "n", Left = max(sfr), Right = min(sfr), SFRok = "y",
+        WSok = "n", WSHW = wshw, WSok = "y",
+        SaveResults = "n"
+    )
 }

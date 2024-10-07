@@ -47,7 +47,7 @@ read_spectra <- function(data_path = pkg_file("example_datasets/bruker/urine"),
     if (length(files) == 0) {
         msg <- sprintf("No spectra found in directory '%s'.", data_path)
         msg2 <- "Did you specify the correct `expno` and `procno`?"
-        if (file_format == "bruker") msg <- paste(msg, ms2)
+        if (file_format == "bruker") msg <- paste(msg, msg2)
         stop(msg)
     }
     spectra <- lapply(paths, function(path) {
@@ -129,8 +129,8 @@ read_spectrum <- function(data_path = metabodecon_file("bruker/sim/sim_01"),
                           force = FALSE) {
     file_format <- match.arg(file_format, c("bruker", "jcampdx"))
     switch(file_format,
-        "bruker" = read_bruker_spectrum(data_path, expno, procno, raw, silent, force),
-        "jcampdx" = read_jcampdx_spectrum(data_path, silent, force)
+        "bruker" = read_bruker(data_path, expno, procno, raw, silent, force),
+        "jcampdx" = read_jcampdx(data_path, silent, force)
     )
 }
 
@@ -274,7 +274,6 @@ simulate_spectrum <- function(name = "sim_00",
 }
 
 
-
 # =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
 # Private Helpers #####
 # =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
@@ -284,20 +283,20 @@ simulate_spectrum <- function(name = "sim_00",
 #' @inheritParams read_spectrum
 #' @examples
 #' spldir <- pkg_file("example_datasets/bruker/urine/urine_1")
-#' x <- read_bruker_spectrum(spldir)
+#' x <- read_bruker(spldir)
 #' fq_ref <- x$fq[1] / (1 - (x$cs[1] / 1e6))
 #' print(head(x))
 #' cat("Frequency of reference in MHz:", fq_ref / 1e6)
-read_bruker_spectrum <- function(spldir,
+read_bruker <- function(spldir,
                                  expno = 10,
                                  procno = 10,
                                  raw = FALSE,
                                  silent = TRUE,
                                  force = FALSE) {
-    acqus <- read_acqus_file(spldir, expno)
+    acqus <- read_acqus(spldir, expno)
     procs <- read_procs_file(spldir, expno, procno)
-    simpar <- read_simpar_file(spldir, expno, procno)
-    one_r <- read_one_r_file(spldir, expno, procno, procs, silent = silent)
+    simpar <- read_simpar(spldir, expno, procno)
+    one_r <- read_one_r(spldir, expno, procno, procs, silent = silent)
     one_r <- one_r[c("raw", "scaled")]
     x <- make_spectrum(
         si = if (raw) one_r$raw else one_r$scaled, # Signal intensities
@@ -323,10 +322,10 @@ read_bruker_spectrum <- function(spldir,
 #' # Example Usage (took 30s on the development machine)
 #' xds_path <- download_example_datasets()
 #' path <- file.path(xds_path, "jcampdx/urine/urine_1.dx")
-#' spectrum_data <- read_jcampdx_spectrum(path)
+#' spectrum_data <- read_jcampdx(path)
 #' str(spectrum_data, 1)
 #' }
-read_jcampdx_spectrum <- function(path,
+read_jcampdx <- function(path,
                                   raw = FALSE,
                                   silent = TRUE,
                                   force = FALSE) {
@@ -339,7 +338,7 @@ read_jcampdx_spectrum <- function(path,
     # - imaginary = df (131072*2)]
     # Colnames(data$real) are c("x", "y")
     # Reading takes about 30s on machine r31 for urine_1.dx (1MB).
-    meta <- parse_metadata_file(lines = data$metadata)
+    meta <- parse_metadata(lines = data$metadata)
     si_raw <- data$real$y
     si_scaled <- if (meta$DTYPP == 0) data$real$y * 2^meta$NC_proc else data$real$y
     make_spectrum(
@@ -376,10 +375,10 @@ read_jcampdx_spectrum <- function(path,
 #' @examples
 #' path <- pkg_file("example_datasets/bruker/urine/urine_1/10/acqus")
 #' lines <- readLines(path)
-#' acqus1 <- parse_metadata_file(path)
-#' acqus2 <- parse_metadata_file(lines = lines)
+#' acqus1 <- parse_metadata(path)
+#' acqus2 <- parse_metadata(lines = lines)
 #' stopifnot(all.equal(acqus1, acqus2))
-parse_metadata_file <- function(path = NULL, lines = NULL) {
+parse_metadata <- function(path = NULL, lines = NULL) {
     msg <- "Either `path` or `lines` must be provided."
     if (is.null(path) && is.null(lines)) stop(msg)
     if (is.null(lines)) lines <- readLines(path)
@@ -417,26 +416,26 @@ parse_metadata_file <- function(path = NULL, lines = NULL) {
 #'
 #' @examples
 #' blood1_dir <- pkg_file("example_datasets/bruker/urine/urine_1")
-#' acqus <- read_acqus_file(blood1_dir)
+#' acqus <- read_acqus(blood1_dir)
 #' str(acqus, 0)
 #' cat("spectrum width ppm:", as.numeric(acqus$SW))
 #' cat("spectrum width Hz:", as.numeric(acqus$SW_h))
-read_acqus_file <- function(spldir, expno = 10) {
+read_acqus <- function(spldir, expno = 10) {
     path <- file.path(spldir, expno, "acqus")
-    acqus <- parse_metadata_file(path)
+    acqus <- parse_metadata(path)
     acqus
 }
 
 #' @noRd
 #' @title Read Bruker TopSpin Processing Parameters
-#' @inheritParams read_spectrum read_acqus_file
+#' @inheritParams read_spectrum read_acqus
 #' @return The processing parameters read from the file as named list.
 #' @examples
 #' blood1_dir <- pkg_file("example_datasets/bruker/urine/urine_1")
 #' procs <- read_procs_file(blood1_dir)
 read_procs_file <- function(spldir, expno = 10, procno = 10) {
     path <- file.path(spldir, expno, "pdata", procno, "procs")
-    procs <- parse_metadata_file(path)
+    procs <- parse_metadata(path)
     procs
 }
 
@@ -450,12 +449,12 @@ read_procs_file <- function(spldir, expno = 10, procno = 10) {
 #' the simulation parameters that were used to generate the spectrum. The file
 #' contains R code, as generated by `dput()`, that can be used to recreate the
 #' list object holding the simulation parameters.
-#' @inheritParams read_spectrum read_acqus_file
+#' @inheritParams read_spectrum read_acqus
 #' @return The simulation parameters read from the file as named list.
 #' @examples
 #' sim_1_dir <- pkg_file("example_datasets/bruker/sim2/sim_01")
-#' simpar <- read_simpar_file(blood1_dir)
-read_simpar_file <- function(spldir, expno = 10, procno = 10) {
+#' simpar <- read_simpar(blood1_dir)
+read_simpar <- function(spldir, expno = 10, procno = 10) {
     path <- file.path(spldir, expno, "pdata", procno, "simpar")
     read <- switch(simpar_format, "rds" = readRDS, "ascii" = dget)
     if (file.exists(path)) read(path)
@@ -463,12 +462,12 @@ read_simpar_file <- function(spldir, expno = 10, procno = 10) {
 
 #' @noRd
 #' @title Read signal intensities from Bruker TopSpin 1r file
-#' @inheritParams read_spectrum read_acqus_file
+#' @inheritParams read_spectrum read_acqus
 #' @examples
 #' spldir <- pkg_file("example_datasets/bruker/urine/urine_1")
-#' oneR <- read_one_r_file(spldir, 10, 10)
+#' oneR <- (spldir, 10, 10)
 #' str(oneR, 1)
-read_one_r_file <- function(spldir,
+read_one_r <- function(spldir,
                             expno = 10,
                             procno = 10,
                             procs = read_procs_file(spldir, expno, procno),
@@ -556,36 +555,22 @@ read_one_r_file <- function(spldir,
     )
 }
 
-#' @noRd
-#' @description
-#' Converts a vector of chemical shifts given in ppm to a vector of frequencies
-#' in Hz.
-#' @param cs Vector of chemical shifts in ppm.
-#' @param fqref Frequency of the reference molecule in Hz.
-as_frequency <- function(cs, fqref) {
-    fqmax <- fqref - (min(cs) * 1e-6 * fqref) # Highest frequency in Hz
-    fqmin <- fqref - (max(cs) * 1e-6 * fqref) # Lowest frequency in Hz
-    fq <- seq(fqmin, fqmax, length.out = length(cs))
-    fq <- fq[rev(order(cs))] # (1)
-    # (1) Sort frequencies in descending order of chemical shifts, as the
-    #     highest chemical shift corresponds to the lowest frequency.
-    fq
-}
-
 # =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
 # Sim Dataset #####
 # =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
 
-update_sim_dataset <- function(dry_run = TRUE, verbose = TRUE) {
-    parent <- if (dry_run) tmpdir() else pkg_file("example_datasets/bruker")
+update_sim <- function(dry_run = TRUE, verbose = TRUE) {
+    tmp <- tmpdir(subdir = TRUE)
+    pkg <- pkg_file("example_datasets/bruker")
+    parent <- if (dry_run) tmp else pkg
     path <- file.path(parent, "sim2")
     if (verbose) logf("Dry_run %s. Updating %s." , dry_run, path)
-    x <- make_sim_dataset()
+    x <- make_sim()
     save_spectra(x, path, force = FALSE, verbose = verbose)
     if (verbose) logf("Finished update of %s." , path)
 }
 
-make_sim_dataset <- function() {
+make_sim <- function() {
     decons <- deconvolute_blood()
     simpars <- lapply(decons, get_sim_params, pkr = c(3.52, 3.37))
     simpars[[2]] <- get_sim_params(decons[[2]], pkr = c(3.51, 3.36)) # (1)
@@ -685,7 +670,7 @@ get_sim_params <- function(x, pkr = c(3.4, 3.5)) {
 #' path <- save_spectrum(x)
 #' y <- read_spectrum(path)
 save_spectrum <- function(x,
-                          path = tmpdir(),
+                          path = tmpdir(subdir = TRUE),
                           force = FALSE,
                           verbose = TRUE) {
 
@@ -694,7 +679,7 @@ save_spectrum <- function(x,
     stopifnot(length(dir(path)) == 0 || isTRUE(force))
     stopifnot(is_bool(force))
     stopifnot(is_bool(verbose))
-    temp <- tmpdir()
+    temp <- tmpdir(subdir = TRUE)
     logv <- get_logv(verbose)
     logv("Saving bruker files to %s", temp)
 
@@ -741,7 +726,7 @@ save_spectrum <- function(x,
 
     # Validate written files
     logv("Reading back files to validate them")
-    y <- read_bruker_spectrum(spldir = temp)
+    y <- read_bruker(spldir = temp)
     is_valid <- all(
         is_equal(x$si, y$si),
         is_equal(x$cs, y$cs),

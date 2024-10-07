@@ -232,7 +232,8 @@ datadir_temp <- function() {
 #' tmpdir("simulate_spectra")
 tmpdir <- function(subdir = NULL, create = FALSE) {
     p <- file.path(base::tempdir(), "metabodecon")
-    p <- if (is.null(subdir)) tempfile("", p) else file.path(p, subdir)
+    if (isTRUE(subdir)) p <- tempfile("", p)
+    if (is_char(subdir)) p <- file.path(p, subdir)
     if (create) base::dir.create(p, recursive = TRUE, showWarnings = FALSE)
     normalizePath(p, "/", mustWork = FALSE)
 }
@@ -423,13 +424,24 @@ tmpfile <- function(pattern = "file", fileext = "") {
     tempfile(pattern, tmpdir(create = TRUE), fileext)
 }
 
-get_worker_logs <- function(n, create = TRUE) {
-    timestamp <- format(Sys.time(), "%Y%m%d_%H%M%OS3")
-    timestamp <- gsub(".", "_", timestamp, fixed = TRUE)
-    logdirrel <- file.path("logs", timestamp)
-    logdir <- tmpdir(subdir = logdirrel, create = TRUE)
-    logfiles <- paste0("worker_", seq_len(n), ".log")
-    logpaths <- file.path(logdir, logfiles)
-    if (create) file.create(logpaths)
-    logpaths
+testdir <- function(p = NULL) {
+    norm_path(paste(tmpdir("tests"), p, sep = "/"))
+    # use paste instead of file.path, because it can deal with NULL
+}
+
+mockdir <- function() {
+    norm_path(file.path(tmpdir(), "mocks"))
+}
+
+#' @noRd
+#' @description
+#' Create and return cache dir. If existing, the persistent cache dir is
+#' returned, else the temp cache dir. To force creation of the persistent cache
+#' dir, call once with `persistent=TRUE`.
+cachedir <- function(persistent = NULL) {
+    tcd <- file.path(tmpdir(), "cache") # temporary cache dir
+    pcd <- file.path(tools::R_user_dir("metabodecon", "cache")) # persistent cache dir
+    cd <- if (isTRUE(persistent) || (is.null(persistent) && dir.exists(pcd))) pcd else tcd
+    ncd <- normalizePath(cd, "/", mustWork = FALSE)
+    mkdirs(ncd)
 }

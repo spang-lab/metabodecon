@@ -283,9 +283,7 @@ speaq_align <- function(feat = gen_feat_mat(spectrum_data),
 
 #' @export
 #'
-#'
 #' @title Combine Peaks
-#'
 #'
 #' @description Even after calling `speaq_align()`, the alignment of individual
 #'
@@ -294,7 +292,6 @@ speaq_align <- function(feat = gen_feat_mat(spectrum_data),
 #' neighboring columns are merged.
 #'
 #' @param shifted_mat The matrix returned by `speaq_align()`.
-#'
 #'
 #' @param range Amount of adjacent columns which are permitted to be used for
 #'

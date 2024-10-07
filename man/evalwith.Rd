@@ -23,35 +23,47 @@ evalwith(
 \arguments{
 \item{expr}{Expression to be evaluated.}
 
-\item{testdir}{ID of the test directory. E.g. \code{"xyz/2"}. Will be created and populated with \code{inputs}. To clear, use \code{clear(testdir("xyz/2"))}.}
+\item{testdir}{ID of the test directory. E.g. \code{"xyz/2"}. Will be created and
+populated with \code{inputs}. To clear, use \code{clear(testdir("xyz/2"))}.}
 
 \item{answers}{Answers to be returned by readline().}
 
-\item{output}{Path to the file where output stream should be redirected to. Use \code{"captured"} to capture the output.}
+\item{output}{Path to the file where output stream should be redirected to.
+Use \code{"captured"} to capture the output.}
 
-\item{message}{Path to the file where message stream be redirected to. Use \code{"captured"} to capture the messages.}
+\item{message}{Path to the file where message stream be redirected to. Use
+\code{"captured"} to capture the messages.}
 
-\item{plot}{Path to the pdf file where plots should be saved to.}
+\item{plot}{An expression opening a device, the string "captured" or a path
+ending in ".pdf", ".svg", or ".png". Examples: \code{svg("tmp.svg")},
+\code{quote(pdf("tmp.pdf"))}, \code{"captured"}, \code{"tmp.png"}. Passing \code{"captured"} is
+equivalent to passing \code{tempfile(fileext = ".png")}.}
 
-\item{datadir_temp}{State of the mocked temporary data directory. See details section.}
+\item{datadir_temp}{State of the mocked temporary data directory. See details
+section.}
 
-\item{datadir_persistent}{State of the mocked persistent data directory. See details section.}
+\item{datadir_persistent}{State of the mocked persistent data directory. See
+details section.}
 
-\item{inputs}{Paths to be copied to the test directory before evaluating \code{expr}.}
+\item{inputs}{Paths to be copied to the test directory before evaluating
+\code{expr}.}
 
 \item{opts}{Named list of options to be set. See \code{\link[=options]{options()}}.}
 
 \item{pars}{Named list of parameters to be set. See \code{\link[=par]{par()}}.}
 
-\item{cache}{Logical indicating whether to cache the result of the expression.}
+\item{cache}{Logical indicating whether to cache the result of the
+expression.}
 
-\item{overwrite}{Logical indicating whether to overwrite the cache file if it already exists.}
+\item{overwrite}{Logical indicating whether to overwrite the cache file if it
+already exists.}
 }
 \value{
 A list containing with following elements:
 \itemize{
 \item \code{rv}: The return value of the expression.
-\item \code{runtime}: The "elapsed" runtime of the expression in seconds. Measured with \code{\link[=system.time]{system.time()}}.
+\item \code{runtime}: The "elapsed" runtime of the expression in seconds. Measured
+with \code{\link[=system.time]{system.time()}}.
 \item \code{output}: The captured output.
 \item \code{message}: The captured messages.
 \item \code{plot}: The path to the saved plot.
@@ -71,16 +83,31 @@ In addition to that, \code{evalwith} allows to:
 \itemize{
 \item Redirect or capture the output and/or message stream via \code{\link[=sink]{sink()}}
 \item Measure the runtime of the evaluated expression via \code{\link[=system.time]{system.time()}}
-\item Creating a temporary test directory (inside \code{\link[=tmpdir]{tmpdir()}}) and populating it with input files according to \code{inputs}
-\item Predefine answers for calls to \code{\link[=readline]{readline()}} happening during evaluation of \code{expr}
+\item Creating a temporary test directory (inside \code{\link[=tmpdir]{tmpdir()}}) and populating it
+with input files according to \code{inputs}
+\item Predefine answers for calls to \code{\link[=readline]{readline()}} happening during evaluation of
+\code{expr}
 \item Caching the result of the expression
 }
 
-All changes to the global state are reverted after the expression has been evaluated.
+All changes to the global state are reverted after the expression has been
+evaluated.
 }
 \details{
-The \code{datadir_temp} and \code{datadir_persistent} arguments accept values "missing", "filled" and "empty". Setting a value unequal NULL causes the functions \code{\link[=datadir_temp]{datadir_temp()}} and/or \code{\link[=datadir_persistent]{datadir_persistent()}} to be replaced with mock functions pointing to fake directories. Functions depending on these functions will then use the fake directories instead of the real ones. When set to "missing" the returned mock directory does not exist. When set to "empty" it exists and is guaranteed to be empty. When set to "filled", it is populated with example datasets.
-Attention: the mocked functions, i.e. \code{\link[=datadir_temp]{datadir_temp()}} and \code{\link[=datadir_persistent]{datadir_persistent()}} cannot be used directly inside \code{expr} when called via \code{devtools::test()}. I'm not sure why, but it seems as if devtools and/or testthat have their own copies of the functions which are used when the expression is evaluated.
+The \code{datadir_temp} and \code{datadir_persistent} arguments accept values
+"missing", "filled" and "empty". Setting a value unequal NULL causes the
+functions \code{\link[=datadir_temp]{datadir_temp()}} and/or \code{\link[=datadir_persistent]{datadir_persistent()}} to be replaced with
+mock functions pointing to fake directories. Functions depending on these
+functions will then use the fake directories instead of the real ones. When
+set to "missing" the returned mock directory does not exist. When set to
+"empty" it exists and is guaranteed to be empty. When set to "filled", it is
+populated with example datasets.
+
+Attention: the mocked functions, i.e. \code{\link[=datadir_temp]{datadir_temp()}} and
+\code{\link[=datadir_persistent]{datadir_persistent()}} cannot be used directly inside \code{expr} when called via
+\code{devtools::test()}. I'm not sure why, but it seems as if devtools and/or
+testthat have their own copies of the functions which are used when the
+expression is evaluated.
 }
 \examples{
 x1 <- evalwith(output = "captured", cat("Helloworld\n"))

@@ -2,7 +2,7 @@ library("testthat")
 
 test_that("read_1r_file works", {
     spldir <- pkg_file("example_datasets/bruker/urine/urine_1")
-    oneR <- read_1r_file(spldir, 10, 10)
+    oneR <- read_one_r(spldir, 10, 10)
     expect_equal(names(oneR), c("spldir", "expno", "procno", "path_1r", "path_procs", "procs", "byteordp", "dtypp", "endian", "nbytes", "ncproc", "type", "n", "raw", "scaled"))
     expect_match(oneR$spldir, ".example_datasets.bruker.urine.urine_1")
     expect_equal(oneR$expno, 10)

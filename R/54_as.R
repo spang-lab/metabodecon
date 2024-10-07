@@ -1,4 +1,6 @@
-# Convert to anything #####
+# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
+# Convert to Anything #####
+# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
 
 #' @export
 #' @name convert
@@ -20,7 +22,7 @@ convert <- function(x, to, ...) {
     as_class(x, ...)
 }
 
-# Singular classes #####
+# Convert to Singleton Object #####
 
 #' @export
 #' @rdname convert
@@ -196,7 +198,9 @@ as_decon2 <- function(x) {
     obj
 }
 
-# Public Plural #####
+# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
+# Convert to Collection Object #####
+# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
 
 #' @export
 #' @rdname convert
@@ -269,7 +273,29 @@ as_decons2 <- function(x) {
     decons2
 }
 
+# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
+# Convert Unit #####
+# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
+
+#' @noRd
+#' @description
+#' Converts a vector of chemical shifts given in ppm to a vector of frequencies
+#' in Hz.
+#' @param cs Vector of chemical shifts in ppm.
+#' @param fqref Frequency of the reference molecule in Hz.
+as_frequency <- function(cs, fqref) {
+    fqmax <- fqref - (min(cs) * 1e-6 * fqref) # Highest frequency in Hz
+    fqmin <- fqref - (max(cs) * 1e-6 * fqref) # Lowest frequency in Hz
+    fq <- seq(fqmin, fqmax, length.out = length(cs))
+    fq <- fq[rev(order(cs))] # (1)
+    # (1) Sort frequencies in descending order of chemical shifts, as the
+    #     highest chemical shift corresponds to the lowest frequency.
+    fq
+}
+
+# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
 # Helpers #####
+# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
 
 set_names <- function(x, nams) {
     if (!is.list(x)) stop("Input must be a list.")
@@ -297,7 +323,9 @@ get_default_names <- function(x, default) {
     stop("Default names must be a single string with a `%d` placeholder or a character vector of same length as the spectra object.")
 }
 
+# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
 # Class Members #####
+# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
 
 spectrum_members <- c(
     "cs",

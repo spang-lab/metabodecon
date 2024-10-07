@@ -1,7 +1,12 @@
 test_that("init_lorentz_curves_v14 works", {
-
-    obj <- md1d("sim_01", cache = TRUE)$rv
-
+    sim <- metabodecon_file("sim_subset")
+    obj <- MetaboDecon1D_silent(
+        filepath = sim,
+        filename ="sim_01",
+        range_water_signal_ppm = 0,
+        signal_free_region = c(3.52, 3.37),
+        debug = TRUE
+    )
     spec <- within(list(), {
         sdp <- obj$x_values
         y_smooth <- obj$debuglist$smoothed$spectrum_y
@@ -12,8 +17,8 @@ test_that("init_lorentz_curves_v14 works", {
             high <- rep(TRUE, length(center))
         })
     })
-    y14 <- init_lc(spec, verbose = FALSE)
-    expect_equal(y14$A, obj$debuglist$params_init$A)
-    expect_equal(y14$lambda, obj$debuglist$params_init$lambda)
-    expect_equal(y14$w, obj$debuglist$params_init$w)
+    lcpar <- init_lc(spec, verbose = FALSE)
+    expect_equal(lcpar$A, obj$debuglist$params_init$A)
+    expect_equal(lcpar$lambda, obj$debuglist$params_init$lambda)
+    expect_equal(lcpar$w, obj$debuglist$params_init$w)
 })
