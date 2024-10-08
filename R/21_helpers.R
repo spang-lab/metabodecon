@@ -381,8 +381,8 @@ calc_A <- function(wr, wc, wl, yr, yc, yl, wrc, wrl, wcl, yrc, yrl, ycl, lambda,
 #' y2 <- A * pi * dcauchy(x, location = x0, scale = lambda)
 #' stopifnot(all.equal(y1, y2))
 lorentz <- function(x, x0, A, lambda) {
-    # For details see [Wikipedia > Cauchy_distribution >
-    # #Properties_of_PDF](https://en.wikipedia.org/wiki/Cauchy_distribution#Properties_of_PDF),
+    # For details see [Wikipedia > Cauchy_distribution > Properties_of_PDF]
+    # (https://en.wikipedia.org/wiki/Cauchy_distribution#Properties_of_PDF)
     # in particular the formula below sentence "In physics, a three-parameter
     # Lorentzian function is often used".
     A * (lambda / (lambda^2 + (x - x0)^2))
@@ -395,6 +395,7 @@ lorentz_sup <- function(x, x0, A, lambda, lcpar = NULL) {
         if ("lambda" %in% nams) lambda <- lcpar$lambda
         if ("x_0" %in% nams) x0 <- lcpar$x_0
         if ("x0" %in% nams) x0 <- lcpar$x0
+        if ("w" %in% nams) x0 <- lcpar$w
     }
     sapply(x, function(xi) {
         sum(abs(A * (lambda / (lambda^2 + (xi - x0)^2))))

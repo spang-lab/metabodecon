@@ -91,12 +91,7 @@ as_decon1 <- function(x, sf = NULL) {
         x_values = x$sdp,
         x_values_ppm = x$ppm,
         y_values = x$y_smooth,
-        spectrum_superposition = s <- lorentz_sup(
-            x = x$sdp,
-            x0 = x$lcr$w,
-            A = x$lcr$A,
-            lambda = x$lcr$lambda
-        ),
+        spectrum_superposition = s <- lorentz_sup(x = x$sdp, lcpar = x$lcr),
         mse_normed = mean(((x$y_smooth / sum(x$y_smooth)) - (s / sum(s)))^2),
         index_peak_triplets_middle = x$peak$center[x$peak$high],
         index_peak_triplets_left = x$peak$right[x$peak$high],
@@ -110,7 +105,9 @@ as_decon1 <- function(x, sf = NULL) {
         A = x$lcr$A,
         lambda = x$lcr$lambda,
         x_0 = x$lcr$w,
-        y_values_raw = x$y_raw, # Following fields only available in `decon1`, but not `decon0` (since v1.2.0)
+        y_values_raw = x$y_raw,
+        # Following fields are only available in `decon1`, but not `decon0`,
+        # i.e. since v1.2.0
         x_values_hz = x$hz,
         mse_normed_raw = mean(((x$y_raw / sum(x$y_raw)) - (s / sum(s)))^2),
         x_0_hz = convert_pos(x$lcr$w, x$sdp, x$hz),

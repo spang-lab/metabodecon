@@ -4,7 +4,7 @@
 
 ### REFACTOR-11: Write PRARP tests
 
-1. Implement a function `get_prarp` that takes a `decon` object and optionally a `truepar` object. If `truepar` is not given, it shall be taken from `decon$meta$simpar`. The function then calculates the PRARP (peak ratio area ratio product) from it, by comparing the estimated parameters with the true parameters.
+1. Implement a function `calc_prarp` that takes a `decon` object and optionally a `truepar` object. If `truepar` is not given, it shall be taken from `decon$meta$simpar`. The function then calculates the PRARP (peak ratio area ratio product) from it, by comparing the estimated parameters with the true parameters.
 
    See function `check_decon_quality()` for existing code to reuse.
 
@@ -70,7 +70,7 @@ Check why there are negative values for the estimated lorentz curve area A.
 
 ### CRAN-7: Check dontrun examples
 
-Remove `dontrun` from examples if they are executable in < 5 sec, or create additionally small toy examples to allow automatic testing in < 5 sec. Reason: `\dontrun{}` should only be used if the example really cannot be executed by the user, e.g. because of missing additional software, missing API keys, etc. That's why wrapping examples in `\dontrun{}` adds the comment ("# Not run:") as a warning for the user. Alternative: You could also replace `\dontrun{}` with `\donttest`, if it takes longer than 5 sec to be executed, but it would be preferable to have automatic checks for functions. Otherwise, you can also write some tests.
+Remove `dontrun` from examples if they are not executable in < 5 sec, or create additionally small toy examples to allow automatic testing in < 5 sec. Reason: `\dontrun{}` should only be used if the example really cannot be executed by the user, e.g. because of missing additional software, missing API keys, etc. That's why wrapping examples in `\dontrun{}` adds the comment ("# Not run:") as a warning for the user. Alternative: You could also replace `\dontrun{}` with `\donttest`, if it takes longer than 5 sec to be executed, but it would be preferable to have automatic checks for functions. Otherwise, you can also write some tests.
 
 ## v1.3.1
 

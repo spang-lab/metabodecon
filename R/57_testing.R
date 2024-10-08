@@ -417,52 +417,99 @@ expect_str <- function(obj, expected_str) {
 #' if the number of peaks and/or the area of the peaks are very different.
 #'
 #' @examples
-#' decon <- generate_lorentz_curves_sim(sim[[1]])
-#' truepar <- sim[[1]]$meta$simpar
-#' calc_prarp(decon, truepar)
-calc_prarp <- function(decon,
-                       truepar = decon$meta$simpar,
-                       vlines = FALSE) {
+#' ## Bad deconvolution (PRARP ~= 0.2)
+#' decon <- generate_lorentz_curves_sim(sim[[1]], delta = 6.4)
+#' truepar <- sim[[1]]$meta$simpar[c("A", "x0", "lambda")]
+#' calc_prarp(decon, truepar, show = TRUE)
+#'
+#' ## Good deconvolution (PRARP ~= 0.64)
+#' decon <- generate_lorentz_curves_sim(sim[[1]], delta = 0)
+#' truepar <- sim[[1]]$meta$simpar[c("A", "x0", "lambda")]
+#' calc_prarp(decon, truepar, show = TRUE)
+#'
+calc_prarp <- function(decon, truepar, show = FALSE) {
+
+    n_peaks_dcnv <- length(decon$A)
+    n_peaks_true <- length(truepar$A)
+    n_peaks_min <- min(n_peaks_dcnv, n_peaks_true)
+    n_peaks_max <- max(n_peaks_dcnv, n_peaks_true)
+    peak_ratio <- n_peaks_min / n_peaks_max
+
+    area_spectrum <- sum(decon$y_values)
+    area_residuals <- sum(abs(decon$spectrum_superposition - decon$y_values))
+    area_min <- min(area_residuals, area_spectrum)
+    area_max <- max(area_residuals, area_spectrum)
+    area_ratio <- 1 - (area_min / area_max)
+
+    prarp <- peak_ratio * area_ratio
+    if (show) plot_prarp(decon, truepar, prarp, peak_ratio, area_ratio)
+    prarp
+}
+
+plot_prarp <- function(decon, truepar, prarp, peak_ratio, area_ratio) {
+
+    # Check which peaks are found correctly and which were missed
     d <- decon
     x <- decon$x_values_ppm
     y <- decon$y_values
-    truepar <- as.data.frame(truepar[c("A", "x0", "lambda")])
     dcnvpar <- data.frame(A = d$A_ppm, x0 = d$x_0_ppm, lambda = d$lambda_ppm)
     dcnvpar$y0 <- calc_y0(x, y, x0 = dcnvpar$x0)
     truepar$y0 <- calc_y0(x, y, x0 = truepar$x0)
-
-    # Check which peaks are found correctly and which were missed
     for (i in seq_along(truepar$x0)) {
         j <- which.min(abs(dcnvpar$x0 - truepar$x0[i]))
         d <- abs(dcnvpar$x0[j] - truepar$x0[i])
-        truepar[i, "closest"] <- j
-        truepar[i, "dist"] <- d
-        truepar[i, "found"] <- d < 0.001
+        truepar$closest[i] <- j
+        truepar$dist[i] <- d
+        truepar$found[i] <- d < 0.001
     }
     for (i in seq_along(dcnvpar$x0)) {
         j <- which.min(abs(truepar$x0 - dcnvpar$x0[i]))
         d <- abs(truepar$x0[j] - dcnvpar$x0[i])
-        dcnvpar[i, "closest"] <- j
-        dcnvpar[i, "dist"] <- d
-        dcnvpar[i, "correct"] <- d < 0.001
+        dcnvpar$closest[i] <- j
+        dcnvpar$dist[i] <- d
+        dcnvpar$correct[i] <- d < 0.001
     }
 
+    # Plot the deconvolution results
     plot_spectrum(decon, foc_rgn = c(0.25, 0.75), foc_only = TRUE)
     points(
-        x = dcnvpar$x0, y = dcnvpar$y0,
-        pch = 21, cex = 3, bg = "transparent", lwd = 2,
+        x = dcnvpar$x0,
+        y = dcnvpar$y0,
+        pch = 21,
+        cex = 3,
+        bg = "transparent",
+        lwd = 2,
         col = ifelse(dcnvpar$correct, "green", "red")
     )
     points(
-        x = truepar$x0[!truepar$found], y = truepar$y0[!truepar$found],
-        pch = 21, cex = 3, bg = "transparent", lwd = 2,
+        x = truepar$x0[!truepar$found],
+        y = truepar$y0[!truepar$found],
+        pch = 21,
+        cex = 3,
+        bg = "transparent",
+        lwd = 2,
         col = "orange"
     )
-    # CONTINUE HERE:
-    # 1. Add a legend (green = found, red = false finding, orange = missed)
-    # 2. Calculate the PRARP score
-    # 3. Write the PRARP and all MSEs to the plot
-    # 4. Return the PRARP score
+    legend(
+        x = "right",
+        legend = c("Found", "Missed", "False Finding"),
+        pch = 21,
+        col = c("green", "orange", "red"),
+        pt.bg = "transparent"
+    )
+    format2 <- function(x) format(x, digits = 2, scientific = FALSE)
+    legend(
+        x = "topleft",
+        legend = c(
+            paste("MSE Normed:", format2(decon$mse_normed)),
+            paste("MSE Normed Raw:", format2(decon$mse_normed_raw)),
+            paste("Peak Ratio (PR):", format2(peak_ratio)),
+            paste("Area Ratio (AR):", format2(area_ratio)),
+            paste("PRARP:", format2(prarp))
+        ),
+        bty = "n"
+    )
+    named(prarp, peak_ratio, area_ratio)
 }
 
 calc_y0 <- function(x, y, x0) {
