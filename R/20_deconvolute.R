@@ -107,7 +107,7 @@
 #' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
 #' sim_1_decon0 <- generate_lorentz_curves(
 #'     data_path = sim_1_dir, # Path to directory containing spectra
-#'     sfr = c(3.58, 3.42), # Borders of signal free region (SFR) in ppm
+#'     sfr = c(3.55, 3.35), # Borders of signal free region (SFR) in ppm
 #'     wshw = 0, # Half width of water signal (WS) in ppm
 #'     delta = 0.1, # Threshold for peak filtering
 #'     ask = FALSE, # Don't ask for user input
@@ -237,7 +237,7 @@ generate_lorentz_curves_sim <- function(data_path,
                                         nfit = 10,
                                         smopts = c(2, 5),
                                         delta = 0.1,
-                                        sfr = c(3.58, 3.42),
+                                        sfr = c(3.55, 3.35),
                                         wshw = 0,
                                         ask = FALSE,
                                         force = FALSE,
@@ -258,8 +258,8 @@ generate_lorentz_curves_sim <- function(data_path,
 deconvolute_gspecs <- function(gspecs,
                                nfit = 3,
                                smopts = c(2, 5),
-                               delta = 0.1,
-                               sfr = c(3.58, 3.42),
+                               delta = 6.4,
+                               sfr = c(3.55, 3.35),
                                wshw = 0,
                                ask = FALSE,
                                force = FALSE,
@@ -301,8 +301,8 @@ deconvolute_gspecs <- function(gspecs,
 deconvolute_gspec <- function(gspec,
                               nfit = 3,
                               smopts = c(2, 5),
-                              delta = 0.1,
-                              sfr = c(3.58, 3.42),
+                              delta = 6.4,
+                              sfr = c(3.55, 3.35),
                               wshw = 0,
                               ask = FALSE,
                               force = FALSE,
@@ -418,7 +418,8 @@ rm_water_signal <- function(x, wshw, bwc, sf = c(1e3, 1e6)) {
 
 rm_negative_signals <- function(spec) {
     logf("Removing negative signals")
-    if (is.null(spec$y_nows)) stop("Water signal not removed yet. Please call `rm_water_signal()` first.")
+    errmsg <- "Water signal not removed yet. Call `rm_water_signal()` first."
+    if (is.null(spec$y_nows)) stop(errmsg)
     spec$y_pos <- abs(spec$y_nows)
     spec
 }

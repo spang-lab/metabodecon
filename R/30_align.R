@@ -228,7 +228,7 @@ gen_feat_mat <- function(data_path = generate_lorentz_curves_sim(),
 #' Example return matrix:
 #'
 #' ```
-#'     ...  3.59  3.58  3.57  3.56  3.55  3.54  3.53
+#'     ...  3.59  3.55  3.57  3.56  3.55  3.54  3.53
 #'   .----------------------------------------------> PPM
 #' 1 | NA   NA    0.20  NA    NA    NA    0.25  NA
 #' 2 | NA   NA    0.15  NA    NA    NA    0.13  NA

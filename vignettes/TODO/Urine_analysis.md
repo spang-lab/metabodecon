@@ -38,7 +38,7 @@ plot_spectrum(urine_01_deconv, foc_rgn = c(0.25, 0.50))
 sim_dir <- metabodecon::metabodecon_file("bruker/sim")
 sim_01_dir <- file.path(sim_dir, "sim_01")
 sim_01_deconv <- metabodecon::generate_lorentz_curves(
-    sim_01_dir, sfr = c(3.42, 3.58), wshw = 0, smopts = c(1, 1), delta = 0.1, ask = FALSE
+    sim_01_dir, sfr = c(3.35, 3.55), wshw = 0, smopts = c(1, 1), delta = 0.1, ask = FALSE
 )
 metabodecon::plot_spectrum(sim_01_deconv, foc_rgn = c(0, 1), sub_show = FALSE)
 metabodecon::plot_spectrum(sim_01_deconv, foc_rgn = c(0.25, 0.50))

@@ -235,8 +235,8 @@ refine_lc_v14 <- function(spec, Z) {
     xlmr <- x[lmr]; # x value for each PTP
     yr <- y[ir]; yc <- y[ic]; yl <- y[il]; # intensity of each PTP
     xr <- x[ir]; xc <- x[ic]; xl <- x[il]; # position of each PTP
-    sl <- sc <- sr <- numeric(length(ic));
-    ql <- qc <- qr <- numeric(length(ic));
+    sl <- sc <- sr <- numeric(length(ic)); # sum of lorentz curves (SLC) at each PTP
+    ql <- qc <- qr <- numeric(length(ic)); # ratio (SLC / original spectrum) at each PTP
 
     # Init distance related variables
     wr  <- wc  <- wl  <- numeric(length(ic));
@@ -329,6 +329,7 @@ refine_lc_v14 <- function(spec, Z) {
     named(A, lambda, w, Z, D, P) # nolint: object_usage_linter
 }
 
+# Taken from Appendix E of Koh et. al. 2009
 calc_w <- function(wr, wc, wl, yr, yc, yl, wrc, wrl, wcl, yrc, yrl, ycl, xr) {
     t1 <- wr^2 * yr * ycl
     t2 <- wl^2 * yl * yrc
@@ -341,12 +342,14 @@ calc_w <- function(wr, wc, wl, yr, yc, yl, wrc, wrl, wcl, yrc, yrl, ycl, xr) {
     w
 }
 
+# Taken from Appendix E of Koh et. al. 2009
 calc_lambda <- function(wr, wc, wl, yr, yc, yl, wrc, wrl, wcl, yrc, yrl, ycl, xr) {
     lambda <- -((sqrt(abs((-wc^4 * yc^2 * yrl^2 - wr^4 * yr^2 * ycl^2 - wl^4 * yrc^2 * yl^2 + 4 * wc * wl^3 * yc * ((-yr) + yc) * yl^2 + 4 * wc^3 * wl * yc^2 * yl * ((-yr) + yl) + 4 * wr^3 * yr^2 * ycl * (wc * yc - wl * yl) + 4 * wr * yr * (wc^3 * yc^2 * yrl - wc * wl^2 * yc * (yr + yc - 2 * yl) * yl + wl^3 * yrc * yl^2 - wc^2 * wl * yc * yl * (yr - 2 * yc + yl)) + 2 * wc^2 * wl^2 * yc * yl * (yr^2 - 3 * yc * yl + yr * (yc + yl)) + 2 * wr^2 * yr * (-2 * wc * wl * yc * yl * (-2 * yr + yc + yl) + wl^2 * yl * (yr * (yc - 3 * yl) + yc * (yc + yl)) + wc^2 * yc * (yr * (-3 * yc + yl) + yl * (yc + yl)))))))) / (2 * sqrt((wr * yr * ycl + wl * yrc * yl + wc * yc * ((-yr) + yl))^2))
     lambda[is.nan(lambda)] <- 0
     lambda
 }
 
+# Taken from Appendix E of Koh et. al. 2009
 calc_A <- function(wr, wc, wl, yr, yc, yl, wrc, wrl, wcl, yrc, yrl, ycl, lambda, w, xr) {
     A <- (-4 * wrc * wrl * wcl * yr * yc * yl * (wr * yr * ycl + wl * yl * yrc + wc * yc * (-yrl)) * lambda) / (wrc^4 * yr^2 * yc^2 - 2 * wrc^2 * yr * yc * (wrl^2 * yr + wcl^2 * yc) * yl + (wrl^2 * yr - wcl^2 * yc)^2 * yl^2)
     A[is.nan(A)] <- 0

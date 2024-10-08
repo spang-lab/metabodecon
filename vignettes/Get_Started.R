@@ -13,7 +13,7 @@ ewobj <- evalwith(
     answers = c("y", "1", "y", "y"),
     expr = generate_lorentz_curves(
         data_path = sim_dir,
-        sfr = c(3.42, 3.58), wshw = 0,
+        sfr = c(3.35, 3.55), wshw = 0,
         smopts = c(2, 5), delta = 0.1,
         verbose = FALSE, nworkers = 1
     )

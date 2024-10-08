@@ -1,19 +1,21 @@
 library(testthat)
 
 test_that("deconvolute_gspecs works", {
-    gspecs <- as_gspecs(read_spectra(metabodecon_file("sim_subset")))
-    obj <- deconvolute_gspecs(
+    spectra <- sim[1:2]
+    truepars <- lapply(spectra, function(x) x$meta$simpar)
+    gspecs <- as_gspecs(spectra)
+    decons <- deconvolute_gspecs(
         gspecs = gspecs,
-        nfit = 3,
-        smopts = c(1, 5),
-        delta = 0.1,
-        sfr = c(3.58, 3.42),
-        wshw = 0,
-        ask = FALSE,
-        force = FALSE,
-        verbose = TRUE,
-        rtyp = "decons1"
+        nfit = 3, sfr = c(3.55, 3.35), wshw = 0,
+        ask = FALSE, force = FALSE, verbose = TRUE, rtyp = "decons1"
     )
-    expect_equal(class(obj), "decons1")
-    expect_equal(length(obj), length(gspecs))
+    prarps <- mapply(calc_prarp, decons, truepars)
+    expect_true(all(prarps > 0.8))
+    calc_prarp(decons[[1]], truepars[[1]], show = TRUE)
+    expect_equal(class(decons), "decons1")
+    expect_equal(length(decons), 2)
+})
+
+test_that("deconvolute_gspecs is backwards compatible to MetaboDecon1D", {
+    # CONTINUE HERE
 })

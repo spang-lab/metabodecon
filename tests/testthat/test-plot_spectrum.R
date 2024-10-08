@@ -82,7 +82,7 @@ ps_setup_dev_env <- function() {
     spec <- read_spectrum(sim_01)
     decon <- generate_lorentz_curves(
         data_path = sim_01,
-        sfr = c(3.42, 3.58),
+        sfr = c(3.35, 3.55),
         wshw = 0,
         delta = 0.1,
         ask = FALSE,

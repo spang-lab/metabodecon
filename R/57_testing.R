@@ -471,7 +471,7 @@ plot_prarp <- function(decon, truepar, prarp, peak_ratio, area_ratio) {
     }
 
     # Plot the deconvolution results
-    plot_spectrum(decon, foc_rgn = c(0.25, 0.75), foc_only = TRUE)
+    plot_spectrum(decon, foc_rgn = c(0, 1), foc_only = TRUE)
     points(
         x = dcnvpar$x0,
         y = dcnvpar$y0,

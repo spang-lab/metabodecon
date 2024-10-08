@@ -2324,7 +2324,7 @@ MetaboDecon1D_silent_sim <- function(# Passed on to [MetaboDecon1D()]
                                      file_format = "bruker",
                                      number_iterations = 3,
                                      range_water_signal_ppm = 0,
-                                     signal_free_region = c(3.58, 3.42),
+                                     signal_free_region = c(3.55, 3.35),
                                      smoothing_param = c(2, 5),
                                      delta = 0.1,
                                      scale_factor = c(1000, 1000000),
@@ -2349,7 +2349,7 @@ MetaboDecon1D_silent_sim <- function(# Passed on to [MetaboDecon1D()]
 #' @author Tobias Schmidt
 #' @examples
 #' sim <- metabodecon_file("bruker/sim_subset")
-#' answers <- get_MetaboDecon1D_answers(ns = 1, wshw = 0, sfr = c(3.58, 3.42))
+#' answers <- get_MetaboDecon1D_answers(ns = 1, wshw = 0, sfr = c(3.55, 3.35))
 #' x <- evalwith(
 #'     answers = answers,
 #'     output = "captured",

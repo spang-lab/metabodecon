@@ -201,8 +201,8 @@ make_spectrum <- function(si,
                           type = NULL,
                           simpar = NULL,
                           mfs = NULL) {
-    cs_min <- cs_max - cs_width # Lowest ppm value
-    cs <- seq(cs_max, cs_max - cs_width, length.out = length(si)) # Chemical shift in parts per million
+    cs_min <- cs_max - cs_width
+    cs <- seq(cs_max, cs_max - cs_width, length.out = length(si))
     fq <- as_frequency(cs, fq_ref)
     fq_width_calc <- max(fq) - min(fq)
     if (!is.null(fq_width) && !is_equal(fq_width_calc, fq_width)) {
@@ -454,7 +454,7 @@ read_procs_file <- function(spldir, expno = 10, procno = 10) {
 #' @inheritParams read_spectrum read_acqus
 #' @return The simulation parameters read from the file as named list.
 #' @examples
-#' sim_1_dir <- pkg_file("example_datasets/bruker/sim2/sim_01")
+#' sim_1_dir <- pkg_file("example_datasets/bruker/sim/sim_01")
 #' simpar <- read_simpar(blood1_dir)
 read_simpar <- function(spldir, expno = 10, procno = 10) {
     path <- file.path(spldir, expno, "pdata", procno, "simpar")
@@ -533,27 +533,27 @@ read_one_r <- function(spldir,
         # -~-~-~-~-~-~-~-~-~-~-~
         # Path related variables
         # -~-~-~-~-~-~-~-~-~-~-~
-        spldir, # Path of dir holding NMR measurements of a individual sample.
-        expno, # Experiment number for the file.
-        procno, # Processing number for the file.
-        path_1r, # Path of the 1r file.
-        path_procs, # Path of the procs file.
-        # -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
-        # Processing parameters and derived values
-        # -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
-        procs, # Parsed content of `procs` file from `read_procs_file()`.
-        byteordp, # Byte ordering of the data. 0/1 = little/big endian.
-        dtypp, # Type of the data. 0/not0 = integer/double.
-        endian, # Endianess of the data. Either "little" or "big".
-        nbytes, # Number of bytes used to store a single value. Either 4 or 8.
-        ncproc, # Exponent of the data. Only relevant if `dtypp` is 0.
-        type, # Type as string. Either "integer" or "double". Like `dtypp`.
-        n, # Number of data points.
-        # -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
-        # Raw and scaled signal intensity values
-        # -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
-        raw, # The raw signal intensity values.
-        scaled # The scaled signal intensity values.
+        spldir, # Path of dir holding NMR measurements of one sample
+        expno, # Experiment number for the file
+        procno, # Processing number for the file
+        path_1r, # Path of the 1r file
+        path_procs, # Path of the procs file
+        # -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+        # Processing parameters and derived value
+        # -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+        procs, # Parsed content of `procs` file from `read_procs_file()`
+        byteordp, # Byte ordering of the data. 0/1 = little/big endian
+        dtypp, # Type of the data. 0/not0 = integer/double
+        endian, # Endianess of the data. Either "little" or "big"
+        nbytes, # Number of bytes used to store a single value. Either 4 or 8
+        ncproc, # Exponent of the data. Only relevant if `dtypp` is 0
+        type, # Type as string. Either "integer" or "double". Like `dtypp`
+        n, # Number of data points
+        # -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+        # Raw and scaled signal intensity value
+        # -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+        raw, # The raw signal intensity values
+        scaled # The scaled signal intensity values
     )
 }
 
@@ -561,17 +561,23 @@ read_one_r <- function(spldir,
 # Sim Dataset #####
 # =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
 
-update_sim <- function(dry_run = TRUE, verbose = TRUE) {
-    tmp <- tmpdir(subdir = TRUE)
-    pkg <- pkg_file("example_datasets/bruker")
-    parent <- if (dry_run) tmp else pkg
-    path <- file.path(parent, "sim2")
-    if (verbose) logf("Dry_run %s. Updating %s." , dry_run, path)
+update_sim <- function(overwrite = FALSE, verbose = FALSE) {
     sim <- make_sim()
-    save_spectra(sim, path, force = FALSE, verbose = verbose)
-    usethis::use_data(sim, overwrite = !dry_run)
-    if (verbose) logf("Finished update of %s." , path)
+    if (isTRUE(overwrite)) {
+        path <- file.path(pkg_file("example_datasets/bruker"), "sim")
+        if (verbose) logf("Overwrite is TRUE. Updating %s." , path)
+        save_spectra(sim, path, force = TRUE, verbose = verbose)
+        usethis::use_data(sim, overwrite = TRUE)
+    } else {
+        path <- file.path(tmpdir(subdir = TRUE), "sim")
+        if (verbose) logf("Overwrite is FALSE. Writing spectra to %s." , path)
+        save_spectra(sim, path, force = FALSE, verbose = verbose)
+        save(sim, file = file.path(path, "sim.rda"), compress = "bzip2")
+    }
+    path
 }
+
+# "C:/Users/tobi/AppData/Local/Temp/RtmpE3Ma4o/metabodecon/4b0857617065/sim/sim.rda"
 
 make_sim <- function() {
     decons <- deconvolute_blood()

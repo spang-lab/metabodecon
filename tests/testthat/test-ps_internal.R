@@ -2,7 +2,7 @@ test_ps_internal <- function() {
     sim_01 <- metabodecon_file("sim/sim_01")
     decon <- generate_lorentz_curves(
         sim_01,
-        sfr = c(3.42, 3.58), ws = 0,
+        sfr = c(3.35, 3.55), ws = 0,
         ask = FALSE, verbose = FALSE,
         delta = 0.1
     )

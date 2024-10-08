@@ -45,7 +45,7 @@ To find the path to the Sim dataset, you can use the `metabodecon_file()` functi
 sim_dir <- metabodecon::metabodecon_file("bruker/sim")
 deconvoluted_spectra <- metabodecon::generate_lorentz_curves(
     data_path = sim_dir, # Path to directory containing spectra
-    sfr = c(3.42, 3.58), # Borders of signal free region (SFR) in ppm
+    sfr = c(3.35, 3.55), # Borders of signal free region (SFR) in ppm
     wshw = 0,            # Half width of water signal (WS) in ppm
     smopts = c(2, 5),    # Configure smoothing parameters
     delta = 0.1,         # Configure threshold for peak filtering

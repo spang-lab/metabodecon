@@ -22,7 +22,7 @@ test_that("get_decon_params works", {
     )
     clear(testdir_path)
     sim <- metabodecon_file("bruker/sim_subset")
-    decons <- generate_lorentz_curves(sim, sfr = c(3.58, 3.42), wshw = 0, delta = 0.1, ask = FALSE, verbose = FALSE)
+    decons <- generate_lorentz_curves(sim, sfr = c(3.55, 3.35), wshw = 0, delta = 0.1, ask = FALSE, verbose = FALSE)
     obj <- get_decon_params(decons)
     expect_str(obj, expected_structure)
     expect_error(get_decon_params("asdf", warn = FALSE), "asdf does not exist.")
