@@ -1,4 +1,4 @@
-# Public API #####
+# Exported #####
 
 #' @export
 #'
@@ -274,7 +274,7 @@ get_data_dir <- function(dataset_name = c("", "blood", "test", "urine"), warn = 
   return(data_dir)
 }
 
-# Private Helpers #####
+# Helpers #####
 
 #' @noRd
 #'
@@ -445,22 +445,3 @@ cachedir <- function(persistent = NULL) {
     ncd <- normalizePath(cd, "/", mustWork = FALSE)
     mkdirs(ncd)
 }
-
-# Datasets #####
-
-## sim #####
-
-#' @title The Sim Dataset
-#'
-#' @description
-#' A simulated dataset generated from the [Blood](
-#' https://spang-lab.github.io/metabodecon/articles/Datasets.html#Blood)
-#' dataset.
-#'
-#' @format A [spectra](metabodecon_classes) object consisting of 16 [spectrum]
-#' objects, where each spectrum object contains 2048 datapoints ranging from
-#' 3.60 to 3.29 ppm
-#'
-#' @source <https://www.who.int/teams/global-tuberculosis-programme/data>
-#'
-"sim"

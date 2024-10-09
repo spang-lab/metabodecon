@@ -1,4 +1,4 @@
-# Draw Spectrum #####
+# Internal #####
 
 # styler: off
 #' @noRd
@@ -71,7 +71,7 @@ draw_spectrum <- function(
 }
 # styler: on
 
-# Draw Spectrum Helpers #####
+# Helpers #####
 
 ds_get_args <- function(env = parent.frame()) {
     keys <- names(formals(draw_spectrum))

@@ -1,4 +1,4 @@
-# Public API #####
+# Exported #####
 
 #' @export
 #'
@@ -219,7 +219,7 @@ plot_spectrum <- function(
 }
 
 
-# Plot Spectrum Helpers #####
+# Helpers #####
 
 ps_get_main_args <- function(env = parent.frame()) {
     args <- sapply(names(formals(plot_spectrum)), get, envir = env)
