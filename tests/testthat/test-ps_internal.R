@@ -17,16 +17,16 @@ test_ps_internal <- function() {
         opar <- par(mfrow = c(3, 2), mar = c(2, 2, 0.5, 0.5))
         on.exit(par(opar))
         p[[1]] <- plot_dummy()
-        p[[2]] <- ps_internal(decon, foc_rgn = c(3.55, 3.52))
+        p[[2]] <- draw_spectrum(decon, foc_rgn = c(3.55, 3.52))
         p[[3]] <- plot_dummy()
-        p[[3]] <- ps_internal(decon,
+        p[[3]] <- draw_spectrum(decon,
             foc_rgn = c(3.55, 3.52),
             foc_only = TRUE, fig = leftmiddle,
             fill_col = rgb(0, 0, 1, 0.1)
         )
         p[[4]] <- plot_dummy()
-        p[[5]] <- ps_internal(decon, fig = leftbottom, add = FALSE)
-        p[[6]] <- ps_internal(decon, lc_show = FALSE, trp_show = FALSE)
+        p[[5]] <- draw_spectrum(decon, fig = leftbottom, add = FALSE)
+        p[[6]] <- draw_spectrum(decon, lc_show = FALSE, trp_show = FALSE)
         p
     })
 }

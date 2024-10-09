@@ -2365,10 +2365,10 @@ get_MetaboDecon1D_answers <- function(ns = 1, # Number of spectra
                                       expno = 10,
                                       procno = 10) {
     answers <- c(
-        SameParam = if (ns > 1) "y" else NULL,
-        AdjNo = if (ns > 1) "1" else NULL,
         ExpNo = if (format == "bruker") expno else NULL,
         ProcNo = if (format == "bruker") procno else NULL,
+        SameParam = if (ns > 1) "y" else NULL,
+        AdjNo = if (ns > 1) "1" else NULL,
         SFRok = "n", Left = max(sfr), Right = min(sfr), SFRok = "y",
         WSok = "n", WSHW = wshw, WSok = "y",
         SaveResults = "n"

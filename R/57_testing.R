@@ -420,14 +420,16 @@ expect_str <- function(obj, expected_str) {
 #' ## Bad deconvolution (PRARP ~= 0.2)
 #' decon <- generate_lorentz_curves_sim(sim[[1]], delta = 6.4)
 #' truepar <- sim[[1]]$meta$simpar[c("A", "x0", "lambda")]
-#' calc_prarp(decon, truepar, show = TRUE)
+#' calc_prarp(decon, truepar)
+#' plot_prarp(decon, truepar)
 #'
 #' ## Good deconvolution (PRARP ~= 0.64)
 #' decon <- generate_lorentz_curves_sim(sim[[1]], delta = 0)
 #' truepar <- sim[[1]]$meta$simpar[c("A", "x0", "lambda")]
-#' calc_prarp(decon, truepar, show = TRUE)
+#' calc_prarp(decon, truepar)
+#' plot_prarp(decon, truepar)
 #'
-calc_prarp <- function(decon, truepar, show = FALSE) {
+calc_prarp <- function(decon, truepar) {
 
     n_peaks_dcnv <- length(decon$A)
     n_peaks_true <- length(truepar$A)
@@ -442,11 +444,17 @@ calc_prarp <- function(decon, truepar, show = FALSE) {
     area_ratio <- 1 - (area_min / area_max)
 
     prarp <- peak_ratio * area_ratio
-    if (show) plot_prarp(decon, truepar, prarp, peak_ratio, area_ratio)
-    prarp
+
+    named(prarp, peak_ratio, area_ratio)
 }
 
-plot_prarp <- function(decon, truepar, prarp, peak_ratio, area_ratio) {
+plot_prarp <- function(decon, truepar) {
+
+    # Calculate PRARP score
+    obj <- calc_prarp(decon, truepar)
+    prarp <- obj$prarp
+    peak_ratio <- obj$peak_ratio
+    area_ratio <- obj$area_ratio
 
     # Check which peaks are found correctly and which were missed
     d <- decon
