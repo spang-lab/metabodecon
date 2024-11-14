@@ -1,3 +1,11 @@
+# Unassigned
+
+- Implement [Max' parameter approximation algorithms](https://gitlab.spang-lab.de/bachelorthesis/ws2425_msombke_metabodecon-v2/-/blob/main/new_method_docs/main.R
+) in `calc_A`, `calc_lambda` and `calc_w`.
+- Add testcase with 100 iterations
+- Add testcase with one big peak at 0.000 ppm (because it's unclear why <https://github.com/spang-lab/metabodecon/blob/v1.2.0/R/21_decon_helpers.R#L315> checks for w[i] == 0).
+- Check special handling for cases with A[i] == 0 and lambda[i] == 0 in paramater approximaton. Max analyzed it and concluded that checks are not necessary. My though: copy paste artifacts from the the w[i] == 0 check (which is wrong).
+
 # Open
 
 ## v1.2.0
@@ -96,7 +104,7 @@ If `c(11.44494, -1.8828)` is part of the ppm range, use these values, otherwise 
 
 ### FEATURE-10: Implement deconvolute_spectra
 
-Implement `deconvolute_spectra()` and `deconvolute_spectrum()` which should be the successors of `deconvolute_gspec()` and `deconvolute_gspecs()`. In particular it should:
+Implement `deconvolute_spectra()` and `deconvolute_spectrum()` which should be the successors of `deconvolute_ispec()` and `deconvolute_ispecs()`. In particular it should:
 
 1. Accept `spectrum` objects as input (as returned by `read_spectra`). See [FEATURE-9](#feature-9-implement-and-export-read_spectra).
 2. Use the correct SFR calculation as described in [CHECK-2](#check-2-signal-free-region-calculation).

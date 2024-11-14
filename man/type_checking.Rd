@@ -4,14 +4,14 @@
 \alias{type_checking}
 \alias{type}
 \alias{is_spectrum}
-\alias{is_gspec}
-\alias{is_gdecon}
+\alias{is_ispec}
+\alias{is_idecon}
 \alias{is_decon0}
 \alias{is_decon1}
 \alias{is_decon2}
 \alias{is_spectra}
-\alias{is_gspecs}
-\alias{is_gdecons}
+\alias{is_ispecs}
+\alias{is_idecons}
 \alias{is_decons0}
 \alias{is_decons1}
 \alias{is_decons2}
@@ -21,9 +21,9 @@ type(x)
 
 is_spectrum(x, check_class = TRUE, check_contents = FALSE)
 
-is_gspec(x)
+is_ispec(x)
 
-is_gdecon(x)
+is_idecon(x)
 
 is_decon0(x)
 
@@ -38,9 +38,9 @@ is_spectra(
   check_child_classes = FALSE
 )
 
-is_gspecs(x)
+is_ispecs(x)
 
-is_gdecons(x)
+is_idecons(x)
 
 is_decons0(x)
 

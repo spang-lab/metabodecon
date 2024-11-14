@@ -290,11 +290,11 @@ simulate_spectrum <- function(name = "sim_00",
 #' print(head(x))
 #' cat("Frequency of reference in MHz:", fq_ref / 1e6)
 read_bruker <- function(spldir,
-                                 expno = 10,
-                                 procno = 10,
-                                 raw = FALSE,
-                                 silent = TRUE,
-                                 force = FALSE) {
+                        expno = 10,
+                        procno = 10,
+                        raw = FALSE,
+                        silent = TRUE,
+                        force = FALSE) {
     acqus <- read_acqus(spldir, expno)
     procs <- read_procs_file(spldir, expno, procno)
     simpar <- read_simpar(spldir, expno, procno)

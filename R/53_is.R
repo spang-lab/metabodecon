@@ -49,11 +49,11 @@ is_spectrum <- function(x,
 
 #' @export
 #' @rdname type_checking
-is_gspec <- function(x) inherits(x, "gspec")
+is_ispec <- function(x) inherits(x, "ispec")
 
 #' @export
 #' @rdname type_checking
-is_gdecon <- function(x) inherits(x, "gdecon")
+is_idecon <- function(x) inherits(x, "idecon")
 
 #' @export
 #' @rdname type_checking
@@ -89,11 +89,11 @@ is_spectra <- function(x,
 
 #' @export
 #' @rdname type_checking
-is_gspecs <- function(x) inherits(x, "gspecs")
+is_ispecs <- function(x) inherits(x, "ispecs")
 
 #' @export
 #' @rdname type_checking
-is_gdecons <- function(x) inherits(x, "gdecons")
+is_idecons <- function(x) inherits(x, "idecons")
 
 #' @export
 #' @rdname type_checking

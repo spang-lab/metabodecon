@@ -119,7 +119,7 @@ deconvolute_blood <- function(read_cache = TRUE,
 #' xdir <- download_example_datasets()
 #' path <- file.path(xdir, "bruker/blood/blood_01")
 #' spec <- read_spectrum(path)
-#' x <- deconvolute_gspec(spec, rtyp = "decon1")
+#' x <- deconvolute_ispec(spec)
 #' sim_params <- get_sim_params(x)
 get_sim_params <- function(x, pkr = c(3.4, 3.5)) {
     d <- as_decon1(x)

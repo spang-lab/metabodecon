@@ -7,27 +7,27 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-Metabodecon introduces a set of classes to highlight the presence of certain elements in corresponding objects.  The order of elements may vary between different versions of Metabodecon, thus elements should always be accessed by name, for example, using `x$si` or `x[["cs"]]`.
+Metabodecon introduces a set of classes to highlight the presence of certain elements in corresponding objects. The order of elements may vary between different versions of Metabodecon, thus elements should always be accessed by name, for example, using `x$si` or `x[["cs"]]`.
 
-A classes itself are described in section [Class Overview].  The elements associated with a class are described in section [Elements].  A grafical visualization of the classes and their corresponding functions is given in figure [Metabodecon Workflow].
+The classes itself are described in section [Class Overview]. The elements associated with a class are described in section [Elements]. A grafical visualization of the classes and their corresponding functions is given in figure [Metabodecon Workflow].
 
 # Class Overview
 
 ## spectrum
 
-Represents one NMR spectrum.  Objects of class 'spectrum' have at least elements 1-3 from section [Elements v1.2+].
+Represents one NMR spectrum. Objects of class 'spectrum' have at least elements 1-3 from section [Elements v1.2+].
 
 ## decon0
 
-Represents one deconvoluted NMR spectrum stored in the old [MetaboDecon1D()] format.  Objects of class 'decon0' have at least elements 1-18 from section [Elements v0.2+].
+Represents one deconvoluted NMR spectrum stored in the old [MetaboDecon1D()] format. Objects of class 'decon0' have at least elements 1-18 from section [Elements v0.2+].
 
 ## decon1
 
-Represents one deconvoluted NMR spectrum stored in the backwards compatible [generate_lorentz_curves()] format.  Objects of class 'decon1' have all elements from section [Elements v0.2+].
+Represents one deconvoluted NMR spectrum stored in the backwards compatible [generate_lorentz_curves()] format. Objects of class 'decon1' have all elements from section [Elements v0.2+].
 
 ## decon2
 
-Represents one deconvoluted NMR spectrum stored in the new [deconvolute()] format.  Objects of class 'decon2' have all elements from section [Elements v1.2+] with elements `sit$al` and `lcpar$x0al` set to `NULL`.
+Represents one deconvoluted NMR spectrum stored in the new [deconvolute()] format. Objects of class 'decon2' have all elements from section [Elements v1.2+] with elements `sit$al` and `lcpar$x0al` set to `NULL`.
 
 ## almnt
 
@@ -36,7 +36,6 @@ Represents one deconvoluted NMR spectrum for which the individual peaks have bee
 ## Collections
 
 The classes mentioned above represent individual objects, such as a single spectrum, deconvolution, or alignment. However, it is often useful to describe collections of these objects, such as a list of spectra or deconvolutions. Therefore, for each individual class, a corresponding "collection" class is provided. These collection classes are named: [spectra], [decons0], [decons1], [decons2], and [almnts].
-
 
 # Elements
 
@@ -58,11 +57,11 @@ The classes mentioned above represent individual objects, such as a single spect
     - `sfr`: Borders of the signal free region in ppm.
     - `wsr`: Borders of the water signal region in ppm.
 5.  `sit`: Signal Intensities (SI) after applying various transformations:
-    1.  `wsrm`: SIs after Water Signal Removal (WSRM),
-    2.  `nvrm`: SIs after WSRM and Negative Value Removal (NVRM).
-    3.  `sm`: SIs after WSRM, NVRM and smoothing.
-    4.  `sup`: SIs as superposition of Lorentz curves.
-    5.  `al`: SIs after alignment.
+    - `wsrm`: SIs after Water Signal Removal (WSRM),
+    - `nvrm`: SIs after WSRM and Negative Value Removal (NVRM).
+    - `sm`: SIs after WSRM, NVRM and smoothing.
+    - `sup`: SIs as superposition of Lorentz curves.
+    - `al`: SIs after alignment.
 6.  `peak`: Peak triplets found during peak selection:
     - `center`: Indices of peak centers.
     - `left`: Indices of left borders.
@@ -73,10 +72,10 @@ The classes mentioned above represent individual objects, such as a single spect
     - `x0`: Center parameter.
     - `x0al`: Center parameter after the spectrum has been aligned.
 8.  `mse`: Mean squared error (MSE):
-    1.  `raw`: MSE between `si` and `sit$sup`
-    2.  `norm`: MSE between `si` and `sit$sup`, divided by `sum(sit$sup)`
-    3.  `sm`: MSE between `sit$sm` and `sit$sup`
-    4.  `smnorm`: MSE between `sit$sm` and `sit$sup`, divided by `sum(sit$sup)`. Equals `mse_normed` in [Elements v0.2+].
+    - `raw`: MSE between `si` and `sit$sup`
+    - `norm`: MSE between `si` and `sit$sup`, divided by `sum(sit$sup)`
+    - `sm`: MSE between `sit$sm` and `sit$sup`
+    - `smnorm`: MSE between `sit$sm` and `sit$sup`, divided by `sum(sit$sup)`. Equals `mse_normed` in [Elements v0.2+].
 
 ## Elements v0.2+
 

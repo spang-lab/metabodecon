@@ -22,7 +22,7 @@ A similar graphical representation with additional information about accepted an
 | decon | plot_lorentz_curves_save_as_png | s   | s   | s   | d   | -   |
 | decon | plot_triplets                   | s   | s   | s   | d   | -   |
 | decon | generate_lorentz_curves         | -   | s   | s   | s   | d   |
-| decon | deconvolute_gspecs              | -   | -   | -   | x   | s   |
+| decon | deconvolute_ispecs              | -   | -   | -   | x   | s   |
 | align | combine_peaks                   | -   | s   | s   | d   | -   |
 | align | gen_feat_mat                    | -   | s   | s   | d   | -   |
 | align | get_ppm_range                   | -   | s   | s   | d   | -   |
@@ -68,7 +68,7 @@ A similar graphical representation with additional information about accepted an
 | Does all calculations in ppm     | no    |     |     | x   | [REFACTOR-6] |
 
 - ᵃ BWC == backwards compatible
-- ᵇ F1 ==MetaboDecon1D, F2 == generate_lorentz_curves, F3 == deconvolute_gspecs
+- ᵇ F1 ==MetaboDecon1D, F2 == generate_lorentz_curves, F3 == deconvolute_ispecs
 - ᶜ The change is backwards compatible if you ignore global state, such as files written to disk or output printed to STDOUT. However, if a script expects such side effects, it will fail. Therefore we set this to "semi".
 - ᵈ The faster implementation also fixes an indexing bug, which in most cases shouldn't have any effect, but in some rare cases it might cause one peak to be missed.
 - ᵉ Only true for MetaboDecon1D versions >= v1.0.0

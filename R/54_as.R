@@ -46,8 +46,8 @@ as_spectrum <- function(x, sf = c(1e3, 1e6)) {
 #' @export
 #' @rdname convert
 #' @inheritParams as_decon1
-as_gspec <- function(x, sf = c(1e3, 1e6)) {
-    if (is_gspec(x)) return(x)
+as_ispec <- function(x, sf = c(1e3, 1e6)) {
+    if (is_ispec(x)) return(x)
     if (is_char(x)) x <- read_spectrum(x)
     s <- if (is_spectrum(x)) x else as_spectrum(x)
     y_raw <- s$si # Raw signal intensities
@@ -64,62 +64,110 @@ as_gspec <- function(x, sf = c(1e3, 1e6)) {
     ppm_nstep <- ppm_range / n # Wrong, but backwards compatible [^2].
     name <- s$meta$name # Name of the spectrum
     meta <- s$meta # Other Metadata to the spectrum
-    g <- locals(without = "x")
-    structure(g, class = "gspec")
-    # [^1]: Same as `dp / sf[1]`, but with slight numeric differences, so we stick with the old calculation method for backwards compatibility.
-    # [^2]: Example: ppm = 11, 23, 35, 47 ==> ppm_step == 12, ppm_nstep ~= 10.6 (not really useful, but we need it for backwards compatibility with MetaboDecon1D results)
+    g <- locals()[ispec_members]
+    structure(g, class = "ispec")
+    # [^1]: Same as `dp / sf[1]`, but with slight numeric differences, so we
+    #       stick with the old calculation method for backwards compatibility.
+    # [^2]: Example: ppm = 11, 23, 35, 47 ==> ppm_step == 12, ppm_nstep ~= 10.6
+    #       (not really useful, but we need it for backwards compatibility with
+    #       MetaboDecon1D results)
 }
 
 #' @export
 #' @rdname convert
-as_gdecon <- function(x) {
-    if (is_gdecon(x)) return(x)
-    stopifnot(is_gspec(x))
-    stopifnot(all(gdecon_members %in% names(x)))
-    gdecon <- structure(x, class = "gdecon")
+as_idecon <- function(x) {
+    if (is_idecon(x)) {
+        x
+    } else if (all(idecon_members %in% names(x))) {
+        structure(x, class = "idecon")
+    } else {
+        stop("Input must have all elements listed in `idecon_members`")
+    }
 }
 
 #' @export
 #' @rdname convert
-#' @param sf Vector with two entries consisting of the factor to scale the x-axis and the factor to scale the y-axis.
-as_decon1 <- function(x, sf = NULL) {
-    if (is_decon1(x)) return(x)
-    x <- as_gdecon(x)
-    structure(class = "decon1", .Data = list(
-        number_of_files = 1,
-        filename = x$name,
-        x_values = x$sdp,
-        x_values_ppm = x$ppm,
-        y_values = x$y_smooth,
-        spectrum_superposition = s <- lorentz_sup(x = x$sdp, lcpar = x$lcr),
-        mse_normed = mean(((x$y_smooth / sum(x$y_smooth)) - (s / sum(s)))^2),
-        index_peak_triplets_middle = x$peak$center[x$peak$high],
-        index_peak_triplets_left = x$peak$right[x$peak$high],
-        index_peak_triplets_right = x$peak$left[x$peak$high],
-        peak_triplets_middle = x$ppm[x$peak$center[x$peak$high]],
-        peak_triplets_left = x$ppm[x$peak$right[x$peak$high]],
-        peak_triplets_right = x$ppm[x$peak$left[x$peak$high]],
-        integrals = x$lcr$integrals,
-        signal_free_region = c(x$sfr$left_sdp, x$sfr$right_sdp),
-        range_water_signal_ppm = x$wsr$hwidth_ppm,
-        A = x$lcr$A,
-        lambda = x$lcr$lambda,
-        x_0 = x$lcr$w,
-        y_values_raw = x$y_raw,
-        # Following fields are only available in `decon1`, but not `decon0`,
-        # i.e. since v1.2.0
-        x_values_hz = x$hz,
-        mse_normed_raw = mean(((x$y_raw / sum(x$y_raw)) - (s / sum(s)))^2),
-        x_0_hz = convert_pos(x$lcr$w, x$sdp, x$hz),
-        x_0_dp = convert_pos(x$lcr$w, x$sdp, x$dp),
-        x_0_ppm = convert_pos(x$lcr$w, x$sdp, x$ppm),
-        A_hz = convert_width(x$lcr$A, x$sdp, x$hz),
-        A_dp = convert_width(x$lcr$A, x$sdp, x$dp),
-        A_ppm = convert_width(x$lcr$A, x$sdp, x$ppm),
-        lambda_hz = convert_width(x$lcr$lambda, x$sdp, x$hz),
-        lambda_dp = convert_width(x$lcr$lambda, x$sdp, x$dp),
-        lambda_ppm = convert_width(x$lcr$lambda, x$sdp, x$ppm)
-    ))
+#' @param x Object to convert.
+#' @param sf Vector with two entries consisting of the factor to scale the
+#'           x-axis and the factor to scale the y-axis.
+as_decon0 <- function(x, sf = NULL) {
+    if (is_decon0(x)) return(x)
+    x <- as_decon1(x)
+    x[decon0_members]
+}
+
+#' @export
+#' @rdname convert
+#' @param sf Vector with two entries consisting of the factor to scale the
+#'           x-axis and the factor to scale the y-axis.
+#' @param hz Frequency of each data point in Hz. Only required when converting
+#'           from `decon0` to `decon1`.
+#' @param si Raw signal intensities.
+as_decon1 <- function(x,
+                      sf = c(1e3, 1e6),
+                      spectrum  = NULL) {
+    if (is_decon0(x)) {
+        if (is.null(sf)) stop("Please provide `sf`")
+        if (is.null(spectrum)) stop("Please provide `spectrum`")
+        fq <- spectrum$meta$fq
+        si <- spectrum$si
+        ssp <- as.numeric(x$spectrum_superposition)
+        ppm <- x$x_values_ppm
+        sdp <- x$x_values
+        dp <- round(x$x_values * sf[1])
+        y <- x
+        y$y_values_raw <- si
+        y$x_values_hz <- fq
+        y$mse_normed_raw <- mean(((si / sum(si)) - (ssp / sum(ssp)))^2)
+        y$x_0_hz <- convert_pos(x$x_0, sdp, fq)
+        y$x_0_dp <- convert_pos(x$x_0, sdp, dp)
+        y$x_0_ppm <- convert_pos(x$x_0, sdp, ppm)
+        y$A_hz <- convert_width(x$A, sdp, fq)
+        y$A_dp <- convert_width(x$A, sdp, dp)
+        y$A_ppm <- convert_width(x$A, sdp, ppm)
+        y$lambda_hz <- convert_width(x$lambda, sdp, fq)
+        y$lambda_dp <- convert_width(x$lambda, sdp, dp)
+        y$lambda_ppm <- convert_width(x$lambda, sdp, ppm)
+    } else if (is_decon1(x)) {
+        y <- x
+    } else if (is_idecon(x)) {
+        y <- structure(class = "decon1", .Data = list())
+        y$number_of_files <- 1
+        y$filename <- x$name
+        y$x_values <- x$sdp
+        y$x_values_ppm <- x$ppm
+        y$y_values <- x$y_smooth
+        y$spectrum_superposition <- s <- lorentz_sup(x = x$sdp, lcpar = x$lcr)
+        y$mse_normed <- mean(((x$y_smooth / sum(x$y_smooth)) - (s / sum(s)))^2)
+        y$index_peak_triplets_middle <- x$peak$center[x$peak$high]
+        y$index_peak_triplets_left <- x$peak$right[x$peak$high]
+        y$index_peak_triplets_right <- x$peak$left[x$peak$high]
+        y$peak_triplets_middle <- x$ppm[x$peak$center[x$peak$high]]
+        y$peak_triplets_left <- x$ppm[x$peak$right[x$peak$high]]
+        y$peak_triplets_right <- x$ppm[x$peak$left[x$peak$high]]
+        y$integrals <- x$lcr$integrals
+        y$signal_free_region <- c(x$sfr$left_sdp, x$sfr$right_sdp)
+        y$range_water_signal_ppm <- x$wsr$hwidth_ppm
+        y$A <- x$lcr$A
+        y$lambda <- x$lcr$lambda
+        y$x_0 <- x$lcr$w
+        # Fields only available in `decon1` (but not in `decon0`):
+        y$y_values_raw <- x$y_raw
+        y$x_values_hz <- x$hz
+        y$mse_normed_raw <- mean(((x$y_raw / sum(x$y_raw)) - (s / sum(s)))^2)
+        y$x_0_hz <- convert_pos(x$lcr$w, x$sdp, x$hz)
+        y$x_0_dp <- convert_pos(x$lcr$w, x$sdp, x$dp)
+        y$x_0_ppm <- convert_pos(x$lcr$w, x$sdp, x$ppm)
+        y$A_hz <- convert_width(x$lcr$A, x$sdp, x$hz)
+        y$A_dp <- convert_width(x$lcr$A, x$sdp, x$dp)
+        y$A_ppm <- convert_width(x$lcr$A, x$sdp, x$ppm)
+        y$lambda_hz <- convert_width(x$lcr$lambda, x$sdp, x$hz)
+        y$lambda_dp <- convert_width(x$lcr$lambda, x$sdp, x$dp)
+        y$lambda_ppm <- convert_width(x$lcr$lambda, x$sdp, x$ppm)
+    } else {
+        stop("Converting %s to decon1 is not supported", class(x)[1])
+    }
+    y
 }
 
 #' @export
@@ -168,7 +216,7 @@ as_decon2 <- function(x) {
             sm = NA,
             smnorm = x$msw_normed
         )
-    } else if (is_gdecon(x)) {
+    } else if (is_idecon(x)) {
         cs <- x$ppm
         si <- x$y_raw
         meta <- x$meta
@@ -225,37 +273,40 @@ as_spectra <- function(x,
 
 #' @export
 #' @rdname convert
-as_gspecs <- function(x, sf = c(1e3, 1e6)) {
-    if (is_gspecs(x)) return(x)
-    gg <- if (is_gspec(x)) {
+as_ispecs <- function(x, sf = c(1e3, 1e6)) {
+    if (is_ispecs(x)) return(x)
+    gg <- if (is_ispec(x)) {
         list(x)
     } else if (is_spectra(x)) {
-        lapply(x, as_gspec, sf = sf)
+        lapply(x, as_ispec, sf = sf)
     } else {
-        errmsg <- "Input must be gspec, gspecs or spectra, not "
+        errmsg <- "Input must be ispec, ispecs or spectra, not "
         stop(errmsg, class(x))
     }
-    gg <- structure(gg, class = "gspecs")
+    gg <- structure(gg, class = "ispecs")
     gg <- set_names(gg, get_names(gg))
     gg
 }
 
 #' @export
 #' @rdname convert
-as_gdecons <- function(x) {
-    if (is_gdecons(x)) return(x)
+as_idecons <- function(x) {
+    if (is_idecons(x)) return(x)
     stopifnot(is.list(x))
-    stopifnot(all(sapply(x, is_gdecon)))
-    structure(x, class = "gdecons")
+    stopifnot(all(sapply(x, is_idecon)))
+    structure(x, class = "idecons")
 }
 
 #' @export
 #' @rdname convert
-as_decons1 <- function(x, sf = c(1e3, 1e6)) {
+as_decons1 <- function(x, sf = c(1e3, 1e6), spectra = NULL) {
     if (is_decons1(x)) return(x)
-    decons1 <- lapply(x, as_decon1)
+    stopifnot(is_decons0(x) || is_idecons(x))
+    decons1 <- structure(vector("list", length(x)), class = "decons1")
     names(decons1) <- names(x)
-    class(decons1) <- "decons1"
+    for (i in seq_along(x)) {
+        decons1[[i]] <- as_decon1(x[[i]], sf = sf, spectrum = spectra[[i]])
+    }
     for (i in seq_along(decons1)) decons1[[i]]$number_of_files <- length(decons1)
     decons1
 }
@@ -305,7 +356,7 @@ set_names <- function(x, nams) {
 }
 
 get_names <- function(x, default = "spectrum_%d") {
-    stopifnot(class(x)[1] %in% c("gdecons", "gspecs", "spectra"))
+    stopifnot(class(x)[1] %in% c("idecons", "ispecs", "spectra"))
     dn <- get_default_names(x, default)
     en <- names(x) # Element name
     sn <- sapply(x, function(s) s$meta$name %||% s$name) # Spectrum name
@@ -330,12 +381,13 @@ spectrum_members <- c(
     "meta"
 )
 
-gspec_members <- c(
+ispec_members <- c(
     "y_raw",
     "y_scaled",
     "n",
     "dp",
     "sdp",
+    "sf",
     "ppm",
     "hz",
     "ppm_range",
@@ -347,8 +399,8 @@ gspec_members <- c(
     "meta"
 )
 
-gdecon_members <- c(
-    gspec_members,
+idecon_members <- c(
+    ispec_members,
     "sf",
     "y_nows",
     "y_pos",

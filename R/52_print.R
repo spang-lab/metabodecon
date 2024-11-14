@@ -26,8 +26,8 @@ print.spectrum <- function(x, name = FALSE, ...) {
 
 #' @export
 #' @rdname print_methods
-print.gspec <- function(x, name = FALSE, ...) {
-    # fmt <- "%sgspec object (%d dp, %.1f to %.1f ppm)\n"
+print.ispec <- function(x, name = FALSE, ...) {
+    # fmt <- "%sispec object (%d dp, %.1f to %.1f ppm)\n"
     # namestr <- if (name) paste0(x$name %||% "NULL", ": ") else ""
     # catf(fmt, namestr, length(x$ppm), max(x$ppm), min(x$ppm))
     str(x, 1)
@@ -35,11 +35,11 @@ print.gspec <- function(x, name = FALSE, ...) {
 
 #' @export
 #' @rdname print_methods
-print.gdecon <- function(x, name = FALSE, ...) {
+print.idecon <- function(x, name = FALSE, ...) {
     # ppm <- x$ppm
     # n <- length(ppm)
     # name <- if (name) paste0(x$name %||% "NULL", ": ") else ""
-    # fmt <- "%sgdecon object (%d dp, %.1f to %.1f ppm, %d peaks)\n"
+    # fmt <- "%sidecon object (%d dp, %.1f to %.1f ppm, %d peaks)\n"
     # catf(fmt, name, n, max(ppm), min(ppm), length(x$A))
     str(x, 1)
 }
@@ -77,16 +77,16 @@ print.spectra <- function(x, ...) {
 
 #' @export
 #' @rdname print_methods
-print.gspecs <- function(x, ...) {
-    # catf("gspecs object with %s gspec elements\n", length(x))
+print.ispecs <- function(x, ...) {
+    # catf("ispecs object with %s ispec elements\n", length(x))
     # invisible(sapply(x, print, name = TRUE))
     str(x, 2, give.attr = FALSE)
 }
 
 #' @export
 #' @rdname print_methods
-print.gdecons <- function(x, ...) {
-    catf("gdecons object with %s gdecon elements\n", length(x))
+print.idecons <- function(x, ...) {
+    catf("idecons object with %s idecon elements\n", length(x))
     nams <- get_names(x)
     mapply(x, nams, FUN = function(xi, nam) {
         catf("%s: ", nam)

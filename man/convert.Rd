@@ -3,13 +3,13 @@
 \name{convert}
 \alias{convert}
 \alias{as_spectrum}
-\alias{as_gspec}
-\alias{as_gdecon}
+\alias{as_ispec}
+\alias{as_idecon}
 \alias{as_decon1}
 \alias{as_decon2}
 \alias{as_spectra}
-\alias{as_gspecs}
-\alias{as_gdecons}
+\alias{as_ispecs}
+\alias{as_idecons}
 \alias{as_decons1}
 \alias{as_decons2}
 \title{Convert to a Metabodecon Class}
@@ -18,9 +18,9 @@ convert(x, to, ...)
 
 as_spectrum(x, sf = c(1000, 1e+06))
 
-as_gspec(x, sf = c(1000, 1e+06))
+as_ispec(x, sf = c(1000, 1e+06))
 
-as_gdecon(x)
+as_idecon(x)
 
 as_decon1(x, sf = NULL)
 
@@ -36,9 +36,9 @@ as_spectra(
   force = FALSE
 )
 
-as_gspecs(x, sf = c(1000, 1e+06))
+as_ispecs(x, sf = c(1000, 1e+06))
 
-as_gdecons(x)
+as_idecons(x)
 
 as_decons1(x, sf = c(1000, 1e+06))
 

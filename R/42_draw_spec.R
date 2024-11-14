@@ -96,7 +96,7 @@ ds_get_dat <- function(args) {
 
     # Chemical Shift
     cs <- {                          # Available in:
-        decon[["ppm"]] %||%          # - gdecon, gspec
+        decon[["ppm"]] %||%          # - idecon, ispec
         decon[["x_values_ppm"]] %||% # - decon0, decon1
         decon[["cs"]] %||%           # - decon2, spectrum
         stop("chemical Shifts missing", call. = FALSE)
@@ -105,7 +105,7 @@ ds_get_dat <- function(args) {
 
     # Raw Signal Intensity
     si <- {                          # Available in:
-        decon[["y_raw"]] %||%        # - gdecon, gspec
+        decon[["y_raw"]] %||%        # - idecon, ispec
         decon[["y_values_raw"]] %||% # - decon1
         decon[["si"]] %||%           # - decon2, spectrum
         stop("raw signal intensities missing", call. = FALSE)

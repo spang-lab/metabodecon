@@ -1,13 +1,13 @@
 # GLC v13 #####
 
-# IMPORTANT: we dont test for jcampdx files because after calling `read_spectrum()`, the data is the same as for bruker, which is tested in `test-read_spectrum.R`. Also, the calculations in the old `MetaboDecon1D()` function are slightly different for jcampdx and bruker files (in the jcampdx case it calculates with n-1 instead of n) and our `compare_spectra_v13` function currently only accounts for bruker-type errors of MetaboDecon1D, but not jcampdx errors.
+# IMPORTANT: we dont test for jcampdx files because after calling `read_spectrum()`, the data is the same as for bruker, which is tested in `test-read_spectrum.R`. Also, the calculations in the old `MetaboDecon1D()` function are slightly different for jcampdx and bruker files (in the jcampdx case it calculates with n-1 instead of n) and our `compare_spectra` function currently only accounts for bruker-type errors of MetaboDecon1D, but not jcampdx errors.
 
 # test_that("GLC works for 1 bruker", {
 #     data_path <- metabodecon_file("bruker/sim_subset")
 #     x <- generate_lorentz_curves_sim(data_path, verbose = FALSE)
 #     # new <- generate_lorentz_curves_sim(dp = "sim_01", ff = "bruker", nfit = 3, simple = TRUE, cache = FALSE)$rv
 #     # old <- md1d(dp = "sim_01", ff = "bruker", nfit = 3, simple = TRUE, cache = FALSE)$rv
-#     # r <- compare_spectra_v13(new, old, silent = TRUE)
+#     # r <- compare_spectra(new, old, silent = TRUE)
 #     # expect_true(sum(r %in% 0:1) >= 60 && sum(r %in% 2:3) == 0) # >=60 identical/equal && no diffs/errors
 # })
 

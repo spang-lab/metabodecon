@@ -35,41 +35,46 @@ confirm_wshw <- function(x, wshw) {
 #' Takes the SFR in PPM and returns the SFR in PPM, DP and SDP.
 #' @note
 #' Because the conversion from PPM to DP/SDP is slightly off (by 1-2 data
-#' points), the returned borders in DP and SDP are also incorrect. However, to
-#' maintain backwards compatibility with the old MetaboDecon1D function, these
-#' values are still returned. To only use the correct ppm values, set `version`
-#' to 2 in [filter_peaks()]. For details see `CHECK-2: signal free region
-#' calculation` in `TODOS.md`.
-enrich_sfr <- function(gspec, sfr) {
+#' points), the SFR borders in DP/SDP returned by this function are also
+#' incorrect. However, to maintain backwards compatibility with the old
+#' MetaboDecon1D function, the behaviour is not changed in this function.
+#' Instead, to only work with the correct ppm values, set `bwc = 2` in
+#' [filter_peaks()]. For details see `CHECK-2: signal free region calculation`
+#' in `TODOS.md`.
+enrich_sfr <- function(sfr, x) {
+    stopifnot(is_ispec(x) || is_idecon(x))
     left_ppm <- sfr[1]
     right_ppm <- sfr[2]
-    left_dp <- (gspec$n + 1) - (gspec$ppm_max - left_ppm) / gspec$ppm_nstep
-    left_sdp <- left_dp / gspec$sf[1]
-    right_dp <- (gspec$n + 1) - (gspec$ppm_max - right_ppm) / gspec$ppm_nstep
-    right_sdp <- right_dp / gspec$sf[1]
+    left_dp <- (x$n + 1) - (x$ppm_max - left_ppm) / x$ppm_nstep
+    left_sdp <- left_dp / x$sf[1]
+    right_dp <- (x$n + 1) - (x$ppm_max - right_ppm) / x$ppm_nstep
+    right_sdp <- right_dp / x$sf[1]
     named(left_ppm, right_ppm, left_dp, right_dp, left_sdp, right_sdp)
 }
 
-#' @description Calculates the WSR in dp and ppm from the WSHW in ppm.
-#' @note Because the conversion from PPM to DP is slightly off (by 1-2 data
-#' points), the returned WSR in dp is also incorrect. However, to maintain
-#' backwards compatibility with the old MetaboDecon1D function, these values are
-#' still returned. To only use the correct ppm values, set `version` to 2 in
+#' @noRd
+#' @description
+#' Calculates the WSR in dp and ppm from the WSHW in ppm.
+#' @note
+#' Because the conversion from PPM to DP/SDP is slightly off (by 1-2 data
+#' points), the SFR borders in DP/SDP returned by this function are also
+#' incorrect. However, to maintain backwards compatibility with the old
+#' MetaboDecon1D function, the behaviour is not changed in this function.
+#' Instead, to only work with the correct ppm values, set `bwc = 2` in
 #' [rm_water_signal()]. For details see `CHECK-3: water signal calculation` in
 #' `TODOS.md`.
-#' @noRd
-enrich_wshw <- function(gspec, wshw) {
-    if (!is_gspec(gspec)) stop("Input must be a `gspec`, not ", class(gspec))
-    gspec <- as_gspec(gspec)
+enrich_wshw <- function(wshw, x) {
+    stopifnot(is_ispec(x) || is_idecon(x))
+    x <- as_ispec(x)
     hwidth_ppm <- wshw
-    hwidth_dp <- hwidth_ppm / gspec$ppm_nstep
-    center_dp <- gspec$n / 2
+    hwidth_dp <- hwidth_ppm / x$ppm_nstep
+    center_dp <- x$n / 2
     right_dp <- center_dp + hwidth_dp
     left_dp <- center_dp - hwidth_dp
-    center_ppm <- gspec$ppm[center_dp]
-    right_ppm <- gspec$ppm[right_dp]
-    left_ppm <- gspec$ppm[left_dp]
-    if (left_dp <= 1 || right_dp >= gspec$n) stop("WSR is out of range")
+    center_ppm <- x$ppm[center_dp]
+    right_ppm <- x$ppm[right_dp]
+    left_ppm <- x$ppm[left_dp]
+    if (left_dp <= 1 || right_dp >= x$n) stop("WSR is out of range")
     named(
         left_ppm, right_ppm, center_ppm, hwidth_ppm,
         left_dp, right_dp, center_dp, hwidth_dp

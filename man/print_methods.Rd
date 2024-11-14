@@ -3,22 +3,22 @@
 \name{print_methods}
 \alias{print_methods}
 \alias{print.spectrum}
-\alias{print.gspec}
-\alias{print.gdecon}
+\alias{print.ispec}
+\alias{print.idecon}
 \alias{print.decon1}
 \alias{print.decon2}
 \alias{print.spectra}
-\alias{print.gspecs}
-\alias{print.gdecons}
+\alias{print.ispecs}
+\alias{print.idecons}
 \alias{print.decons1}
 \alias{print.decons2}
 \title{S3 Methods for Printing Metabodecon Objects}
 \usage{
 \method{print}{spectrum}(x, name = FALSE, ...)
 
-\method{print}{gspec}(x, name = FALSE, ...)
+\method{print}{ispec}(x, name = FALSE, ...)
 
-\method{print}{gdecon}(x, name = FALSE, ...)
+\method{print}{idecon}(x, name = FALSE, ...)
 
 \method{print}{decon1}(x, name = FALSE, ...)
 
@@ -26,9 +26,9 @@
 
 \method{print}{spectra}(x, ...)
 
-\method{print}{gspecs}(x, ...)
+\method{print}{ispecs}(x, ...)
 
-\method{print}{gdecons}(x, ...)
+\method{print}{idecons}(x, ...)
 
 \method{print}{decons1}(x, ...)
 

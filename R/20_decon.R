@@ -164,10 +164,10 @@ deconvolute <- function(x,
 
     # Check and convert input
     check_args_deconvolute()
-    gspecs <- as_gspecs(x)
+    ispecs <- as_ispecs(x)
 
     # Set defaults for not specified args
-    cs <- gspecs[[1]]$ppm
+    cs <- ispecs[[1]]$ppm
     n <- length(cs)
     nfit <- nfit %||% 3
     smopts <- smopts %||% c(2, 5)
@@ -176,15 +176,15 @@ deconvolute <- function(x,
     wshw <- wshw %||% 0
 
     # Deconvolute
-    gdecons <- deconvolute_gspecs(
-        gspecs,
+    idecons <- deconvolute_ispecs(
+        ispecs,
         nfit, smopts, delta, sfr, wshw,
         ask, force, verbose,
-        bwc = 2, nworkers = nworkers, rtyp = "decons2"
+        bwc = 2, nworkers = nworkers
     )
 
     # Convert and return
-    decons2 <- as_decons2(gdecons)
+    decons2 <- as_decons2(idecons)
     if (length(decons2) == 1) decons2[[1]] else decons2
 }
 
@@ -213,15 +213,15 @@ generate_lorentz_curves <- function(data_path,
     )
 
     # Deconvolute
-    gdecons <- deconvolute_gspecs(
-        gspecs = as_gspecs(x = spectra),
+    idecons <- deconvolute_ispecs(
+        ispecs = as_ispecs(x = spectra),
         nfit, smopts, delta, sfr, wshw,
         ask, force, verbose,
-        bwc = 1, nworkers = nworkers, rtyp = "decons1"
+        bwc = 1, nworkers = nworkers
     )
 
     # Convert, store and return
-    decons1 <- as_decons1(gdecons)
+    decons1 <- as_decons1(idecons)
     store_as_rds(decons1, make_rds, data_path)
     if (length(decons1) == 1) decons1[[1]] else decons1
 }
@@ -254,8 +254,15 @@ generate_lorentz_curves_sim <- function(data_path,
 
 #' @noRd
 #' @inheritParams deconvolute
-#' @param bwc Whether to produce results backwards compatible with [MetaboDecon1D()] and [generate_lorentz_curves()]. If `bwc < 2`, a `decon1` object is returned instead of a `decon2` object. If `bwc < 1`, fixes/improvements introduced after version 'metabodecon v1.0' are not used. Support for `bwc < 1` will be removed in 'metabodecon v2.0' and will result in a warning for 'metabodecon v1.x' with `x >= 1.2`.
-deconvolute_gspecs <- function(gspecs,
+#' @param bwc Whether to produce results backwards compatible with
+#' [MetaboDecon1D()]. If `bwc == 0`, bug fixes introduced after version 0.2.2 of
+#' Metabodecon are not used. If `bwc == 1`, new features introduced after
+#' version 0.2.2 of Metabodecon (e.g. faster algorithms) are not used. If `bwc
+#' == 2`, all bug fixes and features introduced after version 0.2.2 are used.
+#'
+#' Support for `bwc == 0` will be removed in 'metabodecon v2.0' and will result
+#' in a warning for 'metabodecon v1.x' with `x >= 1.2`.
+deconvolute_ispecs <- function(ispecs,
                                nfit = 3,
                                smopts = c(2, 5),
                                delta = 6.4,
@@ -265,40 +272,38 @@ deconvolute_gspecs <- function(gspecs,
                                force = FALSE,
                                verbose = TRUE,
                                bwc = 2,
-                               nworkers = 1,
-                               rtyp = "gdecons") {
+                               nworkers = 1) {
 
     # Check args & configure logging
-    args <- check_args_deconvolute_gspecs()
-    gspecs <- as_gspecs(gspecs)
+    args <- check_args_deconvolute_ispecs()
+    ispecs <- as_ispecs(ispecs)
     opts <- if (!verbose) options(toscutil.logf.file = nullfile())
     on.exit(options(opts), add = TRUE)
 
     # Init local vars
-    ns <- length(gspecs)
+    ns <- length(ispecs)
     nw <- if (nworkers == "auto") ceiling(detectCores() / 2) else nworkers
-    nw <- min(nw, length(gspecs))
+    nw <- min(nw, length(ispecs))
     nfstr <- if (ns == 1) "1 spectrum" else sprintf("%d spectra", ns)
     nwstr <- if (nw == 1) "1 worker" else sprintf("%d workers", nw)
-    adjno <- get_adjno(gspecs, sfr, wshw, ask)
-    sfrlist <- get_sfr(gspecs, sfr, ask, adjno)
-    wshwlist <- get_wshw(gspecs, wshw, ask, adjno)
-    smoptslist <- get_smopts(gspecs, smopts)
-    rtypsub <- gsub("decons", "decon", rtyp)
+    adjno <- get_adjno(ispecs, sfr, wshw, ask)
+    sfrlist <- get_sfr(ispecs, sfr, ask, adjno)
+    wshwlist <- get_wshw(ispecs, wshw, ask, adjno)
+    smoptslist <- get_smopts(ispecs, smopts)
 
     # Deconvolute spectra
     logf("Starting deconvolution of %s using %s", nfstr, nwstr)
     starttime <- Sys.time()
-    gdecon_list <- mcmapply(nw, deconvolute_gspec, gspecs,
+    idecon_list <- mcmapply(nw, deconvolute_ispec, ispecs,
         nfit, smoptslist, delta, sfrlist, wshwlist,
-        ask, force, verbose, bwc, nworkers, rtypsub)
-    robj <- convert(gdecon_list, to = args$rtyp)
+        ask, force, verbose, bwc, nworkers)
+    idecons <- as_idecons(idecon_list)
     duration <- format(round(Sys.time() - starttime, 3))
     logf("Finished deconvolution of %s in %s", nfstr, duration)
-    robj
+    idecons
 }
 
-deconvolute_gspec <- function(gspec,
+deconvolute_ispec <- function(ispec,
                               nfit = 3,
                               smopts = c(2, 5),
                               delta = 6.4,
@@ -308,92 +313,90 @@ deconvolute_gspec <- function(gspec,
                               force = FALSE,
                               verbose = TRUE,
                               bwc = 2,
-                              nworkers = 1,
-                              rtyp = "gdecon") {
+                              nworkers = 1) {
 
     # Check args & configure logging
-    gspec <- as_gspec(gspec)
-    args <- check_args_deconvolute_gspec()
-    gspec$dcp <- args[names(args) != "gspec"]
+    ispec <- as_ispec(ispec)
+    args <- check_args_deconvolute_ispec()
+    ispec$dcp <- args[names(args) != "ispec"]
     reps <- smopts[1]
     k <- smopts[2]
     opts <- if (!verbose) options(toscutil.logf.file = nullfile())
     on.exit(options(opts), add = TRUE)
 
-    # Deconvolute gspec
-    logf("Starting deconvolution of %s", gspec$name)
-    gspec <- rm_water_signal(gspec, wshw, bwc)
-    gspec <- rm_negative_signals(gspec)
-    gspec <- smooth_signals(gspec, reps, k, bwc)
-    gspec <- find_peaks(gspec)
-    gspec <- filter_peaks(gspec, sfr, delta, force, bwc)
-    gspec <- fit_lorentz_curves(gspec, nfit)
-    gdecon <- as_gdecon(gspec)
-    robj <- convert(gdecon, to = rtyp)
-    logf("Finished deconvolution of %s", gspec$name)
-    robj
+    # Deconvolute ispec
+    logf("Starting deconvolution of %s", ispec$name)
+    ispec <- rm_water_signal(ispec, wshw, bwc)
+    ispec <- rm_negative_signals(ispec)
+    ispec <- smooth_signals(ispec, reps, k, bwc)
+    ispec <- find_peaks(ispec)
+    ispec <- filter_peaks(ispec, sfr, delta, force, bwc)
+    ispec <- fit_lorentz_curves(ispec, nfit)
+    idecon <- as_idecon(ispec)
+    logf("Finished deconvolution of %s", ispec$name)
+    idecon
 }
 
-# Helpers for `deconvolute_gspecs()` #####
+# Helpers for `deconvolute_ispecs()` #####
 
 #' @description Return number of spectrum to adjust all others or 0 if every spectrum should be adjusted individually.
 #' @noRd
-get_adjno <- function(gspecs, sfr, wshw, ask) {
-    if (isFALSE(ask) || length(gspecs) == 1) {
+get_adjno <- function(ispecs, sfr, wshw, ask) {
+    if (isFALSE(ask) || length(ispecs) == 1) {
         return(0)
     }
     same_param <- get_yn_input("Use same parameters for all spectra?")
     if (!same_param) {
         return(0)
     }
-    namestr <- paste(seq_along(gspecs), names(gspecs), sep = ": ", collapse = ", ")
+    namestr <- paste(seq_along(ispecs), names(ispecs), sep = ": ", collapse = ", ")
     prompt <- sprintf("Number of spectrum for adjusting parameters? (%s)", namestr)
-    get_num_input(prompt, min = 1, max = length(gspecs), int = TRUE)
+    get_num_input(prompt, min = 1, max = length(ispecs), int = TRUE)
 }
 
 #' @description Convert to list of correct length (one per spectrum) and let user confirm each entry.
 #' @noRd
-get_sfr <- function(gspecs, sfr, ask, adjno) {
-    n <- length(gspecs)
+get_sfr <- function(ispecs, sfr, ask, adjno) {
+    n <- length(ispecs)
     if (is_num(sfr, 2)) sfr <- rep(list(sfr), n)
     if (!is_list_of_nums(sfr, n, 2)) stop("sfr should be a [list of] num(2)")
     if (ask && adjno == 0) { # Different SFR for each spectrum.
-        sfr <- lapply(seq_len(n), function(i) confirm_sfr(gspecs[[i]], sfr[[i]]))
+        sfr <- lapply(seq_len(n), function(i) confirm_sfr(ispecs[[i]], sfr[[i]]))
     }
     if (ask && adjno >= 1) { # Same SFR for each spectrum.
-        sfr_adjno <- confirm_sfr(gspecs[[adjno]], sfr[[adjno]])
+        sfr_adjno <- confirm_sfr(ispecs[[adjno]], sfr[[adjno]])
         sfr <- rep(list(sfr_adjno), n)
     }
-    names(sfr) <- names(gspecs)
+    names(sfr) <- names(ispecs)
     sfr
 }
 
 #' @description Convert to list of correct length (one per spectrum) and let user confirm each entry.
 #' @noRd
-get_wshw <- function(gspecs, wshw, ask, adjno) {
-    n <- length(gspecs)
+get_wshw <- function(ispecs, wshw, ask, adjno) {
+    n <- length(ispecs)
     if (is_num(wshw, 1)) wshw <- rep(list(wshw), n)
     if (is_num(wshw, n)) wshw <- as.list(wshw)
     if (!is_list_of_nums(wshw, n, 1)) stop("wshw should be a [list of] num(1)")
-    if (ask && adjno == 0) wshw <- mapply(confirm_wshw, gspecs, wshw)
-    if (ask && adjno >= 1) wshw <- rep(list(confirm_wshw(gspecs[[adjno]], wshw[[adjno]])), n)
-    names(wshw) <- names(gspecs)
+    if (ask && adjno == 0) wshw <- mapply(confirm_wshw, ispecs, wshw)
+    if (ask && adjno >= 1) wshw <- rep(list(confirm_wshw(ispecs[[adjno]], wshw[[adjno]])), n)
+    names(wshw) <- names(ispecs)
     wshw
 }
 
 #' @description Convert to list of correct length (one per spectrum).
 #' @noRd
-get_smopts <- function(gspecs, smopts) {
-    n <- length(gspecs)
+get_smopts <- function(ispecs, smopts) {
+    n <- length(ispecs)
     if (is_int(smopts, 2)) smopts <- rep(list(smopts), n)
     if (!is_list_of_nums(smopts, n, 2)) stop("smopts should be a [list of] int(2)")
-    names(smopts) <- names(gspecs)
+    names(smopts) <- names(ispecs)
     smopts
 }
 
-# Helpers for `deconvolute_gspec()` #####
+# Helpers for `deconvolute_ispec()` #####
 
-rm_water_signal <- function(x, wshw, bwc, sf = c(1e3, 1e6)) {
+rm_water_signal <- function(x, wshw, bwc) {
     check_args_rm_water_signal()
     logf("Removing water signal")
     if (bwc >= 2) {
@@ -402,7 +405,7 @@ rm_water_signal <- function(x, wshw, bwc, sf = c(1e3, 1e6)) {
         x$y_nows <- x$y_scaled
         x$y_nows[idx_wsr] <- min(x$y_nows)
     } else {
-        wsr <- enrich_wshw(x, wshw)
+        wsr <- enrich_wshw(wshw, x)
         left <- wsr$left_dp
         right <- wsr$right_dp
         idx_wsr <- right:left # (1)
@@ -527,22 +530,22 @@ find_peaks <- function(spec) {
 #'
 #' peak <- list(score = c(1, 5, 2), center = c(1, 2, 3))
 #' sdp <- c(3, 2, 1)
-#' gspec <- named(peak, sdp)
+#' ispec <- named(peak, sdp)
 #' sfr <- list(left_sdp = 2.8, right_sdp = 1.2)
-#' rm3 <- filtered_gspec <- filter_peaks(gspec, sfr)
-#' rm2 <- filtered_gspec <- filter_peaks(gspec, sfr, delta = 1)
-filter_peaks <- function(gspec, sfr, delta = 6.4, force = FALSE, bwc = 1) {
+#' rm3 <- filtered_ispec <- filter_peaks(ispec, sfr)
+#' rm2 <- filtered_ispec <- filter_peaks(ispec, sfr, delta = 1)
+filter_peaks <- function(ispec, sfr, delta = 6.4, force = FALSE, bwc = 1) {
     check_args_filter_peaks()
     logf("Removing peaks with low pscores")
-    sdp <- gspec$sdp
-    ppm <- gspec$ppm
-    plb <- gspec$peak$left
-    prb <- gspec$peak$right
-    pct <- gspec$peak$center
-    psc <- gspec$peak$score
+    sdp <- ispec$sdp
+    ppm <- ispec$ppm
+    plb <- ispec$peak$left
+    prb <- ispec$peak$right
+    pct <- ispec$peak$center
+    psc <- ispec$peak$score
     pok <- !is.na(plb) & !is.na(pct) & !is.na(prb)
     if (bwc < 1) {
-        sfr <- enrich_sfr(gspec, sfr)
+        sfr <- enrich_sfr(sfr, ispec)
         in_left_sfr <- sdp[pct] >= sfr$left_sdp
         in_right_sfr <- sdp[pct] <= sfr$right_sdp
     } else {
@@ -559,12 +562,12 @@ filter_peaks <- function(gspec, sfr, delta = 6.4, force = FALSE, bwc = 1) {
         mu <- 0
         sigma <- 0
     }
-    gspec$peak$high <- pok & (psc > mu + delta * sigma)
-    gspec$peak$region <- "norm"
-    gspec$peak$region[in_left_sfr] <- "sfrl"
-    gspec$peak$region[in_right_sfr] <- "sfrr"
-    logf("Removed %d peaks", sum(!gspec$peak$high))
-    gspec
+    ispec$peak$high <- pok & (psc > mu + delta * sigma)
+    ispec$peak$region <- "norm"
+    ispec$peak$region[in_left_sfr] <- "sfrl"
+    ispec$peak$region[in_right_sfr] <- "sfrr"
+    logf("Removed %d peaks", sum(!ispec$peak$high))
+    ispec
 }
 
 fit_lorentz_curves <- function(spec, nfit = 3) {
