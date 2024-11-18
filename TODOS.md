@@ -194,7 +194,7 @@ interpret 64 bit float numbers.
 
 2024/06/28: Checked and now traced by issue [FEATURE-9](#feature-9-implement-and-export-read_spectra).
 
-### CHECK-2: Signal free region calculation
+### CHECK-2: Signal free region (SFR) calculation
 
 In function `deconvolution` of file [MetaboDecon1D.R](R/MetaboDecon1D.R#1372), the signal free region border in data points is calculated as follows:
 

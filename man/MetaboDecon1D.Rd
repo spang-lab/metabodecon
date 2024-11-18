@@ -19,7 +19,7 @@ MetaboDecon1D(
 )
 }
 \arguments{
-\item{filepath}{Complete path of the file folder (Notice for Bruker format: filepath need to
+\item{filepath}{Complete path of the file folder (Notice for Bruker format: filepath needs to
 be the spectrum folder containing one or more different spectra
 (e.g."C:/Users/Username/Desktop/spectra_from_bruker"))}
 

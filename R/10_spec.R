@@ -203,7 +203,7 @@ make_spectrum <- function(si,
                           mfs = NULL) {
     cs_min <- cs_max - cs_width
     cs <- seq(cs_max, cs_max - cs_width, length.out = length(si))
-    fq <- as_frequency(cs, fq_ref)
+    fq <- in_hz(cs, fq_ref)
     fq_width_calc <- max(fq) - min(fq)
     if (!is.null(fq_width) && !is_equal(fq_width_calc, fq_width)) {
         if (force) {
@@ -264,7 +264,7 @@ simulate_spectrum <- function(name = "sim_00",
                               noise = rnorm(length(cs), sd = 1200)) {
     set.seed(seed) # (1)
     si <- round(lorentz_sup(cs, x0, A, lambda) + noise) # (2)
-    fq <- as_frequency(cs, fqref)
+    fq <- in_hz(cs, fqref)
     simpar <- named(name, cs, pkr, x0, A, lambda, noise)
     meta <- named(name, fq, simpar)
     spectrum <- structure(named(si, cs, meta), class = "spectrum")

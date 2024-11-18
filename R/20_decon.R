@@ -318,7 +318,7 @@ deconvolute_ispec <- function(ispec,
     # Check args & configure logging
     ispec <- as_ispec(ispec)
     args <- check_args_deconvolute_ispec()
-    ispec$dcp <- args[names(args) != "ispec"]
+    ispec$decpar <- args[names(args) != "ispec"]
     reps <- smopts[1]
     k <- smopts[2]
     opts <- if (!verbose) options(toscutil.logf.file = nullfile())

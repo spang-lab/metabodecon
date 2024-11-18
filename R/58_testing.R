@@ -651,8 +651,8 @@ compare_spectra <- function(new, old, silent = FALSE) { # styler: off
 
     # Compare values after water signal removal
     o3 <- old$debuglist$wsrm
-    new_sfr <- enrich_sfr(sfr = new$dcp$sfr, x = new)
-    new_wsr <- enrich_wshw(new$dcp$wsr, new)
+    new_sfr <- enrich_sfr(sfr = new$decpar$sfr, x = new)
+    new_wsr <- enrich_wshw(new$decpar$wsr, new)
     r[3] <-  ident(new$n, o3$spectrum_length)
     r[4] <-  ident(new$sdp, o3$spectrum_x)
     r[5] <-  equal(new$ppm, o3$spectrum_x_ppm)

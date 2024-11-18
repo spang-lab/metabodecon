@@ -47,7 +47,7 @@ names of the matrix are the ppm values of the original spectra.
 
 Example return matrix:
 
-\if{html}{\out{<div class="sourceCode">}}\preformatted{    ...  3.59  3.58  3.57  3.56  3.55  3.54  3.53
+\if{html}{\out{<div class="sourceCode">}}\preformatted{    ...  3.59  3.55  3.57  3.56  3.55  3.54  3.53
   .----------------------------------------------> PPM
 1 | NA   NA    0.20  NA    NA    NA    0.25  NA
 2 | NA   NA    0.15  NA    NA    NA    0.13  NA
