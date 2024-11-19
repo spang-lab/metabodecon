@@ -1,12 +1,12 @@
 .Rhistory
 .Rproj.user
-*.code-workspace
-*.tar.gz
-*Rproj*
-*.pdf
 .vscode/
 *_cache/
 *_files/
+*.code-workspace
+*.pdf
+*.tar.gz
+*Rproj*
 /check/
 /revdep/
 archive/
@@ -16,3 +16,4 @@ docs/
 inst/doc/
 tests/testthat_outputs/
 tests/testthat/_snaps/
+vdiffr.Rout.fail

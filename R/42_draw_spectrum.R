@@ -9,7 +9,7 @@
 #' For examples see `test/testthat/test-draw_spectrum.R`
 draw_spectrum <- function(
     # Mandatory
-    decon, # Output of [generate_lorentz_curves()]
+    obj, # Output of [generate_lorentz_curves()]
     # Figure Region
     fig = NULL, # Drawing region in NDC.
     add = !is.null(fig), # If TRUE, the plot is added to the current figure.
@@ -53,11 +53,9 @@ draw_spectrum <- function(
     # Unused
     ...
 ) {
+    local_par(mar = mar, new = add)
+    local_fig(fig = fig, add = add)
     args <- ds_get_args()
-    old <- par(mar = mar, new = add)
-    on.exit(par(old), add = TRUE)
-    rst <- set_fig(fig = fig, add = add)
-    on.exit(rst(), add = TRUE)
     dat <- ds_get_dat(args)
     plt <- ds_init_plot_region(dat, verbose)
     bgr <- ds_draw_bg(dat, fill_col, verbose)
@@ -66,7 +64,7 @@ draw_spectrum <- function(
     lcs <- ds_draw_lorentz_curves(dat, args, verbose)
     foc <- ds_draw_focus_rectangle(dat, rct_show, rct_fill, rct_col, verbose)
     axs <- ds_draw_axis(dat, main, xlab, ylab, axis_col, box_col, verbose)
-    lgd <- ds_draw_legend(args, verbose)
+    lgd <- ds_draw_legend(dat, args, verbose)
     named(dat, plt, bgr, axs, lns, trp, lcs, foc, par = par())
 }
 # styler: on
@@ -86,73 +84,62 @@ ds_get_args <- function(env = parent.frame()) {
     invisible(args)
 }
 
+#' @return Returns a list with the following elements:
+#' - `cs`: Chemical Shifts
+#' - `si`: Raw Signal Intensities
+#' - `sm`: Smoothed Signal Intensities
+#' - `ipc`: Peak Indices Center
+#' - `ipl`: Peak Indices Left
+#' - `ipr`: Peak Indices Right
+#' - `idp`: Indices of Data Points
+#' - `ipp`: Indices of Peak Points
+#' - `inp`: Indices of Non-Peak Points
+#' - `foc_lim`: Limits of Focus Region
+#' - `ifr`: Indices of Focus Region
+#' - `x_0`: Lorentzian Center
+#' - `A`: Lorentzian Amplitude
+#' - `lambda`: Lorentzian Width
+#' - `x`: X-axis values
+#' - `y`: Y-axis values
+#' - `xlim`: X-axis limits
+#' - `ylim`: Y-axis limits
 ds_get_dat <- function(args) {
-    decon <- args$decon
+    obj <- args$obj
     foc_rgn <- args$foc_rgn
     foc_unit <- args$foc_unit
     foc_only <- args$foc_only
     sf_y_raw <- args$sf_y_raw
     ysquash <- args$ysquash
 
-    # Chemical Shift
-    cs <- {                          # Available in:
-        decon[["ppm"]] %||%          # - idecon, ispec
-        decon[["x_values_ppm"]] %||% # - decon0, decon1
-        decon[["cs"]] %||%           # - decon2, spectrum
-        stop("chemical Shifts missing", call. = FALSE)
-        # Use `[[` instead of `$` to prevent partial matching
-    }
-
-    # Raw Signal Intensity
-    si <- {                          # Available in:
-        decon[["y_raw"]] %||%        # - idecon, ispec
-        decon[["y_values_raw"]] %||% # - decon1
-        decon[["si"]] %||%           # - decon2, spectrum
-        stop("raw signal intensities missing", call. = FALSE)
-    }
-
-    # Smoothed Signal Intensity
-    sis <- {
-        decon[["y_smooth"]] %||%
-        decon[["y_values"]] %||%
-        stop("smoothed signal intensities missing", call. = FALSE)
-    }
+    # Chemical Shift & Signal Intensity
+    cs <- obj[["cs"]] %||% obj[["ppm"]] %||% obj[["x_values_ppm"]]
+    si <- obj[["si"]] %||% obj[["y_raw"]] %||% obj[["y_values_raw"]]
+    sm <- obj[["sit"]][["sm"]] %||% obj[["y_smooth"]] %||% obj[["y_values"]]
     si <- si / sf_y_raw
+    if (is.null(cs)) stop("chemical Shifts missing")
 
     # Peak Indices
-    ipc <- decon$index_peak_triplets_middle # Peak centers
-    ipl <- decon$index_peak_triplets_left # Peak borders left
-    ipr <- decon$index_peak_triplets_right # Peak borders right
+    ipc <- obj$index_peak_triplets_middle # Peak centers
+    ipl <- obj$index_peak_triplets_left # Peak borders left
+    ipr <- obj$index_peak_triplets_right # Peak borders right
     idp <- rev(seq_along(cs)) # Data points
     ipp <- c(ipc, ipl, ipr) # Peak points
     inp <- setdiff(idp, ipp) # Non-peak points
 
     # Focus Region Limits
-    foc_lim <- {
-        if (is.null(foc_rgn)) {
-            NULL
-        } else if (foc_unit == "fraction") {
-            quantile(cs, foc_rgn)
-        } else if (foc_unit == "ppm") {
-            foc_rgn
-        } else {
-            stop("foc_unit must be 'fraction' or 'ppm'")
-        }
-    }
+    foc_lim <- if (is.null(foc_rgn)) NULL
+        else if (foc_unit == "fraction") quantile(cs, foc_rgn)
+        else if (foc_unit == "ppm") foc_rgn
+        else stop("foc_unit must be 'fraction' or 'ppm'")
 
     # Indices of Focus Region
-    ifr <- {
-        if (is.null(foc_rgn)) {
-            integer()
-        } else {
-            which(cs > min(foc_lim) & cs < max(foc_lim))
-        }
-    }
+    ifr <- if (is.null(foc_rgn)) integer()
+        else which(cs > min(foc_lim) & cs < max(foc_lim))
 
-    # Lorentzians
-    x_0 <- decon$x_0_ppm
-    A <- decon$A_ppm
-    lambda <- decon$lambda_ppm
+    # Lorentzian Parameters
+    x_0 <- obj$x_0_ppm
+    A <- obj$A_ppm
+    lambda <- obj$lambda_ppm
 
     # Plot region
     x <- if (foc_only) cs[ifr] else cs
@@ -160,7 +147,7 @@ ds_get_dat <- function(args) {
     xlim <- c(max(x), min(x))
     ylim <- c(0, max(y) / ysquash)
 
-    locals(without = c("decon"))
+    named(cs, si, sm, ipc, ipl, ipr, idp, ipp, inp, foc_lim, ifr, x_0, A, lambda, x, y, xlim, ylim)
 }
 
 ds_init_plot_region <- function(dat = ds_get_dat(),
@@ -231,7 +218,7 @@ ds_draw_lines <- function(dat,
                            verbose = FALSE) {
     x <- if (foc_only) dat$cs[dat$ifr] else dat$cs
     y <- if (foc_only) dat$si[dat$ifr] else dat$si
-    ys <- if (foc_only) dat$sis[dat$ifr] else dat$sis
+    ys <- if (foc_only) dat$sm[dat$ifr] else dat$sm
     if (verbose) logf("Drawing raw signal")
     lines(x, y, type = "l", col = line_col, lty = 1)
     if (sm_show && !is.null(ys)) {
@@ -248,7 +235,7 @@ ds_draw_triplets <- function(dat,
     if (isFALSE(show)) return(NULL) # styler: off
     if (verbose) logf("Drawing peak triplets")
     x <- dat$cs
-    y <- dat$sis %||% dat$si
+    y <- dat$sm %||% dat$si
     p <- dat$ipc
     l <- dat$ipl
     r <- dat$ipr
@@ -352,33 +339,20 @@ ds_draw_lorentz_curve <- function(x,
     return(y)
 }
 
-ds_draw_legend <- function(args, verbose = FALSE) {
-    if (isFALSE(args$lgd)) return(invisible(NULL)) # styler: off
+ds_draw_legend <- function(dat, args, verbose = FALSE) {
+    if (isFALSE(args$lgd)) return(invisible(NULL))
     if (verbose) logf("Drawing legend")
-    legend(
-        x = "topright",
-        legend = c(
-            "Raw Signal",
-            "Smoothed Signal",
-            "Peak Triplets",
-            "Single Lorentzian",
-            "Sum of Lorentzians"
-        ),
-        col = c(
-            args$line_col, args$sm_col, args$trp_col[1], args$lc_col, args$sup_col
-        ),
-        lty = c(1, 1, NA, 1, 1),
-        pch = c(NA, NA, args$trp_pch[1], NA, NA),
+    dsc <- c("Raw Signal", "Smoothed Signal", "Single Lorentzian", "Sum of Lorentzians", "Peak Triplets")
+    col <- c(args$line_col, args$sm_col, args$lc_col, args$sup_col, args$trp_col[1])
+    lty <- c(1, 1, 1, 1, NA)
+    pch <- c(NA, NA, NA, NA, args$trp_pch[1])
+    keep <- c(
+        !is.null(dat$si),
+        args$sm_show && !is.null(dat$sm),
+        args$lc_show && !is.null(dat$A),
+        args$sup_show && !is.null(dat$A),
+        args$trp_show && !is.null(dat$ipc)
     )
-}
-
-ds_setup_dev_env <- function() {
-    sim_01 <- metabodecon_file("sim/sim_01")
-    decon <- generate_lorentz_curves(
-        sim_01,
-        sfr = c(3.35, 3.55), wshw = 0, delta = 0.1,
-        ask = FALSE, verbose = FALSE
-    )
-    args <- stub("draw_spectrum", decon = decon, foc_rgn = c(3.55, 3.52))
-    invisible(args)
+    df <- data.frame(dsc, col, lty, pch)[keep,]
+    legend(x = "topright", legend = df$dsc, col = df$col, lty = df$lty, pch = df$pch)
 }

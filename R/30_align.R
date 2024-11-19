@@ -689,30 +689,30 @@ dohCluster_withMaxShift <- function(X,
 
 #' @noRd
 #'
-#' @description Helper function of [gen_feat_mat()] to extract the deconvolution
-#' parameters from `data_path`, where `data_path` can be:
+#' @description
+#' Helper function of [gen_feat_mat()] to extract the deconvolution parameters
+#' from `data_path`, where `data_path` can be a `decon1` or `decons1` object or
+#' a folder containing a `"parameters.txt"` and `"approximated_spectrum.txt"`
+#' file, as created when calling `MetaboDecon1D()` before version 1.2.
 #'
-#' 1. A single devonvolved spectrum as obtained by calling
-#'    `generate_lorentz_curves(spectrum)`
-#' 2. A list of deconvoluted spectra as obtained by calling
-#'    `generate_lorentz_curves(spectra)`
-#' 3. A folder containing ".* parameters.txt" and ".* approximated_spectrum.txt"
-#'    files, as created by when calling `MetaboDecon1D()` before version 1.2.
+#' @param data_path
+#' A list of deconvoluted spectra as returned by [generate_lorentz_curves()] or
+#' a path to a folder containing ".* parameters.txt" and ".*
+#' approximated_spectrum.txt" files.
 #'
-#' @param data_path A list of deconvoluted spectra as returned by
-#' [generate_lorentz_curves()] or a path to a folder containing ".*
-#' parameters.txt" and ".* approximated_spectrum.txt" files.
+#' @param warn
+#' (logical) Whether to print warning in case a file path is provided instead of
+#' a list of deconvoluted spectra.
 #'
-#' @param warn (logical) Whether to print warning in case a file path is
-#' provided instead of a list of deconvoluted spectra.
-#'
-#' @param check (logical) Whether to sanity check the deconvolution parameters
-#' before returning them.
+#' @param check
+#' (logical) Whether to sanity check the deconvolution parameters before
+#' returning them.
 #'
 #' @author Tobias Schmidt
 #'
-#' @return A list containing the deconvolution parameters, i.e. `w`, `lambda`,
-#' `A`, and `spectrum_superposition`.
+#' @return
+#' A list containing the deconvolution parameters, i.e. `w`, `lambda`, `A`, and
+#' `spectrum_superposition`.
 #'
 get_decon_params <- function(data_path, warn = TRUE, check = TRUE) {
     dd <- data_path
@@ -724,7 +724,7 @@ get_decon_params <- function(data_path, warn = TRUE, check = TRUE) {
         spectrum_superposition <- lapply(dd, function(d) d$spectrum_superposition)
         params <- named(w, lambda, A, spectrum_superposition)
     } else {
-        if (!file.exists(dd)) stop(dd, " does not exist.") else if (warn) warning("You have provided a path to `gen_feat_mat()`. Since metabodecon v1.2 it is recommended to provide the output of `generate_lorentz_curves()` directly instead to speed up the computations. For details see section 'Details' after calling `help('gen_feat_mat')`.")
+        if (!file.exists(dd)) stop(dd, " does not exist.") else if (warn) warning("You have provided a path to `gen_feat_mat()`. Since metabodecon v1.2 it is recommended to provide the output of `generate_lorentz_curves()` directly to speed up computations. For details see section 'Details' after calling `help('gen_feat_mat')`.")
         params <- read_decon_params(dd)
     }
     if (check) check_decon_params(params)

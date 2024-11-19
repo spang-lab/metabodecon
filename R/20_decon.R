@@ -260,8 +260,7 @@ generate_lorentz_curves_sim <- function(data_path,
 #' version 0.2.2 of Metabodecon (e.g. faster algorithms) are not used. If `bwc
 #' == 2`, all bug fixes and features introduced after version 0.2.2 are used.
 #'
-#' Support for `bwc == 0` will be removed in 'metabodecon v2.0' and will result
-#' in a warning for 'metabodecon v1.x' with `x >= 1.2`.
+#' Support for `bwc == 0` will be removed in 'metabodecon v2.0'.
 deconvolute_ispecs <- function(ispecs,
                                nfit = 3,
                                smopts = c(2, 5),

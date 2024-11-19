@@ -1,49 +1,50 @@
-# GLC v13 #####
+# IMPORTANT: we dont test for jcampdx files because after calling
+# `read_spectrum()`, the data is the same as for bruker, which is tested in
+# `test-read_spectrum.R`. Also, the calculations in the old `MetaboDecon1D()`
+# function are slightly different for jcampdx and bruker files (in the jcampdx
+# case it calculates with n-1 instead of n) and our `compare_spectra` function
+# currently only accounts for bruker-type errors of MetaboDecon1D, but not
+# jcampdx errors.
 
-# IMPORTANT: we dont test for jcampdx files because after calling `read_spectrum()`, the data is the same as for bruker, which is tested in `test-read_spectrum.R`. Also, the calculations in the old `MetaboDecon1D()` function are slightly different for jcampdx and bruker files (in the jcampdx case it calculates with n-1 instead of n) and our `compare_spectra` function currently only accounts for bruker-type errors of MetaboDecon1D, but not jcampdx errors.
+single_spectrum <- test_that("GLC works for 1 bruker", {
+    x <- generate_lorentz_curves(
+        data_path = sim[[1]],
+        sfr = c(3.55, 3.35),
+        wshw = 0,
+        ask = FALSE,
+        verbose = FALSE
+    )
+    prarp <- calc_prarp(decon = x, truepar = sim[[1]]$meta$simpar)
+    expect_identical(object = names(x), expected = decon1_members)
+    expect_identical(object = class(x), expected = "decon1")
+    expect_true(prarp$peak_ratio > 0.9)
+    expect_true(prarp$area_ratio > 0.9)
+})
 
-# test_that("GLC works for 1 bruker", {
-#     data_path <- metabodecon_file("bruker/sim_subset")
-#     x <- generate_lorentz_curves_sim(data_path, verbose = FALSE)
-#     # new <- generate_lorentz_curves_sim(dp = "sim_01", ff = "bruker", nfit = 3, simple = TRUE, cache = FALSE)$rv
-#     # old <- md1d(dp = "sim_01", ff = "bruker", nfit = 3, simple = TRUE, cache = FALSE)$rv
-#     # r <- compare_spectra(new, old, silent = TRUE)
-#     # expect_true(sum(r %in% 0:1) >= 60 && sum(r %in% 2:3) == 0) # >=60 identical/equal && no diffs/errors
-# })
+bruker_folder <- test_that("GLC works for bruker folder", {
+    data_path <- metabodecon_file("bruker/sim_subset")
+    x <- generate_lorentz_curves(
+        data_path,
+        sfr = c(3.55, 3.35),
+        wshw = 0,
+        ask = FALSE,
+        verbose = FALSE
+    )
+    expect_identical(object = names(x), expected = c("sim_01", "sim_02"))
+    expect_identical(object = class(x), expected = "decons1")
+    expect_identical(object = class(x$sim_01), expected = "decon1")
+    expect_identical(object = class(x$sim_02), expected = "decon1")
+    prarps <- mapply(calc_prarp, x, list(sim[[1]]$meta$simpar, sim[[2]]$meta$simpar))
+    expect_true(all(prarps > 0.8))
+})
 
-# test_that("GLC works for bruker folder", {
-#     data_path <- metabodecon_file("bruker/sim_subset")
-#     x <- generate_lorentz_curves_sim(data_path, verbose = FALSE)
-#     evobj <- md1d(dp = "sim_subset", ff = "bruker", nfit = 3, simple = TRUE, cache = FALSE, debug = FALSE)
-#     y <- evobj$rv
-#     expect_equal(names(x), names(y)) # chr [1:2] "sim_01" "sim_02"
-#     expect_equal(names(x$sim_01)[1: length(y$sim_01)], names(y$sim_01))
-#     new <- x$sim_01
-#     old <- y$sim_01
-#     expect_equal(new$number_of_files,            old$number_of_files           )
-#     expect_equal(new$filename,                   old$filename                  )
-#     expect_equal(new$x_values,                   old$x_values                  )
-#     expect_equal(new$x_values_ppm,               old$x_values_ppm              )
-#     expect_equal(new$y_values,                   old$y_values                  )
-#     expect_equal(new$spectrum_superposition,     old$spectrum_superposition    )
-#     expect_equal(new$mse_normed,                 old$mse_normed                )
-#     expect_equal(new$index_peak_triplets_middle, old$index_peak_triplets_middle)
-#     expect_equal(new$index_peak_triplets_left,   old$index_peak_triplets_left  )
-#     expect_equal(new$index_peak_triplets_right,  old$index_peak_triplets_right )
-#     expect_equal(new$peak_triplets_middle,       old$peak_triplets_middle      )
-#     expect_equal(new$peak_triplets_left,         old$peak_triplets_left        )
-#     expect_equal(new$peak_triplets_right,        old$peak_triplets_right       )
-#     expect_equal(new$integrals,                  old$integrals                 )
-#     expect_equal(new$signal_free_region,         old$signal_free_region        )
-#     expect_equal(new$range_water_signal_ppm,     old$range_water_signal_ppm    )
-#     expect_equal(new$A,                          old$A                         )
-#     expect_equal(new$lambda,                     old$lambda                    )
-#     expect_equal(new$x_0,                        old$x_0                       )
-# })
-
-# test_that("GLC works when no peaks are filtered out", {
-#     x <- simulate_spectrum(ndp = 256, npk = 3)
-#     expect_error(generate_lorentz_curves(x, sfr = c(Inf, -Inf), wshw = 0, smopts = c(0, 3), ask = FALSE))
-#     decon <- generate_lorentz_curves(x, sfr = c(Inf, -Inf), wshw = 0, smopts = c(0, 3), ask = FALSE, force = TRUE)
-#     expect_identical(length(decon), 31L)
-# })
+wrong_sfr <- test_that("GLC works when no peaks are filtered out", {
+    x <- simulate_spectrum(ndp = 256, npk = 3)
+    expect_error(generate_lorentz_curves(
+        x, sfr = c(Inf, -Inf), wshw = 0, smopts = c(0, 3), ask = FALSE
+    ))
+    decon <- generate_lorentz_curves(
+        x, sfr = c(Inf, -Inf), wshw = 0, smopts = c(0, 3), ask = FALSE, force = TRUE
+    )
+    expect_identical(length(decon), 31L)
+})

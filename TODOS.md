@@ -1,11 +1,3 @@
-# Unassigned
-
-- Implement [Max' parameter approximation algorithms](https://gitlab.spang-lab.de/bachelorthesis/ws2425_msombke_metabodecon-v2/-/blob/main/new_method_docs/main.R
-) in `calc_A`, `calc_lambda` and `calc_w`.
-- Add testcase with 100 iterations
-- Add testcase with one big peak at 0.000 ppm (because it's unclear why <https://github.com/spang-lab/metabodecon/blob/v1.2.0/R/21_decon_helpers.R#L315> checks for w[i] == 0).
-- Check special handling for cases with A[i] == 0 and lambda[i] == 0 in paramater approximaton. Max analyzed it and concluded that checks are not necessary. My though: copy paste artifacts from the the w[i] == 0 check (which is wrong).
-
 # Open
 
 ## v1.2.0
@@ -112,6 +104,14 @@ Implement `deconvolute_spectra()` and `deconvolute_spectrum()` which should be t
 4. Use 1-based indexing for data points as described in [CHECK-4](#check-4-data-point-format).
 5. Remove the scale factor and scaled data point numbers as described in [CHECK-4](#check-4-data-point-format).
 6. Remove negative values in a consistent way, as described by [CHECK-5](#check-5-signal-preprocessing)
+
+### INFRA-1: Create issue for the following topics
+
+- Implement [Max' parameter approximation algorithms](https://gitlab.spang-lab.de/bachelorthesis/ws2425_msombke_metabodecon-v2/-/blob/main/new_method_docs/main.R
+) in `calc_A`, `calc_lambda` and `calc_w`.
+- Add testcase with 100 iterations
+- Add testcase with one big peak at 0.000 ppm (because it's unclear why <https://github.com/spang-lab/metabodecon/blob/v1.2.0/R/21_decon_helpers.R#L315> checks for w[i] == 0).
+- Check special handling for cases with A[i] == 0 and lambda[i] == 0 in paramater approximaton. Max analyzed it and concluded that checks are not necessary. My though: copy paste artifacts from the the w[i] == 0 check (which is wrong).
 
 # DONE
 

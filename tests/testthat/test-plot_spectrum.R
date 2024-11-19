@@ -1,8 +1,38 @@
 #' @noRd
+#' @title Setup a development environment for `plot_spectrum`
+mkenv_plot_spectrum <- function() {
+    sim_01 <- metabodecon_file("sim/sim_01")
+    spec <- read_spectrum(sim_01)
+    decon <- generate_lorentz_curves(
+        data_path = sim_01,
+        sfr = c(3.35, 3.55),
+        wshw = 0,
+        delta = 0.1,
+        ask = FALSE,
+        verbose = FALSE
+    )
+    args <- stub(
+        func = plot_spectrum,
+        decon = decon,
+        foc_rgn = c(3.49, 3.45),
+        foc_unit = "ppm",
+        envir = .GlobalEnv
+    )
+    width <- options("width")
+    line <- paste0(collapse(rep("-", width), ""), "\n")
+    cat(line)
+    cat("Assigned to .GlobalEnv:\n")
+    cat(line)
+    str(args, 1, give.attr = FALSE)
+    cat(line)
+    invisible(args)
+}
+
+#' @noRd
 #' @examples
-#' ps_test(1, 2) # first two plots
-#' ps_text(2:4) # second to fourth plot
-ps_test <- function(figs = 1:5) {
+#' test_plot_spectrum(1, 2) # first two plots
+#' test_plot_spectrum(2:4) # second to fourth plot
+test_plot_spectrum <- function(figs = 1:5) {
     n <- length(figs)
     nr <- ceiling(sqrt(n))
     nc <- if (nr^2 > n) nr - 1 else nr
@@ -47,7 +77,7 @@ ps_test <- function(figs = 1:5) {
     }
 }
 
-ps_test_gr_convert <- function() {
+test_grconvert <- function() {
     par(mfrow = c(1, 2), xpd = TRUE)
     plot_dummy()
     x <- c(0.25, 0.75)
@@ -77,30 +107,3 @@ ps_test_gr_convert <- function() {
     par(mfrow = c(1, 1), xpd = FALSE)
 }
 
-ps_setup_dev_env <- function() {
-    sim_01 <- metabodecon_file("sim/sim_01")
-    spec <- read_spectrum(sim_01)
-    decon <- generate_lorentz_curves(
-        data_path = sim_01,
-        sfr = c(3.35, 3.55),
-        wshw = 0,
-        delta = 0.1,
-        ask = FALSE,
-        verbose = FALSE
-    )
-    args <- stub(
-        func = plot_spectrum,
-        decon = decon,
-        foc_rgn = c(3.49, 3.45),
-        foc_unit = "ppm",
-        envir = .GlobalEnv
-    )
-    width <- options("width")
-    line <- paste0(collapse(rep("-", width), ""), "\n")
-    cat(line)
-    cat("Assigned to .GlobalEnv:\n")
-    cat(line)
-    str(args, 1, give.attr = FALSE)
-    cat(line)
-    invisible(args)
-}

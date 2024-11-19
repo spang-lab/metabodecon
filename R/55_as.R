@@ -310,7 +310,7 @@ as_decons1 <- function(x, sf = c(1e3, 1e6), spectra = NULL) {
     decons1
 }
 
-as_decons0 <- function(x, sf = c(1e3, 1e6), spectra = NULL) {
+as_decons0 <- function(x, sf = c(1e3, 1e6), spectra = list(NULL)) {
     if (is_decons0(x)) return(x)
     stopifnot(is_decons1(x) || is_decons2(x) || is_idecons(x))
     decons0 <- mapply(as_decon0, x, list(sf), spectra, SIMPLIFY = FALSE)
@@ -321,7 +321,7 @@ as_decons0 <- function(x, sf = c(1e3, 1e6), spectra = NULL) {
 
 #' @export
 #' @rdname as_metabodecon_class
-as_decons1 <- function(x, sf = c(1e3, 1e6), spectra = NULL) {
+as_decons1 <- function(x, sf = c(1e3, 1e6), spectra = list(NULL)) {
     if (is_decons1(x)) return(x)
     stopifnot(is_decons0(x) || is_idecons(x))
     decons1 <- mapply(as_decon1, x, list(sf), spectra, SIMPLIFY = FALSE)
@@ -409,8 +409,8 @@ decon1_members <- c(
     decon0_members,
     "y_values_raw",
     "x_values_hz",
-    "signal_free_region_ppm",
     "mse_normed_raw",
+    "signal_free_region_ppm",
     "x_0_hz",
     "x_0_dp",
     "x_0_ppm",

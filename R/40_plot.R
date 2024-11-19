@@ -218,6 +218,11 @@ with_fig <- function(expr, fig = NULL, add = TRUE) {
     expr
 }
 
+local_fig <- function(fig = NULL, add = TRUE, envir = parent.frame()) {
+  reset_mfc <- set_fig(fig = fig, add = add)
+  defer(reset_mfc(), envir = envir)
+}
+
 #' @noRd
 #' @description
 #' Returns TRUE if the current multi-figure gets filled by row, else FALSE.
