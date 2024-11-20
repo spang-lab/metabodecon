@@ -9,7 +9,7 @@
 #'
 #' `r lifecycle::badge("experimental")`
 #'
-#' @param decon An object as returned by [generate_lorentz_curves()], containing
+#' @param obj An object as returned by [generate_lorentz_curves()], containing
 #' the deconvolution data. Must include either `x_values_ppm` or `ppm` for the
 #' x-axis values, and either `y_values` or `y_smooth` for the y-axis values.
 #'
@@ -138,7 +138,7 @@
 #' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
 #' sim_01 <- metabodecon_file("sim/sim_01")
 #' spec <- read_spectrum(sim_01)
-#' decon <- generate_lorentz_curves_sim(spec)
+#' obj <- generate_lorentz_curves_sim(spec)
 #' opar <- par(mfrow = c(3, 2))
 #' on.exit(par(opar))
 #'
@@ -151,19 +151,19 @@
 #' ## 6. Hide xlab and ylab
 #' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
 #' plot_spectrum(spec)
-#' plot_spectrum(decon, foc_rgn = c(3.49, 3.45), foc_unit = "ppm")
-#' plot_spectrum(decon, foc_rgn = c(0.40, 0.30))
-#' plot_spectrum(decon,
+#' plot_spectrum(obj, foc_rgn = c(3.49, 3.45), foc_unit = "ppm")
+#' plot_spectrum(obj, foc_rgn = c(0.40, 0.30))
+#' plot_spectrum(obj,
 #'     sub_mar = c(4, 4, 0, 0),
 #'     rct_fill = rgb(0.9, 0.5, 0.9, alpha = 0.1),
 #'     rct_col = "violet",
 #'     sub_rgn = c(x1 = 0.1, x2 = 0.9, y1 = 0.4, y2 = 0.9)
 #' )
-#' plot_spectrum(decon, rct_fill = NULL, sub_fill_col = NULL, cnct_col = NULL)
-#' plot_spectrum(decon, xlab = "", ylab = "", mar = c(2, 2, 0, 1))
+#' plot_spectrum(obj, rct_fill = NULL, sub_fill_col = NULL, cnct_col = NULL)
+#' plot_spectrum(obj, xlab = "", ylab = "", mar = c(2, 2, 0, 1))
 plot_spectrum <- function(
     # Common Settings
-    decon,
+    obj,
     main = "",
     foc_rgn = c(0.40, 0.35),
     foc_unit = "fraction",

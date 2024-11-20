@@ -13,7 +13,7 @@ mkenv_plot_spectrum <- function() {
     )
     args <- stub(
         func = plot_spectrum,
-        decon = decon,
+        obj = decon,
         foc_rgn = c(3.49, 3.45),
         foc_unit = "ppm",
         envir = .GlobalEnv
@@ -107,3 +107,12 @@ test_grconvert <- function() {
     par(mfrow = c(1, 1), xpd = FALSE)
 }
 
+test_result <- test_that("plot_spectrum works", {
+    tmp <- vdiffr::expect_doppelganger(
+        title = "plot_spectrum",
+        fig = test_plot_spectrum,
+        writer = function(plot, file, title = "") {
+            with_svg(file, plot(), width = 12, height = 16)
+        }
+    )
+})

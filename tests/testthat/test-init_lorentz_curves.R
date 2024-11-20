@@ -1,4 +1,4 @@
-test_that("init_lorentz_curves_v14 works", {
+test_that("init_lorentz_curves works", {
     sim <- metabodecon_file("sim_subset")
     obj <- MetaboDecon1D_silent(
         filepath = sim,

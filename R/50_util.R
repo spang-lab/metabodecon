@@ -406,6 +406,10 @@ get_worker_logs <- function(nw, create = TRUE) {
     if (is.null(x)) y else x
 }
 
+`%===%` <- function(x, y) {
+    identical(x, y)
+}
+
 # Docs #####
 
 #' @title Metabodecon Classes

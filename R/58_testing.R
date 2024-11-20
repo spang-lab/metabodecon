@@ -124,8 +124,7 @@ evalwith <- function(expr, # nolint: cyclocomp_linter.
     if (!is.null(testdir)) {
         testpath <- file.path(testdir(), testdir)
         mkdirs(testpath)
-        owd <- setwd(testpath)
-        on.exit(setwd(owd), add = TRUE)
+        local_dir(testpath)
         if (!is.null(inputs)) {
             pkg_inputpaths <- sapply(paste0("example_datasets/", inputs), pkg_file)
             if (any(pkg_inputpaths == "")) {
@@ -146,56 +145,44 @@ evalwith <- function(expr, # nolint: cyclocomp_linter.
     if (!is.null(output)) {
         outcon <- if (output == "captured") textConnection("outvec", "wr", local = TRUE) else file(output, open = "wt")
         sink(outcon, type = "output")
-        on.exit(sink(NULL), add = TRUE)
-        on.exit(close(outcon), add = TRUE)
+        on.exit(close(outcon), add = TRUE, after = FALSE)
+        on.exit(sink(NULL), add = TRUE, after = FALSE)
     }
     msgvec <- vector("character")
     if (!is.null(message)) {
         msgcon <- if (message == "captured") textConnection("msgvec", "wr", local = TRUE) else file(message, open = "wt")
         sink(msgcon, type = "message")
-        on.exit(sink(NULL, type = "message"), add = TRUE)
-        on.exit(close(msgcon), add = TRUE)
+        on.exit(close(msgcon), add = TRUE, after = FALSE)
+        on.exit(sink(NULL, type = "message"), add = TRUE, after = FALSE)
     }
     dev_cur <- dev.cur()
     force(plot) # forces eval, useful if plot ~= `svg("abc.svg")`
     if (identical(dev_cur, dev.cur()) && !is.null(plot)) {
         if (is.expression(plot)) eval(plot) # plot == `quote(svg("abc.svg", width = 10))`
         if (identical(plot, "captured")) plot <- tempfile(fileext = ".png")
-        if (grepl("\\.pdf$", plot)) {
-            pdf(plot)
-        } else if (grepl("\\.svg$", plot)) {
-            svg(plot)
-        } else if (grepl("\\.png$", plot)) {
-            png(plot)
-        } else {
-            stop("plot must be an expression opening a device or a path ending in .pdf, .svg, or .png")
-        }
+        if (grepl("\\.pdf$", plot)) pdf(plot)
+        else if (grepl("\\.svg$", plot)) svg(plot)
+        else if (grepl("\\.png$", plot)) png(plot)
+        else stop("plot must be an expression opening a device or a path ending in .pdf, .svg, or .png")
     }
-    if (!is.null(opts)) {
-        oldopts <- options(opts)
-        on.exit(options(oldopts), add = TRUE)
-    }
-    if (!is.null(pars)) {
-        oldpars <- par(pars)
-        on.exit(par(oldpars), add = TRUE)
-    }
+    if (!is.null(opts)) local_options(opts)
+    if (!is.null(pars)) local_par(pars)
     if (!identical(dev_cur, dev.cur())) {
-        # This must be done after both arguments `plot` and `pars` have been evaluated, as both can lead to a change in the graphical device.
-        on.exit(while (!identical(dev_cur, dev.cur())) dev.off(), add = TRUE)
+        # This must be done after both arguments `plot` and `pars` have been
+        # evaluated, as both can lead to a change in the graphical device.
+        on.exit(while (!identical(dev_cur, dev.cur())) dev.off(), add = TRUE, after = FALSE)
     }
     withCallingHandlers(
         testthat::with_mocked_bindings(
-            code = {
-                tryCatch(
-                    {
-                        runtime <- system.time(rv <- expr)[["elapsed"]]
-                    },
-                    error = function(e) {
-                        sink(NULL, type = "message")
-                        stop(e)
-                    }
-                )
-            },
+            code = tryCatch(
+                expr = {
+                    runtime <- system.time(rv <- expr)[["elapsed"]]
+                },
+                error = function(e) {
+                    sink(NULL, type = "message")
+                    stop(e)
+                }
+            ),
             datadir_temp = get_datadir_mock(type = "temp", state = datadir_temp),
             datadir_persistent = get_datadir_mock(type = "persistent", state = datadir_persistent),
             readline = get_readline_mock(answers),
@@ -284,7 +271,7 @@ get_datadir_mock <- function(type = "temp", state = "default") {
     p <- norm_path(file.path(mockdir(), "datadir", type, state))
     if (state %in% c("missing", "empty")) unlink(p, recursive = TRUE, force = TRUE)
     if (state == "empty") mkdirs(p)
-    if (state == "filled") download_example_datasets(dst_dir = p)
+    if (state == "filled") download_example_datasets(dst_dir = p, silent = TRUE)
     function() p
 }
 
@@ -314,7 +301,7 @@ loaded_via_devtools <- function() {
 run_tests <- function(all = FALSE) {
     RUN_SLOW_TESTS_OLD <- Sys.getenv("RUN_SLOW_TESTS")
     Sys.setenv(RUN_SLOW_TESTS = if (all) "TRUE" else "FALSE")
-    on.exit(Sys.setenv(RUN_SLOW_TESTS = RUN_SLOW_TESTS_OLD), add = TRUE)
+    on.exit(Sys.setenv(RUN_SLOW_TESTS = RUN_SLOW_TESTS_OLD), add = TRUE, after = FALSE)
     devtools::test()
 }
 

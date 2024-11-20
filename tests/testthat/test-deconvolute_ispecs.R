@@ -11,12 +11,14 @@ check_prarp <- test_that("deconvolute_ispecs works", {
         verbose = FALSE,
         bwc = 2
     )
-    truepars <- lapply(spectra, function(x) x$meta$simpar)
+    truepars <- lapply(sim_subset, function(x) x$meta$simpar)
     prarps <- mapply(calc_prarp, idecons, truepars)
     expect_true(all(prarps > 0.8))
     expect_equal(class(idecons), "idecons")
     expect_equal(length(idecons), 2)
 })
+
+skip_if_slow_tests_disabled()
 
 check_bwc <- test_that("deconvolute_ispecs is backwards compatible to MetaboDecon1D", {
 

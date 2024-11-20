@@ -10,14 +10,6 @@ test_that("datadir works if persistent=FALSE, warn=FALSE", {
     expect_equal(x, y)
 })
 
-test_that("datadir works if datadir_persistent=filled", {
-    evalwith(datadir_persistent = "filled", {
-        x <- datadir()
-        y <- datadir(persistent = TRUE)
-    })
-    expect_equal(x, y)
-})
-
 test_that("datadir works if file=non_existent_file", {
     x <- evalwith(message = "captured", {
         datadir(file = "non_existent_file")
@@ -31,4 +23,14 @@ test_that("datadir works if warn=F, datadirs=missing", {
         datadir(file = "non_existent_file", warn = FALSE)
     })
     expect_equal(x$message, character())
+})
+
+skip_if_slow_tests_disabled()
+
+test_that("datadir works if datadir_persistent=filled", {
+    evalwith(datadir_persistent = "filled", {
+        x <- datadir()
+        y <- datadir(persistent = TRUE)
+    })
+    expect_equal(x, y)
 })

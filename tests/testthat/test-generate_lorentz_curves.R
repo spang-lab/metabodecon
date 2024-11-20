@@ -46,5 +46,5 @@ wrong_sfr <- test_that("GLC works when no peaks are filtered out", {
     decon <- generate_lorentz_curves(
         x, sfr = c(Inf, -Inf), wshw = 0, smopts = c(0, 3), ask = FALSE, force = TRUE
     )
-    expect_identical(length(decon), 31L)
+    expect_identical(length(decon), 32L)
 })

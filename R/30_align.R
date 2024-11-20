@@ -271,7 +271,7 @@ speaq_align <- function(feat = gen_feat_mat(spectrum_data),
     })
     ppm <- spectrum_data[[1]]$x_values_ppm
     M <- matrix(nrow = s, ncol = n, dimnames = list(NULL, ppm))
-    for (i in seq_len(s)) M[i, round(Q[[i]]) - 1] <- integrals[[i]]
+    for (i in seq_len(s)) M[i, round(Q[[i]])] <- integrals[[i]]
     if (show) {
         opar <- par(mfrow = mfrow, mar = c(5.1, 4.1, 2.1, 0.1))
         on.exit(par(opar), add = TRUE)

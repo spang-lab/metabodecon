@@ -38,7 +38,8 @@
 download_example_datasets <- function(dst_dir = NULL,
                                       extract = TRUE,
                                       persistent = NULL,
-                                      overwrite = FALSE) {
+                                      overwrite = FALSE,
+                                      silent = FALSE) {
 
     # Example:
     # input   dst_dir    = C:/Users/max/Downloads
@@ -46,7 +47,7 @@ download_example_datasets <- function(dst_dir = NULL,
     # var     cached_xds = C:/Users/max/.local/share/R/metabodecon/example_datasets
     # return  dst_zip    = C:/Users/max/Downloads/example_datasets.zip
     # return  dst_xds    = C:/Users/max/Downloads/example_datasets
-    cached_zip <- cache_example_datasets(persistent = persistent, extract = extract, overwrite = overwrite)
+    cached_zip <- cache_example_datasets(persistent, extract, overwrite, silent)
     cached_xds <- file.path(dirname(cached_zip), "example_datasets")
     if (is.null(dst_dir)) {
         return(if (extract) cached_xds else cached_zip)
@@ -341,13 +342,16 @@ xds <- list(
 #' \donttest{
 #' cache_example_datasets(persistent = FALSE, extract = FALSE, overwrite = FALSE)
 #' }
-cache_example_datasets <- function(persistent = NULL, extract = FALSE, overwrite = FALSE) {
+cache_example_datasets <- function(persistent = NULL,
+                                   extract = FALSE,
+                                   overwrite = FALSE,
+                                   silent = FALSE) {
 
     pdir <- datadir_persistent()
     pzip <- file.path(pdir, "example_datasets.zip")
     pzip_exists <- file.exists(pzip)
     pzip_is_missing <- !pzip_exists
-    pzip_has_correct_size <- isTRUE(file.size(pzip) == xds$zip_size) # implies existence
+    pzip_has_correct_size <- isTRUE(file.size(pzip) == xds$zip_size) # Implies existence
     pzip_has_wrong_size <- !pzip_has_correct_size
 
     tdir <- datadir_temp()
@@ -358,13 +362,18 @@ cache_example_datasets <- function(persistent = NULL, extract = FALSE, overwrite
     persistent <- if (isTRUE(persistent) || (is.null(persistent) && pzip_has_correct_size)) TRUE else FALSE
 
     if (isTRUE(persistent)) {
-        if (pzip_is_missing || (pzip_has_wrong_size && overwrite)) download_example_datasets_zip(pzip, copyfrom = tzip)
+        if (pzip_is_missing || (pzip_has_wrong_size && overwrite)) {
+            download_example_datasets_zip(pzip, copyfrom = tzip, silent = silent)
+        }
         if (pzip_exists && pzip_has_wrong_size && !overwrite) {
             msg <- "Path %s exists already, but has size %d instead of %d. Set `overwrite = TRUE` to overwrite."
             stop(sprintf(msg, pzip, file.size(pzip), xds$zip_size))
         }
     } else {
-        if (tzip_has_wrong_size) download_example_datasets_zip(tzip, copyfrom = pzip) # no need to ask for permission here because we only write to the temp dir
+        if (tzip_has_wrong_size) {
+            download_example_datasets_zip(tzip, copyfrom = pzip, silent = silent)
+            # No need to ask for permission here because we only write to the temp dir
+        }
     }
 
     zip <- if (persistent) pzip else tzip
@@ -398,13 +407,13 @@ extract_example_datasets <- function(path = datadir("example_datasets.zip")) {
 #' \donttest{
 #' download_example_datasets_zip("/path/to/your/directory/example_datasets.zip")
 #' }
-download_example_datasets_zip <- function(path, copyfrom = NULL) {
+download_example_datasets_zip <- function(path, copyfrom = NULL, silent = FALSE) {
     mkdirs(dirname(path))
     if (!is.null(copyfrom) && file.exists(copyfrom) && file.size(copyfrom) == xds$zip_size) {
-        message(sprintf("Copying cached archive %s to %s", copyfrom, path))
+        if (!silent) message(sprintf("Copying cached archive %s to %s", copyfrom, path))
         file.copy(copyfrom, path, overwrite = TRUE)
     } else {
-        message(sprintf("Downloading %s as %s", xds$url, path))
+        if (!silent) message(sprintf("Downloading %s as %s", xds$url, path))
         utils::download.file(xds$url, path, quiet = TRUE)
     }
     path

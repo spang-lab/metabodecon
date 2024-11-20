@@ -1,6 +1,6 @@
 library(testthat)
 
-test_that("is_int_str works", {
+test_that("is_float_str works", {
     fixed_point_notation <- c("2.0", "3.", ".4", "-5.", "-.6")
     scientific_notation <- c("0.45e+04", "66e-05", "0.2e-3", "-33.e-1")
 

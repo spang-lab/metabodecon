@@ -69,13 +69,12 @@ test_draw_spectrum <- function() {
     })
 }
 
-write_svg <- function (plot, file, title = "")
-{
-    svglite::svglite(file, width = 12, height = 16)
-    on.exit(grDevices::dev.off())
-    vdiffr:::print_plot(plot)
-}
-
 test_result <- test_that("draw_spectrum works", {
-  tmp <- vdiffr::expect_doppelganger("Spectra", test_draw_spectrum, writer = write_svg)
+    tmp <- vdiffr::expect_doppelganger(
+        title = "draw_spectrum",
+        fig = test_draw_spectrum,
+        writer = function(plot, file, title = "") {
+            with_svg(file, plot(), width = 12, height = 16)
+        }
+    )
 })
