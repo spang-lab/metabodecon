@@ -8,11 +8,11 @@
 \usage{
 deconvolute(
   x,
-  nfit = NULL,
-  smopts = NULL,
-  delta = NULL,
+  nfit = 3,
+  smopts = c(2, 5),
+  delta = 6.4,
   sfr = NULL,
-  wshw = NULL,
+  wshw = 0,
   ask = FALSE,
   force = FALSE,
   verbose = FALSE,
@@ -46,7 +46,7 @@ generate_lorentz_curves_sim(
   raw = TRUE,
   nfit = 10,
   smopts = c(2, 5),
-  delta = 0.1,
+  delta = 6.4,
   sfr = c(3.55, 3.35),
   wshw = 0,
   ask = FALSE,
@@ -67,9 +67,9 @@ iterations and the number of data points to use for smoothing (must be odd).
 See 'Details'.}
 
 \item{delta}{Threshold for peak filtering. Higher values result in more peaks
-being filtered out. A peak is filtered if its score is below \mjeqn{\mu +
-\sigma \cdot \delta}{mu + s * delta}, where \mjeqn{\mu}{mu} is the average
-peak score in the signal-free region (SFR), and \mjeqn{\sigma}{s} is the
+being filtered out. A peak is filtered if its score is below \eqn{\mu +
+\sigma \cdot \delta}{mu + s * delta}, where \eqn{\mu}{mu} is the average
+peak score in the signal-free region (SFR), and \eqn{\sigma}{s} is the
 standard deviation of peak scores in the SFR. See 'Details'.}
 
 \item{sfr}{Numeric vector with two entries: the ppm positions for the left
@@ -122,12 +122,8 @@ A 'GLCDecon' as described in \href{https://spang-lab.github.io/metabodecon/artic
 \description{
 Deconvolutes NMR spectra by modeling each detected signal within
 a spectrum as Lorentz Curve.
-
-\loadmathjax
 }
 \details{
-\loadmathjax
-
 First, an automated curvature based signal selection is performed. Each
 signal is represented by 3 data points to allow the determination of initial
 Lorentz curves. These Lorentz curves are then iteratively adjusted to
@@ -173,7 +169,6 @@ sim_1_decon0 <- generate_lorentz_curves(
     data_path = sim_1_dir, # Path to directory containing spectra
     sfr = c(3.55, 3.35), # Borders of signal free region (SFR) in ppm
     wshw = 0, # Half width of water signal (WS) in ppm
-    delta = 0.1, # Threshold for peak filtering
     ask = FALSE, # Don't ask for user input
     verbose = FALSE # Suppress status messages
 )

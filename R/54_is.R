@@ -58,7 +58,7 @@ is_idecon <- function(x) inherits(x, "idecon")
 #' @export
 #' @rdname type_checking
 is_decon0 <- function(x) {
-    is.list(x) && all(decon0_members %in% names(x))
+    is.list(x) && all(decon0_members %in% names(x)) && !is_decon1(x)
 }
 
 #' @export

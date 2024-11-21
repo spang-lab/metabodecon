@@ -93,8 +93,9 @@ as_idecon <- function(x) {
 #' @rdname as_metabodecon_class
 as_decon0 <- function(x, sf = NULL, spectrum = NULL) {
     if (is_decon0(x)) return(x)
-    x <- as_decon1(x)
-    x[decon0_members]
+    y <- as_decon1(x)
+    y <- unclass(y)
+    y[decon0_members]
 }
 
 #' @export
@@ -169,8 +170,7 @@ as_decon1 <- function(x, sf = c(1e3, 1e6), spectrum  = NULL) {
         y$x_values <- x$sdp
         y$x_values_ppm <- x$ppm
         y$y_values <- x$y_smooth
-        s <- lorentz_sup(x = x$sdp, lcpar = x$lcr)
-        y$spectrum_superposition <- t(s)
+        y$spectrum_superposition <- t(s <- lorentz_sup(x = x$sdp, lcpar = x$lcr))
         y$mse_normed <- mean(((x$y_smooth / sum(x$y_smooth)) - (s / sum(s)))^2)
         y$index_peak_triplets_middle <- as.numeric(x$peak$center[x$peak$high])
         y$index_peak_triplets_left <- as.numeric(x$peak$right[x$peak$high])
@@ -179,7 +179,7 @@ as_decon1 <- function(x, sf = c(1e3, 1e6), spectrum  = NULL) {
         y$peak_triplets_left <- x$ppm[x$peak$right[x$peak$high]]
         y$peak_triplets_right <- x$ppm[x$peak$left[x$peak$high]]
         y$integrals <- t(x$lcr$integrals)
-        y$signal_free_region <- sfr_in_sdp_bwc(x$args$sfr, x$ppm)
+        y$signal_free_region <- sfr_in_sdp_bwc(x$args$sfr, x$ppm, sf)
         y$range_water_signal_ppm <- x$args$wshw
         y$A <- x$lcr$A
         y$lambda <- x$lcr$lambda
@@ -209,7 +209,6 @@ as_decon2 <- function(x) {
     if (is_decon2(x)) {
         return(x)
     } else if (is_decon1(x)) {
-        stop("TODO")
         cs <- x$x_values_ppm
         si <- x$y_values_raw
         meta <- list(

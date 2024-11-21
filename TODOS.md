@@ -1,3 +1,4 @@
+
 # Open
 
 ## v1.2.0
@@ -14,9 +15,9 @@
 
 Write tests to check whether functions `generate_lorentz_curves()` and `deconvolute()` produce results that are compliant with `MetaboDecon1D()`.
 
-### FEATURE-18: Implement plot_decon
+### FEATURE-18: Implement plot_spectra
 
-Implement `plot_decon` which should be the successor of the following functions:
+Implement `plot_spectra` which should be the successor of the following functions:
 
 - plot_triplets
 - plot_lorentz_curves_save_as_png
@@ -107,6 +108,7 @@ Implement `deconvolute_spectra()` and `deconvolute_spectrum()` which should be t
 
 ### INFRA-1: Create issue for the following topics
 
+- Write a small wrapper to generate and store `aligned SI matrix`
 - Check and refactor integral calculations
 - Improve prarp tests. The peak ratio should be calculated as nCorrectlyIdentifiedPeaks / (nPeaks + nFalselyDetectedPeaks)
 - Implement [Max' parameter approximation algorithms](https://gitlab.spang-lab.de/bachelorthesis/ws2425_msombke_metabodecon-v2/-/blob/main/new_method_docs/main.R

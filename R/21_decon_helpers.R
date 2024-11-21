@@ -370,7 +370,7 @@ calc_A <- function(wr, wc, wl, yr, yc, yl, wrc, wrl, wcl, yrc, yrl, ycl, lambda,
 #'
 #' @description
 #' Calculates the values of a Lorentz Curve for a vector of input values `x`.
-#' The Lorentz Curve is defined as \mjeqn{A \cdot \frac{\lambda}{\lambda^2 +
+#' The Lorentz Curve is defined as \eqn{A \cdot \frac{\lambda}{\lambda^2 +
 #' (x_i - x_0)^2}}.
 #'
 #' @param x Numeric vector of x values.

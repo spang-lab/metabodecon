@@ -8,7 +8,8 @@ download_example_datasets(
   dst_dir = NULL,
   extract = TRUE,
   persistent = NULL,
-  overwrite = FALSE
+  overwrite = FALSE,
+  silent = FALSE
 )
 }
 \arguments{

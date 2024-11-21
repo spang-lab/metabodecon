@@ -7,7 +7,6 @@
 #' @description Deconvolutes NMR spectra by modeling each detected signal within
 #' a spectrum as Lorentz Curve.
 #'
-#' \loadmathjax
 #'
 #' @inheritParams read_spectrum
 #'
@@ -22,9 +21,9 @@
 #' dataframes.
 #'
 #' @param delta Threshold for peak filtering. Higher values result in more peaks
-#' being filtered out. A peak is filtered if its score is below \mjeqn{\mu +
-#' \sigma \cdot \delta}{mu + s * delta}, where \mjeqn{\mu}{mu} is the average
-#' peak score in the signal-free region (SFR), and \mjeqn{\sigma}{s} is the
+#' being filtered out. A peak is filtered if its score is below \eqn{\mu +
+#' \sigma \cdot \delta}{mu + s * delta}, where \eqn{\mu}{mu} is the average
+#' peak score in the signal-free region (SFR), and \eqn{\sigma}{s} is the
 #' standard deviation of peak scores in the SFR. See 'Details'.
 #'
 #' @param force If FALSE, the function stops with an error message if no peaks
@@ -61,8 +60,6 @@
 #' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
 #'
 #' @details
-#'
-#' \loadmathjax
 #'
 #' First, an automated curvature based signal selection is performed. Each
 #' signal is represented by 3 data points to allow the determination of initial

@@ -43,9 +43,9 @@ as_ispecs(x, sf = c(1000, 1e+06))
 
 as_idecons(x)
 
-as_decons1(x, sf = c(1000, 1e+06), spectra = NULL)
+as_decons1(x, sf = c(1000, 1e+06), spectra = list(NULL))
 
-as_decons1(x, sf = c(1000, 1e+06), spectra = NULL)
+as_decons1(x, sf = c(1000, 1e+06), spectra = list(NULL))
 
 as_decons2(x)
 }

@@ -29,22 +29,24 @@ plot_ws <- function(spec, hwidth_ppm) {
     hw <- hwidth_ppm
     x0 <- (spec$ppm_max + spec$ppm_min) / 2
     xlim <- if (hw > 0) c(x0 + 5 * hw, x0 - 5 * hw) else range(spec$ppm)[2:1]
+    in_xlim <- which(spec$ppm <= max(xlim) & spec$ppm >= min(xlim))
     plot(
-        spec$ppm,
-        spec$y_scaled,
+        spec$ppm[in_xlim],
+        spec$y_scaled[in_xlim],
         type = "l",
         xlab = "Chemical Shift [ppm]",
         ylab = "Signal Intensity [au]",
         xlim = xlim
     )
-    graphics::abline(v = x0, col = "red", lty = 1) # center
-    mtext("center", side = 3, line = 0, at = x0, col = "red")
-    if (hw > 0) {
-        ya <- max(spec$y_scaled) * 0.8
-        abline(v = c(x0 + hw, x0 - hw), col = "red") # left/right border
-        arrows(x0, ya, x0 + c(hw, -hw), ya, col = "red", length = 0.1)
-        text(x0 + c(hw, -hw) / 2, ya, labels = "wshw", pos = 3, col = "red")
-    }
+    mtext("Water Signal Region", side = 3, line = 0, at = x0, col = "blue")
+    rect(
+        xleft = x0 - hw,
+        xright = x0 + hw,
+        ybottom = par("usr")[3],
+        ytop = par("usr")[4],
+        col = rgb(0, 0, 1, alpha = 0.2),
+        border = NA
+    )
 }
 
 #' @noRd

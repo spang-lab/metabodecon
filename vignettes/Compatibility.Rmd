@@ -44,7 +44,7 @@ A similar graphical representation with additional information about accepted an
 
 # Figure 1: Metabodecon Workflow
 
-![Metabodecon Workflow](Classes\spectra_classes.png)
+![Metabodecon Workflow](metabodecon_workflow.svg)
 
 # Table 2: Feature Matrix
 

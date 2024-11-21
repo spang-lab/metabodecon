@@ -11,6 +11,7 @@ articles:
       - Datasets
       - Contributing
       - Compatibility
+      - Classes
 reference:
 - title: Deconvolution
   desc: Functions to deconvolute a spectrum into its individual peaks.
@@ -24,6 +25,7 @@ reference:
 - title: Alignment
   desc: Functions to align multiple spectra.
   contents:
+  - align_spectra
   - combine_peaks
   - dohCluster
   - gen_feat_mat
@@ -37,16 +39,25 @@ reference:
   - datadir_temp
   - download_example_datasets
   - metabodecon_file
+  - sim
   - tmpdir
 - title: Utility
   desc: Utility functions, e.g. for converting between units or for calculating y values for a given lorentz curve.
   contents:
+  - as_metabodecon_class
   - calculate_lorentz_curves
   - convert_pos
   - convert_width
-  - tree
-  - width
   - evalwith
+  - make_spectrum
+  - metabodecon_classes
+  - print_methods
+  - read_spectra
+  - simulate_spectrum
+  - transp
+  - tree
+  - type_checking
+  - width
 - title: Deprecated
   desc: Deprecated functions. These functions should no longer be used. They will be retained for a short period of time to give users time to migrate to their replacement function, but will be removed in future releases of the package.
   contents:

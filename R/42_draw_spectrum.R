@@ -84,6 +84,7 @@ ds_get_args <- function(env = parent.frame()) {
     invisible(args)
 }
 
+#' @noRd
 #' @return Returns a list with the following elements:
 #' - `cs`: Chemical Shifts
 #' - `si`: Raw Signal Intensities
@@ -306,16 +307,16 @@ ds_draw_lorentz_curves <- function(dat, args = NULL, verbose = FALSE) {
 }
 
 ds_draw_lorentz_curve <- function(x,
-                                   x_0,
-                                   A,
-                                   lambda,
-                                   lc_show = TRUE,
-                                   lc_col = "black",
-                                   lc_lty = 1,
-                                   lc_fill = NULL) {
+                                  x_0,
+                                  A,
+                                  lambda,
+                                  lc_show = TRUE,
+                                  lc_col = "black",
+                                  lc_lty = 1,
+                                  lc_fill = NULL) {
     y <- lorentz(x, x_0, A, lambda)
     if (lc_show) {
-        near_zero <- abs(y) < 0.01
+        near_zero <- abs(y) < 0.001
         y_big <- y[!near_zero]
         x_big <- x[!near_zero]
         lines(
