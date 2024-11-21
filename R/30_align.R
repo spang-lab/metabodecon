@@ -258,7 +258,7 @@ speaq_align <- function(feat = gen_feat_mat(spectrum_data),
     Y <- feat$data_matrix
     s <- nrow(Y) # Number of spectra
     n <- ncol(Y) # Number of data points
-    U <- feat$peakList # Unaligned peak centers indices (PCIs) in increasing order (i.e. the leftmost value index 1).
+    U <- feat$peakList # Unaligned peak center indices (PCIs) in increasing order (i.e. the leftmost value index 1).
     r <- speaq::findRef(U)$refInd # Reference spectrum
     C <- dohCluster(Y, U, r, maxShift, acceptLostPeak, verbose) # list(Y, new_peakList)
     Y2 <- C$Y

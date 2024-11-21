@@ -55,7 +55,7 @@ The classes mentioned above represent individual objects, such as a single spect
     - `smopts`: The smoothing parameters used for the deconvolution.
     - `delta`: The threshold used for peak filtering.
     - `sfr`: Borders of the signal free region in ppm.
-    - `wsr`: Borders of the water signal region in ppm.
+    - `wshw`: Water signal half width in ppm.
 5.  `sit`: Signal Intensities (SI) after applying various transformations:
     - `wsrm`: SIs after Water Signal Removal (WSRM),
     - `nvrm`: SIs after WSRM and Negative Value Removal (NVRM).

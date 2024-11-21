@@ -82,7 +82,7 @@ in_hz <- function(cs, fqref) {
 }
 
 #' @noRd
-#' @description Function to convert between SDP and PPM in a backwards
+#' @description Functions to convert between SDP and PPM in a backwards
 #' compatible way, i.e. this function does the same mistakes and numerical
 #' errors as the original conversion in MetaboDecon1D.
 #' @param sfr_sdp Signal free region borders (SFR) in scaled data point numbers
@@ -91,7 +91,7 @@ in_hz <- function(cs, fqref) {
 #' @param ppm Chemical shifts (CS) in parts per million (PPM) for all datapoints.
 #' datapoints.
 #' @details See 'CHECK-2: Signal free region (SFR) calculation' in `TODOS.md`.
-sfr_in_ppm_0 <- function(sfr_sdp, sdp, ppm) {
+sfr_in_ppm_bwc <- function(sfr_sdp, sdp, ppm) {
     n <- length(sdp)
     sdp_step <- diff(range(sdp)) / (n - 1)
     sdp_nstep <- diff(range(sdp)) / n
@@ -100,4 +100,21 @@ sfr_in_ppm_0 <- function(sfr_sdp, sdp, ppm) {
     sfr_dp <- sfr_sdp / sdp_step
     sfr_ppm <- max(ppm) - (n + 1 - sfr_dp) * ppm_nstep
     sfr_ppm
+}
+
+#' @noRd
+#' @rdname sfr_in_ppm_bwc
+#' @param sfr_ppm Signal free region borders (SFR) in parts per million (PPM).
+sfr_in_sdp_bwc <- function(sfr_ppm, ppm, sf) {
+    sfr_left  <- max(sfr_ppm)
+    sfr_right <- min(sfr_ppm)
+    ppm_left  <- max(ppm)
+    ppm_right <- min(ppm)
+    n <- length(ppm)
+    ppm_nstep <- (ppm_left - ppm_right) / n
+    dp_left   <- (n + 1) - (ppm_left - sfr_left)  / ppm_nstep
+    dp_right  <- (n + 1) - (ppm_left - sfr_right) / ppm_nstep
+    sdp_left  <- dp_left  / sf[1]
+    sdp_right <- dp_right / sf[1]
+    c(sdp_left, sdp_right)
 }

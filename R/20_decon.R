@@ -109,7 +109,6 @@
 #'     data_path = sim_1_dir, # Path to directory containing spectra
 #'     sfr = c(3.55, 3.35), # Borders of signal free region (SFR) in ppm
 #'     wshw = 0, # Half width of water signal (WS) in ppm
-#'     delta = 0.1, # Threshold for peak filtering
 #'     ask = FALSE, # Don't ask for user input
 #'     verbose = FALSE # Suppress status messages
 #' )
@@ -152,38 +151,24 @@ NULL
 #' @export
 #' @rdname deconvolute
 deconvolute <- function(x,
-                        nfit = NULL,
-                        smopts = NULL,
-                        delta = NULL,
+                        nfit = 3,
+                        smopts = c(2, 5),
+                        delta = 6.4,
                         sfr = NULL,
-                        wshw = NULL,
+                        wshw = 0,
                         ask = FALSE,
                         force = FALSE,
                         verbose = FALSE,
                         nworkers = 1) {
-
-    # Check and convert input
     check_args_deconvolute()
     ispecs <- as_ispecs(x)
-
-    # Set defaults for not specified args
-    cs <- ispecs[[1]]$ppm
-    n <- length(cs)
-    nfit <- nfit %||% 3
-    smopts <- smopts %||% c(2, 5)
-    delta <- delta %||% if (n >= 32768) 6.4 else 0.1
-    sfr <- sfr %||% if (n >= 32768) c(11.44494, -1.8828) else quantile(cs, c(0.9, 0.1))
-    wshw <- wshw %||% 0
-
-    # Deconvolute
+    if (is.null(sfr)) sfr <- quantile(ispecs[[1]]$ppm, c(0.9, 0.1))
     idecons <- deconvolute_ispecs(
         ispecs,
         nfit, smopts, delta, sfr, wshw,
         ask, force, verbose,
         bwc = 2, nworkers = nworkers
     )
-
-    # Convert and return
     decons2 <- as_decons2(idecons)
     if (length(decons2) == 1) decons2[[1]] else decons2
 }
@@ -236,7 +221,7 @@ generate_lorentz_curves_sim <- function(data_path,
                                         raw = TRUE,
                                         nfit = 10,
                                         smopts = c(2, 5),
-                                        delta = 0.1,
+                                        delta = 6.4,
                                         sfr = c(3.55, 3.35),
                                         wshw = 0,
                                         ask = FALSE,
@@ -317,7 +302,7 @@ deconvolute_ispec <- function(ispec,
     # Check args & configure logging
     ispec <- as_ispec(ispec)
     args <- check_args_deconvolute_ispec()
-    ispec$decpar <- args[names(args) != "ispec"]
+    ispec$args <- args[names(args) != "ispec"]
     reps <- smopts[1]
     k <- smopts[2]
     opts <- if (!verbose) options(toscutil.logf.file = nullfile())

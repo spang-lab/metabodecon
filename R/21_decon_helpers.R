@@ -411,6 +411,28 @@ lorentz_sup <- function(x, x0, A, lambda, lcpar = NULL) {
 }
 
 #' @noRd
+#' @title Calculate Lorentz Curve Integrals
+#' @description
+#' Calculates the integral of a Lorentz curve for a vector of input values `x`.
+lorentz_int <- function(x0, A, lambda, lcpar = NULL, limits = NULL) {
+    if (is.list(lcpar)) {
+        nams <- names(lcpar)
+        if ("A" %in% nams) A <- lcpar$A
+        if ("lambda" %in% nams) lambda <- lcpar$lambda
+        if ("x_0" %in% nams) x0 <- lcpar$x_0
+        if ("x0" %in% nams) x0 <- lcpar$x0
+        if ("w" %in% nams) x0 <- lcpar$w
+    }
+    if (is.null(limits)) {
+        A * pi
+    } else {
+        a <- min(limits)
+        b <- max(limits)
+        A * (atan((b - x0) / lambda) - atan((a - x0) / lambda))
+    }
+}
+
+#' @noRd
 #' @description
 #' Before version 1.2 of 'metabodecon', the deconvolution functions
 #' `generate_lorentz_curves()` and `MetaboDecon1D()` wrote their output

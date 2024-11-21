@@ -1,3 +1,5 @@
+# Docs #####
+
 #' @export
 #'
 #' @rdname as_metabodecon_class
@@ -112,7 +114,7 @@ as_decon1 <- function(x, sf = c(1e3, 1e6), spectrum  = NULL) {
         y$y_values_raw <- si
         y$x_values_hz <- fq
         y$mse_normed_raw <- mean(((si / sum(si)) - (ssp / sum(ssp)))^2)
-        y$signal_free_region_ppm <- sfr_in_ppm_0(x$signal_free_region, sdp, ppm)
+        y$signal_free_region_ppm <- sfr_in_ppm_bwc(x$signal_free_region, sdp, ppm)
         y$x_0_hz <- convert_pos(x$x_0, sdp, fq)
         y$x_0_dp <- convert_pos(x$x_0, sdp, dp)
         y$x_0_ppm <- convert_pos(x$x_0, sdp, ppm)
@@ -125,6 +127,41 @@ as_decon1 <- function(x, sf = c(1e3, 1e6), spectrum  = NULL) {
         class(y) <- "decon1"
     } else if (is_decon1(x)) {
         y <- x
+    } else if (is_decon2(x)) {
+        y <- structure(class = "decon1", .Data = list())
+        y$number_of_files <- 1
+        y$filename <- x$meta$name
+        y$x_values <- x$sdp
+        y$x_values_ppm <- x$cs
+        y$y_values <- x$sit$sm
+        y$spectrum_superposition <- x$sit$sup
+        y$mse_normed <- x$mse$smnorm
+        y$index_peak_triplets_middle <- x$peak$center
+        y$index_peak_triplets_left <- x$peak$left
+        y$index_peak_triplets_right <- x$peak$right
+        y$peak_triplets_middle <- x$cs[x$peak$center]
+        y$peak_triplets_left <- x$cs[x$peak$right]
+        y$peak_triplets_right <- x$cs[x$peak$left]
+        sdp <- ((length(x$cs) - 1):0) / sf[1]
+        y$integrals <- lorentz_int(lcpar = x$lcpar, limits = c(0, max(sdp) + sf[1]))
+        y$signal_free_region <- sfr_in_sdp_bwc(x$args$sfr, x$cs, sf)
+        y$range_water_signal_ppm <- x$args$wshw
+        y$A <- x$lcpar$A
+        y$lambda <- x$lcpar$lambda
+        y$x_0 <- x$lcpar$w
+        y$y_values_raw <- x$si
+        y$x_values_hz <- x$meta$fq
+        y$mse_normed_raw <- x$mse$smnorm
+        y$signal_free_region_ppm <- x$args$sfr
+        y$x_0_hz <- convert_pos(x$lcpar$w, x$cs, sdp)
+        y$x_0_dp <- convert_pos(x$lcpar$w, x$cs, sdp)
+        y$x_0_ppm <- convert_pos(x$lcpar$w, x$cs, sdp)
+        y$A_hz <- convert_width(x$lcpar$A, x$cs, sdp)
+        y$A_dp <- convert_width(x$lcpar$A, x$cs, sdp)
+        y$A_ppm <- convert_width(x$lcpar$A, x$cs, sdp)
+        y$lambda_hz <- convert_width(x$lcpar$lambda, x$cs, sdp)
+        y$lambda_dp <- convert_width(x$lcpar$lambda, x$cs, sdp)
+        y$lambda_ppm <- convert_width(x$lcpar$lambda, x$cs, sdp)
     } else if (is_idecon(x)) {
         y <- structure(class = "decon1", .Data = list())
         y$number_of_files <- 1
@@ -142,18 +179,15 @@ as_decon1 <- function(x, sf = c(1e3, 1e6), spectrum  = NULL) {
         y$peak_triplets_left <- x$ppm[x$peak$right[x$peak$high]]
         y$peak_triplets_right <- x$ppm[x$peak$left[x$peak$high]]
         y$integrals <- t(x$lcr$integrals)
-        sfr_ppm <- c(max(x$decpar$sfr), min(x$decpar$sfr))
-        sfr_enr <- enrich_sfr(sfr_ppm, x)
-        y$signal_free_region <- c(sfr_enr$left_sdp, sfr_enr$right_sdp)
-        y$range_water_signal_ppm <- x$decpar$wshw
+        y$signal_free_region <- sfr_in_sdp_bwc(x$args$sfr, x$ppm)
+        y$range_water_signal_ppm <- x$args$wshw
         y$A <- x$lcr$A
         y$lambda <- x$lcr$lambda
         y$x_0 <- x$lcr$w
-        # Fields only available in `decon1` (but not in `decon0`):
         y$y_values_raw <- x$y_raw
         y$x_values_hz <- x$hz
         y$mse_normed_raw <- mean(((x$y_raw / sum(x$y_raw)) - (s / sum(s)))^2)
-        y$signal_free_region_ppm <- sfr_ppm
+        y$signal_free_region_ppm <- x$args$sfr
         y$x_0_hz <- convert_pos(x$lcr$w, x$sdp, x$hz)
         y$x_0_dp <- convert_pos(x$lcr$w, x$sdp, x$dp)
         y$x_0_ppm <- convert_pos(x$lcr$w, x$sdp, x$ppm)
@@ -164,7 +198,7 @@ as_decon1 <- function(x, sf = c(1e3, 1e6), spectrum  = NULL) {
         y$lambda_dp <- convert_width(x$lcr$lambda, x$sdp, x$dp)
         y$lambda_ppm <- convert_width(x$lcr$lambda, x$sdp, x$ppm)
     } else {
-        stop("Converting %s to decon1 is not supported", class(x)[1])
+        stopf("Converting %s to decon1 is not supported", class(x)[1])
     }
     y
 }
@@ -175,6 +209,7 @@ as_decon2 <- function(x) {
     if (is_decon2(x)) {
         return(x)
     } else if (is_decon1(x)) {
+        stop("TODO")
         cs <- x$x_values_ppm
         si <- x$y_values_raw
         meta <- list(
@@ -190,7 +225,7 @@ as_decon2 <- function(x) {
             smopts = NA,
             delta = NA,
             sfr = x$signal_free_region,
-            wsr = x$range_water_signal_ppm
+            wshw = x$range_water_signal_ppm
         )
         sit <- list(
             wsrm = NA,
@@ -213,7 +248,7 @@ as_decon2 <- function(x) {
             raw = NA,
             norm = x$mse_normed_raw,
             sm = NA,
-            smnorm = x$msw_normed
+            smnorm = x$mse_normed
         )
     } else if (is_idecon(x)) {
         cs <- x$ppm
@@ -223,7 +258,7 @@ as_decon2 <- function(x) {
         sit <- list(
             wsrm = x$y_nows,
             nvrm = x$y_pos,
-            smooth = x$y_smooth,
+            sm = x$y_smooth,
             sup = NULL
         )
         peak <- x$peak
@@ -274,14 +309,10 @@ as_spectra <- function(x,
 #' @rdname as_metabodecon_class
 as_ispecs <- function(x, sf = c(1e3, 1e6)) {
     if (is_ispecs(x)) return(x)
-    gg <- if (is_ispec(x)) {
-        list(x)
-    } else if (is_spectra(x)) {
-        lapply(x, as_ispec, sf = sf)
-    } else {
-        errmsg <- "Input must be ispec, ispecs or spectra, not "
-        stop(errmsg, class(x))
-    }
+    gg <- if (is_ispec(x)) list(x)
+        else if (is_spectrum(x)) list(as_ispec(x))
+        else if (is_spectra(x)) lapply(x, as_ispec, sf = sf)
+        else stop("Input must be ispec, ispecs or spectra, not ", class(x))
     gg <- structure(gg, class = "ispecs")
     gg <- set_names(gg, get_names(gg))
     gg

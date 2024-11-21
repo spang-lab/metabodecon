@@ -107,6 +107,8 @@ Implement `deconvolute_spectra()` and `deconvolute_spectrum()` which should be t
 
 ### INFRA-1: Create issue for the following topics
 
+- Check and refactor integral calculations
+- Improve prarp tests. The peak ratio should be calculated as nCorrectlyIdentifiedPeaks / (nPeaks + nFalselyDetectedPeaks)
 - Implement [Max' parameter approximation algorithms](https://gitlab.spang-lab.de/bachelorthesis/ws2425_msombke_metabodecon-v2/-/blob/main/new_method_docs/main.R
 ) in `calc_A`, `calc_lambda` and `calc_w`.
 - Add testcase with 100 iterations

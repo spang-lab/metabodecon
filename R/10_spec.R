@@ -655,3 +655,5 @@ save_spectra <- function(x, path, force = FALSE, verbose = TRUE) {
         )
     }
 }
+
+simpar_format <- "rds"
