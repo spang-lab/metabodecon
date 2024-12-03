@@ -27,7 +27,7 @@ check_bwc <- test_that("deconvolute_ispecs is backwards compatible to MetaboDeco
     spectra <- read_spectra(sim_subset)
     ispecs <- as_ispecs(spectra)
 
-    # Decovolute with old functions
+    # Decovolute with old function
     decons0_old <- MetaboDecon1D_silent( # takes 0.26 sec on tux15
         filepath = sim_subset,
         number_iterations = 3,

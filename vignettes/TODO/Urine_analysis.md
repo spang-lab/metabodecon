@@ -32,7 +32,7 @@ urine_01_dir <- file.path(urine_dir, "urine_1")
 urine_01_deconv <- generate_lorentz_curves(
     urine_01_dir, ask = FALSE
 )
-plot_spectrum(urine_01_deconv, foc_rgn = c(-1.9, -1.8), foc_unit = "ppm", trp_pch = c(17, 4, 4, 124))
+plot_spectrum(urine_01_deconv, foc_rgn = c(-1.9, -1.8), foc_unit = "ppm", dp_pch = c(17, 4, 4, 124))
 plot_spectrum(urine_01_deconv, foc_rgn = c(0.25, 0.50))
 
 sim_dir <- metabodecon::metabodecon_file("bruker/sim")

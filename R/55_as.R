@@ -154,7 +154,7 @@ as_decon1 <- function(x, sf = c(1e3, 1e6), spectrum  = NULL) {
         y$x_values_hz <- x$meta$fq
         y$mse_normed_raw <- x$mse$smnorm
         y$signal_free_region_ppm <- x$args$sfr
-        y$x_0_hz <- convert_pos(x$lcpar$w, x$cs, sdp)
+        y$x_0_hz <- - convert_pos(x$lcpar$w, x$cs, sdp)
         y$x_0_dp <- convert_pos(x$lcpar$w, x$cs, sdp)
         y$x_0_ppm <- convert_pos(x$lcpar$w, x$cs, sdp)
         y$A_hz <- convert_width(x$lcpar$A, x$cs, sdp)
@@ -205,7 +205,7 @@ as_decon1 <- function(x, sf = c(1e3, 1e6), spectrum  = NULL) {
 
 #' @export
 #' @rdname as_metabodecon_class
-as_decon2 <- function(x) {
+as_decon2 <- function(x, spectrum  = NULL) {
     if (is_decon2(x)) {
         return(x)
     } else if (is_decon1(x)) {
@@ -220,28 +220,27 @@ as_decon2 <- function(x) {
             simpar = NULL
         )
         args <- list(
-            nfit = NA,
-            smopts = NA,
-            delta = NA,
+            nfit = NULL,
+            smopts = NULL,
+            delta = NULL,
             sfr = x$signal_free_region,
             wshw = x$range_water_signal_ppm
         )
-        sit <- list(
+        sit <- data.frame(
             wsrm = NA,
             nvrm = NA,
-            sm = x$y_values,
-            sup = x$spectrum_superposition,
-            al = NULL
+            sm = x$y_values * 1e6,
+            sup = x$spectrum_superposition[1, ] * 1e6
         )
-        peak <- list(
+        peak <- data.frame(
             center = x$index_peak_triplets_middle,
             left = x$index_peak_triplets_left,
             right = x$index_peak_triplets_right
         )
-        lcpar <- list(
-            A = x$A,
-            lambda = x$lambda,
-            x0 = x$x_0
+        lcpar <- data.frame(
+            x0 = x$x_0_ppm,
+            A = x$A_ppm * 1e6,
+            lambda = x$lambda_ppm
         )
         mse <- list(
             raw = NA,
@@ -254,14 +253,18 @@ as_decon2 <- function(x) {
         si <- x$y_raw
         meta <- x$meta
         args <- x$args
-        sit <- list(
-            wsrm = x$y_nows,
-            nvrm = x$y_pos,
-            sm = x$y_smooth,
-            sup = NULL
+        sit <- data.frame(
+            wsrm = x$y_nows * 1e6,
+            nvrm = x$y_pos * 1e6,
+            sm = x$y_smooth * 1e6,
+            sup = NA
         )
-        peak <- x$peak
-        lcpar <- x$lcr
+        peak <- as.data.frame(x$peak)
+        lcpar <- data.frame(
+            x0 = convert_pos(x$lcr$w, x$sdp, x$ppm),
+            A = convert_width(x$lcr$A, x$sdp, x$ppm) * 1e6,
+            lambda = convert_width(x$lcr$lambda, x$sdp, x$ppm)
+        )
         mse <- list(
             raw = NULL,
             normed = NULL,
@@ -274,6 +277,17 @@ as_decon2 <- function(x) {
     obj <- named(cs, si, meta, args, sit, peak, lcpar, mse)
     class(obj) <- "decon2"
     obj
+}
+
+as_v2_obj <- function(obj) {
+    if (is_spectrum(obj)) obj
+    else if (is_ispec(obj)) as_spectrum(obj)
+    else if (is_idecon(obj)) as_decon2(obj)
+    else if (is_decon0(obj)) stop("decon0 objects are not supported. Convert with as_decon2.")
+    else if (is_decon1(obj)) as_decon2(obj)
+    else if (is_decon2(obj)) obj
+    else if (is_align(obj)) obj
+    else stopf("Objects of class %s are not supported.", class(obj))
 }
 
 # =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~

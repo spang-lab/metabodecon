@@ -388,22 +388,30 @@ calc_A <- function(wr, wc, wl, yr, yc, yl, wrc, wrl, wcl, yrc, yrl, ycl, lambda,
 #' y1 <- lorentz(x, x0, A, lambda)
 #' y2 <- A * pi * dcauchy(x, location = x0, scale = lambda)
 #' stopifnot(all.equal(y1, y2))
-lorentz <- function(x, x0, A, lambda) {
+lorentz <- function(x, x0, A, lambda, lcpar = NULL) {
     # For details see [Wikipedia > Cauchy_distribution > Properties_of_PDF]
     # (https://en.wikipedia.org/wiki/Cauchy_distribution#Properties_of_PDF)
     # in particular the formula below sentence "In physics, a three-parameter
     # Lorentzian function is often used".
+    if (!is.null(lcpar)) {
+        nams <- names(lcpar)
+        if ("A" %in% nams) A <- lcpar[["A"]]
+        if ("lambda" %in% nams) lambda <- lcpar[["lambda"]]
+        if ("x_0" %in% nams) x0 <- lcpar[["x_0"]]
+        if ("x0" %in% nams) x0 <- lcpar[["x0"]]
+        if ("w" %in% nams) x0 <- lcpar[["w"]]
+    }
     A * (lambda / (lambda^2 + (x - x0)^2))
 }
 
 lorentz_sup <- function(x, x0, A, lambda, lcpar = NULL) {
-    if (is.list(lcpar)) {
+    if (!is.null(lcpar)) {
         nams <- names(lcpar)
-        if ("A" %in% nams) A <- lcpar$A
-        if ("lambda" %in% nams) lambda <- lcpar$lambda
-        if ("x_0" %in% nams) x0 <- lcpar$x_0
-        if ("x0" %in% nams) x0 <- lcpar$x0
-        if ("w" %in% nams) x0 <- lcpar$w
+        if ("A" %in% nams) A <- lcpar[["A"]]
+        if ("lambda" %in% nams) lambda <- lcpar[["lambda"]]
+        if ("x_0" %in% nams) x0 <- lcpar[["x_0"]]
+        if ("x0" %in% nams) x0 <- lcpar[["x0"]]
+        if ("w" %in% nams) x0 <- lcpar[["w"]]
     }
     sapply(x, function(xi) {
         sum(abs(A * (lambda / (lambda^2 + (xi - x0)^2))))
@@ -429,6 +437,14 @@ lorentz_int <- function(x0, A, lambda, lcpar = NULL, limits = NULL) {
         a <- min(limits)
         b <- max(limits)
         A * (atan((b - x0) / lambda) - atan((a - x0) / lambda))
+    }
+}
+
+mse <- function(y, yhat, normed = FALSE) {
+    if (normed) {
+        mean(((y / sum(y)) - (yhat / sum(yhat)))^2)
+    } else {
+        mean((y - yhat)^2)
     }
 }
 

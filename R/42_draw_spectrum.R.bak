@@ -1,88 +1,4 @@
-# Internal #####
-
-# styler: off
-#' @noRd
-#' @title Plot Spectrum Internal
-#' @description
-#' Helper for [plot_spectrum()].
-#' For argument descriptions see [plot_spectrum()].
-#' For examples see `test/testthat/test-draw_spectrum.R`
-draw_spectrum <- function(
-    # Mandatory
-    obj, # Output of [generate_lorentz_curves()]
-    # Figure Region
-    fig = NULL, # Drawing region in NDC.
-    add = !is.null(fig), # If TRUE, the plot is added to the current figure.
-    # Plot Region
-    main = "", # Title of the plot.
-    lgd = TRUE, # If TRUE, a legend is drawn.
-    xlab = "Chemical Shift [ppm]", # Label for the x-axis.
-    ylab = "Signal Intensity [au]", # Label for the y-axis.
-    mar = c(4.1, 4.1, 0.1, 0.1), # Lines below/left/above/right plot region.
-    box_col = "black", # Color of box surrounding plot region.
-    axis_col = "black", # Color of tickmarks and ticklabels.
-    fill_col = NULL, # Background color of plot region.
-    # Focus Region (FR)
-    foc_rgn = NULL, # Start and end of FR.
-    foc_unit = "ppm", # Unit of `foc_rgn`. Either "fraction" or "ppm".
-    foc_only = FALSE, # If TRUE, draw focusregion, else full spectrum.
-    # Focus Rectangle
-    rct_show = !is.null(foc_rgn) && !foc_only, # Draw rectangle around FR?
-    rct_fill = transp("yellow"), # Background color of rectangle around FR.
-    rct_col = "black", # Border color of rectangle around FR.
-    # Spectrum Lines
-    line_col = "black", # Color of raw signal intensities.
-    sm_show = TRUE, # If TRUE, smoothed signal intensities are shown.
-    sm_col = "blue", # Color of smoothed signal intensities.
-    ysquash = 0.96, # Fraction of plot height to squash y-values into.
-    sf_y_raw = 1e6, # Divide raw SI by this factor before drawing.
-    # Lorentzians
-    lc_show = TRUE, # If TRUE, the Lorentzian Curves (LCs) are shown.
-    lc_col = "black", # Color of the Lorentzian Curves.
-    lc_lty = 1, # Line type of the Lorentzian Curves.
-    lc_fill = transp("black"), # BG-color of rectangles shown at LC-center.
-    sup_show = TRUE, # If TRUE, the LC-Superposition (LC-Sup) is shown.
-    sup_col = "red", # Color of LC-Sup.
-    sup_lty = 1, # Line type of LC-Sup.
-    # Peak Triplets
-    trp_show = TRUE, # If TRUE, the peak triplets are shown.
-    trp_col = rep("black", 4), # Colors for center, left, right, non-peak DPs.
-    trp_pch = c(17, 4, 4, NA), # Pchars for center, left, right, non-peak DPs.
-    # Misc
-    verbose = FALSE,
-    # Unused
-    ...
-) {
-    local_par(mar = mar, new = add)
-    local_fig(fig = fig, add = add)
-    args <- ds_get_args()
-    dat <- ds_get_dat(args)
-    plt <- ds_init_plot_region(dat, verbose)
-    bgr <- ds_draw_bg(dat, fill_col, verbose)
-    lns <- ds_draw_lines(dat, line_col, foc_only, sm_show, sm_col, verbose)
-    trp <- ds_draw_triplets(dat, trp_show, trp_pch, trp_col, verbose)
-    lcs <- ds_draw_lorentz_curves(dat, args, verbose)
-    foc <- ds_draw_focus_rectangle(dat, rct_show, rct_fill, rct_col, verbose)
-    axs <- ds_draw_axis(dat, main, xlab, ylab, axis_col, box_col, verbose)
-    lgd <- ds_draw_legend(dat, args, verbose)
-    named(dat, plt, bgr, axs, lns, trp, lcs, foc, par = par())
-}
-# styler: on
-
 # Helpers #####
-
-ds_get_args <- function(env = parent.frame()) {
-    keys <- names(formals(draw_spectrum))
-    keys <- keys[keys != "..."]
-    args <- sapply(keys, get, envir = env)
-    if (!is.null(args$foc_rgn) && length(args$foc_rgn) != 2) {
-        stop("foc_rgn must be a numeric vector of length 2")
-    }
-    if (args$foc_only && is.null(args$foc_rgn)) {
-        stop("foc_only requires foc_rgn to be specified")
-    }
-    invisible(args)
-}
 
 #' @noRd
 #' @return Returns a list with the following elements:
@@ -117,7 +33,7 @@ ds_get_dat <- function(args) {
     si <- obj[["si"]] %||% obj[["y_raw"]] %||% obj[["y_values_raw"]]
     sm <- obj[["sit"]][["sm"]] %||% obj[["y_smooth"]] %||% obj[["y_values"]]
     si <- si / sf_y_raw
-    if (is.null(cs)) stop("chemical Shifts missing")
+    if (is.null(cs)) stop("Chemical shifts missing")
 
     # Peak Indices
     ipc <- obj$index_peak_triplets_middle # Peak centers
@@ -152,14 +68,19 @@ ds_get_dat <- function(args) {
 }
 
 ds_init_plot_region <- function(dat = ds_get_dat(),
-                                 verbose = FALSE) {
+                                verbose = FALSE) {
     if (verbose) logf("Initializing plot region")
     usr <- list(
-        x    = dat$x,    y    = dat$y,
-        xlim = dat$xlim, ylim = dat$ylim,
-        xaxs = "i",      yaxs = "i",
-        xlab = "",       ylab = "",
-        type = "n",      axes = FALSE
+        x    = dat$x,
+        y    = dat$y,
+        xlim = dat$xlim,
+        ylim = dat$ylim,
+        xaxs = "i",
+        yaxs = "i",
+        xlab = "",
+        ylab = "",
+        type = "n",
+        axes = FALSE
     )
     do.call(plot, usr)
     ndc <- list(
@@ -212,11 +133,11 @@ ds_draw_axis <- function(dat,
 }
 
 ds_draw_lines <- function(dat,
-                           line_col = "black",
-                           foc_only = FALSE,
-                           sm_show = TRUE,
-                           sm_col = "blue",
-                           verbose = FALSE) {
+                          line_col = "black",
+                          foc_only = FALSE,
+                          sm_show = TRUE,
+                          sm_col = "blue",
+                          verbose = FALSE) {
     x <- if (foc_only) dat$cs[dat$ifr] else dat$cs
     y <- if (foc_only) dat$si[dat$ifr] else dat$si
     ys <- if (foc_only) dat$sm[dat$ifr] else dat$sm
@@ -248,10 +169,10 @@ ds_draw_triplets <- function(dat,
 }
 
 ds_draw_focus_rectangle <- function(dat,
-                                     show = TRUE,
-                                     fill = rgb(0, 0, 1, alpha = 0.1),
-                                     col = "blue",
-                                     verbose = FALSE) {
+                                    show = TRUE,
+                                    fill = rgb(0, 0, 1, alpha = 0.1),
+                                    col = "blue",
+                                    verbose = FALSE) {
     if (is.null(dat$foc_lim) || !show) return(NULL) # styler: off
     usr <- list(
         xleft = max(dat$foc_lim),
@@ -281,22 +202,20 @@ ds_draw_lorentz_curves <- function(dat, args = NULL, verbose = FALSE) {
     sup_col <- args$sup_col %||% "red"
     sup_lty <- args$sup_lty %||% 1
     foc_only <- args$foc_only %||% FALSE
-    if ((is.null(lc_show) && is.null(sup_show)) || is.null(dat$A)) {
-        return(invisible(NULL))
-    }
     x <- if (foc_only) dat$cs[dat$ifr] else dat$cs
-    Y <- matrix(nrow = length(x), ncol = length(dat$A))
     if (verbose) logf("Drawing individual Lorentzian Curves")
+    Y <- matrix(nrow = length(x), ncol = length(dat$A))
     for (i in seq_along(dat$A)) {
         Y[, i] <- ds_draw_lorentz_curve(
-            x,
-            x_0 = dat$x_0[i],
-            A = dat$A[i],
-            lambda = dat$lambda[i],
+            x       = x,
+            x_0     = dat$x_0[i],
+            A       = dat$A[i],
+            lambda  = dat$lambda[i],
             lc_show = lc_show,
-            lc_col = lc_col,
-            lc_lty = lc_lty,
-            lc_fill = lc_fill
+            lc_col  = lc_col,
+            lc_lty  = lc_lty,
+            lc_fill = lc_fill,
+            ylim    = dat$ylim
         )
     }
     if (sup_show) {
@@ -313,10 +232,11 @@ ds_draw_lorentz_curve <- function(x,
                                   lc_show = TRUE,
                                   lc_col = "black",
                                   lc_lty = 1,
-                                  lc_fill = NULL) {
+                                  lc_fill = NULL,
+                                  ylim) {
     y <- lorentz(x, x_0, A, lambda)
     if (lc_show) {
-        near_zero <- abs(y) < 0.001
+        near_zero <- abs(y) < min(ylim) + 0.001 * diff(ylim)
         y_big <- y[!near_zero]
         x_big <- x[!near_zero]
         lines(
@@ -344,15 +264,15 @@ ds_draw_legend <- function(dat, args, verbose = FALSE) {
     if (isFALSE(args$lgd)) return(invisible(NULL))
     if (verbose) logf("Drawing legend")
     dsc <- c("Raw Signal", "Smoothed Signal", "Single Lorentzian", "Sum of Lorentzians", "Peak Triplets")
-    col <- c(args$line_col, args$sm_col, args$lc_col, args$sup_col, args$trp_col[1])
+    col <- c(args$line_col, args$sm_col, args$lc_col, args$sup_col, args$dp_col[1])
     lty <- c(1, 1, 1, 1, NA)
-    pch <- c(NA, NA, NA, NA, args$trp_pch[1])
+    pch <- c(NA, NA, NA, NA, args$dp_pch[1])
     keep <- c(
         !is.null(dat$si),
         args$sm_show && !is.null(dat$sm),
         args$lc_show && !is.null(dat$A),
         args$sup_show && !is.null(dat$A),
-        args$trp_show && !is.null(dat$ipc)
+        args$dp_show && !is.null(dat$ipc)
     )
     df <- data.frame(dsc, col, lty, pch)[keep,]
     legend(x = "topright", legend = df$dsc, col = df$col, lty = df$lty, pch = df$pch)

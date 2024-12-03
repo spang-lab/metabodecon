@@ -1,21 +1,15 @@
 #' @noRd
 #' @title Setup a development environment for `plot_spectrum`
 mkenv_plot_spectrum <- function() {
-    sim_01 <- metabodecon_file("sim/sim_01")
-    spec <- read_spectrum(sim_01)
-    decon <- generate_lorentz_curves(
-        data_path = sim_01,
-        sfr = c(3.35, 3.55),
-        wshw = 0,
-        delta = 0.1,
-        ask = FALSE,
-        verbose = FALSE
+    target <- c("sim1", "sap2")[2]
+    decon <- switch(target,
+        "sim1" = get_sim1_decon1(),
+        "sap2" = get_sap2_idecon()
     )
     args <- stub(
         func = plot_spectrum,
         obj = decon,
-        foc_rgn = c(3.49, 3.45),
-        foc_unit = "ppm",
+        foc_rgn = "auto",
         envir = .GlobalEnv
     )
     width <- options("width")
@@ -26,6 +20,15 @@ mkenv_plot_spectrum <- function() {
     str(args, 1, give.attr = FALSE)
     cat(line)
     invisible(args)
+}
+
+test_interactive <- function() {
+    target <- c("sim1", "sap2")[2]
+    decon <- switch(target,
+        "sim1" = get_sim1_decon1(),
+        "sap2" = get_sap2_idecon()
+    )
+    plot_spectrum(decon)
 }
 
 #' @noRd

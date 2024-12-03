@@ -380,7 +380,7 @@ get_smopts <- function(ispecs, smopts) {
 rm_water_signal <- function(x, wshw, bwc) {
     check_args_rm_water_signal()
     logf("Removing water signal")
-    if (bwc >= 2) {
+    if (bwc >= 1) {
         ppm_center <- (x$ppm[1] + x$ppm[length(x$ppm)]) / 2
         idx_wsr <- which(x$ppm > ppm_center - wshw & x$ppm < ppm_center + wshw)
         x$y_nows <- x$y_scaled
@@ -534,12 +534,12 @@ filter_peaks <- function(ispec, sfr, delta = 6.4, force = FALSE, bwc = 1) {
         in_right_sfr <- ppm[pct] <= min(sfr)
     }
     in_sfr <- in_left_sfr | in_right_sfr
-    if (any(in_sfr)) {
+    if (sum(in_sfr) > 1) {
         mu <- mean(psc[in_sfr])
         sigma <- sd(psc[in_sfr])
     } else {
-        if (!force) stop("No signals found in signal free region. Please double check deconvolution parameters.")
-        logf("No signals found in signal free region. This is a clear indiciation that the deconvolution parameters are not set correctly. Continuing anyways without dynamic peak filtering, because `force` is TRUE. Note that this might increase runtime drastically.")
+        if (!force) stop("Not enough signals found in signal free region. Please double check deconvolution parameters.")
+        logf("No enough signals found in signal free region. This is a clear indication that the deconvolution parameters are not set correctly. Continuing anyways without dynamic peak filtering, because `force` is TRUE. Note that this might increase runtime drastically.")
         mu <- 0
         sigma <- 0
     }

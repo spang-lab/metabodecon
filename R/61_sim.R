@@ -13,9 +13,6 @@ docs <- "see below"
 #' @format A [spectra](metabodecon_classes) object consisting of 16 [spectrum]
 #' objects, where each spectrum object contains 2048 datapoints ranging from
 #' 3.60 to 3.29 ppm
-#'
-#' @source <https://www.who.int/teams/global-tuberculosis-programme/data>
-#'
 "sim"
 
 update_sim <- function(overwrite = FALSE, verbose = FALSE) {
@@ -26,7 +23,7 @@ update_sim <- function(overwrite = FALSE, verbose = FALSE) {
         save_spectra(sim, path, force = TRUE, verbose = verbose)
         usethis::use_data(sim, overwrite = TRUE)
     } else {
-        path <- file.path(tmpdir(subdir = TRUE), "sim")
+        path <- file.path(tmpdir(subdir = TRUE, create = TRUE), "sim")
         if (verbose) logf("Overwrite is FALSE. Writing spectra to %s." , path)
         save_spectra(sim, path, force = FALSE, verbose = verbose)
         save(sim, file = file.path(path, "sim.rda"), compress = "bzip2")
@@ -130,6 +127,15 @@ get_sim_params <- function(x, pkr = c(3.4, 3.5)) {
     named(A, x0, lambda, noiseSD, name)
 }
 
+get_sim1_decon1 <- function() {
+    generate_lorentz_curves(
+        data_path = sim[[1]],
+        sfr = c(3.55, 3.35),
+        wshw = 0,
+        ask = FALSE,
+        verbose = FALSE
+    )
+}
 
 # =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
 # Deprecated #####

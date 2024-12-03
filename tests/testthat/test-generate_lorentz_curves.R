@@ -6,7 +6,7 @@
 # currently only accounts for bruker-type errors of MetaboDecon1D, but not
 # jcampdx errors.
 
-single_spectrum <- test_that("GLC works for 1 bruker", {
+single_spectrum <- test_that("GLC works for a single spectrum", {
     x <- generate_lorentz_curves(
         data_path = sim[[1]],
         sfr = c(3.55, 3.35),
@@ -21,7 +21,7 @@ single_spectrum <- test_that("GLC works for 1 bruker", {
     expect_true(prarp$area_ratio > 0.9)
 })
 
-bruker_folder <- test_that("GLC works for bruker folder", {
+bruker_folder <- test_that("GLC works for a folder with bruker spectra", {
     data_path <- metabodecon_file("bruker/sim_subset")
     x <- generate_lorentz_curves(
         data_path,
@@ -48,3 +48,16 @@ wrong_sfr <- test_that("GLC works when no peaks are filtered out", {
     )
     expect_identical(length(decon), 32L)
 })
+
+broken_A <- simulate_spectrum(
+    # TODO: deconvolute this spectrum and check whether we get A's with
+    # different signs (I think so.) If yes, fix this. Mixed signs in A (and
+    # lambda) should not be possible!
+    "sap",
+    cs     = seq(0.5, -0.5, by = -0.1),
+    x0     = c(0.2),
+    A      = 2000,
+    lambda = 0.08,
+    noise  = c(0, 0, 0, 0, 0, 5000, 0, 1000, 0, 0, 0),
+    fqref  = 6e8
+)

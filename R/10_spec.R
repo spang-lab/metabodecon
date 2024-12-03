@@ -558,6 +558,7 @@ read_one_r <- function(spldir,
 }
 
 #' @noRd
+#' @title Write spectrum to disk in Bruker format
 #' @examples
 #' x <- simulate_spectrum()
 #' path <- save_spectrum(x)

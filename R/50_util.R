@@ -406,8 +406,16 @@ get_worker_logs <- function(nw, create = TRUE) {
     if (is.null(x)) y else x
 }
 
-`%===%` <- function(x, y) {
+`%&&%` <- function(x, y) {
+    if (is.null(x)) NULL else y
+}
+
+`%==%` <- function(x, y) {
     identical(x, y)
+}
+
+`%!=%` <- function(x, y) {
+    !identical(x, y)
 }
 
 # Docs #####

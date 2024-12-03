@@ -214,7 +214,7 @@ set_fig <- function(fig = NULL, add = TRUE) {
 #'     bottom_left <- with_fig(fig = c(0.1, 0.4, 0.1, 0.4), add = FALSE, plot_dummy())
 #'     bottom_right <- plot_dummy()
 #' })
-with_fig <- function(expr, fig = NULL, add = TRUE) {
+with_fig <- function(expr, fig = NULL, pos = NULL, add = TRUE) {
     reset_mfc <- set_fig(fig = fig, add = add)
     on.exit(reset_mfc())
     expr

@@ -1,46 +1,32 @@
 develop_draw_spectrum <- function() {
-    # Mandatory
-    obj <- generate_lorentz_curves(sim[[1]], sfr = c(3.35, 3.55), wshw = 0, ask = FALSE, verbose = FALSE)
-    # Figure Region
-    fig <- NULL # Drawing region in NDC.
-    add <- !is.null(fig) # If TRUE, the plot is added to the current figure.
-    # Plot Region
-    main <- "" # Title of the plot.
-    lgd <- TRUE # If TRUE, a legend is drawn.
-    xlab <- "Chemical Shift [ppm]" # Label for the x-axis.
-    ylab <- "Signal Intensity [au]" # Label for the y-axis.
-    mar <- c(4.1, 4.1, 0.1, 0.1) # Lines below/left/above/right plot region.
-    box_col <- "black" # Color of box surrounding plot region.
-    axis_col <- "black" # Color of tickmarks and ticklabels.
-    fill_col <- NULL # Background color of plot region.
-    # Focus Region (FR)
-    foc_rgn <- c(3.50, 3.40) # Start and end of FR.
-    foc_unit <- "ppm" # Unit of `foc_rgn`. Either "fraction" or "ppm".
-    foc_only <- FALSE # If TRUE, draw focusregion, else full spectrum.
-    # Focus Rectangle
-    rct_show <- !is.null(foc_rgn) && !foc_only # Draw rectangle around FR?
-    rct_fill <- transp("yellow") # Background color of rectangle around FR.
-    rct_col <- "black" # Border color of rectangle around FR.
-    # Spectrum Lines
-    line_col <- "black" # Color of raw signal intensities.
-    sm_show <- TRUE # If TRUE, smoothed signal intensities are shown.
-    sm_col <- "blue" # Color of smoothed signal intensities.
-    ysquash <- 0.96 # Fraction of plot height to squash y-values into.
-    sf_y_raw <- 1e6 # Divide raw SI by this factor before drawing.
-    # Lorentzians
-    lc_show <- TRUE # If TRUE, the Lorentzian Curves (LCs) are shown.
-    lc_col <- "black" # Color of the Lorentzian Curves.
-    lc_lty <- 1 # Line type of the Lorentzian Curves.
-    lc_fill <- transp("black") # BG-color of rectangles shown at LC-center.
-    sup_show <- TRUE # If TRUE, the LC-Superposition (LC-Sup) is shown.
-    sup_col <- "red" # Color of LC-Sup.
-    sup_lty <- 1 # Line type of LC-Sup.
-    # Peak Triplets
-    trp_show <- TRUE # If TRUE, the peak triplets are shown.
-    trp_col <- rep("black", 4) # Colors for center, left, right, non-peak DPs.
-    trp_pch <- c(17, 4, 4, NA) # Pchars for center, left, right, non-peak DPs.
-    # Misc
-    verbose <- FALSE
+
+    # Achieve clean state
+    rm_all()
+    deferred_run()
+    while (dev.cur() %!=% c(`null device` = 1L)) dev.off()
+
+    # Define Input Object
+    target <- c("sim1", "sap2")[1]
+    obj <- switch(target,
+        "sim1" = get_sim1_decon1(),
+        "sap2" = get_sap2_idecon()
+    )
+    obj <- as_v2_obj(obj)
+
+    # Get to state within [plot_spectrum()] where [draw_spectrum()] is called
+    stub(plot_spectrum, obj = obj)
+    foc_frac <- foc_frac %||% get_foc_frac(obj, foc_rgn)
+    foc_rgn <- foc_rgn %||% get_foc_rgn(obj, foc_frac)
+    layout <- layout %||% get_ps_layout(obj, foc_rgn)
+    local_par(mar = mar)
+    plot_empty()
+    args <- get_ds_arglists(obj, foc_rgn, foc_frac, layout, args1, args2, args3)
+
+    # Stub [draw_spectrum()] with correspondings args as defined by [plot_spectrum()]
+    tmp <- do.call(stub, c(draw_spectrum, args[[1]]))
+    str(args[[1]], 1)
+
+    if (FALSE) draw_spectrum() # Go to Definition and start developing
 }
 
 test_draw_spectrum <- function() {
@@ -61,10 +47,10 @@ test_draw_spectrum <- function() {
         p[[3]] <- draw_spectrum(obj = spec)
         p[[4]] <- draw_spectrum(obj = decon, foc_rgn = c(3.45, 3.37))
         p[[5]] <- plot_dummy()
-        p[[5]] <- draw_spectrum(obj = decon, foc_rgn = c(3.45, 3.37), foc_only = TRUE, fig = leftmiddle, fill_col = rgb(0, 0, 1, 0.1))
+        p[[5]] <- draw_spectrum(obj = decon, foc_rgn = c(3.45, 3.37), foc_only = TRUE, fig = leftmiddle, bg_fill = rgb(0, 0, 1, 0.1))
         p[[6]] <- plot_dummy()
         p[[7]] <- draw_spectrum(obj = decon, fig = leftbottom, add = FALSE)
-        p[[8]] <- draw_spectrum(obj = decon, lc_show = FALSE, trp_show = FALSE)
+        p[[8]] <- draw_spectrum(obj = decon, lc_show = FALSE, dp_show = FALSE)
         p
     })
 }
