@@ -48,6 +48,7 @@ Suggests:
     digest,
     knitr,
     lifecycle,
+    microbenchmark,
     mirai,
     rmarkdown,
     usethis,

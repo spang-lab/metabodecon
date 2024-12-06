@@ -104,13 +104,19 @@ plot_align <- function(YA, YB, PA, PB, mfcol = c(nrow(YA), 1)) {
     mtext("Signal Intensity", side = 2, outer = TRUE, line = 1)
 }
 
-plot_empty <- function() {
-    plot(
-        x = 0.5, y = 0.5, type = "n",
-        xlim = c(0, 1), xlab = "", xaxs = "i",
-        ylim = c(0, 1), ylab = "", yaxs = "i",
-        axes = FALSE, main = "", ann = FALSE
-    )
+plot_empty <- function(xlim = c(0, 1),
+                       ylim = c(0, 1),
+                       xlab = "",
+                       ylab = "",
+                       main = "",
+                       ann = TRUE,
+                       axes = FALSE,
+                       xaxs = "i",
+                       yaxs = "i",
+                       type = "n") {
+    plot(x = xlim, y = ylim, xlim = xlim, ylim = ylim,
+         xlab = xlab, ylab = ylab, main = main, ann = ann,
+         axes = axes, xaxs = xaxs, yaxs = yaxs, type = type)
 }
 
 plot_dummy <- function() {
@@ -182,9 +188,7 @@ plot_dummy <- function() {
 #'     bottom_right <- plot_dummy()
 #' })
 set_fig <- function(fig = NULL, add = TRUE) {
-    if (is.null(fig)) {
-        return(function() {})
-    } # Nothing to do if region is NULL
+    if (is.null(fig)) return(function() {}) # Nothing to do if figure region is NULL
     if (isFALSE(add)) plot_empty() # Advance one frame if `add=FALSE` (Note 3)
     op <- par(c("mar", "mfrow", "mfcol", "mfg", "fig")) # Store MF conf (Note 1)
     byrow <- mf_filled_by_row() # Store MF conf (Note 1)

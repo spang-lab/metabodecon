@@ -1,16 +1,14 @@
 develop_draw_spectrum <- function() {
 
     # Achieve clean state
+    while (dev.cur() %!=% c(`null device` = 1L)) dev.off()
     rm_all()
     deferred_run()
-    while (dev.cur() %!=% c(`null device` = 1L)) dev.off()
+    untrace(draw_spectrum)
 
     # Define Input Object
     target <- c("sim1", "sap2")[1]
-    obj <- switch(target,
-        "sim1" = get_sim1_decon1(),
-        "sap2" = get_sap2_idecon()
-    )
+    obj <- switch(target, "sim1" = get_sim1_decon1(), "sap2" = get_sap2_idecon())
     obj <- as_v2_obj(obj)
 
     # Get to state within [plot_spectrum()] where [draw_spectrum()] is called
@@ -23,10 +21,10 @@ develop_draw_spectrum <- function() {
     args <- get_ds_arglists(obj, foc_rgn, foc_frac, layout, args1, args2, args3)
 
     # Stub [draw_spectrum()] with correspondings args as defined by [plot_spectrum()]
-    tmp <- do.call(stub, c(draw_spectrum, args[[1]]))
-    str(args[[1]], 1)
+    invisible(do.call(stub, c(draw_spectrum, args[[1]])))
 
-    if (FALSE) draw_spectrum() # Go to Definition and start developing
+    # Not "Go to Definition" and start developing
+    if (FALSE) draw_spectrum(obj)
 }
 
 test_draw_spectrum <- function() {

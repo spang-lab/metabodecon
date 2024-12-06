@@ -188,7 +188,7 @@ generate_lorentz_curves <- function(data_path,
                                     verbose = TRUE,
                                     nworkers = 1) {
     # Check and convert input
-    check_args_generate_lorentz_curves()
+    eval(generate_lorentz_curves_type_checks) # 99 us
     spectra <- as_spectra(
         data_path, file_format, expno, procno, raw,
         silent = !verbose, force = force
@@ -516,7 +516,7 @@ find_peaks <- function(spec) {
 #' rm3 <- filtered_ispec <- filter_peaks(ispec, sfr)
 #' rm2 <- filtered_ispec <- filter_peaks(ispec, sfr, delta = 1)
 filter_peaks <- function(ispec, sfr, delta = 6.4, force = FALSE, bwc = 1) {
-    check_args_filter_peaks()
+    stopifnot(is_ispec(ispec))
     logf("Removing peaks with low pscores")
     sdp <- ispec$sdp
     ppm <- ispec$ppm

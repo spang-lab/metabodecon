@@ -154,12 +154,12 @@ collapse <- function(x, sep = ", ", last = NULL) {
 #' @description Fixed copy of [toscutil::logf()]. Can be replaced with original after issue [Fix: logf ignores file and append arguments](https://github.com/toscm/toscutil/issues/10) has been fixed.
 logf <- function(fmt,
                  ...,
-                 file = .Options$toscutil.logf.file %||% "",
-                 append = .Options$toscutil.logf.append %||% TRUE,
-                 prefix = .Options$toscutil.logf.prefix %||% function() now_ms(usetz = FALSE, color = "\033[1;30m"),
-                 sep1 = .Options$toscutil.logf.sep1 %||% " ",
-                 sep2 = .Options$toscutil.logf.sep2 %||% "",
-                 end = .Options$toscutil.logf.end %||% "\n",
+                 file = "",
+                 append = TRUE,
+                 prefix = function() now_ms(usetz = FALSE, color = "\033[1;30m"),
+                 sep1 = " ",
+                 sep2 = "",
+                 end = "\n",
                  verbose = TRUE) {
     cat(prefix(), sep1, sprintf(fmt, ...), sep2, end, sep = "", file = file, append = append)
 }

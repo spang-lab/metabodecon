@@ -351,6 +351,39 @@ set <- function(...) {
     obj
 }
 
+#' @noRd
+#' @title Pop named Element from List
+#' @description
+#' Returns the value of `obj[[key]]` and sets `obj[[key]]` to NULL. This
+#' function modifies the input list in-place, which is different from most other
+#' R functions.
+#' @param obj A list.
+#' @param obj A list.
+#' @param key The key to pop from the list.
+#' @param default The default value to return if the key does not exist in the list.
+#' @examples
+#' tmp <- list(a = NULL, b = 2); pop(tmp, "a")    # Returns NULL
+#' tmp <- list(a = NULL, b = 2); pop(tmp, "a", 5) # Returns NULL
+#' tmp <- list(a = NULL, b = 2); pop(tmp, "b")    # Returns 2
+#' tmp <- list(a = NULL, b = 2); pop(tmp, "b", 5) # Returns 2
+#' tmp <- list(a = NULL, b = 2); pop(tmp, "z")    # Returns NULL
+#' tmp <- list(a = NULL, b = 2); pop(tmp, "z", 5) # Returns 5
+pop <- function(obj, key, default = NULL, env = parent.frame()) {
+    x <- try(val <- obj[[key]])
+    if (inherits(x, "try-error")) browser()
+    if (!is.null(default) && is.null(val) && !exists(key, obj)) {
+        # If the value of 'key' is null, it can have two reasons:
+        # 1. The key does not exist in 'obj'. In this case we want to return the 'default' value.
+        # 2. The key exists in 'obj', but is explicitly set to NULL. In this case we want to return NULL.
+        # If 'default' is NULL, we can skip this check as we would return NULL in any case.
+        val <- default
+    }
+    expr <- substitute(obj[[key]] <- NULL)
+    x <- try({eval(expr, env)}) # Remove key from obj in calling env
+    if (inherits(x, "try-error")) browser()
+    val
+}
+
 timestamp <- function() {
     format(Sys.time(), "%Y-%m-%d_%H-%M-%S")
 }
@@ -407,7 +440,7 @@ get_worker_logs <- function(nw, create = TRUE) {
 }
 
 `%&&%` <- function(x, y) {
-    if (is.null(x)) NULL else y
+    if (is.null(x)) x else y
 }
 
 `%==%` <- function(x, y) {
