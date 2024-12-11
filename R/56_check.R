@@ -44,23 +44,44 @@ check_args_deconvolute_ispecs <- function(e = parent.frame()) {
     return(e)
 }
 
-draw_spectrum_check_arguments <- quote(
-    stopifnot(
-        is_num(foc_rgn, 2)  || is.null(foc_rgn),
-        is_num(foc_frac, 2) || is.null(foc_frac),
-        is_bool(foc_only),
-        is_bool(add),
-        is_num(fig, 4) || is.null(fig),
-        is_num(mar, 4) || is.null(mar),
-        is_str(main)   || is.null(main),
-        is.list(si_line),  is.list(sm_line),  is.list(lc_lines),
-        is.list(sp_line),  is.list(d2_line),
-        is.list(cent_pts), is.list(bord_pts), is.list(norm_pts),
-        is.list(bg_rect),  is.list(foc_rect), is.list(lc_rects),
-        is.list(bt_axis),  is.list(lt_axis),  is.list(tp_axis) ,
-        is.list(rt_axis)
-    )
-)
+draw_spectrum_standardize_arguments <- quote({
+    if (isFALSE(si_line)  || is.null(si_line))  si_line  <- list(show = FALSE)
+    if (isFALSE(sm_line)  || is.null(sm_line))  sm_line  <- list(show = FALSE)
+    if (isFALSE(lc_lines) || is.null(lc_lines)) lc_lines <- list(show = FALSE)
+    if (isFALSE(sp_line)  || is.null(sp_line))  sp_line  <- list(show = FALSE)
+    if (isFALSE(d2_line)  || is.null(d2_line))  d2_line  <- list(show = FALSE)
+    if (isFALSE(cent_pts) || is.null(cent_pts)) cent_pts <- list(show = FALSE)
+    if (isFALSE(bord_pts) || is.null(bord_pts)) bord_pts <- list(show = FALSE)
+    if (isFALSE(norm_pts) || is.null(norm_pts)) norm_pts <- list(show = FALSE)
+    if (isFALSE(bg_rect)  || is.null(bg_rect))  bg_rect  <- list(show = FALSE)
+    if (isFALSE(foc_rect) || is.null(foc_rect)) foc_rect <- list(show = FALSE)
+    if (isFALSE(lc_rects) || is.null(lc_rects)) lc_rects <- list(show = FALSE)
+    if (isFALSE(bt_axis)  || is.null(bt_axis))  bt_axis  <- list(show = FALSE)
+    if (isFALSE(lt_axis)  || is.null(lt_axis))  lt_axis  <- list(show = FALSE)
+    if (isFALSE(tp_axis)  || is.null(tp_axis))  tp_axis  <- list(show = FALSE)
+    if (isFALSE(rt_axis)  || is.null(rt_axis))  rt_axis  <- list(show = FALSE)
+})
+
+"lgd"
+
+"d2_line"
+"si_line"
+"sm_line"
+"sp_line"
+"lc_lines"
+
+"cent_pts"
+"bord_pts"
+"norm_pts"
+
+"bg_rect"
+"foc_rect"
+"lc_rects"
+
+"bt_axis"
+"lt_axis"
+"tp_axis"
+"rt_axis"
 
 generate_lorentz_curves_type_checks <- quote(stopifnot(
     is_existing_path(data_path) ||

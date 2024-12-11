@@ -5,7 +5,7 @@
 #' @title Plot Spectrum
 #'
 #' @description
-#' Plot a spectrum and zoom in on a specific region.
+#' Plot a spectrum and sub3 in on a specific region.
 #' `r lifecycle::badge("experimental")`
 #'
 #' @param obj
@@ -37,7 +37,7 @@
 #' prevent the corresponding sub figure from being drawn. For a description of
 #' the individual sub figures see 'Details'. For a description of normalized
 #' plot coordinates see [graphics::grconvertX()]. If `layout` is set to `NULL`,
-#' [get_ps_layout()] is used to determine a suitable layout automatically.
+#' [get_sub_fig_rgns()] is used to determine a suitable layout automatically.
 #'
 #' @param args1,args2,args3
 #' List of arguments passed to [draw_spectrum()] when drawing sub figure
@@ -48,7 +48,7 @@
 #'
 #' @details
 #' This function first calls [plot_empty()] to initalize a new plotting canvas.
-#' After that it calls [draw_spectrum()] four times to draw the following sub
+#' After that it calls [draw_spectrum()] multiple times to draw the following sub
 #' figures onto the plotting canvas:
 #'
 #' 1. The signal intensities in the focus region
@@ -65,30 +65,58 @@
 #' A sketch of the resulting figure is shown below.
 #'
 #' ```
-#'  _________________________________________________________
-#' | Plotting canvas                                         |
-#' |        ________________________________________         |
-#' |       | Sub1: Signal Intensity in Focus Region  |       |
-#' |       |                   /\                    |       |
-#' |       |                  /  \                   |       |
-#' |       |                 /    \  /\              |       |
-#' |       |                /      \/  \             |       |
-#' |       |           /\  /            \            |       |
-#' |       |          /  \/              \           |       |
-#' |       |         /                    \          |       |
-#' |       |________/______________________\_________|       |
-#' |        _________________________________________        |
-#' |       | Sub2: Second Derivative in Focus Region |       |
-#' |       |_________________________________________|       |
-#' |   ___________________________________________________   |
-#' |  | Sub3: Signal Intensity over all Datapoints        |  |
-#' |  |                         ________________          |  |
-#' |  |                        |Focus Rectangle |         |  |
-#' |  |          /\            |       /\       |         |  |
-#' |  |         /  \           |      /  \/\    |         |  |
-#' |  |        /    \     /\   |   /\/      \   |         |  |
-#' |  |_______/______\___/__\__|__/__________\__|_________|  |
-#' |_________________________________________________________|
+#'  __________________________________________
+#' |        ______________1_____________      |
+#' |       | Sub1: Signal Intensity in  |     |
+#' |       | Focus Region               |     |
+#' |       |             /\             |     |
+#' |       |            /  \            |     |
+#' |       |           /    \  /\       |     |
+#' |     11|          /      \/  \      |7    |
+#' |       |     /\  /            \     |     |
+#' |       |    /  \/              \    |     |
+#' |       |   /                    \   |     |
+#' |       |__/___________0__________\__|     |
+#' |       | Sub2: Second Derivative    |     |
+#' |     11| in Focus Region            |7    |
+#' |       |____________________________|     |
+#' |                      3                   |
+#' |    __________________3_________________  |
+#' |   |  Sub3: Signal Intensity over all   | |
+#' |   |  Datapoints     ________________   | |
+#' | 5 |                | Focus Rectangle|  |1|
+#' |   |     /\         |       /\       |  | |
+#' |   |    /  \        |      /  \/\    |  | |
+#' |   |   /    \   /\  |   /\/      \   |  | |
+#' |   |__/______\_/__\_|__/__________\__|__| |
+#' |______________________5___________________|
+#' ```
+#'
+#' Note that the figure created by `plot_spectrum()` can be part of a
+#' multi-figure configuration as created when setting `mfrow` or `mfcol` via
+#' [par()]. Example:
+#'
+#' ```
+#' _______________________________________
+#'| Plot Spectrum with   | Other Figure  |
+#'| sub3 = TRUE          | Other Figure  |
+#'|      ___________     |  ___________  |
+#'|     | Sub Fig 1 |    | | x      x  | |
+#'|     |___________|    | |      x    | |
+#'|     |_Sub_Fig_2_|    | |      x    | |
+#'|   _________________  | |   x     x | |
+#'|  |    Sub Fig 3    | | |      x    | |
+#'|  |_________________| | |___________| |
+#'|______________________|_______________|
+#'| Some other Figure    | Plot Spectrum |
+#'|                      | sub3 = FALSE  |
+#'|  _________________   |  ___________  |
+#'| |     ___         |  | | Sub Fig 1 | |
+#'| | ___/   \___     |  | |           | |
+#'| |/           \____|  | |___________| |
+#'| |                 |  | | Sub Fig 2 | |
+#'| |_________________|  | |___________| |
+#'|______________________|_______________|
 #' ```
 #'
 #' @examples
@@ -120,29 +148,44 @@
 #' )
 #' plot_spectrum(obj, rct_fill = NULL, sub_fill_col = NULL, cnct_col = NULL)
 #' plot_spectrum(obj, xlab = "", ylab = "", mar = c(2, 2, 0, 1))
-plot_spectrum <- function(obj,
-                          foc_rgn = NULL,
-                          foc_frac = NULL,
-                          cnct_show = TRUE,
-                          cnct_col = "black",
-                          mar = c(4.1, 4.1, 0.1, 0.1),
-                          layout = NULL,
-                          args1 = list(),
-                          args2 = list(),
-                          args3 = list())
+plot_spectrum <- function(x,
+                          ...,
+                          obj = as_v2_obj(x),
+                          foc_frac = get_foc_frac(obj),
+                          foc_rgn = get_foc_rgn(obj, foc_frac),
+                          sub1 = TRUE,
+                          sub2 = FALSE,
+                          sub3 = width(foc_rgn) < width(obj$cs),
+                          mar  = NULL,
+                          frame = FALSE,
+                          con_lines = TRUE)
 {
-    obj <- as_v2_obj(obj)
-    foc_frac <- foc_frac %||% get_foc_frac(obj, foc_rgn)
-    foc_rgn <- foc_rgn %||% get_foc_rgn(obj, foc_frac)
-    layout <- layout %||% get_ps_layout(obj, foc_rgn)
-    local_par(mar = mar)
+    # Parse Inputs
+    dot_args <- if (identical(environment(), globalenv())) list() else list(...)
+    sub1 <- combine(list(show = TRUE), sub1)
+    sub2 <- combine(list(show = FALSE), sub2)
+    sub3 <- combine(list(show = width(foc_rgn) < width(obj$cs)), sub3)
+    frame <- combine(list(show = FALSE), frame)
+    con_lines <- combine(list(show = TRUE), con_lines)
+
+    # Setup Plotting Canvas
+    default_mar_left <- if (sub3$show && any(sub1$show, sub2$show)) 3 else 6
+    default_mar <- c(5, default_mar_left, 2, 2)
+    local_par(mar = mar %||% default_mar)
     plot_empty()
-    args <- get_ds_arglists(obj, foc_rgn, foc_frac, layout, args1, args2, args3)
-    sub1 <- if (!is.null(layout[[1]])) do.call(draw_spectrum, args[[1]])
-    sub2 <- if (!is.null(layout[[2]])) do.call(draw_spectrum, args[[2]])
-    sub3 <- if (!is.null(layout[[3]])) do.call(draw_spectrum, args[[3]])
-    cnct <- if (cnct_show) draw_connection_lines(sub3, sub_plot, cnct_col)
-    invisible(named(args, sub1, sub2, sub3, cnct))
+
+    # Prepare Sub-Figure Arguments
+    args <- get_sub_fig_args(obj, foc_frac, foc_rgn, sub1, sub2, sub3, dot_args)
+
+    # Draw Sub-Figures
+    fig1 <- do.call(draw_spectrum, args$sub1)
+    fig2 <- do.call(draw_spectrum, args$sub2)
+    fig3 <- do.call(draw_spectrum, args$sub3)
+    figC <- draw_con_lines(fig1 %||% fig2, fig3, con_lines)
+    str(frame)
+    figF <- draw_box(frame)
+
+    invisible(NULL)
 }
 
 # Draw #####
@@ -161,15 +204,16 @@ plot_spectrum <- function(obj,
 #' @param add
 #' If TRUE, draw into the currently open figure. If FALSE, start a new figure.
 #'
-#' @param fig
-#' Drawing region in normalized device coordinates.
+#' @param fig_rgn
+#' Drawing region in normalized device coordinates as vector of the form `c(x1,
+#' x2, y1, y2)`.
 #'
 #' @param foc_only
 #' Logical. If TRUE, only the focused region is drawn. If FALSE, the full
 #' spectrum is drawn.
 #'
 #' @param foc_rgn
-#' Numeric vector specifying the start and end of focus region.
+#' Numeric vector specifying the start and end of focus region in ppm.
 #'
 #' @param foc_frac
 #' Numeric vector specifying the start and end of focus region as fraction of
@@ -237,10 +281,12 @@ plot_spectrum <- function(obj,
 #'
 #' In the above example the process would stop at `digit = 3`, because at this
 #' point we have n = 4 unique labels (1.024, 1.025, 1.027 and 1.028).
-draw_spectrum <- function(obj,
+draw_spectrum <- function(
+    obj,
     foc_rgn  = NULL,   foc_frac = NULL,   foc_only = TRUE,
-    add      = FALSE,  fig      = NULL,   mar      = c(4.1, 4.1, 0.1, 0.1),
-    main     = NULL,   show_d2  = FALSE,  lgd      = list(),
+    add      = FALSE,  fig_rgn  = NULL,   mar      = c(4.1, 5.1, 0.1, 0.1),
+    main     = NULL,   show_d2  = FALSE,  show     = TRUE,
+    lgd      = list(),
     si_line  = list(), sm_line  = list(), lc_lines = list(),
     sp_line  = list(), d2_line  = list(),
     cent_pts = list(), bord_pts = list(), norm_pts = list(),
@@ -248,57 +294,85 @@ draw_spectrum <- function(obj,
     bt_axis  = list(), lt_axis  = list(), tp_axis  = list(),
     rt_axis  = list())
 {
-    # Check inputs (278us)
+
+    # Check and enrich inputs (278us)
+    if (isFALSE(show)) return()
     obj <- as_v2_obj(obj)
-    eval(draw_spectrum_check_arguments)
-    env <- environment()
-    defaults <- get_draw_spectrum_defaults(show_d2, foc_only)
-    for (x in names(defaults)) env[[x]] <- modifyList(defaults[[x]], env[[x]])
+    stopifnot(
+        is_num(foc_rgn, 2) || is.null(foc_rgn),
+        is_num(foc_frac, 2) || is.null(foc_frac),
+        is_bool(foc_only),
+        is_bool(add),
+        is_num(fig_rgn, 4) || is.null(fig_rgn),
+        is_num(mar, 4) || is.null(mar),
+        is_str(main) || is.null(main)
+    )
     foc_frac <- foc_frac %||% get_foc_frac(obj, foc_rgn)
     foc_rgn <- foc_rgn %||% get_foc_rgn(obj, foc_frac)
+    env <- environment()
+    defaults <- get_ds_def_args(show_d2, foc_only)
+    for (k in names(defaults)) {
+        d <- defaults[[k]]
+        x <- env[[k]]
+        env[[k]] <- {
+            if (is.null(x)) d
+            else if (isFALSE(x)) modifyList(d, list(show = FALSE))
+            else if (isTRUE(x)) modifyList(d, list(show = TRUE))
+            else if (is.list(x)) modifyList(d, x)
+            else stopf("Argument '%s' must be a list")
+        }
+    }
+    decon_only <- c("sm_line", "lc_lines", "sp_line", "lc_rects", "cent_pts", "bord_pts")
+    if (is_spectrum(obj)) for (k in decon_only) env[[k]]$show <- FALSE
 
     # Set graphical parameters (7ms)
     local_par(mar = mar, new = add)
-    local_fig(fig = fig, add = add)
+    local_fig(fig = fig_rgn, add = add)
 
     # Get xy values over all data points (13us)
     cs <- cs_all <- obj$cs
     si <- si_all <- obj$si
-    sm <- sm_all <- obj$sit$sm
-    d2 <- d2_all <- if (isFALSE(d2_line$show)) NULL else calc_second_derivative(si_all)
-    sp <- sp_all <- obj$sit$sup
+    sm <- sm_all <- obj$sit$sm # NULL for spectra (NFS)
+    d2 <- d2_all <- if (!isFALSE(d2_line$show)) calc_second_derivative(si_all)
+    sp <- sp_all <- obj$sit$sup # NFS
 
     # Get indices of important points relative all data points (611us)
     idp <- idp_all <- seq_along(cs_all) # Data points
-    icp <- icp_all <- obj$peak$center # Center points
-    ibp <- ibp_all <- unique(sort(c(obj$peak$left, obj$peak$right))) # Border points
-    ipp <- ipp_all <- sort(c(icp_all, ibp_all)) # Peak points
-    inp <- inp_all <- setdiff(idp_all, ipp_all) # Nonpeak points
+    icp <- icp_all <- obj$peak$center # Center points (NFS)
+    ibp <- ibp_all <- unique(sort(c(obj$peak$left, obj$peak$right))) # Border points (NFS)
+    ipp <- ipp_all <- sort(c(icp_all, ibp_all)) # Peak points (NFS)
+    inp <- inp_all <- setdiff(idp_all, ipp_all) # Nonpeak points (NFS)
     ifp <- ifp_all <- which(cs_all >= min(foc_rgn) & cs_all <= max(foc_rgn)) # Focus points
 
     # Get lorentz parameters across all data points (8us)
-    lcpar  <- lcpar_all  <- obj$lcpar
-    x0     <- x0_all     <- lcpar_all$x0
-    A      <- A_all      <- lcpar_all$A
-    lambda <- lambda_all <- lcpar_all$lambda
+    n0vec  <- numeric(0)
+    n0df   <- data.frame(x0 = n0vec, A = n0vec, lambda = n0vec)
+    lcpar  <- lcpar_all  <- obj$lcpar %||% n0df # (NFS)
+    x0     <- x0_all     <- lcpar_all$x0 %||% n0df # (NFS)
+    A      <- A_all      <- lcpar_all$A %||% n0df # (NFS)
+    lambda <- lambda_all <- lcpar_all$lambda %||% n0df # (NFS)
 
     # Get indices of important points relative to the vector of focus points (198us)
     if (foc_only) {
         offset <- min(ifp_all) - 1
         idp <- idp_foc <- ifp_all - offset # Data points
-        icp <- icp_foc <- intersect(icp_all, ifp_all) - offset # Center points
-        ibp <- ibp_foc <- intersect(ibp_all, ifp_all) - offset # Border points
-        ipp <- ipp_foc <- intersect(ipp_all, ifp_all) - offset # Peak points
-        inp <- inp_foc <- intersect(inp_all, ifp_all) - offset # Nonpeak points
+        icp <- icp_foc <- intersect(icp_all, ifp_all) - offset # Center points (NFS)
+        ibp <- ibp_foc <- intersect(ibp_all, ifp_all) - offset # Border points (NFS)
+        ipp <- ipp_foc <- intersect(ipp_all, ifp_all) - offset # Peak points (NFS)
+        inp <- inp_foc <- intersect(inp_all, ifp_all) - offset # Nonpeak points (NFS)
+    }
 
-        # Get xy values over the focus region (18us)
+    # Get xy values over the focus region (18us)
+    if (foc_only) {
         cs <- cs_foc <- cs_all[ifp_all]
         si <- si_foc <- si_all[ifp_all]
         sm <- sm_foc <- sm_all[ifp_all]
         d2 <- d2_foc <- d2_all[ifp_all]
         sp <- sp_foc <- sp_all[ifp_all]
+    }
 
-        # Get lorentzians affecting focus region (239us)
+    # Get lorentzians affecting focus region (239us)
+    if (foc_only) {
         y_foc_rgn_start   <- lorentz(x = min(foc_rgn), lcpar = lcpar_all)
         y_foc_rgn_end     <- lorentz(x = max(foc_rgn), lcpar = lcpar_all)
         y_tresh           <- 0.001 * diff(range(si))
@@ -313,8 +387,8 @@ draw_spectrum <- function(obj,
 
     # Get x and y limits (43us)
     xlim <- c(max(cs), min(cs))
-    ymin <- if (show_d2) min(d2) else min(0, si)
-    ymax <- if (show_d2) max(d2) else max(si)
+    ymin <- if (show_d2) min(d2, na.rm = TRUE) else min(0, si, na.rm = TRUE)
+    ymax <- if (show_d2) max(d2, na.rm = TRUE) else max(si, na.rm = TRUE)
     ylim <- c(ymin, ymax)
     ythresh <- 0.001 * diff(range(si))
     if (!is.null(foc_rgn)) {
@@ -323,14 +397,14 @@ draw_spectrum <- function(obj,
         ymax_foc <- max(si[ifp])
     }
     ymin_foc <- if (foc_only) ymin else min(0, si_all[ifp_all])
-    ymax_foc <- if (foc_only) ymax else min(0, si_all[ifp_all])
+    ymax_foc <- if (foc_only) ymax else max(si_all[ifp_all])
     ylim_foc <- c(ymin_foc, ymax_foc)
 
     # Do the actual drawing
     plot_empty(xlim, ylim, main = main)
     draw_rect(xlim, ylim, bg_rect)
-    apply(lcpar_foc, 1, draw_lc_rect, cs, lc_rects, ymin) # 3ms
-    apply(lcpar_foc, 1, draw_lc_line, cs, lc_lines, ythresh) # 13ms
+    apply(lcpar, 1, draw_lc_rect, cs, lc_rects, ymin) # 3ms
+    apply(lcpar, 1, draw_lc_line, cs, lc_lines, ythresh) # 13ms
     draw_line(cs, si, si_line)
     draw_line(cs, sm, sm_line)
     draw_points(cs[icp], sm[icp], cent_pts)
@@ -344,45 +418,48 @@ draw_spectrum <- function(obj,
     draw_axis(xlim, side = 3, tp_axis)
     draw_axis(ylim, side = 4, rt_axis)
     draw_legend(lgd, si_line, sm_line, lc_lines, sp_line, d2_line, cent_pts, bord_pts, norm_pts)
-    usr_to_ndc(c(foc_rgn, ylim))
+    list(
+        plt_rgn_ndc = usr_to_ndc(c(xlim, ylim)),
+        foc_rgn_ndc = usr_to_ndc(c(foc_rgn, ylim_foc))
+    )
 }
 
-draw_legend <- function(lgd, si_line, sm_line, lc_lines, sp_line, d2_line,
+draw_legend <- function(args, si_line, sm_line, lc_lines, sp_line, d2_line,
                         cent_pts, bord_pts, norm_pts) {
-    if (isFALSE(pop(lgd, "show"))) return()
-    dsc <- c("Raw Signal", "Smoothed Signal", "Single Lorentzian",
+    if (isFALSE(pop(args, "show"))) return()
+    dscs <- c("Raw Signal", "Smoothed Signal", "Single Lorentzian",
               "Sum of Lorentzians", "Second Derivative",
               "Peak Center", "Peak Border", "Non-Peak")
-    col <- c(si_line$col %||% "black",  sm_line$col  %||% "black",
-             lc_lines$col %||% "black", sp_line$col  %||% "black",
-             d2_line$col %||% "black",  cent_pts$col %||% "black",
-             bord_pts$col %||% "black", norm_pts$col %||% "black")
-    lty <- c(1, 1, 1, 1, 1, NA, NA, NA)
-    pch <- c(NA, NA, NA, NA, NA, cent_pts$pch %||% NA,
-             bord_pts$pch %||% NA, norm_pts$pch %||% NA)
-    keep <- c(!isFALSE(si_line$show), !isFALSE(sm_line$show),
-              !isFALSE(lc_lines$show), !isFALSE(sp_line$show),
-              !isFALSE(d2_line$show), !isFALSE(cent_pts$show),
-              !isFALSE(bord_pts$show), !isFALSE(norm_pts$show))
-    df <- data.frame(dsc, col, lty, pch)[keep, ]
-    legend(x = "topright", legend = df$dsc, col = df$col, lty = df$lty, pch = df$pch)
+    objs <- list(si_line, sm_line, lc_lines, sp_line, d2_line, cent_pts, bord_pts, norm_pts)
+    lins <- list(si_line, sm_line, lc_lines, sp_line, d2_line)
+    pnts <- list(cent_pts, bord_pts, norm_pts)
+    ltys <- sapply(lins, function(obj) obj$lty %||% 1)
+    pchs <- sapply(pnts, function(obj) obj$pch %||% 1)
+    cols <- sapply(objs, function(obj) obj$col %||% "black")
+    keep <- sapply(objs, function(obj) !isFALSE(obj$show))
+    args$legend <- dscs[keep]
+    args$col <- cols[keep]
+    args$lty <- c(ltys, NA, NA, NA)[keep]
+    args$pch <- c(NA, NA, NA, NA, NA, pchs)[keep]
+    args$x <- args$x %||% "topright"
+    do.call(legend, args)
 }
 
-draw_connection_lines <- function(main_plot, sub_plot, cnct_col) {
-    rct <- main_plot$foc$ndc
-    sfg <- sub_plot$plt$ndc
-    xds <- list(
-        c(x0 = rct$xleft, x1 = sfg$xlim[1]),
-        c(x0 = rct$xright, x1 = sfg$xlim[2])
-    )
-    yd <- c(y0 = rct$ytop, y1 = sfg$ylim[1])
-    y <- grconvertY(yd, "ndc")
-    opar <- par(xpd = TRUE)
-    on.exit(par(opar), add = TRUE)
-    for (xd in xds) {
-        x <- grconvertX(xd, "ndc")
-        segments(x[1], y[1], x[2], y[2], col = cnct_col)
-    }
+draw_con_lines <- function(top_fig, bot_fig, con_lines) {
+    if (isFALSE(pop(con_lines, "show"))) return()
+    if (is.null(top_fig$plt_rgn_ndc)) return()
+    if (is.null(bot_fig$foc_rgn_ndc)) return()
+    plt_rgn_usr <- ndc_to_usr(top_fig$plt_rgn_ndc)
+    foc_rgn_usr <- ndc_to_usr(bot_fig$foc_rgn_ndc)
+    local_par(xpd = NA)
+    con_lines$y0 <- max(foc_rgn_usr[3:4])
+    con_lines$y1 <- min(plt_rgn_usr[3:4])
+    con_lines$x0 <- min(foc_rgn_usr[1:2])
+    con_lines$x1 <- min(plt_rgn_usr[1:2])
+    do.call(segments, con_lines)
+    con_lines$x0 <- max(foc_rgn_usr[1:2])
+    con_lines$x1 <- max(plt_rgn_usr[1:2])
+    do.call(segments, con_lines)
 }
 
 draw_lc_line <- function(p, x, args = list(), threshold = 0) {
@@ -412,18 +489,24 @@ draw_lc_rect <- function(p, x, args = list(), ymin = 0) {
 
 draw_axis <- function(lim, side = 1, args = list()) {
     if (isFALSE(pop(args, "show"))) return()
-    n <- pop(args, "n", default = 5)
-    digits <- pop(args, "digits", default = 2:12)
-    sf <- pop(args, "sf", default = 1)
-    text <- pop(args, "text")
+    n          <- pop(args, "n", default = 5)
+    digits     <- pop(args, "digits", default = 2:12)
+    sf         <- pop(args, "sf", default = 1)
+    text       <- pop(args, "text")
+    skip_first <- pop(args, "skip_first", FALSE)
+    skip_last  <- pop(args, "skip_last", FALSE)
     args$at <- if (is_num(n)) seq(min(lim), max(lim), length.out = n) else axTicks(side)
     labs_sc <- args$at / sf
-    args$labels <- format(labs_sc, digits = 7) # default used by normal axis
-    for (i in digits) {
-        args$labels <- round(labs_sc, digits = i)
-        if (length(unique(args$labels) >= 5)) break
+    if (!isFALSE(args$labels)) {
+        args$labels <- format(labs_sc, digits = 7) # default used by normal axis
+        for (i in digits) {
+            args$labels <- format(labs_sc, digits = i)
+            if (length(unique(args$labels)) >= n) break
+        }
+        if (skip_first) args$labels[1] <- ""
+        if (skip_last) args$labels[length(args$labels)] <- ""
     }
-    if (!is.null(text)) mtext(text, side = side, line = 3)
+    if (!is.null(text)) mtext(text, side = side, line = c(3, 4, 3, 4)[side])
     args$side <- side
     do.call(axis, args)
 }
@@ -435,6 +518,11 @@ draw_rect <- function(xlim, ylim, args = list()) {
     args$ybottom <- ylim[1]
     args$ytop <- ylim[2]
     do.call(rect, args)
+}
+
+draw_box <- function(args = list()) {
+    if (isFALSE(pop(args, "show"))) return()
+    do.call(box, args)
 }
 
 draw_line <- function(x, y, args = list()) {
@@ -452,69 +540,6 @@ draw_points <- function(x, y, args = list()) {
 }
 
 # Get #####
-
-get_ps_layout <- function(obj, foc_rgn) {
-    foc_only_layout <- list(
-        sub1 = c(x1 = 0.00, x2 = 1.00, y1 = 0.25, y2 = 1.00),
-        sub2 = c(x1 = 0.00, x2 = 1.00, y1 = 0.00, y2 = 0.25),
-        sub3 = NULL
-    )
-    zoom_layout <- list(
-        sub1 = c(x1 = 0.05, x2 = 0.95, y1 = 0.50, y2 = 0.95),
-        sub2 = c(x1 = 0.05, x2 = 0.95, y1 = 0.35, y2 = 0.50),
-        sub3 = c(x1 = 0.00, x2 = 1.00, y1 = 0.00, y2 = 0.50)
-    )
-    if (width(foc_rgn) < width(obj$cs)) {
-        zoom_layout
-    } else {
-        foc_only_layout
-    }
-}
-
-get_ds_arglists <- function(obj, foc_rgn, foc_frac, layout, args1, args2, args3) {
-    defaults <- list(
-        obj = obj,
-        foc_rgn = foc_rgn,
-        foc_frac = foc_frac,
-        add = TRUE
-    )
-    sub1 <- list(
-        fig = npc_to_ndc(layout[[1]])
-    )
-    sub2 <- list(
-        fig = npc_to_ndc(layout[[2]]),
-        bt_axis  = list(text = "Chemical Shift [ppm]"),
-        lt_axis  = list(text = "Second Derivative [Mau]", las = 1, sf = 1e6),
-        tp_axis  = list(skip = TRUE),
-        rt_axis  = list(skip = TRUE),
-        bg_rect  = list(skip = TRUE),
-        si_line  = list(skip = TRUE),
-        sm_line  = list(skip = TRUE),
-        lc_lines = list(skip = TRUE),
-        lc_rects = list(skip = TRUE),
-        sp_line  = list(skip = TRUE),
-        d2_line  = list(),
-        foc_rect = list(skip = TRUE),
-        cent_pts = list(skip = TRUE),
-        bord_pts = list(skip = TRUE),
-        norm_pts = list(skip = TRUE)
-    )
-    sub3 <- list(
-        fig = npc_to_ndc(layout[[3]]),
-        sm_line  = list(skip = TRUE),
-        lc_lines = list(skip = TRUE),
-        lc_rects = list(skip = TRUE),
-        sp_line  = list(skip = TRUE),
-        foc_rect = list(skip = TRUE),
-        cent_pts = list(skip = TRUE),
-        bord_pts = list(skip = TRUE),
-        norm_pts = list(skip = TRUE)
-    )
-    arglists <- mapply(modifyList, list(defaults), list(sub1, sub2, sub3))
-    arglists <- mapply(modifyList, arglists, list(sub1, sub2, sub3))
-    names(arglists) <- c("sub1", "sub2", "sub3")
-    arglists
-}
 
 get_foc_frac <- function(obj, foc_rgn = NULL) {
     stopifnot(is_num(obj$cs))
@@ -536,6 +561,98 @@ get_foc_rgn <- function(obj, foc_frac = NULL) {
     quantile(obj$cs, foc_frac)
 }
 
+get_sub_fig_args <- function(obj, foc_frac, foc_rgn, sub1, sub2, sub3, dot_args) {
+    if ((n <- length(dot_args)) != (k <- length(names(dot_args)))) {
+        if (n == 1) dot_args <- dot_args[[1]]
+        else stop("... must contain tag=value pairs or a single list of such pairs")
+    }
+    usr_args <- lapply(list(sub1, sub2, sub3), function(x)
+        modifyList(dot_args, x)
+    )
+    layout <- paste0(
+        if (isFALSE(sub1$show)) "_" else "1",
+        if (isFALSE(sub2$show)) "_" else "2",
+        if (isFALSE(sub3$show)) "_" else "3"
+    )
+    fig_rgns <- switch(layout,           # x1 x2 y1    y2
+        "___" = list(c(0.00, 0.00, 0.00, 0.00), c(0.00, 0.00, 0.00, 0.00), c(0.00, 0.00, 0.00, 0.00)),
+        "1__" = list(c(0.00, 1.00, 0.00, 1.00), c(0.00, 0.00, 0.00, 0.00), c(0.00, 0.00, 0.00, 0.00)),
+        "_2_" = list(c(0.00, 0.00, 0.00, 0.00), c(0.00, 1.00, 0.00, 1.00), c(0.00, 0.00, 0.00, 0.00)),
+        "__3" = list(c(0.00, 1.00, 0.00, 1.00), c(0.00, 0.00, 0.00, 0.00), c(0.00, 1.00, 0.00, 1.00)),
+        "12_" = list(c(0.00, 1.00, 0.20, 1.00), c(0.00, 1.00, 0.00, 0.20), c(0.00, 0.00, 0.00, 0.00)),
+        "1_3" = list(c(0.00, 1.00, 0.40, 1.00), c(0.00, 0.00, 0.00, 0.00), c(0.00, 1.00, 0.00, 0.20)),
+        "_23" = list(c(0.00, 0.00, 0.00, 0.00), c(0.00, 1.00, 0.50, 1.00), c(0.00, 1.00, 0.00, 0.30)),
+        "123" = list(c(0.00, 1.00, 0.50, 1.00), c(0.00, 1.00, 0.30, 0.50), c(0.00, 1.00, 0.00, 0.20)),
+        stop("Invalid layout")
+    )
+    mars <- switch(layout,          # b  l  t  r
+        "1_3" = list(c(1, 6, 2, 2), c(0, 0, 0, 0), c(0, 0, 1, 0)),
+        "_23" = list(c(0, 0, 0, 0), c(1, 2, 2, 2), c(0, 0, 1, 0)),
+        "123" = list(c(0, 6, 2, 2), c(1, 6, 0, 2), c(0, 0, 1, 0)),
+        list(c(0, 0, 0, 0), c(0, 0, 0, 0), c(0, 0, 0, 0))
+    )
+    for (i in 1:3) {
+        fig_rgns[[i]] <- usr_args[[i]]$fig_rgn_npc %||% fig_rgns[[i]]
+        usr_args[[i]]$fig_rgn_npc <- NULL
+    }
+    def_args <- lapply(1:3, function(i) list(
+        obj = obj,
+        foc_rgn = foc_rgn,
+        foc_frac = foc_frac,
+        add = TRUE,
+        fig_rgn = npc_to_ndc(fig_rgns[[i]]),
+        mar = mars[[i]]
+    ))
+    def_args[[1]]$bt_axis <- if (sub2$show) FALSE else if (sub3$show) list(text = "")
+    def_args[[2]]$lt_axis <- if (layout == "_2_") list() else FALSE
+    def_args[[2]]$bt_axis <-if (sub3$show) list(text = "")
+    def_args[[2]]$show_d2 <- TRUE
+    def_args[[3]]$bg_rect <- if (layout != "__3") list(border = NA)
+    def_args[[3]]$foc_only <- FALSE
+    def_args[[3]]$foc_rect <- if (layout == "__3") FALSE
+    def_args[[3]]$lgd <- FALSE
+    def_args[[3]]$lt_axis <- if (layout != "__3") list(text = ""  )
+    structure(
+        mapply(modifyList, def_args, usr_args, SIMPLIFY = FALSE),
+        names = c("sub1", "sub2", "sub3")
+    )
+}
+
+get_ds_def_args <- function(show_d2 = FALSE, foc_only = TRUE) {
+    stopifnot(is_bool(show_d2), is_bool(foc_only))
+    show_si  <- !show_d2
+    ylab <- if (show_si) "Signal Intensity [au] / 1e6" else "Second Derivative / 1e6"
+    lgdx <- if (show_si) "topright" else "bottomright"
+    list(
+        lgd      = list(show = TRUE, x = lgdx, bg = "white"),
+        d2_line  = list(show = show_d2),
+        si_line  = list(show = show_si, col = "black"),
+        sm_line  = list(show = show_si, col = "blue"),
+        sp_line  = list(show = show_si, col = "red"),
+        lc_lines = list(show = show_si && foc_only, col = "grey"),
+        cent_pts = list(show = show_si && foc_only, col = "blue", pch = 124),
+        bord_pts = list(show = show_si && foc_only, col = "blue", pch = 124),
+        norm_pts = list(show = FALSE, col = "black", pch = 124),
+        bg_rect  = list(show = TRUE, col = "white"),
+        foc_rect = list(show = TRUE, col = transp("yellow")),
+        lc_rects = list(show = show_si, col = transp("black"), border = NA),
+        bt_axis  = list(show = TRUE, text = "Chemical Shift [ppm]"),
+        lt_axis  = list(show = TRUE, text = ylab, sf = 1e6, las  = 1),
+        tp_axis  = list(show = FALSE),
+        rt_axis  = list(show = FALSE)
+    )
+}
+
+combine <- function(defaults, x) {
+    name <- deparse(substitute(x))
+    x <- if (is.null(x)) list()
+        else if (isFALSE(x)) list(show = FALSE)
+        else if (isTRUE(x)) list(show = TRUE)
+        else if (is.list(x)) x
+        else stopf("%s must be a bool or list", name)
+    modifyList(defaults, x)
+}
+
 # Convert #####
 
 usr_to_ndc <- function(usr = par("usr")) {
@@ -544,33 +661,15 @@ usr_to_ndc <- function(usr = par("usr")) {
     c(x_ndc, y_ndc)
 }
 
+ndc_to_usr <- function(ndc) {
+    x_usr <- grconvertX(ndc[1:2], from = "ndc", to = "user")
+    y_usr <- grconvertY(ndc[3:4], from = "ndc", to = "user")
+    c(x_usr, y_usr)
+}
+
 npc_to_ndc <- function(npc = c(0, 1, 0, 1)) {
+    if (is.null(npc)) return(NULL)
     x_ndc <- grconvertX(npc[1:2], from = "npc", to = "ndc")
     y_ndc <- grconvertY(npc[3:4], from = "npc", to = "ndc")
     c(x_ndc, y_ndc)
-}
-
-get_draw_spectrum_defaults <- function(show_d2, foc_only = TRUE) {
-    stopifnot(is_bool(show_d2), is_bool(foc_only))
-    show_si  <- !show_d2
-    ylab <- if (show_si) "Signal Intensity [Mau]" else"Second Derivative [au]"
-    ysf <- if (show_si) 1e6 else 1
-    list(
-        lgd      = list(show = TRUE),
-        d2_line  = list(show = show_d2),
-        si_line  = list(show = show_si, col = "black"),
-        sm_line  = list(show = show_si, col = "blue"),
-        sp_line  = list(show = show_si, col = "red"),
-        lc_lines = list(show = show_si && foc_only, col = "grey"),
-        cent_pts = list(show = show_si && foc_only, col = "blue",  pch = 124),
-        bord_pts = list(show = show_si && foc_only, col = "blue",  pch = 124),
-        norm_pts = list(show = FALSE,               col = "black", pch = 124),
-        bg_rect  = list(show = TRUE, col = "white"),
-        foc_rect = list(show = TRUE, col = transp("yellow")),
-        lc_rects = list(show = TRUE, col = transp("black"), border = NA),
-        bt_axis  = list(show = TRUE, text = "Chemical Shift [ppm]"),
-        lt_axis  = list(show = TRUE, text = ylab, sf = ysf, las  = 1),
-        tp_axis  = list(show = FALSE),
-        rt_axis  = list(show = FALSE)
-    )
 }

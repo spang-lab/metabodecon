@@ -1,83 +1,84 @@
 #' @noRd
 #' @title Setup a development environment for `plot_spectrum`
 mkenv_plot_spectrum <- function() {
-    target <- c("sim1", "sap2")[2]
-    decon <- switch(target,
-        "sim1" = get_sim1_decon1(),
-        "sap2" = get_sap2_idecon()
-    )
-    args <- stub(
-        func = plot_spectrum,
-        obj = decon,
-        foc_rgn = "auto",
-        envir = .GlobalEnv
-    )
-    width <- options("width")
-    line <- paste0(collapse(rep("-", width), ""), "\n")
-    cat(line)
-    cat("Assigned to .GlobalEnv:\n")
-    cat(line)
-    str(args, 1, give.attr = FALSE)
-    cat(line)
-    invisible(args)
-}
-
-test_interactive <- function() {
-    target <- c("sim1", "sap2")[2]
-    decon <- switch(target,
-        "sim1" = get_sim1_decon1(),
-        "sap2" = get_sap2_idecon()
-    )
-    plot_spectrum(decon)
+    target <- c("sim1", "sap2")[1]
+    decon <- switch(target, "sim1" = get_sim1_decon1(), "sap2" = get_sap2_idecon())
+    args <- stub(func = plot_spectrum, x = decon, ... = NULL, envir = .GlobalEnv)
+    deferred_run()
+    if (FALSE) plot_spectrum(decon, frame = TRUE)
 }
 
 #' @noRd
 #' @examples
 #' test_plot_spectrum(1, 2) # first two plots
 #' test_plot_spectrum(2:4) # second to fourth plot
-test_plot_spectrum <- function(figs = 1:5) {
+test_plot_spectrum <- function(figs = 1:6) {
+    if (environment() %==% .GlobalEnv) {
+        figs <- 1:6
+        deferred_run()
+    }
     n <- length(figs)
     nr <- ceiling(sqrt(n))
-    nc <- if (nr^2 > n) nr - 1 else nr
+    nc <- if ((nr - 1) * nr >= n) nr - 1 else nr
     spec <- read_spectrum(metabodecon_file("sim/sim_01"))
     decon <- generate_lorentz_curves_sim(spec)
-    opar <- par(mfrow = c(nr, nc))
-    on.exit(par(opar))
+    local_par(mfrow = c(nr, nc))
 
     # Plot the full (non-deconvoluted) spectrum
-    if (1 %in% figs) plot_spectrum(spec)
+    if (1 %in% figs) plot_spectrum(
+        spec,
+        sub1 = FALSE
+    )
 
-    # Focus on a specific region, specified in ppm or as fraction
-    if (2 %in% figs) plot_spectrum(decon, foc_rgn = c(3.49, 3.45), foc_unit = "ppm")
-    if (3 %in% figs) plot_spectrum(decon, foc_rgn = c(0.40, 0.30))
+    # Remove connecting lines, and focus on a specific region specified in ppm
+    if (2 %in% figs) plot_spectrum(
+        decon,
+        foc_rgn = c(3.49, 3.45),
+        con_lines = FALSE
+    )
 
-    # Change margin, color and position of the focus region
-    if (4 %in% figs) {
-        plot_spectrum(decon,
-            sub_mar = c(4, 4, 0, 0),
-            rct_fill = rgb(0.9, 0.5, 0.9, alpha = 0.1),
-            rct_col = "violet",
-            sub_rgn = c(x1 = 0.1, x2 = 0.9, y1 = 0.4, y2 = 0.9)
+    # Show second derivative and focus on a specific region specified as fraction
+    if (3 %in% figs) plot_spectrum(
+        decon,
+        sub2 = TRUE,
+        foc_frac = c(0.40, 0.30)
+    )
+
+    # Change color of focus rectangle and margins of sub figure 1
+    if (4 %in% figs) plot_spectrum(
+        decon,
+        sub1 = list(mar = c(3, 6, 3, 6), lt_axis = list(col = "violet")),
+        foc_rect = list(border = "violet", col = transp("violet")),
+        con_lines = list(col = "violet")
+    )
+
+    # Hide xlab and show second derivative
+    if (5 %in% figs) plot_spectrum(
+        decon,
+        sub2 = TRUE,
+        sub3 = list(bt_axis = list(text = "")),
+        frame = TRUE,
+        con_lines = FALSE
+    )
+
+    # Change the figure region for sub figure 1
+    if (6 %in% figs) plot_spectrum(
+        decon,
+        sub1 = list(
+            fig_rgn_npc = c(0, 1.0, 0.3, 1.0),
+            mar = c(0, 5, 0, 0)
         )
-    }
+    )
 
-    # Remove connecting lines and fill colors
-    if (5 %in% figs) {
-        plot_spectrum(decon,
-            rct_fill = NULL,
-            sub_fill_col = NULL,
-            cnct_col = NULL
-        )
-    }
-
-    # Hide xlab and ylab
-    if (6 %in% figs) {
-        plot_spectrum(decon,
-            xlab = "",
-            ylab = "",
-            mar = c(2, 2, 0, 1)
-        )
-    }
+    # Test all combinations of (de-)activated sub figures
+    if (7 %in% figs)  plot_spectrum(decon, sub1 = FALSE, sub2 = FALSE, sub3 = FALSE, frame = TRUE)
+    if (8 %in% figs)  plot_spectrum(decon, sub1 = TRUE,  sub2 = FALSE, sub3 = FALSE)
+    if (9 %in% figs)  plot_spectrum(decon, sub1 = FALSE, sub2 = TRUE,  sub3 = FALSE)
+    if (10 %in% figs) plot_spectrum(decon, sub1 = FALSE, sub2 = FALSE, sub3 = TRUE)
+    if (11 %in% figs) plot_spectrum(decon, sub1 = TRUE,  sub2 = TRUE,  sub3 = FALSE)
+    if (12 %in% figs) plot_spectrum(decon, sub1 = TRUE,  sub2 = FALSE, sub3 = TRUE)
+    if (13 %in% figs) plot_spectrum(decon, sub1 = FALSE, sub2 = TRUE,  sub3 = TRUE)
+    if (14 %in% figs) plot_spectrum(decon, sub1 = TRUE,  sub2 = TRUE,  sub3 = TRUE)
 }
 
 test_grconvert <- function() {

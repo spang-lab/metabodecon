@@ -12,7 +12,7 @@ develop_draw_spectrum <- function() {
     obj <- as_v2_obj(obj)
 
     # Get to state within [plot_spectrum()] where [draw_spectrum()] is called
-    stub(plot_spectrum, obj = obj)
+    stub(plot_spectrum, obj = obj, ... = NULL)
     foc_frac <- foc_frac %||% get_foc_frac(obj, foc_rgn)
     foc_rgn <- foc_rgn %||% get_foc_rgn(obj, foc_frac)
     layout <- layout %||% get_ps_layout(obj, foc_rgn)
@@ -28,29 +28,17 @@ develop_draw_spectrum <- function() {
 }
 
 test_draw_spectrum <- function() {
-    path <- metabodecon_file("sim/sim_01")
-    spec <- read_spectrum(path)
-    decon <- generate_lorentz_curves(spec, sfr = c(3.55, 3.35), ws = 0, ask = FALSE, verbose = FALSE)
-    plot_dummy <- function() {
-        plot(0, 0, ylim = c(0, 1), xlim = c(0, 1), xaxs = "i", yaxs = "i")
-        text(0.5, 0.5, "dummy")
-    }
-    leftmiddle <- c(0.1, 0.4, 0.30, 0.45)
-    leftbottom <- c(0.1, 0.4, 0.05, 0.20)
-    p <- local({
-        local_par(mfrow = c(4, 2), mar = c(2, 2, 0.5, 0.5))
-        p <- list()
-        p[[1]] <- plot_dummy()
-        p[[2]] <- draw_spectrum(obj = spec)
-        p[[3]] <- draw_spectrum(obj = spec)
-        p[[4]] <- draw_spectrum(obj = decon, foc_rgn = c(3.45, 3.37))
-        p[[5]] <- plot_dummy()
-        p[[5]] <- draw_spectrum(obj = decon, foc_rgn = c(3.45, 3.37), foc_only = TRUE, fig = leftmiddle, bg_fill = rgb(0, 0, 1, 0.1))
-        p[[6]] <- plot_dummy()
-        p[[7]] <- draw_spectrum(obj = decon, fig = leftbottom, add = FALSE)
-        p[[8]] <- draw_spectrum(obj = decon, lc_show = FALSE, dp_show = FALSE)
-        p
-    })
+    decon <- as_v2_obj(get_sim1_decon1())
+    local_par(mfrow = c(4, 2), mar = c(2, 2, 0.5, 0.5))
+    plot_dummy()
+    draw_spectrum(obj = decon)
+    draw_spectrum(obj = decon, lgd = list(x = "top", bg = NA))
+    draw_spectrum(obj = decon, foc_rgn = c(3.45, 3.37))
+    plot_dummy()
+    draw_spectrum(obj = decon, fig = c(0.1, 0.4, 0.30, 0.45), add = TRUE)
+    plot_dummy()
+    draw_spectrum(obj = decon, fig = c(0.1, 0.4, 0.05, 0.20), add = FALSE)
+    draw_spectrum(obj = decon, lc_lines = NULL, lc_rects = NULL, foc_only = FALSE)
 }
 
 test_result <- test_that("draw_spectrum works", {

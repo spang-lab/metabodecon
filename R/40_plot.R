@@ -121,7 +121,7 @@ plot_empty <- function(xlim = c(0, 1),
 
 plot_dummy <- function() {
     plot(
-        x = 0, y = 0, main = "dummy main",
+        x = 0, y = 0, main = "",
         ylim = c(0, 1), xlim = c(0, 1),
         xaxs = "i", yaxs = "i",
         xlab = "dummy xlab", ylab = "dummy ylab"

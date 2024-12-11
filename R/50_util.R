@@ -369,8 +369,7 @@ set <- function(...) {
 #' tmp <- list(a = NULL, b = 2); pop(tmp, "z")    # Returns NULL
 #' tmp <- list(a = NULL, b = 2); pop(tmp, "z", 5) # Returns 5
 pop <- function(obj, key, default = NULL, env = parent.frame()) {
-    x <- try(val <- obj[[key]])
-    if (inherits(x, "try-error")) browser()
+    val <- obj[[key]]
     if (!is.null(default) && is.null(val) && !exists(key, obj)) {
         # If the value of 'key' is null, it can have two reasons:
         # 1. The key does not exist in 'obj'. In this case we want to return the 'default' value.
@@ -379,8 +378,7 @@ pop <- function(obj, key, default = NULL, env = parent.frame()) {
         val <- default
     }
     expr <- substitute(obj[[key]] <- NULL)
-    x <- try({eval(expr, env)}) # Remove key from obj in calling env
-    if (inherits(x, "try-error")) browser()
+    eval(expr, env) # Remove key from obj in calling env
     val
 }
 
@@ -449,6 +447,10 @@ get_worker_logs <- function(nw, create = TRUE) {
 
 `%!=%` <- function(x, y) {
     !identical(x, y)
+}
+
+`%notin` <- function(x, y) {
+    !(x %in% y)
 }
 
 # Docs #####
