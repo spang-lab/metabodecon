@@ -312,7 +312,7 @@ deconvolute_ispec <- function(ispec,
     ispec <- smooth_signals(ispec, reps, k, bwc)
     ispec <- find_peaks(ispec)
     ispec <- filter_peaks(ispec, sfr, delta, force, bwc)
-    ispec <- fit_lorentz_curves(ispec, nfit)
+    ispec <- fit_lorentz_curves(ispec, nfit, bwc)
     idecon <- as_idecon(ispec)
     logf("Finished deconvolution of %s", ispec$name)
     idecon
@@ -551,14 +551,18 @@ filter_peaks <- function(ispec, sfr, delta = 6.4, force = FALSE, bwc = 1) {
     ispec
 }
 
-fit_lorentz_curves <- function(spec, nfit = 3) {
+fit_lorentz_curves <- function(spec, nfit = 3, bwc = 1) {
     logf("Initializing Lorentz curves")
     spec$lci <- lc <- init_lc(spec) # Lorentz Curves Initialized
     spec$lca <- vector("list", length = nfit) # Lorentz Curves Approximated
     logf("Refining Lorentz Curves")
     for (i in 1:nfit) spec$lca[[i]] <- lc <- refine_lc_v14(spec, lc$Z)
-    A <- lc$A; lambda <- lc$lambda; w <- lc$w
-    integrals <- A * (atan((-w + (spec$n / spec$sf[1])) / lambda) - atan((-w) / lambda))
+    A <- lc$A
+    lambda <- lc$lambda
+    w <- lc$w
+    limits <- range(spec$sdp)
+    if (bwc < 2) limits[2] <- limits[2] + (1 / spec$sf[1])
+    integrals <- lorentz_int(w, A, lambda, limits = limits)
     spec$lcr <- list(A = A, lambda = lambda, w = w, integrals = integrals)
     spec
 }

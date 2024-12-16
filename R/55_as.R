@@ -100,7 +100,7 @@ as_decon0 <- function(x, sf = NULL, spectrum = NULL) {
 
 #' @export
 #' @rdname as_metabodecon_class
-as_decon1 <- function(x, sf = c(1e3, 1e6), spectrum  = NULL) {
+as_decon1 <- function(x, sf = c(1e3, 1e6), spectrum  = NULL, bwc = 2) {
     if (is_decon0(x)) {
         if (is.null(sf)) stop("Please provide `sf`")
         if (is.null(spectrum)) stop("Please provide `spectrum`")
@@ -129,40 +129,71 @@ as_decon1 <- function(x, sf = c(1e3, 1e6), spectrum  = NULL) {
     } else if (is_decon1(x)) {
         y <- x
     } else if (is_decon2(x)) {
+        # Helper vars
+        cs <- x$cs
+        si <- x$si
+        n <- length(si)
+        dpn <- (n-1):0
+        sdp <- dpn / 1e3
+        fq <- x$meta$fq
+        cs_step <- width(cs) / (n - 1)
+        dpn_step <- 1
+        fq_step <- if (!is.null(fq)) width(fq) / (n - 1)
+        sdp_step <- dpn_step / 1e3
+        x0_ppm <- x$lcpar$x0
+        A_raw_ppm <- x$lcpar$A
+        lambda_ppm <- x$lcpar$lambda
+        x0_dp <- convert_pos(x0_ppm, cs, dpn)
+        x0_sdp <- convert_pos(x0_ppm, cs, sdp)
+        x0_hz <- if (!is.null(fq)) convert_pos(x0_ppm, cs, fq)
+        A_raw_dp <- A_raw_ppm * (dpn_step  / cs_step)
+        A_raw_sdp <- A_raw_ppm * (sdp_step / cs_step)
+        A_raw_hz  <- if (!is.null(fq)) A_raw_ppm * (fq_step  / cs_step)
+        A_sc_ppm <- A_raw_ppm / 1e6
+        A_sc_dp <- A_raw_dp  / 1e6
+        A_sc_sdp <- A_raw_sdp / 1e6
+        A_sc_hz <- if (!is.null(fq)) A_raw_hz  / 1e6
+        lambda_dp <- convert_width(lambda_ppm, cs, dpn)
+        lambda_sdp <- convert_width(lambda_ppm, cs, sdp)
+        lambda_hz <- if (!is.null(fq)) abs(convert_width(lambda_ppm, cs, fq))
+        limits_sdp <- range(sdp)
+        if (bwc < 2) limits_sdp[2] <- limits_sdp[2] + sdp_step
+        integrals <- t(lorentz_int(x0_sdp, A_sc_sdp, lambda_sdp, limits = limits_sdp))
+        # Outputs
         y <- structure(class = "decon1", .Data = list())
         y$number_of_files <- 1
         y$filename <- x$meta$name
-        y$x_values <- x$sdp
+        y$x_values <- seq.int(length(x$cs) - 1, 0, -1) / sf[1]
         y$x_values_ppm <- x$cs
-        y$y_values <- x$sit$sm
-        y$spectrum_superposition <- x$sit$sup
+        y$y_values <- x$sit$sm / 1e6
+        y$spectrum_superposition <- t(x$sit$sup / 1e6)
         y$mse_normed <- x$mse$smnorm
         y$index_peak_triplets_middle <- x$peak$center
-        y$index_peak_triplets_left <- x$peak$left
-        y$index_peak_triplets_right <- x$peak$right
+        y$index_peak_triplets_left <- x$peak$right # decon[01] has left and right inverted
+        y$index_peak_triplets_right <- x$peak$left # decon[01] has left and right inverted
         y$peak_triplets_middle <- x$cs[x$peak$center]
-        y$peak_triplets_left <- x$cs[x$peak$right]
-        y$peak_triplets_right <- x$cs[x$peak$left]
+        y$peak_triplets_left <- x$cs[x$peak$right] # decon[01] has left and right inverted
+        y$peak_triplets_right <- x$cs[x$peak$left] # decon[01] has left and right inverted
         sdp <- ((length(x$cs) - 1):0) / sf[1]
-        y$integrals <- lorentz_int(lcpar = x$lcpar, limits = c(0, max(sdp) + sf[1]))
+        y$integrals <- integrals
         y$signal_free_region <- sfr_in_sdp_bwc(x$args$sfr, x$cs, sf)
         y$range_water_signal_ppm <- x$args$wshw
-        y$A <- x$lcpar$A
-        y$lambda <- x$lcpar$lambda
-        y$x_0 <- x$lcpar$w
+        y$A <- -A_sc_sdp
+        y$lambda <- -lambda_sdp
+        y$x_0 <- x0_sdp
         y$y_values_raw <- x$si
-        y$x_values_hz <- x$meta$fq
-        y$mse_normed_raw <- x$mse$smnorm
+        y$x_values_hz <- if (!is.null(fq)) x$meta$fq
+        y$mse_normed_raw <- x$mse$norm
         y$signal_free_region_ppm <- x$args$sfr
-        y$x_0_hz <- - convert_pos(x$lcpar$w, x$cs, sdp)
-        y$x_0_dp <- convert_pos(x$lcpar$w, x$cs, sdp)
-        y$x_0_ppm <- convert_pos(x$lcpar$w, x$cs, sdp)
-        y$A_hz <- convert_width(x$lcpar$A, x$cs, sdp)
-        y$A_dp <- convert_width(x$lcpar$A, x$cs, sdp)
-        y$A_ppm <- convert_width(x$lcpar$A, x$cs, sdp)
-        y$lambda_hz <- convert_width(x$lcpar$lambda, x$cs, sdp)
-        y$lambda_dp <- convert_width(x$lcpar$lambda, x$cs, sdp)
-        y$lambda_ppm <- convert_width(x$lcpar$lambda, x$cs, sdp)
+        y$x_0_hz <- if (!is.null(fq)) x0_hz
+        y$x_0_dp <- x0_dp
+        y$x_0_ppm <- x0_ppm
+        y$A_hz <- if (!is.null(fq)) (A_sc_hz)
+        y$A_dp <- -A_sc_dp
+        y$A_ppm <- -A_sc_ppm
+        y$lambda_hz <- if (!is.null(fq)) (lambda_hz)
+        y$lambda_dp <- -lambda_dp
+        y$lambda_ppm <- -lambda_ppm
     } else if (is_idecon(x)) {
         y <- structure(class = "decon1", .Data = list())
         y$number_of_files <- 1
@@ -173,11 +204,11 @@ as_decon1 <- function(x, sf = c(1e3, 1e6), spectrum  = NULL) {
         y$spectrum_superposition <- t(s <- lorentz_sup(x = x$sdp, lcpar = x$lcr))
         y$mse_normed <- mean(((x$y_smooth / sum(x$y_smooth)) - (s / sum(s)))^2)
         y$index_peak_triplets_middle <- as.numeric(x$peak$center[x$peak$high])
-        y$index_peak_triplets_left <- as.numeric(x$peak$right[x$peak$high])
-        y$index_peak_triplets_right <- as.numeric(x$peak$left[x$peak$high])
+        y$index_peak_triplets_left <- as.numeric(x$peak$right[x$peak$high]) # decon[01] has left and right inverted
+        y$index_peak_triplets_right <- as.numeric(x$peak$left[x$peak$high]) # decon[01] has left and right inverted
         y$peak_triplets_middle <- x$ppm[x$peak$center[x$peak$high]]
-        y$peak_triplets_left <- x$ppm[x$peak$right[x$peak$high]]
-        y$peak_triplets_right <- x$ppm[x$peak$left[x$peak$high]]
+        y$peak_triplets_left <- x$ppm[x$peak$right[x$peak$high]] # decon[01] has left and right inverted
+        y$peak_triplets_right <- x$ppm[x$peak$left[x$peak$high]] # decon[01] has left and right inverted
         y$integrals <- t(x$lcr$integrals)
         y$signal_free_region <- sfr_in_sdp_bwc(x$args$sfr, x$ppm, sf)
         y$range_water_signal_ppm <- x$args$wshw
@@ -213,18 +244,19 @@ as_decon2 <- function(x, spectrum  = NULL) {
         si <- x$y_values_raw
         meta <- list(
             name = x$filename,
-            path = NULL,
-            type = NULL,
-            fq = x$x_values_hz,
-            mfs = NULL,
-            simpar = NULL
+            fq = x$x_values_hz
         )
         args <- list(
-            nfit = NULL,
-            smopts = NULL,
-            delta = NULL,
-            sfr = x$signal_free_region,
-            wshw = x$range_water_signal_ppm
+            nfit = NA,
+            smopts = NA,
+            delta = NA,
+            sfr = sfr_in_ppm_bwc(x$signal_free_region, x$x_values, x$x_values_ppm),
+            wshw = x$range_water_signal_ppm,
+            ask = NA,
+            force = NA,
+            verbose = NA,
+            bwc = NA,
+            nworkers = NA
         )
         sit <- data.frame(
             wsrm = NA,
@@ -233,19 +265,19 @@ as_decon2 <- function(x, spectrum  = NULL) {
             sup = x$spectrum_superposition[1, ] * 1e6
         )
         peak <- data.frame(
+            left = x$index_peak_triplets_right, # decon[01] has left and right inverted
             center = x$index_peak_triplets_middle,
-            left = x$index_peak_triplets_left,
-            right = x$index_peak_triplets_right
+            right = x$index_peak_triplets_left  # decon[01] has left and right inverted
         )
         lcpar <- data.frame(
             x0 = x$x_0_ppm,
-            A = x$A_ppm * 1e6,
-            lambda = x$lambda_ppm
+            A = -(x$A_ppm * 1e6),
+            lambda = -(x$lambda_ppm)
         )
         mse <- list(
-            raw = NA,
+            raw = mse(si, sit$sup, normed = FALSE),
             norm = x$mse_normed_raw,
-            sm = NA,
+            sm = mse(sit$sm, sit$sup, normed = FALSE),
             smnorm = x$mse_normed
         )
     } else if (is_idecon(x)) {
@@ -253,24 +285,32 @@ as_decon2 <- function(x, spectrum  = NULL) {
         si <- x$y_raw
         meta <- x$meta
         args <- x$args
+        lcpar <- data.frame(
+            x0 = convert_pos(x$lcr$w, x$sdp, x$ppm),
+            A = -convert_width(x$lcr$A, x$sdp, x$ppm) * 1e6,
+            lambda = -convert_width(x$lcr$lambda, x$sdp, x$ppm)
+        )
         sit <- data.frame(
             wsrm = x$y_nows * 1e6,
             nvrm = x$y_pos * 1e6,
             sm = x$y_smooth * 1e6,
-            sup = NA
+            sup = lorentz_sup(cs, lcpar = lcpar)
         )
-        peak <- as.data.frame(x$peak)
-        lcpar <- data.frame(
-            x0 = convert_pos(x$lcr$w, x$sdp, x$ppm),
-            A = convert_width(x$lcr$A, x$sdp, x$ppm) * 1e6,
-            lambda = convert_width(x$lcr$lambda, x$sdp, x$ppm)
+        peak <- data.frame(
+            left = x$peak$left[x$peak$high],
+            center = x$peak$center[x$peak$high],
+            right = x$peak$right[x$peak$high]
         )
         mse <- list(
-            raw = NULL,
-            normed = NULL,
-            sm = NULL,
-            smnorm = NULL
+            raw = mse(si, sit$sup, normed = FALSE),
+            norm = mse(si, sit$sup, normed = TRUE),
+            sm = mse(sit$sm, sit$sup, normed = FALSE),
+            smnorm = mse(sit$sm, sit$sup, normed = TRUE)
         )
+    } else if (is_decon0(x)) {
+        if (is.null(spectrum)) stop("Please provide `spectrum`")
+        x <- as_decon1(x, spectrum = spectrum)
+        return(as_decon2(x))
     } else {
         stop(sprintf("Converting %s to decon2 is not supported", class(x)[1]))
     }
@@ -415,7 +455,7 @@ ispec_members <- c(
 
 idecon_members <- c(
     ispec_members,
-    "sf",
+    "args",
     "y_nows",
     "y_pos",
     "Z",
@@ -465,6 +505,8 @@ decon1_members <- c(
     "lambda_dp",
     "lambda_ppm"
 )
+
+decon2_members <- c("cs", "si", "meta", "args", "sit", "peak", "lcpar", "mse")
 
 # =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
 # Helpers #####

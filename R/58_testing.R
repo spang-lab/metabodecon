@@ -350,8 +350,8 @@ expect_file_size <- function(testdir, size_exp) {
 #' @examples
 #' expect_str(list(a = 1, b = 2), c("List of 2", " $ a: num 1", " $ b: num 2"))
 #' @noRd
-expect_str <- function(obj, expected_str) {
-    testthat::expect_identical(capture.output(str(obj)), expected_str)
+expect_str <- function(obj, expected_str, ...) {
+    testthat::expect_identical(capture.output(str(obj, ...)), expected_str)
 }
 
 # =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
@@ -416,25 +416,30 @@ expect_str <- function(obj, expected_str) {
 #' calc_prarp(decon, truepar)
 #' plot_prarp(decon, truepar)
 #'
-calc_prarp <- function(decon, truepar) {
+calc_prarp <- function(x,
+                       spectrum = NULL,
+                       obj = as_decon2(x, spectrum = spectrum),
+                       truepar = obj$meta$simpar) {
 
-    decon0 <- as_decon0(decon)
+    x0_true <- truepar$x0
+    x0_found <- obj$lcpar$x0
+    idx_closest_true_peak <- sapply(x0_found, function(x0) which.min(abs(x0_true - x0)))
 
-    n_peaks_dcnv <- length(decon0$A)
-    n_peaks_true <- length(truepar$A)
-    n_peaks_min <- min(n_peaks_dcnv, n_peaks_true)
-    n_peaks_max <- max(n_peaks_dcnv, n_peaks_true)
-    peak_ratio <- n_peaks_min / n_peaks_max
+    np_true <- length(truepar$x0)
+    np_found <- length(idx_closest_true_peak)
+    np_correct <- length(unique(idx_closest_true_peak))
+    np_wrong <- np_found - np_correct
+    peak_ratio   <- min(np_found, np_true) / max(np_found, np_true)
+    peak_ratio_x <- np_correct / (np_true + np_wrong)
 
-    area_spectrum <- sum(decon0$y_values)
-    area_residuals <- sum(abs(decon0$spectrum_superposition - decon0$y_values))
-    area_min <- min(area_residuals, area_spectrum)
-    area_max <- max(area_residuals, area_spectrum)
-    area_ratio <- 1 - (area_min / area_max)
+    area_spectrum <- sum(obj$si)
+    area_residuals <- sum(abs(obj$sit$sup - obj$si))
+    area_ratio <- 1 - (min(area_residuals, area_spectrum) / max(area_residuals, area_spectrum))
 
     prarp <- peak_ratio * area_ratio
+    prarpx <- peak_ratio_x * area_ratio
 
-    named(prarp, peak_ratio, area_ratio)
+    named(prarpx, prarp, peak_ratio_x, peak_ratio, np_true, np_found, np_correct, np_wrong, area_ratio, area_spectrum, area_residuals)
 }
 
 plot_prarp <- function(decon, truepar) {

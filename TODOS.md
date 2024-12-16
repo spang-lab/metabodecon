@@ -3,34 +3,26 @@
 
 ## v1.2.0
 
-### REFACTOR-11: Write PRARP tests
+### REFACTOR-13: Write PRARP tests
 
-1. Implement a function `calc_prarp` that takes a `decon` object and optionally a `truepar` object. If `truepar` is not given, it shall be taken from `decon$meta$simpar`. The function then calculates the PRARP (peak ratio area ratio product) from it, by comparing the estimated parameters with the true parameters.
+Write testcases for the following functions that test for a good PRARP as well as for the correct return type:
 
-   See function `check_decon_quality()` for existing code to reuse.
-
-2. Write testcases for `MetaboDecon1D()`, `generate_lorentz_curves()` and `deconvolute()` that test for a good PRARP as well as for the correct return type.
+- [x] `deconvolute_ispecs()`
+- [] `deconvolute()`
+- [] `generate_lorentz_curves()`
+- [] `MetaboDecon1D()`
 
 ### REFACTOR-12: Write compliance tests
 
-Write tests to check whether functions `generate_lorentz_curves()` and `deconvolute()` produce results that are compliant with `MetaboDecon1D()`.
+Write testcases for the following functions to check whether they produce results that are compliant with `MetaboDecon1D()`:
 
-### FEATURE-18: Implement plot_spectra
+- [ ] `deconvolute_ispecs()`
+- [ ] `deconvolute()`
+- [ ] `generate_lorentz_curves()`
 
-Implement `plot_spectra` which should be the successor of the following functions:
+### CRAN-7: Check dontrun examples
 
-- plot_triplets
-- plot_lorentz_curves_save_as_png
-- plot_spectrum_superposition_save_as_png
-
-All the functionality, i.e.
-
-- showing triplets
-- showing individual lorentz curves and
-- showing superposition of all lorentz curves
-- storing plots as png on disk
-
-should be controllable via function arguments.
+Remove `dontrun` from examples if they are executable in < 5 sec, or create additionally small toy examples to allow automatic testing in < 5 sec. Reason: `\dontrun{}` should only be used if the example really cannot be executed by the user, e.g. because of missing additional software, missing API keys, etc. That's why wrapping examples in `\dontrun{}` adds the comment ("# Not run:") as a warning for the user. Alternative: You could also replace `\dontrun{}` with `\donttest`, if it takes longer than 5 sec to be executed, but it would be preferable to have automatic checks for functions. Otherwise, you can also write some tests.
 
 ### DOC-1: Document whole package
 
@@ -48,7 +40,15 @@ Document the whole package in vignettes, including chapters about alignment and 
 Merge branch `v1.2.0` into `main`.
 Start a new branch `v1.3.0` for the remaining todos.
 
-## v1.3.0
+### CRAN-10: Resubmit to CRAN
+
+Fix all R CMD check findings and resubmit the package to CRAN.
+
+### DOC-3: Write paper
+
+Reformat the vignettes as paper and send to Wolfram for proofreading.
+
+## v1.3.x
 
 ### FEATURE-8: Warn user if peaks are found in SFR
 
@@ -67,22 +67,6 @@ In function `add_return_list`:
 ### CHECK-10: Negative values for estimated A
 
 Check why there are negative values for the estimated lorentz curve area A.
-
-### CRAN-7: Check dontrun examples
-
-Remove `dontrun` from examples if they are executable in < 5 sec, or create additionally small toy examples to allow automatic testing in < 5 sec. Reason: `\dontrun{}` should only be used if the example really cannot be executed by the user, e.g. because of missing additional software, missing API keys, etc. That's why wrapping examples in `\dontrun{}` adds the comment ("# Not run:") as a warning for the user. Alternative: You could also replace `\dontrun{}` with `\donttest`, if it takes longer than 5 sec to be executed, but it would be preferable to have automatic checks for functions. Otherwise, you can also write some tests.
-
-## v1.3.1
-
-### CRAN-10: Resubmit to CRAN
-
-Fix all R CMD check findings and resubmit the package to CRAN.
-
-### DOC-3: Write paper
-
-Reformat the vignettes as paper and send to Wolfram for proofreading.
-
-## v1.3.2
 
 ### FEATURE-19: make SFR and WS defaults dynamic
 
@@ -117,6 +101,8 @@ Implement `deconvolute_spectra()` and `deconvolute_spectrum()` which should be t
 - Add testcase with 100 iterations
 - Add testcase with one big peak at 0.000 ppm (because it's unclear why <https://github.com/spang-lab/metabodecon/blob/v1.2.0/R/21_decon_helpers.R#L315> checks for w[i] == 0).
 - Check special handling for cases with A[i] == 0 and lambda[i] == 0 in paramater approximaton. Max analyzed it and concluded that checks are not necessary. My though: copy paste artifacts from the the w[i] == 0 check (which is wrong).
+- Show prarp in `plot_spectrum()`
+- Show peak scores in `plot_spectrum()`
 
 # DONE
 
@@ -566,6 +552,25 @@ Right now, output gets scrambled because all procs share one stdout. We can fix 
 
 *Done in branch v1.2 with commit bea9348 at Thu Sep 12 17:14:20 2024 +0200*
 
+### FEATURE-18: Implement plot_spectrum
+
+Implement `plot_spectrum` which should be the successor of the following functions:
+
+- plot_triplets
+- plot_lorentz_curves_save_as_png
+- plot_spectrum_superposition_save_as_png
+
+All the functionality, i.e.
+
+- showing triplets
+- showing individual lorentz curves and
+- showing superposition of all lorentz curves
+- storing plots as png on disk
+
+should be controllable via function arguments.
+
+*2024-12-11: Done in branch v1.2.0 with commit 44f8f02*
+
 ## REFACTOR
 
 ### REFACTOR-1: Combine load_xxx_spectrum functions
@@ -666,6 +671,14 @@ Replace all `glc()` calls with calls to `generate_lorentz_curves()`.
    This makes it directly visible how cumbersome it is to use the old function and also can be applied to any input folder (in contrast to the current `md1d` function).
 
 *2024-10-07 09:21:34: Done in branch v1.2.0 with commits 18db936, 8f01fae and 6bdaa6f*
+
+### REFACTOR-11: Implement calc_prarp
+
+Implement a function `calc_prarp` that takes a `decon` object and optionally a `truepar` object. If `truepar` is not given, it shall be taken from `decon$meta$simpar`. The function then calculates the PRARP (peak ratio area ratio product) from it, by comparing the estimated parameters with the true parameters.
+
+See function `check_decon_quality()` for existing code to reuse.
+
+*Done in 2024/10/08 in branch v1.2.0 with commit 1b7b4c1*
 
 ## CRAN
 

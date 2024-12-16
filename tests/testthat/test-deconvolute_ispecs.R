@@ -16,6 +16,10 @@ check_prarp <- test_that("deconvolute_ispecs works", {
     expect_true(all(prarps > 0.8))
     expect_equal(class(idecons), "idecons")
     expect_equal(length(idecons), 2)
+    if (environment() %==% .GlobalEnv) {
+        plot_spectrum(idecons[[1]])
+        plot_spectrum(idecons[[2]])
+    }
 })
 
 skip_if_slow_tests_disabled()

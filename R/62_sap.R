@@ -26,22 +26,24 @@
 #' ```
 #' -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
 #' |      SFR      |               w               |     SFR      |
-#' |               |     x        www       p      |              |
-#  |               |    xxx a    wwwww     ppp     |              |
-#  |   nnn   nnn   |  xxxxxaaa  wwwwwww  ppppppp   |  nnn   nnn   |
-#' -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
-#' 1    11    23  33    45  51    64.5     83     97  105   117  128 DPN
-#' 6.4 5.4   4.2 3.2   2.0 1.4    0.05   -1.8   -3.2 -4.0  -5.2 -6.3 PPM
+#' |               |  x           www       p      |              |
+#  |               | xxxa        wwwww     ppp     |              |
+#  |               |xxxaaa      wwwwwww  ppppppp   |              |
+#' |~-~-~-~-~-~-~-~|~-|-|-~-~-~-~-~|~-~-~-~-|-~-~-~-~-~-~-~-~-~-~-~
+#' |               |  | |          |        |      |
+#' 6.4             |  | 2.24       0.047    -2.22  -3.2
+#'                 |  2.61
+#'                 3.2
 #' ```
 #'
 get_sap2_spectrum <- function() {
     spectrum <- simulate_spectrum(
         name   = "sap2",
         cs     = (64:-63) / 10,
-        x0     = c( 5.4, 4.2,  2.0, 1.4, 0.05, -1.8, -4.0, -5.2),
-        A      = c( 100, 150, 2000, 500, 5000, 2500,  150,  100),
-        lambda = c( 0.2, 0.2,  0.4, 0.2,  0.6,  0.5,  0.2,  0.2),
-        noise  = 0,
+        x0     = c(2.81, 2.10, 0.047, -2.22),
+        A      = c(2000,  500,  5000,   1500),
+        lambda = c( 0.4,  0.3,   0.6,   0.5),
+        noise  = round(rnorm(128, sd = 50)),
         fqref  = 6e8,
         pkr    = c(3.2, -3.2)
     )
@@ -63,6 +65,119 @@ get_sap2_idecon <- function(rmws = FALSE, bwc = 2) {
         delta = 1,
         verbose = FALSE
     )
+}
+
+get_optimal_values <- function(spectrum) {
+    # Meta Data
+    name   <- spectrum$sap1
+    sf     <- c(1e3, 1e6)
+    fq_ref <- convert_pos(0, spectrum$cs, spectrum$meta$fq)
+    # Lorentz params
+    x0_ppm     <- spectrum$meta$simpar$x0
+    A_raw_ppm  <- spectrum$meta$simpar$A
+    lambda_ppm <- spectrum$meta$simpar$lambda
+    # Axis values
+    cs             <- spectrum$cs
+    noise          <- spectrum$meta$simpar$noise
+    si_sup         <- lorentz_sup(cs, x0_ppm, A_raw_ppm, lambda_ppm)
+    si_sup_norm    <- si_sup / sum(si_sup)
+    si_sup_sc      <- si_sup / sf[2]
+    si_sup_sc_norm <- si_sup_sc / sum(si_sup_sc)
+    si             <- si_sup + noise
+    si_norm        <- si / sum(si)
+    si_sc          <- si / sf[2]
+    si_sc_norm     <- si_sc / sum(si_sc)
+    n              <- length(si)
+    dpi            <- 1:n
+    dpn            <- (n-1):0
+    sdp            <- dpn / sf[1]
+    fq             <- fq_ref - (fq_ref / 1e6) * cs
+    cs_step        <- 0.1
+    dpn_step       <- 1
+    fq_step        <- cs_step * (fq_ref / 1e6)
+    sdp_step       <- dpn_step / sf[1]
+    # Peak values
+    peak_ppm <- data.frame(
+        left = x0_ppm + lambda_ppm,
+        center = x0_ppm,
+        right = x0_ppm - lambda_ppm
+    )
+    peak_idx <- data.frame(
+        left = round(convert_pos(peak_ppm$left, cs, dpi)),
+        center = round(convert_pos(peak_ppm$center, cs, dpi)),
+        right = round(convert_pos(peak_ppm$right, cs, dpi))
+    )
+    peak_sdp <- data.frame(
+        left = convert_pos(peak_ppm$left, cs, sdp),
+        center = convert_pos(peak_ppm$center, cs, sdp),
+        right = convert_pos(peak_ppm$right, cs, sdp)
+    )
+    # Lorentz params converted
+    x0_dp  <- convert_pos(x0_ppm, cs, dpn) # x0_dp  = 7
+    x0_sdp <- convert_pos(x0_ppm, cs, sdp) # x0_sdp = 0.007
+    x0_hz  <- convert_pos(x0_ppm, cs, fq)  # x0_hz  = 599999880
+    A_raw_dp  <- A_raw_ppm * (dpn_step  / cs_step) # A_raw_dp  = 20000
+    A_raw_sdp <- A_raw_ppm * (sdp_step / cs_step)  # A_raw_sdp = 20
+    A_raw_hz  <- A_raw_ppm * (fq_step  / cs_step)  # A_raw_hz  = 1200000
+    A_sc_ppm  <- A_raw_ppm / sf[2] # A_sc_ppm  = 0.002
+    A_sc_dp   <- A_raw_dp  / sf[2] # A_sc_dp   = 0.02
+    A_sc_sdp  <- A_raw_sdp / sf[2] # A_sc_sdp  = 0.00002
+    A_sc_hz   <- A_raw_hz  / sf[2] # A_sc_hz   = 1.2
+    lambda_dp  <- convert_width(lambda_ppm, cs, dpn)     # lambda_dp  = 0.8
+    lambda_sdp <- convert_width(lambda_ppm, cs, sdp)     # lambda_sdp = 0.0008
+    lambda_hz  <- abs(convert_width(lambda_ppm, cs, fq)) # lambda_hz  = 48
+    # Deconv params
+    nfit <- 3
+    smopts <- c(0, 3)
+    delta <- 6.4
+    wshw <- 0
+    sfr_ppm <- c(1, -1) # outside of spectrum range
+    sfr_dp  <- convert_pos(sfr_ppm, cs, dpn) # c(15, -5)
+    sfr_sdp <- convert_pos(sfr_ppm, cs, sdp) # c(0.015, -0.005)
+    sfr_sdp_0 <- sfr_in_sdp_bwc(sfr_ppm, cs, sf) # c(15, -5)
+    sfr_hz  <- convert_pos(sfr_ppm, cs, fq)  # c(599999400, 600000600)
+    args <- named(nfit, smopts, delta, sfr = sfr_ppm, wshw)
+    # Integrals
+    # (use n-step intervals instead of n-1-steps to reproduce (gy) results from v0.x)
+    cs_range_0  <- c(min(cs ), max(cs ) + cs_step ) # cs_range_0  = c(-0.5, 0.6)
+    dpn_range_0 <- c(min(dpn), max(dpn) + dpn_step) # dpn_range_0 = c(0, 11)
+    sdp_range_0 <- c(min(sdp), max(sdp) + sdp_step) # sdp_range_0 = c(0, 0.011)
+    fq_range_0  <- c(min(fq ), max(fq ) + fq_step ) # fq_range_0  = c(599999700, 600000360)
+    integrals_rawsi_ppm   <- lorentz_int(x0_ppm, A_raw_ppm, lambda_ppm, limits = range(cs ))   # integrals_rawsi_ppm   = 5534.39650939749
+    integrals_rawsi_dp    <- lorentz_int(x0_dp,  A_raw_dp,  lambda_dp,  limits = range(dpn))   # integrals_rawsi_dp    = 55343.9650939749
+    integrals_rawsi_sdp   <- lorentz_int(x0_sdp, A_raw_sdp, lambda_sdp, limits = range(sdp))   # integrals_rawsi_sdp   = 55.3439650939749
+    integrals_rawsi_hz    <- lorentz_int(x0_hz,  A_raw_hz,  lambda_hz,  limits = range(fq ))   # integrals_rawsi_hz    = 3320637.90563849
+    integrals_rawsi_ppm_0 <- lorentz_int(x0_ppm, A_raw_ppm, lambda_ppm, limits = cs_range_0)   # integrals_rawsi_ppm_0 = 5660.81017319241
+    integrals_rawsi_dp_0  <- lorentz_int(x0_dp,  A_raw_dp,  lambda_dp,  limits = dpn_range_0)  # integrals_rawsi_dp_0  = 56608.1017319241
+    integrals_rawsi_sdp_0 <- lorentz_int(x0_sdp, A_raw_sdp, lambda_sdp, limits = sdp_range_0)  # integrals_rawsi_sdp_0 = 56.6081017319241
+    integrals_rawsi_hz_0  <- lorentz_int(x0_hz,  A_raw_hz,  lambda_hz,  limits = fq_range_0)   # integrals_rawsi_hz_0  = 3337585.93122155
+    integrals_scsi_ppm   <- integrals_rawsi_ppm   / sf[2] # integrals_sc_ppm   = 0.00553439650939
+    integrals_scsi_dp    <- integrals_rawsi_dp    / sf[2] # integrals_sc_dp    = 0.05534396509397
+    integrals_scsi_sdp   <- integrals_rawsi_sdp   / sf[2] # integrals_sc_sdp   = 0.00005534396509
+    integrals_scsi_hz    <- integrals_rawsi_hz    / sf[2] # integrals_sc_hz    = 3.32063790563849
+    integrals_scsi_ppm_0 <- integrals_rawsi_ppm_0 / sf[2] # integrals_sc_ppm_0 = 0.00566081017319
+    integrals_scsi_dp_0  <- integrals_rawsi_dp_0  / sf[2] # integrals_sc_dp_0  = 0.05660810173192
+    integrals_scsi_sdp_0 <- integrals_rawsi_sdp_0 / sf[2] # integrals_sc_sdp_0 = 0.00005660810173
+    integrals_scsi_hz_0  <- integrals_rawsi_hz_0  / sf[2] # integrals_sc_hz_0  = 3.33758593122155
+    # MSEs
+    vae_raw_si  <- abs(si - si_sup)           # Vector of absolute errors for raw SIs
+    vae_norm_si <- abs(si_norm - si_sup_norm) # Vector of absolute errors for normalized SIs
+    vse_raw_si  <- vae_raw_si^2               # Vector of squared errors for raw SIs
+    vse_norm_si <- vae_norm_si^2              # Vector of squared errors for normalized SIs
+    mae_raw_si  <- mean(vae_raw_si)           # Mean absolute error for raw SIs
+    mae_norm_si <- mean(vae_norm_si)          # Mean absolute error for normalized SIs
+    mse_raw_si  <- mean(vse_raw_si)           # Mean squared  error for raw SIs
+    mse_norm_si <- mean(vse_norm_si)          # Mean squared  error for normalized SIs
+    # Compound Objects
+    simpar <- named(name = "sap1", cs, pkr = NULL, x0 = x0_ppm, A = A_raw_ppm, lambda = lambda_ppm, noise)
+    lcpar  <- named(A = A_sc_ppm, lambda = lambda_ppm, x0 = x0_ppm)
+    args   <- named(nfit, smopts, delta, sfr = sfr_ppm, wshw)
+    meta   <- named(name, fq, simpar)
+    sit    <- named(wsrm = si, nvrm = si, sm = si, sup = si_sup, al = NULL)
+    mse    <- named(raw = mse_raw_si, norm = mse_norm_si, sm = mse_raw_si, smnorm = mse_norm_si)
+    peak   <- peak_idx
+    # Return Objects
+    locals()
 }
 
 # =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
@@ -305,3 +420,5 @@ get_sap1 <- function() {
     sap1 <- readRDS(sap1_path)
     sap1
 }
+
+

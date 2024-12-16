@@ -182,7 +182,6 @@ plot_spectrum <- function(x,
     fig2 <- do.call(draw_spectrum, args$sub2)
     fig3 <- do.call(draw_spectrum, args$sub3)
     figC <- draw_con_lines(fig1 %||% fig2, fig3, con_lines)
-    str(frame)
     figF <- draw_box(frame)
 
     invisible(NULL)
@@ -333,8 +332,16 @@ draw_spectrum <- function(
     cs <- cs_all <- obj$cs
     si <- si_all <- obj$si
     sm <- sm_all <- obj$sit$sm # NULL for spectra (NFS)
-    d2 <- d2_all <- if (!isFALSE(d2_line$show)) calc_second_derivative(si_all)
+    d2 <- d2_all <- NULL
     sp <- sp_all <- obj$sit$sup # NFS
+    if (!isFALSE(d2_line$show)) {
+        if (is.null(sm_all)) {
+            warning("Smoothed SI is missing. Calculating second derivative from raw SI.")
+            d2 <- d2_all <- calc_second_derivative(si_all)
+        } else {
+            d2 <- d2_all <- calc_second_derivative(sm_all)
+        }
+    }
 
     # Get indices of important points relative all data points (611us)
     idp <- idp_all <- seq_along(cs_all) # Data points
