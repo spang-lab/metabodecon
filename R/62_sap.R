@@ -36,8 +36,8 @@
 #'                 3.2
 #' ```
 #'
-get_sap2_spectrum <- function() {
-    spectrum <- simulate_spectrum(
+make_sap2 <- function() {
+    sap2 <- simulate_spectrum(
         name   = "sap2",
         cs     = (64:-63) / 10,
         x0     = c(2.81, 2.10, 0.047, -2.22),
@@ -49,8 +49,24 @@ get_sap2_spectrum <- function() {
     )
 }
 
+update_sap2 <- function(overwrite = TRUE, verbose = TRUE) {
+    sap2 <- make_sap2()
+    if (isTRUE(overwrite)) {
+        path <- file.path(pkg_file("example_datasets/bruker"), "sap/sap2")
+        if (verbose) logf("Overwrite is TRUE. Updating %s." , path)
+        save_spectrum(sap2, path, force = TRUE, verbose = verbose)
+        usethis::use_data(sap2, overwrite = TRUE)
+    } else {
+        path <- file.path(tmpdir(subdir = TRUE, create = TRUE), "sap/sap2")
+        if (verbose) logf("Overwrite is FALSE. Writing spectra to %s." , path)
+        save_spectrum(sap2, path, force = FALSE, verbose = verbose)
+        save(sap2, file = file.path(path, "sap2.rda"), compress = "bzip2")
+    }
+    path
+}
+
 get_sap2_ispec <- function() {
-    as_ispec(get_sap2_spectrum())
+    as_ispec(make_sap2())
 }
 
 get_sap2_idecon <- function(rmws = FALSE, bwc = 2) {
@@ -59,7 +75,7 @@ get_sap2_idecon <- function(rmws = FALSE, bwc = 2) {
         stopf("%s is not implemented yet. Use rmws=FALSE and bwc=2.", call, call. = FALSE)
     }
     sap_decon <- deconvolute_ispec(
-        ispec = as_ispec(get_sap2_spectrum()),
+        ispec = as_ispec(make_sap2()),
         sfr = c(3.2, -3.2),
         smopts = c(0, 3),
         delta = 1,

@@ -15,16 +15,25 @@ docs <- "see below"
 #' 3.60 to 3.29 ppm
 "sim"
 
-update_sim <- function(overwrite = FALSE, verbose = FALSE) {
-    sim <- make_sim()
+update_sim <- function(overwrite = FALSE,
+                       verbose = TRUE,
+                       nworkers = 1) {
     if (isTRUE(overwrite)) {
         path <- file.path(pkg_file("example_datasets/bruker"), "sim")
-        if (verbose) logf("Overwrite is TRUE. Updating %s." , path)
+        if (verbose) {
+            logf("Overwrite is TRUE. Updating %s." , path)
+            if (!get_yn_input("Continue?")) return(invisible())
+        }
+        sim <- make_sim(nworkers = nworkers)
         save_spectra(sim, path, force = TRUE, verbose = verbose)
         usethis::use_data(sim, overwrite = TRUE)
     } else {
         path <- file.path(tmpdir(subdir = TRUE, create = TRUE), "sim")
-        if (verbose) logf("Overwrite is FALSE. Writing spectra to %s." , path)
+        if (verbose) {
+            logf("Overwrite is FALSE. Writing spectra to %s." , path)
+            if (!get_yn_input("Continue?")) return(invisible())
+        }
+        sim <- make_sim(nworkers = nworkers)
         save_spectra(sim, path, force = FALSE, verbose = verbose)
         save(sim, file = file.path(path, "sim.rda"), compress = "bzip2")
     }
@@ -33,8 +42,8 @@ update_sim <- function(overwrite = FALSE, verbose = FALSE) {
 
 # "C:/Users/tobi/AppData/Local/Temp/RtmpE3Ma4o/metabodecon/4b0857617065/sim/sim.rda"
 
-make_sim <- function() {
-    decons <- deconvolute_blood()
+make_sim <- function(nworkers = 1) {
+    decons <- deconvolute_blood(nworkers = nworkers)
     simpars <- lapply(decons, get_sim_params, pkr = c(3.52, 3.37))
     simpars[[2]] <- get_sim_params(decons[[2]], pkr = c(3.51, 3.36)) # (1)
     # (1) Blood_02 is shifted approx. 0.01 ppm to the right, so we also need to
@@ -44,7 +53,7 @@ make_sim <- function() {
     sim <- lapply(simpars, function(simpar) {
         simulate_spectrum(
             name = gsub("blood", "sim", simpar$name),
-            ndp = 2048,
+            cs = seq(from = 3.59, length.out = 2048, by = -0.00015),
             x0 = simpar$x0,
             A = simpar$A,
             lambda = simpar$lambda,

@@ -1,4 +1,3 @@
-
 # Open
 
 ## v1.2.0
@@ -7,18 +6,18 @@
 
 Write testcases for the following functions that test for a good PRARP as well as for the correct return type:
 
-- [x] `deconvolute_ispecs()`
-- [] `deconvolute()`
-- [] `generate_lorentz_curves()`
-- [] `MetaboDecon1D()`
+- [ ] `MetaboDecon1D()`
+- [ ] `deconvolute()`
+- [ ] `generate_lorentz_curves()`
+- [ ] `deconvolute_ispec()`
+- [ ] `deconvolute_ispecs()`
 
 ### REFACTOR-12: Write compliance tests
 
 Write testcases for the following functions to check whether they produce results that are compliant with `MetaboDecon1D()`:
 
+- [ ] `deconvolute_ispec()`
 - [ ] `deconvolute_ispecs()`
-- [ ] `deconvolute()`
-- [ ] `generate_lorentz_curves()`
 
 ### CRAN-7: Check dontrun examples
 

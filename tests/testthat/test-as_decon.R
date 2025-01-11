@@ -8,7 +8,7 @@ library(testthat)
 # 4. Verify the values within decon[0-2] by plotting and printing their structure
 # ==> we know that the decon[0-2] objects obtained by direct conversion are correct
 
-spectrum <- get_sap2_spectrum()
+spectrum <- make_sap2()
 ispec <- as_ispec(spectrum)
 idecon <- deconvolute_ispec(ispec, sfr = c(3.2, -3.2), smopts = c(2, 3))
 decon2 <- as_decon2(idecon)

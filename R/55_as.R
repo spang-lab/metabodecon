@@ -8,9 +8,34 @@
 #'
 #' @description Convert an object to a Metabodecon class.
 #'
-#' @param cls The class to convert to. For details see [metabodecon_classes].
-#' @param x The object to convert.
-#' @param ... Additional arguments passed to the conversion function.
+#' @param cls
+#' The class to convert to. For details see [metabodecon_classes].
+#'
+#' @param x
+#' The object to convert.
+#'
+#' @param ...
+#' Additional arguments passed to the conversion function.
+#'
+#' @param sf
+#' Scale factor. Only required if `x` is a decon0 object.
+#'
+#' @param spectrum
+#' Spectrum object. Only required if `x` is a decon0 object.
+#'
+#' @param sfr
+#' Signal free region. Only required if `x` is a decon0 object and element
+#' signal_free_region` is missing.
+#'
+#' @param wshw Water signal region. Only required if `x` is a decon0 object and
+#' element `range_water_signal_ppm` is missing.
+#'
+#' @param bwc Level of backwards compatibity. If `bwc == 0`, bug fixes
+#' introduced after version 0.2.2 of Metabodecon are not used. If `bwc == 1`,
+#' new features introduced after version 0.2.2 of Metabodecon (e.g. faster
+#' algorithms) are not used. If `bwc == 2`, all bug fixes and features
+#' introduced after version 0.2.2 are used. Support for `bwc == 0` will be
+#' removed in 'metabodecon v2.0'.
 #'
 #' @return An object of the specified class.
 #'
@@ -100,10 +125,16 @@ as_decon0 <- function(x, sf = NULL, spectrum = NULL) {
 
 #' @export
 #' @rdname as_metabodecon_class
-as_decon1 <- function(x, sf = c(1e3, 1e6), spectrum  = NULL, bwc = 2) {
+as_decon1 <- function(x,
+                      sf = c(1e3, 1e6),
+                      spectrum  = NULL,
+                      sfr = NULL,
+                      wshw = NULL,
+                      bwc = 2) {
     if (is_decon0(x)) {
         if (is.null(sf)) stop("Please provide `sf`")
         if (is.null(spectrum)) stop("Please provide `spectrum`")
+        # Define some shorthands
         fq <- spectrum$meta$fq
         si <- spectrum$si
         ssp <- as.numeric(x$spectrum_superposition)
@@ -112,10 +143,22 @@ as_decon1 <- function(x, sf = c(1e3, 1e6), spectrum  = NULL, bwc = 2) {
         dp <- round(x$x_values * sf[1])
         ppm_nstep <- diff(range(ppm)) / (length(ppm))
         y <- x
+        # Append optional elements if missing
+        if (is.null(x[["signal_free_region"]])) {
+            if (is.null(sfr)) stop("Please provide `sfr`")
+            y[["signal_free_region"]] <- sfr_in_sdp_bwc(sfr, ppm, sf)
+        }
+        if (is.null(x[["range_water_signal_ppm"]])) {
+            if (is.null(wshw)) stop("Please provide `wshw`")
+            y[["range_water_signal_ppm"]] <- wshw
+        }
+        # Make sure elements are in correct order
+        y <- y[decon0_members]
+        # Calculate decon1 elements
         y$y_values_raw <- si
         y$x_values_hz <- fq
         y$mse_normed_raw <- mean(((si / sum(si)) - (ssp / sum(ssp)))^2)
-        y$signal_free_region_ppm <- sfr_in_ppm_bwc(x$signal_free_region, sdp, ppm)
+        y$signal_free_region_ppm <- sfr %||% sfr_in_ppm_bwc(x[["signal_free_region"]], sdp, ppm)
         y$x_0_hz <- convert_pos(x$x_0, sdp, fq)
         y$x_0_dp <- convert_pos(x$x_0, sdp, dp)
         y$x_0_ppm <- convert_pos(x$x_0, sdp, ppm)
@@ -488,6 +531,13 @@ decon0_members <- c(
     "lambda",
     "x_0"
 )
+
+decon0_members_optional <- c(
+    "signal_free_region",
+    "range_water_signal_ppm"
+)
+
+decon0_members_mandatory <- setdiff(decon0_members, decon0_members_optional)
 
 decon1_members <- c(
     decon0_members,

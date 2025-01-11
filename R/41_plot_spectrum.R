@@ -283,15 +283,17 @@ plot_spectrum <- function(x,
 draw_spectrum <- function(
     obj,
     foc_rgn  = NULL,   foc_frac = NULL,   foc_only = TRUE,
-    add      = FALSE,  fig_rgn  = NULL,   mar      = c(4.1, 5.1, 0.1, 0.1),
-    main     = NULL,   show_d2  = FALSE,  show     = TRUE,
-    lgd      = list(),
-    si_line  = list(), sm_line  = list(), lc_lines = list(),
-    sp_line  = list(), d2_line  = list(),
+    add      = FALSE,  fig_rgn  = NULL,   main     = NULL,
+    show     = TRUE,   show_d2  = FALSE,  truepar  = NULL,
+    mar      = c(4.1, 5.1, .1, .1),
+    si_line  = list(), sm_line  = list(), sp_line  = list(),
+    d2_line  = list(), lc_lines = list(), tp_lines = list(),
     cent_pts = list(), bord_pts = list(), norm_pts = list(),
-    bg_rect  = list(), foc_rect = list(), lc_rects = list(),
-    bt_axis  = list(), lt_axis  = list(), tp_axis  = list(),
-    rt_axis  = list())
+    bg_rect  = list(), foc_rect = list(), lc_rects = list(), tp_rects = list(),
+    bt_axis  = list(), lt_axis  = list(), tp_axis  = list(), rt_axis  = list(),
+    tp_verts = list(), lc_verts = list(),
+    lgd      = list()
+    )
 {
 
     # Check and enrich inputs (278us)
@@ -331,7 +333,7 @@ draw_spectrum <- function(
     # Get xy values over all data points (13us)
     cs <- cs_all <- obj$cs
     si <- si_all <- obj$si
-    sm <- sm_all <- obj$sit$sm # NULL for spectra (NFS)
+    sm <- sm_all <- obj$sit$sm # NULL for spectrum objects (NFS)
     d2 <- d2_all <- NULL
     sp <- sp_all <- obj$sit$sup # NFS
     if (!isFALSE(d2_line$show)) {
@@ -343,7 +345,7 @@ draw_spectrum <- function(
         }
     }
 
-    # Get indices of important points relative all data points (611us)
+    # Get indices of important points relative to all data points (611us)
     idp <- idp_all <- seq_along(cs_all) # Data points
     icp <- icp_all <- obj$peak$center # Center points (NFS)
     ibp <- ibp_all <- unique(sort(c(obj$peak$left, obj$peak$right))) # Border points (NFS)
@@ -351,13 +353,24 @@ draw_spectrum <- function(
     inp <- inp_all <- setdiff(idp_all, ipp_all) # Nonpeak points (NFS)
     ifp <- ifp_all <- which(cs_all >= min(foc_rgn) & cs_all <= max(foc_rgn)) # Focus points
 
-    # Get lorentz parameters across all data points (8us)
-    n0vec  <- numeric(0)
-    n0df   <- data.frame(x0 = n0vec, A = n0vec, lambda = n0vec)
-    lcpar  <- lcpar_all  <- obj$lcpar %||% n0df # (NFS)
-    x0     <- x0_all     <- lcpar_all$x0 %||% n0df # (NFS)
-    A      <- A_all      <- lcpar_all$A %||% n0df # (NFS)
-    lambda <- lambda_all <- lcpar_all$lambda %||% n0df # (NFS)
+    # Get estimated lorentz parameters across all data points (8us)
+    n0vec   <- numeric(0)
+    n0df    <- data.frame(x0 = n0vec, A = n0vec, lambda = n0vec)
+    lcpar   <- lcpar_all  <- obj$lcpar %||% n0df # (NFS)
+    x0      <- x0_all     <- lcpar_all$x0 %||% n0df # (NFS)
+    A       <- A_all      <- lcpar_all$A %||% n0df # (NFS)
+    lambda  <- lambda_all <- lcpar_all$lambda %||% n0df # (NFS)
+
+    # Get true lorentz parameters across all data points
+    truepar <- truepar %||% obj$meta$simpar
+    if (is.null(truepar)) {
+        tp_rects$show <- FALSE
+        tp_lines$show <- FALSE
+        tp_vertsshow <- FALSE
+        trpar <- trpar_all <- data.frame(x0 = numeric(0), A = numeric(0), lambda = numeric(0))
+    } else {
+        trpar <- trpar_all <- as.data.frame(truepar[c("x0", "A", "lambda")])
+    }
 
     # Get indices of important points relative to the vector of focus points (198us)
     if (foc_only) {
@@ -378,7 +391,7 @@ draw_spectrum <- function(
         sp <- sp_foc <- sp_all[ifp_all]
     }
 
-    # Get lorentzians affecting focus region (239us)
+    # Get estimated lorentzians affecting focus region (239us)
     if (foc_only) {
         y_foc_rgn_start   <- lorentz(x = min(foc_rgn), lcpar = lcpar_all)
         y_foc_rgn_end     <- lorentz(x = max(foc_rgn), lcpar = lcpar_all)
@@ -390,6 +403,17 @@ draw_spectrum <- function(
         x0     <- x0_foc     <- x0_all[affects_foc]
         A      <- A_foc      <- A_all[affects_foc]
         lambda <- lambda_foc <- lambda_all[affects_foc]
+    }
+
+    # Get true lorentzians affecting focus region (8us)
+    if (foc_only) {
+        y_foc_rgn_start    <- lorentz(x = min(foc_rgn), lcpar = trpar_all)
+        y_foc_rgn_end      <- lorentz(x = max(foc_rgn), lcpar = trpar_all)
+        y_tresh            <- 0.001 * diff(range(si))
+        high_y_in_foc_rgn  <- y_foc_rgn_start > y_tresh | y_foc_rgn_end > y_tresh
+        x0_in_foc          <- trpar$x0 > min(foc_rgn) & trpar$x0 < max(foc_rgn)
+        affects_foc        <- high_y_in_foc_rgn | x0_in_foc
+        trpar <- trpar_foc <- trpar_all[affects_foc, ]
     }
 
     # Get x and y limits (43us)
@@ -410,10 +434,14 @@ draw_spectrum <- function(
     # Do the actual drawing
     plot_empty(xlim, ylim, main = main)
     draw_rect(xlim, ylim, bg_rect)
+    apply(trpar, 1, draw_lc_rect, cs, tp_rects, ymin) # 3ms
     apply(lcpar, 1, draw_lc_rect, cs, lc_rects, ymin) # 3ms
+    apply(trpar, 1, draw_lc_line, cs, tp_lines, ythresh) # 13ms
     apply(lcpar, 1, draw_lc_line, cs, lc_lines, ythresh) # 13ms
     draw_line(cs, si, si_line)
     draw_line(cs, sm, sm_line)
+    draw_verts(trpar$x0, tp_verts)
+    draw_verts(lcpar$x0, lc_verts)
     draw_points(cs[icp], sm[icp], cent_pts)
     draw_points(cs[ibp], sm[ibp], bord_pts)
     draw_points(cs[inp], sm[inp], norm_pts)
@@ -539,6 +567,12 @@ draw_line <- function(x, y, args = list()) {
     do.call(lines, args)
 }
 
+draw_verts <- function(v, args = list()) {
+    if (isFALSE(pop(args, "show"))) return()
+    args$v <- v
+    do.call(abline, args)
+}
+
 draw_points <- function(x, y, args = list()) {
     if (isFALSE(pop(args, "show"))) return()
     args$x <- x
@@ -631,22 +665,26 @@ get_ds_def_args <- function(show_d2 = FALSE, foc_only = TRUE) {
     ylab <- if (show_si) "Signal Intensity [au] / 1e6" else "Second Derivative / 1e6"
     lgdx <- if (show_si) "topright" else "bottomright"
     list(
-        lgd      = list(show = TRUE, x = lgdx, bg = "white"),
-        d2_line  = list(show = show_d2),
-        si_line  = list(show = show_si, col = "black"),
-        sm_line  = list(show = show_si, col = "blue"),
-        sp_line  = list(show = show_si, col = "red"),
-        lc_lines = list(show = show_si && foc_only, col = "grey"),
-        cent_pts = list(show = show_si && foc_only, col = "blue", pch = 124),
-        bord_pts = list(show = show_si && foc_only, col = "blue", pch = 124),
-        norm_pts = list(show = FALSE, col = "black", pch = 124),
-        bg_rect  = list(show = TRUE, col = "white"),
-        foc_rect = list(show = TRUE, col = transp("yellow")),
-        lc_rects = list(show = show_si, col = transp("black"), border = NA),
-        bt_axis  = list(show = TRUE, text = "Chemical Shift [ppm]"),
-        lt_axis  = list(show = TRUE, text = ylab, sf = 1e6, las  = 1),
-        tp_axis  = list(show = FALSE),
-        rt_axis  = list(show = FALSE)
+        lgd       = list(show = TRUE, x = lgdx, bg = "white"),
+        d2_line   = list(show = show_d2),
+        si_line   = list(show = show_si, col = "black"),
+        sm_line   = list(show = show_si, col = "blue"),
+        sp_line   = list(show = show_si, col = "red"),
+        lc_lines  = list(show = show_si && foc_only, col = "darkgrey"),
+        tp_lines  = list(show = FALSE, col = "darkgreen"),
+        tp_verts  = list(show = FALSE, col = "darkgreen"),
+        lc_verts  = list(show = FALSE, col = "darkgrey"),
+        cent_pts  = list(show = show_si && foc_only, col = "blue", bg = "blue", pch = 24),
+        bord_pts  = list(show = FALSE, col = "blue", pch = 124),
+        norm_pts  = list(show = FALSE, col = "black", pch = 124),
+        bg_rect   = list(show = TRUE, col = "white"),
+        foc_rect  = list(show = TRUE, col = transp("yellow")),
+        lc_rects  = list(show = FALSE, col = transp("black"), border = NA),
+        tp_rects  = list(show = FALSE, col = transp("darkgreen", 0.12), border = NA),
+        bt_axis   = list(show = TRUE, text = "Chemical Shift [ppm]"),
+        lt_axis   = list(show = TRUE, text = ylab, sf = 1e6, las  = 1),
+        tp_axis   = list(show = FALSE),
+        rt_axis   = list(show = FALSE)
     )
 }
 

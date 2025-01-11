@@ -92,6 +92,11 @@ in_hz <- function(cs, fqref) {
 #' datapoints.
 #' @details See 'CHECK-2: Signal free region (SFR) calculation' in `TODOS.md`.
 sfr_in_ppm_bwc <- function(sfr_sdp, sdp, ppm) {
+    stopifnot(
+        is.numeric(sfr_sdp), length(sfr_sdp) == 2,
+        is.numeric(sdp), length(sdp) >= 5,
+        is.numeric(ppm), length(ppm) == length(sdp)
+    )
     n <- length(sdp)
     sdp_step <- diff(range(sdp)) / (n - 1)
     sdp_nstep <- diff(range(sdp)) / n

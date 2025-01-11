@@ -416,10 +416,10 @@ expect_str <- function(obj, expected_str, ...) {
 #' calc_prarp(decon, truepar)
 #' plot_prarp(decon, truepar)
 #'
-calc_prarp <- function(x,
-                       spectrum = NULL,
-                       obj = as_decon2(x, spectrum = spectrum),
-                       truepar = obj$meta$simpar) {
+calc_prarp <- function(x, truepar = NULL, ...) {
+
+    obj <- as_decon2(x, ...)
+    truepar <- truepar %||% obj$meta$simpar
 
     x0_true <- truepar$x0
     x0_found <- obj$lcpar$x0

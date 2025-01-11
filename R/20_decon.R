@@ -203,6 +203,7 @@ generate_lorentz_curves <- function(data_path,
     )
 
     # Convert, store and return
+    if (verbose) logf("Formatting deconvolution results as 'decon1' objects")
     decons1 <- as_decons1(idecons)
     store_as_rds(decons1, make_rds, data_path)
     if (length(decons1) == 1) decons1[[1]] else decons1
@@ -302,8 +303,7 @@ deconvolute_ispec <- function(ispec,
     ispec$args <- args[names(args) != "ispec"]
     reps <- smopts[1]
     k <- smopts[2]
-    opts <- if (!verbose) options(toscutil.logf.file = nullfile())
-    on.exit(options(opts), add = TRUE)
+    if (isFALSE(verbose)) local_options(toscutil.logf.file = nullfile())
 
     # Deconvolute ispec
     logf("Starting deconvolution of %s", ispec$name)
