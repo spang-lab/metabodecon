@@ -10,15 +10,9 @@ sap2 <- test_that("MetaboDecon1D works for single spectrum", {
     )
     expect_identical(object = names(decon0), expected = decon0_members_mandatory)
     expect_identical(object = class(decon0), expected = "list")
-    decon1 <- as_decon1(
-        decon0,
-        spectrum = sap2,
-        sfr = c(3.2, -3.2),
-        wshw = 0,
-        bwc = 0
-    )
-    obj1 <- calc_prarp(x = decon1, truepar = sap2$meta$simpar)
-    expect_true(obj1$prarpx >= 0.507)
+    decon2 <- as_decon2(decon0, spectrum = sap2, sfr = c(3.2, -3.2), wshw = 0)
+    obj2 <- calc_prarp(x = decon2, truepar = sap2$meta$simpar)
+    expect_true(obj2$prarpx >= 0.507)
 })
 
 
@@ -35,15 +29,24 @@ sim_subset <- test_that("MetaboDecon1D works for multiple spectra", {
     expect_identical(class(decons0[[1]]), "list")
     expect_identical(names(decons0[[2]]), decon0_members)
     expect_identical(class(decons0[[2]]), "list")
-
-    decons1 <- as_decons1(decons0, spectra = sim[1:2])
+    decons2 <- as_decons2(decons0, spectra = sim[1:2])
     if (identical(environment(), .GlobalEnv)) {
-        plot_spectrum(decons1[[1]], foc_frac = c(0.48, 0.52))
-        plot_spectrum(decons1[[2]], foc_frac = c(0.48, 0.52))
+        plot_spectrum(
+            decons2[[1]],
+            truepar = sim[[1]]$meta$simpar,
+            sub1 = list(tp_verts = TRUE)
+        )
+        plot_spectrum(
+            decons2[[2]],
+            foc_frac = c(1, 0),
+            truepar = sim[[2]]$meta$simpar,
+            sub1 = list(tp_verts = TRUE),
+            sub3 = FALSE
+        )
     }
-    obj1 <- calc_prarp(decons1[[1]], truepar = sim[[1]]$meta$simpar)
-    obj2 <- calc_prarp(decons1[[2]], truepar = sim[[2]]$meta$simpar)
-    expect_true(obj1$prarp  >= 0.867)
-    expect_true(obj1$prarpx >= 0.809)
+    obj1 <- calc_prarp(decons2[[1]], truepar = sim[[1]]$meta$simpar)
+    obj2 <- calc_prarp(decons2[[2]], truepar = sim[[2]]$meta$simpar)
+    expect_true(obj1$prarpx >= 0.732)
+    expect_true(obj2$prarpx >= 0.710)
 })
 

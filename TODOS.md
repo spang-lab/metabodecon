@@ -6,11 +6,11 @@
 
 Write testcases for the following functions that test for a good PRARP as well as for the correct return type:
 
-- [ ] `MetaboDecon1D()`
-- [ ] `deconvolute()`
-- [ ] `generate_lorentz_curves()`
-- [ ] `deconvolute_ispec()`
-- [ ] `deconvolute_ispecs()`
+- [x] `MetaboDecon1D()`
+- [x] `generate_lorentz_curves()`
+- [x] `deconvolute()`
+- [x] `deconvolute_ispec()`
+- [x] `deconvolute_ispecs()`
 
 ### REFACTOR-12: Write compliance tests
 

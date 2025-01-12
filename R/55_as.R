@@ -279,7 +279,12 @@ as_decon1 <- function(x,
 
 #' @export
 #' @rdname as_metabodecon_class
-as_decon2 <- function(x, spectrum  = NULL) {
+as_decon2 <- function(x,
+                      sf = c(1e3, 1e6),
+                      spectrum = NULL,
+                      sfr = NULL,
+                      wshw = NULL,
+                      bwc = 2) {
     if (is_decon2(x)) {
         return(x)
     } else if (is_decon1(x)) {
@@ -323,6 +328,9 @@ as_decon2 <- function(x, spectrum  = NULL) {
             sm = mse(sit$sm, sit$sup, normed = FALSE),
             smnorm = x$mse_normed
         )
+    } else if (is_decon0(x)) {
+        x <- as_decon1(x, sf, spectrum, sfr, wshw, bwc)
+        return(as_decon2(x))
     } else if (is_idecon(x)) {
         cs <- x$ppm
         si <- x$y_raw
@@ -350,10 +358,6 @@ as_decon2 <- function(x, spectrum  = NULL) {
             sm = mse(sit$sm, sit$sup, normed = FALSE),
             smnorm = mse(sit$sm, sit$sup, normed = TRUE)
         )
-    } else if (is_decon0(x)) {
-        if (is.null(spectrum)) stop("Please provide `spectrum`")
-        x <- as_decon1(x, spectrum = spectrum)
-        return(as_decon2(x))
     } else {
         stop(sprintf("Converting %s to decon2 is not supported", class(x)[1]))
     }
@@ -425,22 +429,13 @@ as_idecons <- function(x) {
 
 #' @export
 #' @rdname as_metabodecon_class
-as_decons1 <- function(x, sf = c(1e3, 1e6), spectra = NULL) {
-    if (is_decons1(x)) return(x)
-    stopifnot(is_decons0(x) || is_idecons(x))
-    decons1 <- structure(vector("list", length(x)), class = "decons1")
-    names(decons1) <- names(x)
-    for (i in seq_along(x)) {
-        decons1[[i]] <- as_decon1(x[[i]], sf = sf, spectrum = spectra[[i]])
-    }
-    for (i in seq_along(decons1)) decons1[[i]]$number_of_files <- length(decons1)
-    decons1
-}
-
-as_decons0 <- function(x, sf = c(1e3, 1e6), spectra = list(NULL)) {
+as_decons0 <- function(x,
+                       sfs = list(c(1e3, 1e6)),
+                       spectra = list(NULL),
+                       nworkers = 1) {
+    stopifnot(is_decons0(x) || is_decons1(x) || is_decons2(x) || is_idecons(x))
     if (is_decons0(x)) return(x)
-    stopifnot(is_decons1(x) || is_decons2(x) || is_idecons(x))
-    decons0 <- mapply(as_decon0, x, list(sf), spectra, SIMPLIFY = FALSE)
+    decons0 <- mcmapply(as_decon0, x, sfs, spectra, nw = nworkers)
     n <- length(decons0)
     for (i in seq_len(n)) decons0[[i]]$number_of_files <- n
     decons0
@@ -448,10 +443,16 @@ as_decons0 <- function(x, sf = c(1e3, 1e6), spectra = list(NULL)) {
 
 #' @export
 #' @rdname as_metabodecon_class
-as_decons1 <- function(x, sf = c(1e3, 1e6), spectra = list(NULL)) {
+as_decons1 <- function(x,
+                       sfs = list(c(1e3, 1e6)),
+                       spectra = list(NULL),
+                       sfrs = list(NULL),
+                       wshws = list(NULL),
+                       bwc = 2,
+                       nworkers = 1) {
+    stopifnot(is_decons0(x) || is_decons1(x) || is_decons2(x) || is_idecons(x))
     if (is_decons1(x)) return(x)
-    stopifnot(is_decons0(x) || is_idecons(x))
-    decons1 <- mapply(as_decon1, x, list(sf), spectra, SIMPLIFY = FALSE)
+    decons1 <- mcmapply(as_decon1, x, sfs, spectra, sfrs, wshws, bwc, nw = nworkers)
     class(decons1) <- "decons1"
     n <- length(decons1)
     for (i in seq_len(n)) decons1[[i]]$number_of_files <- n
@@ -460,9 +461,16 @@ as_decons1 <- function(x, sf = c(1e3, 1e6), spectra = list(NULL)) {
 
 #' @export
 #' @rdname as_metabodecon_class
-as_decons2 <- function(x) {
+as_decons2 <- function(x,
+                       sfs = list(c(1e3, 1e6)),
+                       spectra = list(NULL),
+                       sfrs = list(NULL),
+                       wshws = list(NULL),
+                       bwc = 2,
+                       nworkers = 1) {
+    stopifnot(is_decons0(x) || is_decons1(x) || is_decons2(x) || is_idecons(x))
     if (is_decons2(x)) return(x)
-    decons2 <- lapply(x, as_decon2)
+    decons2 <- mcmapply(as_decon2, x, sfs, spectra, sfrs, wshws, bwc, nw = nworkers)
     names(decons2) <- names(x)
     class(decons2) <- "decons2"
     decons2
@@ -537,7 +545,10 @@ decon0_members_optional <- c(
     "range_water_signal_ppm"
 )
 
-decon0_members_mandatory <- setdiff(decon0_members, decon0_members_optional)
+decon0_members_mandatory <- setdiff(
+    decon0_members,
+    decon0_members_optional
+)
 
 decon1_members <- c(
     decon0_members,

@@ -1,20 +1,27 @@
-check_prarp <- test_that("deconvolute_ispecs works", {
-    xx <- deconvolute(sim[1:2], sfr = c(3.55, 3.35))
+sap2 <- test_that("deconvolute works for single spectrum", {
+    decon2 <- deconvolute(sap2, nfit = 3, sfr = c(3.2, -3.2), smopts = c(1, 3), delta = 3)
+    expect_identical(object = names(decon2), expected = decon2_members)
+    expect_identical(object = class(decon2), expected = "decon2")
+    obj2 <- calc_prarp(x = decon2, truepar = sap2$meta$simpar)
+    expect_true(obj2$prarpx >= 0.961) # MetaboDecon1D has a PRARPX of 0.507. See test-MetaboDecon1d.R.
+})
 
-    obj1 <- calc_prarp(xx[[1]], truepar = sim[[1]]$meta$simpar)
-    expect_true(obj$prarp > 0.84)
-    expect_true(obj$prarpx >= 0.78)
+sim_subset <- test_that("deconvolute works for multiple spectra", {
+    decons2 <- deconvolute(x = sim[1:2], nfit = 3, sfr = c(3.55, 3.35), wshw = 0)
+    expect_identical(class(decons2), "decons2")
+    expect_identical(class(decons2[[1]]), "decon2")
+    expect_identical(class(decons2[[2]]), "decon2")
+    expect_identical(names(decons2), c("sim_01", "sim_02"))
+    expect_identical(names(decons2[[1]]), decon2_members)
+    expect_identical(names(decons2[[2]]), decon2_members)
+    obj1 <- calc_prarp(decons2[[1]], truepar = sim[[1]]$meta$simpar)
+    obj2 <- calc_prarp(decons2[[2]], truepar = sim[[2]]$meta$simpar)
+    expect_true(obj1$prarpx >= 0.777) # MetaboDecon1D has a PRARPX of 0.732. See test-MetaboDecon1d.R.
+    expect_true(obj2$prarpx >= 0.750) # MetaboDecon1D has a PRARPX of 0.710. See test-MetaboDecon1d.R.
+})
 
-    truepars <- lapply(sim[1:2], function(x) x$meta$simpar)
-    prarp_objs <- mapply(calc_prarp, xx, truepars, SIMPLIFY = FALSE)
-    prarpxs <- lapply(prarp_objs, function(obj) obj$prarpx)
-    expect_true(all(prarpxs > 0.7))
-    expect_equal(class(xx), "decons2")
-    expect_equal(length(xx), 2)
-
-
-    if (identical(environment(), .GlobalEnv)) {
-        plot_spectrum(xx[[1]])
-        plot_spectrum(xx[[2]])
-    }
+wrong_sfr <- test_that("deconvolute works when no peaks are filtered out", {
+    x <- simulate_spectrum(ndp = 256, npk = 3)
+    expect_error(deconvolute(x, sfr = c(Inf, -Inf), smopts = c(0, 3)))
+    deconForc <- deconvolute(x, sfr = c(Inf, -Inf), smopts = c(0, 3), force = TRUE)
 })

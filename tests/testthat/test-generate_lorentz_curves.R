@@ -6,44 +6,44 @@
 # currently only accounts for bruker-type errors of MetaboDecon1D, but not
 # jcampdx errors.
 
-single_spectrum <- test_that("GLC works for a single spectrum", {
-    x <- generate_lorentz_curves(
-        data_path = sim[[1]],
+sap2 <- test_that("GLC works for single spectrum", {
+    decon1 <- generate_lorentz_curves(
+        data_path = sap2,
         nfit = 3,
-        sfr = c(3.55, 3.35),
+        sfr = c(3.2, -3.2),
         wshw = 0,
+        smopts = c(1, 3),
+        delta = 3,
         ask = FALSE,
         verbose = FALSE
     )
-    expect_identical(object = names(x), expected = decon1_members)
-    expect_identical(object = class(x), expected = "decon1")
-    obj <- calc_prarp(x, truepar = sim[[1]]$meta$simpar)
-    expect_true(obj$prarp  >= 0.836)
-    expect_true(obj$prarpx >= 0.779)
+    expect_identical(object = names(decon1), expected = decon1_members)
+    expect_identical(object = class(decon1), expected = "decon1")
+    decon2 <- as_decon2(decon1, spectrum = sap2, sfr = c(3.2, -3.2), wshw = 0)
+    obj2 <- calc_prarp(x = decon2, truepar = sap2$meta$simpar)
+    expect_true(obj2$prarpx >= 0.961) # MetaboDecon1D has a PRARPX of 0.507. See test-MetaboDecon1d.R.
 })
 
-bruker_folder <- test_that("GLC works for a folder with bruker spectra", {
-    data_path <- metabodecon_file("bruker/sim_subset")
-    x <- generate_lorentz_curves(
-        data_path,
+sim_subset <- test_that("MetaboDecon1D works for multiple spectra", {
+    decons1 <- generate_lorentz_curves(
+        data_path = sim[1:2],
         nfit = 3,
         sfr = c(3.55, 3.35),
         wshw = 0,
         ask = FALSE,
         verbose = FALSE
     )
-    expect_identical(object = names(x), expected = c("sim_01", "sim_02"))
-    expect_identical(object = class(x), expected = "decons1")
-    expect_identical(object = class(x$sim_01), expected = "decon1")
-    expect_identical(object = class(x$sim_02), expected = "decon1")
-
-    obj1 <- calc_prarp(x$sim_01, truepar = sim[[1]]$meta$simpar)
-    expect_true(obj1$prarp  >= 0.836)
-    expect_true(obj1$prarpx >= 0.779)
-
-    obj2 <- calc_prarp(x$sim_02, truepar = sim[[2]]$meta$simpar)
-    expect_true(obj2$prarp  >= 0.908)
-    expect_true(obj2$prarpx >= 0.709)
+    expect_identical(names(decons1), c("sim_01", "sim_02"))
+    expect_identical(class(decons1), "decons1")
+    expect_identical(names(decons1[[1]]), decon1_members)
+    expect_identical(class(decons1[[1]]), "decon1")
+    expect_identical(names(decons1[[2]]), decon1_members)
+    expect_identical(class(decons1[[2]]), "decon1")
+    decons2 <- as_decons2(decons1, spectra = sim[1:2])
+    obj1 <- calc_prarp(decons2[[1]], truepar = sim[[1]]$meta$simpar)
+    obj2 <- calc_prarp(decons2[[2]], truepar = sim[[2]]$meta$simpar)
+    expect_true(obj1$prarpx >= 0.777) # MetaboDecon1D has a PRARPX of 0.732. See test-MetaboDecon1d.R.
+    expect_true(obj2$prarpx >= 0.750) # MetaboDecon1D has a PRARPX of 0.710. See test-MetaboDecon1d.R.
 })
 
 wrong_sfr <- test_that("GLC works when no peaks are filtered out", {
@@ -69,16 +69,3 @@ wrong_sfr <- test_that("GLC works when no peaks are filtered out", {
     )
     expect_identical(length(decon), 32L)
 })
-
-broken_A <- simulate_spectrum(
-    # TODO: deconvolute this spectrum and check whether we get A's with
-    # different signs (I think so.) If yes, fix this. Mixed signs in A (and
-    # lambda) should not be possible!
-    "sap",
-    cs     = seq(0.5, -0.5, by = -0.1),
-    x0     = c(0.2),
-    A      = 2000,
-    lambda = 0.08,
-    noise  = c(0, 0, 0, 0, 0, 5000, 0, 1000, 0, 0, 0),
-    fqref  = 6e8
-)

@@ -364,9 +364,11 @@ draw_spectrum <- function(
     # Get true lorentz parameters across all data points
     truepar <- truepar %||% obj$meta$simpar
     if (is.null(truepar)) {
+        warnmsg <- "True params missing. Provide 'truepar' or unset 'tp_*' arguments."
+        if (any(tp_rects$show, tp_lines$show, tp_verts$show)) warning(warnmsg, call. = FALSE)
         tp_rects$show <- FALSE
         tp_lines$show <- FALSE
-        tp_vertsshow <- FALSE
+        tp_verts$show <- FALSE
         trpar <- trpar_all <- data.frame(x0 = numeric(0), A = numeric(0), lambda = numeric(0))
     } else {
         trpar <- trpar_all <- as.data.frame(truepar[c("x0", "A", "lambda")])

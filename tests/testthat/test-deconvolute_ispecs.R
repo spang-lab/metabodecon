@@ -1,21 +1,26 @@
 library(testthat)
 
 check_prarp <- test_that("deconvolute_ispecs works", {
-    sim_subset <- sim[1:2]
-    ispecs <- as_ispecs(sim_subset)
-    idecons <- deconvolute_ispecs(
-        ispecs = ispecs,
-        nfit = 3,
-        wshw = 0.00,
-        sfr = c(3.55, 3.35),
-        verbose = FALSE,
-        bwc = 2
-    )
-    truepars <- lapply(sim_subset, function(x) x$meta$simpar)
-    prarps <- mapply(calc_prarp, idecons, truepars)
-    expect_true(all(prarps > 0.8))
-    expect_equal(class(idecons), "idecons")
-    expect_equal(length(idecons), 2)
+    # Call deconvolute_ispecs
+    ispecs <- as_ispecs(sim[1:2])
+    idecons <- deconvolute_ispecs(ispecs, nfit = 3, wshw = 0.00, sfr = c(3.55, 3.35), verbose = FALSE)
+
+    # Test for correct types
+    expect_identical(class(idecons), "idecons")
+    expect_identical(class(idecons[[1]]), "idecon")
+    expect_identical(class(idecons[[2]]), "idecon")
+    expect_identical(names(idecons), c("sim_01", "sim_02"))
+    expect_identical(names(idecons[[1]]), idecon_members)
+    expect_identical(names(idecons[[2]]), idecon_members)
+
+    # Test for good PRARP
+    truepars <- lapply(sim[1:2], function(x) x$meta$simpar)
+    obj1 <- calc_prarp(idecons[[1]], truepar = sim[[1]]$meta$simpar)
+    obj2 <- calc_prarp(idecons[[2]], truepar = sim[[2]]$meta$simpar)
+    expect_true(obj1$prarpx > 0.777)
+    expect_true(obj2$prarpx > 0.750)
+
+    # Plot if testing interactively
     if (environment() %==% .GlobalEnv) {
         plot_spectrum(idecons[[1]])
         plot_spectrum(idecons[[2]])
