@@ -2,27 +2,6 @@
 
 ## v1.2.0
 
-### REFACTOR-13: Write PRARP tests
-
-Write testcases for the following functions that test for a good PRARP as well as for the correct return type:
-
-- [x] `MetaboDecon1D()`
-- [x] `generate_lorentz_curves()`
-- [x] `deconvolute()`
-- [x] `deconvolute_ispec()`
-- [x] `deconvolute_ispecs()`
-
-### REFACTOR-12: Write compliance tests
-
-Write testcases for the following functions to check whether they produce results that are compliant with `MetaboDecon1D()`:
-
-- [x] `deconvolute_ispec()`
-- [x] `deconvolute_ispecs()`
-
-### CRAN-7: Check dontrun examples
-
-Remove `dontrun` from examples if they are executable in < 5 sec, or create additionally small toy examples to allow automatic testing in < 5 sec. Reason: `\dontrun{}` should only be used if the example really cannot be executed by the user, e.g. because of missing additional software, missing API keys, etc. That's why wrapping examples in `\dontrun{}` adds the comment ("# Not run:") as a warning for the user. Alternative: You could also replace `\dontrun{}` with `\donttest`, if it takes longer than 5 sec to be executed, but it would be preferable to have automatic checks for functions. Otherwise, you can also write some tests.
-
 ### DOC-1: Document whole package
 
 Document the whole package in vignettes, including chapters about alignment and a short introduction into all datasets.
@@ -679,6 +658,27 @@ See function `check_decon_quality()` for existing code to reuse.
 
 *Done in 2024/10/08 in branch v1.2.0 with commit 1b7b4c1*
 
+### REFACTOR-12: Write compliance tests
+
+Write testcases for the following functions to check whether they produce results that are compliant with `MetaboDecon1D()`:
+
+- [x] `deconvolute_ispec()`
+- [x] `deconvolute_ispecs()`
+
+*Done in 2025/01/13 in branch v1.2.0 with commit 8c4a16b..c6c6e6a*
+
+### REFACTOR-13: Write PRARP tests
+
+Write testcases for the following functions that test for a good PRARP as well as for the correct return type:
+
+- [x] `MetaboDecon1D()`
+- [x] `generate_lorentz_curves()`
+- [x] `deconvolute()`
+- [x] `deconvolute_ispec()`
+- [x] `deconvolute_ispecs()`
+
+*Done in 2025/01/13 in branch v1.2.0 with commit 8c4a16b..c6c6e6a*
+
 ## CRAN
 
 ### CRAN-0: Omit "Functions for" in title
@@ -708,6 +708,12 @@ You have examples for unexported functions. Please either omit these examples or
 ### CRAN-6: Fix vignettes
 
 In addition, we see: "Unexecutable code in vignettes/metabodecon.Rmd": the `#` should be before `"2)"` instead of afterwards, I guess.
+
+### CRAN-7: Check dontrun examples
+
+Remove `dontrun` from examples if they are executable in < 5 sec, or create additionally small toy examples to allow automatic testing in < 5 sec. Reason: `\dontrun{}` should only be used if the example really cannot be executed by the user, e.g. because of missing additional software, missing API keys, etc. That's why wrapping examples in `\dontrun{}` adds the comment ("# Not run:") as a warning for the user. Alternative: You could also replace `\dontrun{}` with `\donttest`, if it takes longer than 5 sec to be executed, but it would be preferable to have automatic checks for functions. Otherwise, you can also write some tests.
+
+*Done in 2025/01/13 in branch v1.2.0 with commit 8c4a16b..c6c6e6a*
 
 ### CRAN-8: Functions should not write to disk by default
 

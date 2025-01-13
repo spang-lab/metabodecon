@@ -318,6 +318,7 @@ skip_if_not_in_globenv <- function() {
 }
 
 
+#' @noRd
 #' @title Check if the size of each file in a directory is within a certain
 #' range
 #' @description Check if the size of each file in a directory is within 90% to
@@ -327,18 +328,15 @@ skip_if_not_in_globenv <- function() {
 #' @param size_exp A named numeric vector where the names are filenames and the
 #' values are the expected file sizes.
 #' @examples
-#' \dontrun{
-#' testdir <- tmpdir()
-#' file.create(file.path(testdir, "file1.txt"))
-#' file.create(file.path(testdir, "file2.txt"))
-#' size_exp <- c(file1.txt = 100, file2.txt = 200)
+#' testdir <- tmpdir("examples/expect_file_size", create = TRUE)
+#' cat("Helloworld\n", file = file.path(testdir, "file1.txt"))
+#' cat("Goodbye\n", file = file.path(testdir, "file2.txt"))
+#' size_exp <- c(file1.txt = 12, file2.txt = 9)
 #' expect_file_size(testdir, size_exp)
-#' }
-#' @noRd
 expect_file_size <- function(testdir, size_exp) {
     paths <- file.path(testdir, names(size_exp))
     size_obs <- file.info(paths)$size
-    file_has_correct_size <- isTRUE(size_obs > size_exp * 0.9 & size_obs < size_exp * 1.1)
+    file_has_correct_size <- size_obs > size_exp * 0.9 & size_obs < size_exp * 1.1
     lapply(seq_along(size_exp), function(i) {
         if (!isTRUE(file_has_correct_size[i])) {
             message(sprintf("Size of %s is %s which is not between %s and %s", paths[i], size_obs[i], size_exp[i] * 0.9, size_exp[i] * 1.1))

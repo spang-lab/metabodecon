@@ -85,14 +85,18 @@
 #' https://doi.org/10.3390/metabo11070452
 #'
 #' @examples
-#' \dontrun{
-#' ## Deprecated since metabodecon v1.0.0. Please use
+#'
+#' ## MetaboDecon1D() is deprecated since metabodecon v1.0.0. Please use
 #' ## generate_lorentz_curves() instead, as shown below.
+#'
+#' # DEPRECATED:
+#' if (interactive()) {
 #' sim <- metabodecon_file("bruker/sim_subset")
 #' sim_decon <- MetaboDecon1D(sim)
 #' sim_01_decon <- MetaboDecon1D(sim, "sim_01")
 #' }
 #'
+#' # RECOMMENDED:
 #' sim <- metabodecon_file("bruker/sim_subset")
 #' sim_decon <- generate_lorentz_curves_sim(sim, ask = FALSE)
 #' sim_01 <- file.path(sim, "sim_01")
