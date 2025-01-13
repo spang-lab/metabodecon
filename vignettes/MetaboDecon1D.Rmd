@@ -9,14 +9,24 @@ vignette: >
 
 # MetaboDecon1D Usage Example
 
-The `MetaboDecon1D` package is the predecessor of this package and can be downloaded from [uni-regensburg.de/medicine/functional-genomics/staff/prof-wolfram-gronwald/software](https://www.uni-regensburg.de/medicine/functional-genomics/staff/prof-wolfram-gronwald/software/index.html). We include this usage example in here so we can easily reference old behaviour and point out added features in `metabodecon`.
+The `MetaboDecon1D` package (v0.2.2) is the predecessor of this package and can
+be downloaded from
+[uni-regensburg.de/medicine/functional-genomics/staff/prof-wolfram-gronwald/software](https://www.uni-regensburg.de/medicine/functional-genomics/staff/prof-wolfram-gronwald/software/index.html).
+We include this usage example in here so we can easily reference old behaviour
+and point out added features in `metabodecon` (v1.x).
 
 ## Install the package
 
-1. Open the following link in your browser: [uni-regensburg.de/medicine/functional-genomics/staff/prof-wolfram-gronwald/software](https://www.uni-regensburg.de/medicine/functional-genomics/staff/prof-wolfram-gronwald/software/index.html)
-2. Click [MetaboDecon1D: An R-package for the Deconvolution and Integration of 1D NMR data](https://genomics.ur.de/software/NMR/MetaboDecon1D/)
-3. Download [MetaboDecon1D_0.2.2.tar.gz](https://genomics.ur.de/software/NMR/MetaboDecon1D/MetaboDecon1D_0.2.2.tar.gz)
-4. Start an R session and enter command `install.packages("C:/Users/tobi/Downloads/MetaboDecon1D_0.2.2.tar.gz", repos = NULL, type = "source")` (replace `C:/Users/tobi/Downloads/MetaboDecon1D_0.2.2.tar.gz` with the path to the downloaded file on your computer)
+1. Open the following link in your browser:
+   [uni-regensburg.de/medicine/functional-genomics/staff/prof-wolfram-gronwald/software](https://www.uni-regensburg.de/medicine/functional-genomics/staff/prof-wolfram-gronwald/software/index.html)
+2. Click [MetaboDecon1D: An R-package for the Deconvolution and Integration of
+   1D NMR data](https://genomics.ur.de/software/NMR/MetaboDecon1D/)
+3. Download
+   [MetaboDecon1D_0.2.2.tar.gz](https://genomics.ur.de/software/NMR/MetaboDecon1D/MetaboDecon1D_0.2.2.tar.gz)
+4. Start an R session and enter command
+   `install.packages("C:/Users/tobi/Downloads/MetaboDecon1D_0.2.2.tar.gz", repos = NULL, type = "source")`
+   (replace `C:/Users/tobi/Downloads/MetaboDecon1D_0.2.2.tar.gz` with the path
+   to the downloaded file on your computer)
 
 <img src="MetaboDecon1D/install/1_website_gronwald_software.png" width="49%" alt="1_website_gronwald_software.png">
 <img src="MetaboDecon1D/install/2_index_gronwald_software.png" width="49%" alt="2_index_gronwald_software.png">

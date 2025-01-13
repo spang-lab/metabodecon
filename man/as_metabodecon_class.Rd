@@ -11,6 +11,7 @@
 \alias{as_spectra}
 \alias{as_ispecs}
 \alias{as_idecons}
+\alias{as_decons0}
 \alias{as_decons1}
 \alias{as_decons2}
 \title{Convert to a Metabodecon Class}
@@ -23,11 +24,25 @@ as_ispec(x, sf = c(1000, 1e+06))
 
 as_idecon(x)
 
-as_decon0(x, sf = NULL, spectrum = NULL)
+as_decon0(x, sf = NULL, spectrum = NULL, optional = TRUE)
 
-as_decon1(x, sf = c(1000, 1e+06), spectrum = NULL)
+as_decon1(
+  x,
+  sf = c(1000, 1e+06),
+  spectrum = NULL,
+  sfr = NULL,
+  wshw = NULL,
+  bwc = 2
+)
 
-as_decon2(x)
+as_decon2(
+  x,
+  sf = c(1000, 1e+06),
+  spectrum = NULL,
+  sfr = NULL,
+  wshw = NULL,
+  bwc = 2
+)
 
 as_spectra(
   x,
@@ -43,11 +58,27 @@ as_ispecs(x, sf = c(1000, 1e+06))
 
 as_idecons(x)
 
-as_decons1(x, sf = c(1000, 1e+06), spectra = list(NULL))
+as_decons0(x, sfs = list(c(1000, 1e+06)), spectra = list(NULL), nworkers = 1)
 
-as_decons1(x, sf = c(1000, 1e+06), spectra = list(NULL))
+as_decons1(
+  x,
+  sfs = list(c(1000, 1e+06)),
+  spectra = list(NULL),
+  sfrs = list(NULL),
+  wshws = list(NULL),
+  bwc = 2,
+  nworkers = 1
+)
 
-as_decons2(x)
+as_decons2(
+  x,
+  sfs = list(c(1000, 1e+06)),
+  spectra = list(NULL),
+  sfrs = list(NULL),
+  wshws = list(NULL),
+  bwc = 2,
+  nworkers = 1
+)
 }
 \arguments{
 \item{cls}{The class to convert to. For details see \link{metabodecon_classes}.}
@@ -55,6 +86,23 @@ as_decons2(x)
 \item{x}{The object to convert.}
 
 \item{...}{Additional arguments passed to the conversion function.}
+
+\item{sf}{Scale factor. Only required if \code{x} is a decon0 object.}
+
+\item{spectrum}{Spectrum object. Only required if \code{x} is a decon0 object.}
+
+\item{sfr}{Signal free region. Only required if \code{x} is a decon0 object and element
+signal_free_region` is missing.}
+
+\item{wshw}{Water signal region. Only required if \code{x} is a decon0 object and
+element \code{range_water_signal_ppm} is missing.}
+
+\item{bwc}{Level of backwards compatibity. If \code{bwc == 0}, bug fixes
+introduced after version 0.2.2 of Metabodecon are not used. If \code{bwc == 1},
+new features introduced after version 0.2.2 of Metabodecon (e.g. faster
+algorithms) are not used. If \code{bwc == 2}, all bug fixes and features
+introduced after version 0.2.2 are used. Support for \code{bwc == 0} will be
+removed in 'metabodecon v2.0'.}
 
 \item{file_format}{The file_format of the spectrum file. E.g. \code{"bruker"} or
 \code{"jcampdx"}.}

@@ -9,9 +9,6 @@ A \href{metabodecon_classes}{spectra} object consisting of 16 \link{spectrum}
 objects, where each spectrum object contains 2048 datapoints ranging from
 3.60 to 3.29 ppm
 }
-\source{
-\url{https://www.who.int/teams/global-tuberculosis-programme/data}
-}
 \usage{
 sim
 }

@@ -1,3 +1,255 @@
+# Public #####
+
+#' @export
+#'
+#' @title Plot Spectrum
+#'
+#' @description
+#' Plot a spectrum and zoom in on a specific region.
+#' `r lifecycle::badge("experimental")`
+#'
+#' @param obj
+#' An object of type spectrum, decon0, decon1 or decon2. For details see
+#' [Metabodecon
+#' Classes](https://spang-lab.github.io/metabodecon/articles/Metabodecon-Classes.html).
+#'
+#' @param foc_rgn
+#' A numeric vector specifying the start and end of the focus region in ppm. If
+#' set to NULL, `foc_frac` is used to determine the focus region. If both
+#' `foc_rgn` and are set to NULL, [get_foc_rgn()] is used to determine a
+#' suitable focus region automatically. Takes precedence over `foc_frac`.
+#'
+#' @param foc_frac
+#' A numeric vector specifying the start and end of the focus region as fraction
+#' of the full spectrum width. Only used if `foc_rgn` is set to NULL.
+#'
+#' @param cnct_show
+#' Logical. If TRUE, connecting lines are drawn between sub figure 1 and the
+#' focus rectangle in sub figure 3.  See 'Details'.
+#'
+#' @param cnct_col
+#' Color of the lines connecting the main and sub figure.
+#'
+#' @param layout
+#' A list with three elements. Each element should be a numeric vector of the
+#' form `c(x1, x2, y1, y2)`. The i'th element gives the borders of the i'th sub
+#' figure in "normalized plot coordinates". Setting an element to NULL will
+#' prevent the corresponding sub figure from being drawn. For a description of
+#' the individual sub figures see 'Details'. For a description of normalized
+#' plot coordinates see [graphics::grconvertX()]. If `layout` is set to `NULL`,
+#' [get_sub_fig_rgns()] is used to determine a suitable layout automatically.
+#'
+#' @param sub1,sub2,sub3
+#' List of arguments passed to [draw_spectrum()] when drawing sub figure
+#' 1-3. See 'Details'.
+#'
+#' @return
+#' NULL. Called for side effect of plotting as sketched in 'Details'.
+#'
+#' @details
+#' This function first calls [plot_empty()] to initalize a new plotting canvas.
+#' After that it calls [draw_spectrum()] multiple times to draw the following sub
+#' figures onto the plotting canvas:
+#'
+#' 1. The signal intensities in the focus region
+#' 2. The second derivative in the focus region
+#' 3. The signal intensities over all datapoints
+#'
+#' The argument lists for the individual calls to [draw_spectrum()] are
+#' determined at runtime and depend on the arguments passed to [plot_spectrum()]
+#' as well as the currently active graphics device. To customize the appearance
+#' of the individual sub plots, you can overwrite each value passed to
+#' [draw_spectrum()] by providing a corresponding named element in `sub1`,
+#' `sub2` or `sub3`.
+#'
+#' A sketch of the resulting figure is shown below.
+#'
+#' ```
+#'  __________________________________________
+#' |        ______________1_____________      |
+#' |       | Sub1: Signal Intensity in  |     |
+#' |       | Focus Region               |     |
+#' |       |             /\             |     |
+#' |       |            /  \            |     |
+#' |       |           /    \  /\       |     |
+#' |     11|          /      \/  \      |7    |
+#' |       |     /\  /            \     |     |
+#' |       |    /  \/              \    |     |
+#' |       |   /                    \   |     |
+#' |       |__/___________0__________\__|     |
+#' |       | Sub2: Second Derivative    |     |
+#' |     11| in Focus Region            |7    |
+#' |       |____________________________|     |
+#' |                      3                   |
+#' |    __________________3_________________  |
+#' |   |  Sub3: Signal Intensity over all   | |
+#' |   |  Datapoints     ________________   | |
+#' | 5 |                | Focus Rectangle|  |1|
+#' |   |     /\         |       /\       |  | |
+#' |   |    /  \        |      /  \/\    |  | |
+#' |   |   /    \   /\  |   /\/      \   |  | |
+#' |   |__/______\_/__\_|__/__________\__|__| |
+#' |______________________5___________________|
+#' ```
+#'
+#' Note that the figure created by `plot_spectrum()` can be part of a
+#' multi-figure configuration as created when setting `mfrow` or `mfcol` via
+#' [par()]. Example:
+#'
+#' ```
+#' _______________________________________
+#'| Plot Spectrum with   | Other Figure  |
+#'| sub3 = TRUE          | Other Figure  |
+#'|      ___________     |  ___________  |
+#'|     | Sub Fig 1 |    | | x      x  | |
+#'|     |___________|    | |      x    | |
+#'|     |_Sub_Fig_2_|    | |      x    | |
+#'|   _________________  | |   x     x | |
+#'|  |    Sub Fig 3    | | |      x    | |
+#'|  |_________________| | |___________| |
+#'|______________________|_______________|
+#'| Some other Figure    | Plot Spectrum |
+#'|                      | sub3 = FALSE  |
+#'|  _________________   |  ___________  |
+#'| |     ___         |  | | Sub Fig 1 | |
+#'| | ___/   \___     |  | |           | |
+#'| |/           \____|  | |___________| |
+#'| |                 |  | | Sub Fig 2 | |
+#'| |_________________|  | |___________| |
+#'|______________________|_______________|
+#' ```
+#'
+#' @examples
+#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+#' ## Prepare a deconvoluted spectrum as input
+#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+#' sim_01 <- metabodecon_file("sim/sim_01")
+#' spec <- read_spectrum(sim_01)
+#' obj <- generate_lorentz_curves_sim(spec)
+#' opar <- par(mfrow = c(2, 2))
+#' on.exit(par(opar))
+#'
+#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+#' ## 1. Plot the full (non-deconvoluted) spectrum
+#' ## 2. Focus on a specific region, specified in ppm
+#' ## 3. Focus on a specific region, specified in as fraction of the full width
+#' ## 4. Change margin, color and position of the focus region
+#' ## 5. Remove connecting lines and fill colors
+#' ## 6. Hide xlab and ylab
+#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+#' plot_spectrum(spec)
+#' plot_spectrum(obj, foc_rgn = c(3.49, 3.45), foc_unit = "ppm")
+#' plot_spectrum(obj, foc_rgn = c(0.40, 0.30))
+#' plot_spectrum(obj,
+#'     sub_mar = c(4, 4, 0, 0),
+#'     rct_fill = rgb(0.9, 0.5, 0.9, alpha = 0.1),
+#'     rct_col = "violet",
+#'     sub_pos = c(x1 = 0.1, x2 = 0.9, y1 = 0.4, y2 = 0.9)
+#' )
+#' plot_spectrum(obj, rct_fill = NULL, sub_fill_col = NULL, cnct_col = NULL)
+#' plot_spectrum(obj, xlab = "", ylab = "", mar = c(2, 2, 0, 1))
+plot_spectrum <- function(x,
+                          ...,
+                          obj = as_v2_obj(x),
+                          foc_frac = get_foc_frac(obj),
+                          foc_rgn = get_foc_rgn(obj, foc_frac),
+                          sub1 = TRUE,
+                          sub2 = FALSE,
+                          sub3 = width(foc_rgn) < width(obj$cs),
+                          mar  = NULL,
+                          frame = FALSE,
+                          con_lines = TRUE)
+{
+    # Parse Inputs
+    dot_args <- if (identical(environment(), globalenv())) list() else list(...)
+    sub1 <- combine(list(show = TRUE), sub1)
+    sub2 <- combine(list(show = FALSE), sub2)
+    sub3 <- combine(list(show = width(foc_rgn) < width(obj$cs)), sub3)
+    frame <- combine(list(show = FALSE), frame)
+    con_lines <- combine(list(show = TRUE), con_lines)
+
+    # Setup Plotting Canvas
+    default_mar_left <- if (sub3$show && any(sub1$show, sub2$show)) 3 else 6
+    default_mar <- c(5, default_mar_left, 2, 2)
+    local_par(mar = mar %||% default_mar)
+    plot_empty()
+
+    # Prepare Sub-Figure Arguments
+    args <- get_sub_fig_args(obj, foc_frac, foc_rgn, sub1, sub2, sub3, dot_args)
+
+    # Draw Sub-Figures
+    fig1 <- do.call(draw_spectrum, args$sub1)
+    fig2 <- do.call(draw_spectrum, args$sub2)
+    fig3 <- do.call(draw_spectrum, args$sub3)
+    figC <- draw_con_lines(fig1 %||% fig2, fig3, con_lines)
+    figF <- draw_box(frame)
+
+    invisible(NULL)
+}
+
+#' @export
+#' @title Plot Spectra
+#'
+#' @description
+#' Plot a set of deconvoluted spectra.
+#'
+#' @param x
+#' An object of type decons0, decons1 or decons2. For details see
+#' [Metabodecon Classes](https://spang-lab.github.io/metabodecon/articles/Metabodecon-Classes.html).
+#'
+#' @param mar A numeric vector of length 4, which specifies the margins of the plot.
+#'
+#' @param peak_rng A numeric vector of length 2, specifying the ppm range across
+#' all peaks of the provided deconvoluted spectra.
+#'
+#' @return
+#' A plot of the deconvoluted spectra.
+#'
+#' @seealso [plot_spectrum()] for a much more sofisticated plotting routine
+#' suitable to plot a single spectrum.
+#'
+#' @examples
+#' decons <- generate_lorentz_curves(
+#'      data_path = sim,
+#'      sfr = c(3.55, 3.35),
+#'      wshw = 0,
+#'      ask = FALSE,
+#'      verbose = FALSE
+#' )
+#' plot_spectra(decons)
+#'
+plot_spectra <- function(x,
+                         mar = c(4.1, 4.1, 1.1, 0.1),
+                         peak_rng = get_ppm_range(x, show = FALSE)) {
+    # CONTINUE HERE: Refactor to:
+    # 1. Use decons_v2 object
+    # 2. Use x$sit$al if available
+    # 3. Else use x$sit$sup if available
+    # 4. Else use x$si
+    x <- as_decons1(x)
+    if (is_decon_list(x)) {
+        xrng <- range(c(sapply(x, function(s) s$x_values_ppm)))
+        ymax <- max(sapply(x, function(s) max(s$y_values)))
+    } else if (is.data.frame(x)) {
+        stop("x must be a list of deconvoluted spectra.")
+    }
+    a <- peak_rng[1]
+    b <- peak_rng[2]
+    w <- (b - a) / 4
+    y8 <- ymax * 0.8
+    cols <- rainbow(length(x))
+    ltxt <- paste("Spectrum", 1:length(x))
+    opar <- par(mar = mar)
+    on.exit(par(opar))
+    plot(x = NA, type = "n", xlim = xrng[2:1], ylim = c(0, ymax), xlab = "Chemical Shift [ppm]", ylab = "Signal Intensity [au]")
+    abline(v = peak_rng, lty = 2)
+    for (i in 1:length(x)) lines(x = x[[i]]$x_values_ppm, y = x[[i]]$y_values, col = cols[i])
+    arrows(x0 = c(a + w, b - w), x1 = c(a, b), y0 = y8, y1 = y8, length = 0.1, lty = 2, col = "black")
+    text(x = mean(c(a, b)), y = y8, labels = "ppm range")
+    mtext(text = round(c(a, b), 4), side = 3, line = 0, at = c(a, b))
+    legend(x = "topright", legend = ltxt, col = cols, lty = 1)
+}
+
 # Internal #####
 
 #' @noRd
@@ -127,262 +379,4 @@ plot_dummy <- function() {
         xlab = "dummy xlab", ylab = "dummy ylab"
     )
     text(0.5, 0.5, "dummy text")
-}
-
-# Helpers #####
-
-#' @noRd
-#'
-#' @title Set Figure Region
-#'
-#' @description
-#' Calling `par(fig=xxyy)` resets the current multi-figure configuration (MFC)
-#' to one row and one column. `set_fig()` handles this scenario, by first
-#' storing the current MFC, then calling `par(fig=xxyy)` and finally returning a
-#' function that can be used to restore the MFC. See 'Details' for further
-#' information.
-#'
-#' @param fig Region to draw into, given as normalized device coordinates.
-#'
-#' @param add If TRUE, the new plot is added to the existing plot.
-#'
-#' @return Function to reset the MFC.
-#'
-#' @details
-#' Note 1: Setting `par(fig=xxyy)` resets the current MFC to one row and one
-#' column. I.e., array layouts defined by setting `mfrow` or `mfcol`, must be
-#' saved before changing `fig` and restored after the plot has been drawn. The
-#' same applies to the current figure number `mfg` (see Note 2).
-#'
-#' Note 2: When restoring `mfg` it's important to additionally advance one
-#' frame, because when querying `mfg`, the "current figure number" is returned,
-#' but when setting `mfg`, the value is interpreted as "next figure number".
-#' I.e. without advancing one frame, the next figure would be drawn into the
-#' spot of the current figure.
-#'
-#' Note 3: If `fig=xxyy` and `add=FALSE`, it is still necessary to use
-#' `par(fig=xxyy, new=TRUE)` to prevent the device from being cleared (which
-#' would be bad in a multi-figure environment). I.e., the figure number must be
-#' advanced manually, as would have been done by a normal plot. This manual
-#' increment must be done before the MFC is reset by `par(fig=xxyy, new=TRUE)`.
-#' @examples
-#' plot_dummy <- function() {
-#'     plot(0, 0, ylim = c(0, 1), xlim = c(0, 1), xaxs = "i", yaxs = "i")
-#'     text(0.5, 0.5, "dummy")
-#' }
-#' p <- local({
-#'     opar <- par(mfrow = c(2, 2), mar = c(2, 2, 0.5, 0.5))
-#'     on.exit(par(opar))
-#'
-#'     topleft <- plot_dummy()
-#'     reset_mfc <- set_fig(fig = c(0.25, 0.50, 0.50, 0.75), add = TRUE)
-#'     topleft2 <- plot_dummy()
-#'     reset_mfc()
-#'
-#'     topright <- plot_dummy()
-#'
-#'     reset_mfc <- set_fig(fig = c(0.1, 0.4, 0.1, 0.4), add = FALSE)
-#'     bottom_left <- plot_dummy()
-#'     reset_mfc()
-#'
-#'     bottom_right <- plot_dummy()
-#' })
-set_fig <- function(fig = NULL, add = TRUE) {
-    if (is.null(fig)) return(function() {}) # Nothing to do if figure region is NULL
-    if (isFALSE(add)) plot_empty() # Advance one frame if `add=FALSE` (Note 3)
-    op <- par(c("mar", "mfrow", "mfcol", "mfg", "fig")) # Store MF conf (Note 1)
-    byrow <- mf_filled_by_row() # Store MF conf (Note 1)
-    par(fig = fig, new = TRUE) # Set new figure region (Note 3)
-    reset_mfc <- function() {
-        if (byrow) par(mfrow = op$mfrow) else par(mfcol = op$mfcol) # Restore MF Layout (Note 1)
-        par(mfg = op$mfg) # Restore current figure number (Note 1)
-        plot_empty() # Advance one frame (Note 2)
-    }
-    reset_mfc
-}
-
-#' @noRd
-#' @title Plot into specific figure region
-#' @description For Details see [set_fig()].
-#' @examples
-#' plot_dummy <- function() {
-#'     plot(0, 0, ylim = c(0, 1), xlim = c(0, 1), xaxs = "i", yaxs = "i")
-#'     text(0.5, 0.5, "dummy")
-#' }
-#' p <- local({
-#'     opar <- par(mfrow = c(2, 2), mar = c(2, 2, 0.5, 0.5))
-#'     on.exit(par(opar))
-#'     topleft <- plot_dummy()
-#'     topleft2 <- with_fig(fig = c(0.25, 0.50, 0.50, 0.75), add = TRUE, plot_dummy())
-#'     topright <- plot_dummy()
-#'     bottom_left <- with_fig(fig = c(0.1, 0.4, 0.1, 0.4), add = FALSE, plot_dummy())
-#'     bottom_right <- plot_dummy()
-#' })
-with_fig <- function(expr, fig = NULL, pos = NULL, add = TRUE) {
-    reset_mfc <- set_fig(fig = fig, add = add)
-    on.exit(reset_mfc())
-    expr
-}
-
-local_fig <- function(fig = NULL, add = TRUE, envir = parent.frame()) {
-  reset_mfc <- set_fig(fig = fig, add = add)
-  defer(reset_mfc(), envir = envir)
-}
-
-#' @noRd
-#' @description
-#' Returns TRUE if the current multi-figure gets filled by row, else FALSE.
-#' @examples
-#' callwith <- function(by_row = TRUE) {
-#'     grid <- c(2, 2)
-#'     opar <- if (by_row) par(mfrow = grid) else par(mfcol = grid)
-#'     on.exit(opar)
-#'     plot(1:10)
-#'     by_row <- mf_filled_by_row()
-#'     plot(1:5)
-#'     by_row
-#' }
-#' x <- callwith(by_row = TRUE)
-#' y <- callwith(by_row = FALSE)
-#' stopifnot(isTRUE(x) && isFALSE(y))
-mf_filled_by_row <- function() {
-    mfg <- par("mfg")
-    row <- mfg[1]
-    col <- mfg[2]
-    nrows <- mfg[3]
-    ncols <- mfg[4]
-    if (nrows == 1 || ncols == 1) {
-        # In this case it doesn't matter, as the figure spots in the grid will
-        # be filled top-to-bottom / left-to-right in both cases.
-        return(TRUE)
-    } else {
-        # We have at least two rows AND two cols. So what we can do is to set
-        # c(1, 1) as next figure, and then advance one frame. If we end up in
-        # c(1, 2) we are row-oriented, if we end up in c(2, 1) we are
-        # column-oriented. After doing this we can reset the current figure
-        # number to the original value.
-        par(mfg = c(1, 1, nrows, ncols))
-        on.exit({
-            par(mfg = mfg) # Reset current figure number
-            plot_empty() # (1)
-            # (1) When querying `mfg` we get the "current figure number". But
-            # when setting it, we set the "next figure number". I.e. we need to
-            # advance one frame, or we would set the "current figure number" as
-            # "next figure number".
-        })
-        plot_empty() # Draw into c(1, 1)
-        plot_empty() # Draw into c(1, 2) or c(2, 1)
-        mfg2 <- par("mfg") # Query current position
-        return(if (mfg2[1] == 1) TRUE else FALSE)
-    }
-}
-
-# Deprecated #####
-
-plot_si_mat <- function(Y = generate_lorentz_curves_sim("bruker/sim"),
-                        lgdcex = "auto",
-                        main = NULL,
-                        mar = par("mar")) {
-    n <- nrow(Y) # Number of Spectra
-    p <- ncol(Y) # Number of Datapoints
-    cols <- rainbow(n) # Colors
-    dpis <- seq_len(p) # Datapoint Indices
-    spis <- seq_len(n) # Spectrum Indices
-    ltxt <- paste("Spectrum", spis)
-    xlab <- "Datapoint Number"
-    ylab <- "Signal Intensity"
-    xlim <- c(1, p)
-    ylim <- c(0, max(Y))
-    args <- named(x = NA, type = "n", xlim, ylim, xlab, ylab)
-    opar <- par(mar = mar)
-    on.exit(par(opar))
-    do.call(plot, args)
-    for (i in spis) lines(x = dpis, y = Y[i, ], col = cols[i])
-    if (lgdcex == "auto") lgdcex <- 1 / max(1, log(n, base = 8))
-    legend(x = "topright", legend = ltxt, col = cols, lty = 1, cex = lgdcex)
-    if (!is.null(main)) title(main = main)
-}
-
-#' @noRd
-#' @title Plots a spectrum simulated with [get_sim_params()]
-#' @param simspec A simulated spectrum as returned by [get_sim_params()].
-#' @examples
-#' simspec <- get_sim_params()
-#' plot_sim_spec(simspec)
-plot_sim_spec <- function(simspec = get_sim_params()) {
-    X <- simspec$X
-    top_ticks <- seq(from = min(X$cs), to = max(X$cs), length.out = 5)
-    top_labels <- round(seq(from = min(X$fq), to = max(X$fq), length.out = 5))
-    line1_text <- sprintf("Name: %s", gsub("blood", "sim", simspec$filename))
-    line2_text <- sprintf("Base: %s ", simspec$filename)
-    line3_text <- sprintf("Range: 3.6-3.4 ppm")
-    plot(
-        x = X$cs, y = X$si_raw * 1e-6, type = "l",
-        xlab = "Chemical Shift [PPM]", ylab = "Signal Intensity [AU]",
-        xlim = c(3.6, 3.4), col = "black"
-    )
-    lines(x = X$cs, y = X$si_smooth, col = "blue")
-    lines(x = X$cs, y = X$si_sim, col = "red")
-    legend(
-        x = "topleft", lty = 1,
-        col = c("black", "blue", "red"),
-        legend = c("Original Raw / 1e6", "Original Smoothed", "Simulated")
-    )
-    axis(3, at = top_ticks, labels = top_labels, cex.axis = 0.75)
-    mtext(sprintf("Frequency [Hz]"), side = 3, line = 2)
-    mtext(line1_text, side = 3, line = -1.1, col = "red", cex = 1, adj = 0.99)
-    mtext(line2_text, side = 3, line = -2.1, col = "red", cex = 1, adj = 0.99)
-    mtext(line3_text, side = 3, line = -3.1, col = "red", cex = 1, adj = 0.99)
-}
-
-plot_spectra <- function(ss = generate_lorentz_curves_sim(),
-                         mar = c(4.1, 4.1, 1.1, 0.1),
-                         peak_rng = get_ppm_range(ss, show = FALSE)) {
-    if (is_decon_obj(ss)) ss <- list(ss)
-    if (is_decon_list(ss)) {
-        xrng <- range(c(sapply(ss, function(s) s$x_values_ppm)))
-        ymax <- max(sapply(ss, function(s) max(s$y_values)))
-    } else if (is.data.frame(ss)) {
-        stop("ss must be a list of deconvoluted spectra.")
-    }
-    a <- peak_rng[1]
-    b <- peak_rng[2]
-    w <- (b - a) / 4
-    y8 <- ymax * 0.8
-    cols <- rainbow(length(ss))
-    ltxt <- paste("Spectrum", 1:length(ss))
-    opar <- par(mar = mar)
-    on.exit(par(opar))
-    plot(x = NA, type = "n", xlim = xrng[2:1], ylim = c(0, ymax), xlab = "Chemical Shift [ppm]", ylab = "Signal Intensity [au]")
-    abline(v = peak_rng, lty = 2)
-    for (i in 1:length(ss)) lines(x = ss[[i]]$x_values_ppm, y = ss[[i]]$y_values, col = cols[i])
-    arrows(x0 = c(a + w, b - w), x1 = c(a, b), y0 = y8, y1 = y8, length = 0.1, lty = 2, col = "black")
-    text(x = mean(c(a, b)), y = y8, labels = "ppm range")
-    mtext(text = round(c(a, b), 4), side = 3, line = 0, at = c(a, b))
-    legend(x = "topright", legend = ltxt, col = cols, lty = 1)
-}
-
-plot_noise_methods <- function(siRND, siSFR, n = 300, start = 5000) {
-    ymin <- min(c(min(siRND), min(siSFR)))
-    ymax <- max(c(max(siRND), max(siSFR)))
-    ylim <- c(ymin, ymax)
-    opar <- par(mfrow = c(5, 1), mar = c(3, 4, 0, 1))
-    on.exit(par(opar), add = TRUE)
-    for (i in 1:5) {
-        redT <- rgb(1, 0, 0, 0.1)
-        bluT <- rgb(0, 0, 1, 0.1)
-        idx <- ((i - 1) * n + 1):(i * n) + start
-        ysiRND <- siRND[idx]
-        ysiSFR <- siSFR[idx]
-        plot(1:n, ysiRND, type = "n", ylim = ylim, ylab = "", xlab = "", xaxt = "n")
-        axis(1, at = seq(1, n, by = 50), labels = idx[seq(1, n, by = 50)])
-        points(1:n, ysiRND, col = "red", pch = 20)
-        points(1:n, ysiSFR, col = "blue", pch = 20)
-        lines(1:n, ysiRND, col = "red")
-        lines(1:n, ysiSFR, col = "blue")
-        lines(1:n, rep(0, n), col = "black", lty = 2)
-        polygon(c(1:n, n:1), c(ysiRND, rep(0, n)), col = redT, border = NA)
-        polygon(c(1:n, n:1), c(ysiSFR, rep(0, n)), col = bluT, border = NA)
-        legend("topleft", NULL, c("RND", "SFR"), col = c("red", "blue"), lty = 1)
-    }
 }

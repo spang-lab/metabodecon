@@ -1,4 +1,4 @@
-# Public API #####
+# Deconvolution #####
 
 #' @export
 #'
@@ -535,6 +535,140 @@ MetaboDecon1D <- function(filepath,
 }
 
 #' @export
+#'
+#' @title Calculate lorentz curves for each analyzed spectrum
+#'
+#' @description Calculates the lorentz curves of each investigated spectrum.
+#'
+#' @author Martina Haeckl, Tobias Schmidt
+#'
+#' @param deconv_result A list as returned by [generate_lorentz_curves()] or
+#' [MetaboDecon1D].
+#'
+#' @param number_of_files Number of spectra to analyze
+#'
+#' @return
+#' If `deconv_result` holds the result of a single deconvolution, a matrix
+#' containing the generated Lorentz curves is returned, where each row depicts
+#' one Lorentz curve. If `deconv_result` is a list of deconvoluted spectra, a
+#' list of such matrices is returned.
+#'
+#' @seealso
+#' [MetaboDecon1D()],
+#' [plot_triplets()],
+#' [plot_lorentz_curves_save_as_png()],
+#' [plot_spectrum_superposition_save_as_png()]
+#'
+#' @examples
+#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+#' ## Deconvolute the spectra in folder "bruker/sim_subset" into a list of
+#' ## Lorentz Curves (specified via the parameters A, lambda and x_0).
+#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+#' sim <- metabodecon_file("bruker/sim_subset")
+#' decons <- generate_lorentz_curves_sim(sim)
+#' decon0 <- decons[[1]]
+#'
+#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+#' ## Calculate the corresponding y values at each ppm value for each Lorentz
+#' ## Curve. I.e. you get a matrix of dimension n x m for each deconvolution,
+#' ## where n is the number of Lorentz Curves and m is the number of ppm values.
+#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+#' yy <- calculate_lorentz_curves(decons)
+#' y1 <- yy[[1]]
+#' dim(y1)
+#'
+#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+#' ## Visualize the 5th, 9th and 11th Lorentz curve.
+#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+#' nrs <- c(5, 9, 11)
+#' col <- c("red", "blue", "orange")
+#' desc <- paste("Lorentz curve", nrs)
+#' plot(decon0$x_values_ppm, decon0$y_values, type = "l", lty = 2)
+#' for (i in 1:3) lines(decon0$x_values_ppm, y1[nrs[i], ], col = col[i])
+#' legend("topright", legend = desc, col = col, lty = 1)
+#'
+calculate_lorentz_curves <- function(deconv_result, number_of_files = NA) {
+    number_in_folder <- 0
+    if (is.na(number_of_files)) {
+        # Get number of analyzed spectra
+        if ("number_of_files" %in% names(deconv_result)) {
+            number_of_files <- deconv_result$number_of_files
+        } else {
+            if ("number_of_files" %in% names(deconv_result[[1]])) {
+                number_of_files <- deconv_result[[1]]$number_of_files
+                # Check if only one spectrum is inside whole folder
+                if (number_of_files == 1) {
+                    number_in_folder <- 1
+                }
+            }
+        }
+    }
+
+    # Check if more than one spectra was analyzed
+    if (number_of_files > 1 | number_in_folder == 1) {
+        # Check if user input comprise a $ sign
+        if (grepl("[$]", deparse(substitute(deconv_result)))) {
+            spectrum_x <- deconv_result$x_values
+            A_new <- deconv_result$A
+            lambda_new <- deconv_result$lambda
+            w_new <- deconv_result$x_0
+
+            # Calculate lorentz curves
+            lorentz_curves_initial <- matrix(nrow = length(A_new), ncol = length(spectrum_x))
+            for (i in 1:length(A_new)) {
+                if ((w_new[i] == 0) | (lambda_new[i] == 0) | (A_new[i] == 0)) {
+                    lorentz_curves_initial[i, ] <- 0
+                } else {
+                    lorentz_curves_initial[i, ] <- abs(A_new[i] * (lambda_new[i] / (lambda_new[i]^2 + (spectrum_x - w_new[i])^2)))
+                }
+            }
+            # Return matrix with each row contains one lorentz curve
+            return(lorentz_curves_initial)
+        } else {
+            lorentz_curves_list <- list()
+            for (l in 1:number_of_files) {
+                name <- deconv_result[[l]]$filename
+                spectrum_x <- deconv_result[[l]]$x_values
+                A_new <- deconv_result[[l]]$A
+                lambda_new <- deconv_result[[l]]$lambda
+                w_new <- deconv_result[[l]]$x_0
+
+                # Calculate lorentz curves
+                lorentz_curves_initial <- matrix(nrow = length(A_new), ncol = length(spectrum_x))
+                for (i in 1:length(A_new)) {
+                    if ((w_new[i] == 0) | (lambda_new[i] == 0) | (A_new[i] == 0)) {
+                        lorentz_curves_initial[i, ] <- 0
+                    } else {
+                        lorentz_curves_initial[i, ] <- abs(A_new[i] * (lambda_new[i] / (lambda_new[i]^2 + (spectrum_x - w_new[i])^2)))
+                    }
+                }
+                lorentz_curves_list[[paste0(name)]] <- lorentz_curves_initial
+            }
+            return(lorentz_curves_list)
+        }
+    } else {
+        spectrum_x <- deconv_result$x_values
+        A_new <- deconv_result$A
+        lambda_new <- deconv_result$lambda
+        w_new <- deconv_result$x_0
+
+        # Calculate lorentz curves
+        lorentz_curves_initial <- matrix(nrow = length(A_new), ncol = length(spectrum_x))
+        for (i in 1:length(A_new)) {
+            if ((w_new[i] == 0) | (lambda_new[i] == 0) | (A_new[i] == 0)) {
+                lorentz_curves_initial[i, ] <- 0
+            } else {
+                lorentz_curves_initial[i, ] <- abs(A_new[i] * (lambda_new[i] / (lambda_new[i]^2 + (spectrum_x - w_new[i])^2)))
+            }
+        }
+        # Return matrix with each row contains one lorentz curve
+        return(lorentz_curves_initial)
+    }
+}
+
+# Plotting #####
+
+#' @export
 #' @title Plot peak triplets for variable range
 #' @description Plots the peak triplets for each peak detected by [MetaboDecon1D()] and stores the plots as png at `outdir`.
 #'
@@ -683,19 +817,41 @@ plot_triplets <- function(deconv_result, x_range = c(), y_range = c(), out_dir =
 }
 
 #' @export
+#'
 #' @title Plot lorentz curves for variable range
-#' @description Plots the original spectrum and all generated Lorentz curves and save the result as png under the filepath.
 #'
-#' Supersed by [plot_spectrum()] since metabodecon v1.2.0. Will be replaced with v2.
+#' @description
+#' Plots the original spectrum and all generated Lorentz curves and save the
+#' result as png under the filepath.
 #'
-#' `r lifecycle::badge("deprecated")`
-#' @param deconv_result Saved result of the MetaboDecon1D() function
-#' @param x_range Row vector with two entries consisting of the ppm start and the ppm end value to scale the range of the x-axis (optional)
-#' @param y_range Row vector with two entries consisting of the ppm start and the ppm end value to scale the range of the y-axis (optional)
-#' @param out_dir Path to the directory where the png files should be saved. Default is the current working directory.
-#' @param ask Logical value. Whether to ask for confirmation from the user before writing files to disk. Default is TRUE.
-#' @return NULL, called for side effects.
-#' @seealso [MetaboDecon1D()], [plot_triplets()], [plot_spectrum_superposition_save_as_png()]
+#' Supersed by [plot_spectrum()] since metabodecon v1.2.0. Will be replaced with
+#' v2.`r lifecycle::badge("deprecated")`
+#'
+#' @param deconv_result
+#' Saved result of the MetaboDecon1D() function
+#'
+#' @param x_range
+#' Row vector with two entries consisting of the ppm start and the ppm end value
+#' to scale the range of the x-axis (optional)
+#'
+#' @param y_range
+#' Row vector with two entries consisting of the ppm start and the ppm end value
+#' to scale the range of the y-axis (optional)
+#'
+#' @param out_dir
+#' Path to the directory where the png files should be saved. Default is the
+#' current working directory.
+#'
+#' @param ask
+#' Logical value. Whether to ask for confirmation from the user before writing
+#' files to disk. Default is TRUE.
+#'
+#' @return
+#' NULL, called for side effects.
+#'
+#' @seealso
+#' [MetaboDecon1D()], [plot_triplets()], [plot_spectrum_superposition_save_as_png()]
+#'
 #' @examples
 #' sim <- metabodecon_file("bruker/sim_subset")
 #' sim_decon <- generate_lorentz_curves_sim(sim)
@@ -1009,139 +1165,7 @@ plot_spectrum_superposition_save_as_png <- function(deconv_result,
     }
 }
 
-#' @export
-#'
-#' @title Calculate lorentz curves for each analyzed spectrum
-#'
-#' @description Calculates the lorentz curves of each investigated spectrum.
-#'
-#' @author Martina Haeckl, Tobias Schmidt
-#'
-#' @param deconv_result A list as returned by [generate_lorentz_curves()] or
-#' [MetaboDecon1D].
-#'
-#' @param number_of_files Number of spectra to analyze
-#'
-#' @return
-#' If `deconv_result` holds the result of a single deconvolution, a matrix
-#' containing the generated Lorentz curves is returned, where each row depicts
-#' one Lorentz curve. If `deconv_result` is a list of deconvoluted spectra, a
-#' list of such matrices is returned.
-#'
-#' @seealso
-#' [MetaboDecon1D()],
-#' [plot_triplets()],
-#' [plot_lorentz_curves_save_as_png()],
-#' [plot_spectrum_superposition_save_as_png()]
-#'
-#' @examples
-#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
-#' ## Deconvolute the spectra in folder "bruker/sim_subset" into a list of
-#' ## Lorentz Curves (specified via the parameters A, lambda and x_0).
-#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
-#' sim <- metabodecon_file("bruker/sim_subset")
-#' decons <- generate_lorentz_curves_sim(sim)
-#' decon0 <- decons[[1]]
-#'
-#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
-#' ## Calculate the corresponding y values at each ppm value for each Lorentz
-#' ## Curve. I.e. you get a matrix of dimension n x m for each deconvolution,
-#' ## where n is the number of Lorentz Curves and m is the number of ppm values.
-#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
-#' yy <- calculate_lorentz_curves(decons)
-#' y1 <- yy[[1]]
-#' dim(y1)
-#'
-#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
-#' ## Visualize the 5th, 9th and 11th Lorentz curve.
-#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
-#' nrs <- c(5, 9, 11)
-#' col <- c("red", "blue", "orange")
-#' desc <- paste("Lorentz curve", nrs)
-#' plot(decon0$x_values_ppm, decon0$y_values, type = "l", lty = 2)
-#' for (i in 1:3) lines(decon0$x_values_ppm, y1[nrs[i], ], col = col[i])
-#' legend("topright", legend = desc, col = col, lty = 1)
-#'
-calculate_lorentz_curves <- function(deconv_result, number_of_files = NA) {
-    number_in_folder <- 0
-    if (is.na(number_of_files)) {
-        # Get number of analyzed spectra
-        if ("number_of_files" %in% names(deconv_result)) {
-            number_of_files <- deconv_result$number_of_files
-        } else {
-            if ("number_of_files" %in% names(deconv_result[[1]])) {
-                number_of_files <- deconv_result[[1]]$number_of_files
-                # Check if only one spectrum is inside whole folder
-                if (number_of_files == 1) {
-                    number_in_folder <- 1
-                }
-            }
-        }
-    }
-
-    # Check if more than one spectra was analyzed
-    if (number_of_files > 1 | number_in_folder == 1) {
-        # Check if user input comprise a $ sign
-        if (grepl("[$]", deparse(substitute(deconv_result)))) {
-            spectrum_x <- deconv_result$x_values
-            A_new <- deconv_result$A
-            lambda_new <- deconv_result$lambda
-            w_new <- deconv_result$x_0
-
-            # Calculate lorentz curves
-            lorentz_curves_initial <- matrix(nrow = length(A_new), ncol = length(spectrum_x))
-            for (i in 1:length(A_new)) {
-                if ((w_new[i] == 0) | (lambda_new[i] == 0) | (A_new[i] == 0)) {
-                    lorentz_curves_initial[i, ] <- 0
-                } else {
-                    lorentz_curves_initial[i, ] <- abs(A_new[i] * (lambda_new[i] / (lambda_new[i]^2 + (spectrum_x - w_new[i])^2)))
-                }
-            }
-            # Return matrix with each row contains one lorentz curve
-            return(lorentz_curves_initial)
-        } else {
-            lorentz_curves_list <- list()
-            for (l in 1:number_of_files) {
-                name <- deconv_result[[l]]$filename
-                spectrum_x <- deconv_result[[l]]$x_values
-                A_new <- deconv_result[[l]]$A
-                lambda_new <- deconv_result[[l]]$lambda
-                w_new <- deconv_result[[l]]$x_0
-
-                # Calculate lorentz curves
-                lorentz_curves_initial <- matrix(nrow = length(A_new), ncol = length(spectrum_x))
-                for (i in 1:length(A_new)) {
-                    if ((w_new[i] == 0) | (lambda_new[i] == 0) | (A_new[i] == 0)) {
-                        lorentz_curves_initial[i, ] <- 0
-                    } else {
-                        lorentz_curves_initial[i, ] <- abs(A_new[i] * (lambda_new[i] / (lambda_new[i]^2 + (spectrum_x - w_new[i])^2)))
-                    }
-                }
-                lorentz_curves_list[[paste0(name)]] <- lorentz_curves_initial
-            }
-            return(lorentz_curves_list)
-        }
-    } else {
-        spectrum_x <- deconv_result$x_values
-        A_new <- deconv_result$A
-        lambda_new <- deconv_result$lambda
-        w_new <- deconv_result$x_0
-
-        # Calculate lorentz curves
-        lorentz_curves_initial <- matrix(nrow = length(A_new), ncol = length(spectrum_x))
-        for (i in 1:length(A_new)) {
-            if ((w_new[i] == 0) | (lambda_new[i] == 0) | (A_new[i] == 0)) {
-                lorentz_curves_initial[i, ] <- 0
-            } else {
-                lorentz_curves_initial[i, ] <- abs(A_new[i] * (lambda_new[i] / (lambda_new[i]^2 + (spectrum_x - w_new[i])^2)))
-            }
-        }
-        # Return matrix with each row contains one lorentz curve
-        return(lorentz_curves_initial)
-    }
-}
-
-# Private Helpers #####
+# Deconvolution Helpers #####
 
 #' @noRd
 #' @author Martina Haeckl
@@ -2275,7 +2299,7 @@ deconvolution <- function(filepath,
     return(return_list)
 }
 
-# For Testing #####
+# Testing Helpers #####
 
 #' @noRd
 #' @author Tobias Schmidt
@@ -2369,12 +2393,17 @@ get_MetaboDecon1D_answers <- function(ns = 1, # Number of spectra
                                       expno = 10,
                                       procno = 10) {
     answers <- c(
-        ExpNo = if (format == "bruker") expno else NULL,
-        ProcNo = if (format == "bruker") procno else NULL,
-        SameParam = if (ns > 1) "y" else NULL,
-        AdjNo = if (ns > 1) "1" else NULL,
-        SFRok = "n", Left = max(sfr), Right = min(sfr), SFRok = "y",
-        WSok = "n", WSHW = wshw, WSok = "y",
+        ExpNo       = if (format == "bruker") expno else NULL,
+        ProcNo      = if (format == "bruker") procno else NULL,
+        SameParam   = if (ns > 1) "y" else NULL,
+        AdjNo       = if (ns > 1) "1" else NULL,
+        SFRok       = "n",
+        Left        = max(sfr),
+        Right       = min(sfr),
+        SFRok       = "y",
+        WSok        = "n",
+        WSHW        = wshw,
+        WSok        = "y",
         SaveResults = "n"
     )
 }

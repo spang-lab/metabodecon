@@ -4,7 +4,15 @@
 
 ### DOC-1: Document whole package
 
-Document the whole package in vignettes, including chapters about alignment and a short introduction into all datasets.
+Document the whole package in vignettes, including chapters about:
+
+- [x] Classes.Rmd
+- [x] Compatibility.Rmd
+- [x] Contributing.Rmd
+- [x] Datasets.Rmd
+- [x] FAQ.Rmd
+- [x] MetaboDecon1D.Rmd
+- [ ] Get_Started.Rmd
 
 ### DOC-2: Improve function docs
 

@@ -62,28 +62,8 @@ draw_spectrum_standardize_arguments <- quote({
     if (isFALSE(rt_axis)  || is.null(rt_axis))  rt_axis  <- list(show = FALSE)
 })
 
-"lgd"
-
-"d2_line"
-"si_line"
-"sm_line"
-"sp_line"
-"lc_lines"
-
-"cent_pts"
-"bord_pts"
-"norm_pts"
-
-"bg_rect"
-"foc_rect"
-"lc_rects"
-
-"bt_axis"
-"lt_axis"
-"tp_axis"
-"rt_axis"
-
-generate_lorentz_curves_type_checks <- quote(stopifnot(
+generate_lorentz_curves_type_checks <- quote(
+    stopifnot(
     is_existing_path(data_path) ||
         is_spectrum(data_path) ||
         is_spectra(data_path) ||
