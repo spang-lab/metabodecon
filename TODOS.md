@@ -16,8 +16,8 @@ Write testcases for the following functions that test for a good PRARP as well a
 
 Write testcases for the following functions to check whether they produce results that are compliant with `MetaboDecon1D()`:
 
-- [ ] `deconvolute_ispec()`
-- [ ] `deconvolute_ispecs()`
+- [x] `deconvolute_ispec()`
+- [x] `deconvolute_ispecs()`
 
 ### CRAN-7: Check dontrun examples
 

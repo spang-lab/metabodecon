@@ -116,11 +116,14 @@ as_idecon <- function(x) {
 
 #' @export
 #' @rdname as_metabodecon_class
-as_decon0 <- function(x, sf = NULL, spectrum = NULL) {
+as_decon0 <- function(x,
+                      sf = NULL,
+                      spectrum = NULL,
+                      optional = TRUE) {
     if (is_decon0(x)) return(x)
     y <- as_decon1(x)
     y <- unclass(y)
-    y[decon0_members]
+    y[if (optional) decon0_members else decon0_members_mandatory]
 }
 
 #' @export

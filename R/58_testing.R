@@ -307,9 +307,16 @@ run_tests <- function(all = FALSE) {
 
 skip_if_slow_tests_disabled <- function() {
     if (!Sys.getenv("RUN_SLOW_TESTS") == "TRUE") {
-        testthat::skip("Slow tests are disabled. Use `Sys.setenv(RUN_SLOW_TESTS=TRUE)` or `run_tests(all=TRUE)` to enable.")
+        testthat::skip("Slow tests (Use `Sys.setenv(RUN_SLOW_TESTS=TRUE)` or `run_tests(all=TRUE)` to enable).")
     }
 }
+
+skip_if_not_in_globenv <- function() {
+    if (!identical(environment(), .GlobalEnv)) {
+        testthat::skip("Manual tests (To run, open file and execute the code manually).")
+    }
+}
+
 
 #' @title Check if the size of each file in a directory is within a certain
 #' range
