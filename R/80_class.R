@@ -735,6 +735,17 @@ as_v2_obj <- function(obj) {
     else stopf("Objects of class %s are not supported.", class(obj))
 }
 
+as_v2_objs <- function(obj) {
+    if (is_spectra(obj)) obj
+    else if (is_ispecs(obj)) as_spectra(obj)
+    else if (is_idecons(obj)) as_decons2(obj)
+    else if (is_decons0(obj)) stop("decons0 objects are not supported. Convert with as_decons2.")
+    else if (is_decons1(obj)) as_decons2(obj)
+    else if (is_decons2(obj)) obj
+    else if (is_aligns(obj)) obj
+    else stopf("Objects of class %s are not supported.", class(obj))
+}
+
 #' @export
 #' @rdname as_metabodecon_class
 #' @inheritParams read_spectra

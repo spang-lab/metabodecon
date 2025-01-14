@@ -2,6 +2,104 @@
 
 #' @export
 #'
+#' @title Plot Spectra
+#'
+#' @description
+#' Plot a set of deconvoluted spectra.
+#'
+#' @param x
+#' An object of type decons0, decons1 or decons2. For details see
+#' [Metabodecon Classes](https://spang-lab.github.io/metabodecon/articles/Metabodecon-Classes.html).
+#'
+#' @param mar
+#' A numeric vector of length 4, which specifies the margins of the plot.
+#'
+#' @param peak_rng
+#' A numeric vector of length 2, specifying the ppm range across
+#' all peaks of the provided deconvoluted spectra.
+#'
+#' @return
+#' A plot of the deconvoluted spectra.
+#'
+#' @seealso
+#' [plot_spectrum()] for a much more sofisticated plotting routine
+#' suitable for plotting a single spectrum.
+#'
+#' @examples
+#' obj <- deconvolute(sim, sfr = c(3.55, 3.35))
+#' plot_spectra(decons)
+#'
+plot_spectra <- function(obj,
+                         ...,
+                         sfy = 1e6,
+                         xlab = "Chemical Shift [ppm]",
+                         ylab = paste("Signal Intensity [au] /", sfy),
+                         mar = c(4.1, 4.1, 1.1, 0.1)) {
+    # CONTINUE HERE: Refactor to:
+    # 1. Use decons_v2 object
+    # 2. Use x$sit$al if available
+    # 3. Else use x$sit$sup if available
+    # 4. Else use x$si
+    decons <- as_v2_objs(obj, ...)
+    sis <- lapply(decons, function(x) x$sit$al %||% x$sit$sup %||% x$si)
+    x0s <- lapply(decons, function(x) x$lcpar$x0)
+    css <- lapply(decons, function(x) x$cs)
+    si_min <- 0
+    si_max <- max(sapply(sis, max))
+    cs_min <- min(sapply(css, min))
+    cs_max <- max(sapply(css, max))
+    x0_min <- min(sapply(x0s, min))
+    x0_max <- max(sapply(x0s, max))
+    x0_width <- x0_max - x0_min
+    x0_quart <- x0_width / 4
+    line_colors <- rainbow(length(decons))
+    legend_text <- paste("Spectrum", 1:length(decons))
+    local_par(mar = mar)
+    plot(
+        x = NA,
+        type = "n",
+        xlab = xlab,
+        ylab = ylab,
+        xlim = c(cs_max, cs_min),
+        ylim = c(si_min, si_max)
+    )
+    abline(
+        v = c(x0_min, x0_max),
+        lty = 2
+    )
+    for (i in seq_along(decons)) {
+        lines(x = css[[i]], y = sis[[i]], col = line_colors[[i]])
+    }
+    arrows(
+        x0 = c(x0_min + x0_quart, x0_max - x0_quart),
+        x1 = c(x0_min, x0_max),
+        y0 = si_max * 0.8,
+        y1 = si_max * 0.8,
+        length = 0.2,
+        lty = 2,
+        col = "black"
+    )
+    text(
+        x = mean(c(x0_min, x0_max)),
+        y = 0.8 * si_max,
+        labels = "ppm range"
+    )
+    mtext(
+        text = round(c(x0_min, x0_max), 4),
+        side = 3,
+        line = 0,
+        at = c(x0_min, x0_max)
+    )
+    legend(
+        x = "topright",
+        legend = legend_text,
+        col = line_colors,
+        lty = 1
+    )
+}
+
+#' @export
+#'
 #' @title Plot Spectrum
 #'
 #' @description
@@ -457,61 +555,6 @@ draw_spectrum <- function(
         plt_rgn_ndc = usr_to_ndc(c(xlim, ylim)),
         foc_rgn_ndc = usr_to_ndc(c(foc_rgn, ylim_foc))
     )
-}
-
-#' @export
-#' @title Plot Spectra
-#'
-#' @description
-#' Plot a set of deconvoluted spectra.
-#'
-#' @param x
-#' An object of type decons0, decons1 or decons2. For details see
-#' [Metabodecon Classes](https://spang-lab.github.io/metabodecon/articles/Metabodecon-Classes.html).
-#'
-#' @param mar A numeric vector of length 4, which specifies the margins of the plot.
-#'
-#' @param peak_rng A numeric vector of length 2, specifying the ppm range across
-#' all peaks of the provided deconvoluted spectra.
-#'
-#' @return
-#' A plot of the deconvoluted spectra.
-#'
-#' @seealso [plot_spectrum()] for a much more sofisticated plotting routine
-#' suitable to plot a single spectrum.
-#'
-#' @examples
-#' obj <- deconvolute(sim, sfr = c(3.55, 3.35))
-#' plot_spectra(decons)
-#'
-plot_spectra <- function(obj,
-                         ...,
-                         mar = c(4.1, 4.1, 1.1, 0.1)) {
-    # CONTINUE HERE: Refactor to:
-    # 1. Use decons_v2 object
-    # 2. Use x$sit$al if available
-    # 3. Else use x$sit$sup if available
-    # 4. Else use x$si
-    decons2 <- as_decons2(obj, ...)
-    peak_rng = get_ppm_range(decons2, show = FALSE)
-    xx <- lapply(decons2, function(decon2) decon2$cs)
-    xrng <- range(c(sapply(decons2, function(s) s$cs)))
-    ymax <- max(sapply(decons2, function(s) max(s$y_values)))
-    a <- peak_rng[1]
-    b <- peak_rng[2]
-    w <- (b - a) / 4
-    y8 <- ymax * 0.8
-    cols <- rainbow(length(decons2))
-    ltxt <- paste("Spectrum", 1:length(decons2))
-    opar <- par(mar = mar)
-    on.exit(par(opar))
-    plot(decons2 = NA, type = "n", xlim = xrng[2:1], ylim = c(0, ymax), xlab = "Chemical Shift [ppm]", ylab = "Signal Intensity [au]")
-    abline(v = peak_rng, lty = 2)
-    for (i in 1:length(decons2)) lines(x = decons2[[i]]$x_values_ppm, y = x[[i]]$y_values, col = cols[i])
-    arrows(x0 = c(a + w, b - w), x1 = c(a, b), y0 = y8, y1 = y8, length = 0.1, lty = 2, col = "black")
-    text(x = mean(c(a, b)), y = y8, labels = "ppm range")
-    mtext(text = round(c(a, b), 4), side = 3, line = 0, at = c(a, b))
-    legend(x = "topright", legend = ltxt, col = cols, lty = 1)
 }
 
 # Private #####

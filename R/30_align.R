@@ -63,6 +63,10 @@ align <- function(x, maxShift = 50, maxCombine = 5) {
 #' @param spectrum_data
 #' A list of deconvoluted spectra as returned by [generate_lorentz_curves()].
 #'
+#' @param full_range
+#' If TRUE, the full range of the spectra is returned. If FALSE, only the range
+#' from the lowest to the highest peak center is returned.
+#'
 #' @return
 #' A vector containing the lowest and highest ppm value over all peaks of the
 #' provided deconvoluted spectra.
@@ -76,22 +80,25 @@ align <- function(x, maxShift = 50, maxCombine = 5) {
 #' spectrum_data = generate_lorentz_curves_sim(sim_subset)
 #' ppm_rng <- get_ppm_range(spectrum_data, show = TRUE)
 #' print(ppm_rng)
-get_ppm_range <- function(spectrum_data) {
+get_ppm_range <- function(spectrum_data, full_range = FALSE) {
     if (is_decons0(spectrum_data) || is_decon1(spectrum_data)) {
-        x0s <- lapply(spectrum_data, function(x) x$peak_triplets_middle)
+        if (full_range) {
+            xx <- lapply(spectrum_data, function(spectrum) spectrum$x_values_ppm)
+        } else {
+            xx <- lapply(spectrum_data, function(spectrum) spectrum$peak_triplets_middle)
+        }
     } else if (is_decons2(spectrum_data) || is_aligns(spectrum_data)) {
-        x0s <- lapply(spectrum_data, function(x) x$x0)
+        if (full_range) {
+            xx <- lapply(spectrum_data, function(spectrum) spectrum$cs)
+        } else {
+            xx <- lapply(spectrum_data, function(spectrum) spectrum$lcpar$x0)
+        }
     } else {
-        stop("spectrum_data must be a decons0, decons1, decons2, or aligns object. See help('metabodecon_classes') for details.")
+        stop("spectrum_data must be a decons0, decons1, decons2 or aligns object. See help('Metabodecon Classes') for details.")
     }
-
-    msg <- "spectrum_data must be a list of deconvoluted spectra."
-    ss <- spectrum_data
-    ss <- if (is_decon_list(ss)) ss else if (is_decon_obj(ss)) list(ss) else stop(msg)
-    ppm_min <- min(sapply(ss, function(s) min(s$peak_triplets_middle)))
-    ppm_max <- max(sapply(ss, function(s) max(s$peak_triplets_middle)))
-    ppm_rng <- c(ppm_min, ppm_max)
-    ppm_rng
+    x_min <- min(sapply(xx, min))
+    x_max <- max(sapply(xx, max))
+    c(x_min, x_max)
 }
 
 #' @export

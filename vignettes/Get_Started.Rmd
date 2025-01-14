@@ -8,11 +8,16 @@ vignette: >
 ---
 
 <style>
-figure{border: 1px solid #dee2e6; border-radius: .375rem; padding: 0;}
-figcaption{text-align: center; font-style: italic;
-           border-top: 1px solid #dee2e6; padding: 0.75rem;
-           background-color: #ffffff;}
-.sourceCode.txt{background-color: #f1f3f5;}
+figure{
+    border: 1px solid #dee2e6; border-radius: .375rem; padding: 0;
+}
+figcaption{
+    text-align: center; font-style: italic; border-top: 1px solid #dee2e6;
+    padding: 0.75rem; background-color: #ffffff;
+}
+.sourceCode.txt{
+    background-color: #f1f3f5;
+}
 </style>
 
 This article shows how Metabodecon can be used for  deconvoluting  and  aligning
@@ -141,7 +146,7 @@ To  visualize  the  data  before  and  after  the   alignment,   you   can   use
 
 ```R
 metabodecon::plot_spectra(deconvoluted_spectra)
-aligned_spectra <- metabodecon::align(deconvoluted_spectra)
+aligned_spectra <- metabodecon::align(deconvoluted_spectra, maxCombine = 1)
 metabodecon::plot_spectra(aligned_spectra)
 ```
 
@@ -163,8 +168,8 @@ shifted approx. 0.01 ppm to the right.
 
 <!-- Footnotes -->
 
-[^wshw]: Since the used dataset was simulated based on actual measurement in the
-    range of approx. 3.6  to  3.3  ppm,  it  doesn't  contain  a  water
+[^wshw]: Since the used dataset was simulated based on  actual  measurements  in
+    the  range  of  approx.  3.6  to  3.3  ppm,  it   doesn't  contain  a  water
     signal. Therefore, the water signal half width was set to zero.
 
 [^askFALSE]: In this case it may be useful to set `ask = TRUE` for the first run
