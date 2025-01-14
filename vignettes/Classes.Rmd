@@ -142,9 +142,9 @@ provided. These collection classes are named: [spectra], [decons0], [decons1],
 13. `integrals`: Integrals of the Lorentz Curves.
 14. `signal_free_region`: Borders of the signal free region of the spectrum in
     scaled datapoint numbers. Left of the first element and right of the second
-    element no signals are expected.
+    element no signals are expected. Only available if `MetaboDecon1D()` was called with more than one spectra as input.
 15. `range_water_signal_ppm`: Half width of the water signal in ppm. Potential
-    signals in this region are ignored.
+    signals in this region are ignored. Only available if `MetaboDecon1D()` was called with more than one spectra as input.
 16. `A`: Amplitude parameter of the Lorentz Curves. Provided as negative number
     to maintain backwards compatibility with MetaboDecon1D. The area under the
     Lorentz Curve is calculated as \eqn{A \cdot \pi}{A * pi}.

@@ -1,6 +1,4 @@
-# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
 # Exported #####
-# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
 
 #' @export
 #' @family {spectra functions}
@@ -275,10 +273,7 @@ simulate_spectrum <- function(name = "sim_00",
     #     gets stored as integers on disk.
 }
 
-
-# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
 # Internal #####
-# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
 
 #' @noRd
 #' @title Read single Bruker TopSpin 3 Spectrum
@@ -656,5 +651,7 @@ save_spectra <- function(x, path, force = FALSE, verbose = TRUE) {
         )
     }
 }
+
+# Constants #####
 
 simpar_format <- "rds"

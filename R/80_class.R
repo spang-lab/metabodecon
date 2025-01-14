@@ -1,4 +1,361 @@
-# Docs #####
+# Classes #####
+
+#' @name Metabodecon Classes
+#'
+#' @title Metabodecon Classes
+#'
+#' @description
+#' Metabodecon introduces a set of classes to highlight the presence of certain
+#' elements in corresponding objects.
+#'
+#' The order of elements may vary between different versions of Metabodecon,
+#' thus elements should always be accessed by name, for example, using `x$si`
+#' or `x[["cs"]]`. A short description of each class is given in the listing
+#' below.
+#'
+#' -  `spectrum`: One NMR spectrum
+#' -  `decon0`: One deconvoluted NMR spectrum stored in [MetaboDecon1D()] format
+#' -  `decon1`: One deconvoluted NMR spectrum stored in
+#'    [generate_lorentz_curves()] format
+#' -  `decon2`: One deconvoluted NMR spectrum stored in [deconvolute()] format
+#' -  `align`: One aligned NMR spectrum
+#'
+#' The classes mentioned above represent individual objects, such as a single
+#' spectrum, deconvolution, or alignment. However, it is often useful to
+#' describe collections of these objects, such as a list of spectra or
+#' deconvolutions. Therefore, for each individual class, a corresponding
+#' "collection" class is provided. These collection classes are named:
+#' `spectra`, `decons0`, `decons1`, `decons2`, and `aligns`.
+#'
+#' More details can be found in Metabodecon's online documentation at
+#' [Metabodecon Classes](
+#' https://spang-lab.github.io/metabodecon/articles/Metabodecon-Classes.html).
+NULL
+
+`Metabodecon Classes` <- NULL
+
+spectrum_members <- c(
+    "cs",
+    "si",
+    "meta"
+)
+
+ispec_members <- c(
+    "y_raw",
+    "y_scaled",
+    "n",
+    "dp",
+    "sdp",
+    "sf",
+    "ppm",
+    "hz",
+    "ppm_range",
+    "ppm_max",
+    "ppm_min",
+    "ppm_step",
+    "ppm_nstep",
+    "name",
+    "meta"
+)
+
+idecon_members <- c(
+    ispec_members,
+    "args",
+    "y_nows",
+    "y_pos",
+    "Z",
+    "y_smooth",
+    "d",
+    "peak",
+    "lci",
+    "lca",
+    "lcr"
+)
+
+decon0_members <- c(
+    "number_of_files",
+    "filename",
+    "x_values",
+    "x_values_ppm",
+    "y_values",
+    "spectrum_superposition",
+    "mse_normed",
+    "index_peak_triplets_middle",
+    "index_peak_triplets_left",
+    "index_peak_triplets_right",
+    "peak_triplets_middle",
+    "peak_triplets_left",
+    "peak_triplets_right",
+    "integrals",
+    "signal_free_region",
+    "range_water_signal_ppm",
+    "A",
+    "lambda",
+    "x_0"
+)
+
+decon0_members_optional <- c(
+    "signal_free_region",
+    "range_water_signal_ppm"
+)
+
+decon0_members_mandatory <- setdiff(
+    decon0_members,
+    decon0_members_optional
+)
+
+decon1_members <- c(
+    decon0_members,
+    "y_values_raw",
+    "x_values_hz",
+    "mse_normed_raw",
+    "signal_free_region_ppm",
+    "x_0_hz",
+    "x_0_dp",
+    "x_0_ppm",
+    "A_hz",
+    "A_dp",
+    "A_ppm",
+    "lambda_hz",
+    "lambda_dp",
+    "lambda_ppm"
+)
+
+decon2_members <- c(
+    "cs",
+    "si",
+    "meta",
+    "args",
+    "sit",
+    "peak",
+    "lcpar",
+    "mse"
+)
+
+align_members <- decon2_members
+
+# Methods #####
+
+`Print Methods` <- NULL
+
+#' @name Print Methods
+#'
+#' @title S3 Methods for Printing Metabodecon Objects
+#'
+#' @description
+#' S3 Methods for printing metabodecon objects as described in the  [Metabodecon
+#' Classes](https://spang-lab.github.io/metabodecon/articles/).
+#'
+#' @param x
+#' The object to print.
+#'
+#' @param name
+#' Logical. If TRUE, the name of the object is printed before the object.
+#'
+#' @param ...
+#' Not used. Only accepted to comply with generic [base::print()].
+#'
+#' @examples
+#' si <- c(1, 1, 3, 7, 8, 3, 8, 5, 2, 1)
+#' cs_max <- 14.8
+#' cs_width <- 20.0
+#' fq_ref <- 600.25 * 1e6
+#' fq_width <- 12005
+#' spectrum <- read_spectrum()
+#' print(spectrum)
+NULL
+
+#' @export
+#' @rdname print_methods
+print.spectrum <- function(x, name = FALSE, ...) {
+    namestr <- if (name) paste0(x$meta$name %||% "NULL", ": ") else ""
+    fmt <- "%sspectrum object (%d dp, %.1f to %.1f ppm)\n"
+    catf(fmt, namestr, length(x$cs), max(x$cs), min(x$cs))
+}
+
+#' @export
+#' @rdname print_methods
+print.ispec <- function(x, name = FALSE, ...) {
+    # fmt <- "%sispec object (%d dp, %.1f to %.1f ppm)\n"
+    # namestr <- if (name) paste0(x$name %||% "NULL", ": ") else ""
+    # catf(fmt, namestr, length(x$ppm), max(x$ppm), min(x$ppm))
+    str(x, 1)
+}
+
+#' @export
+#' @rdname print_methods
+print.idecon <- function(x, name = FALSE, ...) {
+    # ppm <- x$ppm
+    # n <- length(ppm)
+    # name <- if (name) paste0(x$name %||% "NULL", ": ") else ""
+    # fmt <- "%sidecon object (%d dp, %.1f to %.1f ppm, %d peaks)\n"
+    # catf(fmt, name, n, max(ppm), min(ppm), length(x$A))
+    str(x, 1)
+}
+
+#' @export
+#' @rdname print_methods
+print.decon1 <- function(x, name = FALSE, ...) {
+    ppm <- x$x_values_ppm
+    n <- length(ppm)
+    name <- if (name) paste0(x$filename %||% "NULL", ": ") else ""
+    fmt <- "%sdecon1 object (%d dp, %.1f to %.1f ppm, %d peaks)\n"
+    catf(fmt, name, n, max(ppm), min(ppm), length(x$A))
+}
+
+#' @export
+#' @rdname print_methods
+print.decon2 <- function(x, name = FALSE, ...) {
+    str(x, 1)
+}
+
+#' @export
+#' @rdname print_methods
+print.spectra <- function(x, ...) {
+    msg <- "spectra object consisting of %d spectrum objects:\n"
+    catf(msg, length(x, ...))
+    nams <- get_names(x, ...)
+    msg <- "%s (%d datapoints from %.2f - %.2f ppm)\n"
+    mapply(x, ..., nams, FUN = function(x, nam) {
+        catf(msg, nam, length(x$si), min(x$cs), max(x$cs))
+    })
+    invisible(NULL)
+}
+
+#' @export
+#' @rdname print_methods
+print.ispecs <- function(x, ...) {
+    # catf("ispecs object with %s ispec elements\n", length(x))
+    # invisible(sapply(x, print, name = TRUE))
+    str(x, 2, give.attr = FALSE)
+}
+
+#' @export
+#' @rdname print_methods
+print.idecons <- function(x, ...) {
+    catf("idecons object with %s idecon elements\n", length(x))
+    nams <- get_names(x)
+    mapply(x, nams, FUN = function(xi, nam) {
+        catf("%s: ", nam)
+        print(xi, ...)
+    })
+}
+
+#' @export
+#' @rdname print_methods
+print.decons1 <- function(x, ...) {
+    catf("decons1 object with %s decon1 elements\n", length(x))
+    invisible(sapply(x, print, name = TRUE))
+}
+
+#' @export
+#' @rdname print_methods
+print.decons2 <- function(x, ...) {
+    catf("decons2 object with %s decon2 elements\n", length(x))
+    invisible(sapply(x, print, name = TRUE))
+}
+
+#' @export
+`[.spectra` <- function(x, i, ...) {
+    result <- NextMethod("[")
+    class(result) <- class(x)
+    result
+}
+
+# Checks #####
+
+is_metabodecon_class <- NULL
+
+#' @export
+#'
+#' @name is_metabodecon_class
+#'
+#' @title Check for class membership
+#'
+#' @description Check if an object is an instance of a specific Metabodecon class.
+#'
+#' @param check_class
+#' Logical indicating whether to check the class of the object.
+#'
+#' @param check_contents
+#' Logical indicating whether to check the contents of the object.
+#'
+#' @param check_child_classes
+#' Logical indicating whether to check the class of each element of the object.
+#'
+#' @examples
+#' is_spectrum(sim[[1]])
+#'
+NULL
+
+#' @export
+is_spectrum <- function(x,
+                        check_class = TRUE,
+                        check_contents = FALSE) {
+    # styler: off
+    if (check_class && !inherits(x, "spectrum")) return(FALSE)
+    if (!check_contents) return(TRUE)
+    if (!is.list(x)) return(FALSE)
+    mandatory <- c("si", "cs")
+    if (!all(mandatory %in% names(x))) return(FALSE)
+    # styler: on
+    return(TRUE)
+}
+
+#' @export
+is_ispec <- function(x) inherits(x, "ispec")
+
+#' @export
+is_idecon <- function(x) inherits(x, "idecon")
+
+#' @export
+is_decon0 <- function(x) {
+    is.list(x) && all(decon0_members_mandatory %in% names(x)) && !is_decon1(x)
+}
+
+#' @export
+is_decon1 <- function(x) inherits(x, "decon1")
+
+#' @export
+is_decon2 <- function(x) inherits(x, "decon2")
+
+#' @export
+is_align <- function(x) inherits(x, "align")
+
+#' @export
+is_spectra <- function(x,
+                       check_class = TRUE,
+                       check_contents = FALSE,
+                       check_child_classes = FALSE) {
+    # styler: off
+    if (check_class && !inherits(x, "spectra")) return(FALSE)
+    if (check_child_classes && !all(sapply(x, is_spectrum))) return(FALSE)
+    if (!check_contents) return(TRUE)
+    if (!is.list(x)) return(FALSE)
+    if (!all(sapply(x, is_spectrum, check_contents = TRUE))) return(FALSE)
+    # styler: on
+    return(TRUE)
+}
+
+#' @export
+is_ispecs <- function(x) inherits(x, "ispecs")
+
+#' @export
+is_idecons <- function(x) inherits(x, "idecons")
+
+#' @export
+is_decons0 <- function(x) all(sapply(x, is_decon0))
+
+#' @export
+is_decons1 <- function(x) inherits(x, "decons1")
+
+#' @export
+is_decons2 <- function(x) inherits(x, "decons2")
+
+#' @export
+is_aligns <- function(x) inherits(x, "aligns")
+
+# Convert #####
 
 #' @export
 #'
@@ -50,8 +407,6 @@ as_metabodecon_class <- function(cls, x, ...) {
     as_class <- get(paste0("as_", to), envir = environment(convert))
     as_class(x, ...)
 }
-
-# As Singleton Object #####
 
 #' @export
 #' @rdname as_metabodecon_class
@@ -380,10 +735,6 @@ as_v2_obj <- function(obj) {
     else stopf("Objects of class %s are not supported.", class(obj))
 }
 
-# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
-# As Collection Object #####
-# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
-
 #' @export
 #' @rdname as_metabodecon_class
 #' @inheritParams read_spectra
@@ -479,102 +830,7 @@ as_decons2 <- function(x,
     decons2
 }
 
-# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
-# Class Members #####
-# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
-
-spectrum_members <- c(
-    "cs",
-    "si",
-    "meta"
-)
-
-ispec_members <- c(
-    "y_raw",
-    "y_scaled",
-    "n",
-    "dp",
-    "sdp",
-    "sf",
-    "ppm",
-    "hz",
-    "ppm_range",
-    "ppm_max",
-    "ppm_min",
-    "ppm_step",
-    "ppm_nstep",
-    "name",
-    "meta"
-)
-
-idecon_members <- c(
-    ispec_members,
-    "args",
-    "y_nows",
-    "y_pos",
-    "Z",
-    "y_smooth",
-    "d",
-    "peak",
-    "lci",
-    "lca",
-    "lcr"
-)
-
-decon0_members <- c(
-    "number_of_files",
-    "filename",
-    "x_values",
-    "x_values_ppm",
-    "y_values",
-    "spectrum_superposition",
-    "mse_normed",
-    "index_peak_triplets_middle",
-    "index_peak_triplets_left",
-    "index_peak_triplets_right",
-    "peak_triplets_middle",
-    "peak_triplets_left",
-    "peak_triplets_right",
-    "integrals",
-    "signal_free_region",
-    "range_water_signal_ppm",
-    "A",
-    "lambda",
-    "x_0"
-)
-
-decon0_members_optional <- c(
-    "signal_free_region",
-    "range_water_signal_ppm"
-)
-
-decon0_members_mandatory <- setdiff(
-    decon0_members,
-    decon0_members_optional
-)
-
-decon1_members <- c(
-    decon0_members,
-    "y_values_raw",
-    "x_values_hz",
-    "mse_normed_raw",
-    "signal_free_region_ppm",
-    "x_0_hz",
-    "x_0_dp",
-    "x_0_ppm",
-    "A_hz",
-    "A_dp",
-    "A_ppm",
-    "lambda_hz",
-    "lambda_dp",
-    "lambda_ppm"
-)
-
-decon2_members <- c("cs", "si", "meta", "args", "sit", "peak", "lcpar", "mse")
-
-# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
 # Helpers #####
-# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
 
 set_names <- function(x, nams) {
     if (!is.list(x)) stop("Input must be a list.")

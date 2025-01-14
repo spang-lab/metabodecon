@@ -4,19 +4,11 @@
 \alias{get_ppm_range}
 \title{Get PPM Range covered by Spectra}
 \usage{
-get_ppm_range(
-  spectrum_data = generate_lorentz_curves_sim(),
-  show = FALSE,
-  mar = c(4.1, 4.1, 1.1, 0.1)
-)
+get_ppm_range(spectrum_data)
 }
 \arguments{
 \item{spectrum_data}{A list of deconvoluted spectra as returned by
 \code{\link[=generate_lorentz_curves]{generate_lorentz_curves()}}.}
-
-\item{show}{Whether to plot the ppm range on the spectrum plot.}
-
-\item{mar}{The margins of the plot. Passed on to \code{par()}.}
 }
 \value{
 A vector containing the lowest and highest ppm value over all peaks of the

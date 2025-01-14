@@ -1,6 +1,4 @@
-# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
-# Evalwith #####
-# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
+# Evalwith (Public) #####
 
 #' @export
 #' @title Evaluate an expression with predefined global state
@@ -202,9 +200,7 @@ evalwith <- function(expr, # nolint: cyclocomp_linter.
     invisible(retobj)
 }
 
-# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
-# Evalwith Helpers #####
-# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
+# Evalwith Helpers (Private) #####
 
 #' @noRd
 #' @title Creates a mock readline function for testing
@@ -281,9 +277,7 @@ loaded_via_devtools <- function() {
     return(loaded_via_devtools)
 }
 
-# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
-# Testthat #####
-# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
+# Testthat Helpers (private) #####
 
 #' @noRd
 #' @title Run tests with the option to skip slow tests
@@ -317,7 +311,6 @@ skip_if_not_in_globenv <- function() {
     }
 }
 
-
 #' @noRd
 #' @title Check if the size of each file in a directory is within a certain
 #' range
@@ -345,23 +338,32 @@ expect_file_size <- function(testdir, size_exp) {
     testthat::expect_true(all(file_has_correct_size))
 }
 
+#' @noRd
+#'
 #' @title Expect Structure
-#' @description Tests if the structure of an object matches the expected string
-#' @param obj The object to test
-#' @param expected_str The expected structure of the object as a string. Can be
-#' obtained by calling `dput(capture.output(str(obj)))`.
-#' @return A logical value indicating whether the structure of the object
-#' matches the expected string
+#'
+#' @description
+#' Tests if the structure of an object matches the expected string
+#'
+#' @param
+#' obj The object to test
+#'
+#' @param expected_str
+#' The expected structure of the object as a string. Can be obtained by calling
+#' `dput(capture.output(str(obj)))`.
+#'
+#' @return
+#' A logical value indicating whether the structure of the object matches the
+#' expected string.
+#'
 #' @examples
 #' expect_str(list(a = 1, b = 2), c("List of 2", " $ a: num 1", " $ b: num 2"))
-#' @noRd
+#'
 expect_str <- function(obj, expected_str, ...) {
     testthat::expect_identical(capture.output(str(obj, ...)), expected_str)
 }
 
-# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
-# Misc #####
-# =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
+# Misc (Private) #####
 
 #' @noRd
 #'
@@ -529,7 +531,7 @@ calc_y0 <- function(x, y, x0) {
     y0 <- y_floor + (y_ceil - y_floor) * i0_frac
 }
 
-# Compare #####
+# Compare (Private) #####
 
 pairwise_identical <- function(x) {
     lapply(seq_len(length(x) - 1), function(i) identical(x[[i]], x[[i + 1]]))
@@ -588,11 +590,11 @@ vcomp <- function(x, y, xpct = 0, silent = FALSE) {
     if (!silent) {
         msg <- c("identical", "all.equal", "different", "error")[status + 1]
         if (status == 3) msg <- paste0(msg, ": class(x)==", class(x), ", class(y)==", class(y))
-        col <- c(GREEN, YELLOW, RED, RED)[status + 1]
-        cat2(callstr, " ", col, msg, RESET, sep = "")
+        col <- c(esc$green, esc$yellow, esc$red, esc$red)[status + 1]
+        cat2(callstr, " ", col, msg, esc$reset, sep = "")
         if (status %in% 1:2 && status != xpct) {
             line <- "----------------------------------------"
-            cat2(col, line, RESET, sep = "")
+            cat2(col, line, esc$reset, sep = "")
             i <- which(x != y)
             a <- x[i]
             b <- y[i]
@@ -607,7 +609,7 @@ vcomp <- function(x, y, xpct = 0, silent = FALSE) {
             df["head", ] <- sapply(objs, function(obj) dput2(head(obj, 1)))
             df["tail", ] <- sapply(objs, function(obj) dput2(tail(obj, 1)))
             print(df)
-            cat2(col, line, RESET, sep = "")
+            cat2(col, line, esc$reset, sep = "")
         }
     }
     invisible(status)
@@ -636,7 +638,7 @@ compare_spectra <- function(new, old, silent = FALSE) { # styler: off
     # Define comparison functions
     ident <- update_defaults(vcomp, xpct = 0, silent = silent)
     equal <- update_defaults(vcomp, xpct = 1, silent = silent)
-    
+
     # Define result vector
     r <-  logical()
 
@@ -749,7 +751,7 @@ compare_spectra <- function(new, old, silent = FALSE) { # styler: off
         logf(msg, sum(r == 0), sum(r == 1), sum(r == 2), sum(r == 3), sum(r == 4))
     }
 
-    
+
     # (2) The original MetaboDecon1D implementation throws away NAs, so for
     #     comparsion we need to do the same
 
@@ -769,4 +771,113 @@ update_defaults <- function(func, ...) {
     }
     formals(func) <- defaults
     func
+}
+
+# Deconvolution #####
+
+#' @noRd
+#' @author Tobias Schmidt
+MetaboDecon1D_silent <- function(# Passed on to [MetaboDecon1D()]
+                                 filepath,
+                                 filename = NA,
+                                 file_format = "bruker",
+                                 number_iterations = 10,
+                                 range_water_signal_ppm = 0.1527692,
+                                 signal_free_region = c(11.44494, -1.8828),
+                                 smoothing_param = c(2, 5),
+                                 delta = 6.4,
+                                 scale_factor = c(1000, 1000000),
+                                 debug = FALSE,
+                                 store_results = NULL,
+                                 # Passed on to [evalwith()]
+                                 output = "captured",
+                                 message = "captured",
+                                 plot = "captured",
+                                 # Passed on to [get_MetaboDecon1D_answers()]
+                                 expno = 10,
+                                 procno = 10) {
+    answers <- get_MetaboDecon1D_answers(
+        ns = if (is.na(filename)) length(list.dirs(filepath)) else 1,
+        wshw = range_water_signal_ppm,
+        sfr = signal_free_region,
+        format = file_format,
+        expno = expno,
+        procno = procno
+    )
+    evalwith(
+        answers = answers,
+        output = output,
+        message = output,
+        plot = plot,
+        decon0 <- MetaboDecon1D(
+            filepath, filename, file_format, number_iterations,
+            range_water_signal_ppm, signal_free_region, smoothing_param, delta,
+            scale_factor, debug, store_results
+        )
+    )
+    decon0
+}
+
+#' @noRd
+#' @author Tobias Schmidt
+MetaboDecon1D_silent_sim <- function(# Passed on to [MetaboDecon1D()]
+                                     filepath,
+                                     filename = NA,
+                                     file_format = "bruker",
+                                     number_iterations = 3,
+                                     range_water_signal_ppm = 0,
+                                     signal_free_region = c(3.55, 3.35),
+                                     smoothing_param = c(2, 5),
+                                     delta = 6.4,
+                                     scale_factor = c(1000, 1000000),
+                                     debug = FALSE,
+                                     store_results = NULL,
+                                     # Passed on to [evalwith()]
+                                     output = "captured",
+                                     message = "captured",
+                                     plot = "captured",
+                                     # Passed to [get_MetaboDecon1D_answers()]
+                                     expno = 10,
+                                     procno = 10) {
+    MetaboDecon1D_silent(
+        filepath, filename, file_format,
+        number_iterations, range_water_signal_ppm, signal_free_region,
+        smoothing_param, delta, scale_factor, debug, store_results,
+        output, message, plot, expno, procno
+    )
+}
+
+#' @noRd
+#' @author Tobias Schmidt
+#' @examples
+#' sim <- metabodecon_file("bruker/sim_subset")
+#' answers <- get_MetaboDecon1D_answers(ns = 1, wshw = 0, sfr = c(3.55, 3.35))
+#' x <- evalwith(
+#'     answers = answers,
+#'     output = "captured",
+#'     message = "captured",
+#'     plot = "captured",
+#'     expr = { decon_01 <- MetaboDecon1D(sim, "sim_01") }
+#' )
+#' str(decon_01, 1)
+get_MetaboDecon1D_answers <- function(ns = 1, # Number of spectra
+                                      wshw = 0.1527692,
+                                      sfr = c(11.44494, -1.8828),
+                                      format = "bruker",
+                                      expno = 10,
+                                      procno = 10) {
+    answers <- c(
+        ExpNo       = if (format == "bruker") expno else NULL,
+        ProcNo      = if (format == "bruker") procno else NULL,
+        SameParam   = if (ns > 1) "y" else NULL,
+        AdjNo       = if (ns > 1) "1" else NULL,
+        SFRok       = "n",
+        Left        = max(sfr),
+        Right       = min(sfr),
+        SFRok       = "y",
+        WSok        = "n",
+        WSHW        = wshw,
+        WSok        = "y",
+        SaveResults = "n"
+    )
 }

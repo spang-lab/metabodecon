@@ -7,7 +7,7 @@ sap2 <- test_that("deconvolute works for single spectrum", {
 })
 
 sim_subset <- test_that("deconvolute works for multiple spectra", {
-    decons2 <- deconvolute(x = sim[1:2], nfit = 3, sfr = c(3.55, 3.35), wshw = 0)
+    decons2 <- deconvolute(x = sim[1:2], sfr = c(3.55, 3.35))
     expect_identical(class(decons2), "decons2")
     expect_identical(class(decons2[[1]]), "decon2")
     expect_identical(class(decons2[[2]]), "decon2")

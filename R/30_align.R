@@ -5,28 +5,31 @@
 #' @title Align Spectra
 #'
 #' @description
-#' Align signals across a list of deconvoluted spectra using the 'CluPA'
-#' algorithm from the 'speaq' package, described in Beirnaert et al. (2018)
-#' <doi:10.1371/journal.pcbi.1006018> and Vu et al. (2011)
+#' Align signals across  a  list  of  deconvoluted  spectra  using  the  'CluPA'
+#' algorithm from the 'speaq' package, described  in  Beirnaert  et  al.  (2018)
+#' <doi:10.1371/journal.pcbi.1006018>     and     Vu     et      al.      (2011)
 #' <doi:10.1186/1471-2105-12-405> plus the additional peak combination described
 #' in [combine_peaks()].
 #'
-#' @param decons An object of type `MD1Decons` or `GLCDecons` as returned by
-#' [MetaboDecon1D()] or [generate_lorentz_curves()].
+#' @param decons
+#' An  object  of  type  `decons0`,  `decons1`  or  `decons2`  as  described  in
+#' [Metabodecon Classes].
 #'
-#' @param maxShift Maximum number of points along the "ppm-axis" a value can be
-#' moved by the 'speaq' package. 50 is a suitable starting value for plasma
-#' spectra with a digital resolution of 128K. Note that this parameter has to be
-#' individually optimized depending on the type of analyzed spectra and the
-#' digital resolution. For urine which is more prone to chemical shift
-#' variations this value most probably has to be increased. Passed as argument
-#' `maxShift` to [speaq_align()].
+#' @param maxShift
+#' Maximum number of points along the "ppm-axis" a value can  be  moved  by  the
+#' 'speaq' package. 50 is a suitable starting value for plasma  spectra  with  a
+#' digital resolution of 128K. Note that this parameter has to  be  individually
+#' optimized  depending  on  the  type  of  analyzed  spectra  and  the  digital
+#' resolution. For urine which is more prone to chemical shift  variations  this
+#' value most probably has to be increased. Passed  as  argument  `maxShift`  to
+#' [speaq_align()].
 #'
-#' @param maxCombine Amount of adjacent columns which may be combined for
-#' improving the alignment. Passed as argument `range` to [combine_peaks()].
+#' @param maxCombine
+#' Amount of adjacent columns which may be combined for improving the alignment.
+#' Passed as argument `range` to [combine_peaks()].
 #'
 #' @return
-#' An object of type `AlignedSpectra` as described in [Metabodecon
+#' An  object  of   type   `AlignedSpectra`   as   described   in   [Metabodecon
 #' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
 #'
 #' @examples
@@ -57,36 +60,37 @@ align <- function(x, maxShift = 50, maxCombine = 5) {
 #' @description
 #' Returns the ppm range across all peaks of the provided deconvoluted spectra.
 #'
-#' @param spectrum_data A list of deconvoluted spectra as returned by
-#' [generate_lorentz_curves()].
-#'
-#' @param show Whether to plot the ppm range on the spectrum plot.
-#'
-#' @param mar The margins of the plot. Passed on to `par()`.
+#' @param spectrum_data
+#' A list of deconvoluted spectra as returned by [generate_lorentz_curves()].
 #'
 #' @return
 #' A vector containing the lowest and highest ppm value over all peaks of the
 #' provided deconvoluted spectra.
 #'
 #' @author
-#' Initial version from Wolfram Gronwald.
-#' Refactored by Tobias Schmidt in 2024.
+#' Wolfram Gronwald, 2023: initial version.
+#' Tobias Schmidt, 2024: .
 #'
 #' @examples
 #' sim_subset <- metabodecon_file("sim_subset")
 #' spectrum_data = generate_lorentz_curves_sim(sim_subset)
 #' ppm_rng <- get_ppm_range(spectrum_data, show = TRUE)
 #' print(ppm_rng)
-get_ppm_range <- function(spectrum_data = generate_lorentz_curves_sim(),
-                          show = FALSE,
-                          mar = c(4.1, 4.1, 1.1, 0.1)) {
+get_ppm_range <- function(spectrum_data) {
+    if (is_decons0(spectrum_data) || is_decon1(spectrum_data)) {
+        x0s <- lapply(spectrum_data, function(x) x$peak_triplets_middle)
+    } else if (is_decons2(spectrum_data) || is_aligns(spectrum_data)) {
+        x0s <- lapply(spectrum_data, function(x) x$x0)
+    } else {
+        stop("spectrum_data must be a decons0, decons1, decons2, or aligns object. See help('metabodecon_classes') for details.")
+    }
+
     msg <- "spectrum_data must be a list of deconvoluted spectra."
     ss <- spectrum_data
     ss <- if (is_decon_list(ss)) ss else if (is_decon_obj(ss)) list(ss) else stop(msg)
     ppm_min <- min(sapply(ss, function(s) min(s$peak_triplets_middle)))
     ppm_max <- max(sapply(ss, function(s) max(s$peak_triplets_middle)))
     ppm_rng <- c(ppm_min, ppm_max)
-    if (show) plot_spectra(ss, mar = mar, peak_rng = ppm_rng)
     ppm_rng
 }
 
@@ -344,8 +348,9 @@ speaq_align <- function(feat = gen_feat_mat(spectrum_data),
 #' I.e. column 3 and 4 get merged, because they are in `range` of each other
 #' and have no common non-zero entries.
 #'
-#' @author Initial version from Wolfram Gronwald. Refactored by Tobias Schmidt
-#' in 2024.
+#' @author
+#' Initial version from Wolfram Gronwald.
+#' Refactored by Tobias Schmidt in 2024.
 #'
 #' @examples
 #' sim_subset <- metabodecon_file("bruker/sim_subset")
@@ -531,7 +536,7 @@ dohCluster <- function(X,
     return(res)
 }
 
-#' @author Wolfram Gronwald.
+#' @author Wolfram Gronwald
 #'
 #' @noRd
 #'
@@ -625,7 +630,7 @@ dohCluster_withoutMaxShift <- function(X,
     return(return_list)
 }
 
-#' @author Wolfram Gronwald.
+#' @author Wolfram Gronwald
 #'
 #' @noRd
 #'
@@ -735,10 +740,8 @@ get_decon_params <- function(data_path, warn = TRUE, check = TRUE) {
     params
 }
 
-#' @author Tobias Schmidt
-#'
 #' @noRd
-#'
+#' @author Tobias Schmidt
 read_decon_params <- function(data_path) {
     par_txt <- dir(data_path, "(.*) parameters.txt", full.names = TRUE)
     spc_txt <- dir(data_path, "(.*) approximated_spectrum.txt", full.names = TRUE)
@@ -763,19 +766,15 @@ read_decon_params <- function(data_path) {
     named(w, lambda, A, spectrum_superposition)
 }
 
-#' @author Tobias Schmidt
-#'
 #' @noRd
-#'
+#' @author Tobias Schmidt
 check_decon_params <- function(params) {
     nulls <- unlist(sapply(params, function(pp) sapply(pp, is.null)))
     if (any(nulls)) warning("Detected missing params: ", names(nulls)[nulls])
 }
 
-#' @author Tobias Schmidt
-#'
 #' @noRd
-#'
+#' @author Tobias Schmidt
 rm_zero_width_peaks <- function(params) {
     for (i in seq_len(params$A)) {
         not_zero <- params$w[[i]] != 0
@@ -786,25 +785,35 @@ rm_zero_width_peaks <- function(params) {
     params
 }
 
-#' @author Tobias Schmidt
-#'
 #' @noRd
-#'
+#' @author Tobias Schmidt
 is_decon_obj <- function(x) {
     keys <- c(
-        "number_of_files", "filename", "x_values", "x_values_ppm",
-        "y_values", "spectrum_superposition", "mse_normed", "index_peak_triplets_middle",
-        "index_peak_triplets_left", "index_peak_triplets_right", "peak_triplets_middle",
-        "peak_triplets_left", "peak_triplets_right", "integrals", "signal_free_region",
-        "range_water_signal_ppm", "A", "lambda", "x_0"
+        "number_of_files",
+        "filename",
+        "x_values",
+        "x_values_ppm",
+        "y_values",
+        "spectrum_superposition",
+        "mse_normed",
+        "index_peak_triplets_middle",
+        "index_peak_triplets_left",
+        "index_peak_triplets_right",
+        "peak_triplets_middle",
+        "peak_triplets_left",
+        "peak_triplets_right",
+        "integrals",
+        "signal_free_region",
+        "range_water_signal_ppm",
+        "A",
+        "lambda",
+        "x_0"
     )
     if (is.list(x) && all(keys %in% names(x))) TRUE else FALSE
 }
 
-#' @author Tobias Schmidt
-#'
 #' @noRd
-#'
+#' @author Tobias Schmidt
 is_decon_list <- function(x) {
     if (is.list(x) && all(sapply(x, is_decon_obj))) TRUE else FALSE
 }

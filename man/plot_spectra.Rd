@@ -4,17 +4,13 @@
 \alias{plot_spectra}
 \title{Plot Spectra}
 \usage{
-plot_spectra(
-  x,
-  mar = c(4.1, 4.1, 1.1, 0.1),
-  peak_rng = get_ppm_range(x, show = FALSE)
-)
+plot_spectra(obj, ..., mar = c(4.1, 4.1, 1.1, 0.1))
 }
 \arguments{
+\item{mar}{A numeric vector of length 4, which specifies the margins of the plot.}
+
 \item{x}{An object of type decons0, decons1 or decons2. For details see
 \href{https://spang-lab.github.io/metabodecon/articles/Metabodecon-Classes.html}{Metabodecon Classes}.}
-
-\item{mar}{A numeric vector of length 4, which specifies the margins of the plot.}
 
 \item{peak_rng}{A numeric vector of length 2, specifying the ppm range across
 all peaks of the provided deconvoluted spectra.}
@@ -26,13 +22,7 @@ A plot of the deconvoluted spectra.
 Plot a set of deconvoluted spectra.
 }
 \examples{
-decons <- generate_lorentz_curves(
-     data_path = sim,
-     sfr = c(3.55, 3.35),
-     wshw = 0,
-     ask = FALSE,
-     verbose = FALSE
-)
+obj <- deconvolute(sim, sfr = c(3.55, 3.35))
 plot_spectra(decons)
 
 }
