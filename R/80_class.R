@@ -29,7 +29,7 @@ metabodecon_classes <- NULL
 #'
 #' More details can be found in Metabodecon's online documentation at
 #' [spang-lab.github.io/metabodecon/articles/Metabodecon-Classes](
-#' https://spang-lab.github.io/metabodecon/articles/Metabodecon-Classes.html).
+#' https://spang-lab.github.io/metabodecon/articles/Classes.html).
 NULL
 
 spectrum_members <- c(

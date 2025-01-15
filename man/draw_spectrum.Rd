@@ -39,7 +39,8 @@ draw_spectrum(
 )
 }
 \arguments{
-\item{obj}{An object of type \code{spectrum} or \code{decon2}. For details see \href{https://spang-lab.github.io/metabodecon/articles/Metabodecon-Classes.html}{Metabodecon Classes}.}
+\item{obj}{An object of type \code{spectrum} or \code{decon2}. For details see
+\href{metabodecon_classes}{Metabodecon Classes}.}
 
 \item{foc_rgn}{Numeric vector specifying the start and end of focus region in ppm.}
 
@@ -109,7 +110,7 @@ NULL. Called for side effect of plotting.
 \description{
 Draws a single spectrum.  Internally  used  by  \code{\link[=plot_spectrum]{plot_spectrum()}},  which  is
 usually  the  recommended  way  to  plot  spectra.  For  usage  examples  see
-\href{https://github.com/spang-lab/metabodecon/blob/main/test/testthat/test-draw_spectrum.R}{test/testthat/test-draw_spectrum.R}.
+\href{https://github.com/spang-lab/metabodecon/blob/main/tests/testthat/test-draw_spectrum.R}{test/testthat/test-draw_spectrum.R}.
 }
 \details{
 Parameters \code{bt_axis}, \code{lt_axis}, \code{tp_axis} and \code{rt_axis} all  support  option

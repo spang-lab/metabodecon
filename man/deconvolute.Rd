@@ -116,7 +116,7 @@ Acquisition & Processing > TopSpin Processing Commands and Parameters'
 (requires login).}
 }
 \value{
-A 'decon2' object as described in \href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{Metabodecon Classes}.
+A 'decon2' object as described in \href{metabodecon_classes}{Metabodecon Classes}.
 }
 \description{
 Deconvolutes NMR spectra by modeling each detected signal within

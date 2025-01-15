@@ -56,7 +56,7 @@
 #' @param wshw Half-width of the water artifact in ppm.  See 'Details'.
 #'
 #' @return A 'decon2' object as described in [Metabodecon
-#' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
+#' Classes](metabodecon_classes).
 #'
 #' @details
 #'

@@ -1,34 +1,46 @@
 # metabodecon 1.2.0
 
-Development Branch:
+Finished the following tasks. For details about each task, see
+[TODOS.md](https://github.com/spang-lab/metabodecon/blob/main/TODOS.md).
 
-* `batch-mode`
-
-API:
-
-* Changed `download_example_datasets`. If `extract=TRUE`, the path to the extracted folder is now returned, instead of the path to the zip file.
-
-Documentation:
-
-* Added `acqus` and `1r` file to section *File Structure* of [FAQ](vignettes/FAQ.Rmd)
-* Added info about bruker namings to [FAQ](vignettes/FAQ.Rmd)
-
-Internal:
-
-* Added helper functions `load_jcampdx_spectrum()` and `load_bruker_spectrum()` and corresponding test cases. These functions are more of less directly extract from `deconvolute_spectrum()`.
-* Added improved versions of `load_jcampdx_spectrum()` and `load_bruker_spectrum()` named `load_jcampdx_spectrum_v2()` and `load_bruker_spectrum_v2()` incl. test cases
-* Added util function `norm_path()`.
-* Added test cases for `deconvolute_spectrum()`
-* Moved helper function `.deconvolute_spectrum()` into separate file `deconvolute_spectrum_v2` for development and renamed it to `deconvolute_spectrum_v2()`.
-* Added helper function `get_signal_free_region_in_su()`
-* Disabled `object_length_linter`
-* Moved `deconvolution` function `MetaboDecon1D.R` into separate file `MetaboDecon1D_deconvolution.R`.
-* Moved `str2`, `get_num_input`, `get_str_input`, `get_yn_input`, `collapse` from `main_v2.R` into `util.R`
-* Added functions `ppm_to_dp()`, `ppm_to_sdp()`, `dp_to_ppm()` to `util.R`
-* Added `GLOSSARY.md`
-* Extracted code parts from `deconvolute_spectrum_v2()` and moved them into functions `determine_water_signal`, `determine_signal_free_region`, `plot_sfr` and `plot_ws`.
-* Added test cases for `determine_water_signal` and `determine_signal_free_region`
-* Moved function `deconvolution()` from `MetaboDecon1D.R` into `MetaboDecon1D_deconvolution.R`
+- CRAN-0: Omit "Functions for" in title
+- CRAN-1: Omit "Functions for" in DESCRIPTION
+- CRAN-2: Explain acronyms like NMR
+- CRAN-3: Use correct reference format in DESCRIPTION
+- CRAN-4: Explain return value in function docs
+- CRAN-5: Remove examples from unexported functions
+- CRAN-6: Fix vignettes
+- CRAN-7: Check dontrun examples
+- CRAN-8: Functions should not write to disk by default
+- CRAN-9: Functions should not change working dir or global options
+- FEATURE-01: Use temp dirs for example data
+- FEATURE-02: Add minimal example dataset
+- FEATURE-03: Batch Mode
+- FEATURE-04: Parallelize
+- FEATURE-05: Add test suite
+- FEATURE-06: Return lambda in hertz
+- FEATURE-07: Improve return value
+- FEATURE-09 Implement `read_spectra()`
+- FEATURE-11: Accept dataframes in GLC
+- FEATURE-14: Provide simulated datasets
+- FEATURE-15: Add lifecycle badges
+- FEATURE-16: Improve multiprocessing
+- FEATURE-17: Discard output
+- FEATURE-18: Implement `plot_spectrum()`
+- FEATURE-20: Implement `deconvolute_blood()`
+- FIX-1: Prevent crashes for high smoothing
+- REFACTOR-01: Combine load_spectrum functions
+- REFACTOR-02: Improve Text Output (`-License`, `+Timestamps`)
+- REFACTOR-04: Plotting speed
+- REFACTOR-05: Speedup smoothing
+- REFACTOR-06: Use a single unit as source of truth
+- REFACTOR-07: Split monolithic functions into smaller parts
+- REFACTOR-08: Improve docs for Metabodecon1D return value
+- REFACTOR-09: Replace glc with `generate_lorentz_curves()`
+- REFACTOR-10: Replace all md1d with `MetaboDecon1D()` calls
+- REFACTOR-11: Implement `calc_prarp()`
+- REFACTOR-12: Write compliance tests
+- REFACTOR-13: Write PRARP tests
 
 # metabodecon 1.1.1
 

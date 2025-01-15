@@ -66,7 +66,12 @@ devtools::spell_check()
 urlchecker::url_check()
 
 # Slower, but more realistic tests than devtools::check()
-rcmdcheck::rcmdcheck(args = c("--no-manual", "--as-cran"), build_args = ("--no-manual"), error_on = ("warning"), check_dir = "../FastRet-RCMDcheck")
+rcmdcheck::rcmdcheck(
+    args = c("--no-manual", "--as-cran"),
+    build_args = ("--no-manual"),
+    error_on = ("warning"),
+    check_dir = "../FastRet-RCMDcheck"
+)
 devtools::check(remote = TRUE, manual = TRUE, run_dont_test = TRUE)
 
 # Check reverse dependencies. For details see:

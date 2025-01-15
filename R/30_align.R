@@ -35,7 +35,7 @@
 #'
 #' @return
 #' An  object  of   type   `AlignedSpectra`   as   described   in   [Metabodecon
-#' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
+#' Classes](metabodecon_casses).
 #'
 #' @examples
 #' sim_dir <- metabodecon_file("bruker/sim")

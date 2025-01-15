@@ -26,5 +26,5 @@ deconvolutions.  Therefore,  for  each  individual  class,  a   corresponding
 \code{spectra}, \code{decons0}, \code{decons1}, \code{decons2}, and \code{aligns}.
 
 More details can be found in Metabodecon's online documentation at
-\href{https://spang-lab.github.io/metabodecon/articles/Metabodecon-Classes.html}{spang-lab.github.io/metabodecon/articles/Metabodecon-Classes}.
+\href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{spang-lab.github.io/metabodecon/articles/Metabodecon-Classes}.
 }
