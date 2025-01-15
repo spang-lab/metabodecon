@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metabodecon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -96,7 +96,7 @@
 <ul><li>Fixed filenames of samples in blood dataset (renamed from <code>Bood_&lt;nr&gt;</code> to <code>blood_&lt;nr&gt;</code>).</li>
 <li>Renamed <code>example_datasets/jcampdx/urine/urine.dx</code> to <code>example_datasets/jcampdx/urine/urine_1.dx</code> and renamed <code>example_datasets/bruker/urine/urine/</code> to <code>example_datasets/bruker/urine/urine_1/</code>. This was done because <code>list.files</code> seems to return different orderings for <code>urine.dx</code> and <code>urine_2.dx</code> in different operating systems, whereas <code>urine_1.dx</code> and <code>urine_2.dx</code> are sorted the same way everywhere. This makes it easier to write clear and concise test cases, because we don’t need to check for file ordering.</li>
 </ul><p>Documentation:</p>
-<ul><li>Fixed broken image in <a href="vignettes/FAQ.Rmd">vignettes/FAQ.Rmd</a>.</li>
+<ul><li>Fixed broken image in <a href="https://github.com/spang-lab/metabodecon/blob/main/vignettes/FAQ.Rmd" class="external-link">vignettes/FAQ.Rmd</a>.</li>
 </ul><p>Testing:</p>
 <ul><li>Added unit tests for <code><a href="../reference/deconvolute.html">generate_lorentz_curves()</a></code>.</li>
 <li>Enabled parallel processing for unit tests.</li>
@@ -126,9 +126,9 @@
 <li>Function <code><a href="../reference/get_data_dir.html">get_data_dir()</a></code> is now deprecated in favour of <code><a href="../reference/datadir.html">datadir()</a></code>
 </li>
 </ul><p>Documentation:</p>
-<ul><li>Added question about file structure to <a href="vignettes/FAQ.Rmd">vignettes/FAQ.Rmd</a>
+<ul><li>Added question about file structure to <a href="https://github.com/spang-lab/metabodecon/blob/main/vignettes/FAQ.Rmd" class="external-link">vignettes/FAQ.Rmd</a>
 </li>
-<li>Created categories for function reference in <a href="_pkgdown.yml">_pkgdown.yml</a>
+<li>Created categories for function reference in <a href="https://github.com/spang-lab/metabodecon/blob/main/_pkgdown.yml" class="external-link">_pkgdown.yml</a>
 </li>
 </ul><p>Datasets:</p>
 <ul><li>Moved <code>misc/datasets</code> to <code>misc/example_datasets</code>
