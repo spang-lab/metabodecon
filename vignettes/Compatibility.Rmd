@@ -5,6 +5,8 @@ vignette: >
   %\VignetteIndexEntry{Compatibility}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+resource_files:
+  - vignettes/Classes/metabodecon_workflow.svg
 ---
 
 The original MetaboDecon1D package (v0.2.2) provided four functions for
@@ -38,7 +40,7 @@ and returned types is provided in
 | align | gen_feat_mat                    | -   | s   | s   | d   | -   |
 | align | get_ppm_range                   | -   | s   | s   | d   | -   |
 | align | speaq_align                     | -   | s   | s   | d   | -   |
-| align | align                   | -   | -   | x   | x   | s   |
+| align | align                           | -   | -   | x   | x   | s   |
 | data  | get_data_dir                    | -   | s   | s   | d   | -   |
 | data  | datadir                         | -   | -   | s   | s   | s   |
 | data  | datadir_persistent              | -   | -   | s   | s   | s   |
@@ -53,38 +55,36 @@ and returned types is provided in
 
 # Figure 1: Metabodecon Workflow
 
-![Metabodecon Workflow](metabodecon_workflow.svg)
+![Metabodecon Workflow](Classes/metabodecon_workflow.svg)
 
 # Table 2: Feature Matrix
 
-| Feature                          | BWCᵃ  | F1ᵇ | F2ᵇ | F3ᵇ | Issue        |
-| -------------------------------- | ----- | --- | --- | --- | ------------ |
-| Doesn't write to disk by default | semiᶜ | xᵉ  | x   | x   | [CRAN-8]     |
-| Doesn't change wd or global opts | semiᶜ | xᵉ  | x   | x   | [CRAN-9]     |
-| Uses faster peak selection       | yesᵈ  |     | x   | x   | [CHECK-7]    |
-| Batch Mode                       | yes   |     | x   | x   | [FEATURE-3]  |
-| Parallelized                     | yes   |     | x   | x   | [FEATURE-4]  |
-| Improved plotting speed          | yes   |     | x   | x   | [REFACTOR-4] |
-| Uses micro functions             | yes   |     | x   | x   | [REFACTOR-7] |
-| Doesn't show License             | semiᶜ |     | x   | x   | [REFACTOR-2] |
-| Prints timestamps                | semiᶜ |     | x   | x   | [REFACTOR-2] |
-| Uses correctly scaled y values   | no    |     |     | x   | [CHECK-1]    |
-| Uses correct sfr calculation     | no    |     |     | x   | [CHECK-2]    |
-| Uses correct ws calculation      | no    |     |     | x   | [CHECK-3]    |
-| Uses dynamic signal removal      | no    |     |     | x   | [CHECK-5]    |
-| Uses improved return list        | no    |     |     | x   | [FEATURE-7]  |
-| Uses faster smoothing            | no    |     |     | x   | [REFACTOR-5] |
-| Does all calculations in ppm     | no    |     |     | x   | [REFACTOR-6] |
+| Feature                          | BWC  | F1  | F2  | F3  | Issue        |
+| -------------------------------- | ---- | --- | --- | --- | ------------ |
+| Doesn't write to disk by default | semi | x   | x   | x   | [CRAN-8]     |
+| Doesn't change wd or global opts | semi | x   | x   | x   | [CRAN-9]     |
+| Uses faster peak selection       | yes  |     | x   | x   | [CHECK-7]    |
+| Batch Mode                       | yes  |     | x   | x   | [FEATURE-3]  |
+| Parallelized                     | yes  |     | x   | x   | [FEATURE-4]  |
+| Improved plotting speed          | yes  |     | x   | x   | [REFACTOR-4] |
+| Uses micro functions             | yes  |     | x   | x   | [REFACTOR-7] |
+| Doesn't show License             | semi |     | x   | x   | [REFACTOR-2] |
+| Prints timestamps                | semi |     | x   | x   | [REFACTOR-2] |
+| Uses correctly scaled y values   | no   |     |     | x   | [CHECK-1]    |
+| Uses correct sfr calculation     | no   |     |     | x   | [CHECK-2]    |
+| Uses correct ws calculation      | no   |     |     | x   | [CHECK-3]    |
+| Uses dynamic signal removal      | no   |     |     | x   | [CHECK-5]    |
+| Uses improved return list        | no   |     |     | x   | [FEATURE-7]  |
+| Uses faster smoothing            | no   |     |     | x   | [REFACTOR-5] |
+| Does all calculations in ppm     | no   |     |     | x   | [REFACTOR-6] |
 
-- ᵃ BWC == backwards compatible
-- ᵇ F1 == MetaboDecon1D, F2 == generate_lorentz_curves, F3 == deconvolute_ispecs
-- ᶜ The change is backwards compatible if you ignore global state, such as files
-  written to disk or output printed to STDOUT. However, if a script expects such
-  side effects, it will fail. Therefore we set this to "semi".
-- ᵈ The faster implementation also fixes an indexing bug, which in most cases
-  shouldn't have any effect, but in some rare cases it might cause one peak to
-  be missed.
-- ᵉ Only true for MetaboDecon1D versions >= v1.0.0
+- BWC == backwards compatible
+- F1 == MetaboDecon1D
+- F2 == generate_lorentz_curves
+- F3 == deconvolute_ispecs
+- The faster peak selection implementation also fixes an indexing bug, which in
+  most cases shouldn't have any effect, but in some rare cases might cause
+  one peak to be missed.
 
 [CHECK-1]: ../TODOS.md#check-1-use-of-dtypp-in-load_spectrum
 [CHECK-2]: ../TODOS.md#check-2-signal-free-region-calculation

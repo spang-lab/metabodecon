@@ -1,8 +1,12 @@
 #' @noRd
 #' @title Setup a development environment for `plot_spectrum`
 mkenv_plot_spectrum <- function() {
-    target <- c("sim1", "sap2")[1]
-    decon <- switch(target, "sim1" = get_sim1_decon1(), "sap2" = get_sap2_idecon())
+    target <- c("sim1", "sap")[1]
+    decon <- switch(
+        target,
+        "sim1" = deconvolute(sim[[1]], sfr = c(3.55, 3.35)),
+        "sap" = deconvolute(sap[[1]], sfr = c(3.2, -3.2), smopts = c(1, 3), delta = 3)
+    )
     args <- stub(func = plot_spectrum, x = decon, ... = NULL, envir = .GlobalEnv)
     deferred_run()
     if (FALSE) plot_spectrum(decon, frame = TRUE)

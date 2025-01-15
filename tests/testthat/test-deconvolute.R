@@ -1,8 +1,8 @@
-sap2 <- test_that("deconvolute works for single spectrum", {
-    decon2 <- deconvolute(sap2, nfit = 3, sfr = c(3.2, -3.2), smopts = c(1, 3), delta = 3)
+sap <- test_that("deconvolute works for single spectrum", {
+    decon2 <- deconvolute(sap[[1]], nfit = 3, sfr = c(3.2, -3.2), smopts = c(1, 3), delta = 3)
     expect_identical(object = names(decon2), expected = decon2_members)
     expect_identical(object = class(decon2), expected = "decon2")
-    obj2 <- calc_prarp(x = decon2, truepar = sap2$meta$simpar)
+    obj2 <- calc_prarp(x = decon2, truepar = sap[[1]]$meta$simpar)
     expect_true(obj2$prarpx >= 0.961) # MetaboDecon1D has a PRARPX of 0.507. See test-MetaboDecon1d.R.
 })
 

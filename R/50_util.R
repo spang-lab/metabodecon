@@ -27,7 +27,7 @@
 #' strictly positive, wrap the result with `abs()`.
 #'
 #' @param xa
-#' A numeric vector specifying widths/postions in unit A.
+#' A numeric vector specifying widths/positions in unit A.
 #'
 #' @param ya,yb
 #' A numeric vector specifying the positions of at least two points in unit A /
@@ -293,7 +293,8 @@ readline <- function(...) {
 #' @return The user's input as a numeric value.
 #' @examples
 #' if (interactive()) {
-#'     get_num_input("Enter a number between 1 and 10: ", min = 1, max = 10)
+#'      x <- get_num_input("Enter a number between 1 and 10: ", min = 1, max = 10)
+#'      y <- get_num_input("Enter a number between 1 and 10: ", min = 1, max = 10)
 #' }
 get_num_input <- function(prompt, min = -Inf, max = Inf, int = FALSE) {
     pat <- if (int) "^[+-]?[ ]*[0-9]+$" else "^[+-]?[ ]*[0-9]*\\.?[0-9]+$"
@@ -380,7 +381,7 @@ get_yn_input <- function(prompt) {
 
 # Print Functions (Private) #####
 
-esc <- c(
+esc <- list(
     # https://en.wikipedia.org/wiki/ANSI_escape_code
     reset = "\033[0m", # Reset all formatting
     bold = "\033[1m", # Bold text
@@ -519,6 +520,7 @@ human_readable <- function(x, unit, fmt = "%.1f") {
 # Type Checking (Private) #####
 
 #' @noRd
+#'
 #' @name Type Checking
 #'
 #' @description
@@ -767,7 +769,7 @@ generate_lorentz_curves_type_checks <- quote(
 #' 3. The resonance frequency of the reference equals the resonance frequency of
 #'    protons
 #'
-#' @param x A spectrum object as described in [metabodecon_classes].
+#' @param x A [spectrum](metabodecon_classes) object.
 #'
 #' @return The magnetic field strength in Tesla.
 #'

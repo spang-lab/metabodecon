@@ -2,33 +2,24 @@
 
 ## v1.2.0
 
-### DOC-1: Document whole package
-
-Document the whole package in vignettes, including chapters about:
-
-- [x] Classes.Rmd
-- [x] Compatibility.Rmd
-- [x] Contributing.Rmd
-- [x] Datasets.Rmd
-- [x] FAQ.Rmd
-- [x] MetaboDecon1D.Rmd
-- [ ] Get_Started.Rmd
-
-### DOC-2: Improve function docs
-
-1. Add author descriptions to each function
-2. Add lifecycle badges to each exported function
-3. Ensure each exported function is used at least once in a vignette
-4. Remove unused functions
-
 ### FEATURE-13: Merge into main
 
-Merge branch `v1.2.0` into `main`.
-Start a new branch `v1.3.0` for the remaining todos.
+- [ ] Fix all R CMD Check findings.
+- [ ] Merge branch `v1.2.0` into `main`.
 
 ### CRAN-10: Resubmit to CRAN
 
-Fix all R CMD check findings and resubmit the package to CRAN.
+- [ ] Resubmit to CRAN.
+
+### DOC-2: Improve docs
+
+- [ ] Add author descriptions to each function
+- [ ] Add lifecycle badges to each exported function
+- [ ] Ensure each exported function is used at least once in a vignette
+- [ ] Remove unused functions
+- [ ] Improve `Get_Started` by adding nicer plots
+- [ ] Write `Deconvolution_Details` vignette
+- [ ] Write `Alignment_Details` vignette
 
 ### DOC-3: Write paper
 
@@ -86,7 +77,7 @@ Implement `deconvolute_spectra()` and `deconvolute_spectrum()` which should be t
 ) in `calc_A`, `calc_lambda` and `calc_w`.
 - Add testcase with 100 iterations
 - Add testcase with one big peak at 0.000 ppm (because it's unclear why <https://github.com/spang-lab/metabodecon/blob/v1.2.0/R/21_decon_helpers.R#L315> checks for w[i] == 0).
-- Check special handling for cases with A[i] == 0 and lambda[i] == 0 in paramater approximaton. Max analyzed it and concluded that checks are not necessary. My though: copy paste artifacts from the the w[i] == 0 check (which is wrong).
+- Check special handling for cases with A[i] == 0 and lambda[i] == 0 in parameter approximaton. Max analyzed it and concluded that checks are not necessary. My though: copy paste artifacts from the the w[i] == 0 check (which is wrong).
 - Show prarp in `plot_spectrum()`
 - Show peak scores in `plot_spectrum()`
 
@@ -784,3 +775,17 @@ ToSc: affected functions are:
 > - Sombke Maximilian
 
 2024/07/09: Done in branch `v1.2.0` with commit `f5c204cab44b838afe5d5e8c7ace8c74f11b293c`.
+
+### DOC-1: Document whole package
+
+Document the whole package in vignettes, including chapters about:
+
+- [x] Classes.Rmd
+- [x] Compatibility.Rmd
+- [x] Contributing.Rmd
+- [x] Datasets.Rmd
+- [x] FAQ.Rmd
+- [x] MetaboDecon1D.Rmd
+- [x] Get_Started.Rmd
+
+*Done on 2025/01/14 in branch v1.2.0 with commit 14e0326..71fdc2c*

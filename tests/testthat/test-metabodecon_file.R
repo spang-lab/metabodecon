@@ -7,7 +7,7 @@ test_that("metabodecon_file works", {
     expect_length(metabodecon_file("sim/sim_01"), 1)
 
     # Ambiguous paths (i.e. multiple matches)
-    expect_length(metabodecon_file("sim"), 2)
+    expect_length(metabodecon_file("sim_01"), 2)
     expect_length(metabodecon_file("urine"), 2)
 
     # Non-existing paths (i.e. a character vector of length zero gets returned)

@@ -2,7 +2,7 @@
 % Please edit documentation in R/10_spec.R
 \name{read_spectrum}
 \alias{read_spectrum}
-\title{Read a spectrum from Disk}
+\title{Read one or more spectra from Disk}
 \usage{
 read_spectrum(
   data_path = metabodecon_file("bruker/sim/sim_01"),
@@ -15,35 +15,35 @@ read_spectrum(
 )
 }
 \arguments{
-\item{data_path}{The path of the file/folder containing the spectrum data.
-E.g. \code{"example_datasets/jcampdx/urine/urine_1.dx"} or
+\item{data_path}{The path of the file/folder containing the spectrum data. E.g.
+\code{"example_datasets/jcampdx/urine/urine_1.dx"} or
 \code{"example_datasets/bruker/urine/urine"}.}
 
-\item{file_format}{The file_format of the spectrum file. E.g. \code{"bruker"} or
-\code{"jcampdx"}.}
+\item{file_format}{The file_format of the spectrum file. E.g. \code{"bruker"} or \code{"jcampdx"}.}
 
-\item{expno, procno}{The experiment/processing number for the file. E.g.
-\code{"10"}. Only relevant if \code{file_format} equals \code{"bruker"}. For details see
-section \href{https://spang-lab.github.io/metabodecon/articles/FAQ.html#file-structure}{File Structure} in the metabodecon FAQ.}
+\item{expno, procno}{The experiment/processing number for the file. E.g. \code{"10"}. Only relevant if
+\code{file_format} equals \code{"bruker"}. For details see section \href{https://spang-lab.github.io/metabodecon/articles/FAQ.html#file-structure}{File Structure} in
+the metabodecon FAQ.}
 
-\item{raw}{If \code{FALSE}, scales the returned signal intensities based on
-information available in the spectrum metadata, in particular \code{NC_proc}. For
-details see \code{processing-reference.pdf}, available at
-\url{https://www.bruker.com/en.html} at section 'Services & Support >
-Documentation & Manuals > Magnetic Resonance > Acquisition & Processing >
-TopSpin Processing Commands and Parameters' (requires login).}
+\item{raw}{If \code{FALSE}, scales the returned signal intensities based on information
+available in the spectrum metadata, in particular \code{NC_proc}. For details see
+\code{processing-reference.pdf}, available at \url{https://www.bruker.com/en.html} at
+section 'Services & Support > Documentation & Manuals > Magnetic Resonance >
+Acquisition & Processing > TopSpin Processing Commands and Parameters'
+(requires login).}
 
 \item{silent}{If \code{TRUE}, no output will be printed to the console.}
 
-\item{force}{If \code{TRUE}, try to continue when encountering errors and print
-info messages instead. To hide these messages as well, set \code{silent = TRUE}.}
+\item{force}{If \code{TRUE}, try to continue when encountering errors and print info messages
+instead. To hide these messages as well, set \code{silent = TRUE}.}
 }
 \value{
-A \code{spectrum} object as described in \href{https://spang-lab.github.io/metabodecon/articles/Metabodecon-Classes.html}{Metabodecon Classes}.
+A \href{metabodecon_classes}{spectrum} object.
 }
 \description{
-Read a single spectrum file or folder from disk and return it as \code{spectrum}
-object.
+\code{read_spectrum()} reads a single spectrum from disk and returns it as
+\code{spectrum} object. \code{read_spectra()} can be used to read multiple spectra at
+once and returns a \code{spectra} object.
 }
 \examples{
 relpath <- "example_datasets/bruker/urine"
@@ -68,8 +68,3 @@ x1_dx <- read_spectrum(urine_1_dx, file_format = "jcampdx")
 stopifnot(all.equal(x1, x1_dx))
 }
 }
-\seealso{
-Other {spectrum functions}: 
-\code{\link{make_spectrum}()}
-}
-\concept{{spectrum functions}}

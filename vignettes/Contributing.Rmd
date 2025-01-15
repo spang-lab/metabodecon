@@ -38,22 +38,24 @@ devtools::document() # Build files in man folder
 devtools::spell_check() # Check spelling (add false positives to inst/WORDLIST)
 urlchecker::url_check() # Check URLs
 run_tests(all = TRUE) # Execute tests from tests folder inkl. slow tests
+devtools::run_examples() # Run all examples in the package
 toscutil::check_pkg_docs() # Check function documentation for missing tags
 devtools::check() # Check package formalities
 devtools::install() # Install as required by next command
 pkgdown::build_site() # Build website in docs folder
 ```
 
-After doing these steps, you can push your changes to Github.
+After doing these steps, you can push your changes to Github and create a pull
+request.
 
 # Releasing to CRAN
 
 Whenever a package maintainer wants to release a new version of the package to
 CRAN, they should:
 
-1.  Check whether the [release
-    requirements](https://r-pkgs.org/release.html#sec-release-initial) are
-    fulfilled
+1.  Check whether the
+    [release requirements](https://r-pkgs.org/release.html#sec-release-initial)
+    are fulfilled
 2.  Use the following commands to do a final check of the package and release it
     to CRAN
 

@@ -45,11 +45,10 @@ simulate_spectrum(
 \item{noise}{The noise to add to the spectrum.}
 }
 \value{
-A \code{spectrum} object as described in \link{metabodecon_classes}.
+A \href{metabodecon_classes}{spectrum} object.
 }
 \description{
 Simulates a 1D NMR spectrum based on the provided parameters.
-
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 }
 \examples{
@@ -57,7 +56,7 @@ simA <- simulate_spectrum("simA")
 simA_copy <- simulate_spectrum("simA")
 simB <- simulate_spectrum("simB")
 simC <- simulate_spectrum("simC", npk = 20)
-plot_spectrum(simC, foc_rgn = c(0.25, 0.75))
+plot_spectrum(simC)
 if (!identical(simA, simA_copy)) stop()
-if (identical(simA, simB)) stop()
+if ( identical(simA, simB     )) stop()
 }

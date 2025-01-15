@@ -49,9 +49,10 @@ Suggests:
     knitr,
     lifecycle,
     microbenchmark,
-    mirai,
+    pkgload,
     rmarkdown,
     usethis,
+    vdiffr,
     testthat (>= 3.0.0)
 LazyData: true
 Config/testthat/edition: 3

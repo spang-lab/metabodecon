@@ -7,9 +7,11 @@ develop_draw_spectrum <- function() {
     untrace(draw_spectrum)
 
     # Define Input Object
-    target <- c("sim1", "sap2")[1]
-    obj <- switch(target, "sim1" = get_sim1_decon1(), "sap2" = get_sap2_idecon())
-    obj <- as_v2_obj(obj)
+    target <- c("sim1", "sap1")[1]
+    obj <- switch(target,
+        "sim1" = deconvolute(sim[[1]], sfr = c(3.55, 3.35)),
+        "sap1" = deconvolute(sap[[1]], sfr = c(3.2, -3.2), smopts = c(1, 3), delta = 3)
+    )
 
     # Get to state within [plot_spectrum()] where [draw_spectrum()] is called
     stub(plot_spectrum, obj = obj, ... = NULL)
@@ -28,7 +30,7 @@ develop_draw_spectrum <- function() {
 }
 
 test_draw_spectrum <- function() {
-    decon <- as_v2_obj(get_sim1_decon1())
+    decon <- deconvolute(sim[[1]], sfr = c(3.55, 3.35))
     local_par(mfrow = c(4, 2), mar = c(2, 2, 0.5, 0.5))
     plot_dummy()
     draw_spectrum(obj = decon)

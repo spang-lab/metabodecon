@@ -16,16 +16,16 @@ reference:
 - title: Deconvolution
   desc: Functions to deconvolute a spectrum into its individual peaks.
   contents:
-  - generate_lorentz_curves
-  - plot_lorentz_curves_save_as_png
-  - plot_spectrum
-  - plot_spectrum_superposition_save_as_png
-  - plot_triplets
   - read_spectrum
+  - read_spectra
+  - plot_spectrum
+  - plot_spectra
+  - draw_spectrum
+  - generate_lorentz_curves # shares docs with `deconvolute()`
 - title: Alignment
   desc: Functions to align multiple spectra.
   contents:
-  - align_spectra
+  - align
   - combine_peaks
   - dohCluster
   - gen_feat_mat
@@ -40,26 +40,29 @@ reference:
   - download_example_datasets
   - metabodecon_file
   - sim
+  - sap
   - tmpdir
 - title: Utility
   desc: Utility functions, e.g. for converting between units or for calculating y values for a given lorentz curve.
   contents:
   - as_metabodecon_class
-  - calculate_lorentz_curves
+  - is_metabodecon_class
+  - print_methods
   - convert_pos
   - convert_width
   - evalwith
   - make_spectrum
   - metabodecon_classes
-  - print_methods
-  - read_spectra
   - simulate_spectrum
   - transp
   - tree
-  - type_checking
   - width
 - title: Deprecated
   desc: Deprecated functions. These functions should no longer be used. They will be retained for a short period of time to give users time to migrate to their replacement function, but will be removed in future releases of the package.
   contents:
   - get_data_dir # Superseded by `datadir()`
   - MetaboDecon1D # supersed by `generate_lorentz_curves()`
+  - calculate_lorentz_curves
+  - plot_lorentz_curves_save_as_png
+  - plot_spectrum_superposition_save_as_png
+  - plot_triplets

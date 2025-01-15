@@ -6,9 +6,9 @@
 # currently only accounts for bruker-type errors of MetaboDecon1D, but not
 # jcampdx errors.
 
-sap2 <- test_that("GLC works for single spectrum", {
+sap <- test_that("GLC works for single spectrum", {
     decon1 <- generate_lorentz_curves(
-        data_path = sap2,
+        data_path = sap[[1]],
         nfit = 3,
         sfr = c(3.2, -3.2),
         wshw = 0,
@@ -19,8 +19,8 @@ sap2 <- test_that("GLC works for single spectrum", {
     )
     expect_identical(object = names(decon1), expected = decon1_members)
     expect_identical(object = class(decon1), expected = "decon1")
-    decon2 <- as_decon2(decon1, spectrum = sap2, sfr = c(3.2, -3.2), wshw = 0)
-    obj2 <- calc_prarp(x = decon2, truepar = sap2$meta$simpar)
+    decon2 <- as_decon2(decon1, spectrum = sap[[1]], sfr = c(3.2, -3.2), wshw = 0)
+    obj2 <- calc_prarp(x = decon2, truepar = sap[[1]]$meta$simpar)
     expect_true(obj2$prarpx >= 0.961) # MetaboDecon1D has a PRARPX of 0.507. See test-MetaboDecon1d.R.
 })
 

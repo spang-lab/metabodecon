@@ -7,39 +7,41 @@
 #' @description
 #' Plot a set of deconvoluted spectra.
 #'
-#' @param x
-#' An object of type decons0, decons1 or decons2. For details see
-#' [Metabodecon Classes](https://spang-lab.github.io/metabodecon/articles/Metabodecon-Classes.html).
+#' @param obj
+#' An object of type `decons0`, `decons1` or `decons2`.
+#' For details see [metabodecon_classes].
+#'
+#' @param ...
+#' Additional arguments passed to the conversion function.
+#'
+#' @param sfy
+#' Scaling factor for the y-axis.
+#'
+#' @param xlab
+#' Label for the x-axis.
+#'
+#' @param ylab
+#' Label for the y-axis.
 #'
 #' @param mar
 #' A numeric vector of length 4, which specifies the margins of the plot.
-#'
-#' @param peak_rng
-#' A numeric vector of length 2, specifying the ppm range across
-#' all peaks of the provided deconvoluted spectra.
 #'
 #' @return
 #' A plot of the deconvoluted spectra.
 #'
 #' @seealso
-#' [plot_spectrum()] for a much more sofisticated plotting routine
+#' [plot_spectrum()] for a much more sophisticated plotting routine
 #' suitable for plotting a single spectrum.
 #'
 #' @examples
-#' obj <- deconvolute(sim, sfr = c(3.55, 3.35))
-#' plot_spectra(decons)
-#'
+#' obj <- deconvolute(sim[1:4], sfr = c(3.55, 3.35))
+#' plot_spectra(obj)
 plot_spectra <- function(obj,
                          ...,
                          sfy = 1e6,
                          xlab = "Chemical Shift [ppm]",
                          ylab = paste("Signal Intensity [au] /", sfy),
                          mar = c(4.1, 4.1, 1.1, 0.1)) {
-    # CONTINUE HERE: Refactor to:
-    # 1. Use decons_v2 object
-    # 2. Use x$sit$al if available
-    # 3. Else use x$sit$sup if available
-    # 4. Else use x$si
     decons <- as_v2_objs(obj, ...)
     sis <- lapply(decons, function(x) x$sit$al %||% x$sit$sup %||% x$si)
     x0s <- lapply(decons, function(x) x$lcpar$x0)
@@ -106,58 +108,62 @@ plot_spectra <- function(obj,
 #' Plot a spectrum and zoom in on a specific region.
 #' `r lifecycle::badge("experimental")`
 #'
+#' @param x
+#' An object of type `spectrum`, `decon0`, `decon1` or `decon2`. For details see
+#' [Metabodecon Classes](https://spang-lab.github.io/metabodecon/articles/Metabodecon-Classes.html).
+#'
+#' @param ...
+#' Additional arguments passed to [draw_spectrum()] for **every** sub figure.
+#' See 'Details'.
+#'
 #' @param obj
-#' An object of type spectrum, decon0, decon1 or decon2. For details see
-#' [Metabodecon
-#' Classes](https://spang-lab.github.io/metabodecon/articles/Metabodecon-Classes.html).
+#' An object of type `spectrum` or `decon2`. Usually auto  generated  from  `x`,
+#' but can be set manually in case the default conversion is not sufficient.
 #'
 #' @param foc_rgn
-#' A numeric vector specifying the start and end of the focus region in ppm. If
-#' set to NULL, `foc_frac` is used to determine the focus region. If both
-#' `foc_rgn` and are set to NULL, [get_foc_rgn()] is used to determine a
-#' suitable focus region automatically. Takes precedence over `foc_frac`.
+#' A numeric vector specifying the start and end of the focus region in ppm.  If
+#' set to NULL, `foc_frac` is used  to  determine  the  focus  region.  If  both
+#' `foc_rgn`  and  are  set  to  NULL,  a  suitable  focus  region  is   chosen
+#' automatically. Takes precedence over `foc_frac`.
 #'
 #' @param foc_frac
 #' A numeric vector specifying the start and end of the focus region as fraction
 #' of the full spectrum width. Only used if `foc_rgn` is set to NULL.
 #'
-#' @param cnct_show
-#' Logical. If TRUE, connecting lines are drawn between sub figure 1 and the
-#' focus rectangle in sub figure 3.  See 'Details'.
-#'
-#' @param cnct_col
-#' Color of the lines connecting the main and sub figure.
-#'
-#' @param layout
-#' A list with three elements. Each element should be a numeric vector of the
-#' form `c(x1, x2, y1, y2)`. The i'th element gives the borders of the i'th sub
-#' figure in "normalized plot coordinates". Setting an element to NULL will
-#' prevent the corresponding sub figure from being drawn. For a description of
-#' the individual sub figures see 'Details'. For a description of normalized
-#' plot coordinates see [graphics::grconvertX()]. If `layout` is set to `NULL`,
-#' [get_sub_fig_rgns()] is used to determine a suitable layout automatically.
-#'
 #' @param sub1,sub2,sub3
 #' List of arguments passed to [draw_spectrum()] when drawing sub figure
 #' 1-3. See 'Details'.
+#'
+#' @param mar
+#' A numeric vector of length 4 passed, which specifies the margins of the plot.
+#' Passed to [par()]. If set to `NULL`, a suitable value is chosen automatically.
+#'
+#' @param frame
+#' A list of values passed to [box()] when drawing the frame around plot region.
+#' If set to `NULL`, no frame is drawn.
+#'
+#' @param con_lines
+#' A list of values passed to [lines()] when drawing the connecting lines between
+#' sub figure 1 and the focus rectangle in sub figure 3. See 'Details'.
+#' If set to `NULL`, the connecting lines are not drawn.
 #'
 #' @return
 #' NULL. Called for side effect of plotting as sketched in 'Details'.
 #'
 #' @details
-#' This function first calls [plot_empty()] to initalize a new plotting canvas.
-#' After that it calls [draw_spectrum()] multiple times to draw the following sub
-#' figures onto the plotting canvas:
+#' This function first initializes a new plotting canvas.  After  that  it  calls
+#' [draw_spectrum()] multiple times to draw the following sub figures  onto  the
+#' plotting canvas:
 #'
 #' 1. The signal intensities in the focus region
 #' 2. The second derivative in the focus region
 #' 3. The signal intensities over all datapoints
 #'
-#' The argument lists for the individual calls to [draw_spectrum()] are
+#' The  argument  lists  for  the  individual  calls  to  [draw_spectrum()]  are
 #' determined at runtime and depend on the arguments passed to [plot_spectrum()]
-#' as well as the currently active graphics device. To customize the appearance
-#' of the individual sub plots, you can overwrite each value passed to
-#' [draw_spectrum()] by providing a corresponding named element in `sub1`,
+#' as well as the currently active graphics device. To customize the  appearance
+#' of the  individual  sub  plots,  you  can  overwrite  each  value  passed  to
+#' [draw_spectrum()] by providing  a  corresponding  named  element  in  `sub1`,
 #' `sub2` or `sub3`.
 #'
 #' A sketch of the resulting figure is shown below.
@@ -190,8 +196,8 @@ plot_spectra <- function(obj,
 #' |______________________5___________________|
 #' ```
 #'
-#' Note that the figure created by `plot_spectrum()` can be part of a
-#' multi-figure configuration as created when setting `mfrow` or `mfcol` via
+#' Note  that  the  figure  created  by  `plot_spectrum()`  can  be  part  of  a
+#' multi-figure configuration as created when setting  `mfrow`  or  `mfcol`  via
 #' [par()]. Example:
 #'
 #' ```
@@ -218,34 +224,34 @@ plot_spectra <- function(obj,
 #' ```
 #'
 #' @examples
-#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
-#' ## Prepare a deconvoluted spectrum as input
-#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
-#' sim_01 <- metabodecon_file("sim/sim_01")
-#' spec <- read_spectrum(sim_01)
-#' obj <- generate_lorentz_curves_sim(spec)
-#' opar <- par(mfrow = c(2, 2))
-#' on.exit(par(opar))
+#' ## 1. Prepare a deconvoluted spectrum as input
 #'
-#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
-#' ## 1. Plot the full (non-deconvoluted) spectrum
-#' ## 2. Focus on a specific region, specified in ppm
-#' ## 3. Focus on a specific region, specified in as fraction of the full width
-#' ## 4. Change margin, color and position of the focus region
-#' ## 5. Remove connecting lines and fill colors
-#' ## 6. Hide xlab and ylab
-#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
-#' plot_spectrum(spec)
-#' plot_spectrum(obj, foc_rgn = c(3.49, 3.45), foc_unit = "ppm")
-#' plot_spectrum(obj, foc_rgn = c(0.40, 0.30))
-#' plot_spectrum(obj,
-#'     sub_mar = c(4, 4, 0, 0),
-#'     rct_fill = rgb(0.9, 0.5, 0.9, alpha = 0.1),
-#'     rct_col = "violet",
-#'     sub_pos = c(x1 = 0.1, x2 = 0.9, y1 = 0.4, y2 = 0.9)
+#' spec <- read_spectrum(metabodecon_file("sim/sim_01"))
+#' decon <- generate_lorentz_curves_sim(spec)
+#'
+#' ## 2.1. Plot the full (non-deconvoluted) spectrum
+#' ## 2.2. Remove connecting lines, and focus on a specific region specified in ppm
+#' ## 2.3. Show second derivative and focus on a specific region specified as fraction
+#' ## 2.4. Change color of focus rectangle and margins of sub figure 1
+#' ## 2.5. Hide xlab and show second derivative
+#' ## 2.6. Change the figure region for sub figure 1
+#'
+#' plot_spectrum(spec, sub1 = FALSE)
+#' plot_spectrum(decon, foc_rgn = c(3.49, 3.45), con_lines = FALSE)
+#' plot_spectrum(decon, sub2 = TRUE, foc_frac = c(0.40, 0.30))
+#' plot_spectrum(decon,
+#'     sub1 = list(mar = c(3, 6, 3, 6), lt_axis = list(col = "violet")),
+#'     foc_rect = list(border = "violet", col = transp("violet")),
+#'     con_lines = list(col = "violet")
 #' )
-#' plot_spectrum(obj, rct_fill = NULL, sub_fill_col = NULL, cnct_col = NULL)
-#' plot_spectrum(obj, xlab = "", ylab = "", mar = c(2, 2, 0, 1))
+#' plot_spectrum(decon,
+#'     sub2 = TRUE,
+#'     sub3 = list(bt_axis = list(text = "")),
+#'     frame = TRUE,
+#'     con_lines = FALSE
+#' )
+#' plot_spectrum(decon, sub1 = list(fig_rgn_npc = c(0,1,.3,1), mar = c(0,5,0,0)))
+#'
 plot_spectrum <- function(x,
                           ...,
                           obj = as_v2_obj(x),
@@ -288,8 +294,8 @@ plot_spectrum <- function(x,
 #' @export
 #' @title Draw Spectrum
 #' @description
-#' Draws a single spectrum. Internally used by [plot_spectrum()], which is
-#' usually the recommended way to plot spectra. For usage examples see
+#' Draws a single spectrum.  Internally  used  by  [plot_spectrum()],  which  is
+#' usually  the  recommended  way  to  plot  spectra.  For  usage  examples  see
 #' [test/testthat/test-draw_spectrum.R](https://github.com/spang-lab/metabodecon/blob/main/test/testthat/test-draw_spectrum.R).
 #'
 #' @param obj
@@ -323,46 +329,70 @@ plot_spectrum <- function(x,
 #' @param main
 #' Main title of the plot. Drawn via [title()].
 #'
-#' @param si_line,sm_line,lc_lines,sp_line,d2_line
-#' List of parameters passed to [lines()] when drawing the raw signal
-#' intensities, smoothed signal intensities, lorentzian curves, superposition of
-#' lorentzian curves and second derivative.
+#' @param show
+#' Logical. If FALSE, the function returns without doing anything.
+#'
+#' @param show_d2
+#' Logical. If TRUE, the second derivative of the spectrum is drawn. Setting
+#' this to TRUE changes most of the defaults for the drawing, e.g. by disabling
+#' the drawing of anything related to signal intensities and by changing the
+#' y-axis label to "Second Derivative".
+#'
+#' @param truepar
+#' Data frame with columns x0, A and lambda containing the true lorentzian that
+#' were used to simulate the spectrum. Required if any `tp_*` argument is set.
+#'
+#' @param si_line,sm_line,lc_lines,sp_line,d2_line,tp_lines
+#' List  of  parameters  passed  to  [lines()]  when  drawing  the  raw signal
+#' intensities, smoothed signal intensities, lorentzian curves found by
+#' deconvolution, superposition of lorentzian curves, second derivative and/or
+#' true lorentzian curves.
 #'
 #' @param cent_pts,bord_pts,norm_pts
-#' List of parameters passed to [points()] when drawing the peak center points,
+#' List of parameters passed to [points()] when drawing the peak center  points,
 #' peak border points and non-peak points.
 #'
-#' @param bg_rect,lc_rects,foc_rect
+#' @param bg_rect,lc_rects,foc_rect,tp_rects
 #' List of parameters passed to [rect()] when drawing the background, lorentzian
-#' curves and focus rectangle.
+#' curve substitutes, focus rectangle and/or true lorentzian curve substitutes.
 #'
 #' @param bt_axis,lt_axis,tp_axis,rt_axis
-#' List of parameters used to overwrite the [draw_spectrum_defaults()]. The
-#' provided parameters are passed to [axis()] when drawing the bottom, left, top
-#' and right axis. In addition to the parameters of [axis()], the following
-#' additional parameters are supported as well:
-#' - `text`: Description for the axis. Drawn via [mtext()].
-#' - `n`: Number of tickmarks.
+#' List of parameters used to overwrite the default values  passed  to  [axis()]
+#' when drawing the bottom, left,  top  and  right  axis.  In  addition  to  the
+#' parameters of [axis()], the following additional parameters are supported  as
+#' well:
+#'
+#' - `text`:   Description for the axis. Drawn via [mtext()].
+#' - `n`:      Number of tickmarks.
 #' - `digits`: Number of digits for rounding the labels. If a vector of numbers
-#'   is provided, all numbers are tried, until `n` unique labels are found. See
-#'   'Details'.
-#' - `sf`: Scaling factor. Axis values are divided by this number before the
-#'   labels are calculated. If you set this to anything unequal 1, you should
-#'   also choose `text` in a way that reflects the scaling. E.g. if you set `sf
-#'   = 1e6` you could change the text from "Signal Intensity [au]" to "Signal
-#'   Intensity [Mau]" or "Signal Intensity [au] / 1e6", with "Mau" meaning
-#'   "Mega-Arbitrary-Units".
+#'             is provided, all numbers are tried, until `n` unique labels are
+#'             found. See 'Details'.
+#' - `sf`:     Scaling factor. Axis values are divided by this number before the
+#'             labels are calculated. If you set this to anything unequal 1, you
+#'             should also choose `text` in a way that reflects the scaling.
+#'             E.g. if you set `sf = 1e6` you could change the text from
+#'             `"Signal Intensity [au]"` to `"Signal Intensity [Mau]"` or
+#'             `"Signal Intensity [au] / 1e6"`, with `"Mau"` meaning
+#'             "Mega-Arbitrary-Units".
+#'
+#' @param lc_verts,tp_verts
+#' List of parameters passed to [abline()] when drawing vertical lines at the
+#' centers of estimated lorentzian curves and/or true lorentzian curves. Setting
+#' tp_verts$show to TRUE requires `truepar` to be set.
+#'
+#' @return
+#' NULL. Called for side effect of plotting.
 #'
 #' @details
-#' Parameters `bt_axis`, `lt_axis`, `tp_axis` and `rt_axis` all support option
-#' `n` and `digits`, where `n = 5` means "Draw 5 tickmarks over the full axis
-#' range" and `digits = 3` means "round the label shown beside each tickmark to
-#' 3 digits". If `n` is omitted, a suiteable value is chosen automatically using
+#' Parameters `bt_axis`, `lt_axis`, `tp_axis` and `rt_axis` all  support  option
+#' `n` and `digits`, where `n = 5` means "Draw 5 tickmarks over  the  full  axis
+#' range" and `digits = 3` means "round the label shown beside each tickmark  to
+#' 3 digits". If `n` is omitted, a suitable value is chosen automatically using
 #' [axTicks()]. If `digits` is omitted, a default of `2:12` is used. Providing a
-#' vector of `digits` causes each digit to be tried as argument for [round()],
+#' vector of `digits` causes each digit to be tried as argument  for  [round()],
 #' until a digit is encountered that results in `n` unique labels. Example:
 #'
-#' Assume we have `n = 4` and the corresponding calculated tickmark positions
+#' Assume we have `n = 4` and the corresponding  calculated  tickmark  positions
 #' are: 1.02421, 1.02542, 1.02663 and 1.02784. If we provide `digits = 1:5`, the
 #' following roundings are tried:
 #'
@@ -374,8 +404,17 @@ plot_spectrum <- function(x,
 #' | 4      | 1.0242  | 1.0254  | 1.0266  | 1.0278  |
 #' | 5      | 1.02421 | 1.02542 | 1.02663 | 1.02784 |
 #'
-#' In the above example the process would stop at `digit = 3`, because at this
+#' In the above example the process would stop at `digit = 3`, because  at  this
 #' point we have n = 4 unique labels (1.024, 1.025, 1.027 and 1.028).
+#' 
+#' @examples
+#' decon <- deconvolute(sim[[1]], sfr = c(3.55, 3.35))
+#' draw_spectrum(obj = decon)
+#' draw_spectrum(obj = decon, lgd = list(x = "top", bg = NA))
+#' draw_spectrum(obj = decon, foc_rgn = c(3.45, 3.37))
+#' draw_spectrum(obj = decon, fig = c(0.1, 0.4, 0.30, 0.45), add = TRUE)
+#' draw_spectrum(obj = decon, fig = c(0.1, 0.4, 0.05, 0.20), add = FALSE)
+#' draw_spectrum(obj = decon, lc_lines = NULL, lc_rects = NULL, foc_only = FALSE)
 draw_spectrum <- function(
     obj,
     foc_rgn  = NULL,   foc_frac = NULL,   foc_only = TRUE,

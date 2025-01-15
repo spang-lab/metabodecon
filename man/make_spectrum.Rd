@@ -20,19 +20,19 @@ make_spectrum(
 )
 }
 \arguments{
-\item{si}{Numeric vector of signal intensities, ordered from highest to
-lowest corresponding chemical shift.}
+\item{si}{Numeric vector of signal intensities, ordered from highest to lowest
+corresponding chemical shift.}
 
-\item{cs_max}{The highest chemical shift value in ppm, usually shown as left
-end of the spectrum.}
+\item{cs_max}{The highest chemical shift value in ppm, usually shown as left end of the
+spectrum.}
 
 \item{cs_width}{The width of the spectrum in ppm.}
 
 \item{fq_ref}{The reference frequency in Hz.}
 
-\item{fq_width}{The width of the spectrum in Hz. Only used to check whether
-the values calculated from \code{cs_max}, \code{cs_width} and \code{fq_ref} match the
-provided value. If \code{NULL}, this check will be skipped.}
+\item{fq_width}{The width of the spectrum in Hz. Only used to check whether the values
+calculated from \code{cs_max}, \code{cs_width} and \code{fq_ref} match the provided value.
+If \code{NULL}, this check will be skipped.}
 
 \item{force}{If \code{TRUE}, the function will not raise an error in case of
 discrepancies between the calculated and the provided spectrum width in Hz,
@@ -43,8 +43,7 @@ but will print a info message instead. To hide this message as well, set
 
 \item{name}{The name of the spectrum, e.g. "Blood 1" or "Urine Mouse X23D".}
 
-\item{path}{The path to the spectrum file, e.g.
-"/example_datasets/bruker/urine/urine_1".}
+\item{path}{The path to the spectrum file, e.g. "/example_datasets/bruker/urine/urine_1".}
 
 \item{type}{The type of experiment, e.g. "H1 CPMG" or "H1 NOESY".}
 
@@ -53,7 +52,7 @@ but will print a info message instead. To hide this message as well, set
 \item{mfs}{The magnetic field strength in Tesla.}
 }
 \value{
-A \code{spectrum} object as described in \href{https://spang-lab.github.io/metabodecon/articles/Metabodecon-Classes.html}{Metabodecon Classes}.
+A \href{metabodecon_classes}{spectrum} object.
 }
 \description{
 Creates a spectrum object from the provided signal intensities, frequencies
@@ -68,8 +67,3 @@ fq_width <- 12005
 spectrum <- make_spectrum(si, cs_max, cs_width, fq_ref, fq_width)
 spectrum2 <- make_spectrum(si, cs_max, cs_width, fq_ref, fq_width = 12010, force = FALSE)
 }
-\seealso{
-Other {spectrum functions}: 
-\code{\link{read_spectrum}()}
-}
-\concept{{spectrum functions}}

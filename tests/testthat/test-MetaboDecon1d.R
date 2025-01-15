@@ -1,7 +1,7 @@
-sap2 <- test_that("MetaboDecon1D works for single spectrum", {
+sap <- test_that("MetaboDecon1D works for single spectrum", {
     decon0 <- MetaboDecon1D_silent(
         filepath = metabodecon_file("bruker/sap"),
-        filename = "sap2",
+        filename = "sap_01",
         number_iterations = 3,
         range_water_signal_ppm = 0,
         signal_free_region = c(3.2, -3.2),
@@ -10,8 +10,8 @@ sap2 <- test_that("MetaboDecon1D works for single spectrum", {
     )
     expect_identical(object = names(decon0), expected = decon0_members_mandatory)
     expect_identical(object = class(decon0), expected = "list")
-    decon2 <- as_decon2(decon0, spectrum = sap2, sfr = c(3.2, -3.2), wshw = 0)
-    obj2 <- calc_prarp(x = decon2, truepar = sap2$meta$simpar)
+    decon2 <- as_decon2(decon0, spectrum = sap[[1]], sfr = c(3.2, -3.2), wshw = 0)
+    obj2 <- calc_prarp(x = decon2, truepar = sap[[1]]$meta$simpar)
     expect_true(obj2$prarpx >= 0.507)
 })
 

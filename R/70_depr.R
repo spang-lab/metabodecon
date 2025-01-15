@@ -70,7 +70,7 @@
 #' temporary directory.
 #'
 #' @return
-#' A `decon0` object as described in [MetaboDecon Classes](metabodecon_classes).
+#' A `decon0` object as described in [metabodecon_classes].
 #'
 #' @seealso
 #' [calculate_lorentz_curves()],
@@ -90,7 +90,8 @@
 #' ## generate_lorentz_curves() instead, as shown below.
 #'
 #' # DEPRECATED:
-#' if (interactive()) {
+#' \dontrun{
+#' ## Requires interactive user input
 #' sim <- metabodecon_file("bruker/sim_subset")
 #' sim_decon <- MetaboDecon1D(sim)
 #' sim_01_decon <- MetaboDecon1D(sim, "sim_01")
@@ -671,7 +672,7 @@ calculate_lorentz_curves <- function(deconv_result, number_of_files = NA) {
 #' @title Plot peak triplets for variable range
 #' @description Plots the peak triplets for each peak detected by [MetaboDecon1D()] and stores the plots as png at `outdir`.
 #'
-#' Supersed by [plot_spectrum()] since metabodecon v1.2.0. Will be replaced with v2.
+#' Superseded by [plot_spectrum()] since metabodecon v1.2.0. Will be replaced with v2.
 #'
 #' `r lifecycle::badge("deprecated")`
 #'
@@ -844,7 +845,7 @@ plot_triplets <- function(deconv_result, x_range = c(), y_range = c(), out_dir =
 #' Plots the original spectrum and all generated Lorentz curves and save the
 #' result as png under the filepath.
 #'
-#' Supersed by [plot_spectrum()] since metabodecon v1.2.0. Will be replaced with
+#' Superseded by [plot_spectrum()] since metabodecon v1.2.0. Will be replaced with
 #' v2.`r lifecycle::badge("deprecated")`
 #'
 #' @param deconv_result
@@ -1025,7 +1026,7 @@ plot_lorentz_curves_save_as_png <- function(deconv_result, x_range = c(), y_rang
 #' Plots the original spectrum and the superposition of all generated Lorentz
 #' curves and saves the result as png under the specified filepath.
 #'
-#' Supersed by [plot_spectrum()] since metabodecon v1.2.0. Will be replaced with v2.
+#' Superseded by [plot_spectrum()] since metabodecon v1.2.0. Will be replaced with v2.
 #'
 #' `r lifecycle::badge("deprecated")`
 #'

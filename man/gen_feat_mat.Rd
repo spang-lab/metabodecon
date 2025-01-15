@@ -5,7 +5,7 @@
 \title{Generate Feature Matrix.}
 \usage{
 gen_feat_mat(
-  data_path = generate_lorentz_curves_sim(),
+  data_path,
   ppm_range = get_ppm_range(data_path),
   si_size_real_spectrum = length(data_path$y_values),
   scale_factor_x = 1000,
@@ -41,7 +41,7 @@ from left to right, i.e. the smallest index corresponds to the
 highest ppm value, as the ppm values decrease from left to
 right.
 
-\code{w}: A list of vectors where each vector contains the "position paramater"
+\code{w}: A list of vectors where each vector contains the "position parameter"
 of the peaks in the corresponding spectrum.
 
 \code{A}: A list of vectors where each vector contains the "area parameter" of

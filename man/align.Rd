@@ -4,37 +4,41 @@
 \alias{align}
 \title{Align Spectra}
 \usage{
-align(x, maxShift = 50, maxCombine = 5)
+align(x, maxShift = 50, maxCombine = 5, verbose = FALSE)
 }
 \arguments{
-\item{maxShift}{Maximum number of points along the "ppm-axis" a value can be
-moved by the 'speaq' package. 50 is a suitable starting value for plasma
-spectra with a digital resolution of 128K. Note that this parameter has to be
-individually optimized depending on the type of analyzed spectra and the
-digital resolution. For urine which is more prone to chemical shift
-variations this value most probably has to be increased. Passed as argument
-\code{maxShift} to \code{\link[=speaq_align]{speaq_align()}}.}
+\item{x}{An  object  of  type  \code{decons1}  or  \code{decons2}  as  described  in
+\href{metabodecon_classes}{Metabodecon Classes}. To align \code{decons0} objects
+(as returned by the now deprecated \link{MetaboDecon1D}), you can use
+\code{\link[=as_decons2]{as_decons2()}} to convert it to a \code{decons2} object first.}
 
-\item{maxCombine}{Amount of adjacent columns which may be combined for
-improving the alignment. Passed as argument \code{range} to \code{\link[=combine_peaks]{combine_peaks()}}.}
+\item{maxShift}{Maximum number of points along the "ppm-axis" a value can  be  moved  by  the
+'speaq' package. 50 is a suitable starting value for plasma  spectra  with  a
+digital resolution of 128K. Note that this parameter has to  be  individually
+optimized  depending  on  the  type  of  analyzed  spectra  and  the  digital
+resolution. For urine which is more prone to chemical shift  variations  this
+value most probably has to be increased. Passed  as  argument  \code{maxShift}  to
+\code{\link[=speaq_align]{speaq_align()}}.}
 
-\item{decons}{An object of type \code{MD1Decons} or \code{GLCDecons} as returned by
-\code{\link[=MetaboDecon1D]{MetaboDecon1D()}} or \code{\link[=generate_lorentz_curves]{generate_lorentz_curves()}}.}
+\item{maxCombine}{Amount of adjacent columns which may be combined for improving the alignment.
+Passed as argument \code{range} to \code{\link[=combine_peaks]{combine_peaks()}}.}
+
+\item{verbose}{Whether to print additional information during the alignment process.}
 }
 \value{
-An object of type \code{AlignedSpectra} as described in \href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{Metabodecon Classes}.
+An  object  of   type   \code{AlignedSpectra}   as   described   in   \href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{Metabodecon Classes}.
 }
 \description{
-Align signals across a list of deconvoluted spectra using the 'CluPA'
-algorithm from the 'speaq' package, described in Beirnaert et al. (2018)
-\url{doi:10.1371/journal.pcbi.1006018} and Vu et al. (2011)
+Align signals across  a  list  of  deconvoluted  spectra  using  the  'CluPA'
+algorithm from the 'speaq' package, described  in  Beirnaert  et  al.  (2018)
+\url{doi:10.1371/journal.pcbi.1006018}     and     Vu     et      al.      (2011)
 \url{doi:10.1186/1471-2105-12-405} plus the additional peak combination described
 in \code{\link[=combine_peaks]{combine_peaks()}}.
 }
 \examples{
 sim_dir <- metabodecon_file("bruker/sim")
 spectra <- read_spectra(sim_dir)
-x <- generate_lorentz_curves_sim(spectra)
-aligned <- align(x)
-str(aligned)
+decons <- deconvolute(spectra, sfr = c(3.55, 3.35))
+aligned <- align(decons)
+aligned
 }

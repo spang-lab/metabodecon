@@ -1,7 +1,9 @@
 # Evalwith (Public) #####
 
 #' @export
+#'
 #' @title Evaluate an expression with predefined global state
+#'
 #' @description
 #' Evaluates an expression with a predefined global state, including the:
 #'

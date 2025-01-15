@@ -1,17 +1,83 @@
 # Exported #####
 
 #' @export
-#' @family {spectra functions}
-#' @inherit read_spectrum
-#' @title Test, Convert or Read Spectra Files from Disk
+#'
+#' @title Read one or more spectra from Disk
+#'
 #' @description
-#' `read_spectra()` reads spectra files from disk.
-#' `is_spectra()` tests if an object is a `spectra` object.
-#' `as_spectra()` convert an object to a `spectra` object.
-#' For details about `spectra` objects, see [metabodecon_classes].
-#' @return
-#' `read_spectra()` and `as_spectra` return a `spectra` object.
-#' `is_spectra()` returns a logical.
+#' `read_spectrum()` reads a single spectrum from disk and returns it as
+#' `spectrum` object. `read_spectra()` can be used to read multiple spectra at
+#' once and returns a `spectra` object.
+#'
+#' @param data_path
+#' The path of the file/folder containing the spectrum data. E.g.
+#' `"example_datasets/jcampdx/urine/urine_1.dx"` or
+#' `"example_datasets/bruker/urine/urine"`.
+#'
+#' @param file_format
+#' The file_format of the spectrum file. E.g. `"bruker"` or `"jcampdx"`.
+#'
+#' @param expno,procno
+#' The experiment/processing number for the file. E.g. `"10"`. Only relevant if
+#' `file_format` equals `"bruker"`. For details see section [File Structure](
+#' https://spang-lab.github.io/metabodecon/articles/FAQ.html#file-structure ) in
+#' the metabodecon FAQ.
+#'
+#' @param raw
+#' If `FALSE`, scales the returned signal intensities based on information
+#' available in the spectrum metadata, in particular `NC_proc`. For details see
+#' `processing-reference.pdf`, available at <https://www.bruker.com/en.html> at
+#' section 'Services & Support > Documentation & Manuals > Magnetic Resonance >
+#' Acquisition & Processing > TopSpin Processing Commands and Parameters'
+#' (requires login).
+#'
+#' @param silent
+#' If `TRUE`, no output will be printed to the console.
+#'
+#' @param force
+#' If `TRUE`, try to continue when encountering errors and print info messages
+#' instead. To hide these messages as well, set `silent = TRUE`.
+#'
+#' @return A [spectrum](metabodecon_classes) object.
+#'
+#' @examples
+#' relpath <- "example_datasets/bruker/urine"
+#' urine <- system.file(relpath, package = "metabodecon")
+#' urine_1 <- file.path(urine, "urine_1")
+#' urine_2 <- file.path(urine, "urine_2")
+#' x1 <- read_spectrum(urine_1)
+#' x2 <- read_spectrum(urine_2)
+#' xx <- read_spectra(urine)
+#' str(xx)
+#' str(x1)
+#' stopifnot(all.equal(x1, xx$urine_1))
+#'
+#' ## Below code shows how a spectrum stored in JCAMP-DX format can be read.
+#' ## Reading files in this format is very slow (about 30s on the development
+#' ## machine). So if possible, you should stick with the original Bruker
+#' ## data storage format.
+#' \dontrun{
+#' relpath <- "example_datasets/jcampdx/urine/urine_1.dx"
+#' urine_1_dx <- system.file(relpath, package = "metabodecon")
+#' x1_dx <- read_spectrum(urine_1_dx, file_format = "jcampdx")
+#' stopifnot(all.equal(x1, x1_dx))
+#' }
+read_spectrum <- function(data_path = metabodecon_file("bruker/sim/sim_01"),
+                          file_format = "bruker",
+                          expno = 10,
+                          procno = 10,
+                          raw = FALSE,
+                          silent = TRUE,
+                          force = FALSE) {
+    file_format <- match.arg(file_format, c("bruker", "jcampdx"))
+    switch(file_format,
+        "bruker" = read_bruker(data_path, expno, procno, raw, silent, force),
+        "jcampdx" = read_jcampdx(data_path, silent, force)
+    )
+}
+
+#' @export
+#' @inherit read_spectrum
 read_spectra <- function(data_path = pkg_file("example_datasets/bruker/urine"),
                          file_format = "bruker",
                          expno = 10,
@@ -58,84 +124,6 @@ read_spectra <- function(data_path = pkg_file("example_datasets/bruker/urine"),
 }
 
 #' @export
-#' @family {spectrum functions}
-#'
-#' @title Read a spectrum from Disk
-#'
-#' @description
-#' Read a single spectrum file or folder from disk and return it as `spectrum`
-#' object.
-#'
-#' @param data_path The path of the file/folder containing the spectrum data.
-#' E.g. `"example_datasets/jcampdx/urine/urine_1.dx"` or
-#' `"example_datasets/bruker/urine/urine"`.
-#'
-#' @param file_format The file_format of the spectrum file. E.g. `"bruker"` or
-#' `"jcampdx"`.
-#'
-#' @param expno,procno The experiment/processing number for the file. E.g.
-#' `"10"`. Only relevant if `file_format` equals `"bruker"`. For details see
-#' section [File Structure](
-#' https://spang-lab.github.io/metabodecon/articles/FAQ.html#file-structure
-#' ) in the metabodecon FAQ.
-#'
-#' @param raw If `FALSE`, scales the returned signal intensities based on
-#' information available in the spectrum metadata, in particular `NC_proc`. For
-#' details see `processing-reference.pdf`, available at
-#' <https://www.bruker.com/en.html> at section 'Services & Support >
-#' Documentation & Manuals > Magnetic Resonance > Acquisition & Processing >
-#' TopSpin Processing Commands and Parameters' (requires login).
-#'
-#' @param silent If `TRUE`, no output will be printed to the console.
-#'
-#' @param force If `TRUE`, try to continue when encountering errors and print
-#' info messages instead. To hide these messages as well, set `silent = TRUE`.
-#'
-#' @return
-#' A `spectrum` object as described in [Metabodecon Classes](
-#' https://spang-lab.github.io/metabodecon/articles/Metabodecon-Classes.html
-#' ).
-#'
-#' @examples
-#' relpath <- "example_datasets/bruker/urine"
-#' urine <- system.file(relpath, package = "metabodecon")
-#' urine_1 <- file.path(urine, "urine_1")
-#' urine_2 <- file.path(urine, "urine_2")
-#' x1 <- read_spectrum(urine_1)
-#' x2 <- read_spectrum(urine_2)
-#' xx <- read_spectra(urine)
-#' str(xx)
-#' str(x1)
-#' stopifnot(all.equal(x1, xx$urine_1))
-#'
-#' ## Below code shows how a spectrum stored in JCAMP-DX format can be read.
-#' ## Reading files in this format is very slow (about 30s on the development
-#' ## machine). So if possible, you should stick with the original Bruker
-#' ## data storage format.
-#' \dontrun{
-#' relpath <- "example_datasets/jcampdx/urine/urine_1.dx"
-#' urine_1_dx <- system.file(relpath, package = "metabodecon")
-#' x1_dx <- read_spectrum(urine_1_dx, file_format = "jcampdx")
-#' stopifnot(all.equal(x1, x1_dx))
-#' }
-read_spectrum <- function(data_path = metabodecon_file("bruker/sim/sim_01"),
-                          file_format = "bruker",
-                          expno = 10,
-                          procno = 10,
-                          raw = FALSE,
-                          silent = TRUE,
-                          force = FALSE) {
-    file_format <- match.arg(file_format, c("bruker", "jcampdx"))
-    switch(file_format,
-        "bruker" = read_bruker(data_path, expno, procno, raw, silent, force),
-        "jcampdx" = read_jcampdx(data_path, silent, force)
-    )
-}
-
-#'
-#' @export
-#'
-#' @family {spectrum functions}
 #'
 #' @title Create a Spectrum Object
 #'
@@ -143,41 +131,50 @@ read_spectrum <- function(data_path = metabodecon_file("bruker/sim/sim_01"),
 #' Creates a spectrum object from the provided signal intensities, frequencies
 #' and chemical shifts.
 #'
-#' @param si Numeric vector of signal intensities, ordered from highest to
-#' lowest corresponding chemical shift.
+#' @param si
+#' Numeric vector of signal intensities, ordered from highest to lowest
+#' corresponding chemical shift.
 #'
-#' @param cs_max The highest chemical shift value in ppm, usually shown as left
-#' end of the spectrum.
+#' @param cs_max
+#' The highest chemical shift value in ppm, usually shown as left end of the
+#' spectrum.
 #'
-#' @param cs_width The width of the spectrum in ppm.
+#' @param cs_width
+#' The width of the spectrum in ppm.
 #'
-#' @param fq_ref The reference frequency in Hz.
+#' @param fq_ref
+#' The reference frequency in Hz.
 #'
-#' @param fq_width The width of the spectrum in Hz. Only used to check whether
-#' the values calculated from `cs_max`, `cs_width` and `fq_ref` match the
-#' provided value. If `NULL`, this check will be skipped.
+#' @param fq_width
+#' The width of the spectrum in Hz. Only used to check whether the values
+#' calculated from `cs_max`, `cs_width` and `fq_ref` match the provided value.
+#' If `NULL`, this check will be skipped.
 #'
-#' @param force If `TRUE`, the function will not raise an error in case of
+#' @param force
+#' If `TRUE`, the function will not raise an error in case of
 #' discrepancies between the calculated and the provided spectrum width in Hz,
 #' but will print a info message instead. To hide this message as well, set
 #' `silent = TRUE`.
 #'
-#' @param silent If `TRUE`, no output will be printed to the console.
+#' @param silent
+#' If `TRUE`, no output will be printed to the console.
 #'
-#' @param name The name of the spectrum, e.g. "Blood 1" or "Urine Mouse X23D".
+#' @param name
+#' The name of the spectrum, e.g. "Blood 1" or "Urine Mouse X23D".
 #'
-#' @param path The path to the spectrum file, e.g.
-#' "/example_datasets/bruker/urine/urine_1".
+#' @param path
+#' The path to the spectrum file, e.g. "/example_datasets/bruker/urine/urine_1".
 #'
-#' @param type The type of experiment, e.g. "H1 CPMG" or "H1 NOESY".
+#' @param type
+#' The type of experiment, e.g. "H1 CPMG" or "H1 NOESY".
 #'
-#' @param simpar The simulation parameters used to generate the spectrum.
+#' @param simpar
+#' The simulation parameters used to generate the spectrum.
 #'
-#' @param mfs The magnetic field strength in Tesla.
+#' @param mfs
+#' The magnetic field strength in Tesla.
 #'
-#' @return A `spectrum` object as described in [Metabodecon Classes](
-#' https://spang-lab.github.io/metabodecon/articles/Metabodecon-Classes.html
-#' ).
+#' @return A [spectrum](metabodecon_classes) object.
 #'
 #' @examples
 #' si <- c(1, 1, 3, 7, 8, 3, 8, 5, 2, 1)
@@ -222,7 +219,6 @@ make_spectrum <- function(si,
 #'
 #' @description
 #' Simulates a 1D NMR spectrum based on the provided parameters.
-#'
 #' `r lifecycle::badge("experimental")`
 #'
 #' @param name The name of the spectrum.
@@ -238,16 +234,16 @@ make_spectrum <- function(si,
 #' @param lambda The peak width parameter.
 #' @param noise The noise to add to the spectrum.
 #'
-#' @return A `spectrum` object as described in [metabodecon_classes].
+#' @return A [spectrum](metabodecon_classes) object.
 #'
 #' @examples
 #' simA <- simulate_spectrum("simA")
 #' simA_copy <- simulate_spectrum("simA")
 #' simB <- simulate_spectrum("simB")
 #' simC <- simulate_spectrum("simC", npk = 20)
-#' plot_spectrum(simC, foc_rgn = c(0.25, 0.75))
+#' plot_spectrum(simC)
 #' if (!identical(simA, simA_copy)) stop()
-#' if (identical(simA, simB)) stop()
+#' if ( identical(simA, simB     )) stop()
 simulate_spectrum <- function(name = "sim_00",
                               seed = sum(utf8ToInt(name)), # (1)
                               ndp = 2048,

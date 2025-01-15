@@ -11,9 +11,11 @@
 #' <doi:10.1186/1471-2105-12-405> plus the additional peak combination described
 #' in [combine_peaks()].
 #'
-#' @param decons
-#' An  object  of  type  `decons0`,  `decons1`  or  `decons2`  as  described  in
-#' [Metabodecon Classes].
+#' @param x
+#' An  object  of  type  `decons1`  or  `decons2`  as  described  in
+#' [Metabodecon Classes](metabodecon_classes). To align `decons0` objects
+#' (as returned by the now deprecated [MetaboDecon1D]), you can use
+#' [as_decons2()] to convert it to a `decons2` object first.
 #'
 #' @param maxShift
 #' Maximum number of points along the "ppm-axis" a value can  be  moved  by  the
@@ -28,6 +30,9 @@
 #' Amount of adjacent columns which may be combined for improving the alignment.
 #' Passed as argument `range` to [combine_peaks()].
 #'
+#' @param verbose
+#' Whether to print additional information during the alignment process.
+#'
 #' @return
 #' An  object  of   type   `AlignedSpectra`   as   described   in   [Metabodecon
 #' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
@@ -35,19 +40,19 @@
 #' @examples
 #' sim_dir <- metabodecon_file("bruker/sim")
 #' spectra <- read_spectra(sim_dir)
-#' x <- generate_lorentz_curves_sim(spectra)
-#' aligned <- align(x)
-#' str(aligned)
-align <- function(x, maxShift = 50, maxCombine = 5) {
+#' decons <- deconvolute(spectra, sfr = c(3.55, 3.35))
+#' aligned <- align(decons)
+#' aligned
+align <- function(x, maxShift = 50, maxCombine = 5, verbose = FALSE) {
     decons1 <- as_decons1(x)
-    decons2 <- as_decons2(x)
-    smat <- speaq_align(spectrum_data = decons1, maxShift = 50)
-    n <- length(decons1) # Number of spectra
-    m <- length(decons1$y_values) # Number of Data Points
+    smat <- speaq_align(spectrum_data = decons1, maxShift = 50, verbose = verbose)
     obj <- combine_peaks(shifted_mat = smat, range = maxCombine, spectrum_data = decons1)
-    long <- obj$long # n x m matrix
-    short <- obj$short # n x p matrix (p == nr cols with at least one non-zero entry)
-    for (i in seq_len(n)) decons2[[i]]$sit$sup <- long[i, ]
+    decons2 <- as_decons2(x)
+    for (i in seq_along(decons2)) {
+        decons2[[i]]$sit$al <- obj$long[i, ]
+        class(decons2[[i]]) <- "align"
+    }
+    class(decons2) <- "aligns"
     decons2
 }
 
@@ -76,25 +81,28 @@ align <- function(x, maxShift = 50, maxCombine = 5) {
 #' Tobias Schmidt, 2024: .
 #'
 #' @examples
-#' sim_subset <- metabodecon_file("sim_subset")
-#' spectrum_data = generate_lorentz_curves_sim(sim_subset)
-#' ppm_rng <- get_ppm_range(spectrum_data, show = TRUE)
+#' spectrum_data <- generate_lorentz_curves(
+#'     data_path = sim[1:2],
+#'     nfit = 3,
+#'     sfr = c(3.55, 3.35),
+#'     wshw = 0,
+#'     ask = FALSE,
+#'     verbose = FALSE
+#' )
+#' ppm_rng <- get_ppm_range(spectrum_data)
 #' print(ppm_rng)
 get_ppm_range <- function(spectrum_data, full_range = FALSE) {
-    if (is_decons0(spectrum_data) || is_decon1(spectrum_data)) {
-        if (full_range) {
-            xx <- lapply(spectrum_data, function(spectrum) spectrum$x_values_ppm)
-        } else {
-            xx <- lapply(spectrum_data, function(spectrum) spectrum$peak_triplets_middle)
-        }
+    if (is_decons0(spectrum_data) || is_decons1(spectrum_data)) {
+        if (full_range) xx <- lapply(spectrum_data, function(s) s$x_values_ppm)
+        else            xx <- lapply(spectrum_data, function(s) s$peak_triplets_middle)
     } else if (is_decons2(spectrum_data) || is_aligns(spectrum_data)) {
-        if (full_range) {
-            xx <- lapply(spectrum_data, function(spectrum) spectrum$cs)
-        } else {
-            xx <- lapply(spectrum_data, function(spectrum) spectrum$lcpar$x0)
-        }
+        if (full_range) xx <- lapply(spectrum_data, function(s) s$cs)
+        else            xx <- lapply(spectrum_data, function(s) s$lcpar$x0)
     } else {
-        stop("spectrum_data must be a decons0, decons1, decons2 or aligns object. See help('Metabodecon Classes') for details.")
+        stop(paste0(
+            "spectrum_data must be a decons0, decons1, decons2 or aligns object.\n",
+            "See help('metabodecon_classes') for details."
+        ))
     }
     x_min <- min(sapply(xx, min))
     x_max <- max(sapply(xx, max))
@@ -146,7 +154,7 @@ get_ppm_range <- function(spectrum_data, full_range = FALSE) {
 #'             highest ppm value, as the ppm values decrease from left to
 #'             right.
 #'
-#' `w`: A list of vectors where each vector contains the "position paramater"
+#' `w`: A list of vectors where each vector contains the "position parameter"
 #'      of the peaks in the corresponding spectrum.
 #'
 #' `A`: A list of vectors where each vector contains the "area parameter" of
@@ -164,7 +172,7 @@ get_ppm_range <- function(spectrum_data, full_range = FALSE) {
 #' decons <- generate_lorentz_curves_sim(sim_subset)
 #' obj <- gen_feat_mat(decons)
 #' str(obj, 2, give.attr = FALSE)
-gen_feat_mat <- function(data_path = generate_lorentz_curves_sim(),
+gen_feat_mat <- function(data_path,
                          ppm_range = get_ppm_range(data_path),
                          si_size_real_spectrum = length(data_path$y_values),
                          scale_factor_x = 1000,
@@ -235,7 +243,7 @@ gen_feat_mat <- function(data_path = generate_lorentz_curves_sim(),
 #' A matrix containing the integral values of the spectra after alignment.
 #'
 #' There is one row per spectrum and one column per ppm value. The entry at
-#' postion `i, j` holds the integral value of the signal from spectrum `i` that
+#' position `i, j` holds the integral value of the signal from spectrum `i` that
 #' has its center at position `j` after alignment by speaq. If there is no
 #' signal with center `j` in spectrum `i`, entry `i, j` is set to NA. The column
 #' names of the matrix are the ppm values of the original spectra.

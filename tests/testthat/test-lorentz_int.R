@@ -1,5 +1,5 @@
 
-testthat("lorentz_int can produce backwards compatible results", {
+test_that("lorentz_int can produce backwards compatible results", {
     decon <- generate_lorentz_curves_sim(sim[1])
     A <- decon$A
     x0 <- decon$x_0
@@ -11,7 +11,7 @@ testthat("lorentz_int can produce backwards compatible results", {
     expect_equal(old, new)
 })
 
-testthat("using `A * pi` instead of `integrals` produces similar results", {
+test_that("using `A * pi` instead of `integrals` produces similar results", {
     decon <- generate_lorentz_curves_sim(sim[1])
     A <- decon$A
     x0 <- decon$x_0

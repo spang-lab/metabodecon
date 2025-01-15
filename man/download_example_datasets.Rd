@@ -13,8 +13,8 @@ download_example_datasets(
 )
 }
 \arguments{
-\item{dst_dir}{The destination directory where the downloaded datasets will
-be stored. If NULL, the function will return the path to the cached zip file.}
+\item{dst_dir}{The destination directory where the downloaded datasets will be stored. If
+NULL, the function will return the path to the cached zip file.}
 
 \item{extract}{Logical. If TRUE, the downloaded zip file will be extracted.}
 
@@ -25,8 +25,10 @@ be stored. If NULL, the function will return the path to the cached zip file.}
 datasets but will return \code{\link[=datadir_temp]{datadir_temp()}} if the cached file does not yet
 exist.}
 
-\item{overwrite}{Logical. If TRUE, existing files with the same name in the
-destination directory will be overwritten.}
+\item{overwrite}{Logical. If TRUE, existing files with the same name in the destination
+directory will be overwritten.}
+
+\item{silent}{Logical. If TRUE, no output will be printed to the console.}
 }
 \value{
 The path to the downloaded (and possibly extracted) datasets.

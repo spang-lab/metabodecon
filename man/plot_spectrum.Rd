@@ -19,32 +19,35 @@ plot_spectrum(
 )
 }
 \arguments{
-\item{obj}{An object of type spectrum, decon0, decon1 or decon2. For details see
+\item{x}{An object of type \code{spectrum}, \code{decon0}, \code{decon1} or \code{decon2}. For details see
 \href{https://spang-lab.github.io/metabodecon/articles/Metabodecon-Classes.html}{Metabodecon Classes}.}
+
+\item{...}{Additional arguments passed to \code{\link[=draw_spectrum]{draw_spectrum()}} for \strong{every} sub figure.
+See 'Details'.}
+
+\item{obj}{An object of type \code{spectrum} or \code{decon2}. Usually auto  generated  from  \code{x},
+but can be set manually in case the default conversion is not sufficient.}
 
 \item{foc_frac}{A numeric vector specifying the start and end of the focus region as fraction
 of the full spectrum width. Only used if \code{foc_rgn} is set to NULL.}
 
-\item{foc_rgn}{A numeric vector specifying the start and end of the focus region in ppm. If
-set to NULL, \code{foc_frac} is used to determine the focus region. If both
-\code{foc_rgn} and are set to NULL, \code{\link[=get_foc_rgn]{get_foc_rgn()}} is used to determine a
-suitable focus region automatically. Takes precedence over \code{foc_frac}.}
+\item{foc_rgn}{A numeric vector specifying the start and end of the focus region in ppm.  If
+set to NULL, \code{foc_frac} is used  to  determine  the  focus  region.  If  both
+\code{foc_rgn}  and  are  set  to  NULL,  a  suitable  focus  region  is   chosen
+automatically. Takes precedence over \code{foc_frac}.}
 
 \item{sub1, sub2, sub3}{List of arguments passed to \code{\link[=draw_spectrum]{draw_spectrum()}} when drawing sub figure
 1-3. See 'Details'.}
 
-\item{cnct_show}{Logical. If TRUE, connecting lines are drawn between sub figure 1 and the
-focus rectangle in sub figure 3.  See 'Details'.}
+\item{mar}{A numeric vector of length 4 passed, which specifies the margins of the plot.
+Passed to \code{\link[=par]{par()}}. If set to \code{NULL}, a suitable value is chosen automatically.}
 
-\item{cnct_col}{Color of the lines connecting the main and sub figure.}
+\item{frame}{A list of values passed to \code{\link[=box]{box()}} when drawing the frame around plot region.
+If set to \code{NULL}, no frame is drawn.}
 
-\item{layout}{A list with three elements. Each element should be a numeric vector of the
-form \code{c(x1, x2, y1, y2)}. The i'th element gives the borders of the i'th sub
-figure in "normalized plot coordinates". Setting an element to NULL will
-prevent the corresponding sub figure from being drawn. For a description of
-the individual sub figures see 'Details'. For a description of normalized
-plot coordinates see \code{\link[graphics:convertXY]{graphics::grconvertX()}}. If \code{layout} is set to \code{NULL},
-\code{\link[=get_sub_fig_rgns]{get_sub_fig_rgns()}} is used to determine a suitable layout automatically.}
+\item{con_lines}{A list of values passed to \code{\link[=lines]{lines()}} when drawing the connecting lines between
+sub figure 1 and the focus rectangle in sub figure 3. See 'Details'.
+If set to \code{NULL}, the connecting lines are not drawn.}
 }
 \value{
 NULL. Called for side effect of plotting as sketched in 'Details'.
@@ -54,20 +57,20 @@ Plot a spectrum and zoom in on a specific region.
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 }
 \details{
-This function first calls \code{\link[=plot_empty]{plot_empty()}} to initalize a new plotting canvas.
-After that it calls \code{\link[=draw_spectrum]{draw_spectrum()}} multiple times to draw the following sub
-figures onto the plotting canvas:
+This function first initializes a new plotting canvas.  After  that  it  calls
+\code{\link[=draw_spectrum]{draw_spectrum()}} multiple times to draw the following sub figures  onto  the
+plotting canvas:
 \enumerate{
 \item The signal intensities in the focus region
 \item The second derivative in the focus region
 \item The signal intensities over all datapoints
 }
 
-The argument lists for the individual calls to \code{\link[=draw_spectrum]{draw_spectrum()}} are
+The  argument  lists  for  the  individual  calls  to  \code{\link[=draw_spectrum]{draw_spectrum()}}  are
 determined at runtime and depend on the arguments passed to \code{\link[=plot_spectrum]{plot_spectrum()}}
-as well as the currently active graphics device. To customize the appearance
-of the individual sub plots, you can overwrite each value passed to
-\code{\link[=draw_spectrum]{draw_spectrum()}} by providing a corresponding named element in \code{sub1},
+as well as the currently active graphics device. To customize the  appearance
+of the  individual  sub  plots,  you  can  overwrite  each  value  passed  to
+\code{\link[=draw_spectrum]{draw_spectrum()}} by providing  a  corresponding  named  element  in  \code{sub1},
 \code{sub2} or \code{sub3}.
 
 A sketch of the resulting figure is shown below.
@@ -99,8 +102,8 @@ A sketch of the resulting figure is shown below.
 |______________________5___________________|
 }\if{html}{\out{</div>}}
 
-Note that the figure created by \code{plot_spectrum()} can be part of a
-multi-figure configuration as created when setting \code{mfrow} or \code{mfcol} via
+Note  that  the  figure  created  by  \code{plot_spectrum()}  can  be  part  of  a
+multi-figure configuration as created when setting  \code{mfrow}  or  \code{mfcol}  via
 \code{\link[=par]{par()}}. Example:
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{_______________________________________
@@ -126,32 +129,32 @@ multi-figure configuration as created when setting \code{mfrow} or \code{mfcol} 
 }\if{html}{\out{</div>}}
 }
 \examples{
-## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
-## Prepare a deconvoluted spectrum as input
-## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
-sim_01 <- metabodecon_file("sim/sim_01")
-spec <- read_spectrum(sim_01)
-obj <- generate_lorentz_curves_sim(spec)
-opar <- par(mfrow = c(2, 2))
-on.exit(par(opar))
+## 1. Prepare a deconvoluted spectrum as input
 
-## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
-## 1. Plot the full (non-deconvoluted) spectrum
-## 2. Focus on a specific region, specified in ppm
-## 3. Focus on a specific region, specified in as fraction of the full width
-## 4. Change margin, color and position of the focus region
-## 5. Remove connecting lines and fill colors
-## 6. Hide xlab and ylab
-## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
-plot_spectrum(spec)
-plot_spectrum(obj, foc_rgn = c(3.49, 3.45), foc_unit = "ppm")
-plot_spectrum(obj, foc_rgn = c(0.40, 0.30))
-plot_spectrum(obj,
-    sub_mar = c(4, 4, 0, 0),
-    rct_fill = rgb(0.9, 0.5, 0.9, alpha = 0.1),
-    rct_col = "violet",
-    sub_pos = c(x1 = 0.1, x2 = 0.9, y1 = 0.4, y2 = 0.9)
+spec <- read_spectrum(metabodecon_file("sim/sim_01"))
+decon <- generate_lorentz_curves_sim(spec)
+
+## 2.1. Plot the full (non-deconvoluted) spectrum
+## 2.2. Remove connecting lines, and focus on a specific region specified in ppm
+## 2.3. Show second derivative and focus on a specific region specified as fraction
+## 2.4. Change color of focus rectangle and margins of sub figure 1
+## 2.5. Hide xlab and show second derivative
+## 2.6. Change the figure region for sub figure 1
+
+plot_spectrum(spec, sub1 = FALSE)
+plot_spectrum(decon, foc_rgn = c(3.49, 3.45), con_lines = FALSE)
+plot_spectrum(decon, sub2 = TRUE, foc_frac = c(0.40, 0.30))
+plot_spectrum(decon,
+    sub1 = list(mar = c(3, 6, 3, 6), lt_axis = list(col = "violet")),
+    foc_rect = list(border = "violet", col = transp("violet")),
+    con_lines = list(col = "violet")
 )
-plot_spectrum(obj, rct_fill = NULL, sub_fill_col = NULL, cnct_col = NULL)
-plot_spectrum(obj, xlab = "", ylab = "", mar = c(2, 2, 0, 1))
+plot_spectrum(decon,
+    sub2 = TRUE,
+    sub3 = list(bt_axis = list(text = "")),
+    frame = TRUE,
+    con_lines = FALSE
+)
+plot_spectrum(decon, sub1 = list(fig_rgn_npc = c(0,1,.3,1), mar = c(0,5,0,0)))
+
 }

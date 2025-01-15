@@ -1,38 +1,36 @@
 # Classes #####
 
-#' @name Metabodecon Classes
+metabodecon_classes <- NULL
+
+#' @name metabodecon_classes
 #'
 #' @title Metabodecon Classes
 #'
 #' @description
-#' Metabodecon introduces a set of classes to highlight the presence of certain
+#' Metabodecon introduces a set of classes to highlight the presence of  certain
 #' elements in corresponding objects.
 #'
-#' The order of elements may vary between different versions of Metabodecon,
-#' thus elements should always be accessed by name, for example, using `x$si`
-#' or `x[["cs"]]`. A short description of each class is given in the listing
-#' below.
+#' The order of elements may vary between  different  versions  of  Metabodecon,
+#' thus elements should always be accessed by name, for example, using `x$si` or
+#' `x[["cs"]]`. A short description of each class is given in the listing below.
 #'
 #' -  `spectrum`: One NMR spectrum
 #' -  `decon0`: One deconvoluted NMR spectrum stored in [MetaboDecon1D()] format
-#' -  `decon1`: One deconvoluted NMR spectrum stored in
-#'    [generate_lorentz_curves()] format
+#' -  `decon1`: One deconvoluted NMR spectrum stored in [generate_lorentz_curves()] format
 #' -  `decon2`: One deconvoluted NMR spectrum stored in [deconvolute()] format
 #' -  `align`: One aligned NMR spectrum
 #'
-#' The classes mentioned above represent individual objects, such as a single
-#' spectrum, deconvolution, or alignment. However, it is often useful to
-#' describe collections of these objects, such as a list of spectra or
-#' deconvolutions. Therefore, for each individual class, a corresponding
-#' "collection" class is provided. These collection classes are named:
+#' The classes mentioned above represent individual objects, such  as  a  single
+#' spectrum, deconvolution,  or  alignment.  However,  it  is  often  useful  to
+#' describe collections  of  these  objects,  such  as  a  list  of  spectra  or
+#' deconvolutions.  Therefore,  for  each  individual  class,  a   corresponding
+#' "collection"  class  is  provided.  These  collection  classes   are   named:
 #' `spectra`, `decons0`, `decons1`, `decons2`, and `aligns`.
 #'
 #' More details can be found in Metabodecon's online documentation at
-#' [Metabodecon Classes](
+#' [spang-lab.github.io/metabodecon/articles/Metabodecon-Classes](
 #' https://spang-lab.github.io/metabodecon/articles/Metabodecon-Classes.html).
 NULL
-
-`Metabodecon Classes` <- NULL
 
 spectrum_members <- c(
     "cs",
@@ -136,9 +134,10 @@ align_members <- decon2_members
 
 # Methods #####
 
-`Print Methods` <- NULL
+print_methods <- NULL
 
-#' @name Print Methods
+#' @name print_methods
+#' @rdname print_methods
 #'
 #' @title S3 Methods for Printing Metabodecon Objects
 #'
@@ -206,7 +205,17 @@ print.decon1 <- function(x, name = FALSE, ...) {
 #' @export
 #' @rdname print_methods
 print.decon2 <- function(x, name = FALSE, ...) {
-    str(x, 1)
+    name <- if (name) paste0(x$meta$name %||% "NULL", ": ") else ""
+    fmt <- "%sdecon2 object (%d dp, %.1f to %.1f ppm, %d peaks)\n"
+    catf(fmt, name, length(x$cs), max(x$cs), min(x$cs), length(x$lcpar$A))
+}
+
+#' @export
+#' @rdname print_methods
+print.align <- function(x, name = FALSE, ...) {
+    name <- if (name) paste0(x$meta$name %||% "NULL", ": ") else ""
+    fmt <- "%salign object (%d dp, %.1f to %.1f ppm, %d peaks)\n"
+    catf(fmt, name, length(x$cs), max(x$cs), min(x$cs), length(x$lcpar$A))
 }
 
 #' @export
@@ -256,6 +265,13 @@ print.decons2 <- function(x, ...) {
 }
 
 #' @export
+#' @rdname print_methods
+print.aligns <- function(x, ...) {
+    catf("aligns object with %s align elements\n", length(x))
+    invisible(sapply(x, print, name = TRUE))
+}
+
+#' @export
 `[.spectra` <- function(x, i, ...) {
     result <- NextMethod("[")
     class(result) <- class(x)
@@ -270,9 +286,14 @@ is_metabodecon_class <- NULL
 #'
 #' @name is_metabodecon_class
 #'
-#' @title Check for class membership
+#' @title Is an Object from a Metabodecon Class?
 #'
-#' @description Check if an object is an instance of a specific Metabodecon class.
+#' @description
+#' Check if an object is an instance of a specific [Metabodecon
+#' Class](metabodecon_classes).
+#'
+#' @param x
+#' The object to check.
 #'
 #' @param check_class
 #' Logical indicating whether to check the class of the object.
@@ -284,11 +305,26 @@ is_metabodecon_class <- NULL
 #' Logical indicating whether to check the class of each element of the object.
 #'
 #' @examples
-#' is_spectrum(sim[[1]])
+#' ss <- sim[1:2]
+#' dd <- deconvolute(ss, sfr = c(3.55, 3.35))
+#' aa <- align(dd)
+#' s1 <- sim[[1]]
+#' d1 <- dd[[1]]
+#' a1 <- aa[[1]]
 #'
-NULL
-
-#' @export
+#' is_spectrum(s1) # TRUE
+#' is_spectrum(s1, check_contents = TRUE) # TRUE
+#' is_decon0(d1) # FALSE
+#' is_decon1(d1) # FALSE
+#' is_decon2(d1) # TRUE
+#' is_align(a1)  # TRUE
+#'
+#' is_spectra(ss) # TRUE
+#' is_decons0(dd) # FALSE
+#' is_decons1(dd) # FALSE
+#' is_decons2(dd) # TRUE
+#' is_aligns(aa)  # TRUE
+#'
 is_spectrum <- function(x,
                         check_class = TRUE,
                         check_contents = FALSE) {
@@ -303,26 +339,33 @@ is_spectrum <- function(x,
 }
 
 #' @export
+#' @rdname is_metabodecon_class
 is_ispec <- function(x) inherits(x, "ispec")
 
 #' @export
+#' @rdname is_metabodecon_class
 is_idecon <- function(x) inherits(x, "idecon")
 
 #' @export
+#' @rdname is_metabodecon_class
 is_decon0 <- function(x) {
     is.list(x) && all(decon0_members_mandatory %in% names(x)) && !is_decon1(x)
 }
 
 #' @export
+#' @rdname is_metabodecon_class
 is_decon1 <- function(x) inherits(x, "decon1")
 
 #' @export
+#' @rdname is_metabodecon_class
 is_decon2 <- function(x) inherits(x, "decon2")
 
 #' @export
+#' @rdname is_metabodecon_class
 is_align <- function(x) inherits(x, "align")
 
 #' @export
+#' @rdname is_metabodecon_class
 is_spectra <- function(x,
                        check_class = TRUE,
                        check_contents = FALSE,
@@ -338,61 +381,80 @@ is_spectra <- function(x,
 }
 
 #' @export
+#' @rdname is_metabodecon_class
 is_ispecs <- function(x) inherits(x, "ispecs")
 
 #' @export
+#' @rdname is_metabodecon_class
 is_idecons <- function(x) inherits(x, "idecons")
 
 #' @export
+#' @rdname is_metabodecon_class
 is_decons0 <- function(x) all(sapply(x, is_decon0))
 
 #' @export
+#' @rdname is_metabodecon_class
 is_decons1 <- function(x) inherits(x, "decons1")
 
 #' @export
+#' @rdname is_metabodecon_class
 is_decons2 <- function(x) inherits(x, "decons2")
 
 #' @export
+#' @rdname is_metabodecon_class
 is_aligns <- function(x) inherits(x, "aligns")
 
 # Convert #####
 
+as_metabodecon_class <- NULL
+
 #' @export
 #'
+#' @name as_metabodecon_class
 #' @rdname as_metabodecon_class
 #'
 #' @title Convert to a Metabodecon Class
 #'
 #' @description Convert an object to a Metabodecon class.
 #'
-#' @param cls
-#' The class to convert to. For details see [metabodecon_classes].
-#'
 #' @param x
 #' The object to convert.
-#'
-#' @param ...
-#' Additional arguments passed to the conversion function.
 #'
 #' @param sf
 #' Scale factor. Only required if `x` is a decon0 object.
 #'
-#' @param spectrum
-#' Spectrum object. Only required if `x` is a decon0 object.
+#' @param sfs List of scale factors. Only required if `x` is a list of decon0
+#' objects.
 #'
-#' @param sfr
-#' Signal free region. Only required if `x` is a decon0 object and element
-#' signal_free_region` is missing.
+#' @param spectrum,spectra
+#' The `spectrum`/`spectra` object corresponding to `x` as returned by
+#' [read_spectrum()] / [read_spectra]. Only required if `x` is a decon0 object.
 #'
-#' @param wshw Water signal region. Only required if `x` is a decon0 object and
-#' element `range_water_signal_ppm` is missing.
+#' @param sfr,sfrs
+#' `sfr` should be a vector specifying the borders of the signal free region.
+#' `sfrs` should be a list of such vectors. Only required if `x` is a `decon0`
+#' object where element `signal_free_region` is missing (or a `decons0` objected
+#' containing such `decon0` objects).
 #'
-#' @param bwc Level of backwards compatibity. If `bwc == 0`, bug fixes
-#' introduced after version 0.2.2 of Metabodecon are not used. If `bwc == 1`,
-#' new features introduced after version 0.2.2 of Metabodecon (e.g. faster
-#' algorithms) are not used. If `bwc == 2`, all bug fixes and features
-#' introduced after version 0.2.2 are used. Support for `bwc == 0` will be
-#' removed in 'metabodecon v2.0'.
+#' @param wshw,wshws
+#' `wshw` should specify the half width of the water signal region. `wshws`
+#' should be a list of such values. Only required if `x` is a `decon0` object
+#' where element `range_water_signal_ppm` is missing (or a `decons0` objected
+#' containing such `decon0` objects).
+#'
+#' @param bwc
+#' Level of backwards compatibility. If `bwc == 0`, bug fixes introduced after
+#' version 0.2.2 of Metabodecon are not used. If `bwc == 1`, new features
+#' introduced after version 0.2.2 of Metabodecon (e.g. faster algorithms) are
+#' not used. If `bwc == 2`, all bug fixes and features introduced after version
+#' 0.2.2 are used. Support for `bwc == 0` will be removed in 'metabodecon v2.0'.
+#'
+#' @param optional
+#' Logical. If `TRUE`, the two optional elements `signal_free_region` and
+#' `range_water_signal_ppm` are included in the returned `decon0` object.
+#'
+#' @param nworkers
+#' Number of workers for parallel processing.
 #'
 #' @return An object of the specified class.
 #'
@@ -403,13 +465,6 @@ is_aligns <- function(x) inherits(x, "aligns")
 #' decons1 <- generate_lorentz_curves_sim(spectra)
 #' decon1 <- generate_lorentz_curves_sim(spectrum)
 #' decon2 <- as_decon2(decon1)
-as_metabodecon_class <- function(cls, x, ...) {
-    as_class <- get(paste0("as_", to), envir = environment(convert))
-    as_class(x, ...)
-}
-
-#' @export
-#' @rdname as_metabodecon_class
 as_spectrum <- function(x, sf = c(1e3, 1e6)) {
     if (is_spectrum(x)) {
         return(x)
@@ -836,7 +891,7 @@ as_decons2 <- function(x,
     stopifnot(is_decons0(x) || is_decons1(x) || is_decons2(x) || is_idecons(x))
     if (is_decons2(x)) return(x)
     decons2 <- mcmapply(as_decon2, x, sfs, spectra, sfrs, wshws, bwc, nw = nworkers)
-    names(decons2) <- names(x)
+    names(decons2) <- get_names(x)
     class(decons2) <- "decons2"
     decons2
 }
@@ -854,7 +909,7 @@ set_names <- function(x, nams) {
 }
 
 get_names <- function(x, default = "spectrum_%d") {
-    stopifnot(class(x)[1] %in% c("idecons", "ispecs", "spectra"))
+    stopifnot(is.list(x))
     dn <- get_default_names(x, default)
     en <- names(x) # Element name
     sn <- sapply(x, function(s) s$meta$name %||% s$name) # Spectrum name
