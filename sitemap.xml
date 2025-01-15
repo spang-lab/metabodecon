@@ -1,93 +1,55 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>/404.html</loc>
-  </url>
-  <url>
-    <loc>/LICENSE.html</loc>
-  </url>
-  <url>
-    <loc>/TODOS.html</loc>
-  </url>
-  <url>
-    <loc>/articles/FAQ.html</loc>
-  </url>
-  <url>
-    <loc>/articles/MetaboDecon1D.html</loc>
-  </url>
-  <url>
-    <loc>/articles/index.html</loc>
-  </url>
-  <url>
-    <loc>/articles/metabodecon.html</loc>
-  </url>
-  <url>
-    <loc>/authors.html</loc>
-  </url>
-  <url>
-    <loc>/index.html</loc>
-  </url>
-  <url>
-    <loc>/news/index.html</loc>
-  </url>
-  <url>
-    <loc>/reference/MetaboDecon1D.html</loc>
-  </url>
-  <url>
-    <loc>/reference/calculate_lorentz_curves.html</loc>
-  </url>
-  <url>
-    <loc>/reference/combine_peaks.html</loc>
-  </url>
-  <url>
-    <loc>/reference/datadir.html</loc>
-  </url>
-  <url>
-    <loc>/reference/datadir_persistent.html</loc>
-  </url>
-  <url>
-    <loc>/reference/datadir_temp.html</loc>
-  </url>
-  <url>
-    <loc>/reference/deconvolution.html</loc>
-  </url>
-  <url>
-    <loc>/reference/dohCluster.html</loc>
-  </url>
-  <url>
-    <loc>/reference/download_example_datasets.html</loc>
-  </url>
-  <url>
-    <loc>/reference/gen_feat_mat.html</loc>
-  </url>
-  <url>
-    <loc>/reference/generate_lorentz_curves.html</loc>
-  </url>
-  <url>
-    <loc>/reference/get_data_dir.html</loc>
-  </url>
-  <url>
-    <loc>/reference/get_ppm_range.html</loc>
-  </url>
-  <url>
-    <loc>/reference/index.html</loc>
-  </url>
-  <url>
-    <loc>/reference/plot_lorentz_curves_save_as_png.html</loc>
-  </url>
-  <url>
-    <loc>/reference/plot_spectrum_superposition_save_as_png.html</loc>
-  </url>
-  <url>
-    <loc>/reference/plot_triplets.html</loc>
-  </url>
-  <url>
-    <loc>/reference/show_license.html</loc>
-  </url>
-  <url>
-    <loc>/reference/speaq_align.html</loc>
-  </url>
-  <url>
-    <loc>/reference/tempdir.html</loc>
-  </url>
+<urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
+<url><loc>https://spang-lab.github.io/metabodecon/404.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/LICENSE.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/TODOS.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/articles/Classes.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/articles/Compatibility.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/articles/Contributing.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/articles/Datasets.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/articles/FAQ.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/articles/Get_Started.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/articles/MetaboDecon1D.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/articles/index.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/authors.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/index.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/news/index.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/MetaboDecon1D.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/align.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/as_metabodecon_class.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/calculate_lorentz_curves.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/combine_peaks.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/convert_pos.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/datadir.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/datadir_persistent.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/datadir_temp.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/deconvolute.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/dohCluster.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/download_example_datasets.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/draw_spectrum.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/evalwith.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/gen_feat_mat.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/get_data_dir.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/get_ppm_range.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/index.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/is_metabodecon_class.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/make_spectrum.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/metabodecon_classes.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/metabodecon_file.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/plot_lorentz_curves_save_as_png.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/plot_spectra.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/plot_spectrum.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/plot_spectrum_superposition_save_as_png.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/plot_triplets.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/print_methods.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/read_spectra.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/read_spectrum.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/sap.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/sim.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/simulate_spectrum.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/speaq_align.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/tmpdir.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/transp.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/tree.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/width.html</loc></url>
 </urlset>
+
