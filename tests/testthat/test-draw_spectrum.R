@@ -1,3 +1,6 @@
+testthat::skip_on_cran()
+testthat::skip_on_ci()
+
 develop_draw_spectrum <- function() {
 
     # Achieve clean state

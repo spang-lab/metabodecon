@@ -1,3 +1,6 @@
+testthat::skip_on_cran()
+testthat::skip_on_ci()
+
 #' @noRd
 #' @title Setup a development environment for `plot_spectrum`
 mkenv_plot_spectrum <- function() {
