@@ -8,7 +8,7 @@ align(x, maxShift = 50, maxCombine = 5, verbose = FALSE)
 }
 \arguments{
 \item{x}{An  object  of  type  \code{decons1}  or  \code{decons2}  as  described  in
-\href{metabodecon_classes}{Metabodecon Classes}. To align \code{decons0} objects
+\link{metabodecon_classes}. To align \code{decons0} objects
 (as returned by the now deprecated \link{MetaboDecon1D}), you can use
 \code{\link[=as_decons2]{as_decons2()}} to convert it to a \code{decons2} object first.}
 

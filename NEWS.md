@@ -55,7 +55,7 @@ Datasets:
 
 Documentation:
 
-* Fixed broken image in [vignettes/FAQ.Rmd](vignettes/FAQ.Rmd).
+* Fixed broken image in [vignettes/FAQ.Rmd](https://github.com/spang-lab/metabodecon/blob/main/vignettes/FAQ.Rmd).
 
 Testing:
 
@@ -88,8 +88,8 @@ API:
 
 Documentation:
 
-* Added question about file structure to [vignettes/FAQ.Rmd](vignettes/FAQ.Rmd)
-* Created categories for function reference in [_pkgdown.yml](_pkgdown.yml)
+* Added question about file structure to [vignettes/FAQ.Rmd](https://github.com/spang-lab/metabodecon/blob/main/vignettes/FAQ.Rmd)
+* Created categories for function reference in [_pkgdown.yml](https://github.com/spang-lab/metabodecon/blob/main/_pkgdown.yml)
 
 Datasets:
 

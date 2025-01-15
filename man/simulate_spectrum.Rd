@@ -45,7 +45,7 @@ simulate_spectrum(
 \item{noise}{The noise to add to the spectrum.}
 }
 \value{
-A \href{metabodecon_classes}{spectrum} object.
+A \code{spectrum} object as described in \link{metabodecon_classes}.
 }
 \description{
 Simulates a 1D NMR spectrum based on the provided parameters.

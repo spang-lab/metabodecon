@@ -13,7 +13,7 @@
 #'
 #' @param x
 #' An  object  of  type  `decons1`  or  `decons2`  as  described  in
-#' [Metabodecon Classes](metabodecon_classes). To align `decons0` objects
+#' [metabodecon_classes]. To align `decons0` objects
 #' (as returned by the now deprecated [MetaboDecon1D]), you can use
 #' [as_decons2()] to convert it to a `decons2` object first.
 #'

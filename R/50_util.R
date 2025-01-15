@@ -769,7 +769,7 @@ generate_lorentz_curves_type_checks <- quote(
 #' 3. The resonance frequency of the reference equals the resonance frequency of
 #'    protons
 #'
-#' @param x A [spectrum](metabodecon_classes) object.
+#' @param x A `spectrum` object as described in [metabodecon_classes].
 #'
 #' @return The magnetic field strength in Tesla.
 #'

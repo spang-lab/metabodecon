@@ -86,7 +86,6 @@ devtools::check_win_oldrelease()
 devtools::check_win_release()
 devtools::check_win_devel()
 devtools::check_mac_release()
-rhub::rhub_check()
 
 # Use the following command to submit the package to CRAN of submit via the web
 # interface available at https://cran.r-project.org/submit.html.

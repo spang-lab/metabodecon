@@ -531,9 +531,9 @@ update_sap <- function() {
 #' dataset.
 #'
 #' @format
-#' A [spectra](metabodecon_classes) object consisting of 16
-#' [spectrum](metabodecon_classes) objects, where each spectrum contains
-#' 2048 datapoints ranging from 3.60 to 3.29 ppm
+#' A `spectra` object consisting of 16 `spectrum` objects, where each spectrum
+#' contains 2048 datapoints ranging from 3.60 to 3.29 ppm. For details about
+#' `spectrum` and `spectra` objects see [metabodecon_classes].
 "sim"
 
 make_sim <- function(nworkers = 1) {

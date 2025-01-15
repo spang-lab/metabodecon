@@ -110,7 +110,7 @@ plot_spectra <- function(obj,
 #'
 #' @param x
 #' An object of type `spectrum`, `decon0`, `decon1` or `decon2`. For details see
-#' [Metabodecon Classes](metabodecon_classes).
+#' [metabodecon_classes].
 #'
 #' @param ...
 #' Additional arguments passed to [draw_spectrum()] for **every** sub figure.
@@ -300,7 +300,7 @@ plot_spectrum <- function(x,
 #'
 #' @param obj
 #' An object of type `spectrum` or `decon2`. For details see
-#' [Metabodecon Classes](metabodecon_classes).
+#' [metabodecon_classes].
 #'
 #' @param add
 #' If TRUE, draw into the currently open figure. If FALSE, start a new figure.

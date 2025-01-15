@@ -5,9 +5,9 @@
 \alias{sim}
 \title{The Sim Dataset}
 \format{
-A \href{metabodecon_classes}{spectra} object consisting of 16
-\href{metabodecon_classes}{spectrum} objects, where each spectrum contains
-2048 datapoints ranging from 3.60 to 3.29 ppm
+A \code{spectra} object consisting of 16 \code{spectrum} objects, where each spectrum
+contains 2048 datapoints ranging from 3.60 to 3.29 ppm. For details about
+\code{spectrum} and \code{spectra} objects see \link{metabodecon_classes}.
 }
 \usage{
 sim
