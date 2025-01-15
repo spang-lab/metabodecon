@@ -1,0 +1,89 @@
+---
+title: "Contributing"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Contributing}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+To contribute to this package, you should follow the below steps:
+
+1.  Create a issue at
+    [github.com/spang-lab/FastRet/issues](https://github.com/spang-lab/FastRet/issues)
+    describing the problem or feature you want to work on.
+2.  Wait until the issue is approved by a package maintainer.
+3.  Create a fork of the repository at
+    [github.com/spang-lab/FastRet](https://github.com/spang-lab/FastRet)
+4.  Make your edits as described in section [Making Edits](#making-edits)
+5.  Create a pull request at
+    [github.com/spang-lab/FastRet/pulls](https://github.com/spang-lab/FastRet/pulls)
+
+# Making Edits
+
+Things you can update, are:
+
+1.  Function code in folder [R](R)
+2.  Function documentation in folder [R](R)
+3.  Package documentation in folder `vignettes`
+4.  Test cases in folder [tests](tests)
+5.  Dependencies in file [DESCRIPTION](DESCRIPTION)
+6.  Authors in file [DESCRIPTION](DESCRIPTION)
+
+Whenever you update any of those things, you should run the below commands to
+check that everything is still working as expected:
+
+```R
+devtools::document() # Build files in man folder
+devtools::spell_check() # Check spelling (add false positives to inst/WORDLIST)
+urlchecker::url_check() # Check URLs
+run_tests(all = TRUE) # Execute tests from tests folder inkl. slow tests
+devtools::run_examples() # Run all examples in the package
+toscutil::check_pkg_docs() # Check function documentation for missing tags
+devtools::check() # Check package formalities
+devtools::install() # Install as required by next command
+pkgdown::build_site() # Build website in docs folder
+```
+
+After doing these steps, you can push your changes to Github and create a pull
+request.
+
+# Releasing to CRAN
+
+Whenever a package maintainer wants to release a new version of the package to
+CRAN, they should:
+
+1.  Check whether the
+    [release requirements](https://r-pkgs.org/release.html#sec-release-initial)
+    are fulfilled
+2.  Use the following commands to do a final check of the package and release it
+    to CRAN
+
+```R
+# Check spelling and URLs. False positive findings of spell check should be
+# added to inst/WORDLIST.
+devtools::spell_check()
+urlchecker::url_check()
+
+# Slower, but more realistic tests than devtools::check()
+rcmdcheck::rcmdcheck(args = c("--no-manual", "--as-cran"), build_args = ("--no-manual"), error_on = ("warning"), check_dir = "../FastRet-RCMDcheck")
+devtools::check(remote = TRUE, manual = TRUE, run_dont_test = TRUE)
+
+# Check reverse dependencies. For details see:
+# https://r-pkgs.org/release.html#sec-release-revdep-checks
+revdepcheck::revdep_check(num_workers = 8)
+
+# Send your package to CRAN's builder services. You should receive an e-mail
+# within about 30 minutes with a link to the check results. Checking with
+# check_win_devel is required by CRAN policy and will (also) be done as part
+# of CRAN's incoming checks.
+devtools::check_win_oldrelease()
+devtools::check_win_release()
+devtools::check_win_devel()
+devtools::check_mac_release()
+rhub::rhub_check()
+
+# Use the following command to submit the package to CRAN of submit via the web
+# interface available at https://cran.r-project.org/submit.html.
+devtools::submit_cran()
+```

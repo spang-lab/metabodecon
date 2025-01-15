@@ -1,41 +1,68 @@
-url: ~
+url: https://spang-lab.github.io/metabodecon/
 template:
   bootstrap: 5
 articles:
   - title: Articles
     navbar: ~
     contents:
-      - MetaboDecon1D
+      - Get_Started
       - FAQ
+      - MetaboDecon1D
+      - Datasets
+      - Contributing
+      - Compatibility
+      - Classes
 reference:
-- title: Public API
-  desc: Metabodecon's Public User Interface
+- title: Deconvolution
+  desc: Functions to deconvolute a spectrum into its individual peaks.
   contents:
-  - generate_lorentz_curves
-  - download_example_datasets
-  - datadir
-- title: Plotting Functions
-  desc: Functions to plot the results of the deconvolution
+  - read_spectrum
+  - read_spectra
+  - plot_spectrum
+  - plot_spectra
+  - draw_spectrum
+  - generate_lorentz_curves # shares docs with `deconvolute()`
+- title: Alignment
+  desc: Functions to align multiple spectra.
   contents:
-  - plot_lorentz_curves_save_as_png
-  - plot_spectrum_superposition_save_as_png
-  - plot_triplets
-- title: Internal
-  desc: Internal Helper Functions. These function are exported but should not be used directly by the user. The main reason they are documented here is so that functions from the Public API can reference them when implementation details are explained.
-  contents:
-  - datadir_persistent
-  - datadir_temp
-  - calculate_lorentz_curves
+  - align
   - combine_peaks
-  - deconvolution
   - dohCluster
   - gen_feat_mat
   - get_ppm_range
   - speaq_align
-  - tempdir
-- title: Deprecated
-  desc: Deprecated functions. These functions are no longer used by the package and are only kept for backwards compatibility. They will be removed in future versions of the package.
+- title: Datasets
+  desc: Functions to download and/or find example datasets.
   contents:
-  - MetaboDecon1D
-  - show_license
-  - get_data_dir
+  - datadir
+  - datadir_persistent
+  - datadir_temp
+  - download_example_datasets
+  - metabodecon_file
+  - sim
+  - sap
+  - tmpdir
+- title: Utility
+  desc: Utility functions, e.g. for converting between units or for calculating y values for a given lorentz curve.
+  contents:
+  - as_metabodecon_class
+  - is_metabodecon_class
+  - print_methods
+  - convert_pos
+  - convert_width
+  - evalwith
+  - make_spectrum
+  - metabodecon_classes
+  - simulate_spectrum
+  - transp
+  - tree
+  - width
+- title: Deprecated
+  desc: Deprecated functions. These functions should no longer be used. They will be retained for a short period of time to give users time to migrate to their replacement function, but will be removed in future releases of the package.
+  contents:
+  - get_data_dir # Superseded by `datadir()`
+  - MetaboDecon1D # supersed by `generate_lorentz_curves()`
+  - calculate_lorentz_curves
+  - plot_lorentz_curves_save_as_png
+  - plot_spectrum_superposition_save_as_png
+  - plot_triplets

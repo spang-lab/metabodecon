@@ -1,0 +1,22 @@
+library("testthat")
+
+test_that("read_1r_file works", {
+    spldir <- pkg_file("example_datasets/bruker/urine/urine_1")
+    oneR <- read_one_r(spldir, 10, 10)
+    expect_equal(names(oneR), c("spldir", "expno", "procno", "path_1r", "path_procs", "procs", "byteordp", "dtypp", "endian", "nbytes", "ncproc", "type", "n", "raw", "scaled"))
+    expect_match(oneR$spldir, ".example_datasets.bruker.urine.urine_1")
+    expect_equal(oneR$expno, 10)
+    expect_equal(oneR$procno, 10)
+    expect_match(oneR$path_1r, ".bruker.urine.urine_1.10.pdata.10.1r")
+    expect_match(oneR$path_procs, ".bruker.urine.urine_1.10.pdata.10.procs")
+    expect_equal(length(oneR$procs), 125)
+    expect_equal(oneR$byteordp, 0)
+    expect_equal(oneR$dtypp, 0)
+    expect_equal(oneR$endian, "little")
+    expect_equal(oneR$nbytes, 4)
+    expect_equal(oneR$ncproc, -2)
+    expect_equal(oneR$type, "integer")
+    expect_equal(length(oneR$raw), 131072)
+    expect_equal(head(oneR$raw, 5), c(1265L, 1003L, 105L, -937L, -1062L))
+    expect_equal(oneR$scaled, oneR$raw * 2^(-2)) # only true for this specific sample, because ncproc == -2
+})

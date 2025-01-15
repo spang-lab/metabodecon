@@ -1,44 +1,73 @@
 Package: metabodecon
-Language: en-US
-Type: Package
-Title: Functions for Deconvolution of 1d NMR Spectra
-Version: 1.1.1
+Title: Deconvolution and Alignment of 1D NMR Spectra
+Version: 1.2.0
 Authors@R: c(
-    person(given = "Wolfram",
-           family = "Gronwald",
-           role = c("aut", "cph"),
-           email = "wolfram.gronwald@klinik.uni-regensburg.de"),
-    person(given = "Martina",
-           family = "Haeckl",
-           role = c("aut"),
-           email = "martina.haeckl@stud.uni-regensburg.de"),
     person(given = "Tobias",
            family = "Schmidt",
-           role = c("aut", "cre"),
+           role = c("aut", "cre", "cph"),
            email = "tobias.schmidt331@gmail.com"),
+    person(given = "Martina",
+           family = "Haeckl",
+           role = c("aut", "cph"),
+           email = "martina.haeckl@stud.uni-regensburg.de"),
     person(given = "Yanren Linda",
            family = "Hu",
            role = c("ctb"),
-           email = "yanren-linda.hu@klinik.uni-regensburg.de")
+           email = "yanren-linda.hu@klinik.uni-regensburg.de"),
+    person(given = "Wolfram",
+           family = "Gronwald",
+           role = c("aut", "cph"),
+           email = "wolfram.gronwald@klinik.uni-regensburg.de")
     )
-Description: Functions for deconvolution of 1D NMR spectra followed by alignment of the data and some additional post-processing resulting in a data matrix of aligned signal integrals. The deconvolution part uses the code base of 'MetaboDecon1D' (<doi:10.3390/metabo11070452>). The alignment is done using functions from the 'speaq' package (<https://CRAN.R-project.org/package=speaq>).
+Description: A framework for deconvolution, alignment and postprocessing of 1D
+    NMR spectra, resulting in a data matrix of aligned signal integrals. The
+    deconvolution part uses the algorithm described in Koh et al. (2009)
+    <doi:10.1016/j.jmr.2009.09.003>. The alignment part is based on functions
+    from the 'speaq' package, described in Beirnaert et al. (2018)
+    <doi:10.1371/journal.pcbi.1006018> and Vu et al. (2011)
+    <doi:10.1186/1471-2105-12-405>. A detailed description and evaluation of
+    an early version of the package, 'MetaboDecon1D v0.2.2', can be found in
+    Haeckl et al. (2021) <doi:10.3390/metabo11070452>.
 License: GPL (>= 3)
+URL: https://github.com/spang-lab/metabodecon/, https://spang-lab.github.io/metabodecon/
+BugReports: https://github.com/spang-lab/metabodecon/issues
+biocViews: NMR, Deconvolution
 Encoding: UTF-8
-LazyData: true
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.0
-biocViews:
+RoxygenNote: 7.3.2
+Depends: R (>= 3.5.0)
 Imports:
     data.table,
+    mathjaxr,
     readJDX,
-    speaq
+    speaq,
+    toscutil,
+    withr
 Suggests:
+    devtools,
     digest,
     knitr,
+    lifecycle,
+    microbenchmark,
+    pkgload,
     rmarkdown,
-    testthat (>= 3.0.0),
-    devtools
+    usethis,
+    vdiffr,
+    testthat (>= 3.0.0)
+LazyData: true
 Config/testthat/edition: 3
-Config/testthat/start-first: MetaboDecon1D, generate_lorentz_curves, generate_lorentz_curves_v2
 Config/testthat/parallel: true
-URL: https://spang-lab.github.io/metabodecon/
+Config/testthat/start-first:
+    read_spectrum,
+    download_example_datasets,
+    cache_example_datasets,
+    deconvolute_ispecs,
+    mcmapply,
+    datadir,
+    get_decon_params,
+    generate_lorentz_curves,
+    smooth_signals,
+    speaq_align
+RdMacros: mathjaxr
+BuildManual: TRUE
+Language: en-US

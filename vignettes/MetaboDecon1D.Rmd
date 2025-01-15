@@ -7,21 +7,31 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-# Metabodecon1D Usage Example
+# MetaboDecon1D Usage Example
 
-The `MetaboDecon1D` package is the predecessor of this package and can be downloaded from [uni-regensburg.de/medicine/functional-genomics/staff/prof-wolfram-gronwald/software](https://www.uni-regensburg.de/medicine/functional-genomics/staff/prof-wolfram-gronwald/software/index.html). We include this usage example in here so we can easily reference old behaviour and point out added features in `metabodecon`.
+The `MetaboDecon1D` package (v0.2.2) is the predecessor of this package and can
+be downloaded from
+[uni-regensburg.de/medicine/functional-genomics/staff/prof-wolfram-gronwald/software](https://www.uni-regensburg.de/medicine/functional-genomics/staff/prof-wolfram-gronwald/software/index.html).
+We include this usage example in here so we can easily reference old behaviour
+and point out added features in `metabodecon` (v1.x).
 
 ## Install the package
 
-1. Open the following link in your browser: [uni-regensburg.de/medicine/functional-genomics/staff/prof-wolfram-gronwald/software](https://www.uni-regensburg.de/medicine/functional-genomics/staff/prof-wolfram-gronwald/software/index.html)
-2. Click [MetaboDecon1D: An R-package for the Deconvolution and Integration of 1D NMR data](https://genomics.ur.de/software/NMR/MetaboDecon1D/)
-3. Download [MetaboDecon1D_0.2.2.tar.gz](https://genomics.ur.de/software/NMR/MetaboDecon1D/MetaboDecon1D_0.2.2.tar.gz)
-4. Start an R session and enter command `install.packages("C:/Users/tobi/Downloads/MetaboDecon1D_0.2.2.tar.gz", repos = NULL, type = "source")` (replace `C:/Users/tobi/Downloads/MetaboDecon1D_0.2.2.tar.gz` with the path to the downloaded file on your computer)
+1. Open the following link in your browser:
+   [uni-regensburg.de/medicine/functional-genomics/staff/prof-wolfram-gronwald/software](https://www.uni-regensburg.de/medicine/functional-genomics/staff/prof-wolfram-gronwald/software/index.html)
+2. Click [MetaboDecon1D: An R-package for the Deconvolution and Integration of
+   1D NMR data](https://genomics.ur.de/software/NMR/MetaboDecon1D/)
+3. Download
+   [MetaboDecon1D_0.2.2.tar.gz](https://genomics.ur.de/software/NMR/MetaboDecon1D/MetaboDecon1D_0.2.2.tar.gz)
+4. Start an R session and enter command
+   `install.packages("C:/Users/tobi/Downloads/MetaboDecon1D_0.2.2.tar.gz", repos = NULL, type = "source")`
+   (replace `C:/Users/tobi/Downloads/MetaboDecon1D_0.2.2.tar.gz` with the path
+   to the downloaded file on your computer)
 
-<img src="MetaboDecon1D/install/1_website_gronwald_software.png" width="49%">
-<img src="MetaboDecon1D/install/2_index_gronwald_software.png" width="49%">
-<img src="MetaboDecon1D/install/3_downloaded_archive.png" width="49%">
-<img src="MetaboDecon1D/install/4_commands.png" width="49%">
+<img src="MetaboDecon1D/install/1_website_gronwald_software.png" width="49%" alt="1_website_gronwald_software.png">
+<img src="MetaboDecon1D/install/2_index_gronwald_software.png" width="49%" alt="2_index_gronwald_software.png">
+<img src="MetaboDecon1D/install/3_downloaded_archive.png" width="49%" alt="3_downloaded_archive.png">
+<img src="MetaboDecon1D/install/4_commands.png" width="49%" alt="4_commands.png">
 
 ## Load package
 
@@ -38,9 +48,9 @@ result <- MetaboDecon1D(
     file_format = "bruker"
 )
 ```
-![](MetaboDecon1D/bruker/1_signal_borders.png)
-![](MetaboDecon1D/bruker/2_water_artefact.png)
-![](MetaboDecon1D/bruker/3_output.png)
+![1_signal_borders.png](MetaboDecon1D/bruker/1_signal_borders.png)
+![2_water_artefact.png](MetaboDecon1D/bruker/2_water_artefact.png)
+![3_output.png](MetaboDecon1D/bruker/3_output.png)
 
 ## Visualize results and store plots as png
 
@@ -51,9 +61,9 @@ plot_lorentz_curves_save_as_png(result)
 plot_spectrum_superposition_save_as_png(result)
 ```
 
-![](MetaboDecon1D/bruker/4_plots.png)
+![4_plots.png](MetaboDecon1D/bruker/4_plots.png)
 
-## Deconvolute one spectrum in jcamp-dx format
+## Deconvolute one spectrum in jcampdx format
 
 ```R
 result <- MetaboDecon1D(
@@ -64,7 +74,7 @@ result <- MetaboDecon1D(
 str(result)
 ```
 
-<img src = "MetaboDecon1D/jcamp/1_one_jcamp_dx.png">
+<img src = "MetaboDecon1D/jcamp/1_one_jcamp_dx.png" alt = "1_one_jcamp_dx.png">
 
 ## Deconvolute multiple spectra in Bruker format
 
@@ -76,12 +86,10 @@ result <- MetaboDecon1D(
 str(result)
 ```
 
-<img src = "MetaboDecon1D/bruker/5_n_spectra_1.png" width = "49%">
-<img src = "MetaboDecon1D/bruker/6_n_spectra_2.png" width = "49%">
+<img src = "MetaboDecon1D/bruker/5_n_spectra_1.png" width = "49%" alt = "5_n_spectra_1.png">
+<img src = "MetaboDecon1D/bruker/6_n_spectra_2.png" width = "49%" alt = "6_n_spectra_2.png">
 
-## Deconvolute multiple spectra in jcamp-dx format
-
-<!-- CONTINUE HERE: REDO PLOTS -->
+## Deconvolute multiple spectra in jcampdx format
 
 ```R
 jcamp_results <- MetaboDecon1D(
@@ -93,5 +101,5 @@ plot_lorentz_curves_save_as_png(jcamp_results)
 plot_spectrum_superposition_save_as_png(jcamp_results)
 ```
 
-<img src = "MetaboDecon1D/jcamp/2_many_jcamp_dxs_1.png" width = "49%">
-<img src = "MetaboDecon1D/jcamp/3_many_jcamp_dxs_2.png" width = "49%">
+<img src = "MetaboDecon1D/jcamp/2_many_jcamp_dxs_1.png" width = "49%" alt="2_many_jcamp_dxs_1.png">
+<img src = "MetaboDecon1D/jcamp/3_many_jcamp_dxs_2.png" width = "49%" alt="3_many_jcamp_dxs_2.png">
