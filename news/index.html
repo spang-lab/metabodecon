@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metabodecon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -43,38 +43,50 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.2.0" id="metabodecon-120">metabodecon 1.2.0<a class="anchor" aria-label="anchor" href="#metabodecon-120"></a></h2>
-<p>Development Branch:</p>
-<ul><li><code>batch-mode</code></li>
-</ul><p>API:</p>
-<ul><li>Changed <code>download_example_datasets</code>. If <code>extract=TRUE</code>, the path to the extracted folder is now returned, instead of the path to the zip file.</li>
-</ul><p>Documentation:</p>
-<ul><li>Added <code>acqus</code> and <code>1r</code> file to section <em>File Structure</em> of <a href="vignettes/FAQ.Rmd">FAQ</a>
+<p>Finished the following tasks. For details about each task, see <a href="https://github.com/spang-lab/metabodecon/blob/main/TODOS.md" class="external-link">TODOS.md</a>.</p>
+<ul><li>CRAN-0: Omit “Functions for” in title</li>
+<li>CRAN-1: Omit “Functions for” in DESCRIPTION</li>
+<li>CRAN-2: Explain acronyms like NMR</li>
+<li>CRAN-3: Use correct reference format in DESCRIPTION</li>
+<li>CRAN-4: Explain return value in function docs</li>
+<li>CRAN-5: Remove examples from unexported functions</li>
+<li>CRAN-6: Fix vignettes</li>
+<li>CRAN-7: Check dontrun examples</li>
+<li>CRAN-8: Functions should not write to disk by default</li>
+<li>CRAN-9: Functions should not change working dir or global options</li>
+<li>FEATURE-01: Use temp dirs for example data</li>
+<li>FEATURE-02: Add minimal example dataset</li>
+<li>FEATURE-03: Batch Mode</li>
+<li>FEATURE-04: Parallelize</li>
+<li>FEATURE-05: Add test suite</li>
+<li>FEATURE-06: Return lambda in hertz</li>
+<li>FEATURE-07: Improve return value</li>
+<li>FEATURE-09 Implement <code><a href="../reference/read_spectra.html">read_spectra()</a></code>
 </li>
-<li>Added info about bruker namings to <a href="vignettes/FAQ.Rmd">FAQ</a>
+<li>FEATURE-11: Accept dataframes in GLC</li>
+<li>FEATURE-14: Provide simulated datasets</li>
+<li>FEATURE-15: Add lifecycle badges</li>
+<li>FEATURE-16: Improve multiprocessing</li>
+<li>FEATURE-17: Discard output</li>
+<li>FEATURE-18: Implement <code><a href="../reference/plot_spectrum.html">plot_spectrum()</a></code>
 </li>
-</ul><p>Internal:</p>
-<ul><li>Added helper functions <code>load_jcampdx_spectrum()</code> and <code>load_bruker_spectrum()</code> and corresponding test cases. These functions are more of less directly extract from <code>deconvolute_spectrum()</code>.</li>
-<li>Added improved versions of <code>load_jcampdx_spectrum()</code> and <code>load_bruker_spectrum()</code> named <code>load_jcampdx_spectrum_v2()</code> and <code>load_bruker_spectrum_v2()</code> incl. test cases</li>
-<li>Added util function <code>norm_path()</code>.</li>
-<li>Added test cases for <code>deconvolute_spectrum()</code>
+<li>FEATURE-20: Implement <code>deconvolute_blood()</code>
 </li>
-<li>Moved helper function <code>.deconvolute_spectrum()</code> into separate file <code>deconvolute_spectrum_v2</code> for development and renamed it to <code>deconvolute_spectrum_v2()</code>.</li>
-<li>Added helper function <code>get_signal_free_region_in_su()</code>
+<li>FIX-1: Prevent crashes for high smoothing</li>
+<li>REFACTOR-01: Combine load_spectrum functions</li>
+<li>REFACTOR-02: Improve Text Output (<code>-License</code>, <code>+Timestamps</code>)</li>
+<li>REFACTOR-04: Plotting speed</li>
+<li>REFACTOR-05: Speedup smoothing</li>
+<li>REFACTOR-06: Use a single unit as source of truth</li>
+<li>REFACTOR-07: Split monolithic functions into smaller parts</li>
+<li>REFACTOR-08: Improve docs for Metabodecon1D return value</li>
+<li>REFACTOR-09: Replace glc with <code><a href="../reference/deconvolute.html">generate_lorentz_curves()</a></code>
 </li>
-<li>Disabled <code>object_length_linter</code>
+<li>REFACTOR-10: Replace all md1d with <code><a href="../reference/MetaboDecon1D.html">MetaboDecon1D()</a></code> calls</li>
+<li>REFACTOR-11: Implement <code>calc_prarp()</code>
 </li>
-<li>Moved <code>deconvolution</code> function <code>MetaboDecon1D.R</code> into separate file <code>MetaboDecon1D_deconvolution.R</code>.</li>
-<li>Moved <code>str2</code>, <code>get_num_input</code>, <code>get_str_input</code>, <code>get_yn_input</code>, <code>collapse</code> from <code>main_v2.R</code> into <code>util.R</code>
-</li>
-<li>Added functions <code>ppm_to_dp()</code>, <code>ppm_to_sdp()</code>, <code>dp_to_ppm()</code> to <code>util.R</code>
-</li>
-<li>Added <code>GLOSSARY.md</code>
-</li>
-<li>Extracted code parts from <code>deconvolute_spectrum_v2()</code> and moved them into functions <code>determine_water_signal</code>, <code>determine_signal_free_region</code>, <code>plot_sfr</code> and <code>plot_ws</code>.</li>
-<li>Added test cases for <code>determine_water_signal</code> and <code>determine_signal_free_region</code>
-</li>
-<li>Moved function <code>deconvolution()</code> from <code>MetaboDecon1D.R</code> into <code>MetaboDecon1D_deconvolution.R</code>
-</li>
+<li>REFACTOR-12: Write compliance tests</li>
+<li>REFACTOR-13: Write PRARP tests</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.1.1" id="metabodecon-111">metabodecon 1.1.1<a class="anchor" aria-label="anchor" href="#metabodecon-111"></a></h2>
