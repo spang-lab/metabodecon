@@ -289,8 +289,8 @@ is_metabodecon_class <- NULL
 #' @title Is an Object from a Metabodecon Class?
 #'
 #' @description
-#' Check if an object is an instance of a specific [Metabodecon
-#' Class](metabodecon_classes).
+#' Check if an object is an instance of a specific 'Metabodecon
+#' Class'. See [metabodecon_classes] for a list of classes.
 #'
 #' @param x
 #' The object to check.

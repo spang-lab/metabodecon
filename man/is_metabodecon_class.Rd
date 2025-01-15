@@ -61,7 +61,8 @@ is_aligns(x)
 \item{check_child_classes}{Logical indicating whether to check the class of each element of the object.}
 }
 \description{
-Check if an object is an instance of a specific \href{metabodecon_classes}{Metabodecon Class}.
+Check if an object is an instance of a specific 'Metabodecon
+Class'. See \link{metabodecon_classes} for a list of classes.
 }
 \examples{
 ss <- sim[1:2]

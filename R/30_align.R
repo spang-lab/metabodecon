@@ -34,8 +34,7 @@
 #' Whether to print additional information during the alignment process.
 #'
 #' @return
-#' An  object  of   type   `AlignedSpectra`   as   described   in   [Metabodecon
-#' Classes](metabodecon_casses).
+#' An object of type `align` as described in [metabodecon_classes].
 #'
 #' @examples
 #' sim_dir <- metabodecon_file("bruker/sim")

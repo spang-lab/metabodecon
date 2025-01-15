@@ -26,7 +26,7 @@ Passed as argument \code{range} to \code{\link[=combine_peaks]{combine_peaks()}}
 \item{verbose}{Whether to print additional information during the alignment process.}
 }
 \value{
-An  object  of   type   \code{AlignedSpectra}   as   described   in   \href{metabodecon_casses}{Metabodecon Classes}.
+An object of type \code{align} as described in \link{metabodecon_classes}.
 }
 \description{
 Align signals across  a  list  of  deconvoluted  spectra  using  the  'CluPA'
