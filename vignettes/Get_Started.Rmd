@@ -71,7 +71,7 @@ questions with `y`. If adjustments are needed, you  can  respond  with  `n`  and
 input the correct values.
 
 <figure id="fig-sim01-sfr-and-wsr">
-<img src="Get_Started\sim_01_param_checking.svg" alt="sim_01_param_checking.svg">
+<a href="Get_Started/sim_01_param_checking.svg"><img src="Get_Started/sim_01_param_checking.svg" alt="sim_01_param_checking.svg"></a>
 <figcaption>
 <strong>Figure 1.</strong>
 The first spectrum of the Sim dataset. The x-Axis gives the  chemical  shift  of

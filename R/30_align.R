@@ -283,7 +283,6 @@ speaq_align <- function(feat = gen_feat_mat(spectrum_data),
     U <- feat$peakList # Unaligned peak center indices (PCIs) in increasing order (i.e. the leftmost value index 1).
     r <- speaq::findRef(U)$refInd # Reference spectrum
     C <- dohCluster(Y, U, r, maxShift, acceptLostPeak, verbose) # list(Y, new_peakList)
-    Y2 <- C$Y
     Q <- C$new_peakList # Aligned PCIs in increasing order.
     P <- lapply(Q, function(p) n - p) # Aligned PCIs in decreasing order.
     integrals <- mapply(SIMPLIFY = FALSE, feat$A, feat$lambda, P, FUN = function(A, l, p) {

@@ -56,7 +56,7 @@
 #' ## Reading files in this format is very slow (about 30s on the development
 #' ## machine). So if possible, you should stick with the original Bruker
 #' ## data storage format.
-#' \dontrun{
+#' \donttest{
 #' relpath <- "example_datasets/jcampdx/urine/urine_1.dx"
 #' urine_1_dx <- system.file(relpath, package = "metabodecon")
 #' x1_dx <- read_spectrum(urine_1_dx, file_format = "jcampdx")
@@ -311,13 +311,11 @@ read_bruker <- function(spldir,
 #' @title Read single JCAMPDX Spectrum
 #' @inheritParams read_spectrum
 #' @examples
-#' \dontrun{
-#' # Example Usage (took 30s on the development machine)
+#' # ATTENTION: Takes 30s on the development machine
 #' xds_path <- download_example_datasets()
 #' path <- file.path(xds_path, "jcampdx/urine/urine_1.dx")
 #' spectrum_data <- read_jcampdx(path)
 #' str(spectrum_data, 1)
-#' }
 read_jcampdx <- function(path,
                                   raw = FALSE,
                                   silent = TRUE,

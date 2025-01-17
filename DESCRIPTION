@@ -1,6 +1,6 @@
 Package: metabodecon
 Title: Deconvolution and Alignment of 1d NMR Spectra
-Version: 1.2.3
+Version: 1.2.4
 Authors@R: c(
     person(given = "Tobias",
            family = "Schmidt",
@@ -19,14 +19,14 @@ Authors@R: c(
            role = c("aut", "cph"),
            email = "wolfram.gronwald@klinik.uni-regensburg.de")
     )
-Description: A framework for deconvolution, alignment and postprocessing of 1D
-    NMR spectra, resulting in a data matrix of aligned signal integrals. The
-    deconvolution part uses the algorithm described in Koh et al. (2009)
-    <doi:10.1016/j.jmr.2009.09.003>. The alignment part is based on functions
-    from the 'speaq' package, described in Beirnaert et al. (2018)
-    <doi:10.1371/journal.pcbi.1006018> and Vu et al. (2011)
-    <doi:10.1186/1471-2105-12-405>. A detailed description and evaluation of
-    an early version of the package, 'MetaboDecon1D v0.2.2', can be found in
+Description: A framework for deconvolution, alignment and postprocessing
+    of 1-dimensional (1d) nuclear magnetic resonance (NMR) spectra, resulting in
+    a data matrix of aligned signal integrals. The deconvolution part uses the
+    algorithm described in Koh et al. (2009) <doi:10.1016/j.jmr.2009.09.003>.
+    The alignment part is based on functions from the 'speaq' package, described
+    in Beirnaert et al. (2018) <doi:10.1371/journal.pcbi.1006018> and Vu et al.
+    (2011) <doi:10.1186/1471-2105-12-405>. A detailed description and evaluation
+    of an early version of the package, 'MetaboDecon1D v0.2.2', can be found in
     Haeckl et al. (2021) <doi:10.3390/metabo11070452>.
 License: GPL (>= 3)
 URL: https://github.com/spang-lab/metabodecon/, https://spang-lab.github.io/metabodecon/

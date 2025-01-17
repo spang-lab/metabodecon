@@ -1,3 +1,19 @@
+# metabodecon 1.2.4
+
+- Documentation updates
+
+# metabodecon 1.2.3
+
+- Documentation updates
+
+# metabodecon 1.2.2
+
+- Documentation updates
+
+# metabodecon 1.2.1
+
+- Documentation updates
+
 # metabodecon 1.2.0
 
 Finished the following tasks. For details about each task, see

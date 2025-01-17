@@ -142,7 +142,7 @@ print_methods <- NULL
 #' @title S3 Methods for Printing Metabodecon Objects
 #'
 #' @description
-#' S3 Methods for printing metabodecon objects as described in the  [Metabodecon
+#' S3 Methods for printing metabodecon objects as described in the [Metabodecon
 #' Classes](https://spang-lab.github.io/metabodecon/articles/).
 #'
 #' @param x
@@ -153,6 +153,9 @@ print_methods <- NULL
 #'
 #' @param ...
 #' Not used. Only accepted to comply with generic [base::print()].
+#'
+#' @return
+#' NULL, called for side effect of printing to the standard output device.
 #'
 #' @examples
 #' si <- c(1, 1, 3, 7, 8, 3, 8, 5, 2, 1)
@@ -303,6 +306,9 @@ is_metabodecon_class <- NULL
 #'
 #' @param check_child_classes
 #' Logical indicating whether to check the class of each element of the object.
+#'
+#' @return
+#' TRUE if the object is an instance of the specified class, otherwise FALSE.
 #'
 #' @examples
 #' ss <- sim[1:2]

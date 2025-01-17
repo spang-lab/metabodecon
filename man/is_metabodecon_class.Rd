@@ -60,6 +60,9 @@ is_aligns(x)
 
 \item{check_child_classes}{Logical indicating whether to check the class of each element of the object.}
 }
+\value{
+TRUE if the object is an instance of the specified class, otherwise FALSE.
+}
 \description{
 Check if an object is an instance of a specific 'Metabodecon
 Class'. See \link{metabodecon_classes} for a list of classes.

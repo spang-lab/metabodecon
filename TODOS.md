@@ -1,15 +1,6 @@
 # Open
 
-## v1.2.0
-
-### FEATURE-13: Merge into main
-
-- [ ] Fix all R CMD Check findings.
-- [ ] Merge branch `v1.2.0` into `main`.
-
-### CRAN-10: Resubmit to CRAN
-
-- [ ] Resubmit to CRAN.
+## v1.2.x
 
 ### DOC-2: Improve docs
 
@@ -80,6 +71,7 @@ Implement `deconvolute_spectra()` and `deconvolute_spectrum()` which should be t
 - Check special handling for cases with A[i] == 0 and lambda[i] == 0 in parameter approximaton. Max analyzed it and concluded that checks are not necessary. My though: copy paste artifacts from the the w[i] == 0 check (which is wrong).
 - Show prarp in `plot_spectrum()`
 - Show peak scores in `plot_spectrum()`
+- When reading spectra, the spectrum type should be checked (1D, 2D, etc. and if ncessary an error message should be printed)
 
 # DONE
 
@@ -547,6 +539,17 @@ All the functionality, i.e.
 should be controllable via function arguments.
 
 *2024-12-11: Done in branch v1.2.0 with commit 44f8f02*
+
+### FEATURE-13: Merge into main
+
+- [x] Fix all R CMD Check findings.
+- [x] Merge branch `v1.2.0` into `main`.
+
+*2025-01-16: done with commit d9e7442*
+
+### CRAN-10: Resubmit to CRAN
+
+*2025-01-16: done with commit ff7d9ea*
 
 ## REFACTOR
 

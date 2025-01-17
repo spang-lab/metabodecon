@@ -83,12 +83,12 @@
 #' `decon2` object.
 #'
 #' @examples
-#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
+#'
 #' ## Define the paths to the example datasets we want to deconvolute:
 #' ## `sim_dir`: directory containing 16 simulated spectra
 #' ## `sim_01`: path to the first spectrum in the `sim` directory
 #' ## `sim_01_spec`: the first spectrum in the `sim` directory as a dataframe
-#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
+#'
 #' sim_dir <- metabodecon_file("sim_subset")
 #' sim_1_dir <- file.path(sim_dir, "sim_01")
 #' sim_2_dir <- file.path(sim_dir, "sim_02")
@@ -96,10 +96,10 @@
 #' sim_2_spectrum <- read_spectrum(sim_2_dir)
 #' sim_spectra <- read_spectra(sim_dir)
 #'
-#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
+#'
 #' ## Show that `generate_lorentz_curves()` and `generate_lorentz_curves_sim()`
 #' ## produce the same results:
-#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
+#'
 #' sim_1_decon0 <- generate_lorentz_curves(
 #'     data_path = sim_1_dir, # Path to directory containing spectra
 #'     sfr = c(3.55, 3.35), # Borders of signal free region (SFR) in ppm
@@ -110,10 +110,10 @@
 #' sim_1_decon1 <- generate_lorentz_curves_sim(sim_1_dir)
 #' stopifnot(all.equal(sim_1_decon0, sim_1_decon1))
 #'
-#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
+#'
 #' ## Show that passing a spectrum produces the same results as passing the
 #' ## the corresponding directory:
-#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
+#'
 #' decon_from_spectrum_dir <- generate_lorentz_curves_sim(sim_1_dir)
 #' decon_from_spectrum_obj <- generate_lorentz_curves_sim(sim_1_spectrum)
 #' decons_from_spectra_obj <- generate_lorentz_curves_sim(sim_spectra)
@@ -129,18 +129,6 @@
 #' all.equal(  decons_from_spectra_dir, decons_from_spectra_obj     )
 #' most.equal( decon_from_spectrum_dir, decons_from_spectra_obj[[1]])
 #' most.equal( decon_from_spectrum_dir, decons_from_spectra_dir[[1]])
-#'
-#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
-#' ## Below example uses data from a real NMR experiment, instead of (small)
-#' ## simulated datasets and therefor requires multiple seconds to run. Because
-#' ## `ask` is TRUE in this example (the default value), the user will be asked
-#' ## for input during the deconvolution. To avoid this, set `ask = FALSE`.
-#' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
-#' \dontrun{
-#' example_datasets <- download_example_datasets()
-#' urine_1 <- file.path(example_datasets, "bruker/urine/urine_1")
-#' decon_urine_1 <- generate_lorentz_curves(urine_1)
-#' }
 NULL
 
 #' @export

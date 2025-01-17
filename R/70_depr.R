@@ -86,22 +86,37 @@
 #'
 #' @examples
 #'
-#' ## MetaboDecon1D() is deprecated since metabodecon v1.0.0. Please use
-#' ## generate_lorentz_curves() instead, as shown below.
+#' ## ATTENTION: using MetaboDecon1D() for deconvolution is deprecated. Please use
+#' ## generate_lorentz_curves() instead.
 #'
-#' # DEPRECATED:
-#' \dontrun{
-#' ## Requires interactive user input
+#' ## The following example shows how a subset of the Sim dataset, consisting
+#' ## of two spectrum objects, can be deconvoluted using `MetaboDecon1D()`. The
+#' ## whole example code is wrapped into `evalwith()` to simulate user input.
+#' ## When using the function interactively, you should type in the answers to
+#' ## the questions manually.
+#' expected_answers <- c(
+#'      "10",   # Subfolder of your filepath, i.e. the experiment number?
+#'      "10",   # Subsubsubfolder of filepath, i.e. the processing number?
+#'      "y",    # Use same parameters for all spectra?
+#'      "1",    # File to adjust all parameters.
+#'      "n",    # Signal free region borders correct selected?
+#'      "3.55", # Left border.
+#'      "3.35", # Right border.
+#'      "y",    # Signal free region borders correct selected?
+#'      "n",    # Water artefact fully inside red vertical lines?
+#'      "0",    # Half width range (in ppm) for the water artefact.
+#'      "y",    # Water artefact fully inside red vertical lines?
+#'      "n"     # Save results as text documents?
+#' )
 #' sim <- metabodecon_file("bruker/sim_subset")
-#' sim_decon <- MetaboDecon1D(sim)
-#' sim_01_decon <- MetaboDecon1D(sim, "sim_01")
-#' }
+#' evalwith(answers = expected_answers, {
+#'      sim_decon <- MetaboDecon1D(sim)
+#' })
 #'
-#' # RECOMMENDED:
-#' sim <- metabodecon_file("bruker/sim_subset")
-#' sim_decon <- generate_lorentz_curves_sim(sim, ask = FALSE)
-#' sim_01 <- file.path(sim, "sim_01")
-#' sim_01_decon <- generate_lorentz_curves_sim(sim_01, ask = FALSE)
+#' ## Deconvolute only the first spectrum of the folder "bruker/sim_subset" into
+#' evalwith(answers = expected_answers[-(3:4)], {
+#'      sim_decon <- MetaboDecon1D(sim, filename = "sim_01")
+#' })
 #'
 MetaboDecon1D <- function(filepath,
                           filename = NA,

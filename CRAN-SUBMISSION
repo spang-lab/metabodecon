@@ -1,21 +1,3 @@
-## Resubmission
-
-This is a resubmission.
-
-In this version all issues identified by CRAN Maintainer
-Victoria Wimmer concerning MetaboDecon1D v1.0.2 (submitted
-on Tue 29/08/2023) have been addressed, including:
-
-1. Omit "Functions for" in title
-2. Omit "Functions for" in DESCRIPTION
-3. Explain acronyms like NMR
-4. Use correct reference format in DESCRIPTION
-5. Explain return value in function docs
-6. Remove examples from unexported functions
-7. Fix vignettes
-8. Check dontrun examples
-9. Functions should not write to disk by default
-10. Functions should not change working dir or global options
-
-Furthermore, some refactorings, fixes and feature-additions
-have been made, which are described in detail in NEWS.md.
+Version: 1.2.3
+Date: 2025-01-15 23:51:58 UTC
+SHA: ff7d9eae5e7c78751cae84b600eacab78bf181b3

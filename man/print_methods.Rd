@@ -47,8 +47,11 @@
 
 \item{...}{Not used. Only accepted to comply with generic \code{\link[base:print]{base::print()}}.}
 }
+\value{
+NULL, called for side effect of printing to the standard output device.
+}
 \description{
-S3 Methods for printing metabodecon objects as described in the  \href{https://spang-lab.github.io/metabodecon/articles/}{Metabodecon Classes}.
+S3 Methods for printing metabodecon objects as described in the \href{https://spang-lab.github.io/metabodecon/articles/}{Metabodecon Classes}.
 }
 \examples{
 si <- c(1, 1, 3, 7, 8, 3, 8, 5, 2, 1)
