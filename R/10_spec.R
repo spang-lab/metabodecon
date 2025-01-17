@@ -60,7 +60,11 @@
 #' relpath <- "example_datasets/jcampdx/urine/urine_1.dx"
 #' urine_1_dx <- system.file(relpath, package = "metabodecon")
 #' x1_dx <- read_spectrum(urine_1_dx, file_format = "jcampdx")
-#' stopifnot(all.equal(x1, x1_dx))
+#' stopifnot(
+#'      isTRUE(all.equal(x1$cs, x1_dx$cs)),     # Chemical shifts are equal
+#'      isTRUE(all.equal(x1$si, x1_dx$si)),     # Signal intensities are equal
+#'      !isTRUE(all.equal(x1$meta, x1_dx$meta)) # Metadata is different (e.g. path)
+#' )
 #' }
 read_spectrum <- function(data_path = metabodecon_file("bruker/sim/sim_01"),
                           file_format = "bruker",
@@ -72,7 +76,7 @@ read_spectrum <- function(data_path = metabodecon_file("bruker/sim/sim_01"),
     file_format <- match.arg(file_format, c("bruker", "jcampdx"))
     switch(file_format,
         "bruker" = read_bruker(data_path, expno, procno, raw, silent, force),
-        "jcampdx" = read_jcampdx(data_path, silent, force)
+        "jcampdx" = read_jcampdx(data_path, raw, silent, force)
     )
 }
 
@@ -317,9 +321,9 @@ read_bruker <- function(spldir,
 #' spectrum_data <- read_jcampdx(path)
 #' str(spectrum_data, 1)
 read_jcampdx <- function(path,
-                                  raw = FALSE,
-                                  silent = TRUE,
-                                  force = FALSE) {
+                         raw = FALSE,
+                         silent = TRUE,
+                         force = FALSE) {
     data <- readJDX::readJDX(file = path, SOFC = TRUE, debug = 0)
     # Object `data` is a list with following elements:
     # - dataGuide = df (3*3)
@@ -331,7 +335,7 @@ read_jcampdx <- function(path,
     # Reading takes about 30s on machine r31 for urine_1.dx (1MB).
     meta <- parse_metadata(lines = data$metadata)
     si_raw <- data$real$y
-    si_scaled <- if (meta$DTYPP == 0) data$real$y * 2^meta$NC_proc else data$real$y
+    si_scaled <- if (isTRUE(meta$DTYPP == 0) && isFALSE(raw)) data$real$y * 2^meta$NC_proc else data$real$y
     make_spectrum(
         si = if (raw) si_raw else si_scaled, # Signal intensities
         cs_max = meta$OFFSET, # Spectrum offset in PPM

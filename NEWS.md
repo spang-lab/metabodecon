@@ -1,3 +1,7 @@
+# metabodecon 1.2.5
+
+- Fixed a bug in `read_spectrum()` that caused argument `raw` to not be passed on to `read_jcampdx()`.
+
 # metabodecon 1.2.4
 
 - Documentation updates
