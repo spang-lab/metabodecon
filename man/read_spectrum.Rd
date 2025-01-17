@@ -56,19 +56,4 @@ xx <- read_spectra(urine)
 str(xx)
 str(x1)
 stopifnot(all.equal(x1, xx$urine_1))
-
-## Below code shows how a spectrum stored in JCAMP-DX format can be read.
-## Reading files in this format is very slow (about 30s on the development
-## machine). So if possible, you should stick with the original Bruker
-## data storage format.
-\donttest{
-relpath <- "example_datasets/jcampdx/urine/urine_1.dx"
-urine_1_dx <- system.file(relpath, package = "metabodecon")
-x1_dx <- read_spectrum(urine_1_dx, file_format = "jcampdx")
-stopifnot(
-     isTRUE(all.equal(x1$cs, x1_dx$cs)),     # Chemical shifts are equal
-     isTRUE(all.equal(x1$si, x1_dx$si)),     # Signal intensities are equal
-     !isTRUE(all.equal(x1$meta, x1_dx$meta)) # Metadata is different (e.g. path)
-)
-}
 }
