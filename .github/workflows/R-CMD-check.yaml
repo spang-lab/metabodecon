@@ -28,7 +28,13 @@ jobs:
           - {os: ubuntu-latest,  r: 'devel', http-user-agent: 'release'}
           - {os: ubuntu-latest,  r: 'release'}
           - {os: ubuntu-latest,  r: 'oldrel-1'}
-          - {os: ubuntu-latest,  r: 'oldrel-4'}
+          - {os: ubuntu-latest,  r: 'oldrel-3'}
+          # We do not test for oldrel-4 on Linux, because the most recent
+          # version of randomForst (4.7-1) requires R >= 4.1.0 and for some
+          # reason `pak::pkg_install()` is not (yet) smart enough to figure
+          # out that it can just install randomForest 4.6-14 instead. On
+          # Windows this works just fine, so we test it there and hope that
+          # `install.packages()` is smarter than `pak::pkg_install()`.
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
