@@ -646,6 +646,10 @@ is_existing_path <- function(x) {
     is_str(x) && file.exists(x)
 }
 
+is_existing_dirpath <- function(x) {
+    is_str(x) && dir.exists(x)
+}
+
 is_equal <- function(x, y) {
     isTRUE(all.equal(x, y))
 }

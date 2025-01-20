@@ -1,5 +1,5 @@
-testthat::skip_on_cran()
-testthat::skip_on_ci()
+# testthat::skip_on_cran()
+# testthat::skip_on_ci()
 
 sap <- test_that("MetaboDecon1D works for single spectrum", {
     decon0 <- MetaboDecon1D_silent(

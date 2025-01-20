@@ -1,3 +1,7 @@
+# metabodecon 1.2.6
+
+- Fixed a bug in `MetaboDecon1D()` that caused argument `file_path` to be interpreted as a relative path, even if it was an absolute path.
+
 # metabodecon 1.2.5
 
 - Fixed a bug in `read_spectrum()` that caused argument `raw` to not be passed on to `read_jcampdx()`.

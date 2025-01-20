@@ -1,5 +1,5 @@
-testthat::skip_on_cran()
-testthat::skip_on_ci()
+# testthat::skip_on_cran()
+# testthat::skip_on_ci()
 
 test_that("init_lorentz_curves works", {
     sim <- metabodecon_file("sim_subset")

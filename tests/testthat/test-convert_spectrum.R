@@ -6,8 +6,8 @@ test_that("as_ispec works", {
     expect_true(all(ispec_members %in% names(x)))
 })
 
-testthat::skip_on_cran()
-testthat::skip_on_ci()
+# testthat::skip_on_cran()
+# testthat::skip_on_ci()
 
 test_that("as_ispec produces same output as MetaboDecon1D did", {
     sim <- pkg_file("example_datasets/bruker/sim")

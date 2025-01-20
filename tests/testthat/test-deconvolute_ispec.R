@@ -37,8 +37,8 @@ prarps <- test_that("PRARPs are good", {
     expect_true(obj1$prarpx >= obj0$prarpx)
 })
 
-testthat::skip_on_cran()
-testthat::skip_on_ci()
+# testthat::skip_on_cran()
+# testthat::skip_on_ci()
 
 bwc <- test_that("Deconvolute with bwc=0 returns the same as MetaboDecon1D", {
     decon0_deconvolute <- as_decon0(idecon0, optional = FALSE)

@@ -129,29 +129,26 @@ MetaboDecon1D <- function(filepath,
                           scale_factor = c(1000, 1000000),
                           debug = FALSE,
                           store_results = NULL) {
+
+    stopifnot(
+        is_str(filepath) && dir.exists(filepath),
+        is.na(filename) || (is_str(filename) && file.exists(file.path(filepath, filename))),
+        file_format %in% c("bruker", "jcampdx"),
+        is_int(number_iterations, n = 1),
+        is_num(range_water_signal_ppm, n = 1),
+        is_num(signal_free_region, n = 2),
+        is_num(smoothing_param, n = 2),
+        is_num(delta, n = 1),
+        is_num(scale_factor, n = 2),
+        is_bool(debug, 1),
+        is_bool(store_results, 1) || is.null(store_results)
+    )
+
     if (debug) logf("Starting MetaboDecon1D")
 
     example <- FALSE
-    if (filepath == "load_example_path") {
-        filepath <- system.file("extdata", package = "MetaboDecon1D", mustWork = TRUE)
-        example <- TRUE
-        owd <- setwd(filepath)
-        on.exit(setwd(owd), add = TRUE)
-    }
 
-    # Check if filepath is a global file path (e.g. C:/) or local
-    if (grepl("[ABCDEFGHIJKLMNOPQRSTUVWXYZ]+:+/", filepath)) {
-        # filepath is a global file
-        owd <- setwd(filepath)
-        on.exit(setwd(owd), add = TRUE)
-    } else {
-        # Get current working directory and concat with current filepath and
-        # save as new working directory
-        owd <- setwd(file.path(getwd(), filepath))
-        on.exit(setwd(owd), add = TRUE)
-        # Set afterwards filepath to global path
-        filepath <- getwd()
-    }
+    local_dir(filepath)
 
     # If filename is, as the default value, NA, then the all spectra of the
     # filepath of the folder are analyzed
@@ -332,14 +329,9 @@ MetaboDecon1D <- function(filepath,
             # Get number of files
             number_of_files <- length(files)
 
-            # If example is loaded use predefined values, else get some values from the user
-            if (example == TRUE) {
-                spectroscopy_value <- 10
-                processing_value <- 10
-            } else {
-                spectroscopy_value <- readline(prompt = "What is the name of the subfolder of your filepath: \n[e.g. 10 for C:/Users/Username/Desktop/spectra_folder/spectrum_name/10] ")
-                processing_value <- readline(prompt = "What is the name of the subsubsubfolder of your filepath: \n[e.g. 10 for C:/Users/Username/Desktop/spectra_folder/spectrum_name/10/pdata/10] ")
-            }
+            # Get some values from the user
+            spectroscopy_value <- readline(prompt = "What is the name of the subfolder of your filepath: \n[e.g. 10 for C:/Users/Username/Desktop/spectra_folder/spectrum_name/10] ")
+            processing_value <- readline(prompt = "What is the name of the subsubsubfolder of your filepath: \n[e.g. 10 for C:/Users/Username/Desktop/spectra_folder/spectrum_name/10/pdata/10] ")
 
             # Ask User if he want to use same parameters for all spectra of the folder
             parameter_request <- readline(prompt = "Do you want to use the same parameters (signal_free_region, range_water_signal_ppm) for all spectra? (y/n) ")
@@ -520,14 +512,9 @@ MetaboDecon1D <- function(filepath,
 
         # Check which file format is loaded
         if (file_format == "bruker") {
-            # If example is loaded use predefined values, else get some values from the user
-            if (example == TRUE) {
-                spectroscopy_value <- 10
-                processing_value <- 10
-            } else {
-                spectroscopy_value <- readline(prompt = "What is the name of the subfolder of your filepath: \n[e.g. 10 for C:/Users/Username/Desktop/spectra_folder/spectrum_name/10] ")
-                processing_value <- readline(prompt = "What is the name of the subsubsubfolder of your filepath: \n[e.g. 10 for C:/Users/Username/Desktop/spectra_folder/spectrum_name/10/pdata/10] ")
-            }
+            # Get some values from the user
+            spectroscopy_value <- readline(prompt = "What is the name of the subfolder of your filepath: \n[e.g. 10 for C:/Users/Username/Desktop/spectra_folder/spectrum_name/10] ")
+            processing_value <- readline(prompt = "What is the name of the subsubsubfolder of your filepath: \n[e.g. 10 for C:/Users/Username/Desktop/spectra_folder/spectrum_name/10/pdata/10] ")
 
             # Set variable to false
             same_parameter <- FALSE
@@ -733,8 +720,7 @@ plot_triplets <- function(deconv_result, x_range = c(), y_range = c(), out_dir =
             invisible(NULL)
         }
     }
-    owd <- setwd(out_dir)
-    on.exit(setwd(owd), add = TRUE)
+    local_dir(out_dir)
 
     number_in_folder <- 0
     if ("number_of_files" %in% names(deconv_result)) {
@@ -902,8 +888,7 @@ plot_lorentz_curves_save_as_png <- function(deconv_result, x_range = c(), y_rang
             invisible(NULL)
         }
     }
-    owd <- setwd(out_dir)
-    on.exit(setwd(owd), add = TRUE)
+    local_dir(out_dir)
 
     number_in_folder <- 0
     # Get number of analyzed spectra
@@ -1092,8 +1077,7 @@ plot_spectrum_superposition_save_as_png <- function(deconv_result,
         continue <- get_yn_input(prompt)
         if (!continue) return(invisible(NULL)) # styler: off
     }
-    owd <- setwd(out_dir)
-    on.exit(setwd(owd), add = TRUE)
+    local_dir(out_dir)
 
     number_in_folder <- 0 # Number of analyzed spectra
     if ("number_of_files" %in% names(deconv_result)) {
@@ -2354,8 +2338,7 @@ plot_si_mat <- function(Y = generate_lorentz_curves_sim("bruker/sim"),
     xlim <- c(1, p)
     ylim <- c(0, max(Y))
     args <- named(x = NA, type = "n", xlim, ylim, xlab, ylab)
-    opar <- par(mar = mar)
-    on.exit(par(opar))
+    local_par(mar = mar)
     do.call(plot, args)
     for (i in spis) lines(x = dpis, y = Y[i, ], col = cols[i])
     if (lgdcex == "auto") lgdcex <- 1 / max(1, log(n, base = 8))
@@ -2399,8 +2382,7 @@ plot_noise_methods <- function(siRND, siSFR, n = 300, start = 5000) {
     ymin <- min(c(min(siRND), min(siSFR)))
     ymax <- max(c(max(siRND), max(siSFR)))
     ylim <- c(ymin, ymax)
-    opar <- par(mfrow = c(5, 1), mar = c(3, 4, 0, 1))
-    on.exit(par(opar), add = TRUE)
+    local_par(mfrow = c(5, 1), mar = c(3, 4, 0, 1))
     for (i in 1:5) {
         redT <- rgb(1, 0, 0, 0.1)
         bluT <- rgb(0, 0, 1, 0.1)
@@ -2721,8 +2703,7 @@ analyze_noise_methods <- function(ask = TRUE) {
     slSFR <- count_stretches(siSFR) # stretch lengths of SFR
     table(slRND)
     table(slSFR)
-    opar <- par(mfrow = c(2, 1))
-    on.exit(par(opar), add = TRUE)
+    local_par(mfrow = c(2, 1))
     hist(slRND, breaks = 0:20 + 0.5, xlim = c(0, 20))
     hist(slSFR, breaks = 0:20 + 0.5, xlim = c(0, 20))
 }
