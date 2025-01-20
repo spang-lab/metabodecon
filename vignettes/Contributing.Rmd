@@ -72,7 +72,11 @@ rcmdcheck::rcmdcheck(
     error_on = ("warning"),
     check_dir = "../FastRet-RCMDcheck"
 )
-devtools::check(remote = TRUE, manual = TRUE, run_dont_test = TRUE)
+devtools::check(
+    remote = TRUE,
+    manual = TRUE,
+    run_dont_test = TRUE
+)
 
 # Check reverse dependencies. For details see:
 # https://r-pkgs.org/release.html#sec-release-revdep-checks
