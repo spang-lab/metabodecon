@@ -17,7 +17,7 @@ instead. See examples below for usage.
 
     <a class="navbar-brand me-2" href="../index.html">metabodecon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -171,22 +171,191 @@ minor improvements to pass CRAN checks.</p>
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co">## MetaboDecon1D() is deprecated since metabodecon v1.0.0. Please use</span></span></span>
-<span class="r-in"><span><span class="co">## generate_lorentz_curves() instead, as shown below.</span></span></span>
+<span class="r-in"><span><span class="co">## ATTENTION: using MetaboDecon1D() for deconvolution is deprecated. Please use</span></span></span>
+<span class="r-in"><span><span class="co">## generate_lorentz_curves() instead.</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># DEPRECATED:</span></span></span>
-<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
-<span class="r-in"><span><span class="co">## Requires interactive user input</span></span></span>
+<span class="r-in"><span><span class="co">## The following example shows how a subset of the Sim dataset, consisting</span></span></span>
+<span class="r-in"><span><span class="co">## of two spectrum objects, can be deconvoluted using `MetaboDecon1D()`. The</span></span></span>
+<span class="r-in"><span><span class="co">## whole example code is wrapped into `evalwith()` to simulate user input.</span></span></span>
+<span class="r-in"><span><span class="co">## When using the function interactively, you should type in the answers to</span></span></span>
+<span class="r-in"><span><span class="co">## the questions manually.</span></span></span>
+<span class="r-in"><span><span class="va">expected_answers</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>     <span class="st">"10"</span>,   <span class="co"># Subfolder of your filepath, i.e. the experiment number?</span></span></span>
+<span class="r-in"><span>     <span class="st">"10"</span>,   <span class="co"># Subsubsubfolder of filepath, i.e. the processing number?</span></span></span>
+<span class="r-in"><span>     <span class="st">"y"</span>,    <span class="co"># Use same parameters for all spectra?</span></span></span>
+<span class="r-in"><span>     <span class="st">"1"</span>,    <span class="co"># File to adjust all parameters.</span></span></span>
+<span class="r-in"><span>     <span class="st">"n"</span>,    <span class="co"># Signal free region borders correct selected?</span></span></span>
+<span class="r-in"><span>     <span class="st">"3.55"</span>, <span class="co"># Left border.</span></span></span>
+<span class="r-in"><span>     <span class="st">"3.35"</span>, <span class="co"># Right border.</span></span></span>
+<span class="r-in"><span>     <span class="st">"y"</span>,    <span class="co"># Signal free region borders correct selected?</span></span></span>
+<span class="r-in"><span>     <span class="st">"n"</span>,    <span class="co"># Water artefact fully inside red vertical lines?</span></span></span>
+<span class="r-in"><span>     <span class="st">"0"</span>,    <span class="co"># Half width range (in ppm) for the water artefact.</span></span></span>
+<span class="r-in"><span>     <span class="st">"y"</span>,    <span class="co"># Water artefact fully inside red vertical lines?</span></span></span>
+<span class="r-in"><span>     <span class="st">"n"</span>     <span class="co"># Save results as text documents?</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">sim</span> <span class="op">&lt;-</span> <span class="fu"><a href="metabodecon_file.html">metabodecon_file</a></span><span class="op">(</span><span class="st">"bruker/sim_subset"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">sim_decon</span> <span class="op">&lt;-</span> <span class="fu">MetaboDecon1D</span><span class="op">(</span><span class="va">sim</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">sim_01_decon</span> <span class="op">&lt;-</span> <span class="fu">MetaboDecon1D</span><span class="op">(</span><span class="va">sim</span>, <span class="st">"sim_01"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="evalwith.html">evalwith</a></span><span class="op">(</span>answers <span class="op">=</span> <span class="va">expected_answers</span>, <span class="op">{</span></span></span>
+<span class="r-in"><span>     <span class="va">sim_decon</span> <span class="op">&lt;-</span> <span class="fu">MetaboDecon1D</span><span class="op">(</span><span class="va">sim</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">}</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> What is the name of the subfolder of your filepath: </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> [e.g. 10 for C:/Users/Username/Desktop/spectra_folder/spectrum_name/10] </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> 10</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> What is the name of the subsubsubfolder of your filepath: </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> [e.g. 10 for C:/Users/Username/Desktop/spectra_folder/spectrum_name/10/pdata/10] </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> 10</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Do you want to use the same parameters (signal_free_region, range_water_signal_ppm) for all spectra? (y/n) </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> y</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "sim_01" "sim_02"</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Choose number of file which is used to adjust all parameters: [e.g. 1] </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> 1</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> The selected file to adjust all parameters for all spectra is:  sim_01</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Start deconvolution of sim_01:</span>
+<span class="r-plt img"><img src="MetaboDecon1D-1.png" alt="" width="700" height="433"></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Signal free region borders correct selected? (Area left and right of the green lines) (y/n): </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> n</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Choose another left border: [e.g. 12] </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> 3.55</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Choose another right border: [e.g. -2] </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> 3.35</span>
+<span class="r-plt img"><img src="MetaboDecon1D-2.png" alt="" width="700" height="433"></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Signal free region borders correct selected? (Area left and right of the green lines) (y/n): </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> y</span>
+<span class="r-plt img"><img src="MetaboDecon1D-3.png" alt="" width="700" height="433"></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Water artefact fully inside red vertical lines? (y/n): </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> n</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Choose another half width range (in ppm) for the water artefact: [e.g. 0.1222154] </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> 0</span>
+<span class="r-plt img"><img src="MetaboDecon1D-4.png" alt="" width="700" height="433"></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Water artefact fully inside red vertical lines? (y/n): </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> y</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Normed MSE value of iteration 1 is: </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 4.996559e-09</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Normed MSE value of iteration 2 is: </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 2.17297e-09</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Normed MSE value of iteration 3 is: </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1.778563e-09</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Normed MSE value of iteration 4 is: </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1.652956e-09</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Normed MSE value of iteration 5 is: </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1.571827e-09</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Normed MSE value of iteration 6 is: </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1.539285e-09</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Normed MSE value of iteration 7 is: </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1.507361e-09</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Normed MSE value of iteration 8 is: </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1.491203e-09</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Normed MSE value of iteration 9 is: </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1.476108e-09</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Normed MSE value of iteration 10 is: </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1.460549e-09</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Save results as text documents at /home/runner/work/_temp/Library/metabodecon/example_datasets/bruker/sim_subset? (y/n) </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> n</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Skipping saving of results.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Start deconvolution of sim_02:</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Normed MSE value of iteration 1 is: </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 4.449633e-09</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Normed MSE value of iteration 2 is: </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1.688869e-09</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Normed MSE value of iteration 3 is: </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1.276977e-09</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Normed MSE value of iteration 4 is: </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1.135132e-09</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Normed MSE value of iteration 5 is: </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1.085964e-09</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Normed MSE value of iteration 6 is: </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1.056171e-09</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Normed MSE value of iteration 7 is: </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1.037138e-09</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Normed MSE value of iteration 8 is: </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1.02442e-09</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Normed MSE value of iteration 9 is: </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1.004947e-09</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Normed MSE value of iteration 10 is: </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1.002143e-09</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Skipping saving of results.</span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># RECOMMENDED:</span></span></span>
-<span class="r-in"><span><span class="va">sim</span> <span class="op">&lt;-</span> <span class="fu"><a href="metabodecon_file.html">metabodecon_file</a></span><span class="op">(</span><span class="st">"bruker/sim_subset"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">sim_decon</span> <span class="op">&lt;-</span> <span class="fu"><a href="deconvolute.html">generate_lorentz_curves_sim</a></span><span class="op">(</span><span class="va">sim</span>, ask <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">sim_01</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">sim</span>, <span class="st">"sim_01"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">sim_01_decon</span> <span class="op">&lt;-</span> <span class="fu"><a href="deconvolute.html">generate_lorentz_curves_sim</a></span><span class="op">(</span><span class="va">sim_01</span>, ask <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co">## Deconvolute only the first spectrum of the folder "bruker/sim_subset" into</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="evalwith.html">evalwith</a></span><span class="op">(</span>answers <span class="op">=</span> <span class="va">expected_answers</span><span class="op">[</span><span class="op">-</span><span class="op">(</span><span class="fl">3</span><span class="op">:</span><span class="fl">4</span><span class="op">)</span><span class="op">]</span>, <span class="op">{</span></span></span>
+<span class="r-in"><span>     <span class="va">sim_decon</span> <span class="op">&lt;-</span> <span class="fu">MetaboDecon1D</span><span class="op">(</span><span class="va">sim</span>, filename <span class="op">=</span> <span class="st">"sim_01"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">}</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Start deconvolution of sim_01:</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> What is the name of the subfolder of your filepath: </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> [e.g. 10 for C:/Users/Username/Desktop/spectra_folder/spectrum_name/10] </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> 10</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> What is the name of the subsubsubfolder of your filepath: </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> [e.g. 10 for C:/Users/Username/Desktop/spectra_folder/spectrum_name/10/pdata/10] </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> 10</span>
+<span class="r-plt img"><img src="MetaboDecon1D-5.png" alt="" width="700" height="433"></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Signal free region borders correct selected? (Area left and right of the green lines) (y/n): </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> n</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Choose another left border: [e.g. 12] </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> 3.55</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Choose another right border: [e.g. -2] </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> 3.35</span>
+<span class="r-plt img"><img src="MetaboDecon1D-6.png" alt="" width="700" height="433"></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Signal free region borders correct selected? (Area left and right of the green lines) (y/n): </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> y</span>
+<span class="r-plt img"><img src="MetaboDecon1D-7.png" alt="" width="700" height="433"></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Water artefact fully inside red vertical lines? (y/n): </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> n</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Choose another half width range (in ppm) for the water artefact: [e.g. 0.1222154] </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> 0</span>
+<span class="r-plt img"><img src="MetaboDecon1D-8.png" alt="" width="700" height="433"></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Water artefact fully inside red vertical lines? (y/n): </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> y</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Normed MSE value of iteration 1 is: </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 4.996559e-09</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Normed MSE value of iteration 2 is: </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 2.17297e-09</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Normed MSE value of iteration 3 is: </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1.778563e-09</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Normed MSE value of iteration 4 is: </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1.652956e-09</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Normed MSE value of iteration 5 is: </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1.571827e-09</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Normed MSE value of iteration 6 is: </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1.539285e-09</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Normed MSE value of iteration 7 is: </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1.507361e-09</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Normed MSE value of iteration 8 is: </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1.491203e-09</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Normed MSE value of iteration 9 is: </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1.476108e-09</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Normed MSE value of iteration 10 is: </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1.460549e-09</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Save results as text documents at /home/runner/work/_temp/Library/metabodecon/example_datasets/bruker/sim_subset? (y/n) </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> n</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Skipping saving of results.</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
