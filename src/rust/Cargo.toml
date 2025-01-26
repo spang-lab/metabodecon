@@ -1,0 +1,11 @@
+[package]
+name = "metabodecon-rust-backend"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "_metabodecon"
+crate-type = ["staticlib"]
+
+[dependencies]
+extendr-api = "0.7.1"
