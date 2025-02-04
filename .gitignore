@@ -18,3 +18,5 @@ tests/testthat_outputs/
 tests/testthat/_snaps/
 vdiffr.Rout.fail
 .idea/
+target/
+Cargo.lock
