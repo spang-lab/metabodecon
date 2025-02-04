@@ -1,7 +1,9 @@
 [package]
 name = "metabodecon-rust-backend"
 version = "0.1.0"
+authors = ["Maximilian Sombke <sombkemaximilian@gmail.com>"]
 edition = "2021"
+publish = false
 
 [lib]
 name = "_metabodecon"
@@ -9,3 +11,4 @@ crate-type = ["staticlib"]
 
 [dependencies]
 extendr-api = "0.7.1"
+metabodecon = { path = "../../../metabodecon-rust/metabodecon", features = ["parallel", "bruker"], default-features = false }

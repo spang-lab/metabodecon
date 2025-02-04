@@ -1,16 +1,14 @@
 use extendr_api::prelude::*;
 
-/// Return string `"Hello world!"` to R.
-/// @export
-#[extendr]
-fn hello_world() -> &'static str {
-    "Hello world!"
-}
+mod deconvolute_functions;
+mod deconvoluter;
+mod deconvolution;
+mod spectrum;
 
-// Macro to generate exports.
-// This ensures exported functions are registered with R.
-// See corresponding C code in `entrypoint.c`.
 extendr_module! {
     mod metabodecon;
-    fn hello_world;
+    use deconvolute_functions;
+    use deconvoluter;
+    use deconvolution;
+    use spectrum;
 }
