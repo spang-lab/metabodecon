@@ -71,4 +71,5 @@ Config/testthat/start-first:
 RdMacros: mathjaxr
 BuildManual: TRUE
 Language: en-US
-Config/rextendr/version: 0.7.1
+Config/rextendr/version: 0.3.1.9001
+SystemRequirements: Cargo (Rust's package manager), rustc
