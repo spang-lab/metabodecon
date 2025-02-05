@@ -72,6 +72,38 @@ impl Deconvoluter {
             Err(e) => throw_r_error(format!("{}", e)),
         }
     }
+
+    pub(crate) fn deconvolute_spectra(&self, spectra: List) -> List {
+        let spectra = match Spectrum::recover_list(&spectra) {
+            Ok(spectra) => spectra,
+            Err(e) => throw_r_error(format!("{}", e)),
+        };
+        let deconvolutions: Vec<Deconvolution> = match self.inner.deconvolute_spectra(&spectra) {
+            Ok(deconvolutions) => deconvolutions
+                .into_iter()
+                .map(|deconvolution| deconvolution.into())
+                .collect(),
+            Err(e) => throw_r_error(format!("{}", e)),
+        };
+
+        List::from_values(deconvolutions)
+    }
+
+    pub(crate) fn par_deconvolute_spectra(&self, spectra: List) -> List {
+        let spectra = match Spectrum::recover_list(&spectra) {
+            Ok(spectra) => spectra,
+            Err(e) => throw_r_error(format!("{}", e)),
+        };
+        let deconvolutions: Vec<Deconvolution> = match self.inner.par_deconvolute_spectra(&spectra) {
+            Ok(deconvolutions) => deconvolutions
+                .into_iter()
+                .map(|deconvolution| deconvolution.into())
+                .collect(),
+            Err(e) => throw_r_error(format!("{}", e)),
+        };
+
+        List::from_values(deconvolutions)
+    }
 }
 
 extendr_module! {

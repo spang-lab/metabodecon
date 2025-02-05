@@ -12,6 +12,35 @@ impl AsRef<spectrum::Spectrum> for Spectrum {
     }
 }
 
+impl TryFrom<&Robj> for Spectrum {
+    type Error = Error;
+
+    fn try_from(value: &Robj) -> Result<Self> {
+        if let Some(class) = value.class() {
+            let class = class.collect::<String>();
+            match class.as_str() {
+                "Spectrum" => (),
+                _ => return Err(Error::from(format!("Expected Spectrum, got {:?}", class))),
+            }
+        } else {
+            return Err(Error::from(format!("Expected Spectrum, got {:?}", value)));
+        }
+        let ptr: ExternalPtr<Spectrum> = value.try_into()?;
+
+        Ok(ptr.as_ref().clone())
+    }
+}
+
+impl Spectrum {
+    pub(crate) fn recover_list(spectra: &List) -> Result<Vec<Spectrum>> {
+        spectra
+            .to_vec()
+            .iter()
+            .map(|r_obj| r_obj.try_into())
+            .collect::<Result<Vec<Spectrum>>>()
+    }
+}
+
 #[extendr]
 impl Spectrum {
     pub(crate) fn new(

@@ -22,6 +22,7 @@ lorentzians <- backend_par_deconvolute_spectrum(spec, c(4.7, 4.9))
 spectra <- Spectrum$from_bruker_set("misc/example_datasets/bruker/blood", 10, 10, c(-2.2, 11.8))
 deconvoluter <- Deconvoluter$new()
 deconvoluter$add_ignore_region(4.7, 4.9)
-deconvolutions <- lapply(spectra, deconvoluter$par_deconvolute_spectrum)
+deconvolutions <- deconvoluter$deconvolute_spectra(spectra)
+deconvolutions <- deconvoluter$par_deconvolute_spectra(spectra)
 lorentzians <- lapply(deconvolutions, function(d) d$lorentzians())
 ```
