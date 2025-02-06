@@ -5,24 +5,30 @@
 3. Run `rextendr::document()` (this will generate and modify some files I didn't commit yet)
 4. The file `R/extendr-wrappers.R` will contain the wrapper functions.
 
-# Examples
-
-## Private functions
+# Example
 
 ```R
-spec <- metabodecon::read_spectrum("misc/example_datasets/bruker/blood/blood_01")
-spec$sfr <- c(-2.2, 11.8)
-lorentzians <- backend_deconvolute_spectrum(spec, c(4.7, 4.9))
-lorentzians <- backend_par_deconvolute_spectrum(spec, c(4.7, 4.9))
-```
-
-## Struct bindings
-
-```R
+# Read the spectra
 spectra <- Spectrum$from_bruker_set("misc/example_datasets/bruker/blood", 10, 10, c(-2.2, 11.8))
+
+# Configure the Deconvoluter
 deconvoluter <- Deconvoluter$new()
+deconvoluter$set_moving_average_smoother(4, 3)
 deconvoluter$add_ignore_region(4.7, 4.9)
+
+# Deconvolute the spectra
 deconvolutions <- deconvoluter$deconvolute_spectra(spectra)
 deconvolutions <- deconvoluter$par_deconvolute_spectra(spectra)
+
+# Getting the Lorentzian parameters
 lorentzians <- lapply(deconvolutions, function(d) d$lorentzians())
+
+# Compute the superposition of the Lorentzians for the first spectrum
+superposition_internal <- deconvolutions[[1]]$par_superposition_vec(spectra[[1]]$chemical_shifts())
+
+# Alternative method
+A <- lorentzians[[1]]$A
+lambda <- lorentzians[[1]]$lambda
+x0 <- lorentzians[[1]]$x0
+superposition_parameters <- Lorentzian$par_superposition_vec(spectra[[1]]$chemical_shifts(), A, lambda, x0)
 ```
