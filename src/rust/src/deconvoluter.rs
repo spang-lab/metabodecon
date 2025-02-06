@@ -2,6 +2,7 @@ use crate::deconvolution::Deconvolution;
 use crate::spectrum::Spectrum;
 use extendr_api::prelude::*;
 use metabodecon::deconvolution;
+use std::collections::HashMap;
 
 #[derive(Clone, Debug, Default)]
 pub(crate) struct Deconvoluter {
@@ -12,6 +13,53 @@ pub(crate) struct Deconvoluter {
 impl Deconvoluter {
     pub(crate) fn new() -> Self {
         Self::default()
+    }
+
+    pub(crate) fn smoothing_settings(&self) -> Result<List> {
+        match self.inner.smoothing_settings() {
+            deconvolution::SmoothingSettings::MovingAverage { iterations, window_size } => {
+                let mut result = HashMap::<&str, Robj>::new();
+                result.insert("method", "Moving Average Filter".into());
+                result.insert("iterations", iterations.into());
+                result.insert("window_size", window_size.into());
+
+                List::from_hashmap(result)
+            },
+            _ => {
+                throw_r_error(format!("Unknown smoothing settings, {:?}", self.inner.smoothing_settings()));
+            }
+        }
+    }
+
+    pub(crate) fn selection_settings(&self) -> Result<List> {
+        match self.inner.selection_settings() {
+            deconvolution::SelectionSettings::NoiseScoreFilter { scoring_method, threshold } => {
+                let mut result = HashMap::<&str, Robj>::new();
+                result.insert("method", "Noise Score Filter".into());
+                result.insert("scoring_method", format!("{}", scoring_method).into());
+                result.insert("threshold", threshold.into());
+
+                List::from_hashmap(result)
+            },
+            _ => {
+                throw_r_error(format!("Unknown selection settings, {:?}", self.inner.selection_settings()));
+            }
+        }
+    }
+
+    pub(crate) fn fitting_settings(&self) -> Result<List> {
+        match self.inner.fitting_settings() {
+            deconvolution::FittingSettings::Analytical { iterations } => {
+                let mut result = HashMap::<&str, Robj>::new();
+                result.insert("method", "Analytical Fitter".into());
+                result.insert("iterations", iterations.into());
+
+                List::from_hashmap(result)
+            },
+            _ => {
+                throw_r_error(format!("Unknown fitting settings, {:?}", self.inner.fitting_settings()));
+            }
+        }
     }
 
     pub(crate) fn set_moving_average_smoother(&mut self, iterations: usize, window_size: usize) {
@@ -103,6 +151,13 @@ impl Deconvoluter {
         };
 
         List::from_values(deconvolutions)
+    }
+
+    pub(crate) fn optimize_settings(&mut self, reference: &Spectrum) -> f64 {
+        match self.inner.optimize_settings(reference.as_ref()) {
+            Ok(mse) => mse,
+            Err(e) => throw_r_error(format!("{}", e)),
+        }
     }
 }
 
