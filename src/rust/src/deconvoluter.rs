@@ -77,6 +77,25 @@ impl Deconvoluter {
         }
     }
 
+    pub(crate) fn ignore_regions(&self) -> Nullable<List> {
+        if let Some(ignore_regions) = self.inner.ignore_regions() {
+            let ignore_regions: Vec<Robj> = ignore_regions
+                .iter()
+                .map(|(start, end)| {
+                    let mut result = HashMap::<&str, Robj>::new();
+                    result.insert("start", start.into());
+                    result.insert("end", end.into());
+
+                    List::from_hashmap(result).into()
+                })
+                .collect();
+
+            NotNull(List::from_values(ignore_regions))
+        } else {
+            Null
+        }
+    }
+
     pub(crate) fn set_moving_average_smoother(&mut self, iterations: usize, window_size: usize) {
         match self
             .inner
