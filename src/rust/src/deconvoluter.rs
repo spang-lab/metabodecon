@@ -17,32 +17,44 @@ impl Deconvoluter {
 
     pub(crate) fn smoothing_settings(&self) -> Result<List> {
         match self.inner.smoothing_settings() {
-            deconvolution::SmoothingSettings::MovingAverage { iterations, window_size } => {
+            deconvolution::SmoothingSettings::MovingAverage {
+                iterations,
+                window_size,
+            } => {
                 let mut result = HashMap::<&str, Robj>::new();
                 result.insert("method", "Moving Average Filter".into());
                 result.insert("iterations", iterations.into());
                 result.insert("window_size", window_size.into());
 
                 List::from_hashmap(result)
-            },
+            }
             _ => {
-                throw_r_error(format!("Unknown smoothing settings, {:?}", self.inner.smoothing_settings()));
+                throw_r_error(format!(
+                    "Unknown smoothing settings, {:?}",
+                    self.inner.smoothing_settings()
+                ));
             }
         }
     }
 
     pub(crate) fn selection_settings(&self) -> Result<List> {
         match self.inner.selection_settings() {
-            deconvolution::SelectionSettings::NoiseScoreFilter { scoring_method, threshold } => {
+            deconvolution::SelectionSettings::NoiseScoreFilter {
+                scoring_method,
+                threshold,
+            } => {
                 let mut result = HashMap::<&str, Robj>::new();
                 result.insert("method", "Noise Score Filter".into());
                 result.insert("scoring_method", format!("{}", scoring_method).into());
                 result.insert("threshold", threshold.into());
 
                 List::from_hashmap(result)
-            },
+            }
             _ => {
-                throw_r_error(format!("Unknown selection settings, {:?}", self.inner.selection_settings()));
+                throw_r_error(format!(
+                    "Unknown selection settings, {:?}",
+                    self.inner.selection_settings()
+                ));
             }
         }
     }
@@ -55,9 +67,12 @@ impl Deconvoluter {
                 result.insert("iterations", iterations.into());
 
                 List::from_hashmap(result)
-            },
+            }
             _ => {
-                throw_r_error(format!("Unknown fitting settings, {:?}", self.inner.fitting_settings()));
+                throw_r_error(format!(
+                    "Unknown fitting settings, {:?}",
+                    self.inner.fitting_settings()
+                ));
             }
         }
     }
@@ -142,7 +157,8 @@ impl Deconvoluter {
             Ok(spectra) => spectra,
             Err(e) => throw_r_error(format!("{}", e)),
         };
-        let deconvolutions: Vec<Deconvolution> = match self.inner.par_deconvolute_spectra(&spectra) {
+        let deconvolutions: Vec<Deconvolution> = match self.inner.par_deconvolute_spectra(&spectra)
+        {
             Ok(deconvolutions) => deconvolutions
                 .into_iter()
                 .map(|deconvolution| deconvolution.into())
