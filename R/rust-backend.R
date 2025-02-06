@@ -19,6 +19,8 @@ deconvolute_rust <- function(spectrum,
         deconvolution <- deconvoluter$deconvolute_spectrum(rust_spectrum)
     }
     decon2 <- convert_to_decon2(spectrum, deconvoluter, deconvolution, sfr)
+    decon2$rust_spectrum <- rust_spectrum
+    decon2$rust_deconvolution <- deconvolution
 
     decon2
 }
@@ -44,6 +46,10 @@ multi_deconvolute_rust <- function(spectra,
         deconvolutions <- deconvoluter$deconvolute_spectra(rust_spectra)
     }
     decon2s <- lapply(seq_along(spectra), function(i) convert_to_decon2(spectra[[i]], deconvoluter, deconvolutions[[i]], sfr))
+    for (i in seq_along(decon2s)) {
+        decon2s[[i]]$rust_spectrum <- rust_spectra[[i]]
+        decon2s[[i]]$rust_deconvolution <- deconvolutions[[i]]
+    }
 
     decon2s
 }
