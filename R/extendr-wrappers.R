@@ -10,5 +10,109 @@
 #' @useDynLib metabodecon, .registration = TRUE
 NULL
 
+Deconvoluter <- new.env(parent = emptyenv())
+
+Deconvoluter$new <- function() .Call(wrap__Deconvoluter__new)
+
+Deconvoluter$smoothing_settings <- function() .Call(wrap__Deconvoluter__smoothing_settings, self)
+
+Deconvoluter$selection_settings <- function() .Call(wrap__Deconvoluter__selection_settings, self)
+
+Deconvoluter$fitting_settings <- function() .Call(wrap__Deconvoluter__fitting_settings, self)
+
+Deconvoluter$ignore_regions <- function() .Call(wrap__Deconvoluter__ignore_regions, self)
+
+Deconvoluter$set_moving_average_smoother <- function(iterations, window_size) invisible(.Call(wrap__Deconvoluter__set_moving_average_smoother, self, iterations, window_size))
+
+Deconvoluter$set_noise_score_selector <- function(threshold) invisible(.Call(wrap__Deconvoluter__set_noise_score_selector, self, threshold))
+
+Deconvoluter$set_analytical_fitter <- function(iterations) invisible(.Call(wrap__Deconvoluter__set_analytical_fitter, self, iterations))
+
+Deconvoluter$add_ignore_region <- function(start, end) invisible(.Call(wrap__Deconvoluter__add_ignore_region, self, start, end))
+
+Deconvoluter$clear_ignore_regions <- function() invisible(.Call(wrap__Deconvoluter__clear_ignore_regions, self))
+
+Deconvoluter$deconvolute_spectrum <- function(spectrum) .Call(wrap__Deconvoluter__deconvolute_spectrum, self, spectrum)
+
+Deconvoluter$par_deconvolute_spectrum <- function(spectrum) .Call(wrap__Deconvoluter__par_deconvolute_spectrum, self, spectrum)
+
+Deconvoluter$deconvolute_spectra <- function(spectra) .Call(wrap__Deconvoluter__deconvolute_spectra, self, spectra)
+
+Deconvoluter$par_deconvolute_spectra <- function(spectra) .Call(wrap__Deconvoluter__par_deconvolute_spectra, self, spectra)
+
+Deconvoluter$optimize_settings <- function(reference) .Call(wrap__Deconvoluter__optimize_settings, self, reference)
+
+#' @export
+`$.Deconvoluter` <- function (self, name) { func <- Deconvoluter[[name]]; environment(func) <- environment(); func }
+
+#' @export
+`[[.Deconvoluter` <- `$.Deconvoluter`
+
+Deconvolution <- new.env(parent = emptyenv())
+
+Deconvolution$lorentzians <- function() .Call(wrap__Deconvolution__lorentzians, self)
+
+Deconvolution$mse <- function() .Call(wrap__Deconvolution__mse, self)
+
+Deconvolution$superposition <- function(chemical_shift) .Call(wrap__Deconvolution__superposition, self, chemical_shift)
+
+Deconvolution$superposition_vec <- function(chemical_shifts) .Call(wrap__Deconvolution__superposition_vec, self, chemical_shifts)
+
+Deconvolution$par_superposition_vec <- function(chemical_shifts) .Call(wrap__Deconvolution__par_superposition_vec, self, chemical_shifts)
+
+#' @export
+`$.Deconvolution` <- function (self, name) { func <- Deconvolution[[name]]; environment(func) <- environment(); func }
+
+#' @export
+`[[.Deconvolution` <- `$.Deconvolution`
+
+Lorentzian <- new.env(parent = emptyenv())
+
+Lorentzian$new <- function(sf, hw, maxp) .Call(wrap__Lorentzian__new, sf, hw, maxp)
+
+Lorentzian$sf <- function() .Call(wrap__Lorentzian__sf, self)
+
+Lorentzian$hw <- function() .Call(wrap__Lorentzian__hw, self)
+
+Lorentzian$maxp <- function() .Call(wrap__Lorentzian__maxp, self)
+
+Lorentzian$set_sf <- function(sf) invisible(.Call(wrap__Lorentzian__set_sf, self, sf))
+
+Lorentzian$set_hw <- function(hw) invisible(.Call(wrap__Lorentzian__set_hw, self, hw))
+
+Lorentzian$set_maxp <- function(maxp) invisible(.Call(wrap__Lorentzian__set_maxp, self, maxp))
+
+Lorentzian$evaluate <- function(x) .Call(wrap__Lorentzian__evaluate, self, x)
+
+Lorentzian$evaluate_vec <- function(x) .Call(wrap__Lorentzian__evaluate_vec, self, x)
+
+Lorentzian$superposition <- function(x, sf, hw, maxp) .Call(wrap__Lorentzian__superposition, x, sf, hw, maxp)
+
+Lorentzian$superposition_vec <- function(x, sf, hw, maxp) .Call(wrap__Lorentzian__superposition_vec, x, sf, hw, maxp)
+
+Lorentzian$par_superposition_vec <- function(x, sf, hw, maxp) .Call(wrap__Lorentzian__par_superposition_vec, x, sf, hw, maxp)
+
+#' @export
+`$.Lorentzian` <- function (self, name) { func <- Lorentzian[[name]]; environment(func) <- environment(); func }
+
+#' @export
+`[[.Lorentzian` <- `$.Lorentzian`
+
+Spectrum <- new.env(parent = emptyenv())
+
+Spectrum$new <- function(chemical_shifts, intensities, signal_boundaries) .Call(wrap__Spectrum__new, chemical_shifts, intensities, signal_boundaries)
+
+Spectrum$chemical_shifts <- function() .Call(wrap__Spectrum__chemical_shifts, self)
+
+Spectrum$intensities <- function() .Call(wrap__Spectrum__intensities, self)
+
+Spectrum$signal_boundaries <- function() .Call(wrap__Spectrum__signal_boundaries, self)
+
+#' @export
+`$.Spectrum` <- function (self, name) { func <- Spectrum[[name]]; environment(func) <- environment(); func }
+
+#' @export
+`[[.Spectrum` <- `$.Spectrum`
+
 
 # nolint end
