@@ -2,6 +2,10 @@
 
 ## v1.2.x
 
+### DOC-3: Write paper
+
+Reformat the vignettes as paper and send to Wolfram for proofreading.
+
 ### DOC-2: Improve docs
 
 - [ ] Add author descriptions to each function
@@ -12,15 +16,13 @@
 - [ ] Write `Deconvolution_Details` vignette
 - [ ] Write `Alignment_Details` vignette
 
-### DOC-3: Write paper
-
-Reformat the vignettes as paper and send to Wolfram for proofreading.
-
 ## v1.3.x
 
 ### FEATURE-8: Warn user if peaks are found in SFR
 
 If delta is small (e.g. 1), peaks in SFR might not be filtered out. Either implement this and warn user about it (this is a strong indication that delta was chosen too small).
+
+Note 23.1.2025: in Rust implementation peaks found in IGNORE-REGION are already filtered out automatically before parameter approximation AND points in IGNORE-REGIONS do not contribute to MSE and/or PRARP.
 
 ### REFACTOR-9: Improve mse_normed calculation
 

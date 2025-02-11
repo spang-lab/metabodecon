@@ -1,5 +1,8 @@
 <!-- badges: start -->
-[![R CMD check](https://github.com/spang-lab/metabodecon/workflows/R-CMD-check/badge.svg)](https://github.com/spang-lab/metabodecon/actions)
+[![R-CMD-check](https://github.com/spang-lab/metabodecon/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/spang-lab/metabodecon/actions/workflows/R-CMD-check.yaml)
+[![Codecov test coverage](https://codecov.io/gh/spang-lab/metabodecon/branch/main/graph/badge.svg)](https://app.codecov.io/gh/spang-lab/metabodecon?branch=main)
+[![CRAN Status Badge](https://www.r-pkg.org/badges/version/metabodecon)](https://cran.r-project.org/package=metabodecon)
+[![CRAN Downloads Badge](https://cranlogs.r-pkg.org/badges/grand-total/metabodecon)](https://cranlogs.r-pkg.org/badges/grand-total/metabodecon)
 <!-- badges: end -->
 
 # metabodecon <img src="man/figures/logo.svg" alt="man/figures/logo.svg" align="right" height="138" />
