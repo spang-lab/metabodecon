@@ -12,4 +12,4 @@ crate-type = ["staticlib"]
 
 [dependencies]
 extendr-api = "0.7.1"
-metabodecon = { git = "https://github.com/SombkeMaximilian/metabodecon-rust", features = ["parallel"], default-features = false }
+metabodecon = { git = "https://github.com/SombkeMaximilian/metabodecon-rust", features = ["full"] }
