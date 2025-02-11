@@ -10,6 +10,15 @@ When editing the Rust code, `rextendr::document()` can be used to generate the w
 I currently don't have the time to look into how to disable automatic exports of Rust struct
 bindings, so NAMESPACE must be edited by hand to remove the export statements.
 
+## Rust dependency
+
+The Metabodecon Rust crate is currently a git dependency, meaning that there can sometimes be issues
+with having an outdated local copy of the crate. Running `rextendr::clean()` or manually deleting
+the build artifacts should usually make it download the latest version. If it doesn't, try deleting
+the `Cargo.lock` file in `src/rust`. Normally, this could be fixed by running `cargo update`,
+however, this will default to the virtual manifest in the root of the project, while rextendr uses a
+different manifest in the `src/rust` directory.
+
 # Examples
 
 ## Using the wrapper functions
