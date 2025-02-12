@@ -1,0 +1,15 @@
+[package]
+name = "metabodecon-rust-backend"
+version = "0.1.0"
+authors = ["Maximilian Sombke <sombkemaximilian@gmail.com>"]
+edition = "2021"
+rust-version = "1.78.0"
+publish = false
+
+[lib]
+name = "_metabodecon"
+crate-type = ["staticlib"]
+
+[dependencies]
+extendr-api = "0.7.1"
+metabodecon = { git = "https://github.com/SombkeMaximilian/metabodecon-rust", features = ["full"] }
