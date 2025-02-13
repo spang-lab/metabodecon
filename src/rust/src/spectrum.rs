@@ -12,6 +12,12 @@ impl AsRef<spectrum::Spectrum> for Spectrum {
     }
 }
 
+impl From<spectrum::Spectrum> for Spectrum {
+    fn from(value: spectrum::Spectrum) -> Self {
+        Self { inner: value }
+    }
+}
+
 impl TryFrom<&Robj> for Spectrum {
     type Error = Error;
 
@@ -54,8 +60,8 @@ impl Spectrum {
         let signal_boundaries = (signal_boundaries[0], signal_boundaries[1]);
 
         match spectrum::Spectrum::new(chemical_shifts, intensities, signal_boundaries) {
-            Ok(inner) => Self { inner },
-            Err(e) => throw_r_error(format!("{}", e)),
+            Ok(spectrum) => spectrum.into(),
+            Err(error) => throw_r_error(format!("{}", error)),
         }
     }
 
@@ -72,6 +78,40 @@ impl Spectrum {
             self.inner.signal_boundaries().0,
             self.inner.signal_boundaries().1,
         ]
+    }
+
+    pub(crate) fn write_json(&self, path: &str) {
+        let serialized = match serde_json::to_string_pretty(self.as_ref()) {
+            Ok(serialized) => serialized,
+            Err(error) => throw_r_error(format!("{}", error)),
+        };
+        std::fs::write(path, serialized).unwrap();
+    }
+
+    pub(crate) fn read_json(path: &str) -> Self {
+        let serialized = std::fs::read_to_string(path).unwrap();
+
+        match serde_json::from_str::<spectrum::Spectrum>(&serialized) {
+            Ok(deserialized) => deserialized.into(),
+            Err(error) => throw_r_error(format!("{}", error)),
+        }
+    }
+
+    pub(crate) fn write_bin(&self, path: &str) {
+        let serialized = match rmp_serde::to_vec(self.as_ref()) {
+            Ok(serialized) => serialized,
+            Err(error) => throw_r_error(format!("{}", error)),
+        };
+        std::fs::write(path, serialized).unwrap();
+    }
+
+    pub(crate) fn read_bin(path: &str) -> Self {
+        let serialized = std::fs::read(path).unwrap();
+
+        match rmp_serde::from_slice::<spectrum::Spectrum>(&serialized) {
+            Ok(deserialized) => deserialized.into(),
+            Err(error) => throw_r_error(format!("{}", error)),
+        }
     }
 }
 

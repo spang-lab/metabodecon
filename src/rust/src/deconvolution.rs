@@ -7,9 +7,15 @@ pub(crate) struct Deconvolution {
     inner: deconvolution::Deconvolution,
 }
 
+impl AsRef<deconvolution::Deconvolution> for Deconvolution {
+    fn as_ref(&self) -> &deconvolution::Deconvolution {
+        &self.inner
+    }
+}
+
 impl From<deconvolution::Deconvolution> for Deconvolution {
-    fn from(inner: deconvolution::Deconvolution) -> Self {
-        Self { inner }
+    fn from(value: deconvolution::Deconvolution) -> Self {
+        Self { inner: value }
     }
 }
 
@@ -51,6 +57,40 @@ impl Deconvolution {
             &*chemical_shifts,
             self.inner.lorentzians(),
         )
+    }
+
+    pub(crate) fn write_json(&self, path: &str) {
+        let serialized = match serde_json::to_string_pretty(self.as_ref()) {
+            Ok(serialized) => serialized,
+            Err(error) => throw_r_error(format!("{}", error)),
+        };
+        std::fs::write(path, serialized).unwrap();
+    }
+
+    pub(crate) fn read_json(path: &str) -> Self {
+        let serialized = std::fs::read_to_string(path).unwrap();
+
+        match serde_json::from_str::<deconvolution::Deconvolution>(&serialized) {
+            Ok(deserialized) => deserialized.into(),
+            Err(error) => throw_r_error(format!("{}", error)),
+        }
+    }
+
+    pub(crate) fn write_bin(&self, path: &str) {
+        let serialized = match rmp_serde::to_vec(self.as_ref()) {
+            Ok(serialized) => serialized,
+            Err(error) => throw_r_error(format!("{}", error)),
+        };
+        std::fs::write(path, serialized).unwrap();
+    }
+
+    pub(crate) fn read_bin(path: &str) -> Self {
+        let serialized = std::fs::read(path).unwrap();
+
+        match rmp_serde::from_slice::<deconvolution::Deconvolution>(&serialized) {
+            Ok(deserialized) => deserialized.into(),
+            Err(error) => throw_r_error(format!("{}", error)),
+        }
     }
 }
 

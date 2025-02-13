@@ -60,6 +60,14 @@ Deconvolution$superposition_vec <- function(chemical_shifts) .Call(wrap__Deconvo
 
 Deconvolution$par_superposition_vec <- function(chemical_shifts) .Call(wrap__Deconvolution__par_superposition_vec, self, chemical_shifts)
 
+Deconvolution$write_json <- function(path) invisible(.Call(wrap__Deconvolution__write_json, self, path))
+
+Deconvolution$read_json <- function(path) .Call(wrap__Deconvolution__read_json, path)
+
+Deconvolution$write_bin <- function(path) invisible(.Call(wrap__Deconvolution__write_bin, self, path))
+
+Deconvolution$read_bin <- function(path) .Call(wrap__Deconvolution__read_bin, path)
+
 #' @export
 `$.Deconvolution` <- function (self, name) { func <- Deconvolution[[name]]; environment(func) <- environment(); func }
 
@@ -107,6 +115,14 @@ Spectrum$chemical_shifts <- function() .Call(wrap__Spectrum__chemical_shifts, se
 Spectrum$intensities <- function() .Call(wrap__Spectrum__intensities, self)
 
 Spectrum$signal_boundaries <- function() .Call(wrap__Spectrum__signal_boundaries, self)
+
+Spectrum$write_json <- function(path) invisible(.Call(wrap__Spectrum__write_json, self, path))
+
+Spectrum$read_json <- function(path) .Call(wrap__Spectrum__read_json, path)
+
+Spectrum$write_bin <- function(path) invisible(.Call(wrap__Spectrum__write_bin, self, path))
+
+Spectrum$read_bin <- function(path) .Call(wrap__Spectrum__read_bin, path)
 
 #' @export
 `$.Spectrum` <- function (self, name) { func <- Spectrum[[name]]; environment(func) <- environment(); func }

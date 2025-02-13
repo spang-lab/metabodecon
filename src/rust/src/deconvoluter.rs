@@ -104,7 +104,7 @@ impl Deconvoluter {
                 window_size,
             }) {
             Ok(_) => (),
-            Err(e) => throw_r_error(format!("{}", e)),
+            Err(error) => throw_r_error(format!("{}", error)),
         }
     }
 
@@ -116,7 +116,7 @@ impl Deconvoluter {
             },
         ) {
             Ok(_) => (),
-            Err(e) => throw_r_error(format!("{}", e)),
+            Err(error) => throw_r_error(format!("{}", error)),
         }
     }
 
@@ -126,14 +126,14 @@ impl Deconvoluter {
             .set_fitting_settings(deconvolution::FittingSettings::Analytical { iterations })
         {
             Ok(_) => (),
-            Err(e) => throw_r_error(format!("{}", e)),
+            Err(error) => throw_r_error(format!("{}", error)),
         }
     }
 
     pub(crate) fn add_ignore_region(&mut self, start: f64, end: f64) {
         match self.inner.add_ignore_region((start, end)) {
             Ok(_) => (),
-            Err(e) => throw_r_error(format!("{}", e)),
+            Err(error) => throw_r_error(format!("{}", error)),
         }
     }
 
@@ -144,28 +144,28 @@ impl Deconvoluter {
     pub(crate) fn deconvolute_spectrum(&self, spectrum: &Spectrum) -> Deconvolution {
         match self.inner.deconvolute_spectrum(spectrum.as_ref()) {
             Ok(deconvolution) => deconvolution.into(),
-            Err(e) => throw_r_error(format!("{}", e)),
+            Err(error) => throw_r_error(format!("{}", error)),
         }
     }
 
     pub(crate) fn par_deconvolute_spectrum(&self, spectrum: &Spectrum) -> Deconvolution {
         match self.inner.par_deconvolute_spectrum(spectrum.as_ref()) {
             Ok(deconvolution) => deconvolution.into(),
-            Err(e) => throw_r_error(format!("{}", e)),
+            Err(error) => throw_r_error(format!("{}", error)),
         }
     }
 
     pub(crate) fn deconvolute_spectra(&self, spectra: List) -> List {
         let spectra = match Spectrum::recover_list(&spectra) {
             Ok(spectra) => spectra,
-            Err(e) => throw_r_error(format!("{}", e)),
+            Err(error) => throw_r_error(format!("{}", error)),
         };
         let deconvolutions: Vec<Deconvolution> = match self.inner.deconvolute_spectra(&spectra) {
             Ok(deconvolutions) => deconvolutions
                 .into_iter()
                 .map(|deconvolution| deconvolution.into())
                 .collect(),
-            Err(e) => throw_r_error(format!("{}", e)),
+            Err(error) => throw_r_error(format!("{}", error)),
         };
 
         List::from_values(deconvolutions)
@@ -174,7 +174,7 @@ impl Deconvoluter {
     pub(crate) fn par_deconvolute_spectra(&self, spectra: List) -> List {
         let spectra = match Spectrum::recover_list(&spectra) {
             Ok(spectra) => spectra,
-            Err(e) => throw_r_error(format!("{}", e)),
+            Err(error) => throw_r_error(format!("{}", error)),
         };
         let deconvolutions: Vec<Deconvolution> = match self.inner.par_deconvolute_spectra(&spectra)
         {
@@ -182,7 +182,7 @@ impl Deconvoluter {
                 .into_iter()
                 .map(|deconvolution| deconvolution.into())
                 .collect(),
-            Err(e) => throw_r_error(format!("{}", e)),
+            Err(error) => throw_r_error(format!("{}", error)),
         };
 
         List::from_values(deconvolutions)
@@ -191,7 +191,7 @@ impl Deconvoluter {
     pub(crate) fn optimize_settings(&mut self, reference: &Spectrum) -> f64 {
         match self.inner.optimize_settings(reference.as_ref()) {
             Ok(mse) => mse,
-            Err(e) => throw_r_error(format!("{}", e)),
+            Err(error) => throw_r_error(format!("{}", error)),
         }
     }
 }

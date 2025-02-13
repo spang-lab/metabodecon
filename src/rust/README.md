@@ -43,6 +43,18 @@ deconvoluter$add_ignore_region(4.7, 4.9)
 deconvolutions <- deconvoluter$deconvolute_spectra(spectra)
 deconvolutions <- deconvoluter$par_deconvolute_spectra(spectra)
 
+# Serialization
+spectra[[1]]$write_json("spectrum.json")
+spectra[[1]]$write_bin("spectrum.bin")
+deconvolutions[[1]]$write_json("deconvolution.json")
+deconvolutions[[1]]$write_bin("deconvolution.bin")
+
+# Deserialization
+json_spectrum <- Spectrum$read_json("spectrum.json")
+bin_spectrum <- Spectrum$read_bin("spectrum.bin")
+json_deconvolution <- Deconvolution$read_json("deconvolution.json")
+bin_deconvolution <- Deconvolution$read_bin("deconvolution.bin")
+
 # Getting the Lorentzian parameters
 lorentzians <- lapply(deconvolutions, function(d) d$lorentzians())
 
