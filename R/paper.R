@@ -1,25 +1,26 @@
 # Figures #####
 
 #' @noRd
-#' @examples
+#' @title Plot typical NMR Challenges
 #' @param s # Scaling Factor for the created figure. By making the figure `s` times bigger than the textwidth you can make the font, lines, etc. `s` times smaller, thinner, etc. because it will get scaled down when included in the LaTeX document.
 #' @param w # Figure width. Should be the textwidth of the Latex document in inches.
 #' @param h # Figure height. Should be the textheight of the LaTeX document in inches minus some space for the fiure caption. Example: if the textheight is 9.5 inches, h = 8 could be a good choice.
 #' @examples
 #' mkfig_nmr_challenges()
-mkfig_nmr_challenges <- function(show = TRUE,
+#' plot_nmr_challenges(s = 1.5)
+mkfig_nmr_challenges <- function(show = FALSE,
                                  path = "challenges.pdf",
-                                 s = 2,
+                                 s = 1,
                                  w = 5.45,
                                  h = 8,
                                  ...) {
     if (show) {
         if (dev.cur() == 1) dev.new(width = w * s, height = h * s, rescale = "fixed")
-        plot_nmr_challenges()
+        plot_nmr_challenges(...)
     }
     if (is_str(path)) {
         withr::local_pdf(path, width = w * s, height = h * s)
-        plot_nmr_challenges()
+        plot_nmr_challenges(...)
     }
 }
 
@@ -32,134 +33,229 @@ plot_nmr_challenges <- function(lwd = 0.1,
     init_dev(s, w, h)
     local_par(mfrow = c(5, 2), mar = c(0, 0, 2, 0))
     clear_dev()
-    plot_nmr_experiment()
-    plot_yt_spectra()
-    plot_preprocessing()
-    plot_yf_spectra()
-    plot_deconvolution()
-    plot_deconvoluted_spectra()
-    plot_alignment()
-    plot_aligned_spectra()
-    plot_annotation()
-    plot_anntated_spectra()
+    do.call(plot_1_nmr_experiment, list())
+    do.call(plot_2_raw_fids, list())
+    do.call(plot_3_blackbox_preprocessing, list())
+    do.call(plot_4_raw_spectra, list())
+    do.call(plot_5_deconvolutions, list())
+    do.call(plot_6_deconvoluted_spectra, list())
+    do.call(plot_7_alignment, list())
+    do.call(plot_8_aligned_spectra, list())
+    do.call(plot_9_annotation, list())
+    do.call(plot_10_annotated_spectra, list())
 }
 
-plot_nmr_experiment <- function() {
+plot_1_nmr_experiment <- function() {
+    local_par(mar = c(2, 2, 2, 1))
     plot_empty(main = "NMR Experiment")
     marbox()
-    text(.2, .75, "Samples")
-    draw_vial(x1= .1, y1 = .6, h = .2)
-    draw_vial(x1= .2, y1 = .3, h = .2)
-    draw_vial(x1= .1, y1 = .1, h = .2)
-    text(.6, .75, "NMR Spectrometer")
-    draw_nmr_spectrometer(x1 = .5, y1 = .1, h = .6)
+    text(0, 1, "Samples", adj = c(0, 1))
+    draw_vial(x1= .00, y1 = .48, h = .3)
+    draw_vial(x1= .16, y1 = .25, h = .3)
+    draw_vial(x1= .08, y1 = .02, h = .3)
+    text(0.5, 1, "NMR Spectrometer", adj = c(0, 1))
+    draw_nmr_spectrometer(x1 = .5, y1 = .0, h = .8)
 }
 
-plot_yt_spectra <- function() {
-    local_par(mar = c(1, 0, 2, 0))
+plot_2_raw_fids <- function() {
+    local_par(mar = c(2, 2, 2, 1))
     plot_empty(main = "FID Signals")
     marbox()
+    box()
+    # ndc <- npc_to_ndc()
+    # fig_height <- diff(ndc[3:4])
+    # sub_height <- fig_height / 3
+    # local_par(mar = c(0, 0, 2, 0))
+    # with_fig(fig = c(0.50, 1.00, ndc[3] + 2 * sub_height, ndc[3] + 3 * sub_height), plot_2_raw_fid(1))
+    # with_fig(fig = c(0.50, 1.00, ndc[3] + 1 * sub_height, ndc[3] + 2 * sub_height), plot_2_raw_fid(2))
+    # with_fig(fig = c(0.50, 1.00, ndc[3] + 0 * sub_height, ndc[3] + 1 * sub_height), plot_2_raw_fid(3))
     ndc <- npc_to_ndc()
+    fig_width  <- diff(ndc[1:2])
     fig_height <- diff(ndc[3:4])
     sub_height <- fig_height / 3
-    local_par(mar = c(0, 0, 2, 0))
-    with_fig(fig = c(0.50, 1.00, ndc[3] + 2 * sub_height, ndc[3] + 3 * sub_height), plot_yt_spectrum(1))
-    with_fig(fig = c(0.50, 1.00, ndc[3] + 1 * sub_height, ndc[3] + 2 * sub_height), plot_yt_spectrum(2))
-    with_fig(fig = c(0.50, 1.00, ndc[3] + 0 * sub_height, ndc[3] + 1 * sub_height), plot_yt_spectrum(3))
+    with_fig(fig = npc_to_ndc(c(0, 1, 0/3, 1/3)), plot_2_raw_fid(1))
+    with_fig(fig = npc_to_ndc(c(0, 1, 1/3, 2/3)), plot_2_raw_fid(2))
+    with_fig(fig = npc_to_ndc(c(0, 1, 2/3, 3/3)), plot_2_raw_fid(3))
+    mtext2(1, "Time")
+    mtext2(2, "Signal Intensity")
 }
 
-plot_yt_spectrum <- function(seed = 1) {
+plot_2_raw_fid <- function(seed = 1) {
     set.seed(seed)
+    ymar <- abs(grconvertH(0.1, "nfc", "lines"))
+    local_par(mar = c(ymar, 0, ymar, 0))
     time <- seq(0, 1, by = 0.001)
     decay_constant <- 5 + rnorm(1, 0, 0.5)
     frequency <- 50 + rnorm(1, 0, 2)
     fid_signal <- exp(-decay_constant * time) * sin(2 * pi * frequency * time)
     plot(time, fid_signal, type = "l", xlab = "", ylab = "", axes = FALSE)
-    # main = "Simulated FID Signal"
-    # xlab = "Time (s)"
-    # ylab = "Signal Intensity"
+    marbox()
 }
 
-# Plots the yf spectra on the left side, with an arrow going into a
-# pipeline. In the pipeline, the following steps are written as text:,
-# Apodization, Zero-Filling, Fourier Transform, Phase Correction, Baseline
-# Correction, Referencing
-plot_preprocessing <- function() {
+#' @noRd
+#' @description
+#' Plots the yf spectra on the left side, with an arrow going into a
+#' pipeline. In the pipeline, the following steps are written as text:,
+#' Apodization, Zero-Filling, Fourier Transform, Phase Correction, Baseline
+#' Correction, Referencing
+#' @param cex Character Expansion.
+#' @param lex Line Height Expansion. Must be greater than cex.
+plot_3_preprocessing <- function(cex = par("cex"),
+                                 lex = cex * 1.5) {
     local_par(mar = c(1, 0, 2, 0))
     plot_empty(main = "Preprocessing")
     marbox()
     ndc <- npc_to_ndc()
-    x1 <- ndc[1]; x2 <- ndc[2]; y1 <- ndc[3]; y2 <- ndc[4]
-    H <- diff(ndc[3:4]); h <- H / 100
+    x1 <- ndc[1]; x2 <- ndc[2]
+    y1 <- ndc[3]; y2 <- ndc[4]
     W <- diff(ndc[1:2]); w <- W / 100
-    # y~f spectra
+    H <- diff(ndc[3:4]); h <- H / 100
     local_par(mar = c(0, 0, 0, 0))
-    with_fig(fig = c(x1 + 5 * w, x1 + 40 * w, y1 + 66 * h, y1 + 99 * h), plot_yt_spectrum(1))
-    with_fig(fig = c(x1 + 5 * w, x1 + 40 * w, y1 + 33 * h, y1 + 66 * h), plot_yt_spectrum(2))
-    with_fig(fig = c(x1 + 5 * w, x1 + 40 * w, y1 +  0 * h, y1 + 33 * h), plot_yt_spectrum(3))
-
-    # Write the preprocessing steps to the right
+    with_fig(fig = c(x1 + 10*w, x1 + 40*w, y1 + 66*h, y1 + 99*h), plot_2_raw_fid(1))
+    with_fig(fig = c(x1 + 10*w, x1 + 40*w, y1 + 33*h, y1 + 66*h), plot_2_raw_fid(2))
+    with_fig(fig = c(x1 + 10*w, x1 + 40*w, y1 + 00*h, y1 + 33*h), plot_2_raw_fid(3))
     local_par(mar = c(0, 0, 0, 0))
-    with_fig(fig = c(x1 + 50 * w, x1 + 90 * w, y1, y1 + 98 * h), {
-        plot_empty()
-        lh <- 1.5 # Line height
-        cex <- 0.8 # Chracter Size
-        box()
-        rect(0, 0, 1, 1, col = "lightyellow")
-        mtext("Apodization", side = 3, line = -1 * lh, cex = cex)
-        mtext("Zero-Filling", side = 3, line = -2 * lh, cex = cex)
-        mtext("Fourier Transform", side = 3, line = -3 * lh, cex = cex)
-        mtext("Phase Correction", side = 3, line = -4 * lh, cex = cex)
-        mtext("Baseline Correction", side = 3, line = -5 * lh, cex = cex)
-        mtext("Referencing", side = 3, line = -6 * lh, cex = cex)
-    })
+    local_fig(fig = c(x1 + 50 * w, x1 + 90 * w, y1 + 10 * h, y1 + 90 * h))
+    plot_empty()
+    lh <- grconvertH(1, "chars", "user") * lex # Line Height
+    nl <- 1 / lh # Number of Lines per Subfigure
+    cl <- (nl / 2) + 0.5 # Center Line
+    if (lh > 1/7) warning("Text too large. Reduce `cex` or `lex`.")
+    rect(0.00, 1 - 2 * lh, 1.00, 1 - 0 * lh, col = "lightyellow")
+    rect(0.08, 0 + 2 * lh, 0.92, 1 - 2 * lh, col = "lightyellow")
+    rect(0.00, 0 + 0 * lh, 1.00, 0 + 2 * lh, col = "lightyellow")
+    mtext("Apodization",        3, (cl + 3) * lex, cex = cex)
+    mtext("Zero-Filling",       3, (cl + 2) * lex, cex = cex)
+    mtext("Fourier Transform",  3, (cl + 1) * lex, cex = cex)
+    mtext("Phase Correction",   3, (cl + 0) * lex, cex = cex)
+    mtext("Baseline Correction",3, (cl - 1) * lex, cex = cex)
+    mtext("Referencing",        3, (cl - 2) * lex, cex = cex)
 }
 
-plot_deconvolution <- function() {
-    plot_empty(main = "Deconvolution")
+plot_3_blackbox_preprocessing <- function(cex = par("cex"),
+                                          lex = cex * 1.5) {
+    local_par(mar = c(2, 2, 2, 1))
+    plot_empty(main = "Preprocessing")
     marbox()
-    metabodecon::draw_spectrum(
-        metabodecon::deconvolute(metabodecon::sim[[1]]),
-        foc_frac = c(0.48, 0.38),
-        mar = c(0, 0, 0, 0),
-        lgd = FALSE,
-        bt_axis = FALSE,
-        bg_rect = FALSE,
-        foc_rect = FALSE,
-        lc_lines = TRUE,
-        sp_line = FALSE,
-        cent_pts = FALSE,
-        sm_line = FALSE,
-        add = TRUE
-    )
+    box()
+    lh <- grconvertH(1, "chars", "user") * lex # Line Height in R does NOT depend on `cex`
+    nl <- 1 / lh # Number of Lines per Subfigure
+    cl <- (nl / 2) + 0.5 # Center Line
+    if (7 * lh > 1) warning("Text does not fit in plot area. Reduce `cex` or `lex`.")
+    rect(0, 0, 1, 1, col = "darkgrey")
+    m3text <- function(line, text) mtext(text, line = (-cl + line) * lex, cex = cex)
+    m3text(+3, "Apodization")
+    m3text(+2, "Zero-Filling")
+    m3text(+1, "Fourier Transform")
+    m3text(+0, "Phase Correction")
+    m3text(-1, "Baseline Correction")
+    m3text(-2, "Referencing")
 }
 
-plot_yf_spectra <- function() {
+plot_4_raw_spectra <- function() {
+    local_par(mar = c(2, 2, 2, 1))
     plot_empty(main = "Raw Data in Frequency Domain")
     marbox()
+    ndc <- npc_to_ndc()
+    fig_width  <- diff(ndc[1:2])
+    fig_height <- diff(ndc[3:4])
+    sub_height <- fig_height / 3
+    box()
+    with_fig(fig = npc_to_ndc(c(0, 1, 0/3, 1/3)), plot_4_raw_spectrum(1))
+    with_fig(fig = npc_to_ndc(c(0, 1, 1/3, 2/3)), plot_4_raw_spectrum(2))
+    with_fig(fig = npc_to_ndc(c(0, 1, 2/3, 3/3)), plot_4_raw_spectrum(3))
+    mtext2(1, "Chemical Shift")
+    mtext2(2, "Signal Intensity")
 }
 
-plot_deconvoluted_spectra <- function() {
+plot_4_raw_spectrum <- function(id) {
+    args <- draw_spectrum_plain_args
+    args$obj <- sim[[id]]
+    args$mar[3] <- abs(grconvertH(0.1, "nfc", "lines"))
+    do.call(draw_spectrum, args)
+    with_par(list(mar = c(0, 0, 0, 0)), box())
+}
+
+plot_5_deconvolutions <- function() {
+    local_par(mar = c(2, 2, 2, 1))
+    plot_empty(main = "Deconvolution")
+    marbox()
+    ndc <- npc_to_ndc()
+    fig_width  <- diff(ndc[1:2])
+    fig_height <- diff(ndc[3:4])
+    sub_height <- fig_height / 3
+    box()
+    with_fig(fig = npc_to_ndc(c(0, 1, 0/3, 1/3)), plot_5_deconvolution(1))
+    with_fig(fig = npc_to_ndc(c(0, 1, 1/3, 2/3)), plot_5_deconvolution(2))
+    with_fig(fig = npc_to_ndc(c(0, 1, 2/3, 3/3)), plot_5_deconvolution(3))
+    mtext2(1, "Chemical Shift")
+    mtext2(2, "Signal Intensity")
+}
+
+plot_5_deconvolution <- function(id) {
+    args <- draw_spectrum_plain_args
+    args$mar[3] <- abs(grconvertH(0.1, "nfc", "lines"))
+    args$obj <- deconvolute(sim[[id]])
+    do.call(draw_spectrum, args)
+    with_par(list(mar = c(0, 0, 0, 0)), box())
+}
+
+plot_6_deconvoluted_spectra <- function() {
+    local_par(mar = c(2, 2, 2, 1))
     plot_empty(main = "Deconvoluted Signal Intensities")
     marbox()
+    ndc <- npc_to_ndc()
+    fig_width  <- diff(ndc[1:2])
+    fig_height <- diff(ndc[3:4])
+    sub_height <- fig_height / 3
+    box()
+    with_fig(fig = npc_to_ndc(c(0, 1, 0/3, 1/3)), plot_6_deconvoluted_spectrum(1))
+    with_fig(fig = npc_to_ndc(c(0, 1, 1/3, 2/3)), plot_6_deconvoluted_spectrum(2))
+    with_fig(fig = npc_to_ndc(c(0, 1, 2/3, 3/3)), plot_6_deconvoluted_spectrum(3))
+    mtext2(1, "Chemical Shift")
+    mtext2(2, "Signal Intensity")
 }
 
-plot_alignment <- function() {
+plot_6_deconvoluted_spectrum <- function(id,
+                                         foc_frac = c(0.48, 0.38),
+                                         mar = c(0, 0, 2, 0),
+                                         add = TRUE,
+                                         lgd = FALSE,
+                                         si_line = FALSE,
+                                         sp_line = FALSE,
+                                         sm_line = FALSE,
+                                         lc_lines = TRUE,
+                                         bt_axis = FALSE,
+                                         lt_axis = FALSE,
+                                         bg_rect = FALSE,
+                                         foc_rect = FALSE,
+                                         cent_pts = FALSE
+                                         ) {
+    args <- draw_spectrum_plain_args
+    args$mar[3] <- abs(grconvertH(0.1, "nfc", "lines"))
+    args$obj <- deconvolute(sim[[id]])
+    args$si_line <- FALSE
+    args$lc_lines <- FALSE
+    do.call(draw_spectrum, args)
+    with_par(list(mar = c(0, 0, 0, 0)), box())
+}
+
+plot_7_alignment <- function() {
     plot_empty(main = "Alignment")
     marbox()
 }
 
-plot_aligned_spectra <- function() {
+plot_8_aligned_spectra <- function() {
     plot_empty(main = "Aligned Signal Intensities")
     marbox()
 }
 
-plot_annotation <- function() {
+plot_9_annotation <- function() {
     plot_empty(main = "Identification")
     marbox()
 }
 
-plot_anntated_spectra <- function() {
+plot_10_annotated_spectra <- function() {
     plot_empty(main = "Metabolite Concentrations")
     marbox()
 }
@@ -247,9 +343,9 @@ draw_nmr_spectrometer <- function(x1 = 10, y1 = 20, h = 60, w = NULL) {
     )
 
     # Add labels
-    text((x1 + x2) / 2, (y1 + y2) / 2, "Sample")
-    text(x2 + console_w / 2 + .05, y1 + console_h / 2, "Console")
-    text((x1 + x2) / 2, y2 - h * 0.05, "Magnet")
+    # text((x1 + x2) / 2, (y1 + y2) / 2, "Sample")
+    # text(x2 + console_w / 2 + .05, y1 + console_h / 2, "Console")
+    # text((x1 + x2) / 2, y2 - h * 0.1, "Magnet")
 }
 
 # Plot Helpers #####
@@ -316,6 +412,10 @@ grconvertH <- function(y, from = "user", to = "inches") {
     grconvertY(y, from, to) - grconvertY(0, from, to)
 }
 
+mtext2 <- function(side, text, line = 0.5, cex = par("cex"), ...) {
+    mtext(text, side, line, cex = cex, ...)
+}
+
 # Datasets #####
 
 mkdat_sim2 <- function() {
@@ -330,3 +430,20 @@ mkdat_sim2 <- function() {
         aceticacid = c(rnorm(nA, 2, 0.1), rnorm(nB, 3, 0.1))
     )
 }
+
+# Constants
+
+draw_spectrum_plain_args <- list(
+    foc_rgn  = NULL,   foc_frac = c(0.48, 0.34),   foc_only = TRUE,
+    add      = TRUE,   fig_rgn  = NULL,            main     = NULL,
+    show     = TRUE,   show_d2  = FALSE,           truepar  = NULL,
+    mar      = c(0, 0, 1, 0),
+    si_line  = list(), sm_line  = FALSE,  sp_line  = FALSE,
+    d2_line  = list(), lc_lines = TRUE,   tp_lines = list(),
+    cent_pts = FALSE,  bord_pts = list(), norm_pts = list(),
+    bg_rect  = FALSE,  foc_rect = FALSE,  lc_rects = list(), tp_rects = list(),
+    bt_axis  = FALSE,  lt_axis  = FALSE,  tp_axis  = list(), rt_axis  = list(),
+    tp_verts = list(), lc_verts = list(show = TRUE, col = "blue"),
+    lgd      = FALSE
+
+)

@@ -793,7 +793,7 @@ as_v2_obj <- function(obj) {
     else if (is_decon1(obj)) as_decon2(obj)
     else if (is_decon2(obj)) obj
     else if (is_align(obj)) obj
-    else stopf("Objects of class %s are not supported.", class(obj))
+    else stop(sprintf("Objects of class %s are not supported.", class(obj)))
 }
 
 as_v2_objs <- function(obj) {
@@ -804,7 +804,7 @@ as_v2_objs <- function(obj) {
     else if (is_decons1(obj)) as_decons2(obj)
     else if (is_decons2(obj)) obj
     else if (is_aligns(obj)) obj
-    else stopf("Objects of class %s are not supported.", class(obj))
+    else stop(sprintf("Objects of class %s are not supported.", class(obj)))
 }
 
 #' @export

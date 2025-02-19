@@ -493,7 +493,7 @@ logf <- function(fmt,
     cat(prefix(), sep1, sprintf(fmt, ...), sep2, end, sep = "", file = file, append = append)
 }
 
-stopf <- function(fmt, ..., call. = TRUE, domain = NULL) {
+stopf <- function(fmt, ..., call. = FALSE, domain = NULL) {
     stop(sprintf(fmt, ...), call. = call., domain = domain)
 }
 
