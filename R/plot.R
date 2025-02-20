@@ -376,9 +376,23 @@ plot_spectrum <- function(x,
 #'             "Mega-Arbitrary-Units".
 #'
 #' @param lc_verts,tp_verts
-#' List of parameters passed to [abline()] when drawing vertical lines at the
-#' centers of estimated lorentzian curves and/or true lorentzian curves. Setting
-#' tp_verts$show to TRUE requires `truepar` to be set.
+#' List of parameters passed to [segments()] when drawing vertical lines at the
+#' centers of estimated, true or aligned lorentzian curves. Setting
+#' `tp_verts$show` to TRUE requires `truepar` to be set. In addition to the
+#' parameters of [segments()], the following additional parameters are supported
+#' as well:
+#'
+#' - `height`: Height of the vertical line. The following options are supported:
+#'   - `"full"`: The line is drawn from the bottom to the top of the plot region.
+#'   - `"peak"`: The line is drawn from the bottom to the peak maximum.
+#'   - `"int"`: The height of the line equals the peak integral. If this option
+#'              is used, it is advisable to hide all other lines, as the
+#'              integral values are usually on a different scale than the signal
+#'              intensities. Two show both, signal intensities and integral
+#'              values in the same plot, you can use the `sint` option.
+#'   - `"sint"`: The height of the line equals the "scaled peak integral". This
+#'               scaling is done in a way that the highest scaled integral equals
+#'               the height of the plot region.
 #'
 #' @return
 #' NULL. Called for side effect of plotting.
@@ -387,7 +401,7 @@ plot_spectrum <- function(x,
 #' Parameters `bt_axis`, `lt_axis`, `tp_axis` and `rt_axis` all  support  option
 #' `n` and `digits`, where `n = 5` means "Draw 5 tickmarks over  the  full  axis
 #' range" and `digits = 3` means "round the label shown beside each tickmark  to
-#' 3 digits". If `n` is omitted, a suitable value is chosen automatically using
+#' 3 digits". If `n` is omitted, a suitable value is chosen automatically  using
 #' [axTicks()]. If `digits` is omitted, a default of `2:12` is used. Providing a
 #' vector of `digits` causes each digit to be tried as argument  for  [round()],
 #' until a digit is encountered that results in `n` unique labels. Example:
@@ -406,7 +420,7 @@ plot_spectrum <- function(x,
 #'
 #' In the above example the process would stop at `digit = 3`, because  at  this
 #' point we have n = 4 unique labels (1.024, 1.025, 1.027 and 1.028).
-#' 
+#'
 #' @examples
 #' decon <- deconvolute(sim[[1]], sfr = c(3.55, 3.35))
 #' draw_spectrum(obj = decon)
@@ -430,6 +444,14 @@ draw_spectrum <- function(
     lgd      = list()
     )
 {
+    # [ ]  Add `lc_int` argument.
+    # [ ]  Add `fill` option to lc_lines and tp_lines
+    # [ ]  Add `al_verts` argument.
+    # [ ]  Add `al_arows` argument.
+    # [ ]  Add `height` option to draw_verts.
+    #      If "full", the line is drawn from bottom to top
+    #      If "peak", the line is drawn from bottom to peak maximum
+    #      If "sint", the line is drawn from bottom to
 
     # Check and enrich inputs (278us)
     if (isFALSE(show)) return()
@@ -577,8 +599,8 @@ draw_spectrum <- function(
     apply(lcpar, 1, draw_lc_line, cs, lc_lines, ythresh) # 13ms
     draw_line(cs, si, si_line)
     draw_line(cs, sm, sm_line)
-    draw_verts(trpar$x0, tp_verts)
-    draw_verts(lcpar$x0, lc_verts)
+    draw_verts(trpar, tp_verts)
+    draw_verts(lcpar, lc_verts)
     draw_points(cs[icp], sm[icp], cent_pts)
     draw_points(cs[ibp], sm[ibp], bord_pts)
     draw_points(cs[inp], sm[inp], norm_pts)
@@ -837,10 +859,14 @@ draw_line <- function(x, y, args = list()) {
     do.call(lines, args)
 }
 
-draw_verts <- function(v, args = list()) {
+draw_verts <- function(p, args = list()) {
     if (isFALSE(pop(args, "show"))) return()
-    args$v <- v
-    do.call(abline, args)
+    if (nrow(p) == 0) return()
+    args$x0 <- p$x0
+    args$x1 <- p$x0
+    args$y0 <- rep(par("usr")[3], length(p$x0))
+    args$y1 <- p$A / p$lambda
+    do.call(segments, args)
 }
 
 draw_points <- function(x, y, args = list()) {

@@ -1,5 +1,7 @@
 # Figures #####
 
+cacheenv <- environment()
+
 #' @noRd
 #' @title Plot typical NMR Challenges
 #' @param s # Scaling Factor for the created figure. By making the figure `s` times bigger than the textwidth you can make the font, lines, etc. `s` times smaller, thinner, etc. because it will get scaled down when included in the LaTeX document.
@@ -9,40 +11,56 @@
 #' mkfig_nmr_challenges()
 #' plot_nmr_challenges(s = 1.5)
 mkfig_nmr_challenges <- function(show = FALSE,
-                                 path = "challenges.pdf",
+                                 store = TRUE,
+                                 path = "tmp",
+                                 name = c("challenges"),
+                                 exts = c("pdf", "svg"),
                                  s = 1,
                                  w = 5.45,
-                                 h = 8,
-                                 ...) {
+                                 h = 8) {
+    spectra <- sim[1:3]
+    decons <- deconvolute(sim[1:3])
+    aligns <- align(decons)
     if (show) {
-        if (dev.cur() == 1) dev.new(width = w * s, height = h * s, rescale = "fixed")
-        plot_nmr_challenges(...)
+        plot_nmr_challenges(
+            spectra,
+            decons,
+            aligns,
+            init = TRUE,
+            clear = TRUE
+        )
     }
-    if (is_str(path)) {
-        withr::local_pdf(path, width = w * s, height = h * s)
-        plot_nmr_challenges(...)
+    if (store) {
+        R.devices::devEval(
+            path = path,
+            name = name,
+            type = exts,
+            width = w * s,
+            height = h * s,
+            expr = plot_nmr_challenges(spectra, decons, aligns)
+        )
     }
 }
 
 # Plot #####
-plot_nmr_challenges <- function(lwd = 0.1,
-                                s = 1,
-                                w = 5.45,
-                                h = 8) {
-
-    init_dev(s, w, h)
+plot_nmr_challenges <- function(spectra,
+                                decons = deconvolute(sim[1:3]),
+                                aligns = align(decons),
+                                init = FALSE,
+                                clear = FALSE) {
+    if (init) init_dev(s, w, h)
     local_par(mfrow = c(5, 2), mar = c(0, 0, 2, 0))
-    clear_dev()
-    do.call(plot_1_nmr_experiment, list())
-    do.call(plot_2_raw_fids, list())
-    do.call(plot_3_blackbox_preprocessing, list())
-    do.call(plot_4_raw_spectra, list())
-    do.call(plot_5_deconvolutions, list())
-    do.call(plot_6_deconvoluted_spectra, list())
-    do.call(plot_7_alignment, list())
-    do.call(plot_8_aligned_spectra, list())
-    do.call(plot_9_annotation, list())
-    do.call(plot_10_annotated_spectra, list())
+    if (clear) clear_dev()
+    plot_1_nmr_experiment()
+    plot_2_raw_fids()
+    plot_3_blackbox_preprocessing()
+    plot_4_raw_spectra(spectra)
+    plot_5_deconvolutions(decons)
+    plot_6_deconvoluted_spectra(decons)
+    plot_7_alignment(aligns)
+    plot_8_aligned_spectra(aligns)
+    plot_9_annotation(aligns)
+    plot_10_annotated_spectra(aligns)
 }
 
 plot_1_nmr_experiment <- function() {
@@ -152,7 +170,7 @@ plot_3_blackbox_preprocessing <- function(cex = par("cex"),
     m3text(-2, "Referencing")
 }
 
-plot_4_raw_spectra <- function() {
+plot_4_raw_spectra <- function(spectra) {
     local_par(mar = c(2, 2, 2, 1))
     plot_empty(main = "Raw Data in Frequency Domain")
     marbox()
@@ -161,22 +179,22 @@ plot_4_raw_spectra <- function() {
     fig_height <- diff(ndc[3:4])
     sub_height <- fig_height / 3
     box()
-    with_fig(fig = npc_to_ndc(c(0, 1, 0/3, 1/3)), plot_4_raw_spectrum(1))
-    with_fig(fig = npc_to_ndc(c(0, 1, 1/3, 2/3)), plot_4_raw_spectrum(2))
-    with_fig(fig = npc_to_ndc(c(0, 1, 2/3, 3/3)), plot_4_raw_spectrum(3))
+    with_fig(fig = npc_to_ndc(c(0, 1, 0/3, 1/3)), plot_4_raw_spectrum(spectra[[1]]))
+    with_fig(fig = npc_to_ndc(c(0, 1, 1/3, 2/3)), plot_4_raw_spectrum(spectra[[2]]))
+    with_fig(fig = npc_to_ndc(c(0, 1, 2/3, 3/3)), plot_4_raw_spectrum(spectra[[3]]))
     mtext2(1, "Chemical Shift")
     mtext2(2, "Signal Intensity")
 }
 
-plot_4_raw_spectrum <- function(id) {
+plot_4_raw_spectrum <- function(spectrum) {
     args <- draw_spectrum_plain_args
-    args$obj <- sim[[id]]
+    args$obj <- spectrum
     args$mar[3] <- abs(grconvertH(0.1, "nfc", "lines"))
     do.call(draw_spectrum, args)
     with_par(list(mar = c(0, 0, 0, 0)), box())
 }
 
-plot_5_deconvolutions <- function() {
+plot_5_deconvolutions <- function(decons) {
     local_par(mar = c(2, 2, 2, 1))
     plot_empty(main = "Deconvolution")
     marbox()
@@ -185,79 +203,112 @@ plot_5_deconvolutions <- function() {
     fig_height <- diff(ndc[3:4])
     sub_height <- fig_height / 3
     box()
-    with_fig(fig = npc_to_ndc(c(0, 1, 0/3, 1/3)), plot_5_deconvolution(1))
-    with_fig(fig = npc_to_ndc(c(0, 1, 1/3, 2/3)), plot_5_deconvolution(2))
-    with_fig(fig = npc_to_ndc(c(0, 1, 2/3, 3/3)), plot_5_deconvolution(3))
+    with_fig(fig = npc_to_ndc(c(0, 1, 0/3, 1/3)), plot_5_deconvolution(decons[[1]]))
+    with_fig(fig = npc_to_ndc(c(0, 1, 1/3, 2/3)), plot_5_deconvolution(decons[[2]]))
+    with_fig(fig = npc_to_ndc(c(0, 1, 2/3, 3/3)), plot_5_deconvolution(decons[[3]]))
     mtext2(1, "Chemical Shift")
     mtext2(2, "Signal Intensity")
 }
 
-plot_5_deconvolution <- function(id) {
+plot_5_deconvolution <- function(decon) {
     args <- draw_spectrum_plain_args
     args$mar[3] <- abs(grconvertH(0.1, "nfc", "lines"))
-    args$obj <- deconvolute(sim[[id]])
+    args$obj <- decon
     do.call(draw_spectrum, args)
     with_par(list(mar = c(0, 0, 0, 0)), box())
 }
 
-plot_6_deconvoluted_spectra <- function() {
+plot_6_deconvoluted_spectra <- function(decons) {
     local_par(mar = c(2, 2, 2, 1))
-    plot_empty(main = "Deconvoluted Signal Intensities")
+    plot_empty(main = "Deconvoluted Signal Integrals")
     marbox()
     ndc <- npc_to_ndc()
     fig_width  <- diff(ndc[1:2])
     fig_height <- diff(ndc[3:4])
     sub_height <- fig_height / 3
     box()
-    with_fig(fig = npc_to_ndc(c(0, 1, 0/3, 1/3)), plot_6_deconvoluted_spectrum(1))
-    with_fig(fig = npc_to_ndc(c(0, 1, 1/3, 2/3)), plot_6_deconvoluted_spectrum(2))
-    with_fig(fig = npc_to_ndc(c(0, 1, 2/3, 3/3)), plot_6_deconvoluted_spectrum(3))
+    with_fig(fig = npc_to_ndc(c(0, 1, 0/3, 1/3)), plot_6_deconvoluted_spectrum(decons[[1]]))
+    with_fig(fig = npc_to_ndc(c(0, 1, 1/3, 2/3)), plot_6_deconvoluted_spectrum(decons[[2]]))
+    with_fig(fig = npc_to_ndc(c(0, 1, 2/3, 3/3)), plot_6_deconvoluted_spectrum(decons[[3]]))
     mtext2(1, "Chemical Shift")
-    mtext2(2, "Signal Intensity")
+    mtext2(2, "Signal Integral")
 }
 
-plot_6_deconvoluted_spectrum <- function(id,
-                                         foc_frac = c(0.48, 0.38),
-                                         mar = c(0, 0, 2, 0),
-                                         add = TRUE,
-                                         lgd = FALSE,
-                                         si_line = FALSE,
-                                         sp_line = FALSE,
-                                         sm_line = FALSE,
-                                         lc_lines = TRUE,
-                                         bt_axis = FALSE,
-                                         lt_axis = FALSE,
-                                         bg_rect = FALSE,
-                                         foc_rect = FALSE,
-                                         cent_pts = FALSE
-                                         ) {
+plot_6_deconvoluted_spectrum <- function(decon) {
     args <- draw_spectrum_plain_args
     args$mar[3] <- abs(grconvertH(0.1, "nfc", "lines"))
-    args$obj <- deconvolute(sim[[id]])
+    args$obj <- decon
     args$si_line <- FALSE
+    args$lc_lines <- FALSE
     args$lc_lines <- FALSE
     do.call(draw_spectrum, args)
     with_par(list(mar = c(0, 0, 0, 0)), box())
 }
 
-plot_7_alignment <- function() {
+plot_7_alignment <- function(aligns) {
+    local_par(mar = c(2, 2, 2, 1))
     plot_empty(main = "Alignment")
     marbox()
+    ndc <- npc_to_ndc()
+    fig_width  <- diff(ndc[1:2])
+    fig_height <- diff(ndc[3:4])
+    sub_height <- fig_height / 3
+    box()
+    with_fig(fig = npc_to_ndc(c(0, 1, 0/3, 1/3)), plot_6_deconvoluted_spectrum(aligns[[1]]))
+    with_fig(fig = npc_to_ndc(c(0, 1, 1/3, 2/3)), plot_6_deconvoluted_spectrum(aligns[[2]]))
+    with_fig(fig = npc_to_ndc(c(0, 1, 2/3, 3/3)), plot_6_deconvoluted_spectrum(aligns[[3]]))
+    mtext2(1, "Chemical Shift")
+    mtext2(2, "Signal Intensity")
 }
 
-plot_8_aligned_spectra <- function() {
+plot_8_aligned_spectra <- function(aligns) {
+    local_par(mar = c(2, 2, 2, 1))
     plot_empty(main = "Aligned Signal Intensities")
     marbox()
+    ndc <- npc_to_ndc()
+    fig_width  <- diff(ndc[1:2])
+    fig_height <- diff(ndc[3:4])
+    sub_height <- fig_height / 3
+    box()
+    with_fig(fig = npc_to_ndc(c(0, 1, 0/3, 1/3)), plot_6_deconvoluted_spectrum(aligns[[1]]))
+    with_fig(fig = npc_to_ndc(c(0, 1, 1/3, 2/3)), plot_6_deconvoluted_spectrum(aligns[[2]]))
+    with_fig(fig = npc_to_ndc(c(0, 1, 2/3, 3/3)), plot_6_deconvoluted_spectrum(aligns[[3]]))
+    mtext2(1, "Chemical Shift")
+    mtext2(2, "Signal Intensity")
+
 }
 
-plot_9_annotation <- function() {
+plot_9_annotation <- function(aligns) {
+    local_par(mar = c(2, 2, 2, 1))
     plot_empty(main = "Identification")
     marbox()
+    ndc <- npc_to_ndc()
+    fig_width  <- diff(ndc[1:2])
+    fig_height <- diff(ndc[3:4])
+    sub_height <- fig_height / 3
+    box()
+    with_fig(fig = npc_to_ndc(c(0, 1, 0/3, 1/3)), plot_6_deconvoluted_spectrum(aligns[[1]]))
+    with_fig(fig = npc_to_ndc(c(0, 1, 1/3, 2/3)), plot_6_deconvoluted_spectrum(aligns[[2]]))
+    with_fig(fig = npc_to_ndc(c(0, 1, 2/3, 3/3)), plot_6_deconvoluted_spectrum(aligns[[3]]))
+    mtext2(1, "Chemical Shift")
+    mtext2(2, "Signal Intensity")
 }
 
-plot_10_annotated_spectra <- function() {
+plot_10_annotated_spectra <- function(aligns) {
+    local_par(mar = c(2, 2, 2, 1))
     plot_empty(main = "Metabolite Concentrations")
     marbox()
+    ndc <- npc_to_ndc()
+    fig_width  <- diff(ndc[1:2])
+    fig_height <- diff(ndc[3:4])
+    sub_height <- fig_height / 3
+    box()
+    with_fig(fig = npc_to_ndc(c(0, 1, 0/3, 1/3)), plot_6_deconvoluted_spectrum(aligns[[1]]))
+    with_fig(fig = npc_to_ndc(c(0, 1, 1/3, 2/3)), plot_6_deconvoluted_spectrum(aligns[[2]]))
+    with_fig(fig = npc_to_ndc(c(0, 1, 2/3, 3/3)), plot_6_deconvoluted_spectrum(aligns[[3]]))
+    mtext2(1, "Chemical Shift")
+    mtext2(2, "Signal Intensity")
+
 }
 
 
@@ -350,8 +401,12 @@ draw_nmr_spectrometer <- function(x1 = 10, y1 = 20, h = 60, w = NULL) {
 
 # Plot Helpers #####
 
-init_dev <- function(s = 2, w = 5.45, h = 8) {
-    if (dev.cur() == 1) dev.new(width = w * s, height = h * s, rescale = "fixed")
+init_dev <- function(s = 1, w = 5.45, h = 8) {
+    if (dev.cur() == 1) dev.new(
+        width = w * s,
+        height = h * s,
+        rescale = "fixed"
+    )
 }
 
 clear_dev <- function() {
@@ -445,5 +500,4 @@ draw_spectrum_plain_args <- list(
     bt_axis  = FALSE,  lt_axis  = FALSE,  tp_axis  = list(), rt_axis  = list(),
     tp_verts = list(), lc_verts = list(show = TRUE, col = "blue"),
     lgd      = FALSE
-
 )

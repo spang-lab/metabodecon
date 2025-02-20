@@ -50,10 +50,11 @@ Suggests:
     lifecycle,
     microbenchmark,
     pkgload,
+    R.devices,
     rmarkdown,
+    testthat (>= 3.0.0),
     usethis,
-    vdiffr,
-    testthat (>= 3.0.0)
+    vdiffr
 LazyData: true
 Config/testthat/edition: 3
 Config/testthat/parallel: true

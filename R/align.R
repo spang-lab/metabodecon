@@ -37,13 +37,16 @@
 #' An object of type `align` as described in [metabodecon_classes].
 #'
 #' @examples
-#' sim_dir <- metabodecon_file("bruker/sim")
-#' spectra <- read_spectra(sim_dir)
-#' decons <- deconvolute(spectra, sfr = c(3.55, 3.35))
+#' decons <- deconvolute(sim, sfr = c(3.55, 3.35))
 #' aligned <- align(decons)
 #' aligned
 align <- function(x, maxShift = 50, maxCombine = 5, verbose = FALSE) {
     decons1 <- as_decons1(x)
+    stopifnot(length(decons1) > 1)
+    for (i in 2:length(decons1)) stopifnot(is_equal(
+        decons1[[i-1]]$x_values_ppm,
+        decons1[[i  ]]$x_values_ppm
+    ))
     smat <- speaq_align(spectrum_data = decons1, maxShift = 50, verbose = verbose)
     obj <- combine_peaks(shifted_mat = smat, range = maxCombine, spectrum_data = decons1)
     decons2 <- as_decons2(x)

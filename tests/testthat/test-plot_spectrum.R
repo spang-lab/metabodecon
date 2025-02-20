@@ -20,7 +20,7 @@ mkenv_plot_spectrum <- function() {
 #' test_plot_spectrum(1, 2) # first two plots
 #' test_plot_spectrum(2:4) # second to fourth plot
 test_plot_spectrum <- function(figs = 1:6) {
-    if (environment() %==% .GlobalEnv) {
+    if (environment() %===% .GlobalEnv) {
         figs <- 1:6
         deferred_run()
     }

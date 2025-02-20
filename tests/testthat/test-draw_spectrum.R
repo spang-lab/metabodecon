@@ -4,7 +4,7 @@
 develop_draw_spectrum <- function() {
 
     # Achieve clean state
-    while (dev.cur() %!=% c(`null device` = 1L)) dev.off()
+    while (dev.cur() %!==% c(`null device` = 1L)) dev.off()
     rm_all()
     deferred_run()
     untrace(draw_spectrum)

@@ -367,10 +367,18 @@ get_yn_input <- function(prompt) {
 }
 
 `%==%` <- function(x, y) {
-    identical(x, y)
+    isTRUE(all.equal(x, y))
 }
 
 `%!=%` <- function(x, y) {
+    !isTRUE(all.equal(x, y))
+}
+
+`%===%` <- function(x, y) {
+    identical(x, y)
+}
+
+`%!==%` <- function(x, y) {
     !identical(x, y)
 }
 
@@ -451,6 +459,17 @@ capture.output2 <- function(..., collapse = "\n", trim = FALSE) {
 dput2 <- function(..., collapse = " ", trim = TRUE) {
     x <- capture.output2(dput(...), collapse = collapse, trim = trim)
     return(x)
+}
+
+str0 <- function(object,
+                 max.level = 1,
+                 give.attr = FALSE, ...) {
+    str(
+        object,
+        max.level = max.level,
+        give.attr = give.attr,
+        ...
+    )
 }
 
 str2 <- function(...) {
