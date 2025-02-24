@@ -246,7 +246,7 @@ plot_spectra <- function(obj,
 #' )
 #' plot_spectrum(decon,
 #'     sub2 = TRUE,
-#'     sub3 = list(bt_axis = list(text = "")),
+#'     sub3 = list(bt_text = list(text = "")),
 #'     frame = TRUE,
 #'     con_lines = FALSE
 #' )
@@ -297,6 +297,8 @@ plot_spectrum <- function(x,
 #' Draws a single spectrum.  Internally  used  by  [plot_spectrum()],  which  is
 #' usually  the  recommended  way  to  plot  spectra.  For  usage  examples  see
 #' [test/testthat/test-draw_spectrum.R](https://github.com/spang-lab/metabodecon/blob/main/tests/testthat/test-draw_spectrum.R).
+#'
+#' `r lifecycle::badge("experimental")`
 #'
 #' @param obj
 #' An object of type `spectrum` or `decon2`. For details see
@@ -362,7 +364,6 @@ plot_spectrum <- function(x,
 #' parameters of [axis()], the following additional parameters are supported  as
 #' well:
 #'
-#' - `text`:   Description for the axis. Drawn via [mtext()].
 #' - `n`:      Number of tickmarks.
 #' - `digits`: Number of digits for rounding the labels. If a vector of numbers
 #'             is provided, all numbers are tried, until `n` unique labels are
@@ -375,6 +376,11 @@ plot_spectrum <- function(x,
 #'             `"Signal Intensity [au] / 1e6"`, with `"Mau"` meaning
 #'             "Mega-Arbitrary-Units".
 #'
+#' @param bt_text,lt_text,tp_text,rt_text
+#' List of parameters used to overwrite the default values passed to [mtext()]
+#' when drawing the bottom, left, top and right margin texts (i.e. the axis
+#' labels).
+#'
 #' @param lc_verts,tp_verts
 #' List of parameters passed to [segments()] when drawing vertical lines at the
 #' centers of estimated, true or aligned lorentzian curves. Setting
@@ -385,11 +391,6 @@ plot_spectrum <- function(x,
 #' - `height`: Height of the vertical line. The following options are supported:
 #'   - `"full"`: The line is drawn from the bottom to the top of the plot region.
 #'   - `"peak"`: The line is drawn from the bottom to the peak maximum.
-#'   - `"int"`: The height of the line equals the peak integral. If this option
-#'              is used, it is advisable to hide all other lines, as the
-#'              integral values are usually on a different scale than the signal
-#'              intensities. Two show both, signal intensities and integral
-#'              values in the same plot, you can use the `sint` option.
 #'   - `"sint"`: The height of the line equals the "scaled peak integral". This
 #'               scaling is done in a way that the highest scaled integral equals
 #'               the height of the plot region.
@@ -426,32 +427,30 @@ plot_spectrum <- function(x,
 #' draw_spectrum(obj = decon)
 #' draw_spectrum(obj = decon, lgd = list(x = "top", bg = NA))
 #' draw_spectrum(obj = decon, foc_rgn = c(3.45, 3.37))
-#' draw_spectrum(obj = decon, fig = c(0.1, 0.4, 0.30, 0.45), add = TRUE)
-#' draw_spectrum(obj = decon, fig = c(0.1, 0.4, 0.05, 0.20), add = FALSE)
+#' draw_spectrum(obj = decon, add = FALSE, lgd = FALSE,
+#'               fig = c(.2, .8, .2, .4), mar = c( 0,  0,  0,  0))
+#' draw_spectrum(obj = decon, add = TRUE, lgd = FALSE,
+#'               fig = c(0.2, 0.8, 0.6, 0.8), mar = c(0, 0, 0, 0))
 #' draw_spectrum(obj = decon, lc_lines = NULL, lc_rects = NULL, foc_only = FALSE)
 draw_spectrum <- function(
     obj,
     foc_rgn  = NULL,   foc_frac = NULL,   foc_only = TRUE,
     add      = FALSE,  fig_rgn  = NULL,   main     = NULL,
     show     = TRUE,   show_d2  = FALSE,  truepar  = NULL,
-    mar      = c(4.1, 5.1, .1, .1),
+    mar      = c(5.1, 4.1, 1.1, 1.1),
     si_line  = list(), sm_line  = list(), sp_line  = list(),
     d2_line  = list(), lc_lines = list(), tp_lines = list(),
     cent_pts = list(), bord_pts = list(), norm_pts = list(),
     bg_rect  = list(), foc_rect = list(), lc_rects = list(), tp_rects = list(),
     bt_axis  = list(), lt_axis  = list(), tp_axis  = list(), rt_axis  = list(),
+    bt_text  = list(), lt_text  = list(), tp_text  = list(), rt_text  = list(),
     tp_verts = list(), lc_verts = list(),
     lgd      = list()
     )
 {
-    # [ ]  Add `lc_int` argument.
     # [ ]  Add `fill` option to lc_lines and tp_lines
     # [ ]  Add `al_verts` argument.
     # [ ]  Add `al_arows` argument.
-    # [ ]  Add `height` option to draw_verts.
-    #      If "full", the line is drawn from bottom to top
-    #      If "peak", the line is drawn from bottom to peak maximum
-    #      If "sint", the line is drawn from bottom to
 
     # Check and enrich inputs (278us)
     if (isFALSE(show)) return()
@@ -482,6 +481,28 @@ draw_spectrum <- function(
     }
     decon_only <- c("sm_line", "lc_lines", "sp_line", "lc_rects", "cent_pts", "bord_pts")
     if (is_spectrum(obj)) for (k in decon_only) env[[k]]$show <- FALSE
+
+    # Ensure backwards compatibility to MetaboDecon 1.2.7
+    if (!is.null(bt_axis$text) && !isFALSE(bt_axis$show)) {
+        warning("Setting `bt_axis$text` is deprecated since MetaboDecon 1.3. Use `bt_text$text` instead.")
+        bt_text$text <- pop(bt_axis, "text")
+        bt_text$show <- pop(bt_axis, "show")
+    }
+    if (!is.null(lt_axis$text) && !isFALSE(lt_axis$show)) {
+        warning("Setting `lt_axis$text` is deprecated since MetaboDecon 1.3. Use `lt_text$text` instead.")
+        lt_text$text <- pop(lt_axis, "text")
+        lt_text$show <- pop(lt_axis, "show")
+    }
+    if (!is.null(tp_axis$text) && !isFALSE(tp_axis$show)) {
+        warning("Setting `tp_axis$text` is deprecated since MetaboDecon 1.3. Use `tp_text$text` instead.")
+        tp_text$text <- pop(tp_axis, "text")
+        tp_text$show <- pop(tp_axis, "show")
+    }
+    if (!is.null(rt_axis$text) && !isFALSE(rt_axis$show)) {
+        warning("Setting `rt_axis$text` is deprecated since MetaboDecon 1.3. Use `rt_text$text` instead.")
+        rt_text$text <- pop(rt_axis, "text")
+        rt_text$show <- pop(rt_axis, "show")
+    }
 
     # Set graphical parameters (7ms)
     local_par(mar = mar, new = add)
@@ -611,11 +632,201 @@ draw_spectrum <- function(
     draw_axis(ylim, side = 2, lt_axis)
     draw_axis(xlim, side = 3, tp_axis)
     draw_axis(ylim, side = 4, rt_axis)
-    draw_legend(lgd, si_line, sm_line, lc_lines, sp_line, d2_line, cent_pts, bord_pts, norm_pts)
+    draw_mtext(side = 1, bt_text)
+    draw_mtext(side = 2, lt_text)
+    draw_mtext(side = 3, tp_text)
+    draw_mtext(side = 4, rt_text)
+    draw_legend(lgd, si_line, sm_line, lc_lines, sp_line, d2_line,
+                cent_pts, bord_pts, norm_pts,
+                lc_verts, tp_verts)
     list(
         plt_rgn_ndc = usr_to_ndc(c(xlim, ylim)),
         foc_rgn_ndc = usr_to_ndc(c(foc_rgn, ylim_foc))
     )
+}
+
+# Tests #####
+
+#' @noRd
+#' @title Setup a development environment for `plot_spectrum`
+mkenv_plot_spectrum <- function() {
+    target <- c("sim1", "sap")[1]
+    sim <- metabodecon::sim # Lazydata is not available in the package namespace
+    sap <- metabodecon::sap # Lazydata is not available in the package namespace
+    decon <- switch(
+        target,
+        "sim1" = deconvolute(sim[[1]], sfr = c(3.55, 3.35)),
+        "sap" = deconvolute(sap[[1]], sfr = c(3.2, -3.2), smopts = c(1, 3), delta = 3)
+    )
+    args <- stub(func = plot_spectrum, x = decon, ... = NULL, envir = .GlobalEnv)
+    deferred_run()
+    if (FALSE) plot_spectrum(decon, frame = TRUE)
+}
+
+#' @noRd
+#' @examples
+#' test_plot_spectrum(1, 2) # first two plots
+#' test_plot_spectrum(2:4) # second to fourth plot
+test_plot_spectrum <- function(figs = 1:6, store = FALSE) {
+    if (store) local_pdf("tmp/test_plot_spectrum.pdf", width = 14, height = 10)
+    if (environment() %===% .GlobalEnv) figs <- 1:6
+    n <- length(figs)
+    nr <- ceiling(sqrt(n))
+    nc <- if ((nr - 1) * nr >= n) nr - 1 else nr
+    spec <- read_spectrum(metabodecon_file("sim/sim_01"))
+    decon <- generate_lorentz_curves_sim(spec)
+    local_par(mfrow = c(nr, nc))
+
+    # Plot the full (non-deconvoluted) spectrum
+    if (1 %in% figs) plot_spectrum(
+        spec,
+        sub1 = FALSE
+    )
+
+    # Remove connecting lines, and focus on a specific region specified in ppm
+    if (2 %in% figs) plot_spectrum(
+        decon,
+        foc_rgn = c(3.49, 3.45),
+        con_lines = FALSE
+    )
+
+    # Show second derivative and focus on a specific region specified as fraction
+    if (3 %in% figs) plot_spectrum(
+        decon,
+        foc_frac = c(0.40, 0.30),
+        sub1 = list(lgd = list(cex = 0.66)),
+        sub2 = list(show = TRUE, lt_text = FALSE, lgd = list(cex = 0.66))
+    )
+
+    # Change color of focus rectangle and margins of sub figure 1
+    if (4 %in% figs) plot_spectrum(
+        decon,
+        sub1 = list(mar = c(3, 6, 3, 6), lt_axis = list(col = "violet"), lgd = list(cex = 0.66)),
+        foc_rect = list(border = "violet", col = transp("violet")),
+        con_lines = list(col = "violet")
+    )
+
+    # Hide xlab and show second derivative
+    if (5 %in% figs) plot_spectrum(
+        decon,
+        sub1 = list(lgd = list(cex = 0.66)),
+        sub2 = list(show = TRUE, lt_text = FALSE, lgd = list(cex = 0.66)),
+        sub3 = list(bt_text = list(text = "")),
+        frame = TRUE,
+        con_lines = FALSE
+    )
+
+    # Change the figure region for sub figure 1
+    if (6 %in% figs) plot_spectrum(
+        decon,
+        sub1 = list(
+            fig_rgn_npc = c(0, 1.0, 0.3, 1.0),
+            mar = c(0, 5, 0, 0)
+        )
+    )
+
+    # Test all combinations of (de-)activated sub figures
+    if (7 %in% figs)  plot_spectrum(decon, sub1 = FALSE, sub2 = FALSE, sub3 = FALSE, frame = TRUE)
+    if (8 %in% figs)  plot_spectrum(decon, sub1 = TRUE,  sub2 = FALSE, sub3 = FALSE)
+    if (9 %in% figs)  plot_spectrum(decon, sub1 = FALSE, sub2 = TRUE,  sub3 = FALSE)
+    if (10 %in% figs) plot_spectrum(decon, sub1 = FALSE, sub2 = FALSE, sub3 = TRUE)
+    if (11 %in% figs) plot_spectrum(decon, sub1 = TRUE,  sub2 = TRUE,  sub3 = FALSE)
+    if (12 %in% figs) plot_spectrum(decon, sub1 = TRUE,  sub2 = FALSE, sub3 = TRUE)
+    if (13 %in% figs) plot_spectrum(decon, sub1 = FALSE, sub2 = TRUE,  sub3 = TRUE)
+    if (14 %in% figs) plot_spectrum(decon, sub1 = TRUE,  sub2 = TRUE,  sub3 = TRUE)
+    if (store) "tmp/test_plot_spectrum.pdf"
+}
+
+test_draw_spectrum <- function(store = FALSE) {
+    sim <- metabodecon::sim # Lazydata is not available in the package namespace
+    if (store) local_pdf("tmp/test_draw_spectrum.pdf", width = 14, height = 10)
+    decon <- deconvolute(sim[[1]], sfr = c(3.55, 3.35))
+    fig5 <- c(0.1, 0.4, 0.30, 0.45)
+    fig7 <- c(0.1, 0.4, 0.05, 0.20)
+    lt_text_short <- list(text = "SI / 1e6")
+    local_par(mfrow = c(4, 2), mar = c(5, 4, 1, 1) + 0.1, oma = c(2, 2, 2, 2) + 0.1)
+
+    plot_dummy()
+    draw_spectrum(
+        obj = decon,
+        lc_verts = list(show = TRUE, height = "sint", col = "blue")
+    )
+    draw_spectrum(
+        obj = decon,
+        lgd = list(x = "top", bg = NA),
+        bt_axis = list(),
+        lc_verts = list(show = TRUE, height = "peak", col = "blue")
+    )
+    draw_spectrum(
+        obj = decon,
+        foc_rgn = c(3.45, 3.37),
+        lc_verts = list(show = TRUE, height = "full", col = "darkgreen")
+    )
+    plot_dummy()
+    draw_spectrum(
+        obj = decon,
+        fig_rgn = fig5,
+        add = TRUE,
+        lgd = FALSE,
+        bt_text = FALSE,
+        bt_axis = FALSE,
+        lt_text = lt_text_short
+    )
+    plot_dummy()
+    draw_spectrum(
+        obj = decon,
+        fig_rgn = fig7,
+        add = FALSE,
+        lgd = FALSE,
+        lt_text = lt_text_short
+    )
+    draw_spectrum(
+        obj = decon,
+        si_line = list(col = "grey"),
+        sm_line = FALSE,
+        sp_line = FALSE,
+        foc_rect = FALSE,
+        lc_lines = NULL,
+        lc_rects = NULL,
+        foc_only = FALSE,
+        lt_axis = list(relative = TRUE),
+        lt_text = list(text = "Peak Integrals [au]"),
+        lc_verts = list(show = TRUE, height = "sint", col = "blue")
+    )
+    if (store) "tmp/test_draw_spectrum.pdf"
+}
+
+test_grafical_units <- function() {
+    par(mfrow = c(1, 2), xpd = TRUE)
+    plot_empty()
+    box()
+    x <- c(0.25, 0.75)
+    xds <- list()
+    units <- c("in", "dev", "ndc", "nfc", "npc", "nic", "lines", "chars")
+    for (i in seq_along(units)) {
+        y <- 0.1 * i
+        unit <- units[i]
+        xu <- grconvertX(x, from = unit, to = "user")
+        xds[[i]] <- grconvertX(x, from = unit, to = "ndc")
+        lines(x = xu, y = rep(y, 2))
+        xur <- collapse(round(xu, 2), " - ")
+        label <- sprintf("0.25 - 0.75 %s == %s %s", unit, xur, "user")
+        text(x = 0.5, y = y, labels = label, pos = 3)
+    }
+    fig1 <- par("fig")
+    with_fig(
+        fig = c(0, 1, 0, 1),
+        expr = {
+            plot_empty() # important to setup user coordinates
+            for (i in seq_along(units)) {
+                y <- 0.1 * i + 0.005
+                xu <- grconvertX(xds[[i]], from = "ndc", to = "user")
+                lines(x = xu, y = rep(y, 2), col = "red")
+            }
+        }
+    )
+    legend("topright", legend = c("fig = left half", "fig = full dev"), col = c("black", "red"), lty = 1)
+    par(mfrow = c(1, 1), xpd = FALSE)
 }
 
 # Private #####
@@ -739,35 +950,46 @@ plot_empty <- function(xlim = c(0, 1),
          axes = axes, xaxs = xaxs, yaxs = yaxs, type = type)
 }
 
-plot_dummy <- function() {
+plot_dummy <- function(text = "Dummy Text") {
     plot(
         x = 0, y = 0, main = "",
         ylim = c(0, 1), xlim = c(0, 1),
         xaxs = "i", yaxs = "i",
-        xlab = "dummy xlab", ylab = "dummy ylab"
+        xlab = "Dummy x-Label", ylab = "Dummy y-Label"
     )
-    text(0.5, 0.5, "dummy text")
+    text(0.5, 0.5, text)
 }
 
 # Draw Helpers (Private) #####
 
 draw_legend <- function(args, si_line, sm_line, lc_lines, sp_line, d2_line,
-                        cent_pts, bord_pts, norm_pts) {
+                        cent_pts, bord_pts, norm_pts,
+                        lc_verts, tp_verts) {
     if (isFALSE(pop(args, "show"))) return()
-    dscs <- c("Raw Signal", "Smoothed Signal", "Single Lorentzian",
-              "Sum of Lorentzians", "Second Derivative",
-              "Peak Center", "Peak Border", "Non-Peak")
-    objs <- list(si_line, sm_line, lc_lines, sp_line, d2_line, cent_pts, bord_pts, norm_pts)
-    lins <- list(si_line, sm_line, lc_lines, sp_line, d2_line)
-    pnts <- list(cent_pts, bord_pts, norm_pts)
-    ltys <- sapply(lins, function(obj) obj$lty %||% 1)
-    pchs <- sapply(pnts, function(obj) obj$pch %||% 1)
-    cols <- sapply(objs, function(obj) obj$col %||% "black")
-    keep <- sapply(objs, function(obj) !isFALSE(obj$show))
-    args$legend <- dscs[keep]
-    args$col <- cols[keep]
-    args$lty <- c(ltys, NA, NA, NA)[keep]
-    args$pch <- c(NA, NA, NA, NA, NA, pchs)[keep]
+    lins <- list("Raw Signal" = si_line,
+                 "Smoothed Signal" = sm_line,
+                 "Single Lorentzian" = lc_lines,
+                 "Sum of Lorentzians" = sp_line,
+                 "Second Derivative" = d2_line)
+    pnts <- list("Center Point" = cent_pts,
+                 "Border Point" = bord_pts,
+                 "NonPeak Point" = norm_pts)
+    vrts <- list("Estimated Center" = lc_verts,
+                 "True Center" = tp_verts)
+    is_visible <- function(x) isTRUE(x$show)
+    lins <- lins[sapply(lins, is_visible)]
+    pnts <- pnts[sapply(pnts, is_visible)]
+    vrts <- vrts[sapply(vrts, is_visible)]
+    objs <- c(lins, pnts, vrts)
+    if (length(objs) == 0) return()
+    args$legend <- names(objs)
+    args$col <- sapply(objs, function(obj) obj$col %||% "black")
+    args$lty <- c(  sapply(lins, function(obj) obj$lty %||% 1),
+                    rep(NA, length(pnts)),
+                    rep(NA, length(vrts))   )
+    args$pch <- c(  rep(NA, length(lins)),
+                    sapply(pnts, function(obj) obj$pch %||% 1),
+                    rep(124, length(vrts))  )
     args$x <- args$x %||% "topright"
     do.call(legend, args)
 }
@@ -819,11 +1041,12 @@ draw_axis <- function(lim, side = 1, args = list()) {
     n          <- pop(args, "n", default = 5)
     digits     <- pop(args, "digits", default = 2:12)
     sf         <- pop(args, "sf", default = 1)
-    text       <- pop(args, "text")
     skip_first <- pop(args, "skip_first", FALSE)
     skip_last  <- pop(args, "skip_last", FALSE)
-    args$at <- if (is_num(n)) seq(min(lim), max(lim), length.out = n) else axTicks(side)
-    labs_sc <- args$at / sf
+    relative   <- pop(args, "relative", FALSE)
+    args$at    <- if (is_num(n)) seq(min(lim), max(lim), length.out = n) else axTicks(side)
+    args$side  <- side
+    labs_sc    <- if (relative) convert_pos(args$at, lim, c(0, 1)) else args$at / sf
     if (!isFALSE(args$labels)) {
         args$labels <- format(labs_sc, digits = 7) # default used by normal axis
         for (i in digits) {
@@ -833,9 +1056,17 @@ draw_axis <- function(lim, side = 1, args = list()) {
         if (skip_first) args$labels[1] <- ""
         if (skip_last) args$labels[length(args$labels)] <- ""
     }
-    if (!is.null(text)) mtext(text, side = side, line = c(3, 4, 3, 4)[side])
-    args$side <- side
+    if (is.null(args$line)) args$line <- 0
     do.call(axis, args)
+}
+
+draw_mtext <- function(side = 1, args = list()) {
+    if (isFALSE(pop(args, "show"))) return()
+    if (is.null(args$text)) return()
+    if (is.null(args$cex)) args$cex <- par("cex")
+    if (is.null(args$line)) args$line <- c(3, 4, 3, 4)[side] * par("cex")
+    args$side <- side
+    do.call(mtext, args)
 }
 
 draw_rect <- function(xlim, ylim, args = list()) {
@@ -862,10 +1093,16 @@ draw_line <- function(x, y, args = list()) {
 draw_verts <- function(p, args = list()) {
     if (isFALSE(pop(args, "show"))) return()
     if (nrow(p) == 0) return()
+    height <- pop(args, "height", default = "full")
     args$x0 <- p$x0
     args$x1 <- p$x0
     args$y0 <- rep(par("usr")[3], length(p$x0))
-    args$y1 <- p$A / p$lambda
+    args$y1 <- switch(height,
+        "full" = rep(par("usr")[4], length(p$x0)),
+        "peak" = p$A / p$lambda,
+        "sint" = (p$A / max(p$A)) * diff(par("usr")[3:4]),
+        stop("height must be one of 'full', 'peak', 'sint'")
+    )
     do.call(segments, args)
 }
 
@@ -940,15 +1177,19 @@ get_sub_fig_args <- function(obj, foc_frac, foc_rgn, sub1, sub2, sub3, dot_args)
         fig_rgn = npc_to_ndc(fig_rgns[[i]]),
         mar = mars[[i]]
     ))
-    def_args[[1]]$bt_axis <- if (sub2$show) FALSE else if (sub3$show) list(text = "")
-    def_args[[2]]$lt_axis <- if (layout == "_2_") list() else FALSE
-    def_args[[2]]$bt_axis <-if (sub3$show) list(text = "")
-    def_args[[2]]$show_d2 <- TRUE
-    def_args[[3]]$bg_rect <- if (layout != "__3") list(border = NA)
+    # Subfig 1
+    def_args[[1]]$bt_axis  <- if (sub2$show) FALSE
+    def_args[[1]]$bt_text  <- if (sub2$show || sub3$show) FALSE
+    # Subfig 2
+    def_args[[2]]$bt_text  <- if (sub3$show) FALSE
+    def_args[[2]]$lt_axis  <- if (layout == "_2_") list() else FALSE
+    def_args[[2]]$show_d2  <- TRUE
+    # Subfig 3
+    def_args[[3]]$bg_rect  <- if (layout != "__3") list(border = NA)
     def_args[[3]]$foc_only <- FALSE
     def_args[[3]]$foc_rect <- if (layout == "__3") FALSE
-    def_args[[3]]$lgd <- FALSE
-    def_args[[3]]$lt_axis <- if (layout != "__3") list(text = ""  )
+    def_args[[3]]$lgd      <- FALSE
+    def_args[[3]]$lt_text  <- if (layout != "__3") list(text = "")
     structure(
         mapply(modifyList, def_args, usr_args, SIMPLIFY = FALSE),
         names = c("sub1", "sub2", "sub3")
@@ -977,10 +1218,14 @@ get_ds_def_args <- function(show_d2 = FALSE, foc_only = TRUE) {
         foc_rect  = list(show = TRUE, col = transp("yellow")),
         lc_rects  = list(show = FALSE, col = transp("black"), border = NA),
         tp_rects  = list(show = FALSE, col = transp("darkgreen", 0.12), border = NA),
-        bt_axis   = list(show = TRUE, text = "Chemical Shift [ppm]"),
-        lt_axis   = list(show = TRUE, text = ylab, sf = 1e6, las  = 1),
+        bt_axis   = list(show = TRUE),
+        lt_axis   = list(show = TRUE, sf = 1e6, las  = 1),
         tp_axis   = list(show = FALSE),
-        rt_axis   = list(show = FALSE)
+        rt_axis   = list(show = FALSE),
+        bt_text   = list(show = TRUE, text = "Chemical Shift [ppm]"),
+        lt_text   = list(show = TRUE, text = ylab),
+        tp_text   = list(show = FALSE),
+        rt_text   = list(show = FALSE)
     )
 }
 

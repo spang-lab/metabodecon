@@ -134,7 +134,9 @@ align_members <- decon2_members
 
 # Methods #####
 
-print_methods <- NULL
+print_methods <- function() {
+    # Placeholder to find documentation for `print_methods`
+}
 
 #' @name print_methods
 #' @rdname print_methods
@@ -283,7 +285,9 @@ print.aligns <- function(x, ...) {
 
 # Checks #####
 
-is_metabodecon_class <- NULL
+is_metabodecon_class <- function() {
+    # Placeholder to find documentation for `is_metabodecon_class`
+}
 
 #' @export
 #'
@@ -412,7 +416,10 @@ is_aligns <- function(x) inherits(x, "aligns")
 
 # Convert #####
 
-as_metabodecon_class <- NULL
+as_metabodecon_class <- function() {
+    # Placeholder to find documentation for `as_metabodecon_class`
+}
+
 
 #' @export
 #'

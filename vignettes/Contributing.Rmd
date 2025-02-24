@@ -38,7 +38,7 @@ devtools::document() # Build files in man folder
 devtools::spell_check() # Check spelling (add false positives to inst/WORDLIST)
 urlchecker::url_check() # Check URLs
 run_tests(all = TRUE) # Execute tests from tests folder inkl. slow tests
-devtools::run_examples() # Run all examples in the package
+devtools::run_examples(run_donttest = TRUE) # Run all examples in the package
 toscutil::check_pkg_docs() # Check function documentation for missing tags
 devtools::check() # Check package formalities
 devtools::install() # Install as required by next command

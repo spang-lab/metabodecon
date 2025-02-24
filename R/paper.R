@@ -4,9 +4,9 @@ cacheenv <- environment()
 
 #' @noRd
 #' @title Plot typical NMR Challenges
-#' @param s # Scaling Factor for the created figure. By making the figure `s` times bigger than the textwidth you can make the font, lines, etc. `s` times smaller, thinner, etc. because it will get scaled down when included in the LaTeX document.
-#' @param w # Figure width. Should be the textwidth of the Latex document in inches.
-#' @param h # Figure height. Should be the textheight of the LaTeX document in inches minus some space for the fiure caption. Example: if the textheight is 9.5 inches, h = 8 could be a good choice.
+#' @param s Scaling Factor for the created figure. By making the figure `s` times bigger than the textwidth you can make the font, lines, etc. `s` times smaller, thinner, etc. because it will get scaled down when included in the LaTeX document.
+#' @param w Figure width. Should be the textwidth of the Latex document in inches.
+#' @param h Figure height. Should be the textheight of the LaTeX document in inches minus some space for the fiure caption. Example: if the textheight is 9.5 inches, h = 8 could be a good choice.
 #' @examples
 #' mkfig_nmr_challenges()
 #' plot_nmr_challenges(s = 1.5)
@@ -18,16 +18,17 @@ mkfig_nmr_challenges <- function(show = FALSE,
                                  s = 1,
                                  w = 5.45,
                                  h = 8) {
+    sim <- metabodecon::sim # Lazydata is not available in the package namespace
     spectra <- sim[1:3]
     decons <- deconvolute(sim[1:3])
     aligns <- align(decons)
     if (show) {
+        init_dev(s, w, h)
+        clear_dev()
         plot_nmr_challenges(
             spectra,
             decons,
-            aligns,
-            init = TRUE,
-            clear = TRUE
+            aligns
         )
     }
     if (store) {
@@ -44,13 +45,9 @@ mkfig_nmr_challenges <- function(show = FALSE,
 
 # Plot #####
 plot_nmr_challenges <- function(spectra,
-                                decons = deconvolute(sim[1:3]),
-                                aligns = align(decons),
-                                init = FALSE,
-                                clear = FALSE) {
-    if (init) init_dev(s, w, h)
+                                decons = deconvolute(spectra[1:3]),
+                                aligns = align(decons)) {
     local_par(mfrow = c(5, 2), mar = c(0, 0, 2, 0))
-    if (clear) clear_dev()
     plot_1_nmr_experiment()
     plot_2_raw_fids()
     plot_3_blackbox_preprocessing()
@@ -313,20 +310,6 @@ plot_10_annotated_spectra <- function(aligns) {
 
 
 # Draw #####
-
-#' @noRd
-#' @details See `misc/sketches/blood_vial.drawio` for a sketch of the vial
-draw_vial_2 <- function(x, y, width = 0.2, border = "black") {
-    xp <- grconvertWidth(width / 100, "inches", "user")   # 1 xp == 1/100 of full x-width given in user coords
-    yp <- grconvertHeight(height / 100, "inches", "user") # 1 yp == 1/100 of full y-height given in user coords
-    cap <- list(
-        x1 = x - 50 * xu,
-        x2 = x + 50 * xu,
-        y1 = y + 40 * yu,
-        y2 = y + 50 * yu,
-    )
-    vial <- sticker <- circle <- cross <- bottom <- list()
-}
 
 draw_vial <- function(x1 = 10, y1 = 10, h = 20, w = NULL) {
     # See `misc/sketches/blood_vial.drawio` for a sketch of the vial

@@ -9,11 +9,13 @@ behaviour
 Beirnaert
 bruker
 Bruker
+bt
 BWC
 cdot
 CluPA
 CMD
 codebase
+Codecov
 Comput
 config
 CPMG
@@ -69,6 +71,7 @@ lifecycle
 linter
 lorentz
 lorentzian
+lt
 Marqardt
 MARQUARDT
 md

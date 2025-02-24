@@ -1,6 +1,5 @@
 vdiffr.Rout.fail
 tmp
-tests/testthat/_snaps/
 tests/testthat_outputs/
 inst/doc/
 docs/
