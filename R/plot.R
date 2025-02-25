@@ -434,23 +434,23 @@ plot_spectrum <- function(x,
 #' draw_spectrum(obj = decon, lc_lines = NULL, lc_rects = NULL, foc_only = FALSE)
 draw_spectrum <- function(
     obj,
-    foc_rgn  = NULL,   foc_frac = NULL,   foc_only = TRUE,
-    add      = FALSE,  fig_rgn  = NULL,   main     = NULL,
-    show     = TRUE,   show_d2  = FALSE,  truepar  = NULL,
-    mar      = c(5.1, 4.1, 1.1, 1.1),
-    si_line  = list(), sm_line  = list(), sp_line  = list(),
-    d2_line  = list(), lc_lines = list(), tp_lines = list(),
-    cent_pts = list(), bord_pts = list(), norm_pts = list(),
-    bg_rect  = list(), foc_rect = list(), lc_rects = list(), tp_rects = list(),
-    bt_axis  = list(), lt_axis  = list(), tp_axis  = list(), rt_axis  = list(),
-    bt_text  = list(), lt_text  = list(), tp_text  = list(), rt_text  = list(),
-    tp_verts = list(), lc_verts = list(),
-    lgd      = list()
+    foc_rgn   = NULL,   foc_frac = NULL,   foc_only = TRUE,
+    add       = FALSE,  fig_rgn  = NULL,   main     = NULL,
+    show      = TRUE,   show_d2  = FALSE,  truepar  = NULL,
+    mar       = c(5.1, 4.1, 1.1, 1.1),
+    auc_sf    = NULL,
+    si_line   = list(), sm_line  = list(), sp_line  = list(),
+    d2_line   = list(), lc_lines = list(), tp_lines = list(),
+    cent_pts  = list(), bord_pts = list(), norm_pts = list(),
+    bg_rect   = list(), foc_rect = list(), lc_rects = list(), tp_rects = list(),
+    bt_axis   = list(), lt_axis  = list(), tp_axis  = list(), rt_axis  = list(),
+    bt_text   = list(), lt_text  = list(), tp_text  = list(), rt_text  = list(),
+    tp_verts  = list(), lc_verts = list(), al_verts = list(),
+    al_arrows = list(),
+    lgd       = list()
     )
 {
     # [ ]  Add `fill` option to lc_lines and tp_lines
-    # [ ]  Add `al_verts` argument.
-    # [ ]  Add `al_arows` argument.
 
     # Check and enrich inputs (278us)
     if (isFALSE(show)) return()
@@ -532,12 +532,7 @@ draw_spectrum <- function(
     ifp <- ifp_all <- which(cs_all >= min(foc_rgn) & cs_all <= max(foc_rgn)) # Focus points
 
     # Get estimated lorentz parameters across all data points (8us)
-    n0vec   <- numeric(0)
-    n0df    <- data.frame(x0 = n0vec, A = n0vec, lambda = n0vec)
-    lcpar   <- lcpar_all  <- obj$lcpar %||% n0df # (NFS)
-    x0      <- x0_all     <- lcpar_all$x0 %||% n0df # (NFS)
-    A       <- A_all      <- lcpar_all$A %||% n0df # (NFS)
-    lambda  <- lambda_all <- lcpar_all$lambda %||% n0df # (NFS)
+    lcpar <- lcpar_all <- obj$lcpar %||% empty_df(c("x0", "A", "lambda")) # (NFS)
 
     # Get true lorentz parameters across all data points
     truepar <- truepar %||% obj$meta$simpar
@@ -547,51 +542,42 @@ draw_spectrum <- function(
         tp_rects$show <- FALSE
         tp_lines$show <- FALSE
         tp_verts$show <- FALSE
-        trpar <- trpar_all <- data.frame(x0 = numeric(0), A = numeric(0), lambda = numeric(0))
+        trpar <- trpar_all <- empty_df(c("x0", "A", "lambda"))
     } else {
         trpar <- trpar_all <- as.data.frame(truepar[c("x0", "A", "lambda")])
     }
 
-    # Get indices of important points relative to the vector of focus points (198us)
     if (foc_only) {
+        # Get indices of important points relative to the vector of focus points (198us)
         offset <- min(ifp_all) - 1
         idp <- idp_foc <- ifp_all - offset # Data points
         icp <- icp_foc <- intersect(icp_all, ifp_all) - offset # Center points (NFS)
         ibp <- ibp_foc <- intersect(ibp_all, ifp_all) - offset # Border points (NFS)
         ipp <- ipp_foc <- intersect(ipp_all, ifp_all) - offset # Peak points (NFS)
         inp <- inp_foc <- intersect(inp_all, ifp_all) - offset # Nonpeak points (NFS)
-    }
 
-    # Get xy values over the focus region (18us)
-    if (foc_only) {
+        # Get xy values over the focus region (18us)
         cs <- cs_foc <- cs_all[ifp_all]
         si <- si_foc <- si_all[ifp_all]
         sm <- sm_foc <- sm_all[ifp_all]
         d2 <- d2_foc <- d2_all[ifp_all]
         sp <- sp_foc <- sp_all[ifp_all]
-    }
 
-    # Get estimated lorentzians affecting focus region (239us)
-    if (foc_only) {
-        y_foc_rgn_start   <- lorentz(x = min(foc_rgn), lcpar = lcpar_all)
-        y_foc_rgn_end     <- lorentz(x = max(foc_rgn), lcpar = lcpar_all)
-        y_tresh           <- 0.001 * diff(range(si))
-        high_y_in_foc_rgn <- y_foc_rgn_start > y_tresh | y_foc_rgn_end > y_tresh
-        x0_in_foc         <- x0_all > min(foc_rgn) & x0_all < max(foc_rgn)
-        affects_foc       <- high_y_in_foc_rgn | x0_in_foc
-        lcpar  <- lcpar_foc  <- lcpar_all[affects_foc, ]
-        x0     <- x0_foc     <- x0_all[affects_foc]
-        A      <- A_foc      <- A_all[affects_foc]
-        lambda <- lambda_foc <- lambda_all[affects_foc]
-    }
+        # Get estimated lorentzians affecting focus region (239us)
+        y_foc_rgn_start    <- lorentz(x = min(foc_rgn), lcpar = lcpar_all)
+        y_foc_rgn_end      <- lorentz(x = max(foc_rgn), lcpar = lcpar_all)
+        y_tresh            <- 0.001 * diff(range(si))
+        high_y_in_foc_rgn  <- y_foc_rgn_start > y_tresh | y_foc_rgn_end > y_tresh
+        x0_in_foc          <- lcpar_all$x0 > min(foc_rgn) & lcpar_all$x0 < max(foc_rgn)
+        affects_foc        <- high_y_in_foc_rgn | x0_in_foc
+        lcpar <- lcpar_foc <- lcpar_all[affects_foc, ]
 
-    # Get true lorentzians affecting focus region (8us)
-    if (foc_only) {
+        # Get true lorentzians affecting focus region (8us)
         y_foc_rgn_start    <- lorentz(x = min(foc_rgn), lcpar = trpar_all)
         y_foc_rgn_end      <- lorentz(x = max(foc_rgn), lcpar = trpar_all)
         y_tresh            <- 0.001 * diff(range(si))
         high_y_in_foc_rgn  <- y_foc_rgn_start > y_tresh | y_foc_rgn_end > y_tresh
-        x0_in_foc          <- trpar$x0 > min(foc_rgn) & trpar$x0 < max(foc_rgn)
+        x0_in_foc          <- trpar_all$x0 > min(foc_rgn) & trpar_all$x0 < max(foc_rgn)
         affects_foc        <- high_y_in_foc_rgn | x0_in_foc
         trpar <- trpar_foc <- trpar_all[affects_foc, ]
     }
@@ -620,8 +606,10 @@ draw_spectrum <- function(
     apply(lcpar, 1, draw_lc_line, cs, lc_lines, ythresh) # 13ms
     draw_line(cs, si, si_line)
     draw_line(cs, sm, sm_line)
-    draw_verts(trpar, tp_verts)
-    draw_verts(lcpar, lc_verts)
+    draw_verts(trpar$x0,    trpar$A,    trpar$lambda, tp_verts)
+    draw_verts(lcpar$x0,    lcpar$A,    lcpar$lambda, lc_verts)
+    draw_verts(lcpar$x0_al, lcpar$A_al, lcpar$lambda, al_verts)
+    draw_arrows(lcpar$x0, lcpar$x0_al, lcpar$A,  lcpar$A_al, al_arrows)
     draw_points(cs[icp], sm[icp], cent_pts)
     draw_points(cs[ibp], sm[ibp], bord_pts)
     draw_points(cs[inp], sm[inp], norm_pts)
@@ -650,17 +638,22 @@ draw_spectrum <- function(
 #' @noRd
 #' @title Setup a development environment for `plot_spectrum`
 mkenv_plot_spectrum <- function() {
-    target <- c("sim1", "sap")[1]
-    sim <- metabodecon::sim # Lazydata is not available in the package namespace
-    sap <- metabodecon::sap # Lazydata is not available in the package namespace
-    decon <- switch(
-        target,
-        "sim1" = deconvolute(sim[[1]], sfr = c(3.55, 3.35)),
-        "sap" = deconvolute(sap[[1]], sfr = c(3.2, -3.2), smopts = c(1, 3), delta = 3)
+    args <- stub(
+        func = plot_spectrum,
+        x = deconvolute(metabodecon::sim[[1]], sfr = c(3.55, 3.35)),
+        ... = NULL,
+        envir = .GlobalEnv
     )
-    args <- stub(func = plot_spectrum, x = decon, ... = NULL, envir = .GlobalEnv)
-    deferred_run()
-    if (FALSE) plot_spectrum(decon, frame = TRUE)
+}
+
+mkenv_draw_spectrum <- function() {
+    decons <- deconvolute(metabodecon::sim[1:4], sfr = c(3.55, 3.35))
+    aligns <- align(decons, maxShift = 100, maxCombine = 0)
+    args <- stub(
+        func = draw_spectrum,
+        obj = aligns[[2]],
+        envir = .GlobalEnv
+    )
 }
 
 #' @noRd
@@ -1090,19 +1083,29 @@ draw_line <- function(x, y, args = list()) {
     do.call(lines, args)
 }
 
-draw_verts <- function(p, args = list()) {
-    if (isFALSE(pop(args, "show"))) return()
-    if (nrow(p) == 0) return()
+draw_verts <- function(x0, A, lambda, args = list()) {
+    if (isFALSE(pop(args, "show")) || length(x0) == 0) return()
     height <- pop(args, "height", default = "full")
-    args$x0 <- p$x0
-    args$x1 <- p$x0
-    args$y0 <- rep(par("usr")[3], length(p$x0))
+    args$x0 <- x0
+    args$x1 <- x0
+    args$y0 <- rep(par("usr")[3], length(x0))
     args$y1 <- switch(height,
-        "full" = rep(par("usr")[4], length(p$x0)),
-        "peak" = p$A / p$lambda,
-        "sint" = (p$A / max(p$A)) * diff(par("usr")[3:4]),
+        "full" = rep(par("usr")[4], length(x0)),
+        "peak" = A / lambda,
+        "sint" = (A / max(A)) * diff(par("usr")[3:4]),
         stop("height must be one of 'full', 'peak', 'sint'")
     )
+    do.call(segments, args)
+}
+
+draw_arrows <- function(x0, x1, y0, y1, args = list()) {
+    if (isFALSE(pop(args, "show")) ||
+        length(x0) == 0 ||
+        length(x0) != length(x1)) return()
+    args$x0 <- x0
+    args$x1 <- x1
+    args$y0 <- y0
+    args$y1 <- y1
     do.call(segments, args)
 }
 
@@ -1211,6 +1214,7 @@ get_ds_def_args <- function(show_d2 = FALSE, foc_only = TRUE) {
         tp_lines  = list(show = FALSE, col = "darkgreen"),
         tp_verts  = list(show = FALSE, col = "darkgreen"),
         lc_verts  = list(show = FALSE, col = "darkgrey"),
+        al_verts  = list(show = FALSE, col = "grey"),
         cent_pts  = list(show = show_si && foc_only, col = "blue", bg = "blue", pch = 24),
         bord_pts  = list(show = FALSE, col = "blue", pch = 124),
         norm_pts  = list(show = FALSE, col = "black", pch = 124),

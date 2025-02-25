@@ -777,6 +777,12 @@ generate_lorentz_curves_type_checks <- quote(
 
 # Misc (Private) ##############################################################
 
+empty_df <- function(names) {
+    df <- data.frame(matrix(ncol = length(names), nrow = 0))
+    colnames(df) <- names
+    df
+}
+
 #' @noRd
 #'
 #' @title Calculate Magnetic Field Strength

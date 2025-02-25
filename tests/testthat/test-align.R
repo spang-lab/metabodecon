@@ -1,0 +1,22 @@
+library(testthat)
+
+test_that("align works", {
+    decons <- deconvolute(sim, sfr = c(3.55, 3.35))
+    # Do the alignment
+    aligns <- align2(decons)
+    # Then make all changes to the decons object that we expect [align()] to
+    # make. At the end the objects should be equal. This way we can ensure that
+    # [align()] adds exactly the fields we expect it to add (and no others).
+    # However, this does NOT check, whether the added values contain sensible
+    # values. For now we can use the downstream unit tests (e.g. [dohCluster()],
+    # [combine_peaks()]) and visual inspection for validation of the resulting
+    # values, but at some point it would be good to setup a simulated dataset
+    # with known shifts and test against those.
+    for (i in seq_along(aligns)) {
+        decons[[i]]$sit$al <- aligns[[i]]$sit$al
+        decons[[i]]$lcpar$x0_al <- aligns[[i]]$lcpar$x0_al
+        class(decons[[i]]) <- "align"
+    }
+    class(decons) <- "aligns"
+    expect_equal(decons, aligns)
+})

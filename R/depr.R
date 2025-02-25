@@ -2323,12 +2323,12 @@ deconvolution <- function(filepath,
 
 # Plotting (Private) #####
 
-plot_si_mat <- function(Y = generate_lorentz_curves_sim("bruker/sim"),
+plot_si_mat <- function(X = generate_lorentz_curves_sim("bruker/sim"),
                         lgdcex = "auto",
                         main = NULL,
                         mar = par("mar")) {
-    n <- nrow(Y) # Number of Spectra
-    p <- ncol(Y) # Number of Datapoints
+    n <- nrow(X) # Number of Spectra
+    p <- ncol(X) # Number of Datapoints
     cols <- rainbow(n) # Colors
     dpis <- seq_len(p) # Datapoint Indices
     spis <- seq_len(n) # Spectrum Indices
@@ -2336,11 +2336,11 @@ plot_si_mat <- function(Y = generate_lorentz_curves_sim("bruker/sim"),
     xlab <- "Datapoint Number"
     ylab <- "Signal Intensity"
     xlim <- c(1, p)
-    ylim <- c(0, max(Y))
+    ylim <- c(0, max(X))
     args <- named(x = NA, type = "n", xlim, ylim, xlab, ylab)
     local_par(mar = mar)
     do.call(plot, args)
-    for (i in spis) lines(x = dpis, y = Y[i, ], col = cols[i])
+    for (i in spis) lines(x = dpis, y = X[i, ], col = cols[i])
     if (lgdcex == "auto") lgdcex <- 1 / max(1, log(n, base = 8))
     legend(x = "topright", legend = ltxt, col = cols, lty = 1, cex = lgdcex)
     if (!is.null(main)) title(main = main)

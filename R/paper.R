@@ -21,10 +21,10 @@ mkfig_nmr_challenges <- function(show = FALSE,
     sim <- metabodecon::sim # Lazydata is not available in the package namespace
     spectra <- sim[1:3]
     decons <- deconvolute(sim[1:3])
-    aligns <- align(decons)
+    aligns <- align(decons, maxShift = 100, maxCombine = 0)
     if (show) {
         init_dev(s, w, h)
-        clear_dev()
+        fill_dev()
         plot_nmr_challenges(
             spectra,
             decons,
@@ -237,7 +237,6 @@ plot_6_deconvoluted_spectrum <- function(decon) {
     args$obj <- decon
     args$si_line <- FALSE
     args$lc_lines <- FALSE
-    args$lc_lines <- FALSE
     do.call(draw_spectrum, args)
     with_par(list(mar = c(0, 0, 0, 0)), box())
 }
@@ -267,13 +266,25 @@ plot_8_aligned_spectra <- function(aligns) {
     fig_height <- diff(ndc[3:4])
     sub_height <- fig_height / 3
     box()
-    with_fig(fig = npc_to_ndc(c(0, 1, 0/3, 1/3)), plot_6_deconvoluted_spectrum(aligns[[1]]))
-    with_fig(fig = npc_to_ndc(c(0, 1, 1/3, 2/3)), plot_6_deconvoluted_spectrum(aligns[[2]]))
-    with_fig(fig = npc_to_ndc(c(0, 1, 2/3, 3/3)), plot_6_deconvoluted_spectrum(aligns[[3]]))
+    with_fig(fig = npc_to_ndc(c(0, 1, 0/3, 1/3)), plot_8_aligned_spectrum(aligns[[1]]))
+    with_fig(fig = npc_to_ndc(c(0, 1, 1/3, 2/3)), plot_8_aligned_spectrum(aligns[[2]]))
+    with_fig(fig = npc_to_ndc(c(0, 1, 2/3, 3/3)), plot_8_aligned_spectrum(aligns[[3]]))
     mtext2(1, "Chemical Shift")
     mtext2(2, "Signal Intensity")
 
 }
+
+plot_8_aligned_spectrum <- function(align) {
+    args <- draw_spectrum_plain_args
+    args$mar[3] <- abs(grconvertH(0.1, "nfc", "lines"))
+    args$obj <- align
+    args$si_line <- FALSE
+    args$lc_lines <- FALSE
+    args$lc_verts <- FALSE
+    do.call(draw_spectrum, args)
+    with_par(list(mar = c(0, 0, 0, 0)), box())
+}
+
 
 plot_9_annotation <- function(aligns) {
     local_par(mar = c(2, 2, 2, 1))
@@ -392,15 +403,15 @@ init_dev <- function(s = 1, w = 5.45, h = 8) {
     )
 }
 
-clear_dev <- function() {
+fill_dev <- function() {
     mfg <- par("mfg")
     while (mfg[1] != mfg[3] || mfg[2] != mfg[[4]]) {
         plot_empty()
         mfg <- par("mfg")
     }
-    plot_empty()
-    mfg[1:2] <- c(1, 1)
-    par(mfg = mfg)
+    # plot_empty()
+    # mfg[1:2] <- c(1, 1)
+    # par(mfg = mfg)
 }
 
 get_ndc <- function() {
@@ -481,6 +492,9 @@ draw_spectrum_plain_args <- list(
     cent_pts = FALSE,  bord_pts = list(), norm_pts = list(),
     bg_rect  = FALSE,  foc_rect = FALSE,  lc_rects = list(), tp_rects = list(),
     bt_axis  = FALSE,  lt_axis  = FALSE,  tp_axis  = list(), rt_axis  = list(),
-    tp_verts = list(), lc_verts = list(show = TRUE, col = "blue"),
+    bt_text  = FALSE,  lt_text  = FALSE,  tp_text  = list(), rt_text  = list(),
+    tp_verts = list(),
+    lc_verts = list(show = TRUE, col = "blue", height = "sint"),
+    al_verts = list(show = TRUE, col = "red",  height = "sint"),
     lgd      = FALSE
 )

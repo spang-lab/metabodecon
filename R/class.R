@@ -180,20 +180,12 @@ print.spectrum <- function(x, name = FALSE, ...) {
 #' @export
 #' @rdname print_methods
 print.ispec <- function(x, name = FALSE, ...) {
-    # fmt <- "%sispec object (%d dp, %.1f to %.1f ppm)\n"
-    # namestr <- if (name) paste0(x$name %||% "NULL", ": ") else ""
-    # catf(fmt, namestr, length(x$ppm), max(x$ppm), min(x$ppm))
     str(x, 1)
 }
 
 #' @export
 #' @rdname print_methods
 print.idecon <- function(x, name = FALSE, ...) {
-    # ppm <- x$ppm
-    # n <- length(ppm)
-    # name <- if (name) paste0(x$name %||% "NULL", ": ") else ""
-    # fmt <- "%sidecon object (%d dp, %.1f to %.1f ppm, %d peaks)\n"
-    # catf(fmt, name, n, max(ppm), min(ppm), length(x$A))
     str(x, 1)
 }
 
@@ -926,7 +918,7 @@ get_names <- function(x, default = "spectrum_%d") {
     dn <- get_default_names(x, default)
     en <- names(x) # Element name
     sn <- sapply(x, function(s) s$meta$name %||% s$name) # Spectrum name
-    sapply(seq_along(x), function(i) sn[i] %||% en[i] %||% dn[i])
+    sapply(seq_along(x), function(i) sn[[i]] %||% en[[i]] %||% dn[[i]])
 }
 
 get_default_names <- function(x, default) {
