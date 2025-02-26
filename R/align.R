@@ -41,26 +41,6 @@
 #' aligned <- align(decons)
 #' aligned
 align <- function(x, maxShift = 50, maxCombine = 5, verbose = FALSE) {
-    decons1 <- as_decons1(x)
-    stopifnot(length(decons1) > 1)
-    for (i in 2:length(decons1)) stopifnot(is_equal(
-        decons1[[i-1]]$x_values_ppm,
-        decons1[[i  ]]$x_values_ppm
-    ))
-    smat <- speaq_align(spectrum_data = decons1, maxShift = 50, verbose = verbose)
-    obj <- combine_peaks(shifted_mat = smat, range = maxCombine, spectrum_data = decons1)
-    decons2 <- as_decons2(x)
-    for (i in seq_along(decons2)) {
-        ipc_al <- which(obj$long[i, ] != 0)
-        decons2[[i]]$sit$al <- obj$long[i, ]
-        decons2[[i]]$lcpar$x0_al <- decons2[[i]]$cs[ipc_al]
-        class(decons2[[i]]) <- "align"
-    }
-    aligns <- structure(decons2, class = "aligns")
-    aligns
-}
-
-align2 <- function(x, maxShift = 50, maxCombine = 5, verbose = FALSE) {
 
     # Check and convert inputs
     xx <- as_decons2(x)
@@ -73,8 +53,8 @@ align2 <- function(x, maxShift = 50, maxCombine = 5, verbose = FALSE) {
 
     # Do initial alignment using speaq. Parameter `acceptLostPeak` must be FALSE
     # so we can backtrack which peak has shifted to which position. The result
-    # object contains element `new_peakList` which contains the peak center
-    # indices after alignment (pciaa). The indices are given as continuous
+    # object contains element `new_peakList` which contains the "peak center
+    # indices after alignment" (pciaa). The indices are given as continuous
     # numbers. E.g. a value of 1044.28 means that the aligned peak center is
     # between the datapoint 1044 and 1045.
     obj <- dohCluster(
@@ -120,10 +100,11 @@ align2 <- function(x, maxShift = 50, maxCombine = 5, verbose = FALSE) {
     #
     cmat <- combine_peaks(smat, maxCombine)$long
 
-    # Create `align` objects from the `decon2` objects by:
-    # 1. Storing the new peak centers in their respective slots
-    # 2. Calculating the new signal intensities as superposition of lorentzian
-    #    curves (using the updated peak centers)
+    # Create `align` objects from the `decon2` objects:
+    # 1. Store the new peak centers in their respective slot `$lcpar$x0_al`
+    # 2. Calculate new signal intensities as superposition of lorentz curves,
+    #    (using the updated peak centers) and store them in their respective
+    #    slot `$sit$al`.
     cs <- xx[[1]]$cs
     for (i in seq_along(xx)) {
         pciac <- which(cmat[i, ] != 0) # Peak center indices after combination
@@ -382,29 +363,6 @@ speaq_align <- function(feat = gen_feat_mat(spectrum_data),
         plot_si_mat(Y = C$Y, main = "Aligned Spectra")
     }
     return(M)
-}
-
-speaq_align2 <- function(obj,
-                         refInd = NULL,
-                         maxShift = 50,
-                         verbose = FALSE) {
-    xx <- as_decons2(obj)
-    obj <- dohCluster(
-        X <- get_sup_mat(xx),
-        peakList <- lapply(xx, get_peak_indices),
-        refInd <- refInd %||% speaq::findRef(peakList)$refInd,
-        maxShift,
-        acceptLostPeak <- FALSE, # Necessary to map peaks before and after alignment
-        verbose
-    )
-    ipc_al <- round(obj$new_peakList) # Index of peak centers after alignment
-    cs <- xx[[1]]$cs # Chemical Shifts of any spectrum (they're identical)
-    smat <- matrix(nrow = nrow(X), ncol = ncol(X), dimnames = list(NULL, cs)) # Signal Matrix
-    for (i in seq_len(nrow(X))) {
-        smat[i, round(ipc_al[[i]])] <- xx[[i]]$lcpar$A
-    }
-    smat
-    return(smat)
 }
 
 #' @export

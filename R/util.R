@@ -89,8 +89,6 @@ width <- function(x) {
     diff(range(x))
 }
 
-
-
 # Convert between Units (Private) #############################################
 
 #' @noRd
@@ -473,7 +471,7 @@ str0 <- function(object,
 }
 
 str2 <- function(...) {
-    capture.output(str(...))
+    capture.output2(str(...))
 }
 
 #' @noRd

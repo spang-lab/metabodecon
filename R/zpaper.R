@@ -8,9 +8,14 @@ cacheenv <- environment()
 #' @param w Figure width. Should be the textwidth of the Latex document in inches.
 #' @param h Figure height. Should be the textheight of the LaTeX document in inches minus some space for the fiure caption. Example: if the textheight is 9.5 inches, h = 8 could be a good choice.
 #' @examples
-#' mkfig_nmr_challenges()
-#' plot_nmr_challenges(s = 1.5)
-mkfig_nmr_challenges <- function(show = FALSE,
+#' spectra <- sim[1:3]
+#' decons <- deconvolute(sim[1:3])
+#' aligns <- align(decons, maxShift = 100, maxCombine = 10)
+#' mkfig_nmr_challenges(spectra, decons, aligns)
+mkfig_nmr_challenges <- function(spectra = sim[1:3],
+                                 decons = deconvolute(sim[1:3]),
+                                 aligns = align(decons, maxShift = 100, maxCombine = 10),
+                                 show = FALSE,
                                  store = TRUE,
                                  path = "tmp",
                                  name = c("challenges"),
@@ -18,10 +23,6 @@ mkfig_nmr_challenges <- function(show = FALSE,
                                  s = 1,
                                  w = 5.45,
                                  h = 8) {
-    sim <- metabodecon::sim # Lazydata is not available in the package namespace
-    spectra <- sim[1:3]
-    decons <- deconvolute(sim[1:3])
-    aligns <- align(decons, maxShift = 100, maxCombine = 0)
     if (show) {
         init_dev(s, w, h)
         fill_dev()
@@ -44,6 +45,21 @@ mkfig_nmr_challenges <- function(show = FALSE,
 }
 
 # Plot #####
+test_plot_nmr_challenges <- function(interactive = TRUE) {
+    spectra <- sim[1:3]
+    decons <- deconvolute(sim[1:3])
+    aligns <- align(decons, maxShift = 100, maxCombine = 10)
+    if (interactive) {
+        .GlobalEnv$spectra <- spectra
+        .GlobalEnv$decons <- decons
+        .GlobalEnv$aligns <- aligns
+        catf("%sInitialized:%s spectra, decons, aligns\n", esc$green, esc$reset)
+        catf("%sTestcall:%s plot_nmr_challenges(spectra, decons, aligns)", esc$green, esc$reset)
+    } else {
+        plot_nmr_challenges(spectra, decons, aligns)
+    }
+}
+
 plot_nmr_challenges <- function(spectra,
                                 decons = deconvolute(spectra[1:3]),
                                 aligns = align(decons)) {
@@ -54,7 +70,7 @@ plot_nmr_challenges <- function(spectra,
     plot_4_raw_spectra(spectra)
     plot_5_deconvolutions(decons)
     plot_6_deconvoluted_spectra(decons)
-    plot_7_alignment(aligns)
+    plot_7_alignments(aligns)
     plot_8_aligned_spectra(aligns)
     plot_9_annotation(aligns)
     plot_10_annotated_spectra(aligns)
@@ -186,7 +202,7 @@ plot_4_raw_spectra <- function(spectra) {
 plot_4_raw_spectrum <- function(spectrum) {
     args <- draw_spectrum_plain_args
     args$obj <- spectrum
-    args$mar[3] <- abs(grconvertH(0.1, "nfc", "lines"))
+    # args$mar[3] <- abs(grconvertH(0.1, "nfc", "lines"))
     do.call(draw_spectrum, args)
     with_par(list(mar = c(0, 0, 0, 0)), box())
 }
@@ -209,7 +225,7 @@ plot_5_deconvolutions <- function(decons) {
 
 plot_5_deconvolution <- function(decon) {
     args <- draw_spectrum_plain_args
-    args$mar[3] <- abs(grconvertH(0.1, "nfc", "lines"))
+    # args$mar[3] <- abs(grconvertH(0.1, "nfc", "lines"))
     args$obj <- decon
     do.call(draw_spectrum, args)
     with_par(list(mar = c(0, 0, 0, 0)), box())
@@ -233,15 +249,15 @@ plot_6_deconvoluted_spectra <- function(decons) {
 
 plot_6_deconvoluted_spectrum <- function(decon) {
     args <- draw_spectrum_plain_args
-    args$mar[3] <- abs(grconvertH(0.1, "nfc", "lines"))
+    # args$mar[3] <- abs(grconvertH(0.1, "nfc", "lines"))
     args$obj <- decon
     args$si_line <- FALSE
-    args$lc_lines <- FALSE
+    args$lc_lines$col <- NA
     do.call(draw_spectrum, args)
     with_par(list(mar = c(0, 0, 0, 0)), box())
 }
 
-plot_7_alignment <- function(aligns) {
+plot_7_alignments <- function(aligns) {
     local_par(mar = c(2, 2, 2, 1))
     plot_empty(main = "Alignment")
     marbox()
@@ -250,16 +266,26 @@ plot_7_alignment <- function(aligns) {
     fig_height <- diff(ndc[3:4])
     sub_height <- fig_height / 3
     box()
-    with_fig(fig = npc_to_ndc(c(0, 1, 0/3, 1/3)), plot_6_deconvoluted_spectrum(aligns[[1]]))
-    with_fig(fig = npc_to_ndc(c(0, 1, 1/3, 2/3)), plot_6_deconvoluted_spectrum(aligns[[2]]))
-    with_fig(fig = npc_to_ndc(c(0, 1, 2/3, 3/3)), plot_6_deconvoluted_spectrum(aligns[[3]]))
+    with_fig(fig = npc_to_ndc(c(0, 1, 0/3, 1/3)), plot_7_alignment(aligns[[1]]))
+    with_fig(fig = npc_to_ndc(c(0, 1, 1/3, 2/3)), plot_7_alignment(aligns[[2]]))
+    with_fig(fig = npc_to_ndc(c(0, 1, 2/3, 3/3)), plot_7_alignment(aligns[[3]]))
     mtext2(1, "Chemical Shift")
     mtext2(2, "Signal Intensity")
 }
 
+plot_7_alignment <- function(align) {
+    args <- draw_spectrum_plain_args
+    # args$mar[3] <- abs(grconvertH(0.1, "nfc", "lines"))
+    args$obj <- align
+    args$si_line <- FALSE
+    args$lc_lines$col <- NA
+    do.call(draw_spectrum, args)
+    with_par(list(mar = c(0, 0, 0, 0)), box())
+}
+
 plot_8_aligned_spectra <- function(aligns) {
     local_par(mar = c(2, 2, 2, 1))
-    plot_empty(main = "Aligned Signal Intensities")
+    plot_empty(main = "Aligned Signal Integrals")
     marbox()
     ndc <- npc_to_ndc()
     fig_width  <- diff(ndc[1:2])
@@ -276,15 +302,16 @@ plot_8_aligned_spectra <- function(aligns) {
 
 plot_8_aligned_spectrum <- function(align) {
     args <- draw_spectrum_plain_args
-    args$mar[3] <- abs(grconvertH(0.1, "nfc", "lines"))
+    # args$mar[3] <- abs(grconvertH(0.1, "nfc", "lines"))
     args$obj <- align
     args$si_line <- FALSE
     args$lc_lines <- FALSE
     args$lc_verts <- FALSE
+    args$al_arrows <- FALSE
+    args$al_lines$col <- NA
     do.call(draw_spectrum, args)
     with_par(list(mar = c(0, 0, 0, 0)), box())
 }
-
 
 plot_9_annotation <- function(aligns) {
     local_par(mar = c(2, 2, 2, 1))
@@ -295,9 +322,9 @@ plot_9_annotation <- function(aligns) {
     fig_height <- diff(ndc[3:4])
     sub_height <- fig_height / 3
     box()
-    with_fig(fig = npc_to_ndc(c(0, 1, 0/3, 1/3)), plot_6_deconvoluted_spectrum(aligns[[1]]))
-    with_fig(fig = npc_to_ndc(c(0, 1, 1/3, 2/3)), plot_6_deconvoluted_spectrum(aligns[[2]]))
-    with_fig(fig = npc_to_ndc(c(0, 1, 2/3, 3/3)), plot_6_deconvoluted_spectrum(aligns[[3]]))
+    with_fig(fig = npc_to_ndc(c(0, 1, 0/3, 1/3)), plot_8_aligned_spectrum(aligns[[1]]))
+    with_fig(fig = npc_to_ndc(c(0, 1, 1/3, 2/3)), plot_8_aligned_spectrum(aligns[[2]]))
+    with_fig(fig = npc_to_ndc(c(0, 1, 2/3, 3/3)), plot_8_aligned_spectrum(aligns[[3]]))
     mtext2(1, "Chemical Shift")
     mtext2(2, "Signal Intensity")
 }
@@ -311,9 +338,9 @@ plot_10_annotated_spectra <- function(aligns) {
     fig_height <- diff(ndc[3:4])
     sub_height <- fig_height / 3
     box()
-    with_fig(fig = npc_to_ndc(c(0, 1, 0/3, 1/3)), plot_6_deconvoluted_spectrum(aligns[[1]]))
-    with_fig(fig = npc_to_ndc(c(0, 1, 1/3, 2/3)), plot_6_deconvoluted_spectrum(aligns[[2]]))
-    with_fig(fig = npc_to_ndc(c(0, 1, 2/3, 3/3)), plot_6_deconvoluted_spectrum(aligns[[3]]))
+    with_fig(fig = npc_to_ndc(c(0, 1, 0/3, 1/3)), plot_8_aligned_spectrum(aligns[[1]]))
+    with_fig(fig = npc_to_ndc(c(0, 1, 1/3, 2/3)), plot_8_aligned_spectrum(aligns[[2]]))
+    with_fig(fig = npc_to_ndc(c(0, 1, 2/3, 3/3)), plot_8_aligned_spectrum(aligns[[3]]))
     mtext2(1, "Chemical Shift")
     mtext2(2, "Signal Intensity")
 
@@ -482,19 +509,57 @@ mkdat_sim2 <- function() {
 
 # Constants
 
-draw_spectrum_plain_args <- list(
-    foc_rgn  = NULL,   foc_frac = c(0.48, 0.34),   foc_only = TRUE,
-    add      = TRUE,   fig_rgn  = NULL,            main     = NULL,
-    show     = TRUE,   show_d2  = FALSE,           truepar  = NULL,
-    mar      = c(0, 0, 1, 0),
-    si_line  = list(), sm_line  = FALSE,  sp_line  = FALSE,
-    d2_line  = list(), lc_lines = TRUE,   tp_lines = list(),
-    cent_pts = FALSE,  bord_pts = list(), norm_pts = list(),
-    bg_rect  = FALSE,  foc_rect = FALSE,  lc_rects = list(), tp_rects = list(),
-    bt_axis  = FALSE,  lt_axis  = FALSE,  tp_axis  = list(), rt_axis  = list(),
-    bt_text  = FALSE,  lt_text  = FALSE,  tp_text  = list(), rt_text  = list(),
-    tp_verts = list(),
-    lc_verts = list(show = TRUE, col = "blue", height = "sint"),
-    al_verts = list(show = TRUE, col = "red",  height = "sint"),
-    lgd      = FALSE
-)
+draw_spectrum_plain_args <- local({
+    decon_dark  <- transp("#6c8ebf", 1.0) # blue_bord
+    decon_light <- transp("#dae8fc", 0.5) # blue_fill
+    align_dark  <- transp("#d6b656", 1.0) # yell_bord
+    align_light <- transp("#fff2cc", 0.5) # yell_fill
+    arrow_dark  <- transp("grey", 1.0)    # arow_colr
+    list(
+        foc_rgn  = NULL,
+        foc_frac = c(0.48, 0.34),
+        foc_only = TRUE,
+        add      = TRUE,
+        fig_rgn  = NULL,
+        main     = NULL,
+        show     = TRUE,
+        show_d2  = FALSE,
+        truepar  = NULL,
+        mar      = c(0, 0, 0, 0),
+        # Spectrum Lines
+        si_line  = list(show = TRUE),
+        sm_line  = list(show = FALSE),
+        d2_line  = list(show = FALSE),
+        # Deconvolution Lines
+        sp_line  = list(show = FALSE),
+        lc_lines = list(show = TRUE, col = decon_dark, fill = decon_light),
+        lc_verts = list(show = TRUE, col = decon_dark),
+        tp_lines = list(show = FALSE),
+        tp_verts = list(show = FALSE),
+        # Alignment Lines
+        al_line  = list(show = FALSE),
+        al_lines = list(show = TRUE, col = align_dark, fill = align_light),
+        al_verts = list(show = TRUE, col = align_dark),
+        al_arrows = list(show = TRUE, hsf = 0.5),
+        # Points
+        cent_pts = list(show = FALSE),
+        bord_pts = list(show = FALSE),
+        norm_pts = list(show = FALSE),
+        # Rectangles
+        bg_rect  = list(show = FALSE),
+        foc_rect = list(show = FALSE),
+        lc_rects = list(show = FALSE),
+        tp_rects = list(show = FALSE),
+        # Axes
+        bt_axis  = list(show = FALSE),
+        lt_axis  = list(show = FALSE),
+        tp_axis  = list(show = FALSE),
+        rt_axis  = list(show = FALSE),
+        bt_text  = list(show = FALSE),
+        lt_text  = list(show = FALSE),
+        tp_text  = list(show = FALSE),
+        rt_text  = list(show = FALSE),
+        # Legend
+        lgd      = list(show = FALSE)
+    )
+})
