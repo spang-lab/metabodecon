@@ -15,13 +15,16 @@ draw_spectrum(
   show = TRUE,
   show_d2 = FALSE,
   truepar = NULL,
-  mar = c(5.1, 4.1, 1.1, 1.1),
+  mar = c(4.1, 5.1, 1.1, 1.1),
+  sf_vert = "auto",
   si_line = list(),
   sm_line = list(),
   sp_line = list(),
   d2_line = list(),
+  al_line = list(),
   lc_lines = list(),
   tp_lines = list(),
+  al_lines = list(),
   cent_pts = list(),
   bord_pts = list(),
   norm_pts = list(),
@@ -39,12 +42,13 @@ draw_spectrum(
   rt_text = list(),
   tp_verts = list(),
   lc_verts = list(),
+  al_verts = list(),
+  al_arrows = list(),
   lgd = list()
 )
 }
 \arguments{
-\item{obj}{An object of type \code{spectrum} or \code{decon2}. For details see
-\link{metabodecon_classes}.}
+\item{obj}{An object of type \code{spectrum} or \code{decon2}. For details see \href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{Metabodecon Classes}.}
 
 \item{foc_rgn}{Numeric vector specifying the start and end of focus region in ppm.}
 
@@ -72,10 +76,30 @@ were used to simulate the spectrum. Required if any \verb{tp_*} argument is set.
 
 \item{mar}{Number of lines below/left-of/above/right-of plot region.}
 
-\item{si_line, sm_line, lc_lines, sp_line, d2_line, tp_lines}{List  of  parameters  passed  to  \code{\link[=lines]{lines()}}  when  drawing  the  raw signal
-intensities, smoothed signal intensities, lorentzian curves found by
-deconvolution, superposition of lorentzian curves, second derivative and/or
-true lorentzian curves.}
+\item{sf_vert}{Scale factor for vertical lines corresponding to \code{lc_verts}, \code{tp_verts} and
+\code{al_verts}. If a numeric value is provided, the height of each line equals
+the area of the corresponding lorentzian curve multiplied by \code{sf_vert}. In
+addition, the following strings are supported:
+\itemize{
+\item \code{"auto"}: A suitable numeric value for \code{sf_vert} is chosen automatically,
+in a way that the highest integral equals the highest signal
+intensity after multiplication with \code{sf_vert}.
+\item \code{"peak"}: Vertical lines are drawn from bottom to top of the corresponding
+peak.
+\item \code{"full"}: Vertical lines are drawn over the full vertical range of the plot
+region.
+}}
+
+\item{si_line, sm_line, sp_line, al_line, d2_line, lc_lines, tp_lines, al_lines}{List  of  parameters  passed  to  \code{\link[=lines]{lines()}}  when  drawing  the
+raw signal intensities (si_line),
+smoothed signal intensities (sm_line),
+superposition of lorentzian curves (sp_line),
+aligned lorentzian curves (al_line),
+second derivative (d2_line),
+lorentzian curves found by deconvolution (lc_lines),
+true lorentzian curves (tp_lines) and
+aligned lorentzian curves (al_lines),
+respectively.}
 
 \item{cent_pts, bord_pts, norm_pts}{List of parameters passed to \code{\link[=points]{points()}} when drawing the peak center  points,
 peak border points and non-peak points.}
@@ -105,21 +129,9 @@ E.g. if you set \code{sf = 1e6} you could change the text from
 when drawing the bottom, left, top and right margin texts (i.e. the axis
 labels).}
 
-\item{lc_verts, tp_verts}{List of parameters passed to \code{\link[=segments]{segments()}} when drawing vertical lines at the
+\item{lc_verts, tp_verts, al_verts}{List of parameters passed to \code{\link[=segments]{segments()}} when drawing vertical lines at the
 centers of estimated, true or aligned lorentzian curves. Setting
-\code{tp_verts$show} to TRUE requires \code{truepar} to be set. In addition to the
-parameters of \code{\link[=segments]{segments()}}, the following additional parameters are supported
-as well:
-\itemize{
-\item \code{height}: Height of the vertical line. The following options are supported:
-\itemize{
-\item \code{"full"}: The line is drawn from the bottom to the top of the plot region.
-\item \code{"peak"}: The line is drawn from the bottom to the peak maximum.
-\item \code{"sint"}: The height of the line equals the "scaled peak integral". This
-scaling is done in a way that the highest scaled integral equals
-the height of the plot region.
-}
-}}
+\code{tp_verts$show} to TRUE requires \code{truepar} to be set.}
 
 \item{lgd}{List of parameters passed to \code{\link[=legend]{legend()}} when drawing the legend.}
 }

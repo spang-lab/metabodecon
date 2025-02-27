@@ -532,7 +532,8 @@ update_sap <- function() {
 #' @format
 #' A `spectra` object consisting of 16 `spectrum` objects, where each spectrum
 #' contains 2048 datapoints ranging from 3.60 to 3.29 ppm. For details about
-#' `spectrum` and `spectra` objects see [metabodecon_classes].
+#' `spectrum` and `spectra` objects see [Metabodecon
+#' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
 "sim"
 
 # # For some reason, bindings for "lazy datasets" in R are created only in the Package Environment and not in the Package Namespace. This means that functions in the package cannot directly access these datasets. To fix this, we explicitly create a `sim` binding the package namespace, pointing to a promise. This promise, when evaluated, will return the object from the package namespace. This way, we can use the `sim` dataset in the same fashion as any other exported object, defined directly in R. To create this promise, we can use [delayedAssign()]. To make our editor aware of the fact that an assignment is going on, we first set `sim` to any value using the traditional assignment operator and then overwrite it with [delayedAssign()]. This way, the editor will recognize the assignment and provide autocompletion for the `sim` object.

@@ -7,7 +7,7 @@
 \format{
 A \code{spectra} object consisting of 16 \code{spectrum} objects, where each spectrum
 contains 2048 datapoints ranging from 3.60 to 3.29 ppm. For details about
-\code{spectrum} and \code{spectra} objects see \link{metabodecon_classes}.
+\code{spectrum} and \code{spectra} objects see \href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{Metabodecon Classes}.
 }
 \usage{
 sim

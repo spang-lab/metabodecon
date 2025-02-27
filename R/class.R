@@ -1,37 +1,5 @@
 # Classes #####
 
-metabodecon_classes <- NULL
-
-#' @name metabodecon_classes
-#'
-#' @title Metabodecon Classes
-#'
-#' @description
-#' Metabodecon introduces a set of classes to highlight the presence of  certain
-#' elements in corresponding objects.
-#'
-#' The order of elements may vary between  different  versions  of  Metabodecon,
-#' thus elements should always be accessed by name, for example, using `x$si` or
-#' `x[["cs"]]`. A short description of each class is given in the listing below.
-#'
-#' -  `spectrum`: One NMR spectrum
-#' -  `decon0`: One deconvoluted NMR spectrum stored in [MetaboDecon1D()] format
-#' -  `decon1`: One deconvoluted NMR spectrum stored in [generate_lorentz_curves()] format
-#' -  `decon2`: One deconvoluted NMR spectrum stored in [deconvolute()] format
-#' -  `align`: One aligned NMR spectrum
-#'
-#' The classes mentioned above represent individual objects, such  as  a  single
-#' spectrum, deconvolution,  or  alignment.  However,  it  is  often  useful  to
-#' describe collections  of  these  objects,  such  as  a  list  of  spectra  or
-#' deconvolutions.  Therefore,  for  each  individual  class,  a   corresponding
-#' "collection"  class  is  provided.  These  collection  classes   are   named:
-#' `spectra`, `decons0`, `decons1`, `decons2`, and `aligns`.
-#'
-#' More details can be found in Metabodecon's online documentation at
-#' [spang-lab.github.io/metabodecon/articles/Metabodecon-Classes](
-#' https://spang-lab.github.io/metabodecon/articles/Classes.html).
-NULL
-
 spectrum_members <- c(
     "cs",
     "si",
@@ -288,8 +256,10 @@ is_metabodecon_class <- function() {
 #' @title Is an Object from a Metabodecon Class?
 #'
 #' @description
-#' Check if an object is an instance of a specific 'Metabodecon
-#' Class'. See [metabodecon_classes] for a list of classes.
+#' Check if an object is an instance of a specific 'Metabodecon Class'. See
+#' [Metabodecon
+#' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html) for a
+#' list of classes.
 #'
 #' @param x
 #' The object to check.

@@ -13,9 +13,11 @@
 #'
 #' @param x
 #' An   object   of   type   `decons1`   or   `decons2`    as    described    in
-#' [metabodecon_classes]. To align `decons0` objects (as  returned  by  the  now
-#' deprecated [MetaboDecon1D]), you can use [as_decons2()] to convert  it  to  a
-#' `decons2` object first.
+#' [Metabodecon
+#' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html). To
+#' align `decons0` objects (as  returned  by  the  now deprecated
+#' [MetaboDecon1D]), you can use [as_decons2()] to convert  it  to  a `decons2`
+#' object first.
 #'
 #' @param maxShift
 #' Maximum number of points along the "ppm-axis" a value can  be  moved  by  the
@@ -34,7 +36,8 @@
 #' Whether to print additional information during the alignment process.
 #'
 #' @return
-#' An object of type `align` as described in [metabodecon_classes].
+#' An object of type `align` as described in [Metabodecon
+#' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
 #'
 #' @examples
 #' decons <- deconvolute(sim, sfr = c(3.55, 3.35))
@@ -359,8 +362,8 @@ speaq_align <- function(feat = gen_feat_mat(spectrum_data),
     if (show) {
         opar <- par(mfrow = mfrow, mar = c(5.1, 4.1, 2.1, 0.1))
         on.exit(par(opar), add = TRUE)
-        plot_si_mat(Y = feat$data_matrix, main = "Original Spectra")
-        plot_si_mat(Y = C$Y, main = "Aligned Spectra")
+        plot_si_mat(feat$data_matrix, main = "Original Spectra")
+        plot_si_mat(C$Y, main = "Aligned Spectra")
     }
     return(M)
 }

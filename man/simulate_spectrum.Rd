@@ -45,7 +45,7 @@ simulate_spectrum(
 \item{noise}{The noise to add to the spectrum.}
 }
 \value{
-A \code{spectrum} object as described in \link{metabodecon_classes}.
+A \code{spectrum} object as described in \href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{Metabodecon Classes}.
 }
 \description{
 Simulates a 1D NMR spectrum based on the provided parameters.

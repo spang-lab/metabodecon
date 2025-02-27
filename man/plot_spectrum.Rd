@@ -20,7 +20,7 @@ plot_spectrum(
 }
 \arguments{
 \item{x}{An object of type \code{spectrum}, \code{decon0}, \code{decon1} or \code{decon2}. For details see
-\link{metabodecon_classes}.}
+\href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{Metabodecon Classes}.}
 
 \item{...}{Additional arguments passed to \code{\link[=draw_spectrum]{draw_spectrum()}} for \strong{every} sub figure.
 See 'Details'.}

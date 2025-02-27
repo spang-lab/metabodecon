@@ -7,7 +7,7 @@
 speaq_align(
   feat = gen_feat_mat(spectrum_data),
   maxShift = 50,
-  spectrum_data = generate_lorentz_curves_sim(),
+  spectrum_data,
   si_size_real_spectrum = length(spectrum_data[[1]]$y_values),
   verbose = TRUE,
   show = FALSE,

@@ -59,7 +59,7 @@ stored. If TRUE, the results are stored in a subdirectory of R's per-session
 temporary directory.}
 }
 \value{
-A \code{decon0} object as described in \link{metabodecon_classes}.
+A \code{decon0} object as described in \href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{Metabodecon Classes}.
 }
 \description{
 Automatic deconvolution of a 1D NMR spectrum into several Lorentz curves and

@@ -52,7 +52,6 @@ reference:
   - convert_width
   - evalwith
   - make_spectrum
-  - metabodecon_classes
   - simulate_spectrum
   - transp
   - tree

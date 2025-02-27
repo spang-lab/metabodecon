@@ -7,10 +7,11 @@
 align(x, maxShift = 50, maxCombine = 5, verbose = FALSE)
 }
 \arguments{
-\item{x}{An  object  of  type  \code{decons1}  or  \code{decons2}  as  described  in
-\link{metabodecon_classes}. To align \code{decons0} objects
-(as returned by the now deprecated \link{MetaboDecon1D}), you can use
-\code{\link[=as_decons2]{as_decons2()}} to convert it to a \code{decons2} object first.}
+\item{x}{An   object   of   type   \code{decons1}   or   \code{decons2}    as    described    in
+\href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{Metabodecon Classes}. To
+align \code{decons0} objects (as  returned  by  the  now deprecated
+\link{MetaboDecon1D}), you can use \code{\link[=as_decons2]{as_decons2()}} to convert  it  to  a \code{decons2}
+object first.}
 
 \item{maxShift}{Maximum number of points along the "ppm-axis" a value can  be  moved  by  the
 'speaq' package. 50 is a suitable starting value for plasma  spectra  with  a
@@ -26,7 +27,7 @@ Passed as argument \code{range} to \code{\link[=combine_peaks]{combine_peaks()}}
 \item{verbose}{Whether to print additional information during the alignment process.}
 }
 \value{
-An object of type \code{align} as described in \link{metabodecon_classes}.
+An object of type \code{align} as described in \href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{Metabodecon Classes}.
 }
 \description{
 Align signals across  a  list  of  deconvoluted  spectra  using  the  'CluPA'

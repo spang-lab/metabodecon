@@ -64,8 +64,9 @@ is_aligns(x)
 TRUE if the object is an instance of the specified class, otherwise FALSE.
 }
 \description{
-Check if an object is an instance of a specific 'Metabodecon
-Class'. See \link{metabodecon_classes} for a list of classes.
+Check if an object is an instance of a specific 'Metabodecon Class'. See
+\href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{Metabodecon Classes} for a
+list of classes.
 }
 \examples{
 ss <- sim[1:2]

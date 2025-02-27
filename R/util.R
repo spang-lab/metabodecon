@@ -796,7 +796,8 @@ empty_df <- function(names) {
 #' 3. The resonance frequency of the reference equals the resonance frequency of
 #'    protons
 #'
-#' @param x A `spectrum` object as described in [metabodecon_classes].
+#' @param x A `spectrum` object as described in [Metabodecon
+#' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
 #'
 #' @return The magnetic field strength in Tesla.
 #'

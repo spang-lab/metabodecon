@@ -8,8 +8,9 @@
 #' Plot a set of deconvoluted spectra.
 #'
 #' @param obj
-#' An object of type `decons0`, `decons1` or `decons2`.
-#' For details see [metabodecon_classes].
+#' An object of type `decons0`, `decons1` or `decons2`. For details see
+#' [Metabodecon
+#' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
 #'
 #' @param ...
 #' Additional arguments passed to the conversion function.
@@ -110,7 +111,8 @@ plot_spectra <- function(obj,
 #'
 #' @param x
 #' An object of type `spectrum`, `decon0`, `decon1` or `decon2`. For details see
-#' [metabodecon_classes].
+#' [Metabodecon
+#' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
 #'
 #' @param ...
 #' Additional arguments passed to [draw_spectrum()] for **every** sub figure.
@@ -301,8 +303,8 @@ plot_spectrum <- function(x,
 #' `r lifecycle::badge("experimental")`
 #'
 #' @param obj
-#' An object of type `spectrum` or `decon2`. For details see
-#' [metabodecon_classes].
+#' An object of type `spectrum` or `decon2`. For details see [Metabodecon
+#' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
 #'
 #' @param add
 #' If TRUE, draw into the currently open figure. If FALSE, start a new figure.
@@ -344,25 +346,31 @@ plot_spectrum <- function(x,
 #' Data frame with columns x0, A and lambda containing the true lorentzian that
 #' were used to simulate the spectrum. Required if any `tp_*` argument is set.
 #'
-#' @param vheight
-#' Configure the height of the vertical lines corresponding to `lc_verts`,
-#' `tp_verts` and `al_verts`. If a numeric value is provided, the height of each
-#' line equals the area of the corresponding lorentzian curve multiplied by
-#' `vheight`. In addition, the following strings are supported:
+#' @param sf_vert
+#' Scale factor for vertical lines corresponding to `lc_verts`, `tp_verts` and
+#' `al_verts`. If a numeric value is provided, the height of each line equals
+#' the area of the corresponding lorentzian curve multiplied by `sf_vert`. In
+#' addition, the following strings are supported:
 #'
-#' - `"auto"`: A suitable numeric value for `vheight` is chosen automatically,
+#' - `"auto"`: A suitable numeric value for `sf_vert` is chosen automatically,
 #'             in a way that the highest integral equals the highest signal
-#'             intensity after multiplication with `vheight`.
+#'             intensity after multiplication with `sf_vert`.
 #' - `"peak"`: Vertical lines are drawn from bottom to top of the corresponding
 #'             peak.
 #' - `"full"`: Vertical lines are drawn over the full vertical range of the plot
 #'             region.
 #'
-#' @param si_line,sm_line,lc_lines,sp_line,d2_line,tp_lines
-#' List  of  parameters  passed  to  [lines()]  when  drawing  the  raw signal
-#' intensities, smoothed signal intensities, lorentzian curves found by
-#' deconvolution, superposition of lorentzian curves, second derivative and/or
-#' true lorentzian curves.
+#' @param si_line,sm_line,sp_line,al_line,d2_line,lc_lines,tp_lines,al_lines
+#' List  of  parameters  passed  to  [lines()]  when  drawing  the
+#' raw signal intensities (si_line),
+#' smoothed signal intensities (sm_line),
+#' superposition of lorentzian curves (sp_line),
+#' aligned lorentzian curves (al_line),
+#' second derivative (d2_line),
+#' lorentzian curves found by deconvolution (lc_lines),
+#' true lorentzian curves (tp_lines) and
+#' aligned lorentzian curves (al_lines),
+#' respectively.
 #'
 #' @param cent_pts,bord_pts,norm_pts
 #' List of parameters passed to [points()] when drawing the peak center  points,
@@ -442,8 +450,8 @@ draw_spectrum <- function(
     foc_rgn   = NULL,   foc_frac = NULL,   foc_only = TRUE,
     add       = FALSE,  fig_rgn  = NULL,   main     = NULL,
     show      = TRUE,   show_d2  = FALSE,  truepar  = NULL,
-    mar      = c(4.1, 5.1, 1.1, 1.1),
-    vheight   = "auto",
+    mar       = c(4.1, 5.1, 1.1, 1.1),
+    sf_vert   = "auto",
     si_line   = list(), sm_line  = list(), sp_line  = list(),
     d2_line   = list(), al_line  = list(),
     lc_lines  = list(), tp_lines = list(), al_lines = list(),
@@ -456,8 +464,6 @@ draw_spectrum <- function(
     lgd       = list()
     )
 {
-    # [ ]  Add `fill` option to lc_lines and tp_lines
-
     # Check and enrich inputs (278us)
     if (isFALSE(show)) return()
     obj <- as_v2_obj(obj)
@@ -469,49 +475,34 @@ draw_spectrum <- function(
         is_num(fig_rgn, 4) || is.null(fig_rgn),
         is_num(mar, 4) || is.null(mar),
         is_str(main) || is.null(main),
-        is_num(vheight, 1) || (is_str(vheight) && vheight %in% c("auto", "peak", "full"))
+        is_num(sf_vert, 1) || (is_str(sf_vert) && sf_vert %in% c("auto", "peak", "full"))
     )
     foc_frac <- foc_frac %||% get_foc_frac(obj, foc_rgn)
     foc_rgn <- foc_rgn %||% get_foc_rgn(obj, foc_frac)
+    defaults <- get_draw_spectrum_defaults(show_d2, foc_only)
     env <- environment()
-    defaults <- get_ds_def_args(show_d2, foc_only)
-    for (k in names(defaults)) {
-        d <- defaults[[k]]
-        x <- env[[k]]
-        env[[k]] <- {
-            if (is.null(x)) d
-            else if (isFALSE(x)) modifyList(d, list(show = FALSE))
-            else if (isTRUE(x)) modifyList(d, list(show = TRUE))
-            else if (is.list(x)) modifyList(d, x)
-            else stopf("Argument '%s' must be a list")
-        }
+    for (var in names(defaults)) {
+        env[[var]] <- combine(defaults[[var]], env[[var]], var)
     }
     decon_only <- c("sm_line", "lc_lines", "sp_line", "lc_rects", "cent_pts", "bord_pts")
     align_only <- c("al_line", "al_verts", "al_arrows")
-    if (is_spectrum(obj)) for (k in decon_only) env[[k]]$show <- FALSE
-    if (!is_align(obj)) for (k in align_only) env[[k]]$show <- FALSE
+    if (is_spectrum(obj)) for (var in decon_only) env[[var]]$show <- FALSE
+    if (!is_align(obj)) for (var in align_only) env[[var]]$show <- FALSE
 
     # Ensure backwards compatibility to MetaboDecon 1.2.7
-    if (!is.null(bt_axis$text) && !isFALSE(bt_axis$show)) {
-        warning("Setting `bt_axis$text` is deprecated since MetaboDecon 1.3. Use `bt_text$text` instead.")
-        bt_text$text <- pop(bt_axis, "text")
-        bt_text$show <- pop(bt_axis, "show")
+    warn_msg <- "Setting `%s$text` is deprecated since MetaboDecon 1.3. Use `%s$text` instead."
+    ensure_bwc <- function(axis_var, text_var) {
+        if (!is.null(env[[axis_var]]$text) && !isFALSE(env[[axis_var]]$show)) {
+            warning(sprintf(warn_msg, axis_var, text_var))
+            env[[text_var]]$text <- env[[axis_var]]$text
+            env[[text_var]]$show <- env[[axis_var]]$show
+            env[[axis_var]]$text <- NULL
+        }
     }
-    if (!is.null(lt_axis$text) && !isFALSE(lt_axis$show)) {
-        warning("Setting `lt_axis$text` is deprecated since MetaboDecon 1.3. Use `lt_text$text` instead.")
-        lt_text$text <- pop(lt_axis, "text")
-        lt_text$show <- pop(lt_axis, "show")
-    }
-    if (!is.null(tp_axis$text) && !isFALSE(tp_axis$show)) {
-        warning("Setting `tp_axis$text` is deprecated since MetaboDecon 1.3. Use `tp_text$text` instead.")
-        tp_text$text <- pop(tp_axis, "text")
-        tp_text$show <- pop(tp_axis, "show")
-    }
-    if (!is.null(rt_axis$text) && !isFALSE(rt_axis$show)) {
-        warning("Setting `rt_axis$text` is deprecated since MetaboDecon 1.3. Use `rt_text$text` instead.")
-        rt_text$text <- pop(rt_axis, "text")
-        rt_text$show <- pop(rt_axis, "show")
-    }
+    ensure_bwc("bt_axis", "bt_text");
+    ensure_bwc("lt_axis", "lt_text")
+    ensure_bwc("tp_axis", "tp_text");
+    ensure_bwc("rt_axis", "rt_text")
 
     # Set graphical parameters (7ms)
     local_par(mar = mar, new = add)
@@ -525,12 +516,8 @@ draw_spectrum <- function(
     sp <- sp_all <- obj$sit$sup # NS
     al <- al_all <- obj$sit$al # NULL for spectrum and decon objects (NSD)
     if (!isFALSE(d2_line$show)) {
-        if (is.null(sm_all)) {
-            warning("Smoothed SI is missing. Calculating second derivative from raw SI.")
-            d2 <- d2_all <- calc_second_derivative(si_all)
-        } else {
-            d2 <- d2_all <- calc_second_derivative(sm_all)
-        }
+        if (is.null(sm_all)) warning("Smoothed SI is missing. Calculating second derivative from raw SI.")
+        d2 <- d2_all <- calc_second_derivative(sm_all %||% si_all)
     }
 
     # Get indices of important points relative to all data points (611us)
@@ -546,42 +533,32 @@ draw_spectrum <- function(
 
     # Get true lorentz parameters across all data points
     truepar <- truepar %||% obj$meta$simpar
-    if (is.null(truepar)) {
+    trpar <- if (is.null(truepar)) {
         warnmsg <- "True params missing. Provide 'truepar' or unset 'tp_*' arguments."
         if (any(tp_rects$show, tp_lines$show, tp_verts$show)) warning(warnmsg, call. = FALSE)
         tp_rects$show <- FALSE
         tp_lines$show <- FALSE
         tp_verts$show <- FALSE
-        trpar <- empty_df(c("x0", "A", "lambda"))
+        empty_df(c("x0", "A", "lambda"))
     } else {
-        trpar <- as.data.frame(truepar[c("x0", "A", "lambda")])
+        as.data.frame(truepar[c("x0", "A", "lambda")])
     }
 
-    # Calculate AUCs for estimated and true lorentzian parameters. Scale AUCs
-    # according to `vheight`. Use the same scaling factor for both, to ensure
-    # they are comparable.
-    lcpar$auc <- lcpar$A * pi
-    trpar$auc <- trpar$A * pi
-    lcpar$height <- lcpar$A / lcpar$lambda
-    trpar$height <- trpar$A / trpar$lambda
+    # Calculate amplitude and display height for estimated and true lorentzians
     if (nrow(lcpar) > 0) {
-        if (vheight == "auto") vheight <- max(sp) / max(lcpar$auc, trpar$auc)
-        if (is.numeric(vheight)) {
-            lcpar$auc_scaled <- lcpar$auc * (vheight)
-            trpar$auc_scaled <- trpar$auc * (vheight)
-        } else if (vheight == "peak") {
-            lcpar$auc_scaled <- lcpar$height
-            trpar$auc_scaled <- trpar$height
-        } else if (vheight == "full") {
-            lcpar$auc_scaled <- max(si)
-            trpar$auc_scaled <- max(si)
+        if (sf_vert == "auto") sf_vert <- max(sp) / max(lcpar$A, trpar$A)
+        for (var in c("lcpar", "trpar")) {
+            env[[var]]$ampl <- env[[var]]$A / env[[var]]$lambda
+            if (is.numeric(sf_vert))    env[[var]]$vheight <- env[[var]]$A * (sf_vert)
+            else if (sf_vert == "peak") env[[var]]$vheight <- env[[var]]$ampl
+            else if (sf_vert == "full") env[[var]]$vheight <- max(si)
         }
+        # Order lcpar and trpar by amplitude height, to ensure that highest peaks are
+        # drawn first and therefore appear behind smaller peaks.
+        lcpar <- lcpar[order(lcpar$ampl, decreasing = TRUE), ]
+        trpar <- trpar[order(trpar$ampl, decreasing = TRUE), ]
     }
 
-    # Order lcpar and trpar by peak height, to ensure that highest peaks are
-    # drawn first and therefore appear behind smaller peaks.
-    lcpar <- lcpar[order(lcpar$height, decreasing = TRUE), ]
-    trpar <- trpar[order(trpar$height, decreasing = TRUE), ]
 
     if (foc_only) {
         # Get indices of important points relative to the vector of focus points (198us)
@@ -600,35 +577,25 @@ draw_spectrum <- function(
         sp <- sp_foc <- sp_all[ifp_all]
         al <- al_foc <- al_all[ifp_all]
 
-        # Get estimated lorentzians affecting focus region (239us)
-        y_foc_rgn_start   <- lorentz(x = min(foc_rgn), lcpar = lcpar)
-        y_foc_rgn_end     <- lorentz(x = max(foc_rgn), lcpar = lcpar)
-        y_tresh           <- 0.001 * diff(range(si))
-        high_y_in_foc_rgn <- y_foc_rgn_start > y_tresh | y_foc_rgn_end > y_tresh
-        x0_in_foc         <- lcpar$x0 > min(foc_rgn) & lcpar$x0 < max(foc_rgn)
-        affects_foc       <- high_y_in_foc_rgn | x0_in_foc
-        lcpar             <- lcpar[affects_foc, ]
-
-        # Get true lorentzians affecting focus region (8us)
-        y_foc_rgn_start   <- lorentz(x = min(foc_rgn), lcpar = trpar)
-        y_foc_rgn_end     <- lorentz(x = max(foc_rgn), lcpar = trpar)
-        y_tresh           <- 0.001 * diff(range(si))
-        high_y_in_foc_rgn <- y_foc_rgn_start > y_tresh | y_foc_rgn_end > y_tresh
-        x0_in_foc         <- trpar$x0 > min(foc_rgn) & trpar$x0 < max(foc_rgn)
-        affects_foc       <- high_y_in_foc_rgn | x0_in_foc
-        trpar             <- trpar[affects_foc, ]
+        # Filter out lorentzians not affecting focus region (239us)
+        y_tresh <- 0.001 * diff(range(si))
+        affects_foc_rgn <- function(lcpar) {
+            y_foc_start <- lorentz(x = min(foc_rgn), lcpar = lcpar)
+            y_foc_end   <- lorentz(x = max(foc_rgn), lcpar = lcpar)
+            high_in_foc <- y_foc_start > y_tresh | y_foc_end > y_tresh
+            x0_in_foc   <- lcpar$x0 > min(foc_rgn) & lcpar$x0 < max(foc_rgn)
+            affects_foc <- high_in_foc | x0_in_foc
+        }
+        lcpar <- lcpar[affects_foc_rgn(lcpar), ]
+        trpar <- trpar[affects_foc_rgn(trpar), ]
     }
 
     # Define a seperate dataframe `alpar` holding the parameters of the aligned
     # lorentzians. If no aligned lorentzians are present, set alpar to an empty
     # dataframe.
-    if (is.null(lcpar$x0_al)) {
-        alpar <- lcpar[0,]
-    } else {
-        alpar <- lcpar
-        alpar$x0 <- lcpar$x0_al
-        alpar$x0_al <- NULL
-    }
+    alpar <- if (is.null(lcpar$x0_al)) lcpar[0,] else lcpar
+    alpar$x0 <- lcpar$x0_al
+    alpar$x0_al <- NULL
 
     # Get x and y limits (43us)
     xlim <- c(max(cs), min(cs))
@@ -636,11 +603,6 @@ draw_spectrum <- function(
     ymax <- if (show_d2) max(d2, na.rm = TRUE) else max(si, na.rm = TRUE)
     ylim <- c(ymin, ymax)
     ythresh <- 0.001 * diff(range(si))
-    if (!is.null(foc_rgn)) {
-        foc_rgn <- sort(foc_rgn)
-        ymin_foc <- min(si[ifp])
-        ymax_foc <- max(si[ifp])
-    }
     ymin_foc <- if (foc_only) ymin else min(0, si_all[ifp_all])
     ymax_foc <- if (foc_only) ymax else max(si_all[ifp_all])
     ylim_foc <- c(ymin_foc, ymax_foc)
@@ -661,20 +623,16 @@ draw_spectrum <- function(
     draw_points(cs[inp], sm[inp], norm_pts)
     # Deconvolution Lines
     draw_line(cs, sp, sp_line)
-    lapply(seq_len(nrow(lcpar)), function(i) {
-        draw_lc_line(lcpar[i, ], cs, lc_lines, ythresh)
-    })
-    lapply(seq_len(nrow(trpar)), function(i) {
-        draw_lc_line(trpar[i, ], cs, tp_lines, ythresh)
-    })
-    draw_verts(lcpar$x0, lcpar$auc_scaled, lc_verts)
-    draw_verts(trpar$x0, trpar$auc_scaled, tp_verts)
+    apply(lcpar, 1, draw_lc_line, cs, lc_lines, ythresh) # 13ms
+    apply(trpar, 1, draw_lc_line, cs, tp_lines, ythresh) # 13ms
+    draw_verts(lcpar$x0, lcpar$vheight, lc_verts)
+    draw_verts(trpar$x0, trpar$vheight, tp_verts)
     # Alignment Lines
     draw_line(cs, al, al_line)
     apply(alpar, 1, draw_lc_line, cs, al_lines, ythresh) # 13ms
-    draw_verts(lcpar$x0_al, lcpar$auc_scaled, al_verts)
+    draw_verts(lcpar$x0_al, lcpar$vheight, al_verts)
     # Arrows
-    draw_arrows(lcpar$x0, lcpar$x0_al, lcpar$auc_scaled, al_arrows)
+    draw_arrows(lcpar$x0, lcpar$x0_al, lcpar$vheight, al_arrows)
     # Focus Rectangle
     draw_rect(foc_rgn, ylim_foc, foc_rect)
     # Axes
@@ -813,29 +771,7 @@ test_draw_spectrum <- function(figs = 1:8,
     lt_text_short <- list(text = "SI / 1e6")
     local_par(mfrow = mfrow, mar = mar, oma = oma)
     if (1 %in% figs) plot_dummy()
-    if (2 %in% figs) {
-        blue_bord <- transp("#6c8ebf", 1.0)
-        yell_bord <- transp("#d6b656", 1.0)
-        blue_fill   <- transp("#dae8fc", 0.5)
-        yell_fill   <- transp("#fff2cc", 0.5)
-        arow_colr   <- transp("grey", 1.0)
-        draw_spectrum(
-            obj = align,
-            foc_frac = c(0.8, 0.3),
-            si_line = FALSE,
-            sm_line = FALSE,
-            cent_pts = FALSE,
-            sp_line   = FALSE,
-            al_line   = FALSE,
-            foc_rect  = list(show = TRUE,  col = NA),
-            lc_lines  = list(show = TRUE,  col = NA, fill = yell_fill),
-            al_lines  = list(show = TRUE,  col = NA, fill = blue_fill),
-            lc_verts  = list(show = FALSE, col = yell_bord),
-            al_verts  = list(show = TRUE,  col = blue_bord),
-            al_arrows = list(show = TRUE,  col = arow_colr, hsf = 0.5),
-            vheight = "auto"
-        )
-    }
+    if (2 %in% figs) draw_spectrum(obj = decon)
     if (3 %in% figs) draw_spectrum(
         obj = decon,
         lgd = list(x = "top", bg = NA),
@@ -859,7 +795,29 @@ test_draw_spectrum <- function(figs = 1:8,
             lt_text = lt_text_short
         )
     }
-    if (6 %in% figs) plot_dummy()
+    if (6 %in% figs) {
+        blue_bord <- transp("#6c8ebf", 1.0)
+        yell_bord <- transp("#d6b656", 1.0)
+        blue_fill   <- transp("#dae8fc", 0.5)
+        yell_fill   <- transp("#fff2cc", 0.5)
+        arow_colr   <- transp("grey", 1.0)
+        draw_spectrum(
+            obj = align,
+            foc_frac = c(0.8, 0.3),
+            si_line = FALSE,
+            sm_line = FALSE,
+            cent_pts = FALSE,
+            sp_line   = FALSE,
+            al_line   = FALSE,
+            foc_rect  = list(show = TRUE,  col = NA),
+            lc_lines  = list(show = TRUE,  col = NA, fill = yell_fill),
+            al_lines  = list(show = TRUE,  col = NA, fill = blue_fill),
+            lc_verts  = list(show = FALSE, col = yell_bord),
+            al_verts  = list(show = TRUE,  col = blue_bord),
+            al_arrows = list(show = TRUE,  col = arow_colr, hsf = 0.5),
+            sf_vert = "auto"
+        )
+    }
     if (7 %in% figs) draw_spectrum(
         obj = decon,
         fig_rgn = fig7,
@@ -1306,7 +1264,7 @@ get_sub_fig_args <- function(obj, foc_frac, foc_rgn, sub1, sub2, sub3, dot_args)
     )
 }
 
-get_ds_def_args <- function(show_d2 = FALSE, foc_only = TRUE) {
+get_draw_spectrum_defaults <- function(show_d2 = FALSE, foc_only = TRUE) {
     stopifnot(is_bool(show_d2), is_bool(foc_only))
     show_si  <- !show_d2
     ylab <- if (show_si) "Signal Intensity [au] / 1e6" else "Second Derivative / 1e6"
@@ -1343,8 +1301,10 @@ get_ds_def_args <- function(show_d2 = FALSE, foc_only = TRUE) {
     )
 }
 
-combine <- function(defaults, x) {
-    name <- deparse(substitute(x))
+# Other Helpers (Private) #####
+
+combine <- function(defaults, x, name = NULL) {
+    name <- name %||% deparse(substitute(x))
     x <- if (is.null(x)) list()
         else if (isFALSE(x)) list(show = FALSE)
         else if (isTRUE(x)) list(show = TRUE)

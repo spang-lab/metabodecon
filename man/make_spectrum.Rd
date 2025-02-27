@@ -52,7 +52,7 @@ but will print a info message instead. To hide this message as well, set
 \item{mfs}{The magnetic field strength in Tesla.}
 }
 \value{
-A \code{spectrum} object as described in \link{metabodecon_classes}.
+A \code{spectrum} object as described in \href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{Metabodecon Classes}.
 }
 \description{
 Creates a spectrum object from the provided signal intensities, frequencies

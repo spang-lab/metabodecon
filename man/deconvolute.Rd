@@ -56,8 +56,7 @@ generate_lorentz_curves_sim(
 )
 }
 \arguments{
-\item{x}{A \code{spectrum} or \code{spectra} object as described in
-\link{metabodecon_classes}.}
+\item{x}{A \code{spectrum} or \code{spectra} object as described in \href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{Metabodecon Classes}.}
 
 \item{nfit}{Integer. Number of iterations for approximating the parameters
 for the Lorentz curves. See 'Details'.}
@@ -116,7 +115,7 @@ Acquisition & Processing > TopSpin Processing Commands and Parameters'
 (requires login).}
 }
 \value{
-A 'decon2' object as described in \link{metabodecon_classes}.
+A 'decon2' object as described in \href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{Metabodecon Classes}.
 }
 \description{
 Deconvolutes NMR spectra by modeling each detected signal within

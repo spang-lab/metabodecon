@@ -38,7 +38,7 @@ Acquisition & Processing > TopSpin Processing Commands and Parameters'
 instead. To hide these messages as well, set \code{silent = TRUE}.}
 }
 \value{
-A \code{spectrum} object as described in \link{metabodecon_classes}.
+A \code{spectrum} object as described in \href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{Metabodecon Classes}.
 }
 \description{
 \code{read_spectrum()} reads a single spectrum from disk and returns it as

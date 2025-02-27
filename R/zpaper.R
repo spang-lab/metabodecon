@@ -13,7 +13,7 @@ cacheenv <- environment()
 #' aligns <- align(decons, maxShift = 100, maxCombine = 10)
 #' mkfig_nmr_challenges(spectra, decons, aligns)
 mkfig_nmr_challenges <- function(spectra = sim[1:3],
-                                 decons = deconvolute(sim[1:3]),
+                                 decons = deconvolute(spectra[1:3]),
                                  aligns = align(decons, maxShift = 100, maxCombine = 10),
                                  show = FALSE,
                                  store = TRUE,
@@ -46,7 +46,7 @@ mkfig_nmr_challenges <- function(spectra = sim[1:3],
 
 # Plot #####
 test_plot_nmr_challenges <- function(interactive = TRUE) {
-    spectra <- sim[1:3]
+    spectra <- metabodecon::sim[1:3]
     decons <- deconvolute(sim[1:3])
     aligns <- align(decons, maxShift = 100, maxCombine = 10)
     if (interactive) {

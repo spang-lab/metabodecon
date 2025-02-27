@@ -3,7 +3,7 @@ library(testthat)
 test_that("align works", {
     decons <- deconvolute(sim, sfr = c(3.55, 3.35))
     # Do the alignment
-    aligns <- align2(decons)
+    aligns <- align(decons)
     # Then make all changes to the decons object that we expect [align()] to
     # make. At the end the objects should be equal. This way we can ensure that
     # [align()] adds exactly the fields we expect it to add (and no others).

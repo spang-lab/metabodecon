@@ -70,7 +70,8 @@
 #' temporary directory.
 #'
 #' @return
-#' A `decon0` object as described in [metabodecon_classes].
+#' A `decon0` object as described in [Metabodecon
+#' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
 #'
 #' @seealso
 #' [calculate_lorentz_curves()],
