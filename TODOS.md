@@ -1,5 +1,16 @@
 # Open
 
+
+### FEATURE-25: Make Rust backend optional
+
+The Rust backend should only be built for R versions >= 4.2.0 and if RTools is available. If any of these conditions is not fulfilled, compilation should be skipped.
+
+If skipping compilation is not possible, because we load the dynamic lib in NAMESPACE, it should be generated in a way that does not use any features required by R 4.2.0 or greater. If we choose backend == "rust", we need to check whether the required functions are available.
+
+### FEATURE-26: Merge Rust backend
+
+Merge in Rust backend branch. Requires FEATURE-25 to be implemented first.
+
 ### FEATURE-24: Add checks for missing packages to align
 
 Installation via `install.packages("metabodecon")` do not install `MassSpecWavelet` and `impute`. So if a user doesn't copy paste the installation instructions but installed via `install.packages("metabodecon")`, these dependencies will be missing. In such scenarios, we should print an error message with the required install commands and abort.
