@@ -1,5 +1,9 @@
 # Open
 
+### DOC-10: Add vignette linking to articles
+
+There should be one vignette shipped with the package that is as small as possible and contains links to the online documentation.
+
 ### FEATURE-24: Add checks for missing packages to align
 
 Installation via `install.packages("metabodecon")` do not install `MassSpecWavelet` and `impute`. So if a user doesn't copy paste the installation instructions but installed via `install.packages("metabodecon")`, these dependencies will be missing. In such scenarios, we should print an error message with the required install commands and abort.

@@ -526,11 +526,11 @@ mkdat_sim2 <- function() {
 # Constants
 
 draw_spectrum_plain_args <- local({
-    decon_dark  <- transp("#6c8ebf", 1.0) # blue_bord
-    decon_light <- transp("#dae8fc", 0.5) # blue_fill
-    align_dark  <- transp("#d6b656", 1.0) # yell_bord
-    align_light <- transp("#fff2cc", 0.5) # yell_fill
-    arrow_dark  <- transp("grey", 1.0)    # arow_colr
+    decon_dark  <- "#6C8EBFFF" # transp("#6c8ebf", 1.0)
+    decon_light <- "#DAE8FC80" # transp("#dae8fc", 0.5)
+    align_dark  <- "#D6B656FF" # transp("#d6b656", 1.0)
+    align_light <- "#FFF2CC80" # transp("#fff2cc", 0.5)
+    arrow_dark  <- "#BEBEBEFF" # transp("grey", 1.0)
     list(
         foc_rgn  = NULL,
         foc_frac = c(0.48, 0.34),

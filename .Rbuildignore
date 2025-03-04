@@ -14,9 +14,11 @@
 ^cran-comments\.md$
 ^CRAN-SUBMISSION$
 ^dist$
+^doc$
 ^Dockerfile$
 ^docs$
 ^LICENSE\.md$
+^Meta$
 ^misc$
 ^pkgdown$
 ^README\.md$
@@ -25,5 +27,4 @@
 ^tmp$
 ^TODOS\.md$
 ^vdiffr\.Rout\.fail$
-^doc$
-^Meta$
+^vignettes$
