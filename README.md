@@ -11,13 +11,29 @@ A framework for deconvolution, alignment and postprocessing of 1D NMR spectra, r
 
 ## Installation
 
-Copy paste the following command in a running R session (e.g. in RStudio):
+To install the **stable version** from [CRAN](https://cran.r-project.org/), including all [Bioconductor](https://www.bioconductor.org/) dependencies, paste the following commands in a running R session (e.g. in RStudio):
 
 ```R
-if (!"devtools" %in% installed.packages()[, "Package"]) {
-    install.packages("devtools", repos = c(CRAN = "https://cloud.r-project.org"))
-}
-devtools::install_github("spang-lab/metabodecon", build_manual = TRUE, build_vignettes = TRUE)
+install.packages("pak")
+pak::pkg_install("metabodecon")
+```
+
+Alternatively, if you prefer installing via the traditional `install.packages()` function, you can do so by running the following commands:
+
+```R
+# Install Bioconductor dependencies
+install.packages("BiocManager")
+BiocManager::install(c("MassSpecWavelet", "impute"))
+
+# Install metabodecon
+install.packages("metabodecon")
+```
+
+To install the **development version** from [GitHub](https://github.com/spang-lab/metabodecon/) use:
+
+```R
+install.packages("pak")
+pak::pkg_install("spang-lab/metabodecon")
 ```
 
 ## Usage

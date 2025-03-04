@@ -408,6 +408,10 @@ plot_spectrum <- function(x,
 #' centers of estimated, true or aligned lorentzian curves. Setting
 #' `tp_verts$show` to TRUE requires `truepar` to be set.
 #'
+#' @param al_arrows
+#' List of parameters passed to [arrows()] when drawing arrows between the
+#' estimated and aligned lorentzian curve centers.
+#'
 #' @return
 #' NULL. Called for side effect of plotting.
 #'
@@ -479,7 +483,7 @@ draw_spectrum <- function(
     )
     foc_frac <- foc_frac %||% get_foc_frac(obj, foc_rgn)
     foc_rgn <- foc_rgn %||% get_foc_rgn(obj, foc_frac)
-    defaults <- get_draw_spectrum_defaults(show_d2, foc_only)
+    defaults <- get_draw_spectrum_defaults(show_d2, foc_only, is_align(obj))
     env <- environment()
     for (var in names(defaults)) {
         env[[var]] <- combine(defaults[[var]], env[[var]], var)
@@ -814,7 +818,7 @@ test_draw_spectrum <- function(figs = 1:8,
             al_lines  = list(show = TRUE,  col = NA, fill = blue_fill),
             lc_verts  = list(show = FALSE, col = yell_bord),
             al_verts  = list(show = TRUE,  col = blue_bord),
-            al_arrows = list(show = TRUE,  col = arow_colr, hsf = 0.5),
+            al_arrows = list(show = TRUE,  col = arow_colr, sf = 0.5),
             sf_vert = "auto"
         )
     }
@@ -1161,15 +1165,15 @@ draw_arrows <- function(x0, x1, h, args = list()) {
         || length(x0) == 0
         || length(x0) != length(x1)
         || length(x0) != length(h)) return()
-    hsf <- pop(args, "hsf", default = 0.5)
+    sf <- pop(args, "sf", default = 0.5)
     keep <- abs(grconvertW(x1 - x0, from = "user", to = "inches")) > 0.001
     x0 <- x0[keep]
     x1 <- x1[keep]
     h <- h[keep]
     args$x0 <- x0
     args$x1 <- x1
-    args$y0 <- h * hsf
-    args$y1 <- h * hsf
+    args$y0 <- h * sf
+    args$y1 <- h * sf
     args$length <- args$length %||% grconvertW(0.01, from = "npc", to = "inches")
     do.call(arrows, args)
 }
@@ -1264,7 +1268,63 @@ get_sub_fig_args <- function(obj, foc_frac, foc_rgn, sub1, sub2, sub3, dot_args)
     )
 }
 
-get_draw_spectrum_defaults <- function(show_d2 = FALSE, foc_only = TRUE) {
+get_draw_spectrum_defaults <- function(show_d2 = FALSE,
+                                       foc_only = TRUE,
+                                       aligned = FALSE) {
+    stopifnot(
+        is_bool(show_d2),
+        is_bool(foc_only),
+        is_bool(aligned)
+    )
+    show_al <- !show_d2 && aligned
+    show_si <- !show_d2 && !aligned
+    ylab <- if (show_si) "Signal Intensity [au] / 1e6" else "Second Derivative / 1e6"
+    lgdx <- if (show_si) "topright" else "bottomright"
+    list(
+        # Legend
+        lgd       = list(show = TRUE, x = lgdx, bg = "white"),
+        # Spectrum Lines
+        si_line   = list(show = show_si, col = "black"),
+        sm_line   = list(show = show_si, col = "blue"),
+        d2_line   = list(show = show_d2),
+        # Deconvolution Lines
+        sp_line   = list(show = show_si, col = "red"),
+        lc_lines  = list(show = (show_si || show_al) && foc_only, col = "darkgrey", fill = "grey95"),
+        lc_verts  = list(show = show_al, col = "darkgrey"),
+        lc_rects  = list(show = FALSE, col = transp("darkgrey"), border = NA),
+        # True Parameter Lines
+        tp_lines  = list(show = FALSE, col = "darkgreen"),
+        tp_verts  = list(show = FALSE, col = "darkgreen"),
+        tp_rects  = list(show = FALSE, col = transp("darkgreen", 0.12), border = NA),
+        # Alignment Lines
+        al_line   = list(show = show_al, col = "purple"),
+        al_lines  = list(show = show_al && foc_only, col = "thistle4", fill = transp("thistle1", 0.5)),
+        al_verts  = list(show = show_al, col = "thistle4"),
+        al_arrows = list(show = show_al, col = "darkgrey", lty = 2),
+        # Points
+        cent_pts  = list(show = show_si && foc_only, col = "blue", bg = "blue", pch = 24),
+        bord_pts  = list(show = FALSE, col = "blue", pch = 124),
+        norm_pts  = list(show = FALSE, col = "black", pch = 124),
+        # Backgrounds
+        bg_rect   = list(show = TRUE, col = "white"),
+        foc_rect  = list(show = TRUE, col = transp("yellow")),
+        # Axes
+        bt_axis   = list(show = TRUE),
+        lt_axis   = list(show = TRUE, sf = 1e6, las  = 1),
+        tp_axis   = list(show = FALSE),
+        rt_axis   = list(show = FALSE),
+        # Margin Texts
+        bt_text   = list(show = TRUE, text = "Chemical Shift [ppm]"),
+        lt_text   = list(show = TRUE, text = ylab),
+        tp_text   = list(show = FALSE),
+        rt_text   = list(show = FALSE)
+    )
+}
+
+
+get_draw_spectrum_defaults_2 <- function(show_d2 = FALSE,
+                                         foc_only = TRUE,
+                                         aligned = FALSE) {
     stopifnot(is_bool(show_d2), is_bool(foc_only))
     show_si  <- !show_d2
     ylab <- if (show_si) "Signal Intensity [au] / 1e6" else "Second Derivative / 1e6"
@@ -1272,28 +1332,36 @@ get_draw_spectrum_defaults <- function(show_d2 = FALSE, foc_only = TRUE) {
     list(
         lgd       = list(show = TRUE, x = lgdx, bg = "white"),
         d2_line   = list(show = show_d2),
-        si_line   = list(show = show_si, col = "black"),
-        sm_line   = list(show = show_si, col = "blue"),
-        sp_line   = list(show = show_si, col = "red"),
-        al_line   = list(show = show_si, col = "violet"),
-        lc_lines  = list(show = show_si && foc_only, col = "darkgrey"),
+
+        si_line   = list(show = FALSE, col = "black"),
+        sm_line   = list(show = FALSE, col = "blue"),
+
+        sp_line   = list(show = show_si,             col = "red", fill = "#FFEEEE"),
+        lc_lines  = list(show = show_si && foc_only, col = "red", fill = "#FFC0C0"),
+        lc_verts  = list(show = show_si,             col = "red"                  ),
+        lc_rects  = list(show = FALSE,               col = "red", border = NA     ),
+
         tp_lines  = list(show = FALSE, col = "darkgreen"),
-        al_lines  = list(show = TRUE, col = "violet"),
         tp_verts  = list(show = FALSE, col = "darkgreen"),
-        lc_verts  = list(show = FALSE, col = "darkgrey"),
-        al_verts  = list(show = FALSE, col = "darkgrey"),
-        al_arrows = list(show = TRUE, col = "darkgrey"),
-        cent_pts  = list(show = show_si && foc_only, col = "blue", bg = "blue", pch = 24),
+        tp_rects  = list(show = FALSE, col = transp("darkgreen", 0.12), border = NA),
+
+        al_line   = list(show = show_si, col = "purple", fill = "#FFE0FF"),
+        al_lines  = list(show = show_si, col = "purple", fill = "#FFC0FF"),
+        al_verts  = list(show = show_si, col = "purple"),
+        al_arrows = list(show = show_si, col = "purple"),
+
+        cent_pts  = list(show = FALSE && foc_only, col = "blue", bg = "blue", pch = 24),
         bord_pts  = list(show = FALSE, col = "blue", pch = 124),
         norm_pts  = list(show = FALSE, col = "black", pch = 124),
+
         bg_rect   = list(show = TRUE, col = "white"),
         foc_rect  = list(show = TRUE, col = transp("yellow")),
-        lc_rects  = list(show = FALSE, col = transp("black"), border = NA),
-        tp_rects  = list(show = FALSE, col = transp("darkgreen", 0.12), border = NA),
+
         bt_axis   = list(show = TRUE),
         lt_axis   = list(show = TRUE, sf = 1e6, las  = 1),
         tp_axis   = list(show = FALSE),
         rt_axis   = list(show = FALSE),
+
         bt_text   = list(show = TRUE, text = "Chemical Shift [ppm]"),
         lt_text   = list(show = TRUE, text = ylab),
         tp_text   = list(show = FALSE),

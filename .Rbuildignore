@@ -24,4 +24,6 @@
 ^submit_to_cran\.R$
 ^tmp$
 ^TODOS\.md$
-^vignettes$
+^vdiffr\.Rout\.fail$
+^doc$
+^Meta$

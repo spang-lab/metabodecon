@@ -133,6 +133,9 @@ labels).}
 centers of estimated, true or aligned lorentzian curves. Setting
 \code{tp_verts$show} to TRUE requires \code{truepar} to be set.}
 
+\item{al_arrows}{List of parameters passed to \code{\link[=arrows]{arrows()}} when drawing arrows between the
+estimated and aligned lorentzian curve centers.}
+
 \item{lgd}{List of parameters passed to \code{\link[=legend]{legend()}} when drawing the legend.}
 }
 \value{

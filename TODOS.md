@@ -1,22 +1,55 @@
 # Open
 
-## v1.2.x
+### FEATURE-24: Add checks for missing packages to align
 
-### DOC-3: Write paper
+Installation via `install.packages("metabodecon")` do not install `MassSpecWavelet` and `impute`. So if a user doesn't copy paste the installation instructions but installed via `install.packages("metabodecon")`, these dependencies will be missing. In such scenarios, we should print an error message with the required install commands and abort.
+
+### FEATURE-21: Test Installation on clean OS
+
+Add a workflow for testing installation on a clean Windows/Linux/Mac OS with R pre-installed, but without R-tools and any packages.
+
+### FEATURE-22: Improve questions in interactive mode
+
+1. Question `Signal free region correctly selected? (y/n)` should be replaced by `Borders to Signal Free Regions (green) correctly selected? (y/n)`
+2. Question `Water artefact fully inside red vertical lines? (y/n)` should be replaced by `Water artefact fully inside blue area? (y/n)`
+
+### FEATURE-23: Add function get_si_mat
+
+Add a function `get_si_mat()` for extracting a matrix of signal intensities (SI) from a metabodecon object. The type of returned SI should be `raw` for `spectra`, `sup` for `decons` and `al` for `aligns`.
+
+### DOC-03: Write paper
 
 Reformat the vignettes as paper and send to Wolfram for proofreading.
 
-### DOC-2: Improve docs
+### DOC-02: Add authors to functions
 
-- [ ] Add author descriptions to each function
-- [ ] Add lifecycle badges to each exported function
-- [ ] Ensure each exported function is used at least once in a vignette
-- [ ] Remove unused functions
-- [ ] Improve `Get_Started` by adding nicer plots
-- [ ] Write `Deconvolution_Details` vignette
-- [ ] Write `Alignment_Details` vignette
+### DOC-04: Add author descriptions to each function
 
-## v1.3.x
+### DOC-05: Add lifecycle badges to each exported function
+
+### DOC-06: Ensure each important function is used at least once in a vignette
+
+### DOC-07: Improve Get Started vignette
+
+Add nicer plots.
+Improve alignment part.
+
+### FEATURE-21: Add Sim2 Dataset
+
+sim2 should be simulated as follows:
+
+1. Find three metabolites `mets` related to diabetes with only 1-3 peaks each.
+2. Look up their signal centers `x0_` and halfwidths `lambda_`.
+3. Define two groups: `healthy` and `diabetes`.
+4. Draw signal areas for each sample from a distribution. The distribution should be different for `healthy` and `diabetes`.
+5. Draw metabolite shifts for each sample from a normal distribution.
+6. Apply the shifts to the signal centers.
+7. Simulate data as usual using `simulate_spectra`
+8. Make sure, all of the above information is stored inside `$meta$simpar`
+
+### DOC-08: Write vignette about Deconvolution Details
+
+### DOC-09: Write vignette about Alignment Details
 
 ### FEATURE-8: Warn user if peaks are found in SFR
 
@@ -46,8 +79,6 @@ If `c(11.44494, -1.8828)` is part of the ppm range, use these values, otherwise 
 
 1. `wshw = 0.01 * width(cs)` (where `0.01` is `round(0.007629452, 2)` and `0.007629452` equals `0.1527692 / 20.0236144338963` which is the width of the default WSHW dividided by the width of the `urine_1` spectrum. I.e., the new calculation would give approximately the same proportion of the spectrum width as the default value.)
 2. `sfr = max(cs) - c(1/6, 5/6) * width(cs)`
-
-## v1.4.0
 
 ### FEATURE-10: Implement deconvolute_spectra
 

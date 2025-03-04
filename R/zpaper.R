@@ -12,12 +12,12 @@ cacheenv <- environment()
 #' decons <- deconvolute(sim[1:3])
 #' aligns <- align(decons, maxShift = 100, maxCombine = 10)
 #' mkfig_nmr_challenges(spectra, decons, aligns)
-mkfig_nmr_challenges <- function(spectra = sim[1:3],
-                                 decons = deconvolute(spectra[1:3]),
+mkfig_nmr_challenges <- function(spectra = metabodecon::sim[1:3],
+                                 decons = deconvolute(spectra),
                                  aligns = align(decons, maxShift = 100, maxCombine = 10),
                                  show = FALSE,
                                  store = TRUE,
-                                 path = "tmp",
+                                 path = tmpdir(),
                                  name = c("challenges"),
                                  exts = c("pdf", "svg"),
                                  s = 1,
@@ -26,11 +26,7 @@ mkfig_nmr_challenges <- function(spectra = sim[1:3],
     if (show) {
         init_dev(s, w, h)
         fill_dev()
-        plot_nmr_challenges(
-            spectra,
-            decons,
-            aligns
-        )
+        plot_nmr_challenges(spectra, decons, aligns)
     }
     if (store) {
         R.devices::devEval(
@@ -47,7 +43,7 @@ mkfig_nmr_challenges <- function(spectra = sim[1:3],
 # Plot #####
 test_plot_nmr_challenges <- function(interactive = TRUE) {
     spectra <- metabodecon::sim[1:3]
-    decons <- deconvolute(sim[1:3])
+    decons <- deconvolute(spectra)
     aligns <- align(decons, maxShift = 100, maxCombine = 10)
     if (interactive) {
         .GlobalEnv$spectra <- spectra
@@ -60,8 +56,8 @@ test_plot_nmr_challenges <- function(interactive = TRUE) {
     }
 }
 
-plot_nmr_challenges <- function(spectra,
-                                decons = deconvolute(spectra[1:3]),
+plot_nmr_challenges <- function(spectra = metabodecon::sim[1:3],
+                                decons = deconvolute(spectra),
                                 aligns = align(decons)) {
     local_par(mfrow = c(5, 2), mar = c(0, 0, 2, 0))
     plot_1_nmr_experiment()
@@ -72,7 +68,7 @@ plot_nmr_challenges <- function(spectra,
     plot_6_deconvoluted_spectra(decons)
     plot_7_alignments(aligns)
     plot_8_aligned_spectra(aligns)
-    plot_9_annotation(aligns)
+    plot_9_annotations(aligns)
     plot_10_annotated_spectra(aligns)
 }
 
@@ -202,7 +198,6 @@ plot_4_raw_spectra <- function(spectra) {
 plot_4_raw_spectrum <- function(spectrum) {
     args <- draw_spectrum_plain_args
     args$obj <- spectrum
-    # args$mar[3] <- abs(grconvertH(0.1, "nfc", "lines"))
     do.call(draw_spectrum, args)
     with_par(list(mar = c(0, 0, 0, 0)), box())
 }
@@ -225,7 +220,6 @@ plot_5_deconvolutions <- function(decons) {
 
 plot_5_deconvolution <- function(decon) {
     args <- draw_spectrum_plain_args
-    # args$mar[3] <- abs(grconvertH(0.1, "nfc", "lines"))
     args$obj <- decon
     do.call(draw_spectrum, args)
     with_par(list(mar = c(0, 0, 0, 0)), box())
@@ -249,7 +243,6 @@ plot_6_deconvoluted_spectra <- function(decons) {
 
 plot_6_deconvoluted_spectrum <- function(decon) {
     args <- draw_spectrum_plain_args
-    # args$mar[3] <- abs(grconvertH(0.1, "nfc", "lines"))
     args$obj <- decon
     args$si_line <- FALSE
     args$lc_lines$col <- NA
@@ -275,7 +268,6 @@ plot_7_alignments <- function(aligns) {
 
 plot_7_alignment <- function(align) {
     args <- draw_spectrum_plain_args
-    # args$mar[3] <- abs(grconvertH(0.1, "nfc", "lines"))
     args$obj <- align
     args$si_line <- FALSE
     args$lc_lines$col <- NA
@@ -302,7 +294,6 @@ plot_8_aligned_spectra <- function(aligns) {
 
 plot_8_aligned_spectrum <- function(align) {
     args <- draw_spectrum_plain_args
-    # args$mar[3] <- abs(grconvertH(0.1, "nfc", "lines"))
     args$obj <- align
     args$si_line <- FALSE
     args$lc_lines <- FALSE
@@ -313,7 +304,7 @@ plot_8_aligned_spectrum <- function(align) {
     with_par(list(mar = c(0, 0, 0, 0)), box())
 }
 
-plot_9_annotation <- function(aligns) {
+plot_9_annotations <- function(aligns) {
     local_par(mar = c(2, 2, 2, 1))
     plot_empty(main = "Identification")
     marbox()
@@ -322,11 +313,36 @@ plot_9_annotation <- function(aligns) {
     fig_height <- diff(ndc[3:4])
     sub_height <- fig_height / 3
     box()
-    with_fig(fig = npc_to_ndc(c(0, 1, 0/3, 1/3)), plot_8_aligned_spectrum(aligns[[1]]))
-    with_fig(fig = npc_to_ndc(c(0, 1, 1/3, 2/3)), plot_8_aligned_spectrum(aligns[[2]]))
-    with_fig(fig = npc_to_ndc(c(0, 1, 2/3, 3/3)), plot_8_aligned_spectrum(aligns[[3]]))
+    with_fig(fig = npc_to_ndc(c(0, 1, 0/3, 1/3)), plot_9_annotation(aligns[[1]]))
+    with_fig(fig = npc_to_ndc(c(0, 1, 1/3, 2/3)), plot_9_annotation(aligns[[2]]))
+    with_fig(fig = npc_to_ndc(c(0, 1, 2/3, 3/3)), plot_9_annotation(aligns[[3]]))
     mtext2(1, "Chemical Shift")
     mtext2(2, "Signal Intensity")
+}
+
+plot_9_annotation <- function(align) {
+    # Name        Formula  Peaks  Description
+    # Methane     CH4      1      Simple alkane with one equivalent proton environment.
+    # Ethane      C2H6     1      Alkane with all protons equivalent, producing one peak.
+    # Chloroform  CHCl3    1      Common NMR solvent with a single proton.
+    # Glycine     C2H5NO2  2      Simplest amino acid with alpha proton and NH3+ group.
+    # Alanine     C3H7NO2  3      Contains CH3, alpha proton, and NH3+ group.
+    # Serine      C3H7NO3  4      Has CH2, alpha proton, OH, and NH3+ groups.
+    # Glucose     C6H12O6  5-6    Key sugar in metabolism, altered in diabetes.
+    # Lactate     C3H6O3   3      Diagnostic metabolite for lactic acidosis.
+    args <- draw_spectrum_plain_args
+    args$obj <- align
+    args$si_line <- FALSE
+    args$lc_lines <- FALSE
+    args$lc_verts <- FALSE
+    args$al_arrows <- FALSE
+    args$al_lines$col <- NA
+    do.call(draw_spectrum, args)
+    draw_spectrum(align)
+    coords_text <- align$lcpar$x0_al
+    segments
+
+    with_par(list(mar = c(0, 0, 0, 0)), box())
 }
 
 plot_10_annotated_spectra <- function(aligns) {

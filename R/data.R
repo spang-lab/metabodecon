@@ -463,9 +463,7 @@ cachedir <- function(persistent = NULL) {
     mkdirs(ncd)
 }
 
-# Sap (Private) #####
-
-`sap Documentation` <- NULL
+# Sap (Public) #####
 
 #' @name sap
 #'
@@ -519,8 +517,7 @@ update_sap <- function() {
     path
 }
 
-# Sim #####
-
+# Sim (Public) #####
 
 #' @title The Sim Dataset
 #'
@@ -535,10 +532,6 @@ update_sap <- function() {
 #' `spectrum` and `spectra` objects see [Metabodecon
 #' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
 "sim"
-
-# # For some reason, bindings for "lazy datasets" in R are created only in the Package Environment and not in the Package Namespace. This means that functions in the package cannot directly access these datasets. To fix this, we explicitly create a `sim` binding the package namespace, pointing to a promise. This promise, when evaluated, will return the object from the package namespace. This way, we can use the `sim` dataset in the same fashion as any other exported object, defined directly in R. To create this promise, we can use [delayedAssign()]. To make our editor aware of the fact that an assignment is going on, we first set `sim` to any value using the traditional assignment operator and then overwrite it with [delayedAssign()]. This way, the editor will recognize the assignment and provide autocompletion for the `sim` object.
-# sim <- NULL
-# delayedAssign("sim", get("sim", envir = as.environment("package:metabodecon")))
 
 make_sim <- function(nworkers = 1) {
     decons <- deconvolute_blood(nworkers = nworkers)

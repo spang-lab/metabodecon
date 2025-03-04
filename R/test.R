@@ -386,27 +386,11 @@ expect_str <- function(obj, expected_str, ...) {
 #' visualize the deconvolution results.
 #'
 #' @details
-#' The function first plots the deconvolution results for visual inspection and
-#' then returns the PRARP score for the deconvolution.
+#' The PRARP score is calculated as follows:
 #'
-#' The plotting is done as follows:
-#'
-#' 1. Plot the deconvoluted spectrum using `plot_spectrum()`.
-#' 2. Draw green circles around found peaks [^1].
-#' 3. Draw red circles around missed peaks [^1].
-#' 4. Draw red rectangles around falsely detected peaks. [^2]
-#'
-#' [^1]: we consider a peak as 'found' if there is at least one detected peak
-#'       center within 0.001 ppm of the true peak position. If this is not the
-#'       case, the peak is considered as 'missed'.
-#' [^2]: we consider a peak as 'falsely detected' if there is no true peak
-#'       center within 0.001 ppm of the detected peak position.
-#'
-#' In addition, a quality score is calculated as follows:
-#'
-#' quality    = peak_ratio * area_ratio
 #' peak_ratio = min(peaks_true, peaks_found) / max(peaks_true, peaks_found)
 #' area_ratio = min(area_true,  area_found)  / max(area_true,  area_found)
+#' prarp      = peak_ratio * area_ratio
 #'
 #' I.e., the score is close to 1 if the number of peaks and the area of the
 #' peaks are similar in the true and found spectra and the score is close to 0
