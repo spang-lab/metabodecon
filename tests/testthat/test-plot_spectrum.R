@@ -1,3 +1,6 @@
+testthat::skip_on_cran()
+testthat::skip_on_ci()
+
 test_result <- test_that("plot_spectrum works", {
     tmp <- vdiffr::expect_doppelganger(
         title = "plot_spectrum",

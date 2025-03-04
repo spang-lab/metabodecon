@@ -1,16 +1,5 @@
 # Open
 
-
-### FEATURE-25: Make Rust backend optional
-
-The Rust backend should only be built for R versions >= 4.2.0 and if RTools is available. If any of these conditions is not fulfilled, compilation should be skipped.
-
-If skipping compilation is not possible, because we load the dynamic lib in NAMESPACE, it should be generated in a way that does not use any features required by R 4.2.0 or greater. If we choose backend == "rust", we need to check whether the required functions are available.
-
-### FEATURE-26: Merge Rust backend
-
-Merge in Rust backend branch. Requires FEATURE-25 to be implemented first.
-
 ### FEATURE-24: Add checks for missing packages to align
 
 Installation via `install.packages("metabodecon")` do not install `MassSpecWavelet` and `impute`. So if a user doesn't copy paste the installation instructions but installed via `install.packages("metabodecon")`, these dependencies will be missing. In such scenarios, we should print an error message with the required install commands and abort.
@@ -28,9 +17,15 @@ Add a workflow for testing installation on a clean Windows/Linux/Mac OS with R p
 
 Add a function `get_si_mat()` for extracting a matrix of signal intensities (SI) from a metabodecon object. The type of returned SI should be `raw` for `spectra`, `sup` for `decons` and `al` for `aligns`.
 
-### DOC-03: Write paper
+### FEATURE-25: Make Rust backend optional
 
-Reformat the vignettes as paper and send to Wolfram for proofreading.
+The Rust backend should only be built for R versions >= 4.2.0 and if RTools is available. If any of these conditions is not fulfilled, compilation should be skipped.
+
+If skipping compilation is not possible, because we load the dynamic lib in NAMESPACE, it should be generated in a way that does not use any features required by R 4.2.0 or greater. If we choose backend == "rust", we need to check whether the required functions are available.
+
+### FEATURE-26: Merge Rust backend
+
+Merge in Rust backend branch. Requires FEATURE-25 to be implemented first.
 
 ### DOC-02: Add authors to functions
 
@@ -61,6 +56,10 @@ sim2 should be simulated as follows:
 ### DOC-08: Write vignette about Deconvolution Details
 
 ### DOC-09: Write vignette about Alignment Details
+
+### DOC-03: Write paper
+
+Reformat the vignettes as paper and send to Wolfram for proofreading.
 
 ### FEATURE-8: Warn user if peaks are found in SFR
 
@@ -102,20 +101,38 @@ Implement `deconvolute_spectra()` and `deconvolute_spectrum()` which should be t
 5. Remove the scale factor and scaled data point numbers as described in [CHECK-4](#check-4-data-point-format).
 6. Remove negative values in a consistent way, as described by [CHECK-5](#check-5-signal-preprocessing)
 
-### INFRA-1: Create issue for the following topics
+### INFRA-1: Create issues for the following topics
 
-- Write a small wrapper to generate and store `aligned SI matrix`
-- Check and refactor integral calculations
-- Check and refactor mse calculations
-- Improve prarp tests. The peak ratio should be calculated as nCorrectlyIdentifiedPeaks / (nPeaks + nFalselyDetectedPeaks)
-- Implement [Max' parameter approximation algorithms](https://gitlab.spang-lab.de/bachelorthesis/ws2425_msombke_metabodecon-v2/-/blob/main/new_method_docs/main.R
+### REFACTOR: integral calculations
+
+### REFACTOR: mse calculations
+
+### REFACTOR: parameter approximation
+
+Implement [Max' parameter approximation algorithms](https://gitlab.spang-lab.de/bachelorthesis/ws2425_msombke_metabodecon-v2/-/blob/main/new_method_docs/main.R
 ) in `calc_A`, `calc_lambda` and `calc_w`.
-- Add testcase with 100 iterations
-- Add testcase with one big peak at 0.000 ppm (because it's unclear why <https://github.com/spang-lab/metabodecon/blob/v1.2.0/R/21_decon_helpers.R#L315> checks for w[i] == 0).
-- Check special handling for cases with A[i] == 0 and lambda[i] == 0 in parameter approximaton. Max analyzed it and concluded that checks are not necessary. My though: copy paste artifacts from the the w[i] == 0 check (which is wrong).
-- Show prarp in `plot_spectrum()`
-- Show peak scores in `plot_spectrum()`
-- When reading spectra, the spectrum type should be checked (1D, 2D, etc. and if ncessary an error message should be printed)
+
+### TESTING: Add testcase with 100 iterations
+
+### TESTING: Add testcase with one big peak at 0.000 ppm
+
+It's unclear why <https://github.com/spang-lab/metabodecon/blob/v1.2.0/R/21_decon_helpers.R#L315> checks for w[i] == 0.
+
+Assumption: it's a bug and leads to this peak being missed. If this is the case, remove the check from the code as well.
+
+### REFACTOR: Remove unneeded checks
+
+Check special handling for cases with A[i] == 0 and lambda[i] == 0 in parameter approximaton. Max analyzed it and concluded that checks are not necessary. My thought: copy paste artifacts from the the w[i] == 0 check (which is wrong).
+
+### FEATURE: show prarp in plot_spectrum
+
+### FEATURE: show peak scores in plot_spectrum
+
+### FEATURE: check spectrum type
+
+When reading spectra, the spectrum type should be checked (1D, 2D, etc. and if ncessary an error message should be printed)
+
+### FEATURE: integrate jcampdx functions
 
 # DONE
 
