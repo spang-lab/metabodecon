@@ -31,7 +31,6 @@ impl Deconvolution {
             hw.push(lorentzian.hw());
             maxp.push(lorentzian.maxp());
         });
-
         let mut result = HashMap::<&str, Robj>::new();
         result.insert("A", sf.into());
         result.insert("lambda", hw.into());

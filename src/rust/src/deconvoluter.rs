@@ -176,8 +176,7 @@ impl Deconvoluter {
             Ok(spectra) => spectra,
             Err(error) => throw_r_error(format!("{}", error)),
         };
-        let deconvolutions = match self.inner.par_deconvolute_spectra(&spectra)
-        {
+        let deconvolutions = match self.inner.par_deconvolute_spectra(&spectra) {
             Ok(deconvolutions) => deconvolutions
                 .into_iter()
                 .map(|deconvolution| deconvolution.into())

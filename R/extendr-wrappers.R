@@ -116,6 +116,20 @@ Spectrum$intensities <- function() .Call(wrap__Spectrum__intensities, self)
 
 Spectrum$signal_boundaries <- function() .Call(wrap__Spectrum__signal_boundaries, self)
 
+Spectrum$nucleus <- function() .Call(wrap__Spectrum__nucleus, self)
+
+Spectrum$frequency <- function() .Call(wrap__Spectrum__frequency, self)
+
+Spectrum$reference_compound <- function() .Call(wrap__Spectrum__reference_compound, self)
+
+Spectrum$set_signal_boundaries <- function(signal_boundaries) invisible(.Call(wrap__Spectrum__set_signal_boundaries, self, signal_boundaries))
+
+Spectrum$set_nucleus <- function(nucleus) invisible(.Call(wrap__Spectrum__set_nucleus, self, nucleus))
+
+Spectrum$set_frequency <- function(frequency) invisible(.Call(wrap__Spectrum__set_frequency, self, frequency))
+
+Spectrum$set_reference_compound <- function(reference) invisible(.Call(wrap__Spectrum__set_reference_compound, self, reference))
+
 Spectrum$read_bruker <- function(path, experiment, processing, signal_boundaries) .Call(wrap__Spectrum__read_bruker, path, experiment, processing, signal_boundaries)
 
 Spectrum$read_bruker_set <- function(path, experiment, processing, signal_boundaries) .Call(wrap__Spectrum__read_bruker_set, path, experiment, processing, signal_boundaries)
