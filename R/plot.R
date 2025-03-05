@@ -44,7 +44,7 @@ plot_spectra <- function(obj,
                          ylab = paste("Signal Intensity [au] /", sfy),
                          mar = c(4.1, 4.1, 1.1, 0.1)) {
     decons <- as_v2_objs(obj, ...)
-    sis <- lapply(decons, function(x) x$sit$al %||% x$sit$sup %||% x$si)
+    sis <- lapply(decons, function(x) x$sit$supal %||% x$sit$sup %||% x$si)
     x0s <- lapply(decons, function(x) x$lcpar$x0)
     css <- lapply(decons, function(x) x$cs)
     si_min <- 0
@@ -517,8 +517,8 @@ draw_spectrum <- function(
     si <- si_all <- obj$si
     sm <- sm_all <- obj$sit$sm # NULL for spectrum objects (NS)
     d2 <- d2_all <- NULL
-    sp <- sp_all <- obj$sit$sup # NS
-    al <- al_all <- obj$sit$al # NULL for spectrum and decon objects (NSD)
+    sup <- sup_all <- obj$sit$sup # NS
+    supal <- supal_all <- obj$sit$supal # NULL for spectrum and decon objects (NSD)
     if (!isFALSE(d2_line$show)) {
         if (is.null(sm_all)) warning("Smoothed SI is missing. Calculating second derivative from raw SI.")
         d2 <- d2_all <- calc_second_derivative(sm_all %||% si_all)
@@ -550,7 +550,7 @@ draw_spectrum <- function(
 
     # Calculate amplitude and display height for estimated and true lorentzians
     if (nrow(lcpar) > 0) {
-        if (sf_vert == "auto") sf_vert <- max(sp) / max(lcpar$A, trpar$A)
+        if (sf_vert == "auto") sf_vert <- max(sup) / max(lcpar$A, trpar$A)
         for (var in c("lcpar", "trpar")) {
             env[[var]]$ampl <- env[[var]]$A / env[[var]]$lambda
             if (is.numeric(sf_vert))    env[[var]]$vheight <- env[[var]]$A * (sf_vert)
@@ -626,13 +626,13 @@ draw_spectrum <- function(
     draw_points(cs[ibp], sm[ibp], bord_pts)
     draw_points(cs[inp], sm[inp], norm_pts)
     # Deconvolution Lines
-    draw_line(cs, sp, sp_line)
+    draw_line(cs, sup, sp_line)
     apply(lcpar, 1, draw_lc_line, cs, lc_lines, ythresh) # 13ms
     apply(trpar, 1, draw_lc_line, cs, tp_lines, ythresh) # 13ms
     draw_verts(lcpar$x0, lcpar$vheight, lc_verts)
     draw_verts(trpar$x0, trpar$vheight, tp_verts)
     # Alignment Lines
-    draw_line(cs, al, al_line)
+    draw_line(cs, supal, al_line)
     apply(alpar, 1, draw_lc_line, cs, al_lines, ythresh) # 13ms
     draw_verts(lcpar$x0_al, lcpar$vheight, al_verts)
     # Arrows

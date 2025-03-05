@@ -106,14 +106,20 @@ align <- function(x, maxShift = 50, maxCombine = 5, verbose = FALSE) {
     # Create `align` objects from the `decon2` objects:
     # 1. Store the new peak centers in their respective slot `$lcpar$x0_al`
     # 2. Calculate new signal intensities as superposition of lorentz curves,
-    #    (using the updated peak centers) and store them in their respective
-    #    slot `$sit$al`.
+    #    (using the updated peak centers) and store them in `$sit$supal`.
+    # 3. Store the new signal intensities as integrals in `$sit$al`.
     cs <- xx[[1]]$cs
+    n <- length(cs)
     for (i in seq_along(xx)) {
-        pciac <- which(cmat[i, ] != 0) # Peak center indices after combination
-        lcpar <- xx[[i]]$lcpar
-        xx[[i]]$lcpar$x0_al <- x0_al <- cs[pciac]
-        xx[[i]]$sit$al <- lorentz_sup(cs, x0_al, lcpar$A, lcpar$lambda)
+        al <- rep(0, n)
+        pciac <- which(cmat[i, ] != 0)  # Peak center indices after alignment
+        lcpar <- xx[[i]]$lcpar          # Lorentzian curve parameters
+        x0_al <- cs[pciac]              # Chemical shifts of peak centers
+        al[pciac] <- lcpar$A * pi       # SIs as integrals of aligned lorentzians
+        supal <- lorentz_sup(cs, x0_al, lcpar$A, lcpar$lambda)
+        xx[[i]]$lcpar$x0_al <- x0_al
+        xx[[i]]$sit$al <- al
+        xx[[i]]$sit$supal <- lorentz_sup(cs, x0_al, lcpar$A, lcpar$lambda)
         class(xx[[i]]) <- "align"
     }
     aligns <- structure(xx, class = "aligns")
