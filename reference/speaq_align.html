@@ -25,7 +25,7 @@ purpose of the 'speaq' package."><meta property="og:image" content="https://span
 
     <a class="navbar-brand me-2" href="../index.html">metabodecon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -56,7 +56,7 @@ purpose of the 'speaq' package."><meta property="og:image" content="https://span
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.svg" class="logo" alt=""><h1>Align Signals using 'speaq'</h1>
-      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/v1.2.6/R/30_align.R" class="external-link"><code>R/30_align.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/main/R/align.R" class="external-link"><code>R/align.R</code></a></small>
       <div class="d-none name"><code>speaq_align.Rd</code></div>
     </div>
 
@@ -78,7 +78,7 @@ purpose of the 'speaq' package.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">speaq_align</span><span class="op">(</span></span>
 <span>  feat <span class="op">=</span> <span class="fu"><a href="gen_feat_mat.html">gen_feat_mat</a></span><span class="op">(</span><span class="va">spectrum_data</span><span class="op">)</span>,</span>
 <span>  maxShift <span class="op">=</span> <span class="fl">50</span>,</span>
-<span>  spectrum_data <span class="op">=</span> <span class="fu"><a href="deconvolute.html">generate_lorentz_curves_sim</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  <span class="va">spectrum_data</span>,</span>
 <span>  si_size_real_spectrum <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">spectrum_data</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">y_values</span><span class="op">)</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  show <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -163,7 +163,7 @@ Refactored by Tobias Schmidt in 2024.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  aligning spectrum  1</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  Median pearson correlation of aligned spectra: 0.9977223</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Alignment time:  2e-04  minutes</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Alignment time:  0.0001833333  minutes</span>
 <span class="r-plt img"><img src="speaq_align-1.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">M</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  num [1:2, 1:2048] NA NA NA NA NA NA NA NA NA NA ...</span>

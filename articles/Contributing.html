@@ -26,7 +26,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metabodecon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -70,7 +70,7 @@
       <img src="../logo.svg" class="logo" alt=""><h1>Contributing</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/v1.2.6/vignettes/Contributing.Rmd" class="external-link"><code>vignettes/Contributing.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/main/vignettes/Contributing.Rmd" class="external-link"><code>vignettes/Contributing.Rmd</code></a></small>
       <div class="d-none name"><code>Contributing.Rmd</code></div>
     </div>
 
@@ -113,10 +113,10 @@ commands to check that everything is still working as expected:</p>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/spell_check.html" class="external-link">spell_check</a></span><span class="op">(</span><span class="op">)</span> <span class="co"># Check spelling (add false positives to inst/WORDLIST)</span></span>
 <span><span class="fu">urlchecker</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/urlchecker/man/url_check.html" class="external-link">url_check</a></span><span class="op">(</span><span class="op">)</span> <span class="co"># Check URLs</span></span>
 <span><span class="fu">run_tests</span><span class="op">(</span>all <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="co"># Execute tests from tests folder inkl. slow tests</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/run_examples.html" class="external-link">run_examples</a></span><span class="op">(</span><span class="op">)</span> <span class="co"># Run all examples in the package</span></span>
-<span><span class="fu">toscutil</span><span class="fu">::</span><span class="fu"><a href="https://toscm.github.io/toscutil/reference/check_pkg_docs.html" class="external-link">check_pkg_docs</a></span><span class="op">(</span><span class="op">)</span> <span class="co"># Check function documentation for missing tags</span></span>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/run_examples.html" class="external-link">run_examples</a></span><span class="op">(</span>run_donttest <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="co"># Run all examples in the package</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/check.html" class="external-link">check</a></span><span class="op">(</span><span class="op">)</span> <span class="co"># Check package formalities</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/install.html" class="external-link">install</a></span><span class="op">(</span><span class="op">)</span> <span class="co"># Install as required by next command</span></span>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/install.html" class="external-link">install</a></span><span class="op">(</span><span class="op">)</span> <span class="co"># Install as required by next commands</span></span>
+<span><span class="fu">toscutil</span><span class="fu">::</span><span class="fu"><a href="https://toscm.github.io/toscutil/reference/check_pkg_docs.html" class="external-link">check_pkg_docs</a></span><span class="op">(</span><span class="op">)</span> <span class="co"># Check function documentation for missing tags</span></span>
 <span><span class="fu">pkgdown</span><span class="fu">::</span><span class="fu"><a href="https://pkgdown.r-lib.org/reference/build_site.html" class="external-link">build_site</a></span><span class="op">(</span><span class="op">)</span> <span class="co"># Build website in docs folder</span></span></code></pre></div>
 <p>After doing these steps, you can push your changes to Github and
 create a pull request.</p>

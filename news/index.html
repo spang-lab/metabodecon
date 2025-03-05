@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metabodecon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -38,9 +38,23 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.svg" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/spang-lab/metabodecon/blob/v1.2.6/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/spang-lab/metabodecon/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="1.3.0" id="metabodecon-130">metabodecon 1.3.0<a class="anchor" aria-label="anchor" href="#metabodecon-130"></a></h2>
+<ul><li>Added Github Workflow (GWF) to test installation on a clean Windows/Linux/Mac OS with R pre-installed, but without R-tools and any packages. Closes Todo <a href="TODOS.html#test-install-on-clean-os">Test Install on clean OS</a>.</li>
+<li>Fixed GWF for testing code coverage scipt</li>
+<li>Improved formatting for R-CMD-check-GWF and pkgdown-GWF</li>
+<li>Improved <code><a href="../reference/align.html">align()</a></code>. The new implementation is faster and returns more information. In particular, the chemical shifts of the aligned peaks centers as well as the superposition of the aligned peaks are returned.</li>
+<li>Improved documentation and defaults for <code><a href="../reference/speaq_align.html">speaq_align()</a></code> and <code><a href="../reference/combine_peaks.html">combine_peaks()</a></code>.</li>
+<li>Improved <code><a href="../reference/draw_spectrum.html">draw_spectrum()</a></code>:
+<ul><li>Added parameters <code>bt_text</code>, <code>lt_text</code>, <code>tp_text</code> and <code>rt_text</code> to <code><a href="../reference/plot_spectrum.html">plot_spectrum()</a></code> to allow for full control over the text labels at the plot margins.</li>
+<li>Added parameter <code>sf_vert</code> to <code><a href="../reference/plot_spectrum.html">plot_spectrum()</a></code> to allow configuration of the height of the vertical lines drawn at the peak centers.</li>
+<li>Added the option to fill the area under lorentzian curves with color.</li>
+<li>Improved the legend of the plot.</li>
+</ul></li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.2.6" id="metabodecon-126">metabodecon 1.2.6<a class="anchor" aria-label="anchor" href="#metabodecon-126"></a></h2><p class="text-muted">CRAN release: 2025-01-21</p>
 <ul><li>Fixed a bug in <code><a href="../reference/MetaboDecon1D.html">MetaboDecon1D()</a></code> that caused argument <code>file_path</code> to be interpreted as a relative path, even if it was an absolute path.</li>
