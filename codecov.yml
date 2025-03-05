@@ -1,0 +1,25 @@
+  # Learn more at http://docs.codecov.io/docs/codecov-yaml
+
+codecov:
+  require_ci_to_pass: no
+  notify:
+    wait_for_ci: no
+
+coverage:
+  precision: 2
+  round: down
+  range: 0...100
+  ignore:
+    - ".*test_.*"
+  status:
+    project:
+      default:
+        enabled: yes
+        target: 1
+        threshold: 1
+    patch:
+      default:
+        enabled: off
+
+ignore:
+  - "**/paper.R"

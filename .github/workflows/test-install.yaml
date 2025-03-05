@@ -1,6 +1,10 @@
 name: test-cran-install
 permissions: read-all
-on: [push: {branches: [main, master]}, pull_request: {branches: [main, master]}]
+
+on: {
+  push: {branches: [main, master]},
+  pull_request: {branches: [main, master]}
+}
 
 jobs:
 
