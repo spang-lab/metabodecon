@@ -61,6 +61,10 @@ sim2 should be simulated as follows:
 
 ### DOC-09: Write vignette about Alignment Details
 
+### CHECK-10: Analyze runtime
+
+Do a benchmark about which parts take up the most time in `deconvolute` and `align` and create issues for improving them. Some of the slow parts should already be mentioned in issues. If this is the case, increase the priority of these issue.
+
 ### DOC-03: Write paper
 
 Reformat the vignettes as paper and send to Wolfram for proofreading.

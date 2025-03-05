@@ -578,8 +578,8 @@ draw_spectrum <- function(
         si <- si_foc <- si_all[ifp_all]
         sm <- sm_foc <- sm_all[ifp_all]
         d2 <- d2_foc <- d2_all[ifp_all]
-        sp <- sp_foc <- sp_all[ifp_all]
-        al <- al_foc <- al_all[ifp_all]
+        sup <- sup_foc <- sup_all[ifp_all]
+        supal <- supal_foc <- supal_all[ifp_all]
 
         # Filter out lorentzians not affecting focus region (239us)
         y_tresh <- 0.001 * diff(range(si))
