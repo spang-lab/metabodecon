@@ -80,6 +80,43 @@ impl Spectrum {
         ]
     }
 
+    pub(crate) fn read_bruker(path: &str, experiment: u32, processing: u32, signal_boundaries: Vec<f64>) -> Self {
+        if signal_boundaries.len() != 2 {
+            throw_r_error("signal_boundaries must be a vector of length 2");
+        }
+        let signal_boundaries = (signal_boundaries[0], signal_boundaries[1]);
+
+        match spectrum::Bruker::read_spectrum(path, experiment, processing, signal_boundaries) {
+            Ok(spectrum) => spectrum.into(),
+            Err(error) => throw_r_error(format!("{}", error)),
+        }
+    }
+
+    pub(crate) fn read_bruker_set(path: &str, experiment: u32, processing: u32, signal_boundaries: Vec<f64>) -> List {
+        if signal_boundaries.len() != 2 {
+            throw_r_error("signal_boundaries must be a vector of length 2");
+        }
+        let signal_boundaries = (signal_boundaries[0], signal_boundaries[1]);
+        let spectra = match spectrum::Bruker::read_spectra(path, experiment, processing, signal_boundaries) {
+            Ok(spectra) => spectra.into_iter().map(|spectrum| spectrum.into()).collect::<Vec<Spectrum>>(),
+            Err(error) => throw_r_error(format!("{}", error)),
+        };
+
+        List::from_values(spectra)
+    }
+
+    pub(crate) fn read_jcampdx(path: &str, signal_boundaries: Vec<f64>) -> Self {
+        if signal_boundaries.len() != 2 {
+            throw_r_error("signal_boundaries must be a vector of length 2");
+        }
+        let signal_boundaries = (signal_boundaries[0], signal_boundaries[1]);
+
+        match spectrum::JcampDx::read_spectrum(path, signal_boundaries) {
+            Ok(spectrum) => spectrum.into(),
+            Err(error) => throw_r_error(format!("{}", error)),
+        }
+    }
+
     pub(crate) fn write_json(&self, path: &str) {
         let serialized = match serde_json::to_string_pretty(self.as_ref()) {
             Ok(serialized) => serialized,

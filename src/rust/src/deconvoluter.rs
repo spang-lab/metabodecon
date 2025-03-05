@@ -160,11 +160,11 @@ impl Deconvoluter {
             Ok(spectra) => spectra,
             Err(error) => throw_r_error(format!("{}", error)),
         };
-        let deconvolutions: Vec<Deconvolution> = match self.inner.deconvolute_spectra(&spectra) {
+        let deconvolutions = match self.inner.deconvolute_spectra(&spectra) {
             Ok(deconvolutions) => deconvolutions
                 .into_iter()
                 .map(|deconvolution| deconvolution.into())
-                .collect(),
+                .collect::<Vec<Deconvolution>>(),
             Err(error) => throw_r_error(format!("{}", error)),
         };
 
@@ -176,12 +176,12 @@ impl Deconvoluter {
             Ok(spectra) => spectra,
             Err(error) => throw_r_error(format!("{}", error)),
         };
-        let deconvolutions: Vec<Deconvolution> = match self.inner.par_deconvolute_spectra(&spectra)
+        let deconvolutions = match self.inner.par_deconvolute_spectra(&spectra)
         {
             Ok(deconvolutions) => deconvolutions
                 .into_iter()
                 .map(|deconvolution| deconvolution.into())
-                .collect(),
+                .collect::<Vec<Deconvolution>>(),
             Err(error) => throw_r_error(format!("{}", error)),
         };
 

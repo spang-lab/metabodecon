@@ -116,6 +116,12 @@ Spectrum$intensities <- function() .Call(wrap__Spectrum__intensities, self)
 
 Spectrum$signal_boundaries <- function() .Call(wrap__Spectrum__signal_boundaries, self)
 
+Spectrum$read_bruker <- function(path, experiment, processing, signal_boundaries) .Call(wrap__Spectrum__read_bruker, path, experiment, processing, signal_boundaries)
+
+Spectrum$read_bruker_set <- function(path, experiment, processing, signal_boundaries) .Call(wrap__Spectrum__read_bruker_set, path, experiment, processing, signal_boundaries)
+
+Spectrum$read_jcampdx <- function(path, signal_boundaries) .Call(wrap__Spectrum__read_jcampdx, path, signal_boundaries)
+
 Spectrum$write_json <- function(path) invisible(.Call(wrap__Spectrum__write_json, self, path))
 
 Spectrum$read_json <- function(path) .Call(wrap__Spectrum__read_json, path)
