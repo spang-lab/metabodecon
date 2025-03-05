@@ -1,3 +1,18 @@
+# metabodecon 1.3.0
+
+- Added Github Workflow (GWF) to test installation on a clean Windows/Linux/Mac OS with R pre-installed, but without R-tools and any packages. Closes Todo [Test Install on clean OS].
+- Fixed GWF for testing code coverage scipt
+- Improved formatting for R-CMD-check-GWF and pkgdown-GWF
+- Improved `align()`. The new implementation is faster and returns more information. In particular, the chemical shifts of the aligned peaks centers as well as the superposition of the aligned peaks are returned.
+- Improved documentation and defaults for `speaq_align()` and `combine_peaks()`.
+- Improved `draw_spectrum()`:
+    - Added parameters `bt_text`, `lt_text`, `tp_text` and `rt_text` to `plot_spectrum()` to allow for full control over the text labels at the plot margins.
+    - Added parameter `sf_vert` to `plot_spectrum()` to allow configuration of the height of the vertical lines drawn at the peak centers.
+    - Added the option to fill the area under lorentzian curves with color.
+    - Improved the legend of the plot.
+
+[Test Install on clean OS]: TODOS.md#test-install-on-clean-os
+
 # metabodecon 1.2.6
 
 - Fixed a bug in `MetaboDecon1D()` that caused argument `file_path` to be interpreted as a relative path, even if it was an absolute path.

@@ -89,8 +89,6 @@ width <- function(x) {
     diff(range(x))
 }
 
-
-
 # Convert between Units (Private) #############################################
 
 #' @noRd
@@ -367,10 +365,18 @@ get_yn_input <- function(prompt) {
 }
 
 `%==%` <- function(x, y) {
-    identical(x, y)
+    isTRUE(all.equal(x, y))
 }
 
 `%!=%` <- function(x, y) {
+    !isTRUE(all.equal(x, y))
+}
+
+`%===%` <- function(x, y) {
+    identical(x, y)
+}
+
+`%!==%` <- function(x, y) {
     !identical(x, y)
 }
 
@@ -453,8 +459,19 @@ dput2 <- function(..., collapse = " ", trim = TRUE) {
     return(x)
 }
 
+str0 <- function(object,
+                 max.level = 1,
+                 give.attr = FALSE, ...) {
+    str(
+        object,
+        max.level = max.level,
+        give.attr = give.attr,
+        ...
+    )
+}
+
 str2 <- function(...) {
-    capture.output(str(...))
+    capture.output2(str(...))
 }
 
 #' @noRd
@@ -493,7 +510,7 @@ logf <- function(fmt,
     cat(prefix(), sep1, sprintf(fmt, ...), sep2, end, sep = "", file = file, append = append)
 }
 
-stopf <- function(fmt, ..., call. = TRUE, domain = NULL) {
+stopf <- function(fmt, ..., call. = FALSE, domain = NULL) {
     stop(sprintf(fmt, ...), call. = call., domain = domain)
 }
 
@@ -758,6 +775,12 @@ generate_lorentz_curves_type_checks <- quote(
 
 # Misc (Private) ##############################################################
 
+empty_df <- function(names) {
+    df <- data.frame(matrix(ncol = length(names), nrow = 0))
+    colnames(df) <- names
+    df
+}
+
 #' @noRd
 #'
 #' @title Calculate Magnetic Field Strength
@@ -773,7 +796,8 @@ generate_lorentz_curves_type_checks <- quote(
 #' 3. The resonance frequency of the reference equals the resonance frequency of
 #'    protons
 #'
-#' @param x A `spectrum` object as described in [metabodecon_classes].
+#' @param x A `spectrum` object as described in [Metabodecon
+#' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
 #'
 #' @return The magnetic field strength in Tesla.
 #'

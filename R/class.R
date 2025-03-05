@@ -1,37 +1,5 @@
 # Classes #####
 
-metabodecon_classes <- NULL
-
-#' @name metabodecon_classes
-#'
-#' @title Metabodecon Classes
-#'
-#' @description
-#' Metabodecon introduces a set of classes to highlight the presence of  certain
-#' elements in corresponding objects.
-#'
-#' The order of elements may vary between  different  versions  of  Metabodecon,
-#' thus elements should always be accessed by name, for example, using `x$si` or
-#' `x[["cs"]]`. A short description of each class is given in the listing below.
-#'
-#' -  `spectrum`: One NMR spectrum
-#' -  `decon0`: One deconvoluted NMR spectrum stored in [MetaboDecon1D()] format
-#' -  `decon1`: One deconvoluted NMR spectrum stored in [generate_lorentz_curves()] format
-#' -  `decon2`: One deconvoluted NMR spectrum stored in [deconvolute()] format
-#' -  `align`: One aligned NMR spectrum
-#'
-#' The classes mentioned above represent individual objects, such  as  a  single
-#' spectrum, deconvolution,  or  alignment.  However,  it  is  often  useful  to
-#' describe collections  of  these  objects,  such  as  a  list  of  spectra  or
-#' deconvolutions.  Therefore,  for  each  individual  class,  a   corresponding
-#' "collection"  class  is  provided.  These  collection  classes   are   named:
-#' `spectra`, `decons0`, `decons1`, `decons2`, and `aligns`.
-#'
-#' More details can be found in Metabodecon's online documentation at
-#' [spang-lab.github.io/metabodecon/articles/Metabodecon-Classes](
-#' https://spang-lab.github.io/metabodecon/articles/Classes.html).
-NULL
-
 spectrum_members <- c(
     "cs",
     "si",
@@ -134,7 +102,9 @@ align_members <- decon2_members
 
 # Methods #####
 
-print_methods <- NULL
+print_methods <- function() {
+    # Placeholder to find documentation for `print_methods`
+}
 
 #' @name print_methods
 #' @rdname print_methods
@@ -178,20 +148,12 @@ print.spectrum <- function(x, name = FALSE, ...) {
 #' @export
 #' @rdname print_methods
 print.ispec <- function(x, name = FALSE, ...) {
-    # fmt <- "%sispec object (%d dp, %.1f to %.1f ppm)\n"
-    # namestr <- if (name) paste0(x$name %||% "NULL", ": ") else ""
-    # catf(fmt, namestr, length(x$ppm), max(x$ppm), min(x$ppm))
     str(x, 1)
 }
 
 #' @export
 #' @rdname print_methods
 print.idecon <- function(x, name = FALSE, ...) {
-    # ppm <- x$ppm
-    # n <- length(ppm)
-    # name <- if (name) paste0(x$name %||% "NULL", ": ") else ""
-    # fmt <- "%sidecon object (%d dp, %.1f to %.1f ppm, %d peaks)\n"
-    # catf(fmt, name, n, max(ppm), min(ppm), length(x$A))
     str(x, 1)
 }
 
@@ -283,7 +245,9 @@ print.aligns <- function(x, ...) {
 
 # Checks #####
 
-is_metabodecon_class <- NULL
+is_metabodecon_class <- function() {
+    # Placeholder to find documentation for `is_metabodecon_class`
+}
 
 #' @export
 #'
@@ -292,8 +256,10 @@ is_metabodecon_class <- NULL
 #' @title Is an Object from a Metabodecon Class?
 #'
 #' @description
-#' Check if an object is an instance of a specific 'Metabodecon
-#' Class'. See [metabodecon_classes] for a list of classes.
+#' Check if an object is an instance of a specific 'Metabodecon Class'. See
+#' [Metabodecon
+#' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html) for a
+#' list of classes.
 #'
 #' @param x
 #' The object to check.
@@ -412,7 +378,10 @@ is_aligns <- function(x) inherits(x, "aligns")
 
 # Convert #####
 
-as_metabodecon_class <- NULL
+as_metabodecon_class <- function() {
+    # Placeholder to find documentation for `as_metabodecon_class`
+}
+
 
 #' @export
 #'
@@ -793,7 +762,7 @@ as_v2_obj <- function(obj) {
     else if (is_decon1(obj)) as_decon2(obj)
     else if (is_decon2(obj)) obj
     else if (is_align(obj)) obj
-    else stopf("Objects of class %s are not supported.", class(obj))
+    else stop(sprintf("Objects of class %s are not supported.", class(obj)))
 }
 
 as_v2_objs <- function(obj) {
@@ -804,7 +773,7 @@ as_v2_objs <- function(obj) {
     else if (is_decons1(obj)) as_decons2(obj)
     else if (is_decons2(obj)) obj
     else if (is_aligns(obj)) obj
-    else stopf("Objects of class %s are not supported.", class(obj))
+    else stop(sprintf("Objects of class %s are not supported.", class(obj)))
 }
 
 #' @export
@@ -919,7 +888,7 @@ get_names <- function(x, default = "spectrum_%d") {
     dn <- get_default_names(x, default)
     en <- names(x) # Element name
     sn <- sapply(x, function(s) s$meta$name %||% s$name) # Spectrum name
-    sapply(seq_along(x), function(i) sn[i] %||% en[i] %||% dn[i])
+    sapply(seq_along(x), function(i) sn[[i]] %||% en[[i]] %||% dn[[i]])
 }
 
 get_default_names <- function(x, default) {

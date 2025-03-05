@@ -12,10 +12,12 @@
 #' in [combine_peaks()].
 #'
 #' @param x
-#' An  object  of  type  `decons1`  or  `decons2`  as  described  in
-#' [metabodecon_classes]. To align `decons0` objects
-#' (as returned by the now deprecated [MetaboDecon1D]), you can use
-#' [as_decons2()] to convert it to a `decons2` object first.
+#' An   object   of   type   `decons1`   or   `decons2`    as    described    in
+#' [Metabodecon
+#' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html). To
+#' align `decons0` objects (as  returned  by  the  now deprecated
+#' [MetaboDecon1D]), you can use [as_decons2()] to convert  it  to  a `decons2`
+#' object first.
 #'
 #' @param maxShift
 #' Maximum number of points along the "ppm-axis" a value can  be  moved  by  the
@@ -34,26 +36,96 @@
 #' Whether to print additional information during the alignment process.
 #'
 #' @return
-#' An object of type `align` as described in [metabodecon_classes].
+#' An object of type `align` as described in [Metabodecon
+#' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
 #'
 #' @examples
-#' sim_dir <- metabodecon_file("bruker/sim")
-#' spectra <- read_spectra(sim_dir)
-#' decons <- deconvolute(spectra, sfr = c(3.55, 3.35))
+#' decons <- deconvolute(sim, sfr = c(3.55, 3.35))
 #' aligned <- align(decons)
 #' aligned
 align <- function(x, maxShift = 50, maxCombine = 5, verbose = FALSE) {
-    decons1 <- as_decons1(x)
-    smat <- speaq_align(spectrum_data = decons1, maxShift = 50, verbose = verbose)
-    obj <- combine_peaks(shifted_mat = smat, range = maxCombine, spectrum_data = decons1)
-    decons2 <- as_decons2(x)
-    for (i in seq_along(decons2)) {
-        decons2[[i]]$sit$al <- obj$long[i, ]
-        class(decons2[[i]]) <- "align"
+
+    # Check and convert inputs
+    xx <- as_decons2(x)
+    stopifnot(length(xx) > 1)
+    for (i in 2:length(xx)) {
+        if (!is_equal(xx[[i-1]]$cs, xx[[i]]$cs)) {
+            stop("Chemical shifts must be equal across all spectra.")
+        }
     }
-    class(decons2) <- "aligns"
-    decons2
+
+    # Do initial alignment using speaq. Parameter `acceptLostPeak` must be FALSE
+    # so we can backtrack which peak has shifted to which position. The result
+    # object contains element `new_peakList` which contains the "peak center
+    # indices after alignment" (pciaa). The indices are given as continuous
+    # numbers. E.g. a value of 1044.28 means that the aligned peak center is
+    # between the datapoint 1044 and 1045.
+    obj <- dohCluster(
+        X <- get_sup_mat(xx),
+        peakList <- lapply(xx, get_peak_indices),
+        refInd <- speaq::findRef(peakList)$refInd,
+        maxShift,
+        acceptLostPeak <- FALSE,
+        verbose
+    )
+    pciaa <- obj$new_peakList
+
+    # Discretize the continous peak center indices from above by rounding. Then
+    # prepare the "signal-matrix-after-alignment" (smat). A non-zero value at
+    # position i,j indicates that spectrum i has a peak centered at datapoint j.
+    # The value of the signal equals the area parameter of the peak. A value of
+    # zero at position i,j indicates, that spectrum i has no peak centered at
+    # datapoint j. Example:
+    #
+    # pciaa[[1]] == c(143.2, 120.0, 548.9); xx[[1]]$lcpar$A == c(10, 20, 30)
+    # pciaa[[2]] == c(143.4, 122.4, 548.7); xx[[2]]$lcpar$A == c(40, 50, 60)
+    # pciaa[[3]] == c(141.9, 123.1, 548.6); xx[[3]]$lcpar$A == c(70, 80, 90)
+    #
+    # becomes
+    #
+    # i |... | 142 | 143 | ... | 120 | 121 | 122 | 123 | ... | 548 |
+    # --|----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+    # A |... |   0 |  10 | ... |  20 |   0 |   0 |     | ... |  30 |
+    # B |... |   0 |  40 | ... |   0 |   0 |  40 |     | ... |  60 |
+    # C |... |  70 |   0 | ... |   0 |   0 |  80 |     | ... |  90 |
+    #
+    smat <- matrix(nrow = nrow(X), ncol = ncol(X))
+    for (i in seq_len(nrow(X))) smat[i, round(pciaa[[i]])] <- xx[[i]]$lcpar$A
+
+    # Combine signals ACROSS spectra. Example: the matrix from above would
+    # become:
+    #
+    # i |... | 142 | 143 | ... | 120 | 121 | 122 | 123 | ... | 548 |
+    # --|----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+    # A |... |   0 |  10 | ... |   0 |   0 |  20 |     | ... |  30 |
+    # B |... |   0 |  40 | ... |   0 |   0 |  40 |     | ... |  60 |
+    # C |... |   0 |  70 | ... |   0 |   0 |  80 |     | ... |  90 |
+    #
+    cmat <- combine_peaks(smat, maxCombine)$long
+
+    # Create `align` objects from the `decon2` objects:
+    # 1. Store the new peak centers in their respective slot `$lcpar$x0_al`
+    # 2. Calculate new signal intensities as superposition of lorentz curves,
+    #    (using the updated peak centers) and store them in `$sit$supal`.
+    # 3. Store the new signal intensities as integrals in `$sit$al`.
+    cs <- xx[[1]]$cs
+    n <- length(cs)
+    for (i in seq_along(xx)) {
+        al <- rep(0, n)
+        pciac <- which(cmat[i, ] != 0)  # Peak center indices after alignment
+        lcpar <- xx[[i]]$lcpar          # Lorentzian curve parameters
+        x0_al <- cs[pciac]              # Chemical shifts of peak centers
+        al[pciac] <- lcpar$A * pi       # SIs as integrals of aligned lorentzians
+        supal <- lorentz_sup(cs, x0_al, lcpar$A, lcpar$lambda)
+        xx[[i]]$lcpar$x0_al <- x0_al
+        xx[[i]]$sit$al <- al
+        xx[[i]]$sit$supal <- lorentz_sup(cs, x0_al, lcpar$A, lcpar$lambda)
+        class(xx[[i]]) <- "align"
+    }
+    aligns <- structure(xx, class = "aligns")
+    aligns
 }
+
 
 # Exported Helpers (deprecated) #####
 
@@ -271,7 +343,7 @@ gen_feat_mat <- function(data_path,
 #' str(M)
 speaq_align <- function(feat = gen_feat_mat(spectrum_data),
                         maxShift = 50,
-                        spectrum_data = generate_lorentz_curves_sim(),
+                        spectrum_data,
                         si_size_real_spectrum = length(spectrum_data[[1]]$y_values),
                         verbose = TRUE,
                         show = FALSE,
@@ -296,8 +368,8 @@ speaq_align <- function(feat = gen_feat_mat(spectrum_data),
     if (show) {
         opar <- par(mfrow = mfrow, mar = c(5.1, 4.1, 2.1, 0.1))
         on.exit(par(opar), add = TRUE)
-        plot_si_mat(Y = feat$data_matrix, main = "Original Spectra")
-        plot_si_mat(Y = C$Y, main = "Aligned Spectra")
+        plot_si_mat(feat$data_matrix, main = "Original Spectra")
+        plot_si_mat(C$Y, main = "Aligned Spectra")
     }
     return(M)
 }
@@ -310,7 +382,7 @@ speaq_align <- function(feat = gen_feat_mat(spectrum_data),
 #' Even after calling `speaq_align()`, the alignment of individual signals is
 #' not always perfect, as 'speaq' performs a segment-wise alignment i.e. groups
 #' of signals are aligned. For further improvements, partly filled neighboring
-#' columns are merged.
+#' columns are merged. See 'Details' for an illustrative example.
 #'
 #' @param shifted_mat The matrix returned by `speaq_align()`.
 #'
@@ -329,37 +401,43 @@ speaq_align <- function(feat = gen_feat_mat(spectrum_data),
 #'
 #' @return
 #' A list containing two data frames `long` and `short`. The first data frame
-#' contains one one column for each data point in the original spectrum. The
-#' second data frame contains only columns where at least one entry is non-zero.
+#' contains one column for each data point in the original spectrum. The second
+#' data frame contains only columns where at least one entry is non-zero.
 #'
 #' @details
 #'
 #' Example of what the function does:
 #'
 #' ```txt
-#' |            | 3.56 | 3.54 | 3.51 | 3.51 | 3.50 |
+#' |            | 1    | 2    | 3    | 4    | 5    |
 #' |----------- |------|------|------|------|------|
-#' | Spectrum 1 | 0.13 | 0    | 0.11 | 0    | 0    |
-#' | Spectrum 2 | 0.13 | 0    | 0.12 | 0    | 0    |
-#' | Spectrum 3 | 0.07 | 0    | 0    | 0    | 0    |
-#' | Spectrum 4 | 0.08 | 0    | 0    | 0.07 | 0    |
-#' | Spectrum 5 | 0.04 | 0    | 0.04 | 0    | 0    |
+#' | Spectrum 1 | 0.13 | 0    | 0    | 0.11 | 0    |
+#' | Spectrum 2 | 0    | 0.88 | 0    | 0.12 | 0    |
+#' | Spectrum 3 | 0.07 | 0.56 | 0.30 | 0    | 0    |
+#' | Spectrum 4 | 0.08 | 0    | 0.07 | 0    | 0.07 |
+#' | Spectrum 5 | 0.04 | 0    | 0    | 0.04 | 0    |
 #' ```
 #'
 #' becomes
 #'
 #' ```txt
-#' |            | 3.56 | 3.54 | 3.51 | 3.50 |
-#' |----------- |------|------|------|------|
-#' | Spectrum 1 | 0.13 | 0    | 0.11 | 0    |
-#' | Spectrum 2 | 0.13 | 0    | 0.12 | 0    |
-#' | Spectrum 3 | 0.07 | 0    | 0    | 0    |
-#' | Spectrum 4 | 0.08 | 0    | 0.07 | 0    |
-#' | Spectrum 5 | 0.04 | 0    | 0.04 | 0    |
+#' |            | 1    | 2    | 3    | 4    | 5    |
+#' |----------- |------|------|------|------|------|
+#' | Spectrum 1 | 0.13 | 0    | 0    | 0.11 | 0    |
+#' | Spectrum 2 | 0    | 0.88 | 0    | 0.12 | 0    |
+#' | Spectrum 3 | 0.07 | 0.56 | 0    | 0.30 | 0    |
+#' | Spectrum 4 | 0.08 | 0    | 0    | 0.07 | 0.07 |
+#' | Spectrum 5 | 0.04 | 0    | 0    | 0.04 | 0    |
 #' ```
 #'
-#' I.e. column 3 and 4 get merged, because they are in `range` of each other
-#' and have no common non-zero entries.
+#' I.e.
+#'
+#' 1. Column 1 and 2 get NOT merged, because they have a common non-zero entry.
+#' 2. Column 3 and 4 get merged, because they are in `range` of each other and
+#'    have no common non-zero entries.
+#' 3. Column 4 and 5 get NOT merged, because it is more beneficial to merge
+#'    column 3 and 4, as they have more mergeable entries and after merging
+#'    column 3 and 4, column 4 and 5 have a common non-zero entry.
 #'
 #' @author
 #' Initial version from Wolfram Gronwald.
@@ -373,7 +451,7 @@ speaq_align <- function(feat = gen_feat_mat(spectrum_data),
 #' lower_bound <- 1
 #' obj <- combine_peaks(shifted_mat, range, lower_bound)
 #' str(obj)
-combine_peaks <- function(shifted_mat = speaq_align(),
+combine_peaks <- function(shifted_mat,
                           range = 5,
                           lower_bound = 1,
                           spectrum_data = NULL,
@@ -831,3 +909,12 @@ is_decon_list <- function(x) {
     if (is.list(x) && all(sapply(x, is_decon_obj))) TRUE else FALSE
 }
 
+get_peak_indices <- function(decon2) {
+    x0 <- decon2$lcpar$x0
+    cs <- decon2$cs
+    convert_pos(x0, cs, seq_along(cs))
+}
+
+get_sup_mat <- function(decons2) {
+    do.call(rbind, lapply(decons2, function(d) d$sit$sup))
+}

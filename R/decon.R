@@ -12,8 +12,8 @@
 #' @param ask Logical. Whether to ask for user input during the deconvolution
 #' process. If FALSE, the provided default values will be used.
 #'
-#' @param x A `spectrum` or `spectra` object as described in
-#' [metabodecon_classes].
+#' @param x A `spectrum` or `spectra` object as described in [Metabodecon
+#' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
 #'
 #' @param data_path Either the path to a directory containing measured NMR
 #' spectra, a dataframe as returned by [read_spectrum()], or a list of such
@@ -55,7 +55,8 @@
 #'
 #' @param wshw Half-width of the water artifact in ppm.  See 'Details'.
 #'
-#' @return A 'decon2' object as described in [metabodecon_classes].
+#' @return A 'decon2' object as described in [Metabodecon
+#' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
 #'
 #' @details
 #'

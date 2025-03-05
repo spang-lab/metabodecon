@@ -463,9 +463,7 @@ cachedir <- function(persistent = NULL) {
     mkdirs(ncd)
 }
 
-# Sap (Private) #####
-
-`sap Documentation` <- NULL
+# Sap (Public) #####
 
 #' @name sap
 #'
@@ -519,9 +517,7 @@ update_sap <- function() {
     path
 }
 
-# Sim #####
-
-`sim Documentation` <- NULL
+# Sim (Public) #####
 
 #' @title The Sim Dataset
 #'
@@ -533,7 +529,8 @@ update_sap <- function() {
 #' @format
 #' A `spectra` object consisting of 16 `spectrum` objects, where each spectrum
 #' contains 2048 datapoints ranging from 3.60 to 3.29 ppm. For details about
-#' `spectrum` and `spectra` objects see [metabodecon_classes].
+#' `spectrum` and `spectra` objects see [Metabodecon
+#' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
 "sim"
 
 make_sim <- function(nworkers = 1) {
