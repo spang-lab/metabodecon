@@ -1,6 +1,7 @@
 .Rhistory
 .Rproj.user
 .vscode/
+.idea/
 *_cache/
 *_files/
 *.bkp
