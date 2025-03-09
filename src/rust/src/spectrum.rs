@@ -94,17 +94,12 @@ impl Spectrum {
         let chemical_shift = reference.chemical_shift();
         let index = reference.index();
         let name = reference.name();
-        let referencing_method = reference
-            .referencing_method()
-            .map(|method| method.to_string());
+        let method = reference.method().map(|method| method.to_string());
         let mut result = HashMap::<&str, Robj>::new();
         result.insert("chemical_shift", chemical_shift.into());
         result.insert("index", index.into());
         result.insert("name", Nullable::from(name).into());
-        result.insert(
-            "referencing_method",
-            Nullable::from(referencing_method).into(),
-        );
+        result.insert("referencing_method", Nullable::from(method).into());
 
         List::from_hashmap(result)
     }
@@ -122,8 +117,7 @@ impl Spectrum {
     }
 
     pub(crate) fn set_nucleus(&mut self, nucleus: &str) {
-        self.inner
-            .set_nucleus(std::str::FromStr::from_str(nucleus).unwrap());
+        self.inner.set_nucleus(nucleus);
     }
 
     pub(crate) fn set_frequency(&mut self, frequency: f64) {
@@ -207,6 +201,22 @@ impl Spectrum {
             Ok(spectrum) => spectrum.into(),
             Err(error) => throw_r_error(format!("{}", error)),
         }
+    }
+
+    pub(crate) fn read_jcampdx_set(path: &str, signal_boundaries: Vec<f64>) -> List {
+        if signal_boundaries.len() != 2 {
+            throw_r_error("signal_boundaries must be a vector of length 2");
+        }
+        let signal_boundaries = (signal_boundaries[0], signal_boundaries[1]);
+        let spectra = match spectrum::JcampDx::read_spectra(path, signal_boundaries) {
+            Ok(spectra) => spectra
+                .into_iter()
+                .map(|spectrum| spectrum.into())
+                .collect::<Vec<Spectrum>>(),
+            Err(error) => throw_r_error(format!("{}", error)),
+        };
+
+        List::from_values(spectra)
     }
 
     pub(crate) fn write_json(&self, path: &str) {
