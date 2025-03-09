@@ -136,6 +136,8 @@ Spectrum$read_bruker_set <- function(path, experiment, processing, signal_bounda
 
 Spectrum$read_jcampdx <- function(path, signal_boundaries) .Call(wrap__Spectrum__read_jcampdx, path, signal_boundaries)
 
+Spectrum$read_jcampdx_set <- function(path, signal_boundaries) .Call(wrap__Spectrum__read_jcampdx_set, path, signal_boundaries)
+
 Spectrum$write_json <- function(path) invisible(.Call(wrap__Spectrum__write_json, self, path))
 
 Spectrum$read_json <- function(path) .Call(wrap__Spectrum__read_json, path)
