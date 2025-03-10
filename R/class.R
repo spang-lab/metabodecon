@@ -382,7 +382,6 @@ as_metabodecon_class <- function() {
     # Placeholder to find documentation for `as_metabodecon_class`
 }
 
-
 #' @export
 #'
 #' @name as_metabodecon_class

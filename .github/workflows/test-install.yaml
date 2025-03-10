@@ -75,7 +75,7 @@ jobs:
           BiocManager::install(c("MassSpecWavelet", "impute"))
           install.packages("metabodecon")
 
-  test-oldschool-cran-install:
+  test-github-install:
     runs-on: ${{ matrix.config.os }}
     name: ${{ matrix.config.os }} (${{ matrix.config.r }})
     strategy:
@@ -102,9 +102,8 @@ jobs:
       - name: Install Linux System Dependencies
         if: runner.os == 'Linux'
         run: sudo apt-get update -y && sudo apt-get install -y libgsl0-dev
-      - name: Test Installation from CRAN
+      - name: Test Installation from Github
         shell: Rscript {0}
         run: |
-          install.packages("BiocManager")
-          BiocManager::install(c("MassSpecWavelet", "impute"))
-          install.packages("metabodecon")
+          install.packages("pak")
+          pak::pkg_install("spang-lab/metabodecon")

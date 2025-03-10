@@ -10,14 +10,14 @@ vignette: >
 To contribute to this package, you should follow the below steps:
 
 1.  Create a issue at
-    [github.com/spang-lab/FastRet/issues](https://github.com/spang-lab/FastRet/issues)
+    [github.com/spang-lab/metabodecon/issues](https://github.com/spang-lab/metabodecon/issues)
     describing the problem or feature you want to work on.
 2.  Wait until the issue is approved by a package maintainer.
 3.  Create a fork of the repository at
-    [github.com/spang-lab/FastRet](https://github.com/spang-lab/FastRet)
+    [github.com/spang-lab/metabodecon](https://github.com/spang-lab/metabodecon)
 4.  Make your edits as described in section [Making Edits](#making-edits)
 5.  Create a pull request at
-    [github.com/spang-lab/FastRet/pulls](https://github.com/spang-lab/FastRet/pulls)
+    [github.com/spang-lab/metabodecon/pulls](https://github.com/spang-lab/metabodecon/pulls)
 
 # Making Edits
 
@@ -70,7 +70,7 @@ rcmdcheck::rcmdcheck(
     args = c("--no-manual", "--as-cran"),
     build_args = ("--no-manual"),
     error_on = ("warning"),
-    check_dir = "../FastRet-RCMDcheck"
+    check_dir = "../metabodecon-RCMDcheck"
 )
 devtools::check(
     remote = TRUE,
