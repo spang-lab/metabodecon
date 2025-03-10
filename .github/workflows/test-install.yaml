@@ -1,4 +1,4 @@
-name: test-cran-install
+name: Install-check
 permissions: read-all
 
 on: {
@@ -23,21 +23,55 @@ jobs:
       R_KEEP_PKG_SOURCE: yes
       RUN_SLOW_TESTS: "TRUE"
     steps:
+
       - name: Set up R
         uses: r-lib/actions/setup-r@v2
         with:
           r-version: ${{ matrix.config.r }}
+          rtools-version: 'none'
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
-      - name: Install MacOS System Dependencies
-        uses: r-hub/actions/setup-r-sysreqs@v1
-        with: {type: "minimal"}
-      - name: Install Linux System Dependencies
-        if: runner.os == 'Linux'
-        run: sudo apt-get update -y && sudo apt-get install -y libgsl0-dev
-      - name: Test Installation from CRAN
+
+      # - name: Install MacOS System Dependencies
+      #   uses: r-hub/actions/setup-r-sysreqs@v1
+      #   with: {type: "minimal"}
+
+      # - name: Install Linux System Dependencies
+      #   if: runner.os == 'Linux'
+      #   run: sudo apt-get update -y && sudo apt-get install -y libgsl0-dev
+
+      - name: Test modern Installation from CRAN
         shell: Rscript {0}
         run: |
+
+          cat("1. Ensure we have no pre-installed dependencies\n")
+          x <- rownames(installed.packages())
+          if ("impute" %in% x) {
+              cat("Removing impute\n")
+              remove.packages("impute")
+          }
+          if ("MassSpecWavelet" %in% x) {
+              cat("Removing MassSpecWavelet\n")
+              remove.packages("MassSpecWavelet")
+          }
+          if (!"pkgbuild" %in% x) {
+              cat("Installing pkgbuild\n")
+              install.packages("pkgbuild")
+          }
+          if (pkgbuild::has_rtools()) {
+            rtools <- pkgbuild::rtools_path()
+            while (grepl("rtools", dirname(rtools))) rtools <- dirname(rtools)
+            if (dir.exists(rtools)) {
+                rtools_bak <- gsub("rtools", "rtoolsBAK", rtools)
+                cat("Trying to rename", rtools, "to", rtools_bak, "\n")
+                x <- try(file.rename(rtools, rtools_bak), silent = TRUE)
+                cat(if (inherits(x, "try-error")) "Rename failed\n" else "Rename successful\n")
+            } else {
+                cat("Rtools not available. Nice. \n")
+            }
+          }
+
+          cat("2. Install metabodecon\n")
           install.packages("pak")
           pak::pkg_install("metabodecon")
 
@@ -56,24 +90,59 @@ jobs:
       R_KEEP_PKG_SOURCE: yes
       RUN_SLOW_TESTS: "TRUE"
     steps:
+
       - name: Set up R
         uses: r-lib/actions/setup-r@v2
         with:
           r-version: ${{ matrix.config.r }}
+          rtools-version: 'none'
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
-      - name: Install MacOS System Dependencies
-        uses: r-hub/actions/setup-r-sysreqs@v1
-        with: {type: "minimal"}
-      - name: Install Linux System Dependencies
-        if: runner.os == 'Linux'
-        run: sudo apt-get update -y && sudo apt-get install -y libgsl0-dev
-      - name: Test Installation from CRAN
+
+      # - name: Install MacOS System Dependencies
+      #   uses: r-hub/actions/setup-r-sysreqs@v1
+      #   with: {type: "minimal"}
+
+      # - name: Install Linux System Dependencies
+      #   if: runner.os == 'Linux'
+      #   run: sudo apt-get update -y && sudo apt-get install -y libgsl0-dev
+
+      - name: Test old-school Installation from CRAN
         shell: Rscript {0}
         run: |
+
+          cat("1. Ensure we have no pre-installed dependencies\n")
+          x <- rownames(installed.packages())
+          if ("impute" %in% x) {
+              cat("Removing impute\n")
+              remove.packages("impute")
+          }
+          if ("MassSpecWavelet" %in% x) {
+              cat("Removing MassSpecWavelet\n")
+              remove.packages("MassSpecWavelet")
+          }
+          if (!"pkgbuild" %in% x) {
+              cat("Installing pkgbuild\n")
+              install.packages("pkgbuild")
+          }
+          if (pkgbuild::has_rtools()) {
+            rtools <- pkgbuild::rtools_path()
+            while (grepl("rtools", dirname(rtools))) rtools <- dirname(rtools)
+            if (dir.exists(rtools)) {
+                rtools_bak <- gsub("rtools", "rtoolsBAK", rtools)
+                cat("Trying to rename", rtools, "to", rtools_bak, "\n")
+                x <- try(file.rename(rtools, rtools_bak), silent = TRUE)
+                cat(if (inherits(x, "try-error")) "Rename failed\n" else "Rename successful\n")
+            } else {
+                cat("Rtools not available. Nice. \n")
+            }
+          }
+
+          cat("2. Install metabodecon\n")
           install.packages("BiocManager")
           BiocManager::install(c("MassSpecWavelet", "impute"))
           install.packages("metabodecon")
+
 
   test-github-install:
     runs-on: ${{ matrix.config.os }}
@@ -90,20 +159,54 @@ jobs:
       R_KEEP_PKG_SOURCE: yes
       RUN_SLOW_TESTS: "TRUE"
     steps:
+
       - name: Set up R
         uses: r-lib/actions/setup-r@v2
         with:
           r-version: ${{ matrix.config.r }}
+          rtools-version: 'none'
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
-      - name: Install MacOS System Dependencies
-        uses: r-hub/actions/setup-r-sysreqs@v1
-        with: {type: "minimal"}
-      - name: Install Linux System Dependencies
-        if: runner.os == 'Linux'
-        run: sudo apt-get update -y && sudo apt-get install -y libgsl0-dev
+
+      # - name: Install MacOS System Dependencies
+      #   uses: r-hub/actions/setup-r-sysreqs@v1
+      #   with: {type: "minimal"}
+
+      # - name: Install Linux System Dependencies
+      #   if: runner.os == 'Linux'
+      #   run: sudo apt-get update -y && sudo apt-get install -y libgsl0-dev
+
       - name: Test Installation from Github
         shell: Rscript {0}
         run: |
+
+          cat("1. Ensure we have no pre-installed dependencies\n")
+          x <- rownames(installed.packages())
+          if ("impute" %in% x) {
+              cat("Removing impute\n")
+              remove.packages("impute")
+          }
+          if ("MassSpecWavelet" %in% x) {
+              cat("Removing MassSpecWavelet\n")
+              remove.packages("MassSpecWavelet")
+          }
+          if (!"pkgbuild" %in% x) {
+              cat("Installing pkgbuild\n")
+              install.packages("pkgbuild")
+          }
+          if (pkgbuild::has_rtools()) {
+            rtools <- pkgbuild::rtools_path()
+            while (grepl("rtools", dirname(rtools))) rtools <- dirname(rtools)
+            if (dir.exists(rtools)) {
+                rtools_bak <- gsub("rtools", "rtoolsBAK", rtools)
+                cat("Trying to rename", rtools, "to", rtools_bak, "\n")
+                x <- try(file.rename(rtools, rtools_bak), silent = TRUE)
+                cat(if (inherits(x, "try-error")) "Rename failed\n" else "Rename successful\n")
+            } else {
+                cat("Rtools not available. Nice. \n")
+            }
+          }
+
+          cat("2. Install metabodecon\n")
           install.packages("pak")
           pak::pkg_install("spang-lab/metabodecon")

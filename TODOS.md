@@ -1,25 +1,8 @@
-# Open
-
-## Add index vignette
-
-There should be one vignette shipped with the package that is as small as possible and contains links to the online documentation.
-
-## Checks missing pkgs in align
-
-Installation via `install.packages("metabodecon")` do not install `MassSpecWavelet` and `impute`. So if a user doesn't copy paste the installation instructions but installed via `install.packages("metabodecon")`, these dependencies will be missing. In such scenarios, we should print an error message with the required install commands and abort.
+# Next (mdrb)
 
 ## Test install on clean OS
 
 Add a workflow for testing installation on a clean Windows/Linux/Mac OS with R pre-installed, but without R-tools and any packages.
-
-## Improve questions
-
-1. Question `Signal free region correctly selected? (y/n)` should be replaced by `Borders to Signal Free Regions (green) correctly selected? (y/n)`
-2. Question `Water artefact fully inside red vertical lines? (y/n)` should be replaced by `Water artefact fully inside blue area? (y/n)`
-
-## Add function get_si_mat
-
-Add a function `get_si_mat()` for extracting a matrix of signal intensities (SI) from a metabodecon object. The type of returned SI should be `raw` for `spectra`, `sup` for `decons` and `al` for `aligns`.
 
 ## Make Rust backend optional
 
@@ -30,6 +13,25 @@ If skipping compilation is not possible, because we load the dynamic lib in NAME
 ## Merge Rust backend
 
 Merge in Rust backend branch. Requires FEATURE-25 to be implemented first.
+
+# Open
+
+## Add index vignette
+
+There should be one vignette shipped with the package that is as small as possible and contains links to the online documentation.
+
+## Checks missing pkgs in align
+
+Installation via `install.packages("metabodecon")` do not install `MassSpecWavelet` and `impute`. So if a user doesn't copy paste the installation instructions but installed via `install.packages("metabodecon")`, these dependencies will be missing. In such scenarios, we should print an error message with the required install commands and abort.
+
+## Improve questions
+
+1. Question `Signal free region correctly selected? (y/n)` should be replaced by `Borders to Signal Free Regions (green) correctly selected? (y/n)`
+2. Question `Water artefact fully inside red vertical lines? (y/n)` should be replaced by `Water artefact fully inside blue area? (y/n)`
+
+## Add function get_si_mat
+
+Add a function `get_si_mat()` for extracting a matrix of signal intensities (SI) from a metabodecon object. The type of returned SI should be `raw` for `spectra`, `sup` for `decons` and `al` for `aligns`.
 
 ## Add authors to functions
 
