@@ -10,7 +10,7 @@ jobs:
 
   test-modern-cran-install:
     runs-on: ${{ matrix.config.os }}
-    name: ${{ matrix.config.os }} (${{ matrix.config.r }})
+    name: Test modern CRAN Install (${{ matrix.config.os }}, (${{ matrix.config.r }}))
     strategy:
       fail-fast: false
       matrix:
@@ -31,20 +31,14 @@ jobs:
           rtools-version: 'none'
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
-
-      # - name: Install MacOS System Dependencies
-      #   uses: r-hub/actions/setup-r-sysreqs@v1
-      #   with: {type: "minimal"}
-
-      # - name: Install Linux System Dependencies
-      #   if: runner.os == 'Linux'
-      #   run: sudo apt-get update -y && sudo apt-get install -y libgsl0-dev
 
       - name: Test modern Installation from CRAN
         shell: Rscript {0}
         run: |
 
+          cat("===============================================\n")
           cat("1. Ensure we have no pre-installed dependencies\n")
+          cat("===============================================\n")
           x <- rownames(installed.packages())
           if ("impute" %in% x) {
               cat("Removing impute\n")
@@ -71,13 +65,19 @@ jobs:
             }
           }
 
-          cat("2. Install metabodecon\n")
+          cat("===============================================\n")
+          cat("2. Install pak\n")
+          cat("===============================================\n")
           install.packages("pak")
+
+          cat("===============================================\n")
+          cat("3. Install metabodecon\n")
+          cat("===============================================\n")
           pak::pkg_install("metabodecon")
 
   test-oldschool-cran-install:
     runs-on: ${{ matrix.config.os }}
-    name: ${{ matrix.config.os }} (${{ matrix.config.r }})
+    name: Test old-school CRAN Install (${{ matrix.config.os }}, (${{ matrix.config.r }}))
     strategy:
       fail-fast: false
       matrix:
@@ -99,19 +99,13 @@ jobs:
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
 
-      # - name: Install MacOS System Dependencies
-      #   uses: r-hub/actions/setup-r-sysreqs@v1
-      #   with: {type: "minimal"}
-
-      # - name: Install Linux System Dependencies
-      #   if: runner.os == 'Linux'
-      #   run: sudo apt-get update -y && sudo apt-get install -y libgsl0-dev
-
       - name: Test old-school Installation from CRAN
         shell: Rscript {0}
         run: |
 
+          cat("===============================================\n")
           cat("1. Ensure we have no pre-installed dependencies\n")
+          cat("===============================================\n")
           x <- rownames(installed.packages())
           if ("impute" %in% x) {
               cat("Removing impute\n")
@@ -138,7 +132,14 @@ jobs:
             }
           }
 
-          cat("2. Install metabodecon\n")
+          cat("===============================================\n")
+          cat("2. Install pak\n")
+          cat("===============================================\n")
+          install.packages("pak")
+
+          cat("===============================================\n")
+          cat("3. Install metabodecon\n")
+          cat("===============================================\n")
           install.packages("BiocManager")
           BiocManager::install(c("MassSpecWavelet", "impute"))
           install.packages("metabodecon")
@@ -146,7 +147,7 @@ jobs:
 
   test-github-install:
     runs-on: ${{ matrix.config.os }}
-    name: ${{ matrix.config.os }} (${{ matrix.config.r }})
+    name: Test Github Install (${{ matrix.config.os }}, (${{ matrix.config.r }}))
     strategy:
       fail-fast: false
       matrix:
@@ -168,19 +169,13 @@ jobs:
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
 
-      # - name: Install MacOS System Dependencies
-      #   uses: r-hub/actions/setup-r-sysreqs@v1
-      #   with: {type: "minimal"}
-
-      # - name: Install Linux System Dependencies
-      #   if: runner.os == 'Linux'
-      #   run: sudo apt-get update -y && sudo apt-get install -y libgsl0-dev
-
       - name: Test Installation from Github
         shell: Rscript {0}
         run: |
 
+          cat("===============================================\n")
           cat("1. Ensure we have no pre-installed dependencies\n")
+          cat("===============================================\n")
           x <- rownames(installed.packages())
           if ("impute" %in% x) {
               cat("Removing impute\n")
@@ -207,6 +202,12 @@ jobs:
             }
           }
 
-          cat("2. Install metabodecon\n")
+          cat("===============================================\n")
+          cat("2. Install pak\n")
+          cat("===============================================\n")
           install.packages("pak")
+
+          cat("===============================================\n")
+          cat("3. Install metabodecon\n")
+          cat("===============================================\n")
           pak::pkg_install("spang-lab/metabodecon")
