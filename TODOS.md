@@ -4,15 +4,29 @@
 
 Add a workflow for testing installation on a clean Windows/Linux/Mac OS with R pre-installed, but without R-tools and any packages.
 
+*Done with v1.4.0 in PR [#12](https://github.com/spang-lab/metabodecon/pull/12).*
+
 ## Make Rust backend optional
 
 The Rust backend should only be built for R versions >= 4.2.0 and if RTools is available. If any of these conditions is not fulfilled, compilation should be skipped.
 
 If skipping compilation is not possible, because we load the dynamic lib in NAMESPACE, it should be generated in a way that does not use any features required by R 4.2.0 or greater. If we choose backend == "rust", we need to check whether the required functions are available.
 
-## Merge Rust backend
+Update 10.3.2025: Instead of making compilation optional we should provide a seperate R package [mdrb](https://github.com/spang-lab/mdrb) (Metabodecon Rust Backend) which we can install upon request. I.e. we need to implement:
 
-Merge in Rust backend branch. Requires FEATURE-25 to be implemented first.
+1. A function `check_rust_backend_requirements()` that checks whether the Rust backend can be installed. Requirements are
+   - R version 4.2 or higher
+   - RTools on Windows
+   - `Cargo` and `rustc` in PATH
+   - Package `mdrb`
+2. A function `install_rust_backend(deps=NULL)`, that:
+   1. Asks the user whether he wants to install the missing dependencies if `deps` is `NULL`
+   2. Installs missing dependencies if `deps` is `TRUE`
+   3. Fails if there are missing dependencies and `deps` is `FALSE` or (`deps` is NULL and `interactive()` is `FALSE`)`
+   4. Calls `pak::pkg_install("spang-lab/mdrb")` if all requirements are satisfied
+3. An experimental argument `backend` in `deconvolute` that
+   1. Calls `install_rust_backend(deps=NULL)` if `check_rust_backend_requirements()` returns `FALSE`
+   2. Calls `mdrb::deconvolute` `mdrb` if `check_rust_backend_requirements()` returns `TRUE`
 
 # Open
 
@@ -110,6 +124,13 @@ Implement `deconvolute_spectra()` and `deconvolute_spectrum()` which should be t
 4. Use 1-based indexing for data points as described in [CHECK-4](#check-4-data-point-format).
 5. Remove the scale factor and scaled data point numbers as described in [CHECK-4](#check-4-data-point-format).
 6. Remove negative values in a consistent way, as described by [CHECK-5](#check-5-signal-preprocessing)
+
+## Shrink test-install workflow
+
+Currently the test-install workflow is split over three jobs, with huge amounts of code copy pasted. Extract the test into a single script that:
+
+1. Deletes all previously available dependencies incl. Rtools on Windows (i.e. it must be removed from the PATH)
+2. Does the installation according to the `method` commandline argument, e.g. "CRAN-Modern", "CRAN-Old" or "Github".
 
 ## Refactor integral calculations
 
