@@ -6,7 +6,7 @@ Add a workflow for testing installation on a clean Windows/Linux/Mac OS with R p
 
 *Done with v1.4.0 in PR [#12](https://github.com/spang-lab/metabodecon/pull/12).*
 
-## Make Rust backend optional
+## Add Rust Backend Installer
 
 The Rust backend should only be built for R versions >= 4.2.0 and if RTools is available. If any of these conditions is not fulfilled, compilation should be skipped.
 
@@ -14,19 +14,29 @@ If skipping compilation is not possible, because we load the dynamic lib in NAME
 
 Update 10.3.2025: Instead of making compilation optional we should provide a seperate R package [mdrb](https://github.com/spang-lab/mdrb) (Metabodecon Rust Backend) which we can install upon request. I.e. we need to implement:
 
-1. A function `check_rust_backend_requirements()` that checks whether the Rust backend can be installed. Requirements are
+1. A function `check_mdrb()` that checks whether mdrb is already installed.
+2. A function `check_mdrb_deps()` that checks whether mdrb can be installed. Required dependencies are
    - R version 4.2 or higher
-   - RTools on Windows
-   - `Cargo` and `rustc` in PATH
-   - Package `mdrb`
-2. A function `install_rust_backend(deps=NULL)`, that:
-   1. Asks the user whether he wants to install the missing dependencies if `deps` is `NULL`
-   2. Installs missing dependencies if `deps` is `TRUE`
-   3. Fails if there are missing dependencies and `deps` is `FALSE` or (`deps` is NULL and `interactive()` is `FALSE`)`
-   4. Calls `pak::pkg_install("spang-lab/mdrb")` if all requirements are satisfied
-3. An experimental argument `backend` in `deconvolute` that
-   1. Calls `install_rust_backend(deps=NULL)` if `check_rust_backend_requirements()` returns `FALSE`
-   2. Calls `mdrb::deconvolute` `mdrb` if `check_rust_backend_requirements()` returns `TRUE`
+   - Build tools for R (RTools on Windows, build-essentials on Linux, XCode on Mac)
+   - Cargo and rustc version 1.78 or higher
+3. A function `install_mdrb()`, that
+   1. Does nothing if mdrb is already installed
+   2. Prints installation instructions for mdrb dependencies if `check_mdrb_deps()` lists missing dependencies
+   3. Calls `pak::pkg_install("spang-lab/mdrb")` if all requirements are satisfied
+
+## Add Rust Backend Argument
+
+Add an experimental argument `backend` in `deconvolute()` causing the following behaviour:
+
+| backend | check_mdrb | call                        |
+| ------- | ---------- | --------------------------- |
+| "R"     | anything   | deconvolute_spectrum_r()    |
+| NULL    | FALSE      | deconvolute_spectrum_r()    |
+| NULL    | TRUE       | deconvolute_spectrum_rust() |
+| "rust"  | TRUE       | deconvolute_spectrum_rust() |
+| "rust"  | FALSE      | stop(MESSAGE)               |
+
+With MESSAGE being something like "Rust backend not installed yet. Please call install_mdrb() first."
 
 # Open
 
