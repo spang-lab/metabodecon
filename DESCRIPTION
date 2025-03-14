@@ -52,6 +52,7 @@ Suggests:
     microbenchmark,
     pkgload,
     R.devices,
+    remotes,
     rmarkdown,
     testthat (>= 3.0.0),
     usethis,

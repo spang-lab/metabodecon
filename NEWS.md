@@ -1,3 +1,7 @@
+# metabodecon 1.4.0
+
+- Improved Github Workflow (GWF) to test installation on a clean Windows/Linux/Mac OS with R pre-installed, but without R-tools and any packages.
+
 # metabodecon 1.3.0
 
 - Added Github Workflow (GWF) to test installation on a clean Windows/Linux/Mac OS with R pre-installed, but without R-tools and any packages. Closes Todo [Test Install on clean OS].

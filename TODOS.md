@@ -1,3 +1,45 @@
+# Next (mdrb)
+
+## Test install on clean OS
+
+Add a workflow for testing installation on a clean Windows/Linux/Mac OS with R pre-installed, but without R-tools and any packages.
+
+*Done with v1.4.0 in PR [#12](https://github.com/spang-lab/metabodecon/pull/12).*
+
+## Add Rust Backend Installer
+
+The Rust backend should only be built for R versions >= 4.2.0 and if RTools is available. If any of these conditions is not fulfilled, compilation should be skipped.
+
+If skipping compilation is not possible, because we load the dynamic lib in NAMESPACE, it should be generated in a way that does not use any features required by R 4.2.0 or greater. If we choose backend == "rust", we need to check whether the required functions are available.
+
+Update 10.3.2025: Instead of making compilation optional we should provide a seperate R package [mdrb](https://github.com/spang-lab/mdrb) (Metabodecon Rust Backend) which we can install upon request. I.e. we need to implement:
+
+1. A function `check_mdrb()` that checks whether mdrb is already installed.
+2. A function `check_mdrb_deps()` that checks whether mdrb can be installed. Required dependencies are
+   - R version 4.2 or higher
+   - Build tools for R (RTools on Windows, build-essentials on Linux, XCode on Mac)
+   - Cargo and rustc version 1.78 or higher
+3. A function `install_mdrb()`, that
+   1. Does nothing if mdrb is already installed
+   2. Prints installation instructions for mdrb dependencies if `check_mdrb_deps()` lists missing dependencies
+   3. Calls `pak::pkg_install("spang-lab/mdrb")` if all requirements are satisfied
+
+*Done on Fri Mar 14 19:19:40 2025 +0100 in branch mdrb. PR: [#12](https://github.com/spang-lab/metabodecon/pull/12).*
+
+## Add Rust Backend Argument
+
+Add an experimental argument `backend` in `deconvolute()` causing the following behaviour:
+
+| backend | check_mdrb | call                        |
+| ------- | ---------- | --------------------------- |
+| "R"     | anything   | deconvolute_spectrum_r()    |
+| NULL    | FALSE      | deconvolute_spectrum_r()    |
+| NULL    | TRUE       | deconvolute_spectrum_rust() |
+| "rust"  | TRUE       | deconvolute_spectrum_rust() |
+| "rust"  | FALSE      | stop(MESSAGE)               |
+
+With MESSAGE being something like "Rust backend not installed yet. Please call install_mdrb() first."
+
 # Open
 
 ## Add index vignette
@@ -8,10 +50,6 @@ There should be one vignette shipped with the package that is as small as possib
 
 Installation via `install.packages("metabodecon")` do not install `MassSpecWavelet` and `impute`. So if a user doesn't copy paste the installation instructions but installed via `install.packages("metabodecon")`, these dependencies will be missing. In such scenarios, we should print an error message with the required install commands and abort.
 
-## Test install on clean OS
-
-Add a workflow for testing installation on a clean Windows/Linux/Mac OS with R pre-installed, but without R-tools and any packages.
-
 ## Improve questions
 
 1. Question `Signal free region correctly selected? (y/n)` should be replaced by `Borders to Signal Free Regions (green) correctly selected? (y/n)`
@@ -20,16 +58,6 @@ Add a workflow for testing installation on a clean Windows/Linux/Mac OS with R p
 ## Add function get_si_mat
 
 Add a function `get_si_mat()` for extracting a matrix of signal intensities (SI) from a metabodecon object. The type of returned SI should be `raw` for `spectra`, `sup` for `decons` and `al` for `aligns`.
-
-## Make Rust backend optional
-
-The Rust backend should only be built for R versions >= 4.2.0 and if RTools is available. If any of these conditions is not fulfilled, compilation should be skipped.
-
-If skipping compilation is not possible, because we load the dynamic lib in NAMESPACE, it should be generated in a way that does not use any features required by R 4.2.0 or greater. If we choose backend == "rust", we need to check whether the required functions are available.
-
-## Merge Rust backend
-
-Merge in Rust backend branch. Requires FEATURE-25 to be implemented first.
 
 ## Add authors to functions
 
@@ -108,6 +136,13 @@ Implement `deconvolute_spectra()` and `deconvolute_spectrum()` which should be t
 4. Use 1-based indexing for data points as described in [CHECK-4](#check-4-data-point-format).
 5. Remove the scale factor and scaled data point numbers as described in [CHECK-4](#check-4-data-point-format).
 6. Remove negative values in a consistent way, as described by [CHECK-5](#check-5-signal-preprocessing)
+
+## Shrink test-install workflow
+
+Currently the test-install workflow is split over three jobs, with huge amounts of code copy pasted. Extract the test into a single script that:
+
+1. Deletes all previously available dependencies incl. Rtools on Windows (i.e. it must be removed from the PATH)
+2. Does the installation according to the `method` commandline argument, e.g. "CRAN-Modern", "CRAN-Old" or "Github".
 
 ## Refactor integral calculations
 
