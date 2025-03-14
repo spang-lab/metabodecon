@@ -24,6 +24,8 @@ Update 10.3.2025: Instead of making compilation optional we should provide a sep
    2. Prints installation instructions for mdrb dependencies if `check_mdrb_deps()` lists missing dependencies
    3. Calls `pak::pkg_install("spang-lab/mdrb")` if all requirements are satisfied
 
+*Done on Fri Mar 14 19:19:40 2025 +0100 in branch mdrb. PR: [#12](https://github.com/spang-lab/metabodecon/pull/12).*
+
 ## Add Rust Backend Argument
 
 Add an experimental argument `backend` in `deconvolute()` causing the following behaviour:
