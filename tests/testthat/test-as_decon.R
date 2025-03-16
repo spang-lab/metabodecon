@@ -3,14 +3,12 @@ library(testthat)
 # Prepare Test Environment #####
 
 # 1. Get the sap spectrum
-# 2. Deconvolute the sap spectrum using deconvolute_ispec
+# 2. Deconvolute the sap spectrum using deconvolute_spectrum_r
 # 3. Convert the spectrum to decon[0-2]
 # 4. Verify the values within decon[0-2] by plotting and printing their structure
 # ==> we know that the decon[0-2] objects obtained by direct conversion are correct
 
-spectrum <- sap[[1]]
-ispec <- as_ispec(spectrum)
-idecon <- deconvolute_ispec(ispec, sfr = c(3.2, -3.2), smopts = c(2, 3))
+idecon <- deconvolute_spectrum_r(sap[[1]], sfr = c(3.2, -3.2), smopts = c(2, 3))
 decon2 <- as_decon2(idecon)
 decon1 <- as_decon1(idecon)
 decon0 <- as_decon0(idecon)
@@ -34,7 +32,7 @@ if (identical(environment(), globalenv())) {
     str(decon2, 2, digits.d = 10)
     str(decon1, 2, digits.d = 10)
     str(decon0, 2, digits.d = 10)
-    plot_spectrum(idecon, sub2 = TRUE)
+    plot_spectrum(idecon, sub1 = list(lt_axis = list(sf = 100)), sub2 = TRUE)
 }
 
 # Test conversions to decon2 ####
@@ -60,7 +58,7 @@ test_that("(decon1 -> decon2) == (idecon -> decon2)", {
 
 test_that("(decon0 -> decon2) == (idecon -> decon2)", {
 
-    decon20 <- as_decon2(decon0, spectrum = spectrum)
+    decon20 <- as_decon2(decon0, spectrum = sap[[1]])
 
     # Diffs in `meta$simpar`, `args`, `sit$wsrm`, `sit$nvrm` are expected, so we
     # patch them first to make the comparsion possible.
@@ -85,7 +83,7 @@ test_that("(decon1 -> decon1) == (idecon -> decon1)", {
 })
 
 test_that("(decon0 -> decon1) == (idecon -> decon1)", {
-    decon10 <- as_decon1(decon0, spectrum = spectrum)
+    decon10 <- as_decon1(decon0, spectrum = sap[[1]])
     expect_equal(decon10, decon1)
 })
 
@@ -110,12 +108,12 @@ test_that("(decon0 -> decon0) == (idecon -> decon0)", {
 
 test_that("conversions are reversible", {
 
-    decon020 <- as_decon0(as_decon2(decon0, spectrum = spectrum))
-    decon010 <- as_decon0(as_decon1(decon0, spectrum = spectrum))
+    decon020 <- as_decon0(as_decon2(decon0, spectrum = sap[[1]]))
+    decon010 <- as_decon0(as_decon1(decon0, spectrum = sap[[1]]))
     decon000 <- as_decon0(as_decon0(decon0))
     decon121 <- as_decon1(as_decon2(decon1))
     decon111 <- as_decon1(as_decon1(decon1))
-    decon101 <- as_decon1(as_decon0(decon1), spectrum = spectrum)
+    decon101 <- as_decon1(as_decon0(decon1), spectrum = sap[[1]])
     decon222 <- as_decon2(as_decon2(decon2))
     decon212 <- as_decon2(as_decon1(decon2))
     decon202 <- as_decon2(as_decon1(decon2))

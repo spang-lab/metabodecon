@@ -152,56 +152,6 @@ install_mdrb <- function(ask = TRUE,
     invisible()
 }
 
-#' @title Deconvolute Spectrum
-#' @description Deconvolutes a given spectrum using the specified backend.
-#' @param spectrum The spectrum to be deconvoluted.
-#' @param sfr The spectral frequency range.
-#' @param nfit Number of iterations for the analytical fitter. Default is 3.
-#' @param smopts Smoothing options as a vector of two elements: iterations and window size. Default is c(2, 5).
-#' @param delta Noise score threshold. Default is 6.4.
-#' @param ignore_regions Regions to ignore during deconvolution. Default is NULL.
-#' @param parallel Whether to perform deconvolution in parallel. Default is FALSE.
-#' @param optimize_settings Whether to optimize settings. Default is FALSE.
-#' @param backend The backend to use for deconvolution. Default is "R".
-#' @return A list containing the deconvoluted spectrum and additional information.
-deconvolute <- function(spectrum,
-                        sfr,
-                        nfit = 3,
-                        smopts = c(2, 5),
-                        delta = 6.4,
-                        ignore_regions = NULL,
-                        parallel = FALSE,
-                        optimize_settings = FALSE,
-                        backend = "R") {
-    if (backend == "rust") {
-        if (!check_rust_backend_requirements()) {
-            install_mdrb(deps = NULL)
-        }
-        if (check_rust_backend_requirements()) {
-            return(mdrb::deconvolute(spectrum, sfr, nfit, smopts, delta, ignore_regions, parallel, optimize_settings))
-        } else {
-            stop("Rust backend requirements are not met.")
-        }
-    }
-
-    # Default R backend implementation
-    rust_spectrum <- as_rust_spectrum(spectrum, sfr)
-    stopifnot(is_spectrum(spectrum), is_num(sfr, 2))
-    deconvoluter <- set_up_deconvoluter(nfit, smopts, delta, ignore_regions)
-    if (parallel) {
-        if (optimize_settings) {
-            deconvoluter$optimize_settings(rust_spectrum)
-        }
-        deconvolution <- deconvoluter$par_deconvolute_spectrum(rust_spectrum)
-    } else {
-        deconvolution <- deconvoluter$deconvolute_spectrum(rust_spectrum)
-    }
-    decon2 <- convert_to_decon2(spectrum, deconvoluter, deconvolution, sfr)
-    decon2$rust_spectrum <- rust_spectrum
-    decon2$rust_deconvolution <- deconvolution
-    decon2
-}
-
 #' @title Deconvolute Spectrum using Rust Backend
 #' @description Deconvolutes a given spectrum using the Rust backend.
 #' @param spectrum The spectrum to be deconvoluted.
@@ -258,7 +208,7 @@ deconvolute_spectra_rust <- function(spectra,
                                      parallel = FALSE,
                                      optimize_settings = FALSE) {
     rust_spectra <- lapply(spectra, function(spectrum) as_rust_spectrum(spectrum, sfr))
-    stopifnot(is_spectrum(spectrum), is_num(sfr, 2))
+    stopifnot(is_spectrum(sap[[1]]), is_num(sfr, 2))
     deconvoluter <- set_up_deconvoluter(nfit, smopts, delta, ignore_regions)
     if (parallel) {
         if (optimize_settings) {

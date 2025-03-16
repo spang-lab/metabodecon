@@ -392,11 +392,14 @@ plot_spectrum <- function(x,
 #'             found. See 'Details'.
 #' - `sf`:     Scaling factor. Axis values are divided by this number before the
 #'             labels are calculated. If you set this to anything unequal 1, you
-#'             should also choose `text` in a way that reflects the scaling.
-#'             E.g. if you set `sf = 1e6` you could change the text from
-#'             `"Signal Intensity [au]"` to `"Signal Intensity [Mau]"` or
-#'             `"Signal Intensity [au] / 1e6"`, with `"Mau"` meaning
-#'             "Mega-Arbitrary-Units".
+#'             should also set the corresponding margin text in a way that
+#'             reflects the scaling. Example: by default, a scaling factor of
+#'             1e6 is used for drawing signal intensities and a scaling factor
+#'             of 1 for drawing the second derivative. To make clear, that the
+#'             user should be careful when interpreting the signal intensity
+#'             values, the corresponding margin text is set to "Signal Intensity
+#'             [au]"  where "au" means "Arbitrary Units", indicating that the
+#'             values might be scaled.
 #'
 #' @param bt_text,lt_text,tp_text,rt_text
 #' List of parameters used to overwrite the default values passed to [mtext()]
@@ -466,8 +469,7 @@ draw_spectrum <- function(
     tp_verts  = list(), lc_verts = list(), al_verts = list(),
     al_arrows = list(),
     lgd       = list()
-    )
-{
+) {
     # Check and enrich inputs (278us)
     if (isFALSE(show)) return()
     obj <- as_v2_obj(obj)
@@ -795,7 +797,6 @@ test_draw_spectrum <- function(figs = 1:8,
             add = TRUE,
             lgd = FALSE,
             bt_text = FALSE,
-            bt_axis = FALSE,
             lt_text = lt_text_short
         )
     }
@@ -1276,10 +1277,11 @@ get_draw_spectrum_defaults <- function(show_d2 = FALSE,
         is_bool(foc_only),
         is_bool(aligned)
     )
-    show_al <- !show_d2 && aligned
     show_si <- !show_d2 && !aligned
-    ylab <- if (show_si) "Signal Intensity [au] / 1e6" else "Second Derivative / 1e6"
-    lgdx <- if (show_si) "topright" else "bottomright"
+    show_al <- !show_d2 && aligned
+    ylab <- if (show_d2) "Second Derivative" else "Signal Intensity [au]"
+    sf   <- if (show_d2) 1 else 1e6
+    lgdx <- if (show_d2) "bottomright" else "topright"
     list(
         # Legend
         lgd       = list(show = TRUE, x = lgdx, bg = "white"),
@@ -1310,58 +1312,10 @@ get_draw_spectrum_defaults <- function(show_d2 = FALSE,
         foc_rect  = list(show = TRUE, col = transp("yellow")),
         # Axes
         bt_axis   = list(show = TRUE),
-        lt_axis   = list(show = TRUE, sf = 1e6, las  = 1),
+        lt_axis   = list(show = TRUE, sf = sf, las  = 1),
         tp_axis   = list(show = FALSE),
         rt_axis   = list(show = FALSE),
         # Margin Texts
-        bt_text   = list(show = TRUE, text = "Chemical Shift [ppm]"),
-        lt_text   = list(show = TRUE, text = ylab),
-        tp_text   = list(show = FALSE),
-        rt_text   = list(show = FALSE)
-    )
-}
-
-
-get_draw_spectrum_defaults_2 <- function(show_d2 = FALSE,
-                                         foc_only = TRUE,
-                                         aligned = FALSE) {
-    stopifnot(is_bool(show_d2), is_bool(foc_only))
-    show_si  <- !show_d2
-    ylab <- if (show_si) "Signal Intensity [au] / 1e6" else "Second Derivative / 1e6"
-    lgdx <- if (show_si) "topright" else "bottomright"
-    list(
-        lgd       = list(show = TRUE, x = lgdx, bg = "white"),
-        d2_line   = list(show = show_d2),
-
-        si_line   = list(show = FALSE, col = "black"),
-        sm_line   = list(show = FALSE, col = "blue"),
-
-        sp_line   = list(show = show_si,             col = "red", fill = "#FFEEEE"),
-        lc_lines  = list(show = show_si && foc_only, col = "red", fill = "#FFC0C0"),
-        lc_verts  = list(show = show_si,             col = "red"                  ),
-        lc_rects  = list(show = FALSE,               col = "red", border = NA     ),
-
-        tp_lines  = list(show = FALSE, col = "darkgreen"),
-        tp_verts  = list(show = FALSE, col = "darkgreen"),
-        tp_rects  = list(show = FALSE, col = transp("darkgreen", 0.12), border = NA),
-
-        al_line   = list(show = show_si, col = "purple", fill = "#FFE0FF"),
-        al_lines  = list(show = show_si, col = "purple", fill = "#FFC0FF"),
-        al_verts  = list(show = show_si, col = "purple"),
-        al_arrows = list(show = show_si, col = "purple"),
-
-        cent_pts  = list(show = FALSE && foc_only, col = "blue", bg = "blue", pch = 24),
-        bord_pts  = list(show = FALSE, col = "blue", pch = 124),
-        norm_pts  = list(show = FALSE, col = "black", pch = 124),
-
-        bg_rect   = list(show = TRUE, col = "white"),
-        foc_rect  = list(show = TRUE, col = transp("yellow")),
-
-        bt_axis   = list(show = TRUE),
-        lt_axis   = list(show = TRUE, sf = 1e6, las  = 1),
-        tp_axis   = list(show = FALSE),
-        rt_axis   = list(show = FALSE),
-
         bt_text   = list(show = TRUE, text = "Chemical Shift [ppm]"),
         lt_text   = list(show = TRUE, text = ylab),
         tp_text   = list(show = FALSE),

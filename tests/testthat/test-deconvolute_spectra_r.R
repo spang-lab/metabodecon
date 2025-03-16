@@ -1,18 +1,16 @@
 library(testthat)
 
 # IMPORTANT: we don't test for a good PRARP and/or different values of BWC here,
-# as these checks are already done in `test-deconvolute_ispec` (singular). Here,
-# we only want to assert that the "glue code" in `test-deconvolute_ispecs`
-# (plural), orchestrating multiple invocations of `deconvolute_ispec`, works as
+# as these checks are already done in `test-deconvolute_spectrum_r` (singular). Here,
+# we only want to assert that the "glue code" in `test-deconvolute_spectra_r`
+# (plural), orchestrating multiple invocations of `deconvolute_spectrum_r`, works as
 # expected. We do this by checking that the returned objects have the correct
-# types and the same PRARPs as returned `test-deconvolute_ispec`.
+# types and the same PRARPs as returned `test-deconvolute_spectrum_r`.
 
 # Call #####
-
-ispecs <- as_ispecs(sim[1:2])
-idecons <- deconvolute_ispecs(ispecs, nfit = 3, sfr = c(3.55, 3.35), verbose = FALSE, bwc = 0)
-idecon1 <- deconvolute_ispec(ispecs[[1]], nfit = 3, sfr = c(3.55, 3.35), verbose = FALSE, bwc = 0)
-idecon2 <- deconvolute_ispec(ispecs[[2]], nfit = 3, sfr = c(3.55, 3.35), verbose = FALSE, bwc = 0)
+idecons <- deconvolute_spectra_r(sim[1:2], nfit = 3, sfr = c(3.55, 3.35), verbose = FALSE, bwc = 0)
+idecon1 <- deconvolute_spectrum_r(sim[[1]], nfit = 3, sfr = c(3.55, 3.35), verbose = FALSE, bwc = 0)
+idecon2 <- deconvolute_spectrum_r(sim[[2]], nfit = 3, sfr = c(3.55, 3.35), verbose = FALSE, bwc = 0)
 
 # Checks #####
 

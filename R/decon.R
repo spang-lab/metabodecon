@@ -143,16 +143,34 @@ deconvolute <- function(x,
                         ask = FALSE,
                         force = FALSE,
                         verbose = FALSE,
-                        nworkers = 1) {
-    check_args_deconvolute()
-    ispecs <- as_ispecs(x)
-    if (is.null(sfr)) sfr <- quantile(ispecs[[1]]$ppm, c(0.9, 0.1))
-    idecons <- deconvolute_ispecs(
-        ispecs,
+                        nworkers = 1,
+                        backend = NULL) {
+    # Check inputs
+    stopifnot(
+        is_spectrum(x) || is_spectra(x),
+        is_int(nfit, 1) || is.null(nfit),
+        is_int(smopts, 2) || is.null(smopts),
+        is_num(delta, 1) || is.null(delta),
+        is_num(sfr, 2) || is.null(sfr),
+        is_num(wshw, 1) || is.null(wshw),
+        is_bool(ask, 1),
+        is_bool(force, 1),
+        is_bool(verbose, 1),
+        is_int(nworkers, 1)
+    )
+
+    # Set suitable defaults
+    sfr <- sfr %||% quantile(x$cs %||% x[[1]]$cs, c(0.9, 0.1))
+
+    # Perform deconvolution
+    idecons <- deconvolute_spectra_r(
+        x,
         nfit, smopts, delta, sfr, wshw,
         ask, force, verbose,
         bwc = 2, nworkers = nworkers
     )
+
+    # Convert and return
     decons2 <- as_decons2(idecons)
     if (length(decons2) == 1) decons2[[1]] else decons2
 }
@@ -174,16 +192,28 @@ generate_lorentz_curves <- function(data_path,
                                     force = FALSE,
                                     verbose = TRUE,
                                     nworkers = 1) {
-    # Check and convert input
-    eval(generate_lorentz_curves_type_checks) # 99 us
+    # Check inputs
+    stopifnot(
+        is_existing_path(data_path)
+            || is_spectrum(data_path) || is_spectra(data_path)
+            || is_ispec(data_path)    || is_ispecs(data_path),
+        is_char(file_format, 1, "(bruker|jcampdx)"),
+        is_bool(make_rds, 1) || is_char(make_rds, 1),
+        is_int(expno, 1),    is_int(procno, 1),  is_int(nfit, 1),
+        is_int(smopts, 2),   is_num(delta, 1),   is_num(sfr, 2),
+        is_num(wshw, 1),     is_bool(ask, 1),    is_bool(force, 1),
+        is_bool(verbose, 1), is_int(nworkers, 1)
+    )
+
+    # Read spectra
     spectra <- as_spectra(
         data_path, file_format, expno, procno, raw,
         silent = !verbose, force = force
     )
 
     # Deconvolute
-    idecons <- deconvolute_ispecs(
-        ispecs = as_ispecs(x = spectra),
+    idecons <- deconvolute_spectra_r(
+        spectra,
         nfit, smopts, delta, sfr, wshw,
         ask, force, verbose,
         bwc = 1, nworkers = nworkers
@@ -231,25 +261,32 @@ generate_lorentz_curves_sim <- function(data_path,
 #' == 2`, all bug fixes and features introduced after version 0.2.2 are used.
 #'
 #' Support for `bwc == 0` will be removed in 'metabodecon v2.0'.
-deconvolute_ispecs <- function(ispecs,
-                               nfit = 3,
-                               smopts = c(2, 5),
-                               delta = 6.4,
-                               sfr = c(3.55, 3.35),
-                               wshw = 0,
-                               ask = FALSE,
-                               force = FALSE,
-                               verbose = TRUE,
-                               bwc = 2,
-                               nworkers = 1) {
+deconvolute_spectra_r <- function(x,
+                                  nfit = 3,
+                                  smopts = c(2, 5),
+                                  delta = 6.4,
+                                  sfr = c(3.55, 3.35),
+                                  wshw = 0,
+                                  ask = FALSE,
+                                  force = FALSE,
+                                  verbose = TRUE,
+                                  bwc = 2,
+                                  nworkers = 1) {
 
-    # Check args & configure logging
-    args <- check_args_deconvolute_ispecs()
-    ispecs <- as_ispecs(ispecs)
-    opts <- if (!verbose) options(toscutil.logf.file = nullfile())
-    on.exit(options(opts), add = TRUE)
+    # Check inputs
+    stopifnot(
+        is_int(nfit, 1), is_int(smopts, 2), is_num(delta, 1),
+        is_bool(ask, 1), is_bool(force, 1), is_bool(verbose, 1),
+        is_num(bwc, 1),
+        is_num(sfr, 2)  || is_list_of_nums(sfr,  length(ispecs), 2),
+        is_num(wshw, 1) || is_list_of_nums(wshw, length(ispecs), 1)
+    )
+    ispecs <- as_ispecs(x)
 
-    # Init local vars
+    # Configure logging
+    if (!verbose) local_options(toscutil.logf.file = nullfile())
+
+    # Init locals
     ns <- length(ispecs)
     nw <- if (nworkers == "auto") ceiling(detectCores() / 2) else nworkers
     nw <- min(nw, length(ispecs))
@@ -263,40 +300,42 @@ deconvolute_ispecs <- function(ispecs,
     # Deconvolute spectra
     logf("Starting deconvolution of %s using %s", nfstr, nwstr)
     starttime <- Sys.time()
-    idecon_list <- mcmapply(nw, deconvolute_ispec, ispecs,
+    idecon_list <- mcmapply(nw, deconvolute_spectrum_r,
+        ispecs,
         nfit, smoptslist, delta, sfrlist, wshwlist,
-        ask, force, verbose, bwc, nworkers)
+        ask, force, verbose, bwc, nworkers
+    )
     idecons <- as_idecons(idecon_list)
     duration <- format(round(Sys.time() - starttime, 3))
     logf("Finished deconvolution of %s in %s", nfstr, duration)
+
+    # Return
     idecons
 }
 
-deconvolute_ispec <- function(ispec,
-                              nfit = 3,
-                              smopts = c(2, 5),
-                              delta = 6.4,
-                              sfr = c(3.55, 3.35),
-                              wshw = 0,
-                              ask = FALSE,
-                              force = FALSE,
-                              verbose = TRUE,
-                              bwc = 2,
-                              nworkers = 1) {
+deconvolute_spectrum_r <- function(
+    x,
+    nfit = 3, smopts   = c(2, 5), delta = 6.4,   sfr     = c(3.55, 3.35),
+    wshw = 0, ask      = FALSE,   force = FALSE, verbose = TRUE,
+    bwc  = 2, nworkers = 1
+) {
+    # Check inputs
+    stopifnot(
+        is_int(nfit, 1), is_int(smopts, 2), is_num(delta, 1),
+        is_num(sfr, 2),  is_num(wshw, 1),   is_bool(force, 1),
+        is_num(bwc, 1)
+    )
+    ispec <- as_ispec(x)
+    ispec$args <- get_args(deconvolute_spectrum_r, ignore = "x")
 
-    # Check args & configure logging
-    ispec <- as_ispec(ispec)
-    args <- check_args_deconvolute_ispec()
-    ispec$args <- args[names(args) != "ispec"]
-    reps <- smopts[1]
-    k <- smopts[2]
+    # Configure logging
     if (isFALSE(verbose)) local_options(toscutil.logf.file = nullfile())
 
     # Deconvolute ispec
     logf("Starting deconvolution of %s", ispec$name)
     ispec <- rm_water_signal(ispec, wshw, bwc)
     ispec <- rm_negative_signals(ispec)
-    ispec <- smooth_signals(ispec, reps, k, bwc)
+    ispec <- smooth_signals(ispec, smopts[1], smopts[2], bwc)
     ispec <- find_peaks(ispec)
     ispec <- filter_peaks(ispec, sfr, delta, force, bwc)
     ispec <- fit_lorentz_curves(ispec, nfit, bwc)
@@ -305,18 +344,14 @@ deconvolute_ispec <- function(ispec,
     idecon
 }
 
-# Helpers for deconvolute_ispecs #####
+# Helpers for deconvolute_spectra_r #####
 
 #' @description Return number of spectrum to adjust all others or 0 if every spectrum should be adjusted individually.
 #' @noRd
 get_adjno <- function(ispecs, sfr, wshw, ask) {
-    if (isFALSE(ask) || length(ispecs) == 1) {
-        return(0)
-    }
+    if (isFALSE(ask) || length(ispecs) == 1) return(0)
     same_param <- get_yn_input("Use same parameters for all spectra?")
-    if (!same_param) {
-        return(0)
-    }
+    if (!same_param) return(0)
     namestr <- paste(seq_along(ispecs), names(ispecs), sep = ": ", collapse = ", ")
     prompt <- sprintf("Number of spectrum for adjusting parameters? (%s)", namestr)
     get_num_input(prompt, min = 1, max = length(ispecs), int = TRUE)
@@ -362,7 +397,7 @@ get_smopts <- function(ispecs, smopts) {
     smopts
 }
 
-# Helpers for deconvolute_ispec #####
+# Helpers for deconvolute_spectrum_r #####
 
 rm_water_signal <- function(x, wshw, bwc) {
     check_args_rm_water_signal()
@@ -590,8 +625,17 @@ filter_peaks <- function(ispec, sfr, delta = 6.4, force = FALSE, bwc = 1) {
         mu <- mean(psc[in_sfr])
         sigma <- sd(psc[in_sfr])
     } else {
-        if (!force) stop("Not enough signals found in signal free region. Please double check deconvolution parameters.")
-        logf("No enough signals found in signal free region. This is a clear indication that the deconvolution parameters are not set correctly. Continuing anyways without dynamic peak filtering, because `force` is TRUE. Note that this might increase runtime drastically.")
+        if (!force) stop(paste(
+            "Not enough signals found in signal free region.",
+            "Please double check deconvolution parameters."
+        ))
+        logf(paste(
+            "Not enough signals found in signal free region.",
+            "This is a clear indication that the deconvolution parameters",
+            "are not set correctly. Continuing anyways without dynamic peak",
+            "filtering, because `force` is TRUE. Note that this might",
+            "increase runtime drastically."
+        ))
         mu <- 0
         sigma <- 0
     }

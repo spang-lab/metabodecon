@@ -1,6 +1,6 @@
 # Inputs #####
 args0 <- args1 <- args2 <- list(
-    ispec   = as_ispec(sap[[1]]),
+    x       = sap[[1]],
     nfit    = 3,
     sfr     = c(3.2, -3.2),
     smopts  = c(1, 3),
@@ -12,9 +12,9 @@ args1$bwc <- 1
 args2$bwc <- 2
 
 # Call #####
-idecon0 <- do.call(deconvolute_ispec, args0)
-idecon1 <- do.call(deconvolute_ispec, args1)
-idecon2 <- do.call(deconvolute_ispec, args2)
+idecon0 <- do.call(deconvolute_spectrum_r, args0)
+idecon1 <- do.call(deconvolute_spectrum_r, args1)
+idecon2 <- do.call(deconvolute_spectrum_r, args2)
 
 # Checks #####
 types <- test_that("returned objects have correct type", {

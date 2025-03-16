@@ -54,7 +54,7 @@ deconvolute_spectra_rust <- function(spectra,
                                      parallel = FALSE,
                                      optimize_settings = FALSE) {
     rust_spectra <- lapply(spectra, function(spectrum) as_rust_spectrum(spectrum, sfr))
-    stopifnot(is_spectrum(spectrum), is_num(sfr, 2))
+    stopifnot(is_spectrum(sap[[1]]), is_num(sfr, 2))
     deconvoluter <- set_up_deconvoluter(nfit, smopts, delta, ignore_regions)
     if (parallel) {
         if (optimize_settings) {

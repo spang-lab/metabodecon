@@ -707,32 +707,6 @@ check_args_rm_water_signal <- function(e = parent.frame()) {
     return(e)
 }
 
-check_args_deconvolute_ispec <- function(e = parent.frame()) {
-    stopifnot(is_ispec(e$ispec))
-    stopifnot(is_int(e$nfit, 1))
-    stopifnot(is_int(e$smopts, 2))
-    stopifnot(is_num(e$delta, 1))
-    stopifnot(is_num(e$sfr, 2))
-    stopifnot(is_num(e$wshw, 1))
-    stopifnot(is_bool(e$force, 1))
-    stopifnot(is_num(e$bwc, 1))
-    return(as.list(e))
-}
-
-check_args_deconvolute_ispecs <- function(e = parent.frame()) {
-    stopifnot(is_ispecs(e$ispecs) || is_ispec(e$ispecs))
-    stopifnot(is_int(e$nfit, 1))
-    stopifnot(is_int(e$smopts, 2))
-    stopifnot(is_num(e$delta, 1))
-    stopifnot(is_num(e$sfr, 2) || is_list_of_nums(e$sfr, length(e$ispecs), 2))
-    stopifnot(is_num(e$wshw, 1) || is_list_of_nums(e$wshw, length(e$ispecs), 1))
-    stopifnot(is_bool(e$ask, 1))
-    stopifnot(is_bool(e$force, 1))
-    stopifnot(is_bool(e$verbose, 1))
-    stopifnot(is_num(e$bwc, 1))
-    return(e)
-}
-
 draw_spectrum_standardize_arguments <- quote({
     if (isFALSE(si_line)  || is.null(si_line))  si_line  <- list(show = FALSE)
     if (isFALSE(sm_line)  || is.null(sm_line))  sm_line  <- list(show = FALSE)
@@ -751,29 +725,62 @@ draw_spectrum_standardize_arguments <- quote({
     if (isFALSE(rt_axis)  || is.null(rt_axis))  rt_axis  <- list(show = FALSE)
 })
 
-generate_lorentz_curves_type_checks <- quote(
-    stopifnot(
-    is_existing_path(data_path) ||
-        is_spectrum(data_path) ||
-        is_spectra(data_path) ||
-        is_ispec(data_path) ||
-        is_ispecs(data_path),
-    is_char(file_format, 1, "(bruker|jcampdx)"),
-    is_bool(make_rds, 1) || is_char(make_rds, 1),
-    is_int(expno, 1),
-    is_int(procno, 1),
-    is_int(nfit, 1),
-    is_int(smopts, 2),
-    is_num(delta, 1),
-    is_num(sfr, 2),
-    is_num(wshw, 1),
-    is_bool(ask, 1),
-    is_bool(force, 1),
-    is_bool(verbose, 1),
-    is_int(nworkers, 1)
-))
-
 # Misc (Private) ##############################################################
+
+sapply2 <- function (X, FUN, ...) {
+    sapply(X, FUN, ..., simplify = FALSE, USE.NAMES = TRUE)
+}
+
+#' @noRd
+#' @title Get Named Function Arguments
+#' @description
+#' Extracts the **named** arguments of a function as a named list. Variadic
+#' arguments, i.e. `...`, are not included in the list. Missing values are
+#' provided as "empty symbols".
+#' @param func If provided, only arguments of this function are extracted from
+#' the environment. See 'Details'.
+#' @param ignore A character vector of argument names to ignore.
+#' @param env The environment to extract the arguments from.
+#' @return A named list of arguments.
+#' @details Calling `args <- get_args(f)` as first statement in a function `f`
+#' produces the same as `args <- as.list(environment())` (assuming no values
+#' were provided via `...`). The advantage of using `get_args()` is, that it
+#' allows to exclude certain arguments from the list and that it can be used
+#' interactively from the global environment during function development.
+#' (Calling `as.list(environment())` from the global environment would convert
+#' the complete global environment into a list, meaning it can be extremely
+#' slow.)
+#' @examples
+#' f <- function(a, b = 1, c = NULL, ...) {
+#'      args <- get_args(f, ignore = c("a"))
+#'      # do some calculations
+#'      args
+#' }
+#' f(10, 20) # list(b = 20, c = NULL)
+#'
+#' g <- function(a, b = 1, c = NULL, ...) {
+#'      get_args()
+#' }
+#' g(0, 1, 2, 3, 4) # list(a = 0, b = 1, c = 2   )
+#' xx <- g()        # list(a = ,  b = 1, c = NULL)
+#' is.symbol(xx$a)  # TRUE
+get_args <- function(func = NULL, ignore = character(), env = parent.frame())
+{
+    stopifnot(
+        is.null(ignore) || is.character(ignore),
+        is.environment(env),
+        is.null(func) || is.function(func)
+    )
+    if (is.null(func)) {
+        args <- as.list(env)
+        args[ignore] <- NULL
+    }  else {
+        argnames <- names(formals(func))
+        argnames <- argnames[!argnames %in% ignore]
+        args <- sapply2(argnames, function(name) env[[name]])
+    }
+    args
+}
 
 empty_df <- function(names) {
     df <- data.frame(matrix(ncol = length(names), nrow = 0))
