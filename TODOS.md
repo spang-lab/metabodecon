@@ -46,6 +46,10 @@ With MESSAGE being something like "Rust backend not installed yet. Please call i
 
 # Open
 
+## Add Wolframs Issues
+
+Add the issues Wolfram sent me by Mail.
+
 ## Add index vignette
 
 There should be one vignette shipped with the package that is as small as possible and contains links to the online documentation.

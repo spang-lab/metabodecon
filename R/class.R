@@ -376,10 +376,34 @@ is_decons2 <- function(x) inherits(x, "decons2")
 #' @rdname is_metabodecon_class
 is_aligns <- function(x) inherits(x, "aligns")
 
+is_spectrum_or_spectra <- function(x) is_spectrum(x) || is_spectra(x)
+
 # Convert #####
 
 as_metabodecon_class <- function() {
     # Placeholder to find documentation for `as_metabodecon_class`
+}
+
+as_v2_obj <- function(obj) {
+    if (is_spectrum(obj)) obj
+    else if (is_ispec(obj)) as_spectrum(obj)
+    else if (is_idecon(obj)) as_decon2(obj)
+    else if (is_decon0(obj)) stop("decon0 objects are not supported. Convert with as_decon2.")
+    else if (is_decon1(obj)) as_decon2(obj)
+    else if (is_decon2(obj)) obj
+    else if (is_align(obj)) obj
+    else stop(sprintf("Objects of class %s are not supported.", class(obj)))
+}
+
+as_v2_objs <- function(obj) {
+    if (is_spectra(obj)) obj
+    else if (is_ispecs(obj)) as_spectra(obj)
+    else if (is_idecons(obj)) as_decons2(obj)
+    else if (is_decons0(obj)) stop("decons0 objects are not supported. Convert with as_decons2.")
+    else if (is_decons1(obj)) as_decons2(obj)
+    else if (is_decons2(obj)) obj
+    else if (is_aligns(obj)) obj
+    else stop(sprintf("Objects of class %s are not supported.", class(obj)))
 }
 
 #' @export
@@ -484,6 +508,11 @@ as_ispec <- function(x, sf = c(1e3, 1e6)) {
     # [^2]: Example: ppm = 11, 23, 35, 47 ==> ppm_step == 12, ppm_nstep ~= 10.6
     #       (not really useful, but we need it for backwards compatibility with
     #       MetaboDecon1D results)
+}
+
+as_rbspec <- function(x, sfr) {
+    stopifnot(is_spectrum(x), is_num(sfr, 2))
+    mdrb::Spectrum$new(x$cs, x$si, sfr)
 }
 
 #' @export
@@ -753,28 +782,6 @@ as_decon2 <- function(x,
     obj
 }
 
-as_v2_obj <- function(obj) {
-    if (is_spectrum(obj)) obj
-    else if (is_ispec(obj)) as_spectrum(obj)
-    else if (is_idecon(obj)) as_decon2(obj)
-    else if (is_decon0(obj)) stop("decon0 objects are not supported. Convert with as_decon2.")
-    else if (is_decon1(obj)) as_decon2(obj)
-    else if (is_decon2(obj)) obj
-    else if (is_align(obj)) obj
-    else stop(sprintf("Objects of class %s are not supported.", class(obj)))
-}
-
-as_v2_objs <- function(obj) {
-    if (is_spectra(obj)) obj
-    else if (is_ispecs(obj)) as_spectra(obj)
-    else if (is_idecons(obj)) as_decons2(obj)
-    else if (is_decons0(obj)) stop("decons0 objects are not supported. Convert with as_decons2.")
-    else if (is_decons1(obj)) as_decons2(obj)
-    else if (is_decons2(obj)) obj
-    else if (is_aligns(obj)) obj
-    else stop(sprintf("Objects of class %s are not supported.", class(obj)))
-}
-
 #' @export
 #' @rdname as_metabodecon_class
 #' @inheritParams read_spectra
@@ -870,24 +877,52 @@ as_decons2 <- function(x,
     decons2
 }
 
-# Helpers #####
+# Getters #####
 
-set_names <- function(x, nams) {
-    if (!is.list(x)) stop("Input must be a list.")
-    has_names <- all(sapply(x, function(e) "name" %in% names(e)))
-    has_meta_names <- all(sapply(x, function(e) "name" %in% names(e$meta)))
-    names(x) <- nams
-    if (has_names) for (i in seq_along(x)) x[[i]]$name <- nams[[i]]
-    if (has_meta_names) for (i in seq_along(x)) x[[i]]$meta$name <- nams[[i]]
-    x
+#' @noRd
+#' @title Returns the name of an iterable.
+#' @param x An iterable object, e.g. a single metabodecon object.
+#' @param default Default name if no name is found.
+#' @return The name of the object as string or whatever is given as `default`.
+#' @examples
+#' s1 = list()
+#' s2 = list(name = "foo")
+#' s3 = list(name = "foo", meta = list(name = "bar"))
+#' get_name(s1)  # ""
+#' get_name(s2)  # "foo"
+#' get_name(s3)  # "bar"
+get_name <- function(x, default = "") {
+    (if (is.list(x)) x$meta$name %||% x$name) %||% default
 }
 
+#' @noRd
+#' @title Returns the names of a metabodecon collection object.
+#' @param x A metabodecon collection object.
+#' @param default Default names if no names are found. Passed on to `get_default_names`.
+#' @return A character vector of names.
+#' @examples
+#' s1 = list()
+#' s2 = list(name = "foo")
+#' s3 = list(name = "foo", meta = list(name = "bar"))
+#'
+#' get_names(list(s1, s1))           # c("spectrum_1", "spectrum_2")
+#' get_names(list(s1, myspec = s1))  # c("spectrum_1", "myspec")
+#' get_names(list(s1, myspec = s2))  # c("spectrum_1", "foo")
+#' get_names(list(s1, myspec = s3))  # c("spectrum_1", "bar")
 get_names <- function(x, default = "spectrum_%d") {
-    stopifnot(is.list(x))
-    dn <- get_default_names(x, default)
-    en <- names(x) # Element name
-    sn <- sapply(x, function(s) s$meta$name %||% s$name) # Spectrum name
-    sapply(seq_along(x), function(i) sn[[i]] %||% en[[i]] %||% dn[[i]])
+    obj_names <- sapply(x, get_name, "")
+    obj_names_empty <- obj_names == ""
+    if (any(obj_names_empty)) {
+        list_names <- names(x) %||% rep("", length(x))
+        list_names_empty <- list_names == ""
+        if (any(list_names_empty)) {
+            default_names <- get_default_names(x, default)
+            list_names[list_names_empty] <- default_names[list_names_empty]
+        }
+        obj_names[obj_names_empty] <- list_names[obj_names_empty]
+    }
+    names(obj_names) <- NULL
+    obj_names
 }
 
 get_default_names <- function(x, default) {
@@ -895,5 +930,20 @@ get_default_names <- function(x, default) {
         return(sprintf(default, seq_along(x)))
     if (length(unique(default)) == length(x))
         return(default)
-    stop("Default names must be a single string with a `%d` placeholder or a character vector of same length as the spectra object.")
+    stop(paste(
+        "Default names must be a single string with a `%d` placeholder",
+        "or a character vector of unique spectrum names."
+    ))
+}
+
+# Setters
+
+set_names <- function(x, nams) {
+    stopifnot(is.list(x))
+    has_names <- all(sapply(x, function(e) "name" %in% names(e)))
+    has_meta_names <- all(sapply(x, function(e) "name" %in% names(e$meta)))
+    names(x) <- nams
+    if (has_names) for (i in seq_along(x)) x[[i]]$name <- nams[[i]]
+    if (has_meta_names) for (i in seq_along(x)) x[[i]]$meta$name <- nams[[i]]
+    x
 }

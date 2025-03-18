@@ -884,45 +884,39 @@ test_grafical_units <- function() {
 #' @noRd
 #' @title Plot Signal Free Region
 #' @description Draws the SFR as green vertical lines into the given spectrum.
-#' @param spec The spectrum object.
-#' @param left_ppm The left border of the signal free region in ppm.
-#' @param right_ppm The right border of the signal free region in ppm.
 #' @return NULL. Called for side effect of plotting the signal free region.
-plot_sfr <- function(spec, left_ppm, right_ppm) {
+plot_sfr <- function(cs, si, sfr) {
     plot(
-        x = spec$ppm,
-        y = spec$y_scaled,
+        x = cs,
+        y = si,
         type = "l",
         xlab = "Chemical Shift [ppm]",
         ylab = "Signal Intensity [au]",
-        xlim = c(spec$ppm_max, spec$ppm_min)
+        xlim = c(max(cs), min(cs))
     )
-    graphics::abline(v = c(left_ppm, right_ppm), col = "green")
+    graphics::abline(v = sfr, col = "green")
 }
 
 #' @noRd
 #' @title Plot Water Signal
 #' @description Draws the water signal as red vertical lines into the given spectrum.
-#' @param spec A list representing the spec as returned by [read_spectrum()].
-#' @param hwidth_ppm The half width of the water signal in ppm.
 #' @return NULL. Called for side effect of plotting the water signal.
-plot_ws <- function(spec, hwidth_ppm) {
-    hw <- hwidth_ppm
-    x0 <- (spec$ppm_max + spec$ppm_min) / 2
-    xlim <- if (hw > 0) c(x0 + 5 * hw, x0 - 5 * hw) else range(spec$ppm)[2:1]
-    in_xlim <- which(spec$ppm <= max(xlim) & spec$ppm >= min(xlim))
+plot_ws <- function(cs, si, wshw) {
+    xmid <- (min(cs) + max(cs)) / 2
+    xlim <- if (wshw > 0) c(xmid + 5 * wshw, xmid - 5 * wshw) else range(cs)[2:1]
+    in_xlim <- which(cs <= max(xlim) & cs >= min(xlim))
     plot(
-        spec$ppm[in_xlim],
-        spec$y_scaled[in_xlim],
+        x = cs[in_xlim],
+        y = si[in_xlim],
         type = "l",
         xlab = "Chemical Shift [ppm]",
         ylab = "Signal Intensity [au]",
         xlim = xlim
     )
-    mtext("Water Signal Region", side = 3, line = 0, at = x0, col = "blue")
+    mtext("Water Signal Region", side = 3, line = 0, at = xmid, col = "blue")
     rect(
-        xleft = x0 - hw,
-        xright = x0 + hw,
+        xleft = xmid - wshw,
+        xright = xmid + wshw,
         ybottom = par("usr")[3],
         ytop = par("usr")[4],
         col = rgb(0, 0, 1, alpha = 0.2),

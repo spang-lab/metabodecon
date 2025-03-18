@@ -3,12 +3,12 @@ library(testthat)
 # Prepare Test Environment #####
 
 # 1. Get the sap spectrum
-# 2. Deconvolute the sap spectrum using deconvolute_spectrum_r
+# 2. Deconvolute the sap spectrum using deconvolute_spectrum
 # 3. Convert the spectrum to decon[0-2]
 # 4. Verify the values within decon[0-2] by plotting and printing their structure
 # ==> we know that the decon[0-2] objects obtained by direct conversion are correct
 
-idecon <- deconvolute_spectrum_r(sap[[1]], sfr = c(3.2, -3.2), smopts = c(2, 3))
+idecon <- deconvolute_spectrum(sap[[1]], sfr = c(3.2, -3.2), smopts = c(2, 3))
 decon2 <- as_decon2(idecon)
 decon1 <- as_decon1(idecon)
 decon0 <- as_decon0(idecon)
