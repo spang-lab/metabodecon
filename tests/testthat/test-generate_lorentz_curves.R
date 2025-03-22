@@ -15,7 +15,7 @@ sap <- test_that("GLC works for single spectrum", {
         smopts = c(1, 3),
         delta = 3,
         ask = FALSE,
-        verbose = FALSE
+        verbose = TRUE
     )
     expect_identical(object = names(decon1), expected = decon1_members)
     expect_identical(object = class(decon1), expected = "decon1")

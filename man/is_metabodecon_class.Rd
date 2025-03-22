@@ -5,6 +5,7 @@
 \alias{is_spectrum}
 \alias{is_ispec}
 \alias{is_idecon}
+\alias{is_rustdecon}
 \alias{is_decon0}
 \alias{is_decon1}
 \alias{is_decon2}
@@ -23,6 +24,8 @@ is_spectrum(x, check_class = TRUE, check_contents = FALSE)
 is_ispec(x)
 
 is_idecon(x)
+
+is_rustdecon(x)
 
 is_decon0(x)
 

@@ -155,16 +155,15 @@ deconvolute <- function(x,
 
     # Set suitable defaults
     sfr <- sfr %||% quantile(x$cs %||% x[[1]]$cs, c(0.9, 0.1))
-    bwc <- 2
 
     # Perform deconvolution
-    idecons <- deconvolute_spectra(x,
-        nfit, smopts, delta, sfr, wshw, ask, force, verbose,
-        bwc, nworkers, use_rust
+    decons2 <- deconvolute_spectra(x,
+        nfit, smopts, delta, sfr, wshw,
+        ask, force, verbose, bwc=2,
+        use_rust, nw=nworkers, igr=list(), rtyp="decon2"
     )
 
     # Convert and return
-    decons2 <- as_decons2(idecons)
     if (length(decons2) == 1) decons2[[1]] else decons2
 }
 
@@ -195,14 +194,13 @@ generate_lorentz_curves <- function(data_path,
     )
 
     # Deconvolute
-    idecons <- deconvolute_spectra(spectra,
-        nfit, smopts, delta, sfr, wshw, ask, force, verbose,
-        bwc = 1, nworkers = nworkers
+    decons1 <- deconvolute_spectra(spectra,
+        nfit, smopts, delta, sfr, wshw,
+        ask, force, verbose, bwc=1,
+        use_rust=FALSE, nw=nworkers, igr=list(), rtyp="decon1"
     )
 
-    # Convert, store and return
-    if (verbose) logf("Formatting deconvolution results as 'decon1' objects")
-    decons1 <- as_decons1(idecons)
+    # Store and return
     store_as_rds(decons1, make_rds, data_path)
     if (length(decons1) == 1) decons1[[1]] else decons1
 }
@@ -234,19 +232,20 @@ generate_lorentz_curves_sim <- function(data_path,
 #' Support for `bwc == 0` will be removed in 'metabodecon v2.0'.
 deconvolute_spectra <- function(x,
     nfit=3, smopts=c(2,5), delta=6.4, sfr=c(3.55,3.35), wshw=0,
-    ask=FALSE, force=FALSE, verbose=TRUE, bwc=2, nworkers=1,
-    use_rust=FALSE
+    ask=FALSE, force=FALSE, verbose=TRUE, bwc=2,
+    use_rust=FALSE, nw=1, igr=list(), rtyp="idecon"
 ) {
 
     # Check inputs
     assert(
         is_spectrum(x) || is_spectra(x),
-        is_int(nfit, 1), is_int(smopts, 2), is_num(delta, 1),
-        is_bool(ask, 1), is_bool(force, 1), is_bool(verbose, 1),
-        is_num(bwc, 1),
-        is_num(sfr, 2)  || is_list_of_nums(sfr,  length(x), 2),
-        is_num(wshw, 1) || is_list_of_nums(wshw, length(x), 1),
-        is_bool_or_null(use_rust, 1)
+        is_int(nfit,1), is_int(smopts,2), is_num(delta,1),
+        is_bool(ask,1), is_bool(force,1), is_bool(verbose,1),
+        is_num(bwc,1),
+        is_num(sfr,2)  || is_list_of_nums(sfr,length(x),2),
+        is_num(wshw,1) || is_list_of_nums(wshw,length(x),1),
+        is_bool_or_null(use_rust,1),
+        is_char(rtyp,1,"(decon[0-2]|idecon|rustdecon)")
     )
 
     # Configure logging
@@ -256,69 +255,87 @@ deconvolute_spectra <- function(x,
     spectra <- as_spectra(x)
     ns <- length(spectra)
     nc2 <- ceiling(detectCores() / 2)
-    nw_apply <- if (use_rust) 1 else if (nworkers == "auto") min(nc2, ns) else nworkers
+    nw_apply <- if (use_rust) 1 else if (nw == "auto") min(nc2, ns) else nw
     nw_apply_str <- if (nw_apply == 1) "1 worker" else sprintf("%d workers", nw_apply)
-    nw_deconv <- if (!use_rust) 1 else if (nworkers == "auto") min(nc2, ns) else nworkers
+    nw_deconv <- if (!use_rust) 1 else if (nw == "auto") min(nc2, ns) else nw
     ns_str <- if (ns == 1) "1 spectrum" else sprintf("%d spectra", ns)
     adjno <- get_adjno(spectra, ask)
     sfr_list <- get_sfr(spectra, sfr, ask, adjno)
     wshw_list <- get_wshw(spectra, wshw, ask, adjno)
     smopts_list <- get_smopts(spectra, smopts)
-    use
+    igr_list <- list(list())
 
     # Deconvolute spectra
     logf("Starting deconvolution of %s using %s", ns_str, nw_apply_str)
     starttime <- Sys.time()
-    idecon_list <- mcmapply(nw_apply, deconvolute_spectrum,
+    decon_list <- mcmapply(nw_apply, deconvolute_spectrum,
         spectra,
         nfit, smopts_list, delta, sfr_list, wshw_list,
-        ask, force, verbose, bwc, use_rust, nw_deconv
+        ask, force, verbose, bwc,
+        use_rust, nw_deconv, igr_list, rtyp
     )
-    idecons <- as_idecons(idecon_list)
+    decons <- as_collection(decon_list)
     duration <- format(round(Sys.time() - starttime, 3))
     logf("Finished deconvolution of %s in %s", ns_str, duration)
 
     # Return
-    idecons
+    decons
 }
 
 deconvolute_spectrum <- function(x,
     nfit=3, smopts=c(2,5), delta=6.4, sfr=c(3.55, 3.35), wshw=0,
     ask=FALSE, force=FALSE, verbose=TRUE, bwc=2,
-    use_rust=FALSE, nw=1, igr=list()
+    use_rust=FALSE, nw=1, igr=list(), rtyp="idecon"
 ) {
+    # Check inputs
     assert(
         is_spectrum(x),
         is_int(nfit,1), is_int(smopts,2),    is_num(delta,1),
         is_num(sfr,2),  is_num(wshw,1),      is_bool(force,1),
         is_num(bwc,1),  is_bool(use_rust,1), is_int(nw,1),
-        is_list_of_nums(igr, nv=2)
+        is_list_of_nums(igr, nv=2),
+        is_char(rtyp,1,"(decon[0-2]|idecon|rustdecon)")
     )
+
+    # Init locals
     if (isFALSE(verbose)) local_options(toscutil.logf.file = nullfile())
     name <- get_name(x)
     suffix <- if (use_rust) " using Rust backend" else ""
+    args <- get_args(deconvolute_spectrum, ignore = "x")
+
+    # Deconvolute
     logf("Starting deconvolution of %s%s", name, suffix)
     if (use_rust) {
-        spec <- mdrb::Spectrum$new(x$cs, x$si, sfr)
-        dcv <- mdrb::Deconvoluter$new()
-        dcv$set_moving_average_smoother(smopts[1], smopts[2])
-        dcv$set_noise_score_selector(delta)
-        dcv$set_analytical_fitter(nfit)
-        decon <- dcv$deconvolute_spectrum(spec)
-        rustdecon <- named(spec, dcv, decon)
+        mdrb_spectrum <- mdrb::Spectrum$new(x$cs, x$si, sfr)
+        mdrb_deconvr <- mdrb::Deconvoluter$new()
+        mdrb_deconvr$set_moving_average_smoother(smopts[1], smopts[2])
+        mdrb_deconvr$set_noise_score_selector(delta)
+        mdrb_deconvr$set_analytical_fitter(nfit)
+        mdrb_decon <- mdrb_deconvr$deconvolute_spectrum(mdrb_spectrum)
+        decon <- new_rustdecon(x, args, mdrb_spectrum, mdrb_deconvr, mdrb_decon)
     } else {
+        # Sys.setenv(RAYON_NUM_THREADS=nw) # Must be set before R is started
         ispec <- as_ispec(x)
-        ispec$args <- get_args(deconvolute_spectrum, ignore = "x")
+        ispec <- set(ispec, args=args)
         ispec <- rm_water_signal(ispec, wshw, bwc)
         ispec <- rm_negative_signals(ispec)
         ispec <- smooth_signals(ispec, smopts[1], smopts[2], bwc)
+
         ispec <- find_peaks(ispec)
         ispec <- filter_peaks(ispec, sfr, delta, force, bwc)
         ispec <- fit_lorentz_curves(ispec, nfit, bwc)
-        idecon <- as_idecon(ispec)
+
+        decon <- as_idecon(ispec)
     }
+    logf("Formatting return object as %s", rtyp)
+    convert <- switch(rtyp,
+        "decon0"=as_decon0, "decon1"=as_decon1, "decon2"=as_decon2,
+        "idecon"=as_idecon, "rustdecon"=as_rustdecon
+    )
+    decon <- convert(decon)
     logf("Finished deconvolution of %s", name)
-    idecon
+
+    decon
 }
 
 # Helpers for deconvolute_spectra #####

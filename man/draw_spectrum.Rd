@@ -118,11 +118,14 @@ is provided, all numbers are tried, until \code{n} unique labels are
 found. See 'Details'.
 \item \code{sf}:     Scaling factor. Axis values are divided by this number before the
 labels are calculated. If you set this to anything unequal 1, you
-should also choose \code{text} in a way that reflects the scaling.
-E.g. if you set \code{sf = 1e6} you could change the text from
-\code{"Signal Intensity [au]"} to \code{"Signal Intensity [Mau]"} or
-\code{"Signal Intensity [au] / 1e6"}, with \code{"Mau"} meaning
-"Mega-Arbitrary-Units".
+should also set the corresponding margin text in a way that
+reflects the scaling. Example: by default, a scaling factor of
+1e6 is used for drawing signal intensities and a scaling factor
+of 1 for drawing the second derivative. To make clear, that the
+user should be careful when interpreting the signal intensity
+values, the corresponding margin text is set to "Signal Intensity
+\link{au}"  where "au" means "Arbitrary Units", indicating that the
+values might be scaled.
 }}
 
 \item{bt_text, lt_text, tp_text, rt_text}{List of parameters used to overwrite the default values passed to \code{\link[=mtext]{mtext()}}

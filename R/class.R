@@ -38,6 +38,13 @@ idecon_members <- c(
     "lcr"
 )
 
+rustdecon_members <- c(
+    "spectrum",
+    "mdrb_spectrum",
+    "mdrb_deconvr",
+    "mdrb_decon"
+)
+
 decon0_members <- c(
     "number_of_files",
     "filename",
@@ -154,6 +161,12 @@ print.ispec <- function(x, name = FALSE, ...) {
 #' @export
 #' @rdname print_methods
 print.idecon <- function(x, name = FALSE, ...) {
+    str(x, 1)
+}
+
+#' @export
+#' @rdname print_methods
+print.rustdecon <- function(x, name = FALSE, ...) {
     str(x, 1)
 }
 
@@ -320,6 +333,10 @@ is_idecon <- function(x) inherits(x, "idecon")
 
 #' @export
 #' @rdname is_metabodecon_class
+is_rustdecon <- function(x) inherits(x, "rustdecon")
+
+#' @export
+#' @rdname is_metabodecon_class
 is_decon0 <- function(x) {
     is.list(x) && all(decon0_members_mandatory %in% names(x)) && !is_decon1(x)
 }
@@ -384,10 +401,24 @@ as_metabodecon_class <- function() {
     # Placeholder to find documentation for `as_metabodecon_class`
 }
 
+as_collection <- function(x) {
+    assert(is.list(x), all(sapply(x, class) == class(x[[1]])))
+    decons <- switch(
+        class(x[[1]]),
+        "decon0"    = as_decons0(x),
+        "decon1"    = as_decons1(x),
+        "decon2"    = as_decons2(x),
+        "idecon"    = as_idecons(x),
+        "rustdecon" = as_rustdecons(x),
+        stop("Unsupported class: ", class(x[[1]]))
+    )
+}
+
 as_v2_obj <- function(obj) {
     if (is_spectrum(obj)) obj
     else if (is_ispec(obj)) as_spectrum(obj)
     else if (is_idecon(obj)) as_decon2(obj)
+    else if (is_rustdecon(obj)) as_decon2(obj)
     else if (is_decon0(obj)) stop("decon0 objects are not supported. Convert with as_decon2.")
     else if (is_decon1(obj)) as_decon2(obj)
     else if (is_decon2(obj)) obj
@@ -510,21 +541,76 @@ as_ispec <- function(x, sf = c(1e3, 1e6)) {
     #       MetaboDecon1D results)
 }
 
-as_rbspec <- function(x, sfr) {
-    stopifnot(is_spectrum(x), is_num(sfr, 2))
-    mdrb::Spectrum$new(x$cs, x$si, sfr)
-}
-
 #' @export
 #' @rdname as_metabodecon_class
 as_idecon <- function(x) {
     if (is_idecon(x)) {
         x
+    } else if (is_rustdecon(x)) {
+        y_raw <- x$spectrum$si
+        ppm <- x$spectrum$cs
+        hz <- x$spectrum$meta$fq
+        name <- x$spectrum$meta$name
+        meta <- x$spectrum$meta
+        args <- x$args
+        lcpar <- x$mdrb_decon$lorentzians()
+        y_sup <- x$mdrb_decon$superposition_vec(ppm)
+        n <- length(y_raw)
+        dp <- seq(n-1, 0, -1)
+        sdp <- dp / 1e3
+        sf <- c(1e3, 1e6)
+        ppm_range <- width(ppm)
+        ppm_max <- max(ppm)
+        ppm_min <- min(ppm)
+        ppm_step <- ppm_range / (n-1)
+        ppm_nstep <- ppm_range / n
+        y_scaled <- y_raw / 1e6
+        y_nows <- y_scaled
+        y_pos <- abs(y_scaled)
+        y_smooth <- smooth_signals(named(y_pos), args$smopts[[1]], args$smopts[[2]], verbose=FALSE)$y_smooth
+        d <- calc_second_derivative(y_smooth)
+        lcr <- list(
+            A = - convert_width(lcpar$A, ppm, sdp) / 1e6,
+            lambda = - convert_width(lcpar$lambda, ppm, sdp),
+            w = convert_pos(lcpar$x0, ppm, sdp)
+        )
+        lcr$integrals <- - lcr$A * pi
+        center <- round(convert_pos(lcpar$x0, ppm, 1:n))
+        npeaks <- length(center)
+        peak <- data.frame(
+            left = center - 1,
+            center = center,
+            right = center + 1,
+            score = rep(999, npeaks),
+            high = rep(TRUE, npeaks),
+            region = rep("norm", npeaks)
+        )
+        Z <- lci <- lca <- NA
+        structure(locals(without="x")[idecon_members], class="idecon")
     } else if (all(idecon_members %in% names(x))) {
-        structure(x, class = "idecon")
+        structure(x, class="idecon")
     } else {
         stop("Input must have all elements listed in `idecon_members`")
     }
+}
+
+new_rustdecon <- function(spectrum, args, mdrb_spectrum, mdrb_deconvr, mdrb_decon) {
+    x <- named(spectrum, args, mdrb_spectrum, mdrb_deconvr, mdrb_decon)
+    as_rustdecon(x)
+}
+
+as_rustdecon <- function(x) {
+    assert(
+        is_spectrum(x$spectrum),
+        is.list(x$args),
+        typeof(x$mdrb_spectrum) == "externalptr",
+        typeof(x$mdrb_deconvr) == "externalptr",
+        typeof(x$mdrb_decon) == "externalptr",
+        class(x$mdrb_spectrum) == "Spectrum",
+        class(x$mdrb_deconvr) == "Deconvoluter",
+        class(x$mdrb_decon) == "Deconvolution"
+    )
+    structure(x, class = "rustdecon")
 }
 
 #' @export
@@ -774,6 +860,32 @@ as_decon2 <- function(x,
             sm = mse(sit$sm, sit$sup, normed = FALSE),
             smnorm = mse(sit$sm, sit$sup, normed = TRUE)
         )
+    } else if (is_rustdecon(x)) {
+        # Helper obtained from x$mdrb_spectrum
+        cs  <- x$mdrb_spectrum$chemical_shifts()
+        si  <- x$mdrb_spectrum$intensities()
+        sfr <- x$mdrb_spectrum$signal_boundaries()
+        # Helpers obtained from x$mdrb_decon
+        sup   <- x$mdrb_decon$superposition_vec(cs)
+        lcpar <- x$mdrb_decon$lorentzians()
+        raw   <- x$mdrb_decon$mse()
+        norm  <- mse_raw / sum(sup)
+        # Helpers obtained from x$mdrb_deconvr
+        igr    <- x$mdrb_deconvr$ignore_regions()
+        nfit   <- x$mdrb_deconvr$fitting_settings()$iterations
+        delta  <- x$mdrb_deconvr$selection_settings()$threshold
+        smiter <- x$mdrb_deconvr$smoothing_settings()$iterations
+        smsize <- x$mdrb_deconvr$smoothing_settings()$window_size
+        smopts <- c(smiter, smsize)
+        # Remaining decon2 elements
+        peak <- NA
+        meta <- list()
+        args <- named(
+            nfit, smopts, delta, sfr, wshw=0, ask=FALSE, verbose=FALSE,
+            bwc=2, nworkers=1, use_rust=TRUE
+        )
+        sit <- named(wsrm=NA, nvrm=NA, sm=NA, sup)
+        mse <- named(raw, norm, sm=NA, smnorm=NA)
     } else {
         stop(sprintf("Converting %s to decon2 is not supported", class(x)[1]))
     }
@@ -828,15 +940,35 @@ as_idecons <- function(x) {
     structure(x, class = "idecons")
 }
 
+as_rustdecons <- function() {
+    if (is_rustdecons(x)) return(x)
+    stopifnot(is.list(x))
+    stopifnot(all(sapply(x, is_rustdecon)))
+    structure(x, class = "rustdecons")
+}
+
 #' @export
 #' @rdname as_metabodecon_class
 as_decons0 <- function(x,
                        sfs = list(c(1e3, 1e6)),
                        spectra = list(NULL),
                        nworkers = 1) {
-    stopifnot(is_decons0(x) || is_decons1(x) || is_decons2(x) || is_idecons(x))
-    if (is_decons0(x)) return(x)
-    decons0 <- mcmapply(as_decon0, x, sfs, spectra, nw = nworkers)
+    if (is_decons0(x)) {
+        return(x)
+    } else if (is_decons1(x) || is_decons2(x) || is_idecons(x)) {
+        decons0 <- mcmapply(as_decon0, x, sfs, spectra, nw = nworkers)
+    } else if (is.list(x) && all(sapply(x, is_decon0))) {
+        decons0 <- x
+    } else {
+        stop(paste(
+            "Input must be a list of decon0 objects or a single object",
+            "of type decons0, decons1, decons2 or idecons."
+        ))
+    }
+    # Don't set names or class for decons0, as the original MetaboDecon1D
+    # objects didn't have names or classes as well and we want to stay backwards
+    # compatible. If someone wants to have names, they can use `decons1` or
+    # `decons2` instead.
     n <- length(decons0)
     for (i in seq_len(n)) decons0[[i]]$number_of_files <- n
     decons0
@@ -851,9 +983,19 @@ as_decons1 <- function(x,
                        wshws = list(NULL),
                        bwc = 2,
                        nworkers = 1) {
-    stopifnot(is_decons0(x) || is_decons1(x) || is_decons2(x) || is_idecons(x))
-    if (is_decons1(x)) return(x)
-    decons1 <- mcmapply(as_decon1, x, sfs, spectra, sfrs, wshws, bwc, nw = nworkers)
+    if (is_decons1(x)) {
+        return(x)
+    } else if (is_decons0(x) || is_decons2(x) || is_idecons(x)) {
+        decons1 <- mcmapply(as_decon1, x, sfs, spectra, sfrs, wshws, bwc, nw = nworkers)
+    } else if (is.list(x) && all(sapply(x, is_decon1))) {
+        decons1 <- x
+    } else {
+        stop(paste(
+            "Input must be a list of decon1 objects or a single object",
+            "of type decons0, decons1, decons2 or idecons."
+        ))
+    }
+    names(decons1) <- get_names(x)
     class(decons1) <- "decons1"
     n <- length(decons1)
     for (i in seq_len(n)) decons1[[i]]$number_of_files <- n
@@ -869,9 +1011,18 @@ as_decons2 <- function(x,
                        wshws = list(NULL),
                        bwc = 2,
                        nworkers = 1) {
-    stopifnot(is_decons0(x) || is_decons1(x) || is_decons2(x) || is_idecons(x))
-    if (is_decons2(x)) return(x)
-    decons2 <- mcmapply(as_decon2, x, sfs, spectra, sfrs, wshws, bwc, nw = nworkers)
+    if (is_decons2(x)) {
+        return(x)
+    } else if (is_decons0(x) || is_decons1(x) || is_idecons(x)) {
+        decons2 <- mcmapply(as_decon2, x, sfs, spectra, sfrs, wshws, bwc, nw = nworkers)
+    } else if (is.list(x) && all(sapply(x, is_decon2))) {
+        decons2 <- x
+    } else {
+        stop(paste(
+            "Input must be a list of decon2 objects or a single object",
+            "of type decons0, decons1, decons2 or idecons."
+        ))
+    }
     names(decons2) <- get_names(x)
     class(decons2) <- "decons2"
     decons2

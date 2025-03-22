@@ -4,11 +4,22 @@
 \alias{install_mdrb}
 \title{Install Rust Backend}
 \usage{
-install_mdrb()
+install_mdrb(ask = TRUE, args_remotes = list(), args_mdrb = list())
+}
+\arguments{
+\item{ask}{Whether to ask for confirmation before attempting installion. Default is TRUE.}
+
+\item{args_remotes}{Additional arguments to pass to \code{\link[utils:install.packages]{utils::install.packages()}} when attemping
+installation of \href{https://remotes.r-lib.org/index.html}{remotes}.}
+
+\item{args_mdrb}{Additional arguments to pass to \code{\link[remotes:install_github]{remotes::install_github()}} when attempting
+installation of mdrb.}
 }
 \value{
 NULL. Called for side effect of installing the Rust backend.
 }
 \description{
-Installs the Rust backend and its dependencies.
+Installs metabodecon's Rust backend \href{https://github.com/spang-lab/mdrb}{mdrb}
+via \code{\link[remotes:install_github]{remotes::install_github()}}. If remotes is not available, it is installed
+first via \code{\link[utils:install.packages]{utils::install.packages()}}
 }

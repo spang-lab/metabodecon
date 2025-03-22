@@ -5,6 +5,7 @@
 \alias{print.spectrum}
 \alias{print.ispec}
 \alias{print.idecon}
+\alias{print.rustdecon}
 \alias{print.decon1}
 \alias{print.decon2}
 \alias{print.align}
@@ -21,6 +22,8 @@
 \method{print}{ispec}(x, name = FALSE, ...)
 
 \method{print}{idecon}(x, name = FALSE, ...)
+
+\method{print}{rustdecon}(x, name = FALSE, ...)
 
 \method{print}{decon1}(x, name = FALSE, ...)
 

@@ -40,7 +40,7 @@
 #' check_mdrb_deps()
 check_mdrb <- function() {
     tryCatch(
-        packageVersion("mdrbx") >= package_version("0.0.1"),
+        packageVersion("mdrb") >= package_version("0.0.1"),
         error = function(e) FALSE
     )
 }
@@ -123,7 +123,7 @@ check_mdrb_deps <- function() {
 install_mdrb <- function(ask = TRUE,
                          args_remotes = list(),
                          args_mdrb = list()) {
-    if (check_mdrb()) return()
+    if (check_mdrb()) return(invisible())
     checks <- check_mdrb_deps()
     if (!all(checks$passed)) {
         tbl <- capture.output2(print(checks, row.names = FALSE, right = FALSE))
