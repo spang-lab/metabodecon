@@ -1045,8 +1045,9 @@ load_all <- function(reset = TRUE, shims = TRUE) {
     logf("Elapsed: %s", format(diff))
 }
 
-# On Load #####
+# On Load (Private) #####
 
+#' @noRd
 #' @description
 #' Acts like [stopifnot()] during development but does nothing in production.
 #'

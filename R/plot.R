@@ -43,7 +43,7 @@ plot_spectra <- function(obj,
                          xlab = "Chemical Shift [ppm]",
                          ylab = paste("Signal Intensity [au] /", sfy),
                          mar = c(4.1, 4.1, 1.1, 0.1)) {
-    decons <- as_v2_objs(obj, ...)
+    decons <- as_v12_collection(obj, ...)
     sis <- lapply(decons, function(x) x$sit$supal %||% x$sit$sup %||% x$si)
     x0s <- lapply(decons, function(x) x$lcpar$x0)
     css <- lapply(decons, function(x) x$cs)
@@ -110,8 +110,8 @@ plot_spectra <- function(obj,
 #' `r lifecycle::badge("experimental")`
 #'
 #' @param x
-#' An object of type `spectrum`, `decon0`, `decon1` or `decon2`. For details see
-#' [Metabodecon
+#' An object of type `spectrum`, `decon0`, `decon1`, `decon2` or `align`. For
+#' details see [Metabodecon
 #' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
 #'
 #' @param ...
@@ -256,7 +256,7 @@ plot_spectra <- function(obj,
 #'
 plot_spectrum <- function(x,
                           ...,
-                          obj = as_v2_obj(x),
+                          obj = as_v12_singlet(x),
                           foc_frac = get_foc_frac(obj),
                           foc_rgn = get_foc_rgn(obj, foc_frac),
                           sub1 = TRUE,
@@ -266,7 +266,13 @@ plot_spectrum <- function(x,
                           frame = FALSE,
                           con_lines = TRUE)
 {
-    # Parse Inputs
+
+    # Check and parse inputs
+    stopifnot(
+        is_spectrum(obj) || is_decon2(obj) || is_align(obj),
+        is_num(foc_frac, 2),
+        is_num(foc_rgn, 2)
+    )
     dot_args <- if (identical(environment(), globalenv())) list() else list(...)
     sub1 <- combine(list(show = TRUE), sub1)
     sub2 <- combine(list(show = FALSE), sub2)
@@ -472,7 +478,7 @@ draw_spectrum <- function(
 ) {
     # Check and enrich inputs (278us)
     if (isFALSE(show)) return()
-    obj <- as_v2_obj(obj)
+    obj <- as_v12_singlet(obj)
     stopifnot(
         is_num(foc_rgn, 2) || is.null(foc_rgn),
         is_num(foc_frac, 2) || is.null(foc_frac),

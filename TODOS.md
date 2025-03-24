@@ -28,23 +28,57 @@ Update 10.3.2025: Instead of making compilation optional we should provide a sep
 
 ## Rename deconvolute_ispec
 
-This is a preparation for issue *Add Rust Backend Argument*. When introducing `deconvolute_spectrum_rust()` and `deconvolute_spectra_rust()` we should have corresponding R functions with the exact same interface.
+This is a preparation for issue *Add Rust Backend Argument*. Rename `deconvolute_ispec()` to `deconvolute_spectrum()` and `deconvolute_ispecs()` to `deconvolute_spectra()`.
+
+*Done on Mar 22 11:39:49 2025 +0100 in branch mdrb. PR: [#12](https://github.com/spang-lab/metabodecon/pull/12).*
 
 ## Add Rust Backend Argument
 
-Add an experimental argument `backend` in `deconvolute()` causing the following behaviour:
+Add an experimental argument `use_rust` in `deconvolute()` causing the following behaviour:
 
-| backend | check_mdrb | call                        |
-| ------- | ---------- | --------------------------- |
-| "R"     | anything   | deconvolute_spectrum_r()    |
-| NULL    | FALSE      | deconvolute_spectrum_r()    |
-| NULL    | TRUE       | deconvolute_spectrum_rust() |
-| "rust"  | TRUE       | deconvolute_spectrum_rust() |
-| "rust"  | FALSE      | stop(MESSAGE)               |
+| use_rust | check_mdrb | call                        |
+| -------- | ---------- | --------------------------- |
+| FALSE    | anything   | deconvolute_spectrum_r()    |
+| NULL     | FALSE      | deconvolute_spectrum_r()    |
+| NULL     | TRUE       | deconvolute_spectrum_rust() |
+| TRUE     | TRUE       | deconvolute_spectrum_rust() |
+| TRUE     | FALSE      | stop(MESSAGE)               |
 
 With MESSAGE being something like "Rust backend not installed yet. Please call install_mdrb() first."
 
+Sub-Tasks
+
+- [x] Add `use_rust` argument to `deconvolute`, `deconvolute_spectra()` and `deconvolute_spectrum()` and assert that it is passed on correctly
+- [x] Implement usage of rust in `deconvolute_spectrum()`
+- [x] Write testcases for `deconvolute_spectrum(use_rust=TRUE, rtyp="idecon')`
+- [ ] Write testcases for `deconvolute_spectrum(use_rust=TRUE, rtyp="decon2')`
+- [ ] Write testcases for `deconvolute_spectra(use_rust=TRUE, rtyp="idecon')`
+- [ ] Write testcases for `deconvolute_spectra(use_rust=TRUE, rtyp="decon2')`
+- [ ] Write testcases for `deconvolute(use_rust=TRUE, rtyp="idecon')`
+- [ ] Write testcases for `deconvolute(use_rust=TRUE, rtyp="decon2')`
+
 # Open
+
+## Remove ispec and idecon
+
+1.  `enrich_sfr(sfr, ispec)`
+2.  `enrich_wshw(wshw, ispec)`
+3.  `init_lc(ispec)`
+4.  `refine_lc_v14(ispec, lc$Z)`
+5.  `rm_water_signal(ispec, wshw, bwc)`
+6.  `rm_negative_signals(ispec)`
+7.  `smooth_signals(ispec, smopts[1], smopts[2], bwc)`
+8.  `find_peaks(ispec)`
+9.  `filter_peaks(ispec, sfr, delta, force, bwc)`
+10. `fit_lorentz_curves(ispec, nfit, bwc)`
+
+Tasks
+
+1. Modify above functions in a way that they return a single value instead
+   returning the full input spectrum. The assignement to the spectrum object
+   should be done by the caller.
+2. Modify above functions in a way, that they don't accept idecon objects, but only [spectrum](https://spang-lab.github.io/metabodecon/articles/Classes.html#spectrum) objects and/or other [v1.2+ elements](https://spang-lab.github.io/metabodecon/articles/Classes.html#elements-v1-2).
+3. Remove the `idecon` type from the package.
 
 ## Add Wolframs Issues
 
@@ -153,6 +187,11 @@ Currently the test-install workflow is split over three jobs, with huge amounts 
 2. Does the installation according to the `method` commandline argument, e.g. "CRAN-Modern", "CRAN-Old" or "Github".
 
 ## Refactor integral calculations
+
+
+## Calculate mandatory SITs in as_decon2
+
+Elements `wsrm` and `nvrm` are mandatory in `decon2` and should therefor be calculated during `as_decon2`. If additional data is needed to do this from `decon0` and/or `decon1` objects, add an argument that allows users to provide this information.
 
 ## Refactor mse calculations
 

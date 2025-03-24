@@ -245,7 +245,7 @@ deconvolute_spectra <- function(x,
         is_num(sfr,2)  || is_list_of_nums(sfr,length(x),2),
         is_num(wshw,1) || is_list_of_nums(wshw,length(x),1),
         is_bool_or_null(use_rust,1),
-        is_char(rtyp,1,"(decon[0-2]|idecon|rustdecon)")
+        is_char(rtyp,1,"(decon[0-2]|idecon|rdecon)")
     )
 
     # Configure logging
@@ -294,7 +294,7 @@ deconvolute_spectrum <- function(x,
         is_num(sfr,2),  is_num(wshw,1),      is_bool(force,1),
         is_num(bwc,1),  is_bool(use_rust,1), is_int(nw,1),
         is_list_of_nums(igr, nv=2),
-        is_char(rtyp,1,"(decon[0-2]|idecon|rustdecon)")
+        is_char(rtyp,1,"(decon[0-2]|idecon|rdecon)")
     )
 
     # Init locals
@@ -312,7 +312,7 @@ deconvolute_spectrum <- function(x,
         mdrb_deconvr$set_noise_score_selector(delta)
         mdrb_deconvr$set_analytical_fitter(nfit)
         mdrb_decon <- mdrb_deconvr$deconvolute_spectrum(mdrb_spectrum)
-        decon <- new_rustdecon(x, args, mdrb_spectrum, mdrb_deconvr, mdrb_decon)
+        decon <- new_rdecon(x, args, mdrb_spectrum, mdrb_deconvr, mdrb_decon)
     } else {
         # Sys.setenv(RAYON_NUM_THREADS=nw) # Must be set before R is started
         ispec <- as_ispec(x)
@@ -330,7 +330,7 @@ deconvolute_spectrum <- function(x,
     logf("Formatting return object as %s", rtyp)
     convert <- switch(rtyp,
         "decon0"=as_decon0, "decon1"=as_decon1, "decon2"=as_decon2,
-        "idecon"=as_idecon, "rustdecon"=as_rustdecon
+        "idecon"=as_idecon, "rdecon"=as_rdecon
     )
     decon <- convert(decon)
     logf("Finished deconvolution of %s", name)

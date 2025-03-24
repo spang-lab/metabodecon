@@ -808,7 +808,7 @@ MetaboDecon1D_silent <- function(# Passed on to [MetaboDecon1D()]
             scale_factor, debug, store_results
         )
     )
-    decon0
+    decon0_from_idecon
 }
 
 #' @noRd
