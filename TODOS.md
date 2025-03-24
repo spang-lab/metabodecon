@@ -51,34 +51,13 @@ Sub-Tasks
 - [x] Add `use_rust` argument to `deconvolute`, `deconvolute_spectra()` and `deconvolute_spectrum()` and assert that it is passed on correctly
 - [x] Implement usage of rust in `deconvolute_spectrum()`
 - [x] Write testcases for `deconvolute_spectrum(use_rust=TRUE, rtyp="idecon')`
-- [ ] Write testcases for `deconvolute_spectrum(use_rust=TRUE, rtyp="decon2')`
-- [ ] Write testcases for `deconvolute_spectra(use_rust=TRUE, rtyp="idecon')`
-- [ ] Write testcases for `deconvolute_spectra(use_rust=TRUE, rtyp="decon2')`
-- [ ] Write testcases for `deconvolute(use_rust=TRUE, rtyp="idecon')`
-- [ ] Write testcases for `deconvolute(use_rust=TRUE, rtyp="decon2')`
+- [x] Write testcases for `deconvolute_spectrum(use_rust=TRUE, rtyp="decon2')`
+- [x] Write testcases for `deconvolute_spectra(use_rust=TRUE, rtyp="idecon')`
+- [x] Write testcases for `deconvolute_spectra(use_rust=TRUE, rtyp="decon2')`
+- [ ] Write testcases for `deconvolute(use_rust=TRUE)` with mdrb installed
+- [ ] Write testcases for `deconvolute(use_rust=TRUE)` with mdrb missing
 
 # Open
-
-## Remove ispec and idecon
-
-1.  `enrich_sfr(sfr, ispec)`
-2.  `enrich_wshw(wshw, ispec)`
-3.  `init_lc(ispec)`
-4.  `refine_lc_v14(ispec, lc$Z)`
-5.  `rm_water_signal(ispec, wshw, bwc)`
-6.  `rm_negative_signals(ispec)`
-7.  `smooth_signals(ispec, smopts[1], smopts[2], bwc)`
-8.  `find_peaks(ispec)`
-9.  `filter_peaks(ispec, sfr, delta, force, bwc)`
-10. `fit_lorentz_curves(ispec, nfit, bwc)`
-
-Tasks
-
-1. Modify above functions in a way that they return a single value instead
-   returning the full input spectrum. The assignement to the spectrum object
-   should be done by the caller.
-2. Modify above functions in a way, that they don't accept idecon objects, but only [spectrum](https://spang-lab.github.io/metabodecon/articles/Classes.html#spectrum) objects and/or other [v1.2+ elements](https://spang-lab.github.io/metabodecon/articles/Classes.html#elements-v1-2).
-3. Remove the `idecon` type from the package.
 
 ## Add Wolframs Issues
 
@@ -223,6 +202,35 @@ When reading spectra, the spectrum type should be checked (1D, 2D, etc. and if n
 ## Integrate jcampdx functions
 
 Integrate jcampdx reader and writer functions from Max.
+
+## Remove ispec and idecon
+
+Subtasks:
+
+1. Modify below functions in a way that they return a single value instead
+   returning the full input spectrum. The assignement to the spectrum object
+   should be done by the caller.
+2. Modify below functions in a way, that they don't accept idecon objects, but
+   only spectrum objects and/or other v1.2+ elements
+3. Remove the `idecon` type from the package.
+
+Functions:
+
+1.  `enrich_sfr(sfr, ispec)`
+2.  `enrich_wshw(wshw, ispec)`
+3.  `init_lc(ispec)`
+4.  `refine_lc_v14(ispec, lc$Z)`
+5.  `rm_water_signal(ispec, wshw, bwc)`
+6.  `rm_negative_signals(ispec)`
+7.  `smooth_signals(ispec, smopts[1], smopts[2], bwc)`
+8.  `find_peaks(ispec)`
+9.  `filter_peaks(ispec, sfr, delta, force, bwc)`
+10. `fit_lorentz_curves(ispec, nfit, bwc)`
+
+Links:
+
+- https://spang-lab.github.io/metabodecon/articles/Classes.html#spectrum
+- https://spang-lab.github.io/metabodecon/articles/Classes.html#elements-v1-2
 
 # DONE
 

@@ -244,7 +244,7 @@ deconvolute_spectra <- function(x,
         is_num(bwc,1),
         is_num(sfr,2)  || is_list_of_nums(sfr,length(x),2),
         is_num(wshw,1) || is_list_of_nums(wshw,length(x),1),
-        is_bool_or_null(use_rust,1),
+        if (rtyp == "rdecon") isTRUE(use_rust) else is_bool(use_rust),
         is_char(rtyp,1,"(decon[0-2]|idecon|rdecon)")
     )
 
@@ -274,7 +274,7 @@ deconvolute_spectra <- function(x,
         ask, force, verbose, bwc,
         use_rust, nw_deconv, igr_list, rtyp
     )
-    decons <- as_collection(decon_list)
+    decons <- as_collection(decon_list, rtyp)
     duration <- format(round(Sys.time() - starttime, 3))
     logf("Finished deconvolution of %s in %s", ns_str, duration)
 

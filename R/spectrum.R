@@ -641,5 +641,3 @@ save_spectra <- function(x, path, force = FALSE, verbose = TRUE) {
 # Constants #####
 
 simpar_format <- "rds"
-
-spectrum_members <- c("cs", "si", "meta")

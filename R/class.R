@@ -78,17 +78,6 @@ print.spectra <- function(x, ...) {
 
 #' @export
 #' @rdname print_methods
-print.idecons <- function(x, ...) {
-    catf("idecons object with %s idecon elements\n", length(x))
-    nams <- get_names(x)
-    mapply(x, nams, FUN = function(xi, nam) {
-        catf("%s: ", nam)
-        print(xi, ...)
-    })
-}
-
-#' @export
-#' @rdname print_methods
 print.decons1 <- function(x, ...) {
     catf("decons1 object with %s decon1 elements\n", length(x))
     invisible(sapply(x, print, name = TRUE))
@@ -112,24 +101,57 @@ print.aligns <- function(x, ...) {
 
 #' @export
 print.ispec <- function(x, name = FALSE, ...) {
-    str(x, 1)
+    name <- {
+        if (isTRUE(name)) paste0(get_name(x) %||% "NULL", ": ")
+        else if (is.character(name)) paste0(name, ": ")
+        else ""
+    }
+    fmt <- "%sispec object (%d dp, %.1f to %.1f ppm)\n"
+    catf(fmt, name, length(x$ppm), max(x$ppm), min(x$ppm))
 }
 
 #' @export
 print.idecon <- function(x, name = FALSE, ...) {
-    str(x, 1)
+    name <- {
+        if (isTRUE(name)) paste0(get_name(x) %||% "NULL", ": ")
+        else if (is.character(name)) paste0(name, ": ")
+        else ""
+    }
+    fmt <- "%sidecon object (%d dp, %.1f to %.1f ppm, %d peaks)\n"
+    catf(fmt, name, length(x$ppm), max(x$ppm), min(x$ppm), length(x$lcr$A))
 }
 
 #' @export
 print.rdecon <- function(x, name = FALSE, ...) {
-    str(x, 1)
+    name <- {
+        if (isTRUE(name)) paste0(get_name(x) %||% "NULL", ": ")
+        else if (is.character(name)) paste0(name, ": ")
+        else ""
+    }
+    catf("%srdecon object\n", name)
 }
 
 #' @export
 print.ispecs <- function(x, ...) {
-    # catf("ispecs object with %s ispec elements\n", length(x))
-    # invisible(sapply(x, print, name = TRUE))
-    str(x, 2, give.attr = FALSE)
+    catf("ispecs object with %s ispec elements\n", length(x))
+    nams <- get_names(x)
+    invisible(mapply(print, x, nams))
+}
+
+#' @export
+#' @rdname print_methods
+print.idecons <- function(x, ...) {
+    catf("idecons object with %s idecon elements\n", length(x))
+    nams <- get_names(x)
+    invisible(mapply(print, x, nams))
+}
+
+#' @export
+#' @rdname print_methods
+print.rdecons <- function(x, ...) {
+    catf("rdecons object with %s rdecon elements\n", length(x))
+    nams <- get_names(x)
+    invisible(mapply(print, x, nams))
 }
 
 `[.collection` <- function(x, i, ...) {
@@ -283,6 +305,7 @@ is_idecon <- function(x) inherits(x, "idecon")
 is_rdecon <- function(x) inherits(x, "rdecon")
 is_ispecs <- function(x) inherits(x, "ispecs")
 is_idecons <- function(x) inherits(x, "idecons")
+is_rdecons <- function(x) inherits(x, "rdecons")
 
 # Convert (Public) #####
 
@@ -862,23 +885,26 @@ as_idecons <- function(x) {
     structure(x, class = "idecons")
 }
 
-as_rdecons <- function() {
+as_rdecons <- function(x) {
     if (is_rdecons(x)) return(x)
-    stopifnot(is.list(x))
-    stopifnot(all(sapply(x, is_rdecon)))
+    assert(is.list(x), all(sapply(x, is_rdecon)))
     structure(x, class = "rdecons")
 }
 
 # Convert a list of singlets to a collection
-as_collection <- function(x) {
-    assert(is.list(x), all(sapply(x, class) == class(x[[1]])))
-    decons <- switch(class(x[[1]]),
+as_collection <- function(x, cls) {
+    assert(
+        is.list(x),
+        is_char(cls, 1, "(decon[0-2]|idecon|rdecon)"),
+        cls == "decon0" || all(sapply(x, class) == cls)
+    )
+    decons <- switch(cls,
         "decon0" = as_decons0(x),
         "decon1" = as_decons1(x),
         "decon2" = as_decons2(x),
         "idecon" = as_idecons(x),
         "rdecon" = as_rdecons(x),
-        stop("Unsupported class: ", class(x[[1]]))
+        stop("Unsupported class: ", cls)
     )
 }
 
@@ -1012,6 +1038,8 @@ set_names <- function(x, nams) {
 }
 
 # Members (Private) #####
+
+spectrum_members <- c("cs", "si", "meta")
 
 ispec_members <- c(
     "y_raw",

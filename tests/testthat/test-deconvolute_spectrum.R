@@ -85,7 +85,7 @@ backends <- test_that("Rust and R backend produce equal results", {
     # be equal.
     idecon_bwc2_mod <- idecon_bwc2
     idecon_rust_mod <- idecon_rust
-    idecon_bwc2_mod$args_use_rust <- TRUE
+    idecon_bwc2_mod$args$use_rust <- TRUE
     idecon_bwc2_mod[c("peak", "Z", "lci", "lca", "lcr")] <- NULL
     idecon_rust_mod[c("peak", "Z", "lci", "lca", "lcr")] <- NULL
     expect_equal(idecon_rust_mod, idecon_bwc2_mod)

@@ -7,10 +7,11 @@
 \alias{print.decon2}
 \alias{print.align}
 \alias{print.spectra}
-\alias{print.idecons}
 \alias{print.decons1}
 \alias{print.decons2}
 \alias{print.aligns}
+\alias{print.idecons}
+\alias{print.rdecons}
 \title{S3 Methods for Printing Metabodecon Objects}
 \usage{
 \method{print}{spectrum}(x, name = FALSE, ...)
@@ -23,13 +24,15 @@
 
 \method{print}{spectra}(x, ...)
 
-\method{print}{idecons}(x, ...)
-
 \method{print}{decons1}(x, ...)
 
 \method{print}{decons2}(x, ...)
 
 \method{print}{aligns}(x, ...)
+
+\method{print}{idecons}(x, ...)
+
+\method{print}{rdecons}(x, ...)
 }
 \arguments{
 \item{x}{The object to print.}

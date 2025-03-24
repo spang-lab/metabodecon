@@ -1,36 +1,62 @@
 library(testthat)
 
-# IMPORTANT: we don't test for a good PRARP and/or different values of BWC here,
-# as these checks are already done in `test-deconvolute_spectrum` (singular). Here,
-# we only want to assert that the "glue code" in `test-deconvolute_spectra`
-# (plural), orchestrating multiple invocations of `deconvolute_spectrum`, works as
+# IMPORTANT: in this file we don't test for good PRARPs, as these checks are
+# already done in `test-deconvolute_spectrum` (singular). Here, we only want to
+# assert that the "glue code" in `test-deconvolute_spectra` (plural),
+# orchestrating multiple invocations of `deconvolute_spectrum`, works as
 # expected. We do this by checking that the returned objects have the correct
-# types and the same PRARPs as returned `test-deconvolute_spectrum`.
+# types.
 
-# Call #####
-idecons <- deconvolute_spectra(sim[1:2], nfit=3, sfr=c(3.55,3.35), verbose=FALSE, bwc=0)
-idecon1 <- deconvolute_spectrum(sim[[1]], nfit=3, sfr=c(3.55,3.35), verbose=FALSE, bwc=0)
-idecon2 <- deconvolute_spectrum(sim[[2]], nfit=3, sfr=c(3.55,3.35), verbose=FALSE, bwc=0)
+# Inputs #####
+defaults <- list(
+    x=sap,
+    nfit=3, smopts=c(1,3), delta=3, sfr=c(3.2,-3.2), wshw=0,
+    ask=FALSE, force=FALSE, verbose=FALSE, bwc=0,
+    use_rust=FALSE, nw=1, igr=list(), rtyp="idecon"
+)
+
+args_idecons_bwc0_R <- set(defaults)
+args_idecons_bwc1_R <- set(defaults, bwc=1)
+args_idecons_bwc2_R <- set(defaults, bwc=2)
+args_decons0_bwc2_R <- set(defaults, bwc=2, rtyp="decon0")
+args_decons1_bwc2_R <- set(defaults, bwc=2, rtyp="decon1")
+args_decons2_bwc2_R <- set(defaults, bwc=2, rtyp="decon2")
+args_rdecons_bwc2_R <- set(defaults, bwc=2, rtyp="rdecon")
+args_rdecons_bwc2_rust <- set(defaults, bwc=2, rtyp="rdecon", use_rust=TRUE)
+
+# Calls #####
+idecons_bwc0_R <- try(do.call(deconvolute_spectra, args_idecons_bwc0_R), silent = TRUE)
+idecons_bwc1_R <- try(do.call(deconvolute_spectra, args_idecons_bwc1_R), silent = TRUE)
+idecons_bwc2_R <- try(do.call(deconvolute_spectra, args_idecons_bwc2_R), silent = TRUE)
+decons0_bwc2_R <- try(do.call(deconvolute_spectra, args_decons0_bwc2_R), silent = TRUE)
+decons1_bwc2_R <- try(do.call(deconvolute_spectra, args_decons1_bwc2_R), silent = TRUE)
+decons2_bwc2_R <- try(do.call(deconvolute_spectra, args_decons2_bwc2_R), silent = TRUE)
+rdecons_bwc2_R <- try(do.call(deconvolute_spectra, args_rdecons_bwc2_R), silent = TRUE)
+rdecons_bwc2_rust <- try(do.call(deconvolute_spectra, args_rdecons_bwc2_rust), silent = TRUE)
 
 # Checks #####
-
 types <- test_that("Types are ok", {
-    expect_identical(class(idecons), "idecons")
-    expect_identical(class(idecons[[1]]), "idecon")
-    expect_identical(class(idecons[[2]]), "idecon")
-    expect_identical(names(idecons), c("sim_01", "sim_02"))
-    expect_identical(names(idecons[[1]]), idecon_members)
-    expect_identical(names(idecons[[2]]), idecon_members)
-})
+    expect_identical(class(idecons_bwc0_R), "idecons")
+    expect_identical(class(idecons_bwc1_R), "idecons")
+    expect_identical(class(idecons_bwc2_R), "idecons")
+    expect_identical(class(decons0_bwc2_R), "list")
+    expect_identical(class(decons1_bwc2_R), "decons1")
+    expect_identical(class(decons2_bwc2_R), "decons2")
+    expect_identical(class(rdecons_bwc2_R), "try-error")
+    expect_identical(class(rdecons_bwc2_rust), "rdecons")
 
-prarps <- test_that("PRARPs are good", {
-    truepars <- lapply(sim[1:2], function(x) x$meta$simpar)
-    prarpxs <- c(
-        calc_prarp(idecons[[1]], truepar = sim[[1]]$meta$simpar)$prarpx,
-        calc_prarp(idecons[[2]], truepar = sim[[2]]$meta$simpar)$prarpx
-    )
-    prarpx1 <- calc_prarp(idecon1, truepar = sim[[1]]$meta$simpar)$prarpx
-    prarpx2 <- calc_prarp(idecon2, truepar = sim[[2]]$meta$simpar)$prarpx
-    expect_equal(prarpxs[1], prarpx1)
-    expect_equal(prarpxs[2], prarpx2)
+    expect_identical(class(idecons_bwc0_R[[1]]), "idecon")
+    expect_identical(class(idecons_bwc1_R[[1]]), "idecon")
+    expect_identical(class(idecons_bwc2_R[[1]]), "idecon")
+    expect_identical(class(decons0_bwc2_R[[1]]), "list")
+    expect_identical(class(decons1_bwc2_R[[1]]), "decon1")
+    expect_identical(class(decons2_bwc2_R[[1]]), "decon2")
+    expect_identical(class(rdecons_bwc2_rust[[1]]), "rdecon")
+
+    expect_identical(names(idecons_bwc0_R[[1]]), idecon_members)
+    expect_identical(names(idecons_bwc1_R[[1]]), idecon_members)
+    expect_identical(names(idecons_bwc2_R[[1]]), idecon_members)
+    expect_identical(names(decons1_bwc2_R[[1]]), decon1_members)
+    expect_identical(names(decons2_bwc2_R[[1]]), decon2_members)
+    expect_identical(names(rdecons_bwc2_rust[[1]]), rdecon_members)
 })

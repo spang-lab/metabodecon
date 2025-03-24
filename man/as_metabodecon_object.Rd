@@ -6,8 +6,6 @@
 \alias{as_decon0}
 \alias{as_decon1}
 \alias{as_decon2}
-\alias{as_decon2.idecon}
-\alias{as_decon2.rdecon}
 \alias{as_spectra}
 \alias{as_decons0}
 \alias{as_decons1}
@@ -37,10 +35,6 @@ as_decon2(
   wshw = NULL,
   bwc = 2
 )
-
-as_decon2.idecon(x, ...)
-
-as_decon2.rdecon(x, ...)
 
 as_spectra(
   x,
