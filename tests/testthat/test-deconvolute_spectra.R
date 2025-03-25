@@ -67,17 +67,12 @@ r_return_types <- test_that("R return types are ok", {
 
 skip_on_cran()
 skip_if(getRversion() < numeric_version("4.2"))
-
-mdrb <- test_that("MDRB is available", {
-    expect_true(mdrb_available)
-})
-
 skip_if_not(mdrb_available) # (1)
 # (1) If we reach this point, we're not on CRAN and our R version is greater
 # equal 4.2. I.e., mdrb should be available. If it is not, the "MDRB is
-# available" check from above will fail and that's enough for us to see that
-# something is wrong. I.e, in such as scenario, there is no need to execute the
-# following tests and spam the log file.
+# available" check from `test-deconvolute.R` will fail and that's enough for us
+# to see that something is wrong. I.e, in such as scenario, there is no need to
+# execute the following tests and spam the log file.
 
 rust_return_types <- test_that("Rust return types are ok", {
     expect_identical(class(obj$rdecons_bwc2_rust), "rdecons")

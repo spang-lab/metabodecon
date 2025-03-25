@@ -843,7 +843,7 @@ as_idecon <- function(x) {
 }
 
 as_rdecon <- function(x) {
-    assert(
+    assert( # (1)
         is_spectrum(x$spectrum),
         is.list(x$args),
         typeof(x$mdrb_spectrum) == "externalptr",
@@ -853,7 +853,20 @@ as_rdecon <- function(x) {
         class(x$mdrb_deconvr) == "Deconvoluter",
         class(x$mdrb_decon) == "Deconvolution"
     )
+    stopifnot(length(x) == 5) # (1)
     structure(x, class = "rdecon")
+    # (1) This function is private, so in theory it can never be called with
+    # invalid arguments, as all public functions validate their inputs first.
+    # Therefore, using assert for type checking is correct, as assert-checks are
+    # deactivated when the package is loaded via library(), i.e. the
+    # "production" code will run faster.
+    #
+    # However, in practice, it's very easy to run into nasty problems as soon as
+    # assertions are disabled (e.g. when calling this function with invalid
+    # arguments during unit testing). To prevent such scenarios, we include a
+    # very tiny, super-fast sanity check here, using stopifnot. This check
+    # will always run, even in production code, and might us save a lot of
+    # headaches in the future.
 }
 
 #' @export
@@ -880,8 +893,7 @@ as_ispecs <- function(x, sf = c(1e3, 1e6)) {
 #' @rdname as_metabodecon_object
 as_idecons <- function(x) {
     if (is_idecons(x)) return(x)
-    stopifnot(is.list(x))
-    stopifnot(all(sapply(x, is_idecon)))
+    stopifnot(is.list(x), all(sapply(x, is_idecon)))
     structure(x, class = "idecons")
 }
 
@@ -1028,7 +1040,7 @@ get_peak <- function(x0, cs, target = "decon2") {
 # Setters #####
 
 set_names <- function(x, nams) {
-    stopifnot(is.list(x))
+    assert(is.list(x))
     has_names <- all(sapply(x, function(e) "name" %in% names(e)))
     has_meta_names <- all(sapply(x, function(e) "name" %in% names(e$meta)))
     names(x) <- nams

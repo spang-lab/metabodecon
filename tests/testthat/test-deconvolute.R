@@ -59,7 +59,7 @@ test_wrong_sfr <- test_that("deconvolute works when no peaks are filtered out", 
 skip_on_cran()
 skip_if(getRversion() < numeric_version("4.2"))
 
-mdrb <- test_that("MDRB is available", {
+mdrb <- test_that("Package mdrb must be available if not on CRAN and R >= 4.2", {
     expect_true(mdrb_available)
 })
 

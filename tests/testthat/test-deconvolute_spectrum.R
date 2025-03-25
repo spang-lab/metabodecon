@@ -10,8 +10,8 @@ args <- list(
     idecon_bwc1 = set(defaults, bwc=1),
     idecon_bwc2 = set(defaults, bwc=2),
     idecon_rust = set(defaults, bwc=2, use_rust=TRUE),
-    decon2_bwc2 = set(defaults, bwc=2, rtyp="decon2"),
-    decon2_rust = set(defaults, bwc=2, rtyp="decon2", use_rust=TRUE)
+    rdecon_bwc2 = set(defaults, bwc=2, rtyp="rdecon"),
+    rdecon_rust = set(defaults, bwc=2, rtyp="rdecon", use_rust=TRUE)
 )
 mdrb_available <- check_mdrb()
 
@@ -31,17 +31,19 @@ prarp <- sapply(obj, try_calc_prarpx, simplify=FALSE)
 # Checks #####
 r_structures <- test_that(
     "Returned decon objects have correct structure with R backend", {
-    # We only test 'idecon' and 'decon2' objects, as that's enough to
+    # We only test 'idecon' and 'rdecon' objects, as that's enough to
     # cover the R and Rust backends. Conversions to other types are tested
     # in test-as_decon.R.
     expect_identical(object = names(obj$idecon_bwc0), expected = idecon_members)
     expect_identical(object = names(obj$idecon_bwc1), expected = idecon_members)
     expect_identical(object = names(obj$idecon_bwc2), expected = idecon_members)
-    expect_identical(object = names(obj$decon2_bwc2), expected = decon2_members)
+
+    expect_identical(object = names(obj$rdecon_bwc2), expected = NULL)
+
     expect_identical(object = class(obj$idecon_bwc0), expected = "idecon")
     expect_identical(object = class(obj$idecon_bwc1), expected = "idecon")
     expect_identical(object = class(obj$idecon_bwc2), expected = "idecon")
-    expect_identical(object = class(obj$decon2_bwc2), expected = "decon2")
+    expect_identical(object = class(obj$rdecon_bwc2), expected = "try-error")
 })
 
 r_prarps <- test_that(
@@ -49,13 +51,11 @@ r_prarps <- test_that(
     expect_true(prarp$idecon_bwc0 >= 0.507) # (1)
     expect_true(prarp$idecon_bwc1 >= 0.961)
     expect_true(prarp$idecon_bwc2 >= 0.961)
-    expect_true(prarp$decon2_bwc2 >= 0.961)
+    expect_true(inherits(prarp$rdecon_bwc2, "try-error"))
     expect_true(prarp$idecon_bwc0 <= prarp$idecon_bwc1) # (2)
     expect_true(prarp$idecon_bwc1 <= prarp$idecon_bwc2) # (2)
-    expect_true(prarp$idecon_bwc2 == prarp$decon2_bwc2) # (3)
     # (1) MetaboDecon1D has a PRARPX of 0.507. See test-MetaboDecon1d.R.
     # (2) Higher bwc versions should lead to higher PRARPs
-    # (3) Different return types should not affect PRARPs
 })
 
 bwc <- test_that(
@@ -78,33 +78,27 @@ bwc <- test_that(
 
 skip_on_cran()
 skip_if(getRversion() < numeric_version("4.2"))
-
-mdrb <- test_that(
-    "MDRB is available", {
-    expect_true(mdrb_available)
-})
-
 skip_if_not(mdrb_available) # (1)
 # (1) If we reach this point, we're not on CRAN and our R version is greater
 # equal 4.2. I.e., mdrb should be available. If it is not, the "MDRB is
-# available" check from above will fail and that's enough for us to see that
-# something is wrong. I.e, in such as scenario, there is no need to execute the
-# following tests and spam the log file.
+# available" check from `test-deconvolute.R` will fail and that's enough for us
+# to see that something is wrong. I.e, in such as scenario, there is no need to
+# execute the following tests and spam the log file.
 
 rust_structures <- test_that(
     "Returned decon objects have correct structure with Rust backend", {
     expect_identical(object = names(obj$idecon_rust), expected = idecon_members)
-    expect_identical(object = names(obj$decon2_rust), expected = decon2_members)
+    expect_identical(object = names(obj$rdecon_rust), expected = rdecon_members)
     expect_identical(object = class(obj$idecon_rust), expected = "idecon")
-    expect_identical(object = class(obj$decon2_rust), expected = "decon2")
+    expect_identical(object = class(obj$rdecon_rust), expected = "rdecon")
 })
 
 rust_prarps <- test_that(
     "PRARPs are good with Rust backend", {
     expect_true(prarp$idecon_rust >= 0.961)
-    expect_true(prarp$decon2_rust >= 0.961)
+    expect_true(prarp$rdecon_rust >= 0.961)
     expect_true(prarp$idecon_bwc2 <= prarp$idecon_rust) # (1)
-    expect_true(prarp$idecon_bwc2 <= prarp$decon2_rust) # (1)
+    expect_true(prarp$idecon_bwc2 <= prarp$rdecon_rust) # (1)
     # (1) Rust should be better or equal to R
 })
 
@@ -127,8 +121,12 @@ rust_r_equality <- test_that(
     # steps, which is not yet implemented in the R version.
     expect_true(prarp$idecon_rust >= prarp$idecon_bwc2)
 
-    # We also expect the rust version to produce an object that is plottable
-    expect_no_error(evalwith(plot = "captured",
+    # Different return types should not affect PRARPs
+    expect_true(prarp$idecon_rust == prarp$rdecon_rust)
+
+    # Make sure the objects are plottable
+    expect_no_error(evalwith(plot = "captured", {
         plot_spectrum(obj$idecon_rust)
-    ))
+        plot_spectrum(obj$rdecon_rust)
+    }))
 })

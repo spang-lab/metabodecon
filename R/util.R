@@ -118,7 +118,7 @@ in_hz <- function(cs, fqref) {
 #' datapoints.
 #' @details See 'CHECK-2: Signal free region (SFR) calculation' in `TODOS.md`.
 sfr_in_ppm_bwc <- function(sfr_sdp, sdp, ppm) {
-    stopifnot(
+    assert(
         is.numeric(sfr_sdp), length(sfr_sdp) == 2,
         is.numeric(sdp), length(sdp) >= 5,
         is.numeric(ppm), length(ppm) == length(sdp)
@@ -741,7 +741,7 @@ called_from_globalenv <- function() {
 #' is.symbol(xx$a)  # TRUE
 get_args <- function(func = NULL, ignore = character(), env = parent.frame())
 {
-    stopifnot(
+    assert(
         is.null(ignore) || is.character(ignore),
         is.environment(env),
         is.null(func) || is.function(func)

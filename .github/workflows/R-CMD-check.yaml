@@ -56,7 +56,12 @@ jobs:
 
       - name: Set up R dependencies
         uses: r-lib/actions/setup-r-dependencies@v2
-        with: { extra-packages: "any::rcmdcheck", needs: "check" }
+        with: {
+          extra-packages: "any::rcmdcheck, mdrb=?ignore-before-r=4.2.0",
+          needs: "check"
+        }
 
       - name: Test package
         uses: r-lib/actions/check-r-package@v2
+        env:
+          _R_CHECK_FORCE_SUGGESTS_: false

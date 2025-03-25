@@ -304,6 +304,12 @@ run_tests <- function(func = NULL, all = FALSE) {
     RUN_SLOW_TESTS_OLD <- Sys.getenv("RUN_SLOW_TESTS")
     Sys.setenv(RUN_SLOW_TESTS = if (all) "TRUE" else "FALSE")
     on.exit(Sys.setenv(RUN_SLOW_TESTS = RUN_SLOW_TESTS_OLD), add = TRUE, after = FALSE)
+    ns <- asNamespace("metabodecon")
+    unlockBinding("assert", ns)
+    ns$assert = function(...) {} # (1)
+    lockBinding("assert", ns)
+    # (1) Disable type checking in private functions, as done when loading the
+    # package via library.
     if (is.null(func)) {
         logf("Calling: devtools::test()")
         devtools::test()

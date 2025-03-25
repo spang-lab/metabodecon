@@ -1189,8 +1189,10 @@ draw_points <- function(x, y, args = list()) {
 # Get Helpers (Private) #####
 
 get_foc_frac <- function(obj, foc_rgn = NULL) {
-    stopifnot(is_num(obj$cs))
-    stopifnot(is.null(foc_rgn) || (is_num(foc_rgn, 2)))
+    assert(
+        is_num(obj$cs),
+        is.null(foc_rgn) || (is_num(foc_rgn, 2))
+    )
     if (is.null(foc_rgn)) {
         n <- length(obj$cs)
         width <- min(256 / n, 0.5)
@@ -1202,8 +1204,10 @@ get_foc_frac <- function(obj, foc_rgn = NULL) {
 }
 
 get_foc_rgn <- function(obj, foc_frac = NULL) {
-    stopifnot(is_num(obj$cs))
-    stopifnot(is.null(foc_frac) || (is_num(foc_frac, 2)))
+    assert(
+        is_num(obj$cs),
+        is_num_or_null(foc_frac, 2)
+    )
     if (is.null(foc_frac)) foc_frac <- get_foc_frac(obj)
     quantile(obj$cs, foc_frac)
 }
@@ -1272,7 +1276,7 @@ get_sub_fig_args <- function(obj, foc_frac, foc_rgn, sub1, sub2, sub3, dot_args)
 get_draw_spectrum_defaults <- function(show_d2 = FALSE,
                                        foc_only = TRUE,
                                        aligned = FALSE) {
-    stopifnot(
+    assert(
         is_bool(show_d2),
         is_bool(foc_only),
         is_bool(aligned)

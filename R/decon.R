@@ -414,7 +414,7 @@ get_smopts <- function(x, smopts) {
 # Helpers for deconvolute_spectrum #####
 
 rm_water_signal <- function(x, wshw, bwc) {
-    stopifnot(is_ispec(x), is_num(wshw, 1), is_num(bwc, 1))
+    assert(is_ispec(x), is_num(wshw, 1), is_num(bwc, 1))
     logf("Removing water signal")
     if (bwc >= 1) {
         ppm_center <- (x$ppm[1] + x$ppm[length(x$ppm)]) / 2
@@ -617,7 +617,7 @@ filter_peaks_v13 <- function(ppm, # x values in ppm
 #' rm3 <- filtered_ispec <- filter_peaks(ispec, sfr)
 #' rm2 <- filtered_ispec <- filter_peaks(ispec, sfr, delta = 1)
 filter_peaks <- function(ispec, sfr, delta = 6.4, force = FALSE, bwc = 1) {
-    stopifnot(is_ispec(ispec))
+    assert(is_ispec(ispec))
     logf("Removing peaks with low pscores")
     sdp <- ispec$sdp
     ppm <- ispec$ppm
@@ -728,7 +728,7 @@ confirm_wshw <- function(x, wshw) {
 #' [filter_peaks()]. For details see `CHECK-2: signal free region calculation`
 #' in `TODOS.md`.
 enrich_sfr <- function(sfr, x) {
-    stopifnot(is_ispec(x) || is_idecon(x))
+    assert(is_ispec(x) || is_idecon(x))
     left_ppm <- sfr[1]
     right_ppm <- sfr[2]
     left_dp <- (x$n + 1) - (x$ppm_max - left_ppm) / x$ppm_nstep
@@ -750,7 +750,7 @@ enrich_sfr <- function(sfr, x) {
 #' [rm_water_signal()]. For details see `CHECK-3: water signal calculation` in
 #' `TODOS.md`.
 enrich_wshw <- function(wshw, x) {
-    stopifnot(is_ispec(x) || is_idecon(x))
+    assert(is_ispec(x) || is_idecon(x))
     x <- as_ispec(x)
     hwidth_ppm <- wshw
     hwidth_dp <- hwidth_ppm / x$ppm_nstep

@@ -15,126 +15,104 @@ library(testthat)
 #    (verified) objects.
 
 # Inputs #####
-
-idecon <- deconvolute_spectrum(
-    x       = sap$sap_01,
-    sfr     = c(3.2, -3.2),
-    smopts  = c(2, 3)
-)
-rdecon <- deconvolute_spectrum(
-    x        = sap$sap_01,
-    sfr      = c(3.2, -3.2),
-    smopts   = c(2, 3),
-    rtyp     = "rdecon",
-    use_rust = TRUE
-)
-decon2i <- as_decon2(idecon) # (1)
-decon1i <- as_decon1(idecon) # (1)
-decon0i <- as_decon0(idecon) # (1)
-decon2r <- as_decon2(rdecon) # (1)
+trySilent <- function(expr) try(expr, silent = TRUE)
+idecon <- trySilent(deconvolute_spectrum(
+    x=sap$sap_01, sfr=c(3.2,-3.2), smopts=c(2, 3),
+))
+rdecon <- trySilent(deconvolute_spectrum(
+    x=sap$sap_01, sfr=c(3.2, -3.2), smopts=c(2, 3), rtyp="rdecon", use_rust=TRUE
+))
+decon2i <- try(as_decon2(idecon), silent = TRUE) # (1)
+decon1i <- try(as_decon1(idecon), silent = TRUE) # (1)
+decon0i <- try(as_decon0(idecon), silent = TRUE) # (1)
+decon2r <- try(as_decon2(rdecon), silent = TRUE) # (1)
 decon1r <- try(as_decon1(rdecon), silent = TRUE) # (1)
 decon0r <- try(as_decon0(rdecon), silent = TRUE) # (1)
 # (1) Name objects as decon[0-2][ir] (with trailing i or r) to indicate the
 # origin of these objects (idecon or rdecon).
+mdrb_available <- check_mdrb()
 
-# Tests #####
+# Checks #####
 
-test_structure <- test_that("([ir]decon -> decon[0-2]) works", {
-    expect_equal(names(idecon), idecon_members)
+test_derivatives_idecon <- test_that("(idecon -> decon[0-2] works", {
+    expect_equal(names(idecon),  idecon_members)
     expect_equal(names(decon2i), decon2_members)
     expect_equal(names(decon1i), decon1_members)
     expect_equal(names(decon0i), decon0_members)
-    expect_equal(names(rdecon),  rdecon_members)
-    expect_equal(names(decon2r), decon2_members)
-    expect_equal(names(decon1r), NULL) # (1)
-    expect_equal(names(decon0r), NULL) # (1)
-    expect_equal(class(idecon), "idecon")
+    expect_equal(class(idecon),  "idecon")
     expect_equal(class(decon2i), "decon2")
     expect_equal(class(decon1i), "decon1")
     expect_equal(class(decon0i), "list")
-    expect_equal(class(rdecon), "rdecon")
-    expect_equal(class(decon2r), "decon2")
-    expect_equal(class(decon1r), "try-error") # (1)
-    expect_equal(class(decon0r), "try-error") # (1)
-    # (1) "Converting rdecon to decon[01] is not supported"
 })
 
-test_interactively <- if (identical(environment(), globalenv())) {
+test_interactively_idecon <- if (identical(environment(), globalenv())) {
     str(idecon,  2, digits.d = 10)
     str(decon2i, 2, digits.d = 10)
     str(decon1i, 2, digits.d = 10)
     str(decon0i, 2, digits.d = 10)
-    str(rdecon,  2, digits.d = 10)
-    str(decon2r, 2, digits.d = 10)
     plot_spectrum(idecon,  sub1 = list(lt_axis = list(sf = 100)), sub2 = TRUE)
     plot_spectrum(decon2i, sub1 = list(lt_axis = list(sf = 100)), sub2 = TRUE)
     plot_spectrum(decon1i, sub1 = list(lt_axis = list(sf = 100)), sub2 = TRUE)
-    plot_spectrum(rdecon,  sub1 = list(lt_axis = list(sf = 100)), sub2 = TRUE)
-    plot_spectrum(decon2r, sub1 = list(lt_axis = list(sf = 100)), sub2 = TRUE)
-    # decon0 objects are not supported by plot_spectrum(), however, since decon0
-    # is a strict subset of decon1, it's enough to plot decon1. Later on, the
-    # decon0 and decon1 objects will be compared to verify that the decon0
-    # object is valid as well.
 }
 
-test_decon22 <- test_that("(decon2 -> decon2) == (idecon -> decon2)", {
+test_decon22i <- test_that("(decon2 <- decon2) == (decon2 <- idecon)", {
     decon22i <- as_decon2(decon2i)
     expect_equal(decon22i, decon2i)
 })
 
-test_decon21 <- test_that("(decon1 -> decon2) == (idecon -> decon2)", {
-    decon21 <- as_decon2(decon1i)
+test_decon21i <- test_that("(decon2 <- decon1) == (decon2 <- idecon)", {
+    decon21i <- as_decon2(decon1i)
     # Diffs in `meta$simpar`, `args`, `sit$wsrm`, `sit$nvrm` are expected, so we
     # patch them first to make the comparsion possible.
-    decon21$sit$wsrm <- decon2i$sit$wsrm
-    decon21$sit$nvrm <- decon2i$sit$nvrm
-    decon21$meta$simpar <- decon2i$meta$simpar
-    decon21$args <- decon2i$args
-    expect_equal(decon21, decon2i)
+    decon21i$sit$wsrm <- decon2i$sit$wsrm
+    decon21i$sit$nvrm <- decon2i$sit$nvrm
+    decon21i$meta$simpar <- decon2i$meta$simpar
+    decon21i$args <- decon2i$args
+    expect_equal(decon21i, decon2i)
 })
 
-test_decon20 <- test_that("(decon0 -> decon2) == (idecon -> decon2)", {
-    decon20 <- as_decon2(decon0i, spectrum = sap[[1]])
+test_decon20i <- test_that("(decon2 <- decon0) == (decon2 <- idecon)", {
+    decon20i <- as_decon2(decon0i, spectrum = sap[[1]])
     # Diffs in `meta$simpar`, `args`, `sit$wsrm`, `sit$nvrm` are expected, so we
     # patch them first to make the comparsion possible.
-    decon20$sit$wsrm <- decon2i$sit$wsrm
-    decon20$sit$nvrm <- decon2i$sit$nvrm
-    decon20$meta$simpar <- decon2i$meta$simpar
-    decon20$args <- decon2i$args
-    expect_equal(decon20, decon2i)
+    decon20i$sit$wsrm <- decon2i$sit$wsrm
+    decon20i$sit$nvrm <- decon2i$sit$nvrm
+    decon20i$meta$simpar <- decon2i$meta$simpar
+    decon20i$args <- decon2i$args
+    expect_equal(decon20i, decon2i)
 })
 
-test_decon12 <- test_that("(decon2 -> decon1) == (idecon -> decon1)", {
-    decon12 <- as_decon1(decon2i);
-    expect_equal(decon12, decon1i)
+test_decon12i <- test_that("(decon1 <- decon2) == (decon1 <- idecon)", {
+    decon12i <- as_decon1(decon2i);
+    expect_equal(decon12i, decon1i)
 })
 
-test_decon11 <- test_that("(decon1 -> decon1) == (idecon -> decon1)", {
-    decon11 <- as_decon1(decon1i)
-    expect_equal(decon11, decon1i)
+test_decon11i <- test_that("(decon1 <- decon1) == (decon1 <- idecon)", {
+    decon11i <- as_decon1(decon1i)
+    expect_equal(decon11i, decon1i)
 })
 
-test_decon10 <- test_that("(decon0 -> decon1) == (idecon -> decon1)", {
-    decon10 <- as_decon1(decon0i, spectrum = sap[[1]])
-    expect_equal(decon10, decon1i)
+test_decon10i <- test_that("(decon1 <- decon0) == (decon1 <- idecon)", {
+    decon10i <- as_decon1(decon0i, spectrum = sap[[1]])
+    expect_equal(decon10i, decon1i)
 })
 
-test_decon02 <- test_that("(decon2 -> decon0) == (idecon -> decon0)", {
-    decon02 <- as_decon0(decon2i);
-    expect_equal(decon02, decon0i)
+test_decon02i <- test_that("(decon0 <- decon2) == (decon0 <- idecon)", {
+    decon02i <- as_decon0(decon2i);
+    expect_equal(decon02i, decon0i)
 })
 
-test_decon01 <- test_that("(decon1 -> decon0) == (idecon -> decon0)", {
-    decon01 <- as_decon0(decon1i)
-    expect_equal(decon01, decon0i)
+test_decon01i <- test_that("(decon0 <- decon1) == (decon0 <- idecon)", {
+    decon01i <- as_decon0(decon1i)
+    expect_equal(decon01i, decon0i)
 })
 
-test_decon00 <- test_that("(decon0 -> decon0) == (idecon -> decon0)", {
-    decon00 <- as_decon0(decon0i)
-    expect_equal(decon00, decon0i)
+test_decon00i <- test_that("(decon0 <- decon0) == (decon0 <- idecon)", {
+    decon00i <- as_decon0(decon0i)
+    expect_equal(decon00i, decon0i)
 })
 
-test_reversibility <- test_that("conversion are reversible", {
+test_idecon_reversibility <- test_that("conversion are reversible", {
 
     decon222 <- as_decon2(as_decon2(decon2i))
     decon212 <- as_decon2(as_decon1(decon2i))
@@ -172,3 +150,36 @@ test_reversibility <- test_that("conversion are reversible", {
     expect_equal(decon202, decon2i)
 })
 
+# Rust Checks #####
+
+skip_on_cran()
+skip_if(getRversion() < numeric_version("4.2"))
+skip_if_not(mdrb_available) # (1)
+# (1) If we reach this point, we're not on CRAN and our R version is greater
+# equal 4.2. I.e., mdrb should be available. If it is not, the "MDRB is
+# available" check from `test-deconvolute.R` will fail and that's enough for us
+# to see that something is wrong. I.e, in such as scenario, there is no need to
+# execute the following tests and spam the log file.
+
+test_derivatives_rdecon <- test_that("(idecon -> decon[0-2] works", {
+    expect_equal(names(rdecon),  rdecon_members)
+    expect_equal(names(decon2r), decon2_members)
+    expect_equal(names(decon1r), NULL) # (1)
+    expect_equal(names(decon0r), NULL) # (1)
+    expect_equal(class(rdecon),  "rdecon")
+    expect_equal(class(decon2r), "decon2")
+    expect_equal(class(decon1r), "try-error") # (1)
+    expect_equal(class(decon0r), "try-error") # (1)
+    # (1) "Converting rdecon to decon[01] is not supported"
+})
+
+test_interactively_rdecon <- if (identical(environment(), globalenv())) {
+    str(rdecon,  2, digits.d = 10)
+    str(decon2r, 2, digits.d = 10)
+    plot_spectrum(rdecon,  sub1 = list(lt_axis = list(sf = 100)), sub2 = TRUE)
+    plot_spectrum(decon2r, sub1 = list(lt_axis = list(sf = 100)), sub2 = TRUE)
+    # decon0 objects are not supported by plot_spectrum(), however, since decon0
+    # is a strict subset of decon1, it's enough to plot decon1. Later on, the
+    # decon0 and decon1 objects will be compared to verify that the decon0
+    # object is valid as well.
+}
