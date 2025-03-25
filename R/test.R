@@ -442,6 +442,10 @@ calc_prarp <- function(x, truepar = NULL, ...) {
     named(prarpx, prarp, peak_ratio_x, peak_ratio, np_true, np_found, np_correct, np_wrong, area_ratio, area_spectrum, area_residuals)
 }
 
+calc_prarpx <- function(x, truepar = NULL, ...) {
+    calc_prarp(x, truepar)$prarpx
+}
+
 plot_prarp <- function(decon, truepar) {
 
     # Calculate PRARP score

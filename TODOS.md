@@ -65,9 +65,9 @@ Add the issues Wolfram sent me by Mail.
 
 ## Add index vignette
 
-There should be one vignette shipped with the package that is as small as possible and contains links to the online documentation.
+There should be one vignette shipped with the package that is as small as possible and contains klinks to the online documentation.
 
-## Checks missing pkgs in align
+## Check missing pkgs in align
 
 Installation via `install.packages("metabodecon")` do not install `MassSpecWavelet` and `impute`. So if a user doesn't copy paste the installation instructions but installed via `install.packages("metabodecon")`, these dependencies will be missing. In such scenarios, we should print an error message with the required install commands and abort.
 

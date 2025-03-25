@@ -495,9 +495,10 @@ collapse <- function(x, sep = ", ", last = NULL) {
 }
 
 #' @noRd
-#' @description Fixed copy of [toscutil::logf()]. Can be replaced with original
-#' after issue
-#' [Fix: logf ignores file and append arguments](https://github.com/toscm/toscutil/issues/10) has been fixed.
+#' @description
+#' Fixed copy of [toscutil::logf()]. Can be replaced with original after issue
+#' [Fix: logf ignores file and append
+#' arguments](https://github.com/toscm/toscutil/issues/10) has been fixed.
 logf <- function(fmt,
                  ...,
                  file = getOption("toscutil.logf.file", ""),
@@ -700,6 +701,10 @@ is_list_of_nums <- function(x, nl = NULL, nv = NULL) {
 }
 
 # Misc (Private) ##############################################################
+
+called_from_globalenv <- function() {
+    identical(parent.frame(), .GlobalEnv)
+}
 
 #' @noRd
 #' @title Get Named Function Arguments
@@ -1059,18 +1064,30 @@ load_all <- function(reset = TRUE, shims = TRUE) {
 #'
 #' The idea is that exported functions should use plain [stopifnot()] to
 #' validate their inputs, whereas private functions should use [assert()] instead.
-#' This approach enables rigorous type checking during development without
-#' impacting performance in production.
+#' This approach allows us to use rigorous type checking during development
+#' without impacting performance in production.
 #'
-#' If you need to keep assertions enabled in production, you can set the
-#' option `metabodecon.assert` to `stopifnot` **before** loading the package.
+#' If we need to keep assertions enabled in production, we can set the
+#' option `metabodecon.assert` to `stopifnot` before loading the package.
+#'
+#' If we want to disable assertions during development, e.g. to get
+#' realistic runtime estimates, we can set the option `metabodecon.assert` to
+#' `function(...) {}` before calling `devtools::load_all()`.
+#'
 #' Example:
 #'
 #' ```r
-#' library(metabodecon)                    # Load metabodecon with assertions disabled
-#' unloadNamespace("metabodecon")          # Unload metabodecon
-#' options(metabodecon.assert = stopifnot) # Configure stopifnot as the assertion function
-#' library(metabodecon)                    # Reload metabodecon
+#' # Steps:
+#' # (1) Load metabodecon with assertions disabled
+#  # (2) Unload metabodecon
+#  # (3A) Configure stopifnot as the assertion function OR
+#  # (3B) Configure empty function as assertion function
+#  # (4) Reload metabodecon
+#' library(metabodecon)                           # (1)
+#' unloadNamespace("metabodecon")                 # (2)
+#' options(metabodecon.assert = stopifnot)        # (3A)
+#' options(metabodecon.assert = function(...) {}) # (3B)
+#' library(metabodecon)                           # (4)
 #' ```
 assert <- stopifnot
 

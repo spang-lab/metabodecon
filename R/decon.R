@@ -146,15 +146,18 @@ deconvolute <- function(x,
 ) {
     # Check inputs
     stopifnot(
-        is_spectrum_or_spectra(x), is_int_or_null(nfit, 1),
-        is_int_or_null(smopts, 2), is_num_or_null(delta, 1),
-        is_num_or_null(sfr, 2),    is_num_or_null(wshw, 1),
-        is_bool(ask, 1),           is_bool(force, 1),
-        is_bool(verbose, 1),       is_int(nworkers, 1)
+        is_spectrum_or_spectra(x),    is_int_or_null(nfit, 1),
+        is_int_or_null(smopts, 2),    is_num_or_null(delta, 1),
+        is_num_or_null(sfr, 2),       is_num_or_null(wshw, 1),
+        is_bool(ask, 1),              is_bool(force, 1),
+        is_bool(verbose, 1),          is_int(nworkers, 1),
+        is_bool_or_null(use_rust, 1)
     )
 
     # Set suitable defaults
     sfr <- sfr %||% quantile(x$cs %||% x[[1]]$cs, c(0.9, 0.1))
+    if (isTRUE(use_rust)) check_mdrb(stop_on_fail = TRUE)
+    if (is.null(use_rust)) use_rust <- check_mdrb()
 
     # Perform deconvolution
     decons2 <- deconvolute_spectra(x,

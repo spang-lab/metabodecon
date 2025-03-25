@@ -1,3 +1,5 @@
+# Public #####
+
 #' @export
 #'
 #' @title Check Rust Backend Requirements
@@ -9,6 +11,8 @@
 #'
 #' `check_mdrb_deps()` returns a list with detailed information about the
 #' installation status of mdrb and its dependencies.
+#'
+#' @param stop_on_fail If TRUE, an error is thrown if the check fails, providing instructions on how to install or upgrade mdrb.
 #'
 #' @return
 #' `check_mdrb()` returns TRUE if a suitable version of mdrb is installed,
@@ -38,11 +42,19 @@
 #' @examples
 #' check_mdrb()
 #' check_mdrb_deps()
-check_mdrb <- function() {
-    tryCatch(
-        packageVersion("mdrb") >= package_version("0.0.1"),
-        error = function(e) FALSE
+check_mdrb <- function(stop_on_fail = FALSE) {
+    stopifnot(is_bool(stop_on_fail, 1))
+    mdrb_version <- get_mdrb_version()
+    req_version <- package_version("0.0.1")
+    mdrb_is_ok <- mdrb_version >= req_version
+    if (mdrb_is_ok || !stop_on_fail) return(mdrb_is_ok)
+    err_msg <- paste(sep = "\n",
+        "Using the Rust backend requires mdrb >= 0.0.1.\n",
+        "To install or upgrade mdrb run: install_mdrb()",
+        "To check system requirements run: check_mdrb_deps()\n",
+        "For more information see: https://github.com/spang-lab/mdrb"
     )
+    stop(err_msg, call. = FALSE)
 }
 
 #' @export
@@ -98,7 +110,6 @@ check_mdrb_deps <- function() {
     df
 }
 
-
 #' @export
 #'
 #' @title Install Rust Backend
@@ -119,11 +130,17 @@ check_mdrb_deps <- function() {
 #' Additional arguments to pass to [remotes::install_github()] when attempting
 #' installation of mdrb.
 #'
+#' @param verbose Whether to print messages to the console. Default is TRUE.
+#'
 #' @return NULL. Called for side effect of installing the Rust backend.
 install_mdrb <- function(ask = TRUE,
                          args_remotes = list(),
-                         args_mdrb = list()) {
-    if (check_mdrb()) return(invisible())
+                         args_mdrb = list(),
+                         verbose = TRUE) {
+    if (check_mdrb()) {
+        if (verbose) logf("mdrb is already installed.")
+        return(invisible())
+    }
     checks <- check_mdrb_deps()
     if (!all(checks$passed)) {
         tbl <- capture.output2(print(checks, row.names = FALSE, right = FALSE))
@@ -142,12 +159,21 @@ install_mdrb <- function(ask = TRUE,
     pkg_vec <- if (remotes_available) "mdrb" else c("remotes", "mdrb")
     pkg_str <- paste(pkg_vec, collapse = " and ")
     pkg_word <- if (length(pkg_vec) == 1) "package" else "packages"
-    msg <- sprintf("Proceeding will install the following %s: %s. Continue?", pkg_word, pkg_str)
-    cont <- get_yn_input(msg)
-    if (!cont) return()
+    msg <- "Proceeding will install the following %s: %s. Continue?"
+    msg <- sprintf(msg, pkg_word, pkg_str)
+    cont <- if (isTRUE(ask) && isFALSE(get_yn_input(msg))) return()
     args_remotes$pkgs <- "remotes"
     if (!remotes_available) do.call(utils::install.packages, args_remotes)
     args_mdrb$repo <- "spang-lab/mdrb"
     do.call(remotes::install_github, args_mdrb)
     invisible()
+}
+
+# Internal #####
+
+get_mdrb_version <- function() {
+    tryCatch(
+        packageVersion("mdrb"),
+        error = function(e) package_version("0.0.0")
+    )
 }
