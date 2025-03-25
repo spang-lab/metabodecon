@@ -67,7 +67,7 @@ The classes mentioned above represent individual objects, such as a single spect
     - `nvrm`: SIs after WSRM and Negative Value Removal (NVRM).
     - `sm`: SIs after WSRM, NVRM and smoothing.
     - `sup`: SIs as superposition of Lorentz Curves.
-    - `supal`: SIs as superposition of alignd Lorentz Curves. *(v1.4.0+)*
+    - `supal`: SIs as superposition of aligned Lorentz Curves. *(v1.4.0+)*
     - `al`: SIs as integrals of aligned Lorentz Curves. I.e., the intensity of a peak-center-datapoint equals the integral value of the corresponding peak. The intensity of a other datapoints is zero.
 6. `peak`: Dataframe of peak triplets found during peak selection:
     - `center`: Indices of peak centers.

@@ -12,9 +12,10 @@ install_mdrb(
 )
 }
 \arguments{
-\item{ask}{Whether to ask for confirmation before attempting installion. Default is TRUE.}
+\item{ask}{Whether to ask for confirmation before attempting installation. Default is
+TRUE.}
 
-\item{args_remotes}{Additional arguments to pass to \code{\link[utils:install.packages]{utils::install.packages()}} when attemping
+\item{args_remotes}{Additional arguments to pass to \code{\link[utils:install.packages]{utils::install.packages()}} when attempting
 installation of \href{https://remotes.r-lib.org/index.html}{remotes}.}
 
 \item{args_mdrb}{Additional arguments to pass to \code{\link[remotes:install_github]{remotes::install_github()}} when attempting

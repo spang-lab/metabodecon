@@ -1,5 +1,7 @@
 # Next (mdrb)
 
+## Check mse calculation in Rust
+
 ## Test install on clean OS
 
 Add a workflow for testing installation on a clean Windows/Linux/Mac OS with R pre-installed, but without R-tools and any packages.
@@ -86,18 +88,9 @@ Add a function `get_si_mat()` for extracting a matrix of signal intensities (SI)
 
 ## Add lifecycle badges to functions
 
-## Check function usage in vignettes
+## Improve Sap Dataset
 
-Every important function should be used at least once in a vignette.
-
-## Improve Get-Started vignette
-
-Add nicer plots.
-Improve alignment part.
-
-## Add Sim2 Dataset
-
-sim2 should be simulated as follows:
+Sap spectra should be simulated as follows:
 
 1. Find three metabolites `mets` related to diabetes with only 1-3 peaks each.
 2. Look up their signal centers `x0_` and halfwidths `lambda_`.
@@ -107,6 +100,11 @@ sim2 should be simulated as follows:
 6. Apply the shifts to the signal centers.
 7. Simulate data as usual using `simulate_spectra`
 8. Make sure, all of the above information is stored inside `$meta$simpar`
+
+## Improve Get-Started vignette
+
+Add nicer plots.
+Improve alignment part.
 
 ## Write Deconvolution-Details Vignette
 

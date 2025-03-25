@@ -122,10 +122,11 @@ check_mdrb_deps <- function() {
 #' first via [utils::install.packages()]
 #'
 #' @param ask
-#' Whether to ask for confirmation before attempting installion. Default is TRUE.
+#' Whether to ask for confirmation before attempting installation. Default is
+#' TRUE.
 #'
 #' @param args_remotes
-#' Additional arguments to pass to [utils::install.packages()] when attemping
+#' Additional arguments to pass to [utils::install.packages()] when attempting
 #' installation of [remotes](https://remotes.r-lib.org/index.html).
 #'
 #' @param args_mdrb
@@ -135,6 +136,9 @@ check_mdrb_deps <- function() {
 #' @param verbose Whether to print messages to the console. Default is TRUE.
 #'
 #' @return NULL. Called for side effect of installing the Rust backend.
+#'
+#' @examples
+#' evalwith(answers = c(continue = "n"), install_mdrb())
 install_mdrb <- function(ask = TRUE,
                          args_remotes = list(),
                          args_mdrb = list(),

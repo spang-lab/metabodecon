@@ -311,8 +311,8 @@ is_rdecons <- function(x) inherits(x, "rdecons")
 
 #' @export
 #'
-#' @name as_metabodecon_object
-#' @rdname as_metabodecon_object
+#' @name as_metabodecon_class
+#' @rdname as_metabodecon_class
 #'
 #' @title Convert to a Metabodecon Object
 #'
@@ -385,7 +385,7 @@ as_spectrum <- function(x, sf = c(1e3, 1e6)) {
 }
 
 #' @export
-#' @rdname as_metabodecon_object
+#' @rdname as_metabodecon_class
 as_decon0 <- function(x,
                       sf = NULL,
                       spectrum = NULL,
@@ -397,7 +397,7 @@ as_decon0 <- function(x,
 }
 
 #' @export
-#' @rdname as_metabodecon_object
+#' @rdname as_metabodecon_class
 as_decon1 <- function(x,
                       sf = c(1e3, 1e6),
                       spectrum = NULL,
@@ -551,7 +551,7 @@ as_decon1 <- function(x,
 }
 
 #' @export
-#' @rdname as_metabodecon_object
+#' @rdname as_metabodecon_class
 as_decon2 <- function(x, sf = c(1e3, 1e6), spectrum = NULL, sfr = NULL, wshw = NULL, bwc = 2) {
     if (is_decon0(x)) as_decon2.decon1(x = as_decon1(x, sf, spectrum, sfr, wshw, bwc))
     else if (is_decon1(x)) as_decon2.decon1(x)
@@ -640,17 +640,22 @@ as_decon2.rdecon <- function(x, ...) {
     args <- x$args
     sup <- x$mdrb_decon$superposition_vec(cs)
     lcpar <- as.data.frame(x$mdrb_decon$lorentzians())
-    mse_raw <- x$mdrb_decon$mse()
-    mse_norm <- mse_raw / sum(sup)
     wsrm <- si # Rust backend doesn't remove the water signal
     nvrm <- si # Rust backend doesn't remove negative values
     spec <- list(y_pos = nvrm)
     reps <- args$smopts[[1]]
     size <- args$smopts[[2]]
     sm <- smooth_signals(spec, reps, size, verbose = FALSE)$y_smooth
-    sup = sup
     sit <- named(wsrm, nvrm, sm, sup)
-    mse <- list(raw = mse_raw, norm = mse_norm, sm = NA, smnorm = NA)
+    mse <- list(
+        raw = mse(si, sup, norm=FALSE), # (1)
+        norm = mse(si, sup, norm=TRUE),
+        sm = mse(sm, sup, norm=FALSE),
+        smnorm = mse(sm, sup, norm=TRUE)
+        # (1) x$mdrb_decon$mse() deviates from mse() results, so we need to
+        # calculate ourselves until Rust backend provides the correct values
+        # (see TODOS.md
+    )
     peak <- get_peak(lcpar$x0, cs) # Should be provided directly by Rust backend in future versions
     obj <- named(cs, si, meta, args, sit, peak, lcpar, mse)
     class(obj) <- "decon2"
@@ -658,7 +663,7 @@ as_decon2.rdecon <- function(x, ...) {
 }
 
 #' @export
-#' @rdname as_metabodecon_object
+#' @rdname as_metabodecon_class
 #' @inheritParams read_spectra
 as_spectra <- function(x,
                        file_format = "bruker",
@@ -682,7 +687,7 @@ as_spectra <- function(x,
 }
 
 #' @export
-#' @rdname as_metabodecon_object
+#' @rdname as_metabodecon_class
 as_decons0 <- function(x,
                        sfs = list(c(1e3, 1e6)),
                        spectra = list(NULL),
@@ -709,7 +714,7 @@ as_decons0 <- function(x,
 }
 
 #' @export
-#' @rdname as_metabodecon_object
+#' @rdname as_metabodecon_class
 as_decons1 <- function(x,
                        sfs = list(c(1e3, 1e6)),
                        spectra = list(NULL),
@@ -737,7 +742,7 @@ as_decons1 <- function(x,
 }
 
 #' @export
-#' @rdname as_metabodecon_object
+#' @rdname as_metabodecon_class
 as_decons2 <- function(x,
                        sfs = list(c(1e3, 1e6)),
                        spectra = list(NULL),
@@ -870,7 +875,7 @@ as_rdecon <- function(x) {
 }
 
 #' @export
-#' @rdname as_metabodecon_object
+#' @rdname as_metabodecon_class
 as_ispecs <- function(x, sf = c(1e3, 1e6)) {
     if (is_ispecs(x)) {
         return(x)
@@ -890,7 +895,7 @@ as_ispecs <- function(x, sf = c(1e3, 1e6)) {
 }
 
 #' @export
-#' @rdname as_metabodecon_object
+#' @rdname as_metabodecon_class
 as_idecons <- function(x) {
     if (is_idecons(x)) return(x)
     stopifnot(is.list(x), all(sapply(x, is_idecon)))
