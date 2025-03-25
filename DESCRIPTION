@@ -49,7 +49,9 @@ Suggests:
     digest,
     knitr,
     lifecycle,
+    mdrb,
     microbenchmark,
+    pkgbuild,
     pkgload,
     R.devices,
     remotes,
@@ -74,3 +76,4 @@ Config/testthat/start-first:
 RdMacros: mathjaxr
 BuildManual: TRUE
 Language: en-US
+Remotes: spang-lab/mdrb

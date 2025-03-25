@@ -4,7 +4,7 @@
 
 Add a workflow for testing installation on a clean Windows/Linux/Mac OS with R pre-installed, but without R-tools and any packages.
 
-*Done with v1.4.0 in PR [#12](https://github.com/spang-lab/metabodecon/pull/12).*
+*Done: Mar 10. Branch: mdrb. PR: https://github.com/spang-lab/metabodecon/pull/12.*
 
 ## Add Rust Backend Installer
 
@@ -24,13 +24,13 @@ Update 10.3.2025: Instead of making compilation optional we should provide a sep
    2. Prints installation instructions for mdrb dependencies if `check_mdrb_deps()` lists missing dependencies
    3. Calls `pak::pkg_install("spang-lab/mdrb")` if all requirements are satisfied
 
-*Done on Fri Mar 14 19:19:40 2025 +0100 in branch mdrb. PR: [#12](https://github.com/spang-lab/metabodecon/pull/12).*
+*Done: Mar 14. Branch: mdrb. PR: https://github.com/spang-lab/metabodecon/pull/12.*
 
 ## Rename deconvolute_ispec
 
 This is a preparation for issue *Add Rust Backend Argument*. Rename `deconvolute_ispec()` to `deconvolute_spectrum()` and `deconvolute_ispecs()` to `deconvolute_spectra()`.
 
-*Done on Mar 22 11:39:49 2025 +0100 in branch mdrb. PR: [#12](https://github.com/spang-lab/metabodecon/pull/12).*
+*Done: Mar 18-22. Branch: mdrb. PR: https://github.com/spang-lab/metabodecon/pull/12.*
 
 ## Add Rust Backend Argument
 
@@ -54,8 +54,10 @@ Sub-Tasks
 - [x] Write testcases for `deconvolute_spectrum(use_rust=TRUE, rtyp="decon2')`
 - [x] Write testcases for `deconvolute_spectra(use_rust=TRUE, rtyp="idecon')`
 - [x] Write testcases for `deconvolute_spectra(use_rust=TRUE, rtyp="decon2')`
-- [ ] Write testcases for `deconvolute(use_rust=TRUE)` with mdrb installed
-- [ ] Write testcases for `deconvolute(use_rust=TRUE)` with mdrb missing
+- [x] Write testcases for `deconvolute(use_rust=TRUE)` with mdrb installed
+- [x] Write testcases for `deconvolute(use_rust=TRUE)` with mdrb missing
+
+*Done: Mar 18-25. Branch: mdrb. PR: https://github.com/spang-lab/metabodecon/pull/12.*
 
 # Open
 

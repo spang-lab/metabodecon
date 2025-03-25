@@ -5,9 +5,13 @@
 \alias{check_mdrb_deps}
 \title{Check Rust Backend Requirements}
 \usage{
-check_mdrb()
+check_mdrb(stop_on_fail = FALSE)
 
 check_mdrb_deps()
+}
+\arguments{
+\item{stop_on_fail}{If TRUE, an error is thrown if the check fails, providing instructions on how
+to install or upgrade mdrb.}
 }
 \value{
 \code{check_mdrb()} returns TRUE if a suitable version of mdrb is installed,
@@ -35,8 +39,8 @@ Example:
 }\if{html}{\out{</div>}}
 }
 \description{
-\code{check_mdrb()} returns a boolean indicating whether a suitable version of
-the metabodecon Rust backend \href{https://github.com/spang-lab/mdrb}{mdrb} is
+\code{check_mdrb()} returns a boolean indicating whether a suitable version of the
+metabodecon Rust backend \href{https://github.com/spang-lab/mdrb}{mdrb} is
 currently installed.
 
 \code{check_mdrb_deps()} returns a list with detailed information about the

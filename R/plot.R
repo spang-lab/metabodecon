@@ -404,7 +404,7 @@ plot_spectrum <- function(x,
 #'             of 1 for drawing the second derivative. To make clear, that the
 #'             user should be careful when interpreting the signal intensity
 #'             values, the corresponding margin text is set to "Signal Intensity
-#'             [au]"  where "au" means "Arbitrary Units", indicating that the
+#'             \[au\]"  where "au" means "Arbitrary Units", indicating that the
 #'             values might be scaled.
 #'
 #' @param bt_text,lt_text,tp_text,rt_text

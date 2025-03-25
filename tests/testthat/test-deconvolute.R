@@ -3,6 +3,7 @@ library(testthat)
 # Inputs #####
 
 sap1 <- sap[[1]]
+mdrb_available <- check_mdrb()
 
 # Helpers #####
 
@@ -28,7 +29,7 @@ get_zero_version <- function() {
 }
 
 # Tests #####
-test_sap1 <- test_that("deconvolute works for single spectrum", {
+test_sap1 <- test_that("deconvolute works for a single spectrum", {
     decon2 <- deconvolute_sap1()
     expect_sap1_deconvolution_worked(decon2)
 })
@@ -53,9 +54,21 @@ test_wrong_sfr <- test_that("deconvolute works when no peaks are filtered out", 
     deconForc <- deconvolute(x, sfr=c(Inf,-Inf), smopts=c(0,3), force=TRUE)
 })
 
-# Local Tests #####
+# Rust Checks #####
 
 skip_on_cran()
+skip_if(getRversion() < numeric_version("4.2"))
+
+mdrb <- test_that("MDRB is available", {
+    expect_true(mdrb_available)
+})
+
+skip_if_not(mdrb_available) # (1)
+# (1) If we reach this point, we're not on CRAN and our R version is greater
+# equal 4.2. I.e., mdrb should be available. If it is not, the "MDRB is
+# available" check from above will fail and that's enough for us to see that
+# something is wrong. I.e, in such as scenario, there is no need to execute the
+# following tests and spam the log file.
 
 rust_backend <- test_that("deconvolute works with rust backend", {
     # Mdrb missing
@@ -68,22 +81,10 @@ rust_backend <- test_that("deconvolute works with rust backend", {
     expect_sap1_deconvolution_worked(rn_mm)
     expect_sap1_deconvolution_worked(rf_mm)
     # Mdrb available
-    if (!check_mdrb()) {
-        message("\nPackage 'mdrb' is missing. Attempting to install it.")
-        install_mdrb(ask = FALSE, verbose = FALSE)
-    }
-    if (mdrb_available <- check_mdrb()) {
-        rt_ma <- try(deconvolute_sap1(use_rust=TRUE), silent=TRUE)
-        rn_ma <- try(deconvolute_sap1(use_rust=NULL), silent=TRUE)
-        rf_ma <- try(deconvolute_sap1(use_rust=FALSE), silent=TRUE)
-        expect_sap1_deconvolution_worked(rn_mm)
-        expect_sap1_deconvolution_worked(rn_mm)
-        expect_sap1_deconvolution_worked(rn_mm)
-    } else {
-        warning(paste(
-            "Cannot test Rust backend because 'mdrb' is missing.",
-            "Call `install_mdrb()` first and then and try again."
-        ))
-        expect_true(mdrb_available)
-    }
+    rt_ma <- try(deconvolute_sap1(use_rust=TRUE), silent=TRUE)
+    rn_ma <- try(deconvolute_sap1(use_rust=NULL), silent=TRUE)
+    rf_ma <- try(deconvolute_sap1(use_rust=FALSE), silent=TRUE)
+    expect_sap1_deconvolution_worked(rn_mm)
+    expect_sap1_deconvolution_worked(rn_mm)
+    expect_sap1_deconvolution_worked(rn_mm)
 })

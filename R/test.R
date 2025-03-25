@@ -275,6 +275,14 @@ get_datadir_mock <- function(type = "temp", state = "default") {
 
 # Testthat Helpers (private) #####
 
+r_geq <- function(x) {
+    getRversion() >= numeric_version(x)
+}
+
+not_cran <- function() {
+    interactive() || isTRUE(as.logical(Sys.getenv(x, "NOT_CRAN")))
+}
+
 #' @noRd
 #' @title Run tests with the option to skip slow tests
 #' @description Runs the tests in the current R package. If `all` is TRUE, it

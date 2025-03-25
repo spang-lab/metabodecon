@@ -124,7 +124,7 @@ reflects the scaling. Example: by default, a scaling factor of
 of 1 for drawing the second derivative. To make clear, that the
 user should be careful when interpreting the signal intensity
 values, the corresponding margin text is set to "Signal Intensity
-\link{au}"  where "au" means "Arbitrary Units", indicating that the
+[au]"  where "au" means "Arbitrary Units", indicating that the
 values might be scaled.
 }}
 

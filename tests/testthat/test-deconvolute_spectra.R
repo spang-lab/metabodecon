@@ -14,49 +14,73 @@ defaults <- list(
     ask=FALSE, force=FALSE, verbose=FALSE, bwc=0,
     use_rust=FALSE, nw=1, igr=list(), rtyp="idecon"
 )
+args <- list(
+    idecons_bwc0_R = set(defaults),
+    idecons_bwc1_R = set(defaults, bwc=1),
+    idecons_bwc2_R = set(defaults, bwc=2),
+    decons0_bwc2_R = set(defaults, bwc=2, rtyp="decon0"),
+    decons1_bwc2_R = set(defaults, bwc=2, rtyp="decon1"),
+    decons2_bwc2_R = set(defaults, bwc=2, rtyp="decon2"),
+    rdecons_bwc2_R = set(defaults, bwc=2, rtyp="rdecon"),
+    rdecons_bwc2_rust = set(defaults, bwc=2, rtyp="rdecon", use_rust=TRUE)
+)
+mdrb_available <- check_mdrb()
 
-args_idecons_bwc0_R <- set(defaults)
-args_idecons_bwc1_R <- set(defaults, bwc=1)
-args_idecons_bwc2_R <- set(defaults, bwc=2)
-args_decons0_bwc2_R <- set(defaults, bwc=2, rtyp="decon0")
-args_decons1_bwc2_R <- set(defaults, bwc=2, rtyp="decon1")
-args_decons2_bwc2_R <- set(defaults, bwc=2, rtyp="decon2")
-args_rdecons_bwc2_R <- set(defaults, bwc=2, rtyp="rdecon")
-args_rdecons_bwc2_rust <- set(defaults, bwc=2, rtyp="rdecon", use_rust=TRUE)
+# Helpers #####
+try_deconvolute_spectra <- function(args) {
+    try(do.call(deconvolute_spectra, args), silent=TRUE)
+}
+
+try_calc_prarpx <- function(obj) {
+    try(calc_prarpx(obj), silent=TRUE)
+}
 
 # Calls #####
-idecons_bwc0_R <- try(do.call(deconvolute_spectra, args_idecons_bwc0_R), silent = TRUE)
-idecons_bwc1_R <- try(do.call(deconvolute_spectra, args_idecons_bwc1_R), silent = TRUE)
-idecons_bwc2_R <- try(do.call(deconvolute_spectra, args_idecons_bwc2_R), silent = TRUE)
-decons0_bwc2_R <- try(do.call(deconvolute_spectra, args_decons0_bwc2_R), silent = TRUE)
-decons1_bwc2_R <- try(do.call(deconvolute_spectra, args_decons1_bwc2_R), silent = TRUE)
-decons2_bwc2_R <- try(do.call(deconvolute_spectra, args_decons2_bwc2_R), silent = TRUE)
-rdecons_bwc2_R <- try(do.call(deconvolute_spectra, args_rdecons_bwc2_R), silent = TRUE)
-rdecons_bwc2_rust <- try(do.call(deconvolute_spectra, args_rdecons_bwc2_rust), silent = TRUE)
+obj <- sapply(args, try_deconvolute_spectra, simplify=FALSE)
 
 # Checks #####
-types <- test_that("Types are ok", {
-    expect_identical(class(idecons_bwc0_R), "idecons")
-    expect_identical(class(idecons_bwc1_R), "idecons")
-    expect_identical(class(idecons_bwc2_R), "idecons")
-    expect_identical(class(decons0_bwc2_R), "list")
-    expect_identical(class(decons1_bwc2_R), "decons1")
-    expect_identical(class(decons2_bwc2_R), "decons2")
-    expect_identical(class(rdecons_bwc2_R), "try-error")
-    expect_identical(class(rdecons_bwc2_rust), "rdecons")
+r_return_types <- test_that("R return types are ok", {
 
-    expect_identical(class(idecons_bwc0_R[[1]]), "idecon")
-    expect_identical(class(idecons_bwc1_R[[1]]), "idecon")
-    expect_identical(class(idecons_bwc2_R[[1]]), "idecon")
-    expect_identical(class(decons0_bwc2_R[[1]]), "list")
-    expect_identical(class(decons1_bwc2_R[[1]]), "decon1")
-    expect_identical(class(decons2_bwc2_R[[1]]), "decon2")
-    expect_identical(class(rdecons_bwc2_rust[[1]]), "rdecon")
+    expect_identical(class(obj$idecons_bwc0_R), "idecons")
+    expect_identical(class(obj$idecons_bwc1_R), "idecons")
+    expect_identical(class(obj$idecons_bwc2_R), "idecons")
+    expect_identical(class(obj$decons0_bwc2_R), "list")
+    expect_identical(class(obj$decons1_bwc2_R), "decons1")
+    expect_identical(class(obj$decons2_bwc2_R), "decons2")
+    expect_identical(class(obj$rdecons_bwc2_R), "try-error")
 
-    expect_identical(names(idecons_bwc0_R[[1]]), idecon_members)
-    expect_identical(names(idecons_bwc1_R[[1]]), idecon_members)
-    expect_identical(names(idecons_bwc2_R[[1]]), idecon_members)
-    expect_identical(names(decons1_bwc2_R[[1]]), decon1_members)
-    expect_identical(names(decons2_bwc2_R[[1]]), decon2_members)
-    expect_identical(names(rdecons_bwc2_rust[[1]]), rdecon_members)
+    expect_identical(class(obj$idecons_bwc0_R[[1]]), "idecon")
+    expect_identical(class(obj$idecons_bwc1_R[[1]]), "idecon")
+    expect_identical(class(obj$idecons_bwc2_R[[1]]), "idecon")
+    expect_identical(class(obj$decons0_bwc2_R[[1]]), "list")
+    expect_identical(class(obj$decons1_bwc2_R[[1]]), "decon1")
+    expect_identical(class(obj$decons2_bwc2_R[[1]]), "decon2")
+
+    expect_identical(names(obj$idecons_bwc0_R[[1]]), idecon_members)
+    expect_identical(names(obj$idecons_bwc1_R[[1]]), idecon_members)
+    expect_identical(names(obj$idecons_bwc2_R[[1]]), idecon_members)
+    expect_identical(names(obj$decons1_bwc2_R[[1]]), decon1_members)
+    expect_identical(names(obj$decons2_bwc2_R[[1]]), decon2_members)
+})
+
+# Rust Checks #####
+
+skip_on_cran()
+skip_if(getRversion() < numeric_version("4.2"))
+
+mdrb <- test_that("MDRB is available", {
+    expect_true(mdrb_available)
+})
+
+skip_if_not(mdrb_available) # (1)
+# (1) If we reach this point, we're not on CRAN and our R version is greater
+# equal 4.2. I.e., mdrb should be available. If it is not, the "MDRB is
+# available" check from above will fail and that's enough for us to see that
+# something is wrong. I.e, in such as scenario, there is no need to execute the
+# following tests and spam the log file.
+
+rust_return_types <- test_that("Rust return types are ok", {
+    expect_identical(class(obj$rdecons_bwc2_rust), "rdecons")
+    expect_identical(class(obj$rdecons_bwc2_rust[[1]]), "rdecon")
+    expect_identical(names(obj$rdecons_bwc2_rust[[1]]), rdecon_members)
 })

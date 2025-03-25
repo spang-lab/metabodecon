@@ -4,7 +4,12 @@
 \alias{install_mdrb}
 \title{Install Rust Backend}
 \usage{
-install_mdrb(ask = TRUE, args_remotes = list(), args_mdrb = list())
+install_mdrb(
+  ask = TRUE,
+  args_remotes = list(),
+  args_mdrb = list(),
+  verbose = TRUE
+)
 }
 \arguments{
 \item{ask}{Whether to ask for confirmation before attempting installion. Default is TRUE.}
@@ -14,6 +19,8 @@ installation of \href{https://remotes.r-lib.org/index.html}{remotes}.}
 
 \item{args_mdrb}{Additional arguments to pass to \code{\link[remotes:install_github]{remotes::install_github()}} when attempting
 installation of mdrb.}
+
+\item{verbose}{Whether to print messages to the console. Default is TRUE.}
 }
 \value{
 NULL. Called for side effect of installing the Rust backend.

@@ -5,14 +5,16 @@
 #' @title Check Rust Backend Requirements
 #'
 #' @description
-#' `check_mdrb()` returns a boolean indicating whether a suitable version of
-#' the metabodecon Rust backend [mdrb](https://github.com/spang-lab/mdrb) is
+#' `check_mdrb()` returns a boolean indicating whether a suitable version of the
+#' metabodecon Rust backend [mdrb](https://github.com/spang-lab/mdrb) is
 #' currently installed.
 #'
 #' `check_mdrb_deps()` returns a list with detailed information about the
 #' installation status of mdrb and its dependencies.
 #'
-#' @param stop_on_fail If TRUE, an error is thrown if the check fails, providing instructions on how to install or upgrade mdrb.
+#' @param stop_on_fail
+#' If TRUE, an error is thrown if the check fails, providing instructions on how
+#' to install or upgrade mdrb.
 #'
 #' @return
 #' `check_mdrb()` returns TRUE if a suitable version of mdrb is installed,
