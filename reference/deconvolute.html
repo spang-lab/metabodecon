@@ -61,7 +61,8 @@ a spectrum as Lorentz Curve.</p>
 <span>  ask <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  force <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  nworkers <span class="op">=</span> <span class="fl">1</span></span>
+<span>  nworkers <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  use_rust <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">generate_lorentz_curves</span><span class="op">(</span></span>
@@ -159,6 +160,14 @@ deconvolution process.</p></dd>
 <dd><p>Number of workers to use for parallel processing. If
 <code>"auto"</code>, the number of workers will be determined automatically. If a number
 greater than 1, it will be limited to the number of spectra.</p></dd>
+
+
+<dt id="arg-use-rust">use_rust<a class="anchor" aria-label="anchor" href="#arg-use-rust"></a></dt>
+<dd><p>Logical. Whether to use the Rust backend for deconvolution.
+Requires the <a href="https://github.com/spang-lab/mdrb" class="external-link">mdrb</a> package. If TRUE and
+mdrb is missing, an error is thrown. If FALSE, the R implementation is used.
+If NULL, the Rust backend is used if available, otherwise the R implementation
+is used.</p></dd>
 
 
 <dt id="arg-data-path">data_path<a class="anchor" aria-label="anchor" href="#arg-data-path"></a></dt>
