@@ -3,24 +3,18 @@
 \name{print_methods}
 \alias{print_methods}
 \alias{print.spectrum}
-\alias{print.ispec}
-\alias{print.idecon}
 \alias{print.decon1}
 \alias{print.decon2}
 \alias{print.align}
 \alias{print.spectra}
-\alias{print.ispecs}
-\alias{print.idecons}
 \alias{print.decons1}
 \alias{print.decons2}
 \alias{print.aligns}
+\alias{print.idecons}
+\alias{print.rdecons}
 \title{S3 Methods for Printing Metabodecon Objects}
 \usage{
 \method{print}{spectrum}(x, name = FALSE, ...)
-
-\method{print}{ispec}(x, name = FALSE, ...)
-
-\method{print}{idecon}(x, name = FALSE, ...)
 
 \method{print}{decon1}(x, name = FALSE, ...)
 
@@ -30,15 +24,15 @@
 
 \method{print}{spectra}(x, ...)
 
-\method{print}{ispecs}(x, ...)
-
-\method{print}{idecons}(x, ...)
-
 \method{print}{decons1}(x, ...)
 
 \method{print}{decons2}(x, ...)
 
 \method{print}{aligns}(x, ...)
+
+\method{print}{idecons}(x, ...)
+
+\method{print}{rdecons}(x, ...)
 }
 \arguments{
 \item{x}{The object to print.}
@@ -54,11 +48,9 @@ NULL, called for side effect of printing to the standard output device.
 S3 Methods for printing metabodecon objects as described in the \href{https://spang-lab.github.io/metabodecon/articles/}{Metabodecon Classes}.
 }
 \examples{
-si <- c(1, 1, 3, 7, 8, 3, 8, 5, 2, 1)
-cs_max <- 14.8
-cs_width <- 20.0
-fq_ref <- 600.25 * 1e6
-fq_width <- 12005
-spectrum <- read_spectrum()
-print(spectrum)
+print(sim[[1]])
+print(sim[[1]], name = TRUE)
+print(sim)
+decon <- deconvolute(sim[[1]], sfr = c(3.55, 3.35))
+print(decon)
 }

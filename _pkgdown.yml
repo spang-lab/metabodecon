@@ -46,12 +46,14 @@ reference:
   desc: Utility functions, e.g. for converting between units or for calculating y values for a given lorentz curve.
   contents:
   - as_metabodecon_class
-  - is_metabodecon_class
-  - print_methods
+  - check_mdrb
   - convert_pos
   - convert_width
   - evalwith
+  - install_mdrb
+  - is_metabodecon_class
   - make_spectrum
+  - print_methods
   - simulate_spectrum
   - transp
   - tree

@@ -3,15 +3,11 @@
 \name{is_metabodecon_class}
 \alias{is_metabodecon_class}
 \alias{is_spectrum}
-\alias{is_ispec}
-\alias{is_idecon}
 \alias{is_decon0}
 \alias{is_decon1}
 \alias{is_decon2}
 \alias{is_align}
 \alias{is_spectra}
-\alias{is_ispecs}
-\alias{is_idecons}
 \alias{is_decons0}
 \alias{is_decons1}
 \alias{is_decons2}
@@ -19,10 +15,6 @@
 \title{Is an Object from a Metabodecon Class?}
 \usage{
 is_spectrum(x, check_class = TRUE, check_contents = FALSE)
-
-is_ispec(x)
-
-is_idecon(x)
 
 is_decon0(x)
 
@@ -38,10 +30,6 @@ is_spectra(
   check_contents = FALSE,
   check_child_classes = FALSE
 )
-
-is_ispecs(x)
-
-is_idecons(x)
 
 is_decons0(x)
 
@@ -81,12 +69,12 @@ is_spectrum(s1, check_contents = TRUE) # TRUE
 is_decon0(d1) # FALSE
 is_decon1(d1) # FALSE
 is_decon2(d1) # TRUE
-is_align(a1)  # TRUE
+is_align(a1) # TRUE
 
 is_spectra(ss) # TRUE
 is_decons0(dd) # FALSE
 is_decons1(dd) # FALSE
 is_decons2(dd) # TRUE
-is_aligns(aa)  # TRUE
+is_aligns(aa) # TRUE
 
 }

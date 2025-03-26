@@ -118,7 +118,7 @@ in_hz <- function(cs, fqref) {
 #' datapoints.
 #' @details See 'CHECK-2: Signal free region (SFR) calculation' in `TODOS.md`.
 sfr_in_ppm_bwc <- function(sfr_sdp, sdp, ppm) {
-    stopifnot(
+    assert(
         is.numeric(sfr_sdp), length(sfr_sdp) == 2,
         is.numeric(sdp), length(sdp) >= 5,
         is.numeric(ppm), length(ppm) == length(sdp)
@@ -495,9 +495,10 @@ collapse <- function(x, sep = ", ", last = NULL) {
 }
 
 #' @noRd
-#' @description Fixed copy of [toscutil::logf()]. Can be replaced with original
-#' after issue
-#' [Fix: logf ignores file and append arguments](https://github.com/toscm/toscutil/issues/10) has been fixed.
+#' @description
+#' Fixed copy of [toscutil::logf()]. Can be replaced with original after issue
+#' [Fix: logf ignores file and append
+#' arguments](https://github.com/toscm/toscutil/issues/10) has been fixed.
 logf <- function(fmt,
                  ...,
                  file = getOption("toscutil.logf.file", ""),
@@ -570,30 +571,47 @@ type <- function(x) {
 }
 
 is_num <- function(x, n = NULL) {
-    if (is.null(n)) {
-        is.numeric(x)
-    } else {
-        is.numeric(x) && length(x) == n
-    }
+    is.numeric(x) && (is.null(n) || length(x) == n)
 }
 
 is_int <- function(x, n = NULL) {
-    if (is.null(x)) return(FALSE)
     x_is_int <- is.integer(x) || (is.numeric(x) && all(abs(x - round(x)) < sqrt(.Machine$double.eps)))
     has_correct_length <- is.null(n) || length(x) == n
     x_is_int && has_correct_length
 }
 
 is_char <- function(x, n = NULL, pattern = NULL) {
-    !is.null(x) && is.character(x) && (is.null(n) || length(x) == n ) && (is.null(pattern) || all(grepl(pattern, x)))
+    is.character(x) &&
+        (is.null(n) || length(x) == n ) &&
+        (is.null(pattern) || all(grepl(pattern, x)))
 }
 
 is_bool <- function(x, n = NULL) {
-    !is.null(x) && is.logical(x) && (is.null(n) || length(x) == n)
+    is.logical(x) && (is.null(n) || length(x) == n)
 }
 
 is_str <- function(x) {
     is.character(x) && length(x) == 1
+}
+
+is_num_or_null <- function(x, n = NULL) {
+    is.null(x) || is_num(x, n)
+}
+
+is_int_or_null <- function(x, n = NULL) {
+    is.null(x) || is_int(x, n)
+}
+
+is_char_or_null <- function(x, n = NULL, pattern = NULL) {
+    is.null(x) || is_char(x, n, pattern)
+}
+
+is_bool_or_null <- function(x, n = NULL) {
+    is.null(x) || is_bool(x, n)
+}
+
+is_str_or_null <- function(x) {
+    is.null(x) || is_str(x)
 }
 
 #' @noRd
@@ -675,105 +693,69 @@ all_identical <- function(x) {
     all(sapply(x, identical, x[[1]]))
 }
 
-is_list_of_nums <- function(x, nl, nv) {
-    if (is.null(nl) && is.null(nv)) {
-        is.list(x) && all(sapply(x, is.numeric))
-    } else if (is.null(nv)) {
-        is.list(x) && length(x) == nl && all(sapply(x, is.numeric))
-    } else {
-        is.list(x) && length(x) == nl && all(sapply(x, is_num, n = nv))
-    }
+is_list_of_nums <- function(x, nl = NULL, nv = NULL) {
+    if (!is.list(x)) return(FALSE)
+    if (!(is.null(nl) || length(x) == nl)) return(FALSE)
+    if (!(is.null(nv) || all(lengths(x) == nv))) returns(FALSE)
+    return(TRUE)
 }
-
-# Arg Checking (Private) #####
-
-check_args_deconvolute <- function(e = parent.frame()) {
-    stopifnot(is_char(e$x, 1) || is_spectrum(e$x) || is_spectra(e$x) || is_ispec(e$x) || is_ispecs(e$x))
-    stopifnot(is_int(e$nfit, 1) || is.null(e$nfit))
-    stopifnot(is_int(e$smopts, 2) || is.null(e$smopts))
-    stopifnot(is_num(e$delta, 1) || is.null(e$delta))
-    stopifnot(is_num(e$sfr, 2) || is.null(e$sfr))
-    stopifnot(is_num(e$wshw, 1) || is.null(e$wshw))
-    stopifnot(is_bool(e$ask, 1))
-    stopifnot(is_bool(e$force, 1))
-    stopifnot(is_bool(e$verbose, 1))
-    stopifnot(is_int(e$nworkers, 1))
-    return(e)
-}
-
-check_args_rm_water_signal <- function(e = parent.frame()) {
-    stopifnot(is_ispec(e$x))
-    stopifnot(is_num(e$bwc, 1))
-    return(e)
-}
-
-check_args_deconvolute_ispec <- function(e = parent.frame()) {
-    stopifnot(is_ispec(e$ispec))
-    stopifnot(is_int(e$nfit, 1))
-    stopifnot(is_int(e$smopts, 2))
-    stopifnot(is_num(e$delta, 1))
-    stopifnot(is_num(e$sfr, 2))
-    stopifnot(is_num(e$wshw, 1))
-    stopifnot(is_bool(e$force, 1))
-    stopifnot(is_num(e$bwc, 1))
-    return(as.list(e))
-}
-
-check_args_deconvolute_ispecs <- function(e = parent.frame()) {
-    stopifnot(is_ispecs(e$ispecs) || is_ispec(e$ispecs))
-    stopifnot(is_int(e$nfit, 1))
-    stopifnot(is_int(e$smopts, 2))
-    stopifnot(is_num(e$delta, 1))
-    stopifnot(is_num(e$sfr, 2) || is_list_of_nums(e$sfr, length(e$ispecs), 2))
-    stopifnot(is_num(e$wshw, 1) || is_list_of_nums(e$wshw, length(e$ispecs), 1))
-    stopifnot(is_bool(e$ask, 1))
-    stopifnot(is_bool(e$force, 1))
-    stopifnot(is_bool(e$verbose, 1))
-    stopifnot(is_num(e$bwc, 1))
-    return(e)
-}
-
-draw_spectrum_standardize_arguments <- quote({
-    if (isFALSE(si_line)  || is.null(si_line))  si_line  <- list(show = FALSE)
-    if (isFALSE(sm_line)  || is.null(sm_line))  sm_line  <- list(show = FALSE)
-    if (isFALSE(lc_lines) || is.null(lc_lines)) lc_lines <- list(show = FALSE)
-    if (isFALSE(sp_line)  || is.null(sp_line))  sp_line  <- list(show = FALSE)
-    if (isFALSE(d2_line)  || is.null(d2_line))  d2_line  <- list(show = FALSE)
-    if (isFALSE(cent_pts) || is.null(cent_pts)) cent_pts <- list(show = FALSE)
-    if (isFALSE(bord_pts) || is.null(bord_pts)) bord_pts <- list(show = FALSE)
-    if (isFALSE(norm_pts) || is.null(norm_pts)) norm_pts <- list(show = FALSE)
-    if (isFALSE(bg_rect)  || is.null(bg_rect))  bg_rect  <- list(show = FALSE)
-    if (isFALSE(foc_rect) || is.null(foc_rect)) foc_rect <- list(show = FALSE)
-    if (isFALSE(lc_rects) || is.null(lc_rects)) lc_rects <- list(show = FALSE)
-    if (isFALSE(bt_axis)  || is.null(bt_axis))  bt_axis  <- list(show = FALSE)
-    if (isFALSE(lt_axis)  || is.null(lt_axis))  lt_axis  <- list(show = FALSE)
-    if (isFALSE(tp_axis)  || is.null(tp_axis))  tp_axis  <- list(show = FALSE)
-    if (isFALSE(rt_axis)  || is.null(rt_axis))  rt_axis  <- list(show = FALSE)
-})
-
-generate_lorentz_curves_type_checks <- quote(
-    stopifnot(
-    is_existing_path(data_path) ||
-        is_spectrum(data_path) ||
-        is_spectra(data_path) ||
-        is_ispec(data_path) ||
-        is_ispecs(data_path),
-    is_char(file_format, 1, "(bruker|jcampdx)"),
-    is_bool(make_rds, 1) || is_char(make_rds, 1),
-    is_int(expno, 1),
-    is_int(procno, 1),
-    is_int(nfit, 1),
-    is_int(smopts, 2),
-    is_num(delta, 1),
-    is_num(sfr, 2),
-    is_num(wshw, 1),
-    is_bool(ask, 1),
-    is_bool(force, 1),
-    is_bool(verbose, 1),
-    is_int(nworkers, 1)
-))
 
 # Misc (Private) ##############################################################
+
+called_from_globalenv <- function() {
+    identical(parent.frame(), .GlobalEnv)
+}
+
+#' @noRd
+#' @title Get Named Function Arguments
+#' @description
+#' Extracts the **named** arguments of a function as a named list. Variadic
+#' arguments, i.e. `...`, are not included in the list. Missing values are
+#' provided as "empty symbols".
+#' @param func If provided, only arguments of this function are extracted from
+#' the environment. See 'Details'.
+#' @param ignore A character vector of argument names to ignore.
+#' @param env The environment to extract the arguments from.
+#' @return A named list of arguments.
+#' @details Calling `args <- get_args(f)` as first statement in a function `f`
+#' produces the same as `args <- as.list(environment())` (assuming no values
+#' were provided via `...`). The advantage of using `get_args()` is, that it
+#' allows to exclude certain arguments from the list and that it can be used
+#' interactively from the global environment during function development.
+#' (Calling `as.list(environment())` from the global environment would convert
+#' the complete global environment into a list, meaning it can be extremely
+#' slow.)
+#' @examples
+#' f <- function(a, b = 1, c = NULL, ...) {
+#'      args <- get_args(f, ignore = c("a"))
+#'      # do some calculations
+#'      args
+#' }
+#' f(10, 20) # list(b = 20, c = NULL)
+#'
+#' g <- function(a, b = 1, c = NULL, ...) {
+#'      get_args()
+#' }
+#' g(0, 1, 2, 3, 4) # list(a = 0, b = 1, c = 2   )
+#' xx <- g()        # list(a = ,  b = 1, c = NULL)
+#' is.symbol(xx$a)  # TRUE
+get_args <- function(func = NULL, ignore = character(), env = parent.frame())
+{
+    assert(
+        is.null(ignore) || is.character(ignore),
+        is.environment(env),
+        is.null(func) || is.function(func)
+    )
+    if (is.null(func)) {
+        args <- as.list(env)
+        args[ignore] <- NULL
+    }  else {
+        argnames <- names(formals(func))
+        argnames <- argnames[!argnames %in% ignore]
+        args <- sapply(argnames, function(name) env[[name]], simplify = FALSE)
+    }
+    args
+}
 
 empty_df <- function(names) {
     df <- data.frame(matrix(ncol = length(names), nrow = 0))
@@ -941,15 +923,35 @@ tree <- function(path, max.level = 2, level = 0, prefix = "") {
 }
 
 #' @noRd
+#' @description Update values of a list and return the modified list.
+#' @details
+#' Setting a value to NULL will **not** remove the key from the list, but set
+#' the value to NULL. I.e. setting values using `set` is closer to `[<-` than
+#' to `[[<-`. Example:
+#'
 #' @examples
+#' # Inputs
 #' xx <- list(a=1, b=2:5, d="a")
-#' set(xx, a=10, d=4, f=sqrt)
+#'
+#' # Examples
+#' yy <- set(xx, a=10, d=4, f=sqrt)  # Set a and d. Add f.
+#' zz <- set(xx, a=NULL)             # Set a to NULL.
+#'
+#' # Outputs
+#' stopifnot(identical(yy, list(a=10, b=2:5, d=4, f=sqrt)))
+#' stopifnot(identical(zz, list(a=NULL, b=2:5, d="a")))
+#'
+#' # For comparison
+#' xx$a <- NULL                      # Removes a
+#' xx[["a"]] <- NULL                 # Removes a
+#' xx["a"] <- list(NULL)             # Set a to NULL (like `set`)
+#'
 set <- function(...) {
     args <- list(...)
     obj <- args[[1]]
     vals <- args[-1]
     keys <- names(vals)
-    mapply(function(k, v) obj[[k]] <<- v, keys, vals)
+    mapply(function(k, v) obj[k] <<- list(v), keys, vals)
     obj
 }
 
@@ -1035,8 +1037,68 @@ get_worker_logs <- function(nw, create = TRUE) {
     logpaths
 }
 
-load_all <- function() {
-    pkgload::load_all()
-    pkgload_env <- environment(pkgload::load_all)
-    pkgload_env$insert_global_shims(force = TRUE)
+load_all <- function(reset = TRUE, shims = TRUE) {
+    x <- Sys.time()
+    logf("Calling: pkgload::load_all(reset = %s)", reset)
+    pkgload::load_all(reset = reset, quiet = TRUE)
+    if (shims) {
+        logf("Calling: pkgload_env$insert_global_shims(force = TRUE)")
+        pkgload_env <- environment(pkgload::load_all)
+        pkgload_env$insert_global_shims(force = TRUE)
+    }
+    diff <- Sys.time() - x
+    logf("Elapsed: %s", format(diff))
+}
+
+# On Load (Private) #####
+
+#' @noRd
+#' @description
+#' Acts like [stopifnot()] during development but does nothing in production.
+#'
+#' @details
+#' In the package source code, this function is defined as a copy of
+#' [stopifnot()]. However, during package loading, it is replaced with an empty
+#' function unless the package is loaded via [devtools::load_all()]. The actual
+#' replacement is implemented in [.onLoad()].
+#'
+#' The idea is that exported functions should use plain [stopifnot()] to
+#' validate their inputs, whereas private functions should use [assert()] instead.
+#' This approach allows us to use rigorous type checking during development
+#' without impacting performance in production.
+#'
+#' If we need to keep assertions enabled in production, we can set the
+#' option `metabodecon.assert` to `stopifnot` before loading the package.
+#'
+#' If we want to disable assertions during development, e.g. to get
+#' realistic runtime estimates, we can set the option `metabodecon.assert` to
+#' `function(...) {}` before calling `devtools::load_all()`.
+#'
+#' Example:
+#'
+#' ```r
+#' # Steps:
+#' # (1) Load metabodecon with assertions disabled
+#  # (2) Unload metabodecon
+#  # (3A) Configure stopifnot as the assertion function OR
+#  # (3B) Configure empty function as assertion function
+#  # (4) Reload metabodecon
+#' library(metabodecon)                           # (1)
+#' unloadNamespace("metabodecon")                 # (2)
+#' options(metabodecon.assert = stopifnot)        # (3A)
+#' options(metabodecon.assert = function(...) {}) # (3B)
+#' library(metabodecon)                           # (4)
+#' ```
+assert <- stopifnot
+
+.onLoad <- function(libname, pkgname){
+    pkgenv <- topenv()
+    if (!loaded_via_devtools()) pkgenv$assert <- function(...) {}
+    if (!is.null(x <- .Options$metabodecon.assert)) pkgenv$assert <- x
+}
+
+loaded_via_devtools <- function() {
+    pkg_dir <- dirname(system.file("DESCRIPTION", package = "metabodecon"))
+    loaded_via_devtools <- dir.exists(file.path(pkg_dir, "inst"))
+    return(loaded_via_devtools)
 }

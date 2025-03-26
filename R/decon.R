@@ -55,6 +55,12 @@
 #'
 #' @param wshw Half-width of the water artifact in ppm.  See 'Details'.
 #'
+#' @param use_rust Logical. Whether to use the Rust backend for deconvolution.
+#' Requires the [mdrb](https://github.com/spang-lab/mdrb) package. If TRUE and
+#' mdrb is missing, an error is thrown. If FALSE, the R implementation is used.
+#' If NULL, the Rust backend is used if available, otherwise the R implementation
+#' is used.
+#'
 #' @return A 'decon2' object as described in [Metabodecon
 #' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
 #'
@@ -135,63 +141,69 @@ NULL
 #' @export
 #' @rdname deconvolute
 deconvolute <- function(x,
-                        nfit = 3,
-                        smopts = c(2, 5),
-                        delta = 6.4,
-                        sfr = NULL,
-                        wshw = 0,
-                        ask = FALSE,
-                        force = FALSE,
-                        verbose = FALSE,
-                        nworkers = 1) {
-    check_args_deconvolute()
-    ispecs <- as_ispecs(x)
-    if (is.null(sfr)) sfr <- quantile(ispecs[[1]]$ppm, c(0.9, 0.1))
-    idecons <- deconvolute_ispecs(
-        ispecs,
-        nfit, smopts, delta, sfr, wshw,
-        ask, force, verbose,
-        bwc = 2, nworkers = nworkers
+    nfit=3,    smopts=c(2,5), delta=6.4,     sfr=NULL,   wshw=0,
+    ask=FALSE, force=FALSE,   verbose=FALSE, nworkers=1, use_rust=FALSE
+) {
+    # Check inputs
+    stopifnot(
+        is_spectrum_or_spectra(x),    is_int_or_null(nfit, 1),
+        is_int_or_null(smopts, 2),    is_num_or_null(delta, 1),
+        is_num_or_null(sfr, 2),       is_num_or_null(wshw, 1),
+        is_bool(ask, 1),              is_bool(force, 1),
+        is_bool(verbose, 1),          is_int(nworkers, 1),
+        is_bool_or_null(use_rust, 1)
     )
-    decons2 <- as_decons2(idecons)
+
+    # Set suitable defaults
+    sfr <- sfr %||% quantile(x$cs %||% x[[1]]$cs, c(0.9, 0.1))
+    if (isTRUE(use_rust)) check_mdrb(stop_on_fail = TRUE)
+    if (is.null(use_rust)) use_rust <- check_mdrb()
+
+    # Perform deconvolution
+    decons2 <- deconvolute_spectra(x,
+        nfit, smopts, delta, sfr, wshw,
+        ask, force, verbose, bwc=2,
+        use_rust, nw=nworkers, igr=list(), rtyp="decon2"
+    )
+
+    # Convert and return
     if (length(decons2) == 1) decons2[[1]] else decons2
 }
 
 #' @export
 #' @rdname deconvolute
 generate_lorentz_curves <- function(data_path,
-                                    file_format = "bruker",
-                                    make_rds = FALSE,
-                                    expno = 10,
-                                    procno = 10,
-                                    raw = TRUE,
-                                    nfit = 10,
-                                    smopts = c(2, 5),
-                                    delta = 6.4,
-                                    sfr = c(11.44494, -1.8828),
-                                    wshw = 0.1527692,
-                                    ask = TRUE,
-                                    force = FALSE,
-                                    verbose = TRUE,
-                                    nworkers = 1) {
-    # Check and convert input
-    eval(generate_lorentz_curves_type_checks) # 99 us
+    file_format="bruker", make_rds=FALSE, expno=10, procno=10, raw=TRUE,
+    nfit=10, smopts=c(2,5), delta=6.4, sfr=c(11.44494,-1.8828), wshw=0.1527692,
+    ask=TRUE, force=FALSE, verbose=TRUE, nworkers=1
+) {
+    # Check inputs
+    stopifnot(
+        is_existing_path(data_path) ||
+        is_spectrum(data_path) || is_spectra(data_path) ||
+        is_ispec(data_path) || is_ispecs(data_path),
+        is_char(file_format,1,"(bruker|jcampdx)"),
+        is_bool(make_rds,1) || is_char(make_rds,1),
+        is_int(expno,1),    is_int(procno,1),   is_int(nfit,1),
+        is_int(smopts,2),   is_num(delta,1),    is_num(sfr,2),
+        is_num(wshw,1),     is_bool(ask,1),     is_bool(force,1),
+        is_bool(verbose,1), is_int(nworkers,1)
+    )
+
+    # Read spectra
     spectra <- as_spectra(
         data_path, file_format, expno, procno, raw,
         silent = !verbose, force = force
     )
 
     # Deconvolute
-    idecons <- deconvolute_ispecs(
-        ispecs = as_ispecs(x = spectra),
+    decons1 <- deconvolute_spectra(spectra,
         nfit, smopts, delta, sfr, wshw,
-        ask, force, verbose,
-        bwc = 1, nworkers = nworkers
+        ask, force, verbose, bwc=1,
+        use_rust=FALSE, nw=nworkers, igr=list(), rtyp="decon1"
     )
 
-    # Convert, store and return
-    if (verbose) logf("Formatting deconvolution results as 'decon1' objects")
-    decons1 <- as_decons1(idecons)
+    # Store and return
     store_as_rds(decons1, make_rds, data_path)
     if (length(decons1) == 1) decons1[[1]] else decons1
 }
@@ -199,20 +211,10 @@ generate_lorentz_curves <- function(data_path,
 #' @export
 #' @rdname deconvolute
 generate_lorentz_curves_sim <- function(data_path,
-                                        file_format = "bruker",
-                                        make_rds = FALSE,
-                                        expno = 10,
-                                        procno = 10,
-                                        raw = TRUE,
-                                        nfit = 10,
-                                        smopts = c(2, 5),
-                                        delta = 6.4,
-                                        sfr = c(3.55, 3.35),
-                                        wshw = 0,
-                                        ask = FALSE,
-                                        force = FALSE,
-                                        verbose = FALSE,
-                                        nworkers = 1) {
+    file_format="bruker", make_rds=FALSE, expno=10, procno=10, raw=TRUE,
+    nfit=10, smopts=c(2,5), delta=6.4, sfr=c(3.55,3.35), wshw=0,
+    ask=FALSE, force=FALSE, verbose=FALSE, nworkers=1
+) {
     generate_lorentz_curves(
         data_path, file_format, make_rds, expno, procno, raw,
         nfit, smopts, delta, sfr, wshw,
@@ -231,141 +233,188 @@ generate_lorentz_curves_sim <- function(data_path,
 #' == 2`, all bug fixes and features introduced after version 0.2.2 are used.
 #'
 #' Support for `bwc == 0` will be removed in 'metabodecon v2.0'.
-deconvolute_ispecs <- function(ispecs,
-                               nfit = 3,
-                               smopts = c(2, 5),
-                               delta = 6.4,
-                               sfr = c(3.55, 3.35),
-                               wshw = 0,
-                               ask = FALSE,
-                               force = FALSE,
-                               verbose = TRUE,
-                               bwc = 2,
-                               nworkers = 1) {
+deconvolute_spectra <- function(x,
+    nfit=3, smopts=c(2,5), delta=6.4, sfr=c(3.55,3.35), wshw=0,
+    ask=FALSE, force=FALSE, verbose=TRUE, bwc=2,
+    use_rust=FALSE, nw=1, igr=list(), rtyp="idecon"
+) {
 
-    # Check args & configure logging
-    args <- check_args_deconvolute_ispecs()
-    ispecs <- as_ispecs(ispecs)
-    opts <- if (!verbose) options(toscutil.logf.file = nullfile())
-    on.exit(options(opts), add = TRUE)
+    # Check inputs
+    assert(
+        is_spectrum(x) || is_spectra(x),
+        is_int(nfit,1), is_int(smopts,2), is_num(delta,1),
+        is_bool(ask,1), is_bool(force,1), is_bool(verbose,1),
+        is_num(bwc,1),
+        is_num(sfr,2)  || is_list_of_nums(sfr,length(x),2),
+        is_num(wshw,1) || is_list_of_nums(wshw,length(x),1),
+        if (rtyp == "rdecon") isTRUE(use_rust) else is_bool(use_rust),
+        is_char(rtyp,1,"(decon[0-2]|idecon|rdecon)")
+    )
 
-    # Init local vars
-    ns <- length(ispecs)
-    nw <- if (nworkers == "auto") ceiling(detectCores() / 2) else nworkers
-    nw <- min(nw, length(ispecs))
-    nfstr <- if (ns == 1) "1 spectrum" else sprintf("%d spectra", ns)
-    nwstr <- if (nw == 1) "1 worker" else sprintf("%d workers", nw)
-    adjno <- get_adjno(ispecs, sfr, wshw, ask)
-    sfrlist <- get_sfr(ispecs, sfr, ask, adjno)
-    wshwlist <- get_wshw(ispecs, wshw, ask, adjno)
-    smoptslist <- get_smopts(ispecs, smopts)
+    # Configure logging
+    if (!verbose) local_options(toscutil.logf.file = nullfile())
+
+    # Init locals
+    spectra <- as_spectra(x)
+    ns <- length(spectra)
+    nc2 <- ceiling(detectCores() / 2)
+    nw_apply <- if (use_rust) 1 else if (nw == "auto") min(nc2, ns) else nw
+    nw_apply_str <- if (nw_apply == 1) "1 worker" else sprintf("%d workers", nw_apply)
+    nw_deconv <- if (!use_rust) 1 else if (nw == "auto") min(nc2, ns) else nw
+    ns_str <- if (ns == 1) "1 spectrum" else sprintf("%d spectra", ns)
+    adjno <- get_adjno(spectra, ask)
+    sfr_list <- get_sfr(spectra, sfr, ask, adjno)
+    wshw_list <- get_wshw(spectra, wshw, ask, adjno)
+    smopts_list <- get_smopts(spectra, smopts)
+    igr_list <- list(list())
 
     # Deconvolute spectra
-    logf("Starting deconvolution of %s using %s", nfstr, nwstr)
+    logf("Starting deconvolution of %s using %s", ns_str, nw_apply_str)
     starttime <- Sys.time()
-    idecon_list <- mcmapply(nw, deconvolute_ispec, ispecs,
-        nfit, smoptslist, delta, sfrlist, wshwlist,
-        ask, force, verbose, bwc, nworkers)
-    idecons <- as_idecons(idecon_list)
+    decon_list <- mcmapply(nw_apply, deconvolute_spectrum,
+        spectra,
+        nfit, smopts_list, delta, sfr_list, wshw_list,
+        ask, force, verbose, bwc,
+        use_rust, nw_deconv, igr_list, rtyp
+    )
+    decons <- as_collection(decon_list, rtyp)
     duration <- format(round(Sys.time() - starttime, 3))
-    logf("Finished deconvolution of %s in %s", nfstr, duration)
-    idecons
+    logf("Finished deconvolution of %s in %s", ns_str, duration)
+
+    # Return
+    decons
 }
 
-deconvolute_ispec <- function(ispec,
-                              nfit = 3,
-                              smopts = c(2, 5),
-                              delta = 6.4,
-                              sfr = c(3.55, 3.35),
-                              wshw = 0,
-                              ask = FALSE,
-                              force = FALSE,
-                              verbose = TRUE,
-                              bwc = 2,
-                              nworkers = 1) {
+deconvolute_spectrum <- function(x,
+    nfit=3, smopts=c(2,5), delta=6.4, sfr=c(3.55, 3.35), wshw=0,
+    ask=FALSE, force=FALSE, verbose=TRUE, bwc=2,
+    use_rust=FALSE, nw=1, igr=list(), rtyp="idecon"
+) {
+    # Check inputs
+    assert(
+        is_spectrum(x),
+        is_int(nfit,1), is_int(smopts,2),    is_num(delta,1),
+        is_num(sfr,2),  is_num(wshw,1),      is_bool(force,1),
+        is_num(bwc,1),  is_bool(use_rust,1), is_int(nw,1),
+        is_list_of_nums(igr, nv=2),
+        is_char(rtyp,1,"(decon[0-2]|idecon|rdecon)")
+    )
 
-    # Check args & configure logging
-    ispec <- as_ispec(ispec)
-    args <- check_args_deconvolute_ispec()
-    ispec$args <- args[names(args) != "ispec"]
-    reps <- smopts[1]
-    k <- smopts[2]
+    # Init locals
     if (isFALSE(verbose)) local_options(toscutil.logf.file = nullfile())
+    name <- get_name(x)
+    suffix <- if (use_rust) " using Rust backend" else ""
+    args <- get_args(deconvolute_spectrum, ignore = "x")
 
-    # Deconvolute ispec
-    logf("Starting deconvolution of %s", ispec$name)
-    ispec <- rm_water_signal(ispec, wshw, bwc)
-    ispec <- rm_negative_signals(ispec)
-    ispec <- smooth_signals(ispec, reps, k, bwc)
-    ispec <- find_peaks(ispec)
-    ispec <- filter_peaks(ispec, sfr, delta, force, bwc)
-    ispec <- fit_lorentz_curves(ispec, nfit, bwc)
-    idecon <- as_idecon(ispec)
-    logf("Finished deconvolution of %s", ispec$name)
-    idecon
+    # Deconvolute
+    logf("Starting deconvolution of %s%s", name, suffix)
+    if (use_rust) {
+        mdrb_spectrum <- mdrb::Spectrum$new(x$cs, x$si, sfr)
+        mdrb_deconvr <- mdrb::Deconvoluter$new()
+        mdrb_deconvr$set_moving_average_smoother(smopts[1], smopts[2])
+        mdrb_deconvr$set_noise_score_selector(delta)
+        mdrb_deconvr$set_analytical_fitter(nfit)
+        mdrb_decon <- mdrb_deconvr$deconvolute_spectrum(mdrb_spectrum)
+        decon <- new_rdecon(x, args, mdrb_spectrum, mdrb_deconvr, mdrb_decon)
+    } else {
+        # Sys.setenv(RAYON_NUM_THREADS=nw) # Must be set before R is started
+        ispec <- as_ispec(x)
+        ispec <- set(ispec, args=args)
+        ispec <- rm_water_signal(ispec, wshw, bwc)
+        ispec <- rm_negative_signals(ispec)
+        ispec <- smooth_signals(ispec, smopts[1], smopts[2], bwc)
+
+        ispec <- find_peaks(ispec)
+        ispec <- filter_peaks(ispec, sfr, delta, force, bwc)
+        ispec <- fit_lorentz_curves(ispec, nfit, bwc)
+
+        decon <- as_idecon(ispec)
+    }
+    logf("Formatting return object as %s", rtyp)
+    convert <- switch(rtyp,
+        "decon0"=as_decon0, "decon1"=as_decon1, "decon2"=as_decon2,
+        "idecon"=as_idecon, "rdecon"=as_rdecon
+    )
+    decon <- convert(decon)
+    logf("Finished deconvolution of %s", name)
+
+    decon
 }
 
-# Helpers for deconvolute_ispecs #####
+# Helpers for deconvolute_spectra #####
 
-#' @description Return number of spectrum to adjust all others or 0 if every spectrum should be adjusted individually.
 #' @noRd
-get_adjno <- function(ispecs, sfr, wshw, ask) {
-    if (isFALSE(ask) || length(ispecs) == 1) {
-        return(0)
-    }
-    same_param <- get_yn_input("Use same parameters for all spectra?")
-    if (!same_param) {
-        return(0)
-    }
-    namestr <- paste(seq_along(ispecs), names(ispecs), sep = ": ", collapse = ", ")
-    prompt <- sprintf("Number of spectrum for adjusting parameters? (%s)", namestr)
-    get_num_input(prompt, min = 1, max = length(ispecs), int = TRUE)
+#' @param x A `spectra` object or any other metabodecon collection object.
+#' @description
+#' Get number of spectrum that should be used to adjust all others. If ask is
+#' FALSE or every spectrum should be adjusted individually, zero is returned.
+get_adjno <- function(x, ask) {
+    assert(is_spectra(x), is_bool(ask, 1))
+    if (isFALSE(ask) ||
+        length(x)==1 ||
+        isFALSE(get_yn_input("Use same parameters for all spectra?"))) return(0)
+    numbers <- seq_along(x)
+    names <- get_names(x)
+    names_str <- paste(numbers, names, sep = ": ", collapse = ", ")
+    prompt <- sprintf("Number of spectrum for adjusting parameters? (%s)", names_str)
+    adjno <- get_num_input(prompt, min = 1, max = length(x), int = TRUE)
+    adjno
 }
 
-#' @description Convert to list of correct length (one per spectrum) and let user confirm each entry.
 #' @noRd
-get_sfr <- function(ispecs, sfr, ask, adjno) {
-    n <- length(ispecs)
+#' @description Converts one or more SFR vectors to list of vectors of the
+#' correct length. If `ask` is TRUE, let user confirm entries.
+#' @param x Any metabodecon collection object.
+#' @param sfr SFR defaults. Can be a vector of length 2 or a list. If a list is
+#' provided, it must have the same length as `x`.
+#' @param ask Ask user to confirm suggested defaults?
+#' @param adjno Number of spectrum to show when user is asked for confirmation.
+#' If 0, the user is asked to confirm each entry individually.
+#' @description
+#' Convert to list of correct length (one per spectrum) and let user confirm
+#' each entry.
+get_sfr <- function(x, sfr, ask, adjno) {
+    n <- length(x)
     if (is_num(sfr, 2)) sfr <- rep(list(sfr), n)
     if (!is_list_of_nums(sfr, n, 2)) stop("sfr should be a [list of] num(2)")
-    if (ask && adjno == 0) { # Different SFR for each spectrum.
-        sfr <- lapply(seq_len(n), function(i) confirm_sfr(ispecs[[i]], sfr[[i]]))
-    }
-    if (ask && adjno >= 1) { # Same SFR for each spectrum.
-        sfr_adjno <- confirm_sfr(ispecs[[adjno]], sfr[[adjno]])
-        sfr <- rep(list(sfr_adjno), n)
-    }
-    names(sfr) <- names(ispecs)
+    if (ask && adjno == 0) sfr <- lapply(seq_len(n), function(i) confirm_sfr(x[[i]], sfr[[i]]))
+    if (ask && adjno >= 1) sfr <- rep(list(confirm_sfr(x[[adjno]], sfr[[adjno]])), n)
+    names(sfr) <- get_names(x)
     sfr
 }
 
-#' @description Convert to list of correct length (one per spectrum) and let user confirm each entry.
 #' @noRd
-get_wshw <- function(ispecs, wshw, ask, adjno) {
-    n <- length(ispecs)
+#' @description Same as [get_sfr()], but for WSHW.
+get_wshw <- function(x, wshw, ask, adjno) {
+    n <- length(x)
     if (is_num(wshw, 1)) wshw <- rep(list(wshw), n)
     if (is_num(wshw, n)) wshw <- as.list(wshw)
     if (!is_list_of_nums(wshw, n, 1)) stop("wshw should be a [list of] num(1)")
-    if (ask && adjno == 0) wshw <- mapply(confirm_wshw, ispecs, wshw)
-    if (ask && adjno >= 1) wshw <- rep(list(confirm_wshw(ispecs[[adjno]], wshw[[adjno]])), n)
-    names(wshw) <- names(ispecs)
+    if (ask && adjno == 0) wshw <- mapply(confirm_wshw, x, wshw, SIMPLIFY = FALSE)
+    if (ask && adjno >= 1) wshw <- rep(list(confirm_wshw(x[[adjno]], wshw[[adjno]])), n)
+    names(wshw) <- names(x)
     wshw
 }
 
-#' @description Convert to list of correct length (one per spectrum).
 #' @noRd
-get_smopts <- function(ispecs, smopts) {
-    n <- length(ispecs)
+#' @param x Any metabodecon collection object.
+#' @param smopts
+#' Defaults smoothing options. Can be a vector of length 2 or a list of such
+#' vectors. If a list if provided, it must have the same length as `x`.
+#' @description Convert to list of correct length (one per spectrum).
+get_smopts <- function(x, smopts) {
+    n <- length(x)
     if (is_int(smopts, 2)) smopts <- rep(list(smopts), n)
-    if (!is_list_of_nums(smopts, n, 2)) stop("smopts should be a [list of] int(2)")
-    names(smopts) <- names(ispecs)
+    else if (is_list_of_nums(smopts, n, 2)) {}
+    else stop("smopts should be a [list of] int(2)")
+    names(smopts) <- names(x)
     smopts
 }
 
-# Helpers for deconvolute_ispec #####
+# Helpers for deconvolute_spectrum #####
 
 rm_water_signal <- function(x, wshw, bwc) {
-    check_args_rm_water_signal()
+    assert(is_ispec(x), is_num(wshw, 1), is_num(bwc, 1))
     logf("Removing water signal")
     if (bwc >= 1) {
         ppm_center <- (x$ppm[1] + x$ppm[length(x$ppm)]) / 2
@@ -568,7 +617,7 @@ filter_peaks_v13 <- function(ppm, # x values in ppm
 #' rm3 <- filtered_ispec <- filter_peaks(ispec, sfr)
 #' rm2 <- filtered_ispec <- filter_peaks(ispec, sfr, delta = 1)
 filter_peaks <- function(ispec, sfr, delta = 6.4, force = FALSE, bwc = 1) {
-    stopifnot(is_ispec(ispec))
+    assert(is_ispec(ispec))
     logf("Removing peaks with low pscores")
     sdp <- ispec$sdp
     ppm <- ispec$ppm
@@ -590,8 +639,17 @@ filter_peaks <- function(ispec, sfr, delta = 6.4, force = FALSE, bwc = 1) {
         mu <- mean(psc[in_sfr])
         sigma <- sd(psc[in_sfr])
     } else {
-        if (!force) stop("Not enough signals found in signal free region. Please double check deconvolution parameters.")
-        logf("No enough signals found in signal free region. This is a clear indication that the deconvolution parameters are not set correctly. Continuing anyways without dynamic peak filtering, because `force` is TRUE. Note that this might increase runtime drastically.")
+        if (!force) stop(paste(
+            "Not enough signals found in signal free region.",
+            "Please double check deconvolution parameters."
+        ))
+        logf(paste(
+            "Not enough signals found in signal free region.",
+            "This is a clear indication that the deconvolution parameters",
+            "are not set correctly. Continuing anyways without dynamic peak",
+            "filtering, because `force` is TRUE. Note that this might",
+            "increase runtime drastically."
+        ))
         mu <- 0
         sigma <- 0
     }
@@ -622,15 +680,20 @@ fit_lorentz_curves <- function(spec, nfit = 3, bwc = 1) {
 # Helpers for get_sfr and get_wshw #####
 
 #' @description Repeatedly ask the user to confirm/refine SFR borders.
+#' @param x Any metabodecon object.
 #' @noRd
 confirm_sfr <- function(x, sfr = c(11.44494, -1.8828)) {
-    plot_sfr(x, sfr[1], sfr[2])
+    si <- x$y_scaled %||% x$si
+    cs <- x$ppm %||% x$cs
+    cs_min <- min(cs)
+    cs_max <- max(cs)
+    plot_sfr(cs, si, sfr)
     sfr_ok <- get_yn_input("Signal free region correctly selected?")
     while (!sfr_ok) {
-        get_border <- function(msg) get_num_input(msg, x$ppm_min, x$ppm_max)
+        get_border <- function(msg) get_num_input(msg, cs_min, cs_max)
         sfr[1] <- get_border("Choose another left border: [e.g. 12]")
         sfr[2] <- get_border("Choose another right border: [e.g. -2]")
-        plot_sfr(x, sfr[1], sfr[2])
+        plot_sfr(cs, si, sfr)
         sfr_ok <- get_yn_input("Signal free region correctly selected?")
     }
     sfr
@@ -639,11 +702,13 @@ confirm_sfr <- function(x, sfr = c(11.44494, -1.8828)) {
 #' @description Repeatedly ask the user to confirm/refine the WSHW.
 #' @noRd
 confirm_wshw <- function(x, wshw) {
-    plot_ws(x, wshw)
+    cs <- x$cs %||% x$ppm
+    si <- x$si %||% x$y_scaled
+    plot_ws(cs, si, wshw)
     ws_ok <- get_yn_input("Water artefact fully inside red vertical lines?")
     while (!ws_ok) {
         wshw <- get_num_input("Choose another half width range (in ppm) for the water artefact: [e.g. 0.1222154]")
-        plot_ws(x, wshw)
+        plot_ws(cs, si, wshw)
         ws_ok <- get_yn_input("Water artefact fully inside red vertical lines?")
     }
     wshw
@@ -663,7 +728,7 @@ confirm_wshw <- function(x, wshw) {
 #' [filter_peaks()]. For details see `CHECK-2: signal free region calculation`
 #' in `TODOS.md`.
 enrich_sfr <- function(sfr, x) {
-    stopifnot(is_ispec(x) || is_idecon(x))
+    assert(is_ispec(x) || is_idecon(x))
     left_ppm <- sfr[1]
     right_ppm <- sfr[2]
     left_dp <- (x$n + 1) - (x$ppm_max - left_ppm) / x$ppm_nstep
@@ -685,7 +750,7 @@ enrich_sfr <- function(sfr, x) {
 #' [rm_water_signal()]. For details see `CHECK-3: water signal calculation` in
 #' `TODOS.md`.
 enrich_wshw <- function(wshw, x) {
-    stopifnot(is_ispec(x) || is_idecon(x))
+    assert(is_ispec(x) || is_idecon(x))
     x <- as_ispec(x)
     hwidth_ppm <- wshw
     hwidth_dp <- hwidth_ppm / x$ppm_nstep

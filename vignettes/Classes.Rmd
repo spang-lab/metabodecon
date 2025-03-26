@@ -7,7 +7,7 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-Metabodecon introduces a set of classes to highlight the presence of certain elements in corresponding objects. The order of elements may vary between different versions of Metabodecon, thus elements should always be accessed by name, for example, using `x$si` or `x[["cs"]]`.
+Metabodecon introduces a set of classes to highlight the presence of certain elements in corresponding objects. The order of elements may vary between different versions of Metabodecon, thus elements should always be accessed by name, for example, using `x$si` or `x[["cs"]]`. Elements marked as optional can be present, NULL or missing, i.e. they should only be used conditionally.
 
 The classes itself are described in section [Class Overview]. The elements associated with a class are described in section [Elements]. A graphical visualization of the classes and their corresponding functions is given in figure [Metabodecon Workflow].
 
@@ -41,27 +41,34 @@ The classes mentioned above represent individual objects, such as a single spect
 
 ## Elements v1.2+
 
-1. `cs`: Vector of chemical shifts (CS) in parts per pillion (ppm). Must be of the same length as `si`.
+1. `cs`: Vector of chemical shifts (CS) in parts per million (ppm). Must be of the same length as `si`.
 2. `si`: Vector of signal intensities (SI) in arbitrary units (au). Element `si[i]` is the signal intensity measured at chemical shift `cs[i]`, i.e. `si` must be of the same length as `cs`.
-3. `meta`: List of additional metadata about the spectrum, e.g.:
-    - `name`: The name of the spectrum, e.g. `"Blood 1"` or `"Urine 2"`.
-    - `path`: The path of the file/folder containing the spectrum data. E.g. `"example_datasets/jcampdx/urine/urine_1.dx"` or `"example_datasets/bruker/urine/urine"`.
-    - `type`: The type of experiment, e.g. `"H1 CPMG"` or `"H1 NOESY"`.
-    - `fq`: Vector of signal frequencies in Hertz (Hz). Must be of the same length as `si` and `cs`.
-    - `mfs`: Magnetic field strength in Tesla, e.g. `14.1`.
-    - `simpar`: True Lorentz Curve parameters. List with elements `A`, `lambda` and `x0`. For details see element `lcpar`. Only available if a spectrum has been simulated.
-4. `args`: List of deconvolution parameters:
-    - `nfit`: The number of fitting iterations.
-    - `smopts`: The smoothing parameters used for the deconvolution.
-    - `delta`: The threshold used for peak filtering.
-    - `sfr`: Borders of the signal free region in ppm.
-    - `wshw`: Water signal half width in ppm.
+3. `meta`: Optional. List of metadata about the spectrum, e.g.:
+    - `name`: Optional. The name of the spectrum, e.g. `"Blood 1"` or `"Urine 2"`.
+    - `path`: Optional. The path of the file/folder containing the spectrum data. E.g. `"example_datasets/jcampdx/urine/urine_1.dx"` or `"example_datasets/bruker/urine/urine"`.
+    - `type`: Optional. The type of experiment, e.g. `"H1 CPMG"` or `"H1 NOESY"`.
+    - `fq`: Optional. Vector of signal frequencies in Hertz (Hz). Must be of the same length as `si` and `cs`.
+    - `mfs`: Optional. Magnetic field strength in Tesla, e.g. `14.1`.
+    - `simpar`: Optional. True Lorentz Curve parameters. List with elements `A`, `lambda` and `x0`. For details see element `lcpar`. Only available if a spectrum has been simulated.
+4. `args`: Optional. List of deconvolution parameters, i.e.:
+    - `nfit`: Optional. The number of fitting iterations.
+    - `smopts`: Optional. The smoothing parameters used for the deconvolution.
+    - `delta`: Optional. The threshold used for peak filtering.
+    - `sfr`: Optional. Borders of the signal free region in ppm.
+    - `wshw`: Optional. Water signal half width in ppm.
+    - `ask`: Optional. Whether interactive mode was enabled.
+    - `verbose`: Optional. Whether verbose output was enabled.
+    - `bwc`: Optional. Level of backwards compatibility used by internal calculations.
+    - `nworkers`: Optional. Number of workers used for parallel processing.
+    - `use_rust`: Optional. Whether the Rust backend was used for deconvolution. *(v1.4.0+)*
+    - `rtyp`: Optional. Object type returned by internal function `deconvolute_spectrum`. *(v1.4.0+)*
 5. `sit`: Dataframe of Signal Intensities (SI) after applying various transformations:
     - `wsrm`: SIs after Water Signal Removal (WSRM),
     - `nvrm`: SIs after WSRM and Negative Value Removal (NVRM).
     - `sm`: SIs after WSRM, NVRM and smoothing.
     - `sup`: SIs as superposition of Lorentz Curves.
-    - `al`: SIs after alignment.
+    - `supal`: SIs as superposition of aligned Lorentz Curves. *(v1.4.0+)*
+    - `al`: SIs as integrals of aligned Lorentz Curves. I.e., the intensity of a peak-center-datapoint equals the integral value of the corresponding peak. The intensity of a other datapoints is zero.
 6. `peak`: Dataframe of peak triplets found during peak selection:
     - `center`: Indices of peak centers.
     - `left`: Indices of left borders.
@@ -75,8 +82,7 @@ The classes mentioned above represent individual objects, such as a single spect
     - `raw`: MSE between `si` and `sit$sup`
     - `norm`: MSE between `si` and `sit$sup`, divided by `sum(sit$sup)`
     - `sm`: MSE between `sit$sm` and `sit$sup`
-    - `smnorm`: MSE between `sit$sm` and `sit$sup`, divided by `sum(sit$sup)`.
-                Equals `mse_normed` in [Elements v0.2+].
+    - `smnorm`: MSE between `sit$sm` and `sit$sup`, divided by `sum(sit$sup)`. Equals `mse_normed` in [Elements v0.2+].
 
 ## Elements v0.2+
 

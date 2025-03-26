@@ -550,10 +550,12 @@ save_spectrum <- function(x,
                           verbose = TRUE) {
 
     # Check input args, init temp dir and log function
-    stopifnot(is_spectrum(x))
-    stopifnot(length(dir(path)) == 0 || isTRUE(force))
-    stopifnot(is_bool(force))
-    stopifnot(is_bool(verbose))
+    assert(
+        is_spectrum(x),
+        length(dir(path)) == 0 || isTRUE(force),
+        is_bool(force),
+        is_bool(verbose)
+    )
     temp <- tmpdir(subdir = TRUE)
     logv <- get_logv(verbose)
     logv("Saving bruker files to %s", temp)
@@ -622,10 +624,12 @@ save_spectrum <- function(x,
 #' @noRd
 #' @title Save Spectra to Disk in Bruker Format
 save_spectra <- function(x, path, force = FALSE, verbose = TRUE) {
-    stopifnot(is_spectra(x))
-    stopifnot(length(dir(path)) == 0 || isTRUE(force))
-    stopifnot(is_bool(force))
-    stopifnot(is_bool(verbose))
+    assert(
+        is_spectra(x),
+        length(dir(path)) == 0 || isTRUE(force),
+        is_bool(force),
+        is_bool(verbose)
+    )
     subpaths <- sapply(x, function(s) file.path(path, s$meta$name))
     mkdirs(path)
     for (i in seq_along(x)) {

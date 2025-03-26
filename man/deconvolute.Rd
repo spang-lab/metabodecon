@@ -16,7 +16,8 @@ deconvolute(
   ask = FALSE,
   force = FALSE,
   verbose = FALSE,
-  nworkers = 1
+  nworkers = 1,
+  use_rust = FALSE
 )
 
 generate_lorentz_curves(
@@ -91,6 +92,12 @@ deconvolution process.}
 \item{nworkers}{Number of workers to use for parallel processing. If
 \code{"auto"}, the number of workers will be determined automatically. If a number
 greater than 1, it will be limited to the number of spectra.}
+
+\item{use_rust}{Logical. Whether to use the Rust backend for deconvolution.
+Requires the \href{https://github.com/spang-lab/mdrb}{mdrb} package. If TRUE and
+mdrb is missing, an error is thrown. If FALSE, the R implementation is used.
+If NULL, the Rust backend is used if available, otherwise the R implementation
+is used.}
 
 \item{data_path}{Either the path to a directory containing measured NMR
 spectra, a dataframe as returned by \code{\link[=read_spectrum]{read_spectrum()}}, or a list of such

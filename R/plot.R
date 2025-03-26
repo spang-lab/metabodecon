@@ -43,7 +43,7 @@ plot_spectra <- function(obj,
                          xlab = "Chemical Shift [ppm]",
                          ylab = paste("Signal Intensity [au] /", sfy),
                          mar = c(4.1, 4.1, 1.1, 0.1)) {
-    decons <- as_v2_objs(obj, ...)
+    decons <- as_v12_collection(obj, ...)
     sis <- lapply(decons, function(x) x$sit$supal %||% x$sit$sup %||% x$si)
     x0s <- lapply(decons, function(x) x$lcpar$x0)
     css <- lapply(decons, function(x) x$cs)
@@ -110,8 +110,8 @@ plot_spectra <- function(obj,
 #' `r lifecycle::badge("experimental")`
 #'
 #' @param x
-#' An object of type `spectrum`, `decon0`, `decon1` or `decon2`. For details see
-#' [Metabodecon
+#' An object of type `spectrum`, `decon0`, `decon1`, `decon2` or `align`. For
+#' details see [Metabodecon
 #' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
 #'
 #' @param ...
@@ -256,7 +256,7 @@ plot_spectra <- function(obj,
 #'
 plot_spectrum <- function(x,
                           ...,
-                          obj = as_v2_obj(x),
+                          obj = as_v12_singlet(x),
                           foc_frac = get_foc_frac(obj),
                           foc_rgn = get_foc_rgn(obj, foc_frac),
                           sub1 = TRUE,
@@ -266,7 +266,13 @@ plot_spectrum <- function(x,
                           frame = FALSE,
                           con_lines = TRUE)
 {
-    # Parse Inputs
+
+    # Check and parse inputs
+    stopifnot(
+        is_spectrum(obj) || is_decon2(obj) || is_align(obj),
+        is_num(foc_frac, 2),
+        is_num(foc_rgn, 2)
+    )
     dot_args <- if (identical(environment(), globalenv())) list() else list(...)
     sub1 <- combine(list(show = TRUE), sub1)
     sub2 <- combine(list(show = FALSE), sub2)
@@ -392,11 +398,14 @@ plot_spectrum <- function(x,
 #'             found. See 'Details'.
 #' - `sf`:     Scaling factor. Axis values are divided by this number before the
 #'             labels are calculated. If you set this to anything unequal 1, you
-#'             should also choose `text` in a way that reflects the scaling.
-#'             E.g. if you set `sf = 1e6` you could change the text from
-#'             `"Signal Intensity [au]"` to `"Signal Intensity [Mau]"` or
-#'             `"Signal Intensity [au] / 1e6"`, with `"Mau"` meaning
-#'             "Mega-Arbitrary-Units".
+#'             should also set the corresponding margin text in a way that
+#'             reflects the scaling. Example: by default, a scaling factor of
+#'             1e6 is used for drawing signal intensities and a scaling factor
+#'             of 1 for drawing the second derivative. To make clear, that the
+#'             user should be careful when interpreting the signal intensity
+#'             values, the corresponding margin text is set to "Signal Intensity
+#'             \[au\]"  where "au" means "Arbitrary Units", indicating that the
+#'             values might be scaled.
 #'
 #' @param bt_text,lt_text,tp_text,rt_text
 #' List of parameters used to overwrite the default values passed to [mtext()]
@@ -466,11 +475,10 @@ draw_spectrum <- function(
     tp_verts  = list(), lc_verts = list(), al_verts = list(),
     al_arrows = list(),
     lgd       = list()
-    )
-{
+) {
     # Check and enrich inputs (278us)
     if (isFALSE(show)) return()
-    obj <- as_v2_obj(obj)
+    obj <- as_v12_singlet(obj)
     stopifnot(
         is_num(foc_rgn, 2) || is.null(foc_rgn),
         is_num(foc_frac, 2) || is.null(foc_frac),
@@ -795,7 +803,6 @@ test_draw_spectrum <- function(figs = 1:8,
             add = TRUE,
             lgd = FALSE,
             bt_text = FALSE,
-            bt_axis = FALSE,
             lt_text = lt_text_short
         )
     }
@@ -883,45 +890,39 @@ test_grafical_units <- function() {
 #' @noRd
 #' @title Plot Signal Free Region
 #' @description Draws the SFR as green vertical lines into the given spectrum.
-#' @param spec The spectrum object.
-#' @param left_ppm The left border of the signal free region in ppm.
-#' @param right_ppm The right border of the signal free region in ppm.
 #' @return NULL. Called for side effect of plotting the signal free region.
-plot_sfr <- function(spec, left_ppm, right_ppm) {
+plot_sfr <- function(cs, si, sfr) {
     plot(
-        x = spec$ppm,
-        y = spec$y_scaled,
+        x = cs,
+        y = si,
         type = "l",
         xlab = "Chemical Shift [ppm]",
         ylab = "Signal Intensity [au]",
-        xlim = c(spec$ppm_max, spec$ppm_min)
+        xlim = c(max(cs), min(cs))
     )
-    graphics::abline(v = c(left_ppm, right_ppm), col = "green")
+    graphics::abline(v = sfr, col = "green")
 }
 
 #' @noRd
 #' @title Plot Water Signal
 #' @description Draws the water signal as red vertical lines into the given spectrum.
-#' @param spec A list representing the spec as returned by [read_spectrum()].
-#' @param hwidth_ppm The half width of the water signal in ppm.
 #' @return NULL. Called for side effect of plotting the water signal.
-plot_ws <- function(spec, hwidth_ppm) {
-    hw <- hwidth_ppm
-    x0 <- (spec$ppm_max + spec$ppm_min) / 2
-    xlim <- if (hw > 0) c(x0 + 5 * hw, x0 - 5 * hw) else range(spec$ppm)[2:1]
-    in_xlim <- which(spec$ppm <= max(xlim) & spec$ppm >= min(xlim))
+plot_ws <- function(cs, si, wshw) {
+    xmid <- (min(cs) + max(cs)) / 2
+    xlim <- if (wshw > 0) c(xmid + 5 * wshw, xmid - 5 * wshw) else range(cs)[2:1]
+    in_xlim <- which(cs <= max(xlim) & cs >= min(xlim))
     plot(
-        spec$ppm[in_xlim],
-        spec$y_scaled[in_xlim],
+        x = cs[in_xlim],
+        y = si[in_xlim],
         type = "l",
         xlab = "Chemical Shift [ppm]",
         ylab = "Signal Intensity [au]",
         xlim = xlim
     )
-    mtext("Water Signal Region", side = 3, line = 0, at = x0, col = "blue")
+    mtext("Water Signal Region", side = 3, line = 0, at = xmid, col = "blue")
     rect(
-        xleft = x0 - hw,
-        xright = x0 + hw,
+        xleft = xmid - wshw,
+        xright = xmid + wshw,
         ybottom = par("usr")[3],
         ytop = par("usr")[4],
         col = rgb(0, 0, 1, alpha = 0.2),
@@ -1188,8 +1189,10 @@ draw_points <- function(x, y, args = list()) {
 # Get Helpers (Private) #####
 
 get_foc_frac <- function(obj, foc_rgn = NULL) {
-    stopifnot(is_num(obj$cs))
-    stopifnot(is.null(foc_rgn) || (is_num(foc_rgn, 2)))
+    assert(
+        is_num(obj$cs),
+        is.null(foc_rgn) || (is_num(foc_rgn, 2))
+    )
     if (is.null(foc_rgn)) {
         n <- length(obj$cs)
         width <- min(256 / n, 0.5)
@@ -1201,8 +1204,10 @@ get_foc_frac <- function(obj, foc_rgn = NULL) {
 }
 
 get_foc_rgn <- function(obj, foc_frac = NULL) {
-    stopifnot(is_num(obj$cs))
-    stopifnot(is.null(foc_frac) || (is_num(foc_frac, 2)))
+    assert(
+        is_num(obj$cs),
+        is_num_or_null(foc_frac, 2)
+    )
     if (is.null(foc_frac)) foc_frac <- get_foc_frac(obj)
     quantile(obj$cs, foc_frac)
 }
@@ -1271,15 +1276,16 @@ get_sub_fig_args <- function(obj, foc_frac, foc_rgn, sub1, sub2, sub3, dot_args)
 get_draw_spectrum_defaults <- function(show_d2 = FALSE,
                                        foc_only = TRUE,
                                        aligned = FALSE) {
-    stopifnot(
+    assert(
         is_bool(show_d2),
         is_bool(foc_only),
         is_bool(aligned)
     )
-    show_al <- !show_d2 && aligned
     show_si <- !show_d2 && !aligned
-    ylab <- if (show_si) "Signal Intensity [au] / 1e6" else "Second Derivative / 1e6"
-    lgdx <- if (show_si) "topright" else "bottomright"
+    show_al <- !show_d2 && aligned
+    ylab <- if (show_d2) "Second Derivative" else "Signal Intensity [au]"
+    sf   <- if (show_d2) 1 else 1e6
+    lgdx <- if (show_d2) "bottomright" else "topright"
     list(
         # Legend
         lgd       = list(show = TRUE, x = lgdx, bg = "white"),
@@ -1310,58 +1316,10 @@ get_draw_spectrum_defaults <- function(show_d2 = FALSE,
         foc_rect  = list(show = TRUE, col = transp("yellow")),
         # Axes
         bt_axis   = list(show = TRUE),
-        lt_axis   = list(show = TRUE, sf = 1e6, las  = 1),
+        lt_axis   = list(show = TRUE, sf = sf, las  = 1),
         tp_axis   = list(show = FALSE),
         rt_axis   = list(show = FALSE),
         # Margin Texts
-        bt_text   = list(show = TRUE, text = "Chemical Shift [ppm]"),
-        lt_text   = list(show = TRUE, text = ylab),
-        tp_text   = list(show = FALSE),
-        rt_text   = list(show = FALSE)
-    )
-}
-
-
-get_draw_spectrum_defaults_2 <- function(show_d2 = FALSE,
-                                         foc_only = TRUE,
-                                         aligned = FALSE) {
-    stopifnot(is_bool(show_d2), is_bool(foc_only))
-    show_si  <- !show_d2
-    ylab <- if (show_si) "Signal Intensity [au] / 1e6" else "Second Derivative / 1e6"
-    lgdx <- if (show_si) "topright" else "bottomright"
-    list(
-        lgd       = list(show = TRUE, x = lgdx, bg = "white"),
-        d2_line   = list(show = show_d2),
-
-        si_line   = list(show = FALSE, col = "black"),
-        sm_line   = list(show = FALSE, col = "blue"),
-
-        sp_line   = list(show = show_si,             col = "red", fill = "#FFEEEE"),
-        lc_lines  = list(show = show_si && foc_only, col = "red", fill = "#FFC0C0"),
-        lc_verts  = list(show = show_si,             col = "red"                  ),
-        lc_rects  = list(show = FALSE,               col = "red", border = NA     ),
-
-        tp_lines  = list(show = FALSE, col = "darkgreen"),
-        tp_verts  = list(show = FALSE, col = "darkgreen"),
-        tp_rects  = list(show = FALSE, col = transp("darkgreen", 0.12), border = NA),
-
-        al_line   = list(show = show_si, col = "purple", fill = "#FFE0FF"),
-        al_lines  = list(show = show_si, col = "purple", fill = "#FFC0FF"),
-        al_verts  = list(show = show_si, col = "purple"),
-        al_arrows = list(show = show_si, col = "purple"),
-
-        cent_pts  = list(show = FALSE && foc_only, col = "blue", bg = "blue", pch = 24),
-        bord_pts  = list(show = FALSE, col = "blue", pch = 124),
-        norm_pts  = list(show = FALSE, col = "black", pch = 124),
-
-        bg_rect   = list(show = TRUE, col = "white"),
-        foc_rect  = list(show = TRUE, col = transp("yellow")),
-
-        bt_axis   = list(show = TRUE),
-        lt_axis   = list(show = TRUE, sf = 1e6, las  = 1),
-        tp_axis   = list(show = FALSE),
-        rt_axis   = list(show = FALSE),
-
         bt_text   = list(show = TRUE, text = "Chemical Shift [ppm]"),
         lt_text   = list(show = TRUE, text = ylab),
         tp_text   = list(show = FALSE),

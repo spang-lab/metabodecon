@@ -7,7 +7,7 @@
 plot_spectrum(
   x,
   ...,
-  obj = as_v2_obj(x),
+  obj = as_v12_singlet(x),
   foc_frac = get_foc_frac(obj),
   foc_rgn = get_foc_rgn(obj, foc_frac),
   sub1 = TRUE,
@@ -19,8 +19,8 @@ plot_spectrum(
 )
 }
 \arguments{
-\item{x}{An object of type \code{spectrum}, \code{decon0}, \code{decon1} or \code{decon2}. For details see
-\href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{Metabodecon Classes}.}
+\item{x}{An object of type \code{spectrum}, \code{decon0}, \code{decon1}, \code{decon2} or \code{align}. For
+details see \href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{Metabodecon Classes}.}
 
 \item{...}{Additional arguments passed to \code{\link[=draw_spectrum]{draw_spectrum()}} for \strong{every} sub figure.
 See 'Details'.}

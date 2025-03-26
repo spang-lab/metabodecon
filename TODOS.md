@@ -1,16 +1,79 @@
-# Open
+# Next (mdrb)
 
-## Add index vignette
-
-There should be one vignette shipped with the package that is as small as possible and contains links to the online documentation.
-
-## Checks missing pkgs in align
-
-Installation via `install.packages("metabodecon")` do not install `MassSpecWavelet` and `impute`. So if a user doesn't copy paste the installation instructions but installed via `install.packages("metabodecon")`, these dependencies will be missing. In such scenarios, we should print an error message with the required install commands and abort.
+## Check mse calculation in Rust
 
 ## Test install on clean OS
 
 Add a workflow for testing installation on a clean Windows/Linux/Mac OS with R pre-installed, but without R-tools and any packages.
+
+*Done: Mar 10. Branch: mdrb. PR: https://github.com/spang-lab/metabodecon/pull/12.*
+
+## Add Rust Backend Installer
+
+The Rust backend should only be built for R versions >= 4.2.0 and if RTools is available. If any of these conditions is not fulfilled, compilation should be skipped.
+
+If skipping compilation is not possible, because we load the dynamic lib in NAMESPACE, it should be generated in a way that does not use any features required by R 4.2.0 or greater. If we choose backend == "rust", we need to check whether the required functions are available.
+
+Update 10.3.2025: Instead of making compilation optional we should provide a seperate R package [mdrb](https://github.com/spang-lab/mdrb) (Metabodecon Rust Backend) which we can install upon request. I.e. we need to implement:
+
+1. A function `check_mdrb()` that checks whether mdrb is already installed.
+2. A function `check_mdrb_deps()` that checks whether mdrb can be installed. Required dependencies are
+   - R version 4.2 or higher
+   - Build tools for R (RTools on Windows, build-essentials on Linux, XCode on Mac)
+   - Cargo and rustc version 1.78 or higher
+3. A function `install_mdrb()`, that
+   1. Does nothing if mdrb is already installed
+   2. Prints installation instructions for mdrb dependencies if `check_mdrb_deps()` lists missing dependencies
+   3. Calls `pak::pkg_install("spang-lab/mdrb")` if all requirements are satisfied
+
+*Done: Mar 14. Branch: mdrb. PR: https://github.com/spang-lab/metabodecon/pull/12.*
+
+## Rename deconvolute_ispec
+
+This is a preparation for issue *Add Rust Backend Argument*. Rename `deconvolute_ispec()` to `deconvolute_spectrum()` and `deconvolute_ispecs()` to `deconvolute_spectra()`.
+
+*Done: Mar 18-22. Branch: mdrb. PR: https://github.com/spang-lab/metabodecon/pull/12.*
+
+## Add Rust Backend Argument
+
+Add an experimental argument `use_rust` in `deconvolute()` causing the following behaviour:
+
+| use_rust | check_mdrb | call                        |
+| -------- | ---------- | --------------------------- |
+| FALSE    | anything   | deconvolute_spectrum_r()    |
+| NULL     | FALSE      | deconvolute_spectrum_r()    |
+| NULL     | TRUE       | deconvolute_spectrum_rust() |
+| TRUE     | TRUE       | deconvolute_spectrum_rust() |
+| TRUE     | FALSE      | stop(MESSAGE)               |
+
+With MESSAGE being something like "Rust backend not installed yet. Please call install_mdrb() first."
+
+Sub-Tasks
+
+- [x] Add `use_rust` argument to `deconvolute`, `deconvolute_spectra()` and `deconvolute_spectrum()` and assert that it is passed on correctly
+- [x] Implement usage of rust in `deconvolute_spectrum()`
+- [x] Write testcases for `deconvolute_spectrum(use_rust=TRUE, rtyp="idecon')`
+- [x] Write testcases for `deconvolute_spectrum(use_rust=TRUE, rtyp="decon2')`
+- [x] Write testcases for `deconvolute_spectra(use_rust=TRUE, rtyp="idecon')`
+- [x] Write testcases for `deconvolute_spectra(use_rust=TRUE, rtyp="decon2')`
+- [x] Write testcases for `deconvolute(use_rust=TRUE)` with mdrb installed
+- [x] Write testcases for `deconvolute(use_rust=TRUE)` with mdrb missing
+
+*Done: Mar 18-25. Branch: mdrb. PR: https://github.com/spang-lab/metabodecon/pull/12.*
+
+# Open
+
+## Add Wolframs Issues
+
+Add the issues Wolfram sent me by Mail.
+
+## Add index vignette
+
+There should be one vignette shipped with the package that is as small as possible and contains klinks to the online documentation.
+
+## Check missing pkgs in align
+
+Installation via `install.packages("metabodecon")` do not install `MassSpecWavelet` and `impute`. So if a user doesn't copy paste the installation instructions but installed via `install.packages("metabodecon")`, these dependencies will be missing. In such scenarios, we should print an error message with the required install commands and abort.
 
 ## Improve questions
 
@@ -21,32 +84,13 @@ Add a workflow for testing installation on a clean Windows/Linux/Mac OS with R p
 
 Add a function `get_si_mat()` for extracting a matrix of signal intensities (SI) from a metabodecon object. The type of returned SI should be `raw` for `spectra`, `sup` for `decons` and `al` for `aligns`.
 
-## Make Rust backend optional
-
-The Rust backend should only be built for R versions >= 4.2.0 and if RTools is available. If any of these conditions is not fulfilled, compilation should be skipped.
-
-If skipping compilation is not possible, because we load the dynamic lib in NAMESPACE, it should be generated in a way that does not use any features required by R 4.2.0 or greater. If we choose backend == "rust", we need to check whether the required functions are available.
-
-## Merge Rust backend
-
-Merge in Rust backend branch. Requires FEATURE-25 to be implemented first.
-
 ## Add authors to functions
 
 ## Add lifecycle badges to functions
 
-## Check function usage in vignettes
+## Improve Sap Dataset
 
-Every important function should be used at least once in a vignette.
-
-## Improve Get-Started vignette
-
-Add nicer plots.
-Improve alignment part.
-
-## Add Sim2 Dataset
-
-sim2 should be simulated as follows:
+Sap spectra should be simulated as follows:
 
 1. Find three metabolites `mets` related to diabetes with only 1-3 peaks each.
 2. Look up their signal centers `x0_` and halfwidths `lambda_`.
@@ -56,6 +100,11 @@ sim2 should be simulated as follows:
 6. Apply the shifts to the signal centers.
 7. Simulate data as usual using `simulate_spectra`
 8. Make sure, all of the above information is stored inside `$meta$simpar`
+
+## Improve Get-Started vignette
+
+Add nicer plots.
+Improve alignment part.
 
 ## Write Deconvolution-Details Vignette
 
@@ -109,7 +158,19 @@ Implement `deconvolute_spectra()` and `deconvolute_spectrum()` which should be t
 5. Remove the scale factor and scaled data point numbers as described in [CHECK-4](#check-4-data-point-format).
 6. Remove negative values in a consistent way, as described by [CHECK-5](#check-5-signal-preprocessing)
 
+## Shrink test-install workflow
+
+Currently the test-install workflow is split over three jobs, with huge amounts of code copy pasted. Extract the test into a single script that:
+
+1. Deletes all previously available dependencies incl. Rtools on Windows (i.e. it must be removed from the PATH)
+2. Does the installation according to the `method` commandline argument, e.g. "CRAN-Modern", "CRAN-Old" or "Github".
+
 ## Refactor integral calculations
+
+
+## Calculate mandatory SITs in as_decon2
+
+Elements `wsrm` and `nvrm` are mandatory in `decon2` and should therefor be calculated during `as_decon2`. If additional data is needed to do this from `decon0` and/or `decon1` objects, add an argument that allows users to provide this information.
 
 ## Refactor mse calculations
 
@@ -118,9 +179,9 @@ Implement `deconvolute_spectra()` and `deconvolute_spectrum()` which should be t
 Implement [Max' parameter approximation algorithms](https://gitlab.spang-lab.de/bachelorthesis/ws2425_msombke_metabodecon-v2/-/blob/main/new_method_docs/main.R
 ) in `calc_A`, `calc_lambda` and `calc_w`.
 
-## Test deconvolute with nfit=100
+## Test deconvolute with huge nfit
 
-## Test deconvolute with peak at 0 ppm
+## Test deconvolute with peak at zero ppm
 
 It's unclear why <https://github.com/spang-lab/metabodecon/blob/v1.2.0/R/21_decon_helpers.R#L315> checks for w[i] == 0.
 
@@ -141,6 +202,35 @@ When reading spectra, the spectrum type should be checked (1D, 2D, etc. and if n
 ## Integrate jcampdx functions
 
 Integrate jcampdx reader and writer functions from Max.
+
+## Remove ispec and idecon
+
+Subtasks:
+
+1. Modify below functions in a way that they return a single value instead
+   returning the full input spectrum. The assignement to the spectrum object
+   should be done by the caller.
+2. Modify below functions in a way, that they don't accept idecon objects, but
+   only spectrum objects and/or other v1.2+ elements
+3. Remove the `idecon` type from the package.
+
+Functions:
+
+1.  `enrich_sfr(sfr, ispec)`
+2.  `enrich_wshw(wshw, ispec)`
+3.  `init_lc(ispec)`
+4.  `refine_lc_v14(ispec, lc$Z)`
+5.  `rm_water_signal(ispec, wshw, bwc)`
+6.  `rm_negative_signals(ispec)`
+7.  `smooth_signals(ispec, smopts[1], smopts[2], bwc)`
+8.  `find_peaks(ispec)`
+9.  `filter_peaks(ispec, sfr, delta, force, bwc)`
+10. `fit_lorentz_curves(ispec, nfit, bwc)`
+
+Links:
+
+- https://spang-lab.github.io/metabodecon/articles/Classes.html#spectrum
+- https://spang-lab.github.io/metabodecon/articles/Classes.html#elements-v1-2
 
 # DONE
 
@@ -221,7 +311,7 @@ interpret 64 bit float numbers.
 
 2024/06/28: Checked and now traced by issue [FEATURE-9](#feature-9-implement-and-export-read_spectra).
 
-## CHECK-2: Signal free region (SFR) calculation
+## CHECK-2: SFR calculation
 
 In function `deconvolution` of file [MetaboDecon1D.R](R/MetaboDecon1D.R#1372), the signal free region border in data points is calculated as follows:
 
@@ -383,21 +473,21 @@ for(i in 2:second_derivative_border){
 > [!IMPORTANT] Check result:
 > Implemented in function [select_peaks_v2](R/generate_lorentz_curves.R#1325).
 
-## CHECK-8: Fix name of samples in blood dataset
+## CHECK-8: Fix names in blood dataset
 
 It should be `Blood` not `Bood`.
 
 > [!IMPORTANT] Check result:
 > Fixed in branch `test-glc`
 
-## CHECK-9: Ask Wolfram about peak selection
+## CHECK-9: Discuss peak selection
 
 Ask Wolfram whether it's ok that the peak selection sometimes selects two peaks for one local maximum.
 
 > [!IMPORTANT] Check result:
 > That's ok and by intention.
 
-## FEATURE-1: Use temp dirs for example data
+## FEATURE-1: Use tempdir for example data
 
 Function `download_example_data` should allow users to specify a temp dir instead the usual XDG directory. This is useful to pass CRAN checks as CRAN doesn't allow writing to th user' home directory.
 
@@ -616,15 +706,15 @@ should be controllable via function arguments.
 
 *2025-01-16: done with commit ff7d9ea*
 
-## REFACTOR-1: Combine load_xxx_spectrum functions
+## REFACTOR-1: Combine load functions
 
 Combine `load_jcampdx_spectrum` and `load_bruker_spectrum` into one function, which calls `read_jcampdx` or `read_bruker` depending on the `type` argument. The `read_*_spectrum` function should return the measured signal strengths as vector `y_ss` and the corresponding ppm values as vector `x_ppm`. All other elements returned by the `load_*_spectrum` functions can be calculated from those. This makes the code more maintainable and easier to understand.
 
 Useful info for reading bruker files: according to `Bruker_NMR_Data_Formats.pdf` (available through Google), the text files `acqu?` and `proc?` contain acquisition and processing parameters. Files ending with `s` (`acqus`, `proc2s`, ...) describe the status of the dataset. Other files (`acqu`, `proc2`, ...) contain parameter values used in later processing or acquisition steps. Format of all parameter files corresponds to the JCAMP-DX standard, which allows the inclusion of vendor specific parameters by prefixing them with the character sequence `##$`. For this reason, all TopSpin parameters in the file are preceded by this sequence.
 
-## REFACTOR-2: Text Output (-License, +Timestamps)
+## REFACTOR-2: Improve Text Output
 
-The output should be improved. The License should not be printed after every function execution, unless there is a strong reason to do so. Timestamps should be added to the output, so the user automatically has a rough idea how long the function will take to finish.
+The output should be improved (-License, +Timestamps). The License should not be printed after every function execution, unless there is a strong reason to do so. Timestamps should be added to the output, so the user automatically has a rough idea how long the function will take to finish.
 
 ## REFACTOR-4: Plotting speed
 
@@ -646,7 +736,7 @@ identical(s1, s2) == FALSE
 all.equal(s1, s2) == TRUE
 ```
 
-## REFACTOR-6: Use a single unit as source of truth
+## REFACTOR-6: Use a single unit ony
 
 Function `generate_lorentz_curves` and `MetaboDecon1D` use different units for their calculations and in their returned list, e.g.
  `ppm` (parts per million), `dp` (data points) and `sdp` (scaled data points) as x values and `si` (signal intensity), `ssi` (scaled signal intensity) as y values. Thats not good, as each conversion introduces numeric rounding errors and whenever we do a transformation, e.g. "removal of water signal", "removal of negative values" or "smoothing", we need to do the transformation for all units. Instead, we should use only one unit as single source of truth and provide conversion functions for the user, e.g. `ppm_to_hz` or `ppm_to_dp`. In the final returned list, it's ok to have all units, but at least during the calculation we should stick to `ppm` and `si` I think.
@@ -655,13 +745,13 @@ This also makes input for the user much easier, because something like the follo
 
 2024/06/30: Tracked by [FEATURE-10](#feature-10-implement-deconvolute_spectra) instead.
 
-## REFACTOR-7: Split monolithic functions into smaller parts
+## REFACTOR-7: Split up big functions
 
 The original `MetaboDecon1D` function has approx. 350 lines of code and the original `deconvolution` function has approx 1000 lines of code. This is way too much for testing and modifying. We should extract copy-pasted parts into indivual functions and test these functions separately.
 
 2024/06/30: Done in function `generate_lorentz_curves` in branch `v1.2.0`.
 
-## REFACTOR-8: Improve docs for Metabodecon1D return value
+## REFACTOR-8: Improve Metabodecon1D docs
 
 Original Teams Message from Wolfram from `2023/11/08 3:29 PM`
 
@@ -694,13 +784,13 @@ Output variables of MetaboDecon1D (These variables will be obtained for each ana
 
 *2024-06-30: Done with commit ab20d64*
 
-## REFACTOR-9: Replace glc with generate_lorentz_curves
+## REFACTOR-9: Replace glc calls
 
 Replace all `glc()` calls with calls to `generate_lorentz_curves()`.
 
 *2024-10-01 17:43: Done in branch v1.2.0 with commit 0b52023*
 
-## REFACTOR-10: Replace all md1d with MetaboDecon1D calls
+## REFACTOR-10: Replace all md1d calls
 
 1. Implement a function `get_MetaboDecon1D_answers` that takes the path to the spectra as well as the required `sfr`, `wshw` values as as input and returns a vecotr with the corresponding answers to the questions asked by `MetaboDecon1D`.
 
@@ -732,7 +822,7 @@ Write testcases for the following functions to check whether they produce result
 
 *Done in 2025/01/13 in branch v1.2.0 with commit 8c4a16b..c6c6e6a*
 
-## REFACTOR-13: Write PRARP tests
+## REFACTOR-13: Write prarp tests
 
 Write testcases for the following functions that test for a good PRARP as well as for the correct return type:
 
@@ -744,11 +834,11 @@ Write testcases for the following functions that test for a good PRARP as well a
 
 *Done in 2025/01/13 in branch v1.2.0 with commit 8c4a16b..c6c6e6a*
 
-## CRAN-0: Omit "Functions for" in title
+## CRAN-0: Improve package title
 
 Omit the redundant "Functions for" in your title.
 
-## CRAN-1: Omit "Functions for" in DESCRIPTION
+## CRAN-1: Improve package description
 
 Do not start the description with "Functions for", "This package", package name, title or similar.
 
@@ -756,15 +846,15 @@ Do not start the description with "Functions for", "This package", package name,
 
 Always explain all acronyms in the description text. e.g.: NMR
 
-## CRAN-3: Use correct reference format in DESCRIPTION
+## CRAN-3: Correct description format
 
 Write references in the description of the DESCRIPTION file in the form `authors (year) <doi:...>` with no space after 'doi:' and angle brackets for auto-linking. (If you want to add a title as well please put it in quotes: "Title")
 
-## CRAN-4: Explain return value in function docs
+## CRAN-4: Always Explain return value
 
 Please add `\value` to .Rd files regarding exported methods and explain the functions results in the documentation. Please write about the structure of the output (class) and also what the output means. (If a function does not return a value, please document that too, e.g. `\value{No return value, called for side effects}` or similar). Missing Rd-tags in up to 11 .Rd files, e.g.: `combine_peaks.Rd: \value`, `dohCluster.Rd: \value`, ...
 
-## CRAN-5: Remove examples from unexported functions
+## CRAN-5: Remove unexported examples
 
 You have examples for unexported functions. Please either omit these examples or export these functions. Examples for unexported function with example: plot_spectrum_superposition_save_as_png().
 
@@ -778,7 +868,7 @@ Remove `dontrun` from examples if they are executable in < 5 sec, or create addi
 
 *Done in 2025/01/13 in branch v1.2.0 with commit 8c4a16b..c6c6e6a*
 
-## CRAN-8: Functions should not write to disk by default
+## CRAN-8: Ask before writing to disk
 
 Please ensure that your functions do not write by default or in your `examples/vignettes/tests` in the user's home filespace (including the package directory and `getwd()`). This is not allowed by CRAN policies. Please omit any default path in writing functions. In your examples/vignettes/tests you can write to `tempdir()`.
 
@@ -789,11 +879,11 @@ ToSc: affected functions are:
 
 2024/06/28: Implemented with f5d63f7, 6491b42 and 76b8c4d.
 
-## CRAN-9: Functions should not change working dir or global options
+## CRAN-9: Do not change global state
 
  Please make sure that you do not change the user's options, par or working directory. If you really have to do so within functions, please ensure with an *immediate* call of on.exit() that the settings are reset when the function is exited. E.g. `R/MetaboDecon1D.R`. If you're not familiar with the function, please check `?on.exit`. This function makes it possible to restore options before exiting a function even if the function breaks. Therefore it needs to be called immediately after the option change within a function.
 
-## FIX-1: Prevent crashes for high smoothing
+## FIX-1: Fix crashes when high smoothing
 
 > From: Maximilian Sombke <Maximilian.Sombke@stud.uni-regensburg.de>
 > Sent: Friday, July 12, 2024 2:59 PM

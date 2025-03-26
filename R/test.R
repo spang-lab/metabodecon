@@ -273,32 +273,53 @@ get_datadir_mock <- function(type = "temp", state = "default") {
     function() p
 }
 
-loaded_via_devtools <- function() {
-    pkg_dir <- dirname(system.file("DESCRIPTION", package = "metabodecon"))
-    loaded_via_devtools <- dir.exists(file.path(pkg_dir, "inst"))
-    return(loaded_via_devtools)
+# Testthat Helpers (private) #####
+
+r_geq <- function(x) {
+    getRversion() >= numeric_version(x)
 }
 
-# Testthat Helpers (private) #####
+not_cran <- function() {
+    interactive() || isTRUE(as.logical(Sys.getenv(x, "NOT_CRAN")))
+}
 
 #' @noRd
 #' @title Run tests with the option to skip slow tests
 #' @description Runs the tests in the current R package. If `all` is TRUE, it
-#' well set environment variable `RUN_SLOW_TESTS` to "TRUE" so that all tests
+#' will set environment variable `RUN_SLOW_TESTS` to "TRUE" so that all tests
 #' are run. If `all` is FALSE, it will set `RUN_SLOW_TESTS` to "FALSE" so that
-#' slow tests are skipped.
+#' slow tests are skipped. If `func` is provided, only the corresponding test file
+#' will be run.
+#' @param func Character or function. The name of the function whose test file should be run.
+#' If NULL (default), all tests are run.
 #' @param all Logical. If TRUE, all tests are run. If FALSE, slow tests are
 #' skipped.
-#' @return The result of devtools::test()
+#' @return The result of devtools::test() or testthat::test_file() for a specific function.
 #' @examples
-#' if (interactive()) {
-#'     run_tests(all = FALSE)
-#' }
-run_tests <- function(all = FALSE) {
+#' run_tests(get_smopts)           # Runs fast tests for get_smopts
+#' run_tests(get_smopts, all=TRUE) # Runs all tests for get_smopts
+#' run_tests()                     # Run all fast tests of the package
+#' run_tests(all=TRUE)             # Run all tests of the package
+run_tests <- function(func = NULL, all = FALSE) {
     RUN_SLOW_TESTS_OLD <- Sys.getenv("RUN_SLOW_TESTS")
     Sys.setenv(RUN_SLOW_TESTS = if (all) "TRUE" else "FALSE")
     on.exit(Sys.setenv(RUN_SLOW_TESTS = RUN_SLOW_TESTS_OLD), add = TRUE, after = FALSE)
-    devtools::test()
+    ns <- asNamespace("metabodecon")
+    unlockBinding("assert", ns)
+    ns$assert = function(...) {} # (1)
+    lockBinding("assert", ns)
+    # (1) Disable type checking in private functions, as done when loading the
+    # package via library.
+    if (is.null(func)) {
+        logf("Calling: devtools::test()")
+        devtools::test()
+    } else {
+        if (is.function(func)) func <- deparse(substitute(func))
+        file <- paste0("test-", func, ".R")
+        path <- paste0("tests/testthat/", file)
+        logf("Calling: testthat::test_file(%s)", path)
+        testthat::test_file(path)
+    }
 }
 
 skip_if_slow_tests_disabled <- function() {
@@ -433,6 +454,10 @@ calc_prarp <- function(x, truepar = NULL, ...) {
     prarpx <- peak_ratio_x * area_ratio
 
     named(prarpx, prarp, peak_ratio_x, peak_ratio, np_true, np_found, np_correct, np_wrong, area_ratio, area_spectrum, area_residuals)
+}
+
+calc_prarpx <- function(x, truepar = NULL, ...) {
+    calc_prarp(x, truepar)$prarpx
 }
 
 plot_prarp <- function(decon, truepar) {

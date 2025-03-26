@@ -1,7 +1,15 @@
+# metabodecon 1.4.0
+
+- Improved Github Workflow (GWF) to test installation on a clean Windows/Linux/Mac OS with R pre-installed, but without R-tools and any packages.
+- Added `use_rust` option to `deconvolute()`. If `use_rust` is TRUE, the deconvolution is done using the implementation from Rust package [metabodecon-rust](https://github.com/SombkeMaximilian/metabodecon-rust/tree/main). Using the Rust backend requires R package [mdrb](https://github.com/spang-lab/mdrb) (Metabodecon Rust Backend) to be installed first. For this purpose the following additional functions are provided:
+    - `install_mdrb()`: Installs mdrb
+    - `check_mdrb()`: Checks whether a suitable version of mdrb is already installed
+    - `check_mdrb_deps()`: Checks whether all required system dependencies of mdrb are installed
+
 # metabodecon 1.3.0
 
 - Added Github Workflow (GWF) to test installation on a clean Windows/Linux/Mac OS with R pre-installed, but without R-tools and any packages. Closes Todo [Test Install on clean OS].
-- Fixed GWF for testing code coverage scipt
+- Fixed GWF for testing code coverage script
 - Improved formatting for R-CMD-check-GWF and pkgdown-GWF
 - Improved `align()`. The new implementation is faster and returns more information. In particular, the chemical shifts of the aligned peaks centers as well as the superposition of the aligned peaks are returned.
 - Improved documentation and defaults for `speaq_align()` and `combine_peaks()`.

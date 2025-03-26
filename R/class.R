@@ -1,110 +1,4 @@
-# Classes #####
-
-spectrum_members <- c(
-    "cs",
-    "si",
-    "meta"
-)
-
-ispec_members <- c(
-    "y_raw",
-    "y_scaled",
-    "n",
-    "dp",
-    "sdp",
-    "sf",
-    "ppm",
-    "hz",
-    "ppm_range",
-    "ppm_max",
-    "ppm_min",
-    "ppm_step",
-    "ppm_nstep",
-    "name",
-    "meta"
-)
-
-idecon_members <- c(
-    ispec_members,
-    "args",
-    "y_nows",
-    "y_pos",
-    "Z",
-    "y_smooth",
-    "d",
-    "peak",
-    "lci",
-    "lca",
-    "lcr"
-)
-
-decon0_members <- c(
-    "number_of_files",
-    "filename",
-    "x_values",
-    "x_values_ppm",
-    "y_values",
-    "spectrum_superposition",
-    "mse_normed",
-    "index_peak_triplets_middle",
-    "index_peak_triplets_left",
-    "index_peak_triplets_right",
-    "peak_triplets_middle",
-    "peak_triplets_left",
-    "peak_triplets_right",
-    "integrals",
-    "signal_free_region",
-    "range_water_signal_ppm",
-    "A",
-    "lambda",
-    "x_0"
-)
-
-decon0_members_optional <- c(
-    "signal_free_region",
-    "range_water_signal_ppm"
-)
-
-decon0_members_mandatory <- setdiff(
-    decon0_members,
-    decon0_members_optional
-)
-
-decon1_members <- c(
-    decon0_members,
-    "y_values_raw",
-    "x_values_hz",
-    "mse_normed_raw",
-    "signal_free_region_ppm",
-    "x_0_hz",
-    "x_0_dp",
-    "x_0_ppm",
-    "A_hz",
-    "A_dp",
-    "A_ppm",
-    "lambda_hz",
-    "lambda_dp",
-    "lambda_ppm"
-)
-
-decon2_members <- c(
-    "cs",
-    "si",
-    "meta",
-    "args",
-    "sit",
-    "peak",
-    "lcpar",
-    "mse"
-)
-
-align_members <- decon2_members
-
-# Methods #####
-
-print_methods <- function() {
-    # Placeholder to find documentation for `print_methods`
-}
+# S3 Public #####
 
 #' @name print_methods
 #' @rdname print_methods
@@ -128,13 +22,11 @@ print_methods <- function() {
 #' NULL, called for side effect of printing to the standard output device.
 #'
 #' @examples
-#' si <- c(1, 1, 3, 7, 8, 3, 8, 5, 2, 1)
-#' cs_max <- 14.8
-#' cs_width <- 20.0
-#' fq_ref <- 600.25 * 1e6
-#' fq_width <- 12005
-#' spectrum <- read_spectrum()
-#' print(spectrum)
+#' print(sim[[1]])
+#' print(sim[[1]], name = TRUE)
+#' print(sim)
+#' decon <- deconvolute(sim[[1]], sfr = c(3.55, 3.35))
+#' print(decon)
 NULL
 
 #' @export
@@ -143,18 +35,6 @@ print.spectrum <- function(x, name = FALSE, ...) {
     namestr <- if (name) paste0(x$meta$name %||% "NULL", ": ") else ""
     fmt <- "%sspectrum object (%d dp, %.1f to %.1f ppm)\n"
     catf(fmt, namestr, length(x$cs), max(x$cs), min(x$cs))
-}
-
-#' @export
-#' @rdname print_methods
-print.ispec <- function(x, name = FALSE, ...) {
-    str(x, 1)
-}
-
-#' @export
-#' @rdname print_methods
-print.idecon <- function(x, name = FALSE, ...) {
-    str(x, 1)
 }
 
 #' @export
@@ -198,25 +78,6 @@ print.spectra <- function(x, ...) {
 
 #' @export
 #' @rdname print_methods
-print.ispecs <- function(x, ...) {
-    # catf("ispecs object with %s ispec elements\n", length(x))
-    # invisible(sapply(x, print, name = TRUE))
-    str(x, 2, give.attr = FALSE)
-}
-
-#' @export
-#' @rdname print_methods
-print.idecons <- function(x, ...) {
-    catf("idecons object with %s idecon elements\n", length(x))
-    nams <- get_names(x)
-    mapply(x, nams, FUN = function(xi, nam) {
-        catf("%s: ", nam)
-        print(xi, ...)
-    })
-}
-
-#' @export
-#' @rdname print_methods
 print.decons1 <- function(x, ...) {
     catf("decons1 object with %s decon1 elements\n", length(x))
     invisible(sapply(x, print, name = TRUE))
@@ -236,18 +97,94 @@ print.aligns <- function(x, ...) {
     invisible(sapply(x, print, name = TRUE))
 }
 
+# S3 Private #####
+
 #' @export
-`[.spectra` <- function(x, i, ...) {
+print.ispec <- function(x, name = FALSE, ...) {
+    name <- {
+        if (isTRUE(name)) paste0(get_name(x) %||% "NULL", ": ")
+        else if (is.character(name)) paste0(name, ": ")
+        else ""
+    }
+    fmt <- "%sispec object (%d dp, %.1f to %.1f ppm)\n"
+    catf(fmt, name, length(x$ppm), max(x$ppm), min(x$ppm))
+}
+
+#' @export
+print.idecon <- function(x, name = FALSE, ...) {
+    name <- {
+        if (isTRUE(name)) paste0(get_name(x) %||% "NULL", ": ")
+        else if (is.character(name)) paste0(name, ": ")
+        else ""
+    }
+    fmt <- "%sidecon object (%d dp, %.1f to %.1f ppm, %d peaks)\n"
+    catf(fmt, name, length(x$ppm), max(x$ppm), min(x$ppm), length(x$lcr$A))
+}
+
+#' @export
+print.rdecon <- function(x, name = FALSE, ...) {
+    name <- {
+        if (isTRUE(name)) paste0(get_name(x) %||% "NULL", ": ")
+        else if (is.character(name)) paste0(name, ": ")
+        else ""
+    }
+    catf("%srdecon object\n", name)
+}
+
+#' @export
+print.ispecs <- function(x, ...) {
+    catf("ispecs object with %s ispec elements\n", length(x))
+    nams <- get_names(x)
+    invisible(mapply(print, x, nams))
+}
+
+#' @export
+#' @rdname print_methods
+print.idecons <- function(x, ...) {
+    catf("idecons object with %s idecon elements\n", length(x))
+    nams <- get_names(x)
+    invisible(mapply(print, x, nams))
+}
+
+#' @export
+#' @rdname print_methods
+print.rdecons <- function(x, ...) {
+    catf("rdecons object with %s rdecon elements\n", length(x))
+    nams <- get_names(x)
+    invisible(mapply(print, x, nams))
+}
+
+`[.collection` <- function(x, i, ...) {
     result <- NextMethod("[")
     class(result) <- class(x)
     result
 }
 
-# Checks #####
+#' @export
+`[.spectra` <- `[.collection`
 
-is_metabodecon_class <- function() {
-    # Placeholder to find documentation for `is_metabodecon_class`
-}
+#' @export
+`[.decons0` <- `[.collection`
+
+#' @export
+`[.decons1` <- `[.collection`
+
+#' @export
+`[.decons2` <- `[.collection`
+
+#' @export
+`[.aligns` <- `[.collection`
+
+#' @export
+`[.ispecs` <- `[.collection`
+
+#' @export
+`[.idecons` <- `[.collection`
+
+#' @export
+`[.rdecons` <- `[.collection`
+
+# Checks (Public) #####
 
 #' @export
 #'
@@ -289,13 +226,13 @@ is_metabodecon_class <- function() {
 #' is_decon0(d1) # FALSE
 #' is_decon1(d1) # FALSE
 #' is_decon2(d1) # TRUE
-#' is_align(a1)  # TRUE
+#' is_align(a1) # TRUE
 #'
 #' is_spectra(ss) # TRUE
 #' is_decons0(dd) # FALSE
 #' is_decons1(dd) # FALSE
 #' is_decons2(dd) # TRUE
-#' is_aligns(aa)  # TRUE
+#' is_aligns(aa) # TRUE
 #'
 is_spectrum <- function(x,
                         check_class = TRUE,
@@ -309,14 +246,6 @@ is_spectrum <- function(x,
     # styler: on
     return(TRUE)
 }
-
-#' @export
-#' @rdname is_metabodecon_class
-is_ispec <- function(x) inherits(x, "ispec")
-
-#' @export
-#' @rdname is_metabodecon_class
-is_idecon <- function(x) inherits(x, "idecon")
 
 #' @export
 #' @rdname is_metabodecon_class
@@ -354,14 +283,6 @@ is_spectra <- function(x,
 
 #' @export
 #' @rdname is_metabodecon_class
-is_ispecs <- function(x) inherits(x, "ispecs")
-
-#' @export
-#' @rdname is_metabodecon_class
-is_idecons <- function(x) inherits(x, "idecons")
-
-#' @export
-#' @rdname is_metabodecon_class
 is_decons0 <- function(x) all(sapply(x, is_decon0))
 
 #' @export
@@ -376,29 +297,35 @@ is_decons2 <- function(x) inherits(x, "decons2")
 #' @rdname is_metabodecon_class
 is_aligns <- function(x) inherits(x, "aligns")
 
-# Convert #####
+# Checks (Private) #####
 
-as_metabodecon_class <- function() {
-    # Placeholder to find documentation for `as_metabodecon_class`
-}
+is_spectrum_or_spectra <- function(x) is_spectrum(x) || is_spectra(x)
+is_ispec <- function(x) inherits(x, "ispec")
+is_idecon <- function(x) inherits(x, "idecon")
+is_rdecon <- function(x) inherits(x, "rdecon")
+is_ispecs <- function(x) inherits(x, "ispecs")
+is_idecons <- function(x) inherits(x, "idecons")
+is_rdecons <- function(x) inherits(x, "rdecons")
+
+# Convert (Public) #####
 
 #' @export
 #'
 #' @name as_metabodecon_class
 #' @rdname as_metabodecon_class
 #'
-#' @title Convert to a Metabodecon Class
+#' @title Convert to a Metabodecon Object
 #'
-#' @description Convert an object to a Metabodecon class.
+#' @description Convert a object to a Metabodecon object.
 #'
 #' @param x
 #' The object to convert.
 #'
 #' @param sf
-#' Scale factor. Only required if `x` is a decon0 object.
+#' Scale factor used during Only required if `x` is a decon0 object.
 #'
-#' @param sfs List of scale factors. Only required if `x` is a list of decon0
-#' objects.
+#' @param sfs
+#' List of scale factors. Only required if `x` is a list of decon0 objects.
 #'
 #' @param spectrum,spectra
 #' The `spectrum`/`spectra` object corresponding to `x` as returned by
@@ -443,58 +370,17 @@ as_spectrum <- function(x, sf = c(1e3, 1e6)) {
     if (is_spectrum(x)) {
         return(x)
     } else if (is_decon1(x)) {
-        cs = x$x_values_ppm
-        si = x$y_values_raw %||% (x$y_values * sf[2])
-        name = x$filename
-        fq = x$x_values_hz
+        cs <- x$x_values_ppm
+        si <- x$y_values_raw %||% (x$y_values * sf[2])
+        name <- x$filename
+        fq <- x$x_values_hz
         meta <- named(name, fq)
         obj <- named(cs, si, meta)
         return(structure(obj, class = "spectrum"))
     } else {
         msg <- "Converting %s to spectrum is not suppoorted"
-        stop(sprintf(msg, class(x)[1]))
-    }
-}
-
-#' @export
-#' @rdname as_metabodecon_class
-#' @inheritParams as_decon1
-as_ispec <- function(x, sf = c(1e3, 1e6)) {
-    if (is_ispec(x)) return(x)
-    if (is_char(x)) x <- read_spectrum(x)
-    s <- if (is_spectrum(x)) x else as_spectrum(x)
-    y_raw <- s$si # Raw signal intensities
-    y_scaled <- y_raw / sf[2] # Scaled signal intensities
-    n <- length(y_raw) # Number of data points
-    dp <- seq(n - 1, 0, -1) # Data point numbers
-    sdp <- seq((n - 1) / sf[1], 0, -1 / sf[1]) # Scaled data point numbers [^1]
-    ppm <- s$cs # Parts per million
-    hz <- s$meta$fq # Frequency in Hz
-    ppm_range <- diff(range(s$cs)) # Range of the chemical shifts in ppm.
-    ppm_max <- max(s$cs) # Maximum chemical shift in ppm.
-    ppm_min <- min(s$cs) # Minimum chemical shift in ppm.
-    ppm_step <- ppm_range / (n - 1) # Step size calculated correctly.
-    ppm_nstep <- ppm_range / n # Wrong, but backwards compatible [^2].
-    name <- s$meta$name # Name of the spectrum
-    meta <- s$meta # Other Metadata to the spectrum
-    g <- locals()[ispec_members]
-    structure(g, class = "ispec")
-    # [^1]: Same as `dp / sf[1]`, but with slight numeric differences, so we
-    #       stick with the old calculation method for backwards compatibility.
-    # [^2]: Example: ppm = 11, 23, 35, 47 ==> ppm_step == 12, ppm_nstep ~= 10.6
-    #       (not really useful, but we need it for backwards compatibility with
-    #       MetaboDecon1D results)
-}
-
-#' @export
-#' @rdname as_metabodecon_class
-as_idecon <- function(x) {
-    if (is_idecon(x)) {
-        x
-    } else if (all(idecon_members %in% names(x))) {
-        structure(x, class = "idecon")
-    } else {
-        stop("Input must have all elements listed in `idecon_members`")
+        msg <- sprintf(msg, class(x)[1])
+        stop(msg)
     }
 }
 
@@ -514,7 +400,7 @@ as_decon0 <- function(x,
 #' @rdname as_metabodecon_class
 as_decon1 <- function(x,
                       sf = c(1e3, 1e6),
-                      spectrum  = NULL,
+                      spectrum = NULL,
                       sfr = NULL,
                       wshw = NULL,
                       bwc = 2) {
@@ -563,7 +449,7 @@ as_decon1 <- function(x,
         cs <- x$cs
         si <- x$si
         n <- length(si)
-        dpn <- (n-1):0
+        dpn <- (n - 1):0
         sdp <- dpn / 1e3
         fq <- x$meta$fq
         cs_step <- width(cs) / (n - 1)
@@ -576,13 +462,13 @@ as_decon1 <- function(x,
         x0_dp <- convert_pos(x0_ppm, cs, dpn)
         x0_sdp <- convert_pos(x0_ppm, cs, sdp)
         x0_hz <- if (!is.null(fq)) convert_pos(x0_ppm, cs, fq)
-        A_raw_dp <- A_raw_ppm * (dpn_step  / cs_step)
+        A_raw_dp <- A_raw_ppm * (dpn_step / cs_step)
         A_raw_sdp <- A_raw_ppm * (sdp_step / cs_step)
-        A_raw_hz  <- if (!is.null(fq)) A_raw_ppm * (fq_step  / cs_step)
+        A_raw_hz <- if (!is.null(fq)) A_raw_ppm * (fq_step / cs_step)
         A_sc_ppm <- A_raw_ppm / 1e6
-        A_sc_dp <- A_raw_dp  / 1e6
+        A_sc_dp <- A_raw_dp / 1e6
         A_sc_sdp <- A_raw_sdp / 1e6
-        A_sc_hz <- if (!is.null(fq)) A_raw_hz  / 1e6
+        A_sc_hz <- if (!is.null(fq)) A_raw_hz / 1e6
         lambda_dp <- convert_width(lambda_ppm, cs, dpn)
         lambda_sdp <- convert_width(lambda_ppm, cs, sdp)
         lambda_hz <- if (!is.null(fq)) abs(convert_width(lambda_ppm, cs, fq))
@@ -666,113 +552,114 @@ as_decon1 <- function(x,
 
 #' @export
 #' @rdname as_metabodecon_class
-as_decon2 <- function(x,
-                      sf = c(1e3, 1e6),
-                      spectrum = NULL,
-                      sfr = NULL,
-                      wshw = NULL,
-                      bwc = 2) {
-    if (is_decon2(x)) {
-        return(x)
-    } else if (is_decon1(x)) {
-        cs <- x$x_values_ppm
-        si <- x$y_values_raw
-        meta <- list(
-            name = x$filename,
-            fq = x$x_values_hz
-        )
-        args <- list(
-            nfit = NA,
-            smopts = NA,
-            delta = NA,
-            sfr = sfr_in_ppm_bwc(x$signal_free_region, x$x_values, x$x_values_ppm),
-            wshw = x$range_water_signal_ppm,
-            ask = NA,
-            force = NA,
-            verbose = NA,
-            bwc = NA,
-            nworkers = NA
-        )
-        sit <- data.frame(
-            wsrm = NA,
-            nvrm = NA,
-            sm = x$y_values * 1e6,
-            sup = x$spectrum_superposition[1, ] * 1e6
-        )
-        peak <- data.frame(
-            left = x$index_peak_triplets_right, # decon[01] has left and right inverted
-            center = x$index_peak_triplets_middle,
-            right = x$index_peak_triplets_left  # decon[01] has left and right inverted
-        )
-        lcpar <- data.frame(
-            x0 = x$x_0_ppm,
-            A = -(x$A_ppm * 1e6),
-            lambda = -(x$lambda_ppm)
-        )
-        mse <- list(
-            raw = mse(si, sit$sup, normed = FALSE),
-            norm = x$mse_normed_raw,
-            sm = mse(sit$sm, sit$sup, normed = FALSE),
-            smnorm = x$mse_normed
-        )
-    } else if (is_decon0(x)) {
-        x <- as_decon1(x, sf, spectrum, sfr, wshw, bwc)
-        return(as_decon2(x))
-    } else if (is_idecon(x)) {
-        cs <- x$ppm
-        si <- x$y_raw
-        meta <- x$meta
-        args <- x$args
-        lcpar <- data.frame(
-            x0 = convert_pos(x$lcr$w, x$sdp, x$ppm),
-            A = -convert_width(x$lcr$A, x$sdp, x$ppm) * 1e6,
-            lambda = -convert_width(x$lcr$lambda, x$sdp, x$ppm)
-        )
-        sit <- data.frame(
-            wsrm = x$y_nows * 1e6,
-            nvrm = x$y_pos * 1e6,
-            sm = x$y_smooth * 1e6,
-            sup = lorentz_sup(cs, lcpar = lcpar)
-        )
-        peak <- data.frame(
-            left = x$peak$left[x$peak$high],
-            center = x$peak$center[x$peak$high],
-            right = x$peak$right[x$peak$high]
-        )
-        mse <- list(
-            raw = mse(si, sit$sup, normed = FALSE),
-            norm = mse(si, sit$sup, normed = TRUE),
-            sm = mse(sit$sm, sit$sup, normed = FALSE),
-            smnorm = mse(sit$sm, sit$sup, normed = TRUE)
-        )
-    } else {
-        stop(sprintf("Converting %s to decon2 is not supported", class(x)[1]))
-    }
+as_decon2 <- function(x, sf = c(1e3, 1e6), spectrum = NULL, sfr = NULL, wshw = NULL, bwc = 2) {
+    if (is_decon0(x)) as_decon2.decon1(x = as_decon1(x, sf, spectrum, sfr, wshw, bwc))
+    else if (is_decon1(x)) as_decon2.decon1(x)
+    else if (is_decon2(x)) x
+    else if (is_idecon(x)) as_decon2.idecon(x)
+    else if (is_rdecon(x)) as_decon2.rdecon(x)
+    else stop(sprintf("Converting %s to decon2 is not supported", class(x)[1]))
+}
+
+as_decon2.decon1 <- function(x, ...) {
+    cs <- x$x_values_ppm
+    si <- x$y_values_raw
+    meta <- list(
+        name = x$filename,
+        fq = x$x_values_hz
+    )
+    args <- list(
+        nfit = NA, smopts = NA, delta = NA,
+        sfr = sfr_in_ppm_bwc(x$signal_free_region, x$x_values, x$x_values_ppm),
+        wshw = x$range_water_signal_ppm,
+        ask = NA, force = NA, verbose = NA, bwc = NA, nworkers = NA
+    )
+    sit <- data.frame(
+        wsrm = NA, nvrm = NA,
+        sm = x$y_values * 1e6,
+        sup = x$spectrum_superposition[1, ] * 1e6
+    )
+    peak <- data.frame(
+        left = x$index_peak_triplets_right, # decon[01] has left and right inverted
+        center = x$index_peak_triplets_middle,
+        right = x$index_peak_triplets_left
+    )
+    lcpar <- data.frame(
+        x0 = x$x_0_ppm,
+        A = -(x$A_ppm * 1e6),
+        lambda = -(x$lambda_ppm)
+    )
+    mse <- list(
+        raw = mse(si, sit$sup, normed = FALSE),
+        norm = x$mse_normed_raw,
+        sm = mse(sit$sm, sit$sup, normed = FALSE),
+        smnorm = x$mse_normed
+    )
     obj <- named(cs, si, meta, args, sit, peak, lcpar, mse)
     class(obj) <- "decon2"
     obj
 }
 
-as_v2_obj <- function(obj) {
-    if (is_spectrum(obj)) obj
-    else if (is_ispec(obj)) as_spectrum(obj)
-    else if (is_idecon(obj)) as_decon2(obj)
-    else if (is_decon0(obj)) stop("decon0 objects are not supported. Convert with as_decon2.")
-    else if (is_decon1(obj)) as_decon2(obj)
-    else if (is_decon2(obj)) obj
-    else if (is_align(obj)) obj
-    else stop(sprintf("Objects of class %s are not supported.", class(obj)))
+as_decon2.idecon <- function(x, ...) {
+    cs <- x$ppm
+    si <- x$y_raw
+    meta <- x$meta
+    args <- x$args
+    lcpar <- data.frame(
+        x0 = convert_pos(x$lcr$w, x$sdp, x$ppm),
+        A = -convert_width(x$lcr$A, x$sdp, x$ppm) * 1e6,
+        lambda = -convert_width(x$lcr$lambda, x$sdp, x$ppm)
+    )
+    sit <- data.frame(
+        wsrm = x$y_nows * 1e6,
+        nvrm = x$y_pos * 1e6,
+        sm = x$y_smooth * 1e6,
+        sup = lorentz_sup(cs, lcpar = lcpar)
+    )
+    peak <- data.frame(
+        left = x$peak$left[x$peak$high],
+        center = x$peak$center[x$peak$high],
+        right = x$peak$right[x$peak$high]
+    )
+    mse <- list(
+        raw = mse(si, sit$sup, normed = FALSE),
+        norm = mse(si, sit$sup, normed = TRUE),
+        sm = mse(sit$sm, sit$sup, normed = FALSE),
+        smnorm = mse(sit$sm, sit$sup, normed = TRUE)
+    )
+    obj <- named(cs, si, meta, args, sit, peak, lcpar, mse)
+    class(obj) <- "decon2"
+    obj
 }
 
-as_v2_objs <- function(obj) {
-    if (is_spectra(obj)) obj
-    else if (is_ispecs(obj)) as_spectra(obj)
-    else if (is_idecons(obj)) as_decons2(obj)
-    else if (is_decons0(obj)) stop("decons0 objects are not supported. Convert with as_decons2.")
-    else if (is_decons1(obj)) as_decons2(obj)
-    else if (is_decons2(obj)) obj
-    else if (is_aligns(obj)) obj
-    else stop(sprintf("Objects of class %s are not supported.", class(obj)))
+as_decon2.rdecon <- function(x, ...) {
+    assert(is_rdecon(x))
+    cs <- x$mdrb_spectrum$chemical_shifts()
+    si <- x$mdrb_spectrum$intensities()
+    meta <- x$spectrum$meta
+    args <- x$args
+    sup <- x$mdrb_decon$superposition_vec(cs)
+    lcpar <- as.data.frame(x$mdrb_decon$lorentzians())
+    wsrm <- si # Rust backend doesn't remove the water signal
+    nvrm <- si # Rust backend doesn't remove negative values
+    spec <- list(y_pos = nvrm)
+    reps <- args$smopts[[1]]
+    size <- args$smopts[[2]]
+    sm <- smooth_signals(spec, reps, size, verbose = FALSE)$y_smooth
+    sit <- named(wsrm, nvrm, sm, sup)
+    mse <- list(
+        raw = mse(si, sup, norm=FALSE), # (1)
+        norm = mse(si, sup, norm=TRUE),
+        sm = mse(sm, sup, norm=FALSE),
+        smnorm = mse(sm, sup, norm=TRUE)
+        # (1) x$mdrb_decon$mse() deviates from mse() results, so we need to
+        # calculate ourselves until Rust backend provides the correct values
+        # (see TODOS.md
+    )
+    peak <- get_peak(lcpar$x0, cs) # Should be provided directly by Rust backend in future versions
+    obj <- named(cs, si, meta, args, sit, peak, lcpar, mse)
+    class(obj) <- "decon2"
+    obj
 }
 
 #' @export
@@ -801,35 +688,26 @@ as_spectra <- function(x,
 
 #' @export
 #' @rdname as_metabodecon_class
-as_ispecs <- function(x, sf = c(1e3, 1e6)) {
-    if (is_ispecs(x)) return(x)
-    gg <- if (is_ispec(x)) list(x)
-        else if (is_spectrum(x)) list(as_ispec(x))
-        else if (is_spectra(x)) lapply(x, as_ispec, sf = sf)
-        else stop("Input must be ispec, ispecs or spectra, not ", class(x))
-    gg <- structure(gg, class = "ispecs")
-    gg <- set_names(gg, get_names(gg))
-    gg
-}
-
-#' @export
-#' @rdname as_metabodecon_class
-as_idecons <- function(x) {
-    if (is_idecons(x)) return(x)
-    stopifnot(is.list(x))
-    stopifnot(all(sapply(x, is_idecon)))
-    structure(x, class = "idecons")
-}
-
-#' @export
-#' @rdname as_metabodecon_class
 as_decons0 <- function(x,
                        sfs = list(c(1e3, 1e6)),
                        spectra = list(NULL),
                        nworkers = 1) {
-    stopifnot(is_decons0(x) || is_decons1(x) || is_decons2(x) || is_idecons(x))
-    if (is_decons0(x)) return(x)
-    decons0 <- mcmapply(as_decon0, x, sfs, spectra, nw = nworkers)
+    if (is_decons0(x)) {
+        return(x)
+    } else if (is_decons1(x) || is_decons2(x) || is_idecons(x)) {
+        decons0 <- mcmapply(as_decon0, x, sfs, spectra, nw = nworkers)
+    } else if (is.list(x) && all(sapply(x, is_decon0))) {
+        decons0 <- x
+    } else {
+        stop(paste(
+            "Input must be a list of decon0 objects or a single object",
+            "of type decons0, decons1, decons2 or idecons."
+        ))
+    }
+    # Don't set names or class for decons0, as the original MetaboDecon1D
+    # objects didn't have names or classes as well and we want to stay backwards
+    # compatible. If someone wants to have names, they can use `decons1` or
+    # `decons2` instead.
     n <- length(decons0)
     for (i in seq_len(n)) decons0[[i]]$number_of_files <- n
     decons0
@@ -844,9 +722,19 @@ as_decons1 <- function(x,
                        wshws = list(NULL),
                        bwc = 2,
                        nworkers = 1) {
-    stopifnot(is_decons0(x) || is_decons1(x) || is_decons2(x) || is_idecons(x))
-    if (is_decons1(x)) return(x)
-    decons1 <- mcmapply(as_decon1, x, sfs, spectra, sfrs, wshws, bwc, nw = nworkers)
+    if (is_decons1(x)) {
+        return(x)
+    } else if (is_decons0(x) || is_decons2(x) || is_idecons(x)) {
+        decons1 <- mcmapply(as_decon1, x, sfs, spectra, sfrs, wshws, bwc, nw = nworkers)
+    } else if (is.list(x) && all(sapply(x, is_decon1))) {
+        decons1 <- x
+    } else {
+        stop(paste(
+            "Input must be a list of decon1 objects or a single object",
+            "of type decons0, decons1, decons2 or idecons."
+        ))
+    }
+    names(decons1) <- get_names(x)
     class(decons1) <- "decons1"
     n <- length(decons1)
     for (i in seq_len(n)) decons1[[i]]$number_of_files <- n
@@ -862,18 +750,302 @@ as_decons2 <- function(x,
                        wshws = list(NULL),
                        bwc = 2,
                        nworkers = 1) {
-    stopifnot(is_decons0(x) || is_decons1(x) || is_decons2(x) || is_idecons(x))
-    if (is_decons2(x)) return(x)
-    decons2 <- mcmapply(as_decon2, x, sfs, spectra, sfrs, wshws, bwc, nw = nworkers)
+    if (is_decons2(x)) {
+        return(x)
+    } else if (is_decons0(x) || is_decons1(x) || is_idecons(x)) {
+        decons2 <- mcmapply(as_decon2, x, sfs, spectra, sfrs, wshws, bwc, nw = nworkers)
+    } else if (is.list(x) && all(sapply(x, is_decon2))) {
+        decons2 <- x
+    } else {
+        stop(paste(
+            "Input must be a list of decon2 objects or a single object",
+            "of type decons0, decons1, decons2 or idecons."
+        ))
+    }
     names(decons2) <- get_names(x)
     class(decons2) <- "decons2"
     decons2
 }
 
-# Helpers #####
+# Convert (Private) #####
+
+as_ispec <- function(x, sf = c(1e3, 1e6)) {
+    if (is_ispec(x)) {
+        return(x)
+    }
+    if (is_char(x)) x <- read_spectrum(x)
+    s <- if (is_spectrum(x)) x else as_spectrum(x)
+    y_raw <- s$si # Raw signal intensities
+    y_scaled <- y_raw / sf[2] # Scaled signal intensities
+    n <- length(y_raw) # Number of data points
+    dp <- seq(n - 1, 0, -1) # Data point numbers
+    sdp <- seq((n - 1) / sf[1], 0, -1 / sf[1]) # Scaled data point numbers [^1]
+    ppm <- s$cs # Parts per million
+    hz <- s$meta$fq # Frequency in Hz
+    ppm_range <- diff(range(s$cs)) # Range of the chemical shifts in ppm.
+    ppm_max <- max(s$cs) # Maximum chemical shift in ppm.
+    ppm_min <- min(s$cs) # Minimum chemical shift in ppm.
+    ppm_step <- ppm_range / (n - 1) # Step size calculated correctly.
+    ppm_nstep <- ppm_range / n # Wrong, but backwards compatible [^2].
+    name <- s$meta$name # Name of the spectrum
+    meta <- s$meta # Other Metadata to the spectrum
+    g <- locals()[ispec_members]
+    structure(g, class = "ispec")
+    # [^1]: Same as `dp / sf[1]`, but with slight numeric differences, so we
+    #       stick with the old calculation method for backwards compatibility.
+    # [^2]: Example: ppm = 11, 23, 35, 47 ==> ppm_step == 12, ppm_nstep ~= 10.6
+    #       (not really useful, but we need it for backwards compatibility with
+    #       MetaboDecon1D results)
+}
+
+as_idecon <- function(x) {
+    if (is_idecon(x)) {
+        x
+    } else if (is_rdecon(x)) {
+        y_raw <- x$spectrum$si
+        ppm <- x$spectrum$cs
+        hz <- x$spectrum$meta$fq
+        name <- x$spectrum$meta$name
+        meta <- x$spectrum$meta
+        args <- x$args
+        lcpar <- x$mdrb_decon$lorentzians()
+        y_sup <- x$mdrb_decon$superposition_vec(ppm)
+        n <- length(y_raw)
+        dp <- seq(n - 1, 0, -1)
+        sdp <- dp / 1e3
+        sf <- c(1e3, 1e6)
+        ppm_range <- width(ppm)
+        ppm_max <- max(ppm)
+        ppm_min <- min(ppm)
+        ppm_step <- ppm_range / (n - 1)
+        ppm_nstep <- ppm_range / n
+        y_scaled <- y_raw / 1e6
+        y_nows <- y_scaled
+        y_pos <- abs(y_scaled)
+        y_smooth <- smooth_signals(named(y_pos), args$smopts[[1]], args$smopts[[2]], verbose = FALSE)$y_smooth
+        d <- (calc_second_derivative(y_smooth))
+        A <- (-convert_width(lcpar$A, ppm, sdp) / 1e6)
+        lambda <- (-convert_width(lcpar$lambda, ppm, sdp))
+        w <- convert_pos(lcpar$x0, ppm, sdp)
+        integrals <- (-A) * pi
+        lcr <- named(A, lambda, w, integrals)
+        center <- round(convert_pos(lcpar$x0, ppm, 1:n))
+        npeaks <- length(center)
+        left <- center - 1
+        center <- center
+        right <- center + 1
+        score <- rep(999, npeaks)
+        high <- rep(TRUE, npeaks)
+        region <- rep("norm", npeaks)
+        peak <- data.frame(left, center, right, score, high, region)
+        Z <- lci <- lca <- NA
+        structure(locals(without = "x")[idecon_members], class = "idecon")
+    } else if (all(idecon_members %in% names(x))) {
+        structure(x, class = "idecon")
+    } else {
+        stop("Input must have all elements listed in `idecon_members`")
+    }
+}
+
+as_rdecon <- function(x) {
+    assert( # (1)
+        is_spectrum(x$spectrum),
+        is.list(x$args),
+        typeof(x$mdrb_spectrum) == "externalptr",
+        typeof(x$mdrb_deconvr) == "externalptr",
+        typeof(x$mdrb_decon) == "externalptr",
+        class(x$mdrb_spectrum) == "Spectrum",
+        class(x$mdrb_deconvr) == "Deconvoluter",
+        class(x$mdrb_decon) == "Deconvolution"
+    )
+    stopifnot(length(x) == 5) # (1)
+    structure(x, class = "rdecon")
+    # (1) This function is private, so in theory it can never be called with
+    # invalid arguments, as all public functions validate their inputs first.
+    # Therefore, using assert for type checking is correct, as assert-checks are
+    # deactivated when the package is loaded via library(), i.e. the
+    # "production" code will run faster.
+    #
+    # However, in practice, it's very easy to run into nasty problems as soon as
+    # assertions are disabled (e.g. when calling this function with invalid
+    # arguments during unit testing). To prevent such scenarios, we include a
+    # very tiny, super-fast sanity check here, using stopifnot. This check
+    # will always run, even in production code, and might us save a lot of
+    # headaches in the future.
+}
+
+#' @export
+#' @rdname as_metabodecon_class
+as_ispecs <- function(x, sf = c(1e3, 1e6)) {
+    if (is_ispecs(x)) {
+        return(x)
+    }
+    gg <- if (is_ispec(x)) {
+        list(x)
+    } else if (is_spectrum(x)) {
+        list(as_ispec(x))
+    } else if (is_spectra(x)) {
+        lapply(x, as_ispec, sf = sf)
+    } else {
+        stop("Input must be ispec, ispecs or spectra, not ", class(x))
+    }
+    gg <- structure(gg, class = "ispecs")
+    gg <- set_names(gg, get_names(gg))
+    gg
+}
+
+#' @export
+#' @rdname as_metabodecon_class
+as_idecons <- function(x) {
+    if (is_idecons(x)) return(x)
+    stopifnot(is.list(x), all(sapply(x, is_idecon)))
+    structure(x, class = "idecons")
+}
+
+as_rdecons <- function(x) {
+    if (is_rdecons(x)) return(x)
+    assert(is.list(x), all(sapply(x, is_rdecon)))
+    structure(x, class = "rdecons")
+}
+
+# Convert a list of singlets to a collection
+as_collection <- function(x, cls) {
+    assert(
+        is.list(x),
+        is_char(cls, 1, "(decon[0-2]|idecon|rdecon)"),
+        cls == "decon0" || all(sapply(x, class) == cls)
+    )
+    decons <- switch(cls,
+        "decon0" = as_decons0(x),
+        "decon1" = as_decons1(x),
+        "decon2" = as_decons2(x),
+        "idecon" = as_idecons(x),
+        "rdecon" = as_rdecons(x),
+        stop("Unsupported class: ", cls)
+    )
+}
+
+# Convert a metabodecon singlet to a metabodecon "v1.2+" singlet
+as_v12_singlet <- function(obj) {
+    if (is_spectrum(obj)) obj
+    else if (is_ispec(obj)) as_spectrum(obj)
+    else if (is_idecon(obj)) as_decon2(obj)
+    else if (is_rdecon(obj)) as_decon2(obj)
+    else if (is_decon0(obj)) stop("decon0 objects are not supported. Convert with as_decon2.")
+    else if (is_decon1(obj)) as_decon2(obj)
+    else if (is_decon2(obj)) obj
+    else if (is_align(obj)) obj
+    else stop(sprintf("Objects of class %s are not supported.", class(obj)))
+}
+
+# Convert a metabodecon collection to a metabodecon "v1.2+" collection
+as_v12_collection <- function(obj) {
+    if (is_spectra(obj)) obj
+    else if (is_ispecs(obj)) as_spectra(obj)
+    else if (is_idecons(obj)) as_decons2(obj)
+    else if (is_decons0(obj)) stop("decons0 objects are not supported. Convert with as_decons2.")
+    else if (is_decons1(obj)) as_decons2(obj)
+    else if (is_decons2(obj)) obj
+    else if (is_aligns(obj)) obj
+    else stop(sprintf("Objects of class %s are not supported.", class(obj)))
+}
+
+# Constructors (Private) #####
+
+new_rdecon <- function(spectrum, args, mdrb_spectrum, mdrb_deconvr, mdrb_decon) {
+    x <- named(spectrum, args, mdrb_spectrum, mdrb_deconvr, mdrb_decon)
+    as_rdecon(x)
+}
+
+# Getters (Private) #####
+
+#' @noRd
+#' @title Returns the name of an iterable.
+#' @param x An iterable object, e.g. a single metabodecon object.
+#' @param default Default name if no name is found.
+#' @return The name of the object as string or whatever is given as `default`.
+#' @examples
+#' s1 <- list()
+#' s2 <- list(name = "foo")
+#' s3 <- list(name = "foo", meta = list(name = "bar"))
+#' get_name(s1) # ""
+#' get_name(s2) # "foo"
+#' get_name(s3) # "bar"
+get_name <- function(x, default = "") {
+    (if (is.list(x)) x$meta$name %||% x$name) %||% default
+}
+
+#' @noRd
+#' @title Returns the names of a metabodecon collection object.
+#' @param x A metabodecon collection object.
+#' @param default Default names if no names are found. Passed on to `get_default_names`.
+#' @return A character vector of names.
+#' @examples
+#' s1 <- list()
+#' s2 <- list(name = "foo")
+#' s3 <- list(name = "foo", meta = list(name = "bar"))
+#'
+#' get_names(list(s1, s1)) # c("spectrum_1", "spectrum_2")
+#' get_names(list(s1, myspec = s1)) # c("spectrum_1", "myspec")
+#' get_names(list(s1, myspec = s2)) # c("spectrum_1", "foo")
+#' get_names(list(s1, myspec = s3)) # c("spectrum_1", "bar")
+get_names <- function(x, default = "spectrum_%d") {
+    obj_names <- sapply(x, get_name, "")
+    obj_names_empty <- obj_names == ""
+    if (any(obj_names_empty)) {
+        list_names <- names(x) %||% rep("", length(x))
+        list_names_empty <- list_names == ""
+        if (any(list_names_empty)) {
+            default_names <- get_default_names(x, default)
+            list_names[list_names_empty] <- default_names[list_names_empty]
+        }
+        obj_names[obj_names_empty] <- list_names[obj_names_empty]
+    }
+    names(obj_names) <- NULL
+    obj_names
+}
+
+get_default_names <- function(x, default) {
+    if (length(default) == 1 && grepl("%d", default)) {
+        return(sprintf(default, seq_along(x)))
+    }
+    if (length(unique(default)) == length(x)) {
+        return(default)
+    }
+    stop(paste(
+        "Default names must be a single string with a `%d` placeholder",
+        "or a character vector of unique spectrum names."
+    ))
+}
+
+# Temporary Helper Function until metabodecon-rust/mdrb offer a method to
+# retrieve peak selection results from the mdrb_decon element.
+get_peak <- function(x0, cs, target = "decon2") {
+    assert(
+        is_num(x0),
+        is_num(cs),
+        is_char(target, 1, "(idecon|decon2)")
+    )
+    center <- round(convert_pos(x0, cs, seq_along(cs)))
+    npeaks <- length(center)
+    left <- center - 1
+    center <- center
+    right <- center + 1
+    if (target == "idecon") {
+        score <- rep(999, npeaks)
+        high <- rep(TRUE, npeaks)
+        region <- rep("norm", npeaks)
+        peak <- data.frame(left, center, right, score, high, region)
+    } else {
+        peak <- data.frame(left, center, right)
+    }
+    peak
+}
+
+# Setters #####
 
 set_names <- function(x, nams) {
-    if (!is.list(x)) stop("Input must be a list.")
+    assert(is.list(x))
     has_names <- all(sapply(x, function(e) "name" %in% names(e)))
     has_meta_names <- all(sapply(x, function(e) "name" %in% names(e$meta)))
     names(x) <- nams
@@ -882,18 +1054,108 @@ set_names <- function(x, nams) {
     x
 }
 
-get_names <- function(x, default = "spectrum_%d") {
-    stopifnot(is.list(x))
-    dn <- get_default_names(x, default)
-    en <- names(x) # Element name
-    sn <- sapply(x, function(s) s$meta$name %||% s$name) # Spectrum name
-    sapply(seq_along(x), function(i) sn[[i]] %||% en[[i]] %||% dn[[i]])
-}
+# Members (Private) #####
 
-get_default_names <- function(x, default) {
-    if (length(default) == 1 && grepl("%d", default))
-        return(sprintf(default, seq_along(x)))
-    if (length(unique(default)) == length(x))
-        return(default)
-    stop("Default names must be a single string with a `%d` placeholder or a character vector of same length as the spectra object.")
-}
+spectrum_members <- c("cs", "si", "meta")
+
+ispec_members <- c(
+    "y_raw",
+    "y_scaled",
+    "n",
+    "dp",
+    "sdp",
+    "sf",
+    "ppm",
+    "hz",
+    "ppm_range",
+    "ppm_max",
+    "ppm_min",
+    "ppm_step",
+    "ppm_nstep",
+    "name",
+    "meta"
+)
+
+idecon_members <- c(
+    ispec_members,
+    "args",
+    "y_nows",
+    "y_pos",
+    "Z",
+    "y_smooth",
+    "d",
+    "peak",
+    "lci",
+    "lca",
+    "lcr"
+)
+
+rdecon_members <- c(
+    "spectrum",
+    "args",
+    "mdrb_spectrum",
+    "mdrb_deconvr",
+    "mdrb_decon"
+)
+
+decon0_members <- c(
+    "number_of_files",
+    "filename",
+    "x_values",
+    "x_values_ppm",
+    "y_values",
+    "spectrum_superposition",
+    "mse_normed",
+    "index_peak_triplets_middle",
+    "index_peak_triplets_left",
+    "index_peak_triplets_right",
+    "peak_triplets_middle",
+    "peak_triplets_left",
+    "peak_triplets_right",
+    "integrals",
+    "signal_free_region",
+    "range_water_signal_ppm",
+    "A",
+    "lambda",
+    "x_0"
+)
+
+decon0_members_optional <- c(
+    "signal_free_region",
+    "range_water_signal_ppm"
+)
+
+decon0_members_mandatory <- setdiff(
+    decon0_members,
+    decon0_members_optional
+)
+
+decon1_members <- c(
+    decon0_members,
+    "y_values_raw",
+    "x_values_hz",
+    "mse_normed_raw",
+    "signal_free_region_ppm",
+    "x_0_hz",
+    "x_0_dp",
+    "x_0_ppm",
+    "A_hz",
+    "A_dp",
+    "A_ppm",
+    "lambda_hz",
+    "lambda_dp",
+    "lambda_ppm"
+)
+
+decon2_members <- c(
+    "cs",
+    "si",
+    "meta",
+    "args",
+    "sit",
+    "peak",
+    "lcpar",
+    "mse"
+)
+
+align_members <- decon2_members
