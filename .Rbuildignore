@@ -7,6 +7,7 @@
 ^\.gitlab-ci\.yml$
 ^\.lintr$
 ^\.vscode$
+^ARCHIVE\.md$
 ^CHANGELOG\.md$
 ^check_package\.R$
 ^check$
