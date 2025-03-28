@@ -696,7 +696,7 @@ all_identical <- function(x) {
 is_list_of_nums <- function(x, nl = NULL, nv = NULL) {
     if (!is.list(x)) return(FALSE)
     if (!(is.null(nl) || length(x) == nl)) return(FALSE)
-    if (!(is.null(nv) || all(lengths(x) == nv))) returns(FALSE)
+    if (!(is.null(nv) || all(lengths(x) == nv))) return(FALSE)
     return(TRUE)
 }
 
@@ -1037,15 +1037,24 @@ get_worker_logs <- function(nw, create = TRUE) {
     logpaths
 }
 
-load_all <- function(reset = TRUE, shims = TRUE) {
+load_all <- function() {
     x <- Sys.time()
-    logf("Calling: pkgload::load_all(reset = %s)", reset)
-    pkgload::load_all(reset = reset, quiet = TRUE)
-    if (shims) {
-        logf("Calling: pkgload_env$insert_global_shims(force = TRUE)")
-        pkgload_env <- environment(pkgload::load_all)
-        pkgload_env$insert_global_shims(force = TRUE)
-    }
+    logf("Calling: pkgload::load_all(reset = TRUE)")
+    pkgload::load_all(reset = TRUE, quiet = TRUE)
+    logf("Calling: pkgload_env$insert_global_shims(force = TRUE)")
+    pkgload_env <- environment(pkgload::load_all)
+    pkgload_env$insert_global_shims(force = TRUE)
+    diff <- Sys.time() - x
+    logf("Elapsed: %s", format(diff))
+}
+
+document <- function() {
+    x <- Sys.time()
+    logf("Calling: devtools::document(quiet = TRUE)")
+    devtools::document(quiet = TRUE)
+    logf("Calling: pkgload_env$insert_global_shims(force = TRUE)")
+    pkgload_env <- environment(pkgload::load_all)
+    pkgload_env$insert_global_shims(force = TRUE)
     diff <- Sys.time() - x
     logf("Elapsed: %s", format(diff))
 }
