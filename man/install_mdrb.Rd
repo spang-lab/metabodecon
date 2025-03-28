@@ -31,3 +31,6 @@ Installs metabodecon's Rust backend \href{https://github.com/spang-lab/mdrb}{mdr
 via \code{\link[remotes:install_github]{remotes::install_github()}}. If remotes is not available, it is installed
 first via \code{\link[utils:install.packages]{utils::install.packages()}}
 }
+\examples{
+evalwith(answers = c(continue = "n"), install_mdrb())
+}

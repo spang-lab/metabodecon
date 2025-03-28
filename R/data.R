@@ -129,13 +129,13 @@ metabodecon_file <- function(name = "sim_01") {
 #' one only optionally was made to conform to CRAN package policies, which state
 #' that:
 #'
-#'     Packages should not write in the user's home filespace (including
-#'     clipboards), nor anywhere else on the file system apart from the R
-#'     session's temporary directory \[...\] Limited exceptions may be allowed
-#'     in interactive sessions if the package obtains confirmation from the
-#'     user. For R version 4.0 or later \[...\] packages may store user-specific
-#'     data, configuration and cache files in their respective user directories
-#'     obtained from [tools::R_user_dir()] \[...\].
+#' *Packages should not write in the user's home filespace (including*
+#' *clipboards), nor anywhere else on the file system apart from the R*
+#' *session's temporary directory \[...\] Limited exceptions may be allowed*
+#' *in interactive sessions if the package obtains confirmation from the*
+#' *user. For R version 4.0 or later \[...\] packages may store user-specific*
+#' *data, configuration and cache files in their respective user directories*
+#' *obtained from `tools::R_user_dir()` \[...\].*
 #'
 #' Source:
 #' [cran.r-project.org/web/packages/policies](
