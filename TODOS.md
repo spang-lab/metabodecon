@@ -1,6 +1,8 @@
 # NEXT
 
-## Fix unsafe calls
+## Done
+
+### Fix unsafe calls
 
 With the 1.4.0 Release we get the following R CMD check notes:
 
@@ -11,30 +13,54 @@ Found the following possibly unsafe calls:
 
 https://github.com/spang-lab/metabodecon/actions/runs/14069618152/job/39400480535
 
-## Add Wolframs Issues
+*Done: 28.3.2025. Branch: feat14x. PR: #13.*
 
-Add the issues Wolfram sent me by Mail.
+## Open
 
-## Add index vignette
+### Add Getting Started to Reference
 
-There should be one vignette shipped with the package that is as small as possible and contains klinks to the online documentation.
+Add a function `Getting_Started()` or `get_started()` to the package that contains a link to the online documentation. This should be the first function in the reference manual (if possible).
 
-## Check missing pkgs in align
+### Add classes to Reference
+
+Add a `Metabodecon Classes` list into Reference Manual.
+
+### Remove S3 methods from Reference
+
+S3 methods do not need to be documented, and their inclusion takes up a disproportionate amount of space in the reference manual. Therefore, we should remove their documentation.
+
+### Turn articles into vignettes
+
+Make sure that the vignettes are built from scratch so they don't take up too much space. If thats not possible, add one vignette to the package that is as small as possible and contains links to the online documentation.
+
+### Update expno/procno defaults
+
+Expno and procno should use NULL as default.
+If NULL, the function should look for the first available expno/procno folder.
+If there is only one, it should use that one.
+If there are multiple, it should use expno=10 and procno=10.
+If there are multiple but no 10, it should throw an error.
+
+### Change verbose defaults
+
+Change verbose argument for deconvolute and align to TRUE.
+
+### Check missing pkgs in align
 
 Installation via `install.packages("metabodecon")` do not install `MassSpecWavelet` and `impute`. So if a user doesn't copy paste the installation instructions but installed via `install.packages("metabodecon")`, these dependencies will be missing. In such scenarios, we should print an error message with the required install commands and abort.
 
-## Improve questions
+### Improve questions
 
 1. Question `Signal free region correctly selected? (y/n)` should be replaced by `Borders to Signal Free Regions (green) correctly selected? (y/n)`
 2. Question `Water artefact fully inside red vertical lines? (y/n)` should be replaced by `Water artefact fully inside blue area? (y/n)`
 
-## Add function get_si_mat
+### Add function get_si_mat
 
 Add a function `get_si_mat()` for extracting a matrix of signal intensities (SI) from a metabodecon object. The type of returned SI should be `raw` for `spectra`, `sup` for `decons` and `al` for `aligns`.
 
-## Add authors to functions
+### Add authors to functions
 
-## Add lifecycle badges to functions
+### Add lifecycle badges to functions
 
 # BACKLOG
 
