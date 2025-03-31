@@ -1,22 +1,4 @@
-# Imports ######################################################################
-
-# Standard Lib
-
-#' @import grDevices
-#' @import stats
-#' @import utils
-#' @import parallel
-#' @import stats
-#' @import graphics
-#' @import grDevices
-#' @import mathjaxr
-
-# 3rd Party
-
-#' @import withr
-#' @import toscutil
-
-# Convert between Units (Public) #####
+# Convert between Units (Public) ###############################################
 
 #' @export
 #' @title Convert from unit A to unit B
