@@ -13,13 +13,15 @@ Found the following possibly unsafe calls:
 
 https://github.com/spang-lab/metabodecon/actions/runs/14069618152/job/39400480535
 
-*Done: 28.3.2025. Branch: feat14x. PR: #13.*
+*Done: Fri Mar 28 2025. Branch: feat14x. PR: #13.*
 
 ## Open
 
 ### Add Getting Started to Reference
 
 Add a function `Getting_Started()` or `get_started()` to the package that contains a link to the online documentation. This should be the first function in the reference manual (if possible).
+
+*Done: Mon Mar 31 2025. Branch: feat14x. PR: #13.*
 
 ### Add classes to Reference
 
