@@ -39,8 +39,8 @@ automatically. Takes precedence over \code{foc_frac}.}
 \item{sub1, sub2, sub3}{List of arguments passed to \code{\link[=draw_spectrum]{draw_spectrum()}} when drawing sub figure
 1-3. See 'Details'.}
 
-\item{mar}{A numeric vector of length 4 passed, which specifies the margins of the plot.
-Passed to \code{\link[=par]{par()}}. If set to \code{NULL}, a suitable value is chosen automatically.}
+\item{mar}{A numeric vector of length 4 specifying the margins of the plot. Passed to
+\code{\link[=par]{par()}}. If set to \code{NULL}, a suitable value is chosen automatically.}
 
 \item{frame}{A list of values passed to \code{\link[=box]{box()}} when drawing the frame around plot region.
 If set to \code{NULL}, no frame is drawn.}

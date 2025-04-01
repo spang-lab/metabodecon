@@ -10,7 +10,8 @@ plot_spectra(
   sfy = 1e+06,
   xlab = "Chemical Shift [ppm]",
   ylab = paste("Signal Intensity [au] /", sfy),
-  mar = c(4.1, 4.1, 1.1, 0.1)
+  mar = c(4.1, 4.1, 1.1, 0.1),
+  lgd = TRUE
 )
 }
 \arguments{
@@ -26,6 +27,8 @@ plot_spectra(
 \item{ylab}{Label for the y-axis.}
 
 \item{mar}{A numeric vector of length 4, which specifies the margins of the plot.}
+
+\item{lgd}{Logical. If TRUE, a legend is drawn.}
 }
 \value{
 A plot of the deconvoluted spectra.

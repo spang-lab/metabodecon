@@ -32,5 +32,5 @@ via \code{\link[remotes:install_github]{remotes::install_github()}}. If remotes 
 first via \code{\link[utils:install.packages]{utils::install.packages()}}
 }
 \examples{
-evalwith(answers = c(continue = "n"), install_mdrb())
+if (interactive()) try(install_mdrb())
 }
