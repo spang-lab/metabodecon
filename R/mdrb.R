@@ -138,7 +138,7 @@ check_mdrb_deps <- function() {
 #' @return NULL. Called for side effect of installing the Rust backend.
 #'
 #' @examples
-#' evalwith(answers = c(continue = "n"), install_mdrb())
+#' if (interactive()) try(install_mdrb())
 install_mdrb <- function(ask = TRUE,
                          args_remotes = list(),
                          args_mdrb = list(),
