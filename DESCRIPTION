@@ -1,6 +1,6 @@
 Package: metabodecon
 Title: Deconvolution and Alignment of 1d NMR Spectra
-Version: 1.4.0
+Version: 1.4.1
 Authors@R: c(
     person(given = "Tobias",
            family = "Schmidt",
@@ -77,3 +77,4 @@ RdMacros: mathjaxr
 BuildManual: TRUE
 Language: en-US
 Remotes: spang-lab/mdrb
+VignetteBuilder: knitr
