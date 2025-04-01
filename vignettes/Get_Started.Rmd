@@ -37,8 +37,7 @@ img {
 
 ```{r set-defaults, echo=FALSE, results=FALSE, message=FALSE}
 knitr::opts_chunk$set(
-    dev = "svg",
-    fig.dim = c(5, 5), # Dimensions of stores figures in inches
+    fig.dim = c(5, 5), # Size of stored figures in inches
     fig.show = "hold", # Render images as inline elements
     out.height = "auto", # (1)
     eval = FALSE,
