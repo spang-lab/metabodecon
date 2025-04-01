@@ -8,17 +8,47 @@ vignette: >
 ---
 
 <style>
-figure{
-    border: 1px solid #dee2e6; border-radius: .375rem; padding: 0;
+figure, div.figure
+{
+    border: 1px solid #dee2e6;
+    border-radius: .375rem;
+    padding: 0;
+    margin: 1em 0;
 }
-figcaption{
-    text-align: center; font-style: italic; border-top: 1px solid #dee2e6;
-    padding: 0.75rem; background-color: #ffffff;
+caption, p.caption {
+    text-align: center;
+    font-style: italic;
+    border-top: 1px solid #dee2e6;
+    padding: 0.75rem;
+    background-color: #ffffff;
 }
-.sourceCode.txt{
-    background-color: #f1f3f5;
+img {
+    margin: 0 auto;
+    padding: 0;
+    border: none;
+    width: 50%;
+}
+@media (max-width: 500px) {
+    img {
+        width: 100%; /* Full width for smaller viewports */
+    }
 }
 </style>
+
+```{r set-defaults, echo=FALSE, results=FALSE, message=FALSE}
+knitr::opts_chunk$set(
+    dev = "svg",
+    fig.dim = c(5, 5), # Dimensions of stores figures in inches
+    fig.show = "hold", # Render images as inline elements
+    out.height = "auto", # (1)
+    eval = FALSE,
+    echo = FALSE,
+    results = FALSE,
+    message = FALSE
+    # (1) Either out.width or out.heigt must be set of rmarkdown will not put
+    # a div.figure around the individual img elements
+)
+```
 
 This article shows how Metabodecon can be used for  deconvoluting  and  aligning
 one-dimensional NMR spectra using the pre-installed [Sim] dataset as an example.
@@ -39,7 +69,7 @@ function, which returns the path to any file or  directory  within  the  package
 directory. To deconvolute the  spectra  within  the  Sim  dataset  you  can  use
 `generate_lorentz_curves()`:
 
-```R
+```{r chunk-deconvolute, echo=TRUE}
 sim_dir <- metabodecon::metabodecon_file("bruker/sim")
 deconvoluted_spectra <- metabodecon::generate_lorentz_curves(
     data_path = sim_dir, # Path to directory containing spectra
@@ -64,25 +94,23 @@ acquisition and processing parameters. However, for heterogeneous datasets, it's
 advisable to optimize parameters for each batch of spectra individually.
 
 Questions three and  four  are  accompanied  by  two  plots,  shown  in  [Figure
-1](#fig-sim01-sfr-and-wsr), which  help  you  to  verify  the  accuracy  of  the
-selected signal-free region (SFR) and water signal half-width (WSHW) [^wshw]. In
-this case, the provided parameters are already fine,  so  you  can  answer  both
-questions with `y`. If adjustments are needed, you  can  respond  with  `n`  and
-input the correct values.
+1](#fig-deconvolute), which help you to verify  the  accuracy  of  the  selected
+signal-free region (SFR) and water signal half-width  (WSHW)  [^wshw].  In  this
+case, the provided parameters are already fine, so you can answer both questions
+with `y`. If adjustments are needed, you can respond  with  `n`  and  input  the
+correct values.
 
-<figure id="fig-sim01-sfr-and-wsr">
-<a href="Get_Started/sim_01_param_checking.svg"><img src="Get_Started/sim_01_param_checking.svg" alt="sim_01_param_checking.svg"></a>
-<figcaption>
-<strong>Figure 1.</strong>
-The first spectrum of the Sim dataset. The x-Axis gives the  chemical  shift  of
-each datapoint in parts per million (ppm). The y-Axis gives the signal intensity
-of each datapoint in arbitrary units (au). The borders of the signal free region
-are shown as green vertical lines in the left plot.  The  center  of  the  water
-signal is shown as a red vertical line in the  right  plot.  Because  the  water
-signal half width is set to zero, the borders of the water signal  region  equal
-its center.
-</figcaption>
-</figure>
+<a id="fig-deconvolute"></a>
+
+```{r fig-deconvolute, eval=TRUE, fig.cap='<strong>Figure 1.</strong> The first spectrum of the Sim dataset. The x-Axis gives the chemical shift of each datapoint in parts per million (ppm). The y-Axis gives the signal intensity of each datapoint in arbitrary units (au). The signal free regions are shown as green rectangles in the left plot. The water signal region, usually shown as blue rectangle, is shown in the right plot. Because the water signal half width is set to zero in this case, the rectangle collapses to a vertical line.'}
+metabodecon::evalwith(
+    answers = list(sameParams = "y", adjNo="1", sfrOk = "y", wsOk = "y"),
+    pars = list(mar = c(4, 4, 2, 2)),
+    expr = {
+        <<chunk-deconvolute>>
+    }
+)
+```
 
 When using the function in scripts, where interactive user input is not desired,
 you can disable the interactive prompting by setting parameter `ask` to `FALSE`.
@@ -92,28 +120,27 @@ spectra automatically. [^askFALSE]
 # Visualize deconvoluted spectra
 
 After completing the deconvolution, it is advisable to visualize the extracted
-signals using `plot_spectrum()` to assess the quality of the deconvolution:
+signals using `plot_spectrum()` to assess the quality of the deconvolution.
 
-```R
-# Visualize the first spectrum only
+```{r chunk-plot-spectrum, echo=TRUE}
+# Visualize the first spectrum.
 metabodecon::plot_spectrum(deconvoluted_spectra[[1]])
+
+# Visualize the second spectrum, this time without the legend.
+metabodecon::plot_spectrum(deconvoluted_spectra[[1]], lgd = FALSE)
 
 # Visualize all spectra and save them to a pdf file
 pdfpath <- tempfile(fileext = ".pdf")
-pdf(pdfpath, width = 12, height = 8)
-for (i in seq_along(deconvoluted_spectra)) {
-    metabodecon::plot_spectrum(
-        x = deconvoluted_spectra[[i]],
-        main = deconvoluted_spectra[[i]]$filename,
-        foc_frac = c(0.25, 0.75)
-    )
+pdf(pdfpath)
+for (x in deconvoluted_spectra) {
+    metabodecon::plot_spectrum(x, main = x$filename)
 }
 dev.off()
 cat("Plots saved to", pdfpath, "\n")
 ```
 
 Out of the 16 generated plots, the first two are shown as  examples  in  [Figure
-2](#fig-sim1-plots). Things to look out for are:
+2](#fig-plot-spectrum). Things to look out for are:
 
 1. That the smoothing does not remove any real signals. If the smoothing is  too
    strong, i.e., the smoothed signal intensity (SI) is very different  from  the
@@ -123,17 +150,11 @@ Out of the 16 generated plots, the first two are shown as  examples  in  [Figure
    smoothed SI. If major peaks are missed by the algorithm,  you  should  reduce
    the threshold `delta` in the call to `generate_lorentz_curves()`.
 
-<figure id="fig-sim1-plots">
-<a  href="Get_Started/sim_01_spectrum.svg"><img src="Get_Started/sim_01_spectrum.svg" alt="sim_01_spectrum.svg" width="49%"></a>
-<a  href="Get_Started/sim_02_spectrum.svg"><img src="Get_Started/sim_02_spectrum.svg" alt="sim_02_spectrum.svg" width="49%"></a>
-<figcaption>
-<strong>Figure 2.</strong>
-Deconvolution results for the first two spectra of the Sim dataset. The  raw  SI
-(black), smoothed SI (blue), and  superposition  of  Lorentz  curves  (red)  are
-closely aligned, indicating that <code>smopts</code> and <code>delta</code> were
-chosen well and that the deconvolution was successful.
-</figcaption>
-</figure>
+<a id="fig-plot-spectrum"></a>
+
+```{r fig-plot-spectrum, eval=TRUE, fig.cap="<strong>Figure 2.</strong> Deconvolution results for the first two spectra of the Sim dataset. The raw SI (black), smoothed SI (blue), and superposition of Lorentz curves (red) are closely aligned, indicating that <code>smopts</code> and <code>delta</code> were chosen well and that the deconvolution was successful."}
+<<chunk-plot-spectrum>>
+```
 
 # Align deconvoluted spectra
 
@@ -141,30 +162,28 @@ The last step in the Metabodecon Workflow is to align the deconvoluted  spectra.
 This is necessary because the chemical shifts of the peaks in  the  spectra  may
 vary slightly due to differences in the measurement conditions.
 
-To  visualize  the  data  before  and  after  the   alignment,   you   can   use
-`plot_spectra()`. To do the alignment, you can use `align()`:
+To perform the alignment, you can use `align()`. To visualize  the  data  before
+and after the alignment, you can use `plot_spectra()`:
 
-```R
-metabodecon::plot_spectra(deconvoluted_spectra)
-aligned_spectra <- metabodecon::align(deconvoluted_spectra, maxCombine = 1)
-metabodecon::plot_spectra(aligned_spectra)
+```{r chunk-align, echo=TRUE}
+# Plot spectra before alignment. Only shows spectra 1-8 for clarity.
+metabodecon::plot_spectra(deconvoluted_spectra[1:8], lgd = FALSE)
+
+# Align spectra and plot again.
+aligned_spectra <- metabodecon::align(deconvoluted_spectra)
+metabodecon::plot_spectra(aligned_spectra[1:8])
 ```
 
-The resulting plots are shown in [Figure 3](#fig-sim-spectra-overlayed)
+The resulting plots are shown in [Figure 3](#fig-align). Before  the  alignment,
+the spectra exhibit generally similar shapes but do not perfectly overlap. After
+the alignment, the spectra are much more consistent with each other,  indicating
+that the alignment was  successful.  Notably,  spectrum  two  has  been  shifted
+significantly to the left.
 
-<figure id="fig-sim-spectra-overlayed">
-<a href="Get_Started/sim_spectra_overlayed.svg">
-<img src="Get_Started/sim_spectra_overlayed.svg" alt="sim_spectra_overlayed.svg">
-</a>
-<figcaption>
-<strong>Figure 3.</strong>
-Overlay of all 16 deconvoluted spectra from the Sim dataset.  The  x-Axis  gives
-the chemical shift of each datapoint in parts  per  million  (ppm).  The  y-Axis
-gives the signal intensity of each datapoint in arbitrary units (au). All specta
-are pretty similar to each other except for  Spetrum  2,  which  appears  to  be
-shifted approx. 0.01 ppm to the right.
-</figcaption>
-</figure>
+<a id="fig-align"></a>
+```{r fig-align, eval=TRUE, fig.cap='<strong>Figure 3.</strong> Overlay of the first eight deconvoluted spectra from the Sim dataset before alignment (left) and after alignment (right). The x-Axis gives the chemical shift of each datapoint in parts per million (ppm). The y-Axis gives the signal intensity of each datapoint in arbitrary units (au). All specta are pretty similar to each other except for Spectrum 2, which got shifted approx. 0.01 ppm to the right.'}
+<<chunk-align>>
+```
 
 <!-- Footnotes -->
 
