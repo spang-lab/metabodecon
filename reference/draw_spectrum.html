@@ -13,7 +13,7 @@ test/testthat/test-draw_spectrum.R.
 
     <a class="navbar-brand me-2" href="../index.html">metabodecon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.4.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -44,7 +44,7 @@ test/testthat/test-draw_spectrum.R.
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.svg" class="logo" alt=""><h1>Draw Spectrum</h1>
-      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/v1.4.0/R/plot.R" class="external-link"><code>R/plot.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/main/R/plot.R" class="external-link"><code>R/plot.R</code></a></small>
       <div class="d-none name"><code>draw_spectrum.Rd</code></div>
     </div>
 
@@ -244,12 +244,12 @@ estimated and aligned lorentzian curve centers.</p></dd>
 <code>n</code> and <code>digits</code>, where <code>n = 5</code> means "Draw 5 tickmarks over  the  full  axis
 range" and <code>digits = 3</code> means "round the label shown beside each tickmark  to
 3 digits". If <code>n</code> is omitted, a suitable value is chosen automatically  using
-<code><a href="https://rdrr.io/r/graphics/axTicks.html" class="external-link">axTicks()</a></code>. If <code>digits</code> is omitted, a default of <code>2:12</code> is used. Providing a
-vector of <code>digits</code> causes each digit to be tried as argument  for  <code><a href="https://rdrr.io/r/base/Round.html" class="external-link">round()</a></code>,
-until a digit is encountered that results in <code>n</code> unique labels. Example:</p>
+<code><a href="https://rdrr.io/r/graphics/axTicks.html" class="external-link">axTicks()</a></code>. If <code>digits</code> is omitted, a default of <code>0:12</code> is used. Providing a
+vector of <code>digits</code> causes each digit to be tried until a digit is encountered
+that results in <code>n</code> unique labels. Example:</p>
 <p>Assume we have <code>n = 4</code> and the corresponding  calculated  tickmark  positions
 are: 1.02421, 1.02542, 1.02663 and 1.02784. If we provide <code>digits = 1:5</code>, the
-following roundings are tried:</p><table class="table table"><tr><td>digit</td><td>label 1</td><td>label 2</td><td>label 3</td><td>label 4</td></tr><tr><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td></tr><tr><td>2</td><td>1.02</td><td>1.03</td><td>1.03</td><td>1.03</td></tr><tr><td>3</td><td>1.024</td><td>1.025</td><td>1.027</td><td>1.028</td></tr><tr><td>4</td><td>1.0242</td><td>1.0254</td><td>1.0266</td><td>1.0278</td></tr><tr><td>5</td><td>1.02421</td><td>1.02542</td><td>1.02663</td><td>1.02784</td></tr></table><p>In the above example the process would stop at <code>digit = 3</code>, because  at  this
+following representations are tried:</p><table class="table table"><tr><td>digit</td><td>label 1</td><td>label 2</td><td>label 3</td><td>label 4</td></tr><tr><td>1</td><td>1.0</td><td>1.0</td><td>1.0</td><td>1.0</td></tr><tr><td>2</td><td>1.02</td><td>1.03</td><td>1.03</td><td>1.03</td></tr><tr><td>3</td><td>1.024</td><td>1.025</td><td>1.027</td><td>1.028</td></tr><tr><td>4</td><td>1.0242</td><td>1.0254</td><td>1.0266</td><td>1.0278</td></tr><tr><td>5</td><td>1.02421</td><td>1.02542</td><td>1.02663</td><td>1.02784</td></tr></table><p>In the above example the process would stop at <code>digit = 3</code>, because  at  this
 point we have n = 4 unique labels (1.024, 1.025, 1.027 and 1.028).</p>
     </div>
 

@@ -1,5 +1,6 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://spang-lab.github.io/metabodecon/404.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/ARCHIVE.html</loc></url>
 <url><loc>https://spang-lab.github.io/metabodecon/LICENSE.html</loc></url>
 <url><loc>https://spang-lab.github.io/metabodecon/TODOS.html</loc></url>
 <url><loc>https://spang-lab.github.io/metabodecon/articles/Classes.html</loc></url>
@@ -31,10 +32,12 @@
 <url><loc>https://spang-lab.github.io/metabodecon/reference/gen_feat_mat.html</loc></url>
 <url><loc>https://spang-lab.github.io/metabodecon/reference/get_data_dir.html</loc></url>
 <url><loc>https://spang-lab.github.io/metabodecon/reference/get_ppm_range.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/get_started.html</loc></url>
 <url><loc>https://spang-lab.github.io/metabodecon/reference/index.html</loc></url>
 <url><loc>https://spang-lab.github.io/metabodecon/reference/install_mdrb.html</loc></url>
 <url><loc>https://spang-lab.github.io/metabodecon/reference/is_metabodecon_class.html</loc></url>
 <url><loc>https://spang-lab.github.io/metabodecon/reference/make_spectrum.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/metabodecon-package.html</loc></url>
 <url><loc>https://spang-lab.github.io/metabodecon/reference/metabodecon_file.html</loc></url>
 <url><loc>https://spang-lab.github.io/metabodecon/reference/plot_lorentz_curves_save_as_png.html</loc></url>
 <url><loc>https://spang-lab.github.io/metabodecon/reference/plot_spectra.html</loc></url>
