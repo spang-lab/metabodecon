@@ -1,12 +1,10 @@
-# NEXT OPEN
-
-## Turn articles into vignettes
-
-Make sure that the vignettes are built from scratch so they don't take up too much space. If thats not possible, add one vignette to the package that is as small as possible and contains links to the online documentation.
+# NEXT
 
 ## Remove Remotes field from DESCRIPTION
 
 When you submit your package to CRAN, all of its dependencies must also be available on CRAN. For this reason, release() will warn you if you try to release a package with a Remotes field.
+
+# PLANNED
 
 ## Update expno/procno defaults
 
@@ -22,7 +20,7 @@ Change verbose argument for deconvolute and align to TRUE.
 
 ## Check missing pkgs in align
 
-Installation via `install.packages("metabodecon")` do not install `MassSpecWavelet` and `impute`. So if a user doesn't copy paste the installation instructions but installed via `install.packages("metabodecon")`, these dependencies will be missing. In such scenarios, we should print an error message with the required install commands and abort.
+Installation via `install.packages("metabodecon")` does not install `MassSpecWavelet` and `impute`. So if a user doesn't copy paste the installation instructions but installed via `install.packages("metabodecon")`, these dependencies will be missing. In such scenarios, we should print an error message with the required install commands and abort.
 
 ## Improve questions
 
@@ -36,35 +34,6 @@ Add a function `get_si_mat()` for extracting a matrix of signal intensities (SI)
 ## Add authors to functions
 
 ## Add lifecycle badges to functions
-
-# NEXT DONE
-
-## Show SFR and WSHW as rects
-
-`plot_ws()` and `plot_sfr()` should show the SFR and WSHW as rectangles instead of border lines. This is more intuitive and allows to see the width of the SFR and WSHW.
-
-*Done: Tue Apr 1 2025. Branch: feat14x. PR: #13.*
-
-## Add Getting Started to Reference
-
-Add a function `Getting_Started()` or `get_started()` to the package that contains a link to the online documentation. This should be the first function in the reference manual (if possible).
-
-*Done: Mon Mar 31 2025. Branch: feat14x. PR: #13.*
-
-## Fix unsafe calls
-
-With the 1.4.0 Release we get the following R CMD check notes:
-
-Found the following possibly unsafe calls:
-- In `test.R`: `unlockBinding("assert", ns)`
-- In `util.R:699:is_list_of_nums`: no visible global function definition for `returns`
-- In `test.R:283:not_cran`: no visible binding for global variable `x`
-
-https://github.com/spang-lab/metabodecon/actions/runs/14069618152/job/39400480535
-
-*Done: Fri Mar 28 2025. Branch: feat14x. PR: #13.*
-
-# BACKLOG
 
 ## Improve Sap Dataset
 
@@ -202,21 +171,9 @@ Links:
 - https://spang-lab.github.io/metabodecon/articles/Classes.html#spectrum
 - https://spang-lab.github.io/metabodecon/articles/Classes.html#elements-v1-2
 
-## Check mse calculation in Rust
+## Turn articles into vignettes
 
-`x$mdrb_decon$mse()` deviates from `mse(si, sup, norm=FALSE)` in `as_decon2.rdecon()`, which is why we have to calculate the MSE ourselves in R. This should be fixed in the Rust backend.
-
-MSE calculation in R is implemented in `decon.R` as:
-
-```R
-mse <- function(y, yhat, normed = FALSE) {
-    if (normed) {
-        mean(((y / sum(y)) - (yhat / sum(yhat)))^2)
-    } else {
-        mean((y - yhat)^2)
-    }
-}
-```
+Make sure that all suitable articles are included as vignettes and built from scratch so they don't take up too much space.
 
 # DONE
 
@@ -290,3 +247,46 @@ Implement `deconvolute_spectra()` and `deconvolute_spectrum()` which should be t
 5. Remove the scale factor and scaled data point numbers as described in CHECK-4
 
 *Done with 1.2 or 1.3 (not sure) somewhere in between Sep24 and Jan25*
+
+## Check mse calculation in Rust
+
+`x$mdrb_decon$mse()` deviates from `mse(si, sup, norm=FALSE)` in `as_decon2.rdecon()`, which is why we have to calculate the MSE ourselves in R. This should be fixed in mdrb.
+
+MSE calculation in R is implemented in `decon.R` as:
+
+```R
+mse <- function(y, yhat, normed = FALSE) {
+    if (normed) {
+        mean(((y / sum(y)) - (yhat / sum(yhat)))^2)
+    } else {
+        mean((y - yhat)^2)
+    }
+}
+```
+
+*Update 3. April 2025: clarified with max. MSE calculation is done using only points in the signal region. This is the cause for the discrepancy. We should add a test for this.*
+
+## Show SFR and WSHW as rects
+
+`plot_ws()` and `plot_sfr()` should show the SFR and WSHW as rectangles instead of border lines. This is more intuitive and allows to see the width of the SFR and WSHW.
+
+*Done: Tue Apr 1 2025. Branch: feat14x. PR: #13.*
+
+## Add Getting Started to Reference
+
+Add a function `Getting_Started()` or `get_started()` to the package that contains a link to the online documentation. This should be the first function in the reference manual (if possible).
+
+*Done: Mon Mar 31 2025. Branch: feat14x. PR: #13.*
+
+## Fix unsafe calls
+
+With the 1.4.0 Release we get the following R CMD check notes:
+
+Found the following possibly unsafe calls:
+- In `test.R`: `unlockBinding("assert", ns)`
+- In `util.R:699:is_list_of_nums`: no visible global function definition for `returns`
+- In `test.R:283:not_cran`: no visible binding for global variable `x`
+
+https://github.com/spang-lab/metabodecon/actions/runs/14069618152/job/39400480535
+
+*Done: Fri Mar 28 2025. Branch: feat14x. PR: #13.*
