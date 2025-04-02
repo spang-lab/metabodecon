@@ -156,15 +156,15 @@ Parameters \code{bt_axis}, \code{lt_axis}, \code{tp_axis} and \code{rt_axis} all
 \code{n} and \code{digits}, where \code{n = 5} means "Draw 5 tickmarks over  the  full  axis
 range" and \code{digits = 3} means "round the label shown beside each tickmark  to
 3 digits". If \code{n} is omitted, a suitable value is chosen automatically  using
-\code{\link[=axTicks]{axTicks()}}. If \code{digits} is omitted, a default of \code{2:12} is used. Providing a
-vector of \code{digits} causes each digit to be tried as argument  for  \code{\link[=round]{round()}},
-until a digit is encountered that results in \code{n} unique labels. Example:
+\code{\link[=axTicks]{axTicks()}}. If \code{digits} is omitted, a default of \code{0:12} is used. Providing a
+vector of \code{digits} causes each digit to be tried until a digit is encountered
+that results in \code{n} unique labels. Example:
 
 Assume we have \code{n = 4} and the corresponding  calculated  tickmark  positions
 are: 1.02421, 1.02542, 1.02663 and 1.02784. If we provide \code{digits = 1:5}, the
-following roundings are tried:\tabular{lllll}{
+following representations are tried:\tabular{lllll}{
    digit \tab label 1 \tab label 2 \tab label 3 \tab label 4 \cr
-   1 \tab 1 \tab 1 \tab 1 \tab 1 \cr
+   1 \tab 1.0 \tab 1.0 \tab 1.0 \tab 1.0 \cr
    2 \tab 1.02 \tab 1.03 \tab 1.03 \tab 1.03 \cr
    3 \tab 1.024 \tab 1.025 \tab 1.027 \tab 1.028 \cr
    4 \tab 1.0242 \tab 1.0254 \tab 1.0266 \tab 1.0278 \cr

@@ -280,7 +280,7 @@ r_geq <- function(x) {
 }
 
 not_cran <- function() {
-    interactive() || isTRUE(as.logical(Sys.getenv(x, "NOT_CRAN")))
+    interactive() || isTRUE(as.logical(Sys.getenv("NOT_CRAN", "FALSE")))
 }
 
 #' @noRd
@@ -304,12 +304,9 @@ run_tests <- function(func = NULL, all = FALSE) {
     RUN_SLOW_TESTS_OLD <- Sys.getenv("RUN_SLOW_TESTS")
     Sys.setenv(RUN_SLOW_TESTS = if (all) "TRUE" else "FALSE")
     on.exit(Sys.setenv(RUN_SLOW_TESTS = RUN_SLOW_TESTS_OLD), add = TRUE, after = FALSE)
-    ns <- asNamespace("metabodecon")
-    unlockBinding("assert", ns)
-    ns$assert = function(...) {} # (1)
-    lockBinding("assert", ns)
-    # (1) Disable type checking in private functions, as done when loading the
-    # package via library.
+    testthat::local_mocked_bindings(assert = function(...) {}) # (1)
+    # (1) Disable type checking in private functions, as is the case when the
+    # package is loaded via library.
     if (is.null(func)) {
         logf("Calling: devtools::test()")
         devtools::test()

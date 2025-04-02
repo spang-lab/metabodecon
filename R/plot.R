@@ -27,6 +27,9 @@
 #' @param mar
 #' A numeric vector of length 4, which specifies the margins of the plot.
 #'
+#' @param lgd
+#' Logical. If TRUE, a legend is drawn.
+#'
 #' @return
 #' A plot of the deconvoluted spectra.
 #'
@@ -42,9 +45,10 @@ plot_spectra <- function(obj,
                          sfy = 1e6,
                          xlab = "Chemical Shift [ppm]",
                          ylab = paste("Signal Intensity [au] /", sfy),
-                         mar = c(4.1, 4.1, 1.1, 0.1)) {
+                         mar = c(4.1, 4.1, 1.1, 0.1),
+                         lgd = TRUE) {
     decons <- as_v12_collection(obj, ...)
-    sis <- lapply(decons, function(x) x$sit$supal %||% x$sit$sup %||% x$si)
+    sis <- lapply(decons, function(x) (x$sit$supal %||% x$sit$sup %||% x$si) / sfy)
     x0s <- lapply(decons, function(x) x$lcpar$x0)
     css <- lapply(decons, function(x) x$cs)
     si_min <- 0
@@ -93,7 +97,7 @@ plot_spectra <- function(obj,
         line = 0,
         at = c(x0_min, x0_max)
     )
-    legend(
+    if (lgd) legend(
         x = "topright",
         legend = legend_text,
         col = line_colors,
@@ -137,8 +141,8 @@ plot_spectra <- function(obj,
 #' 1-3. See 'Details'.
 #'
 #' @param mar
-#' A numeric vector of length 4 passed, which specifies the margins of the plot.
-#' Passed to [par()]. If set to `NULL`, a suitable value is chosen automatically.
+#' A numeric vector of length 4 specifying the margins of the plot. Passed to
+#' [par()]. If set to `NULL`, a suitable value is chosen automatically.
 #'
 #' @param frame
 #' A list of values passed to [box()] when drawing the frame around plot region.
@@ -281,8 +285,8 @@ plot_spectrum <- function(x,
     con_lines <- combine(list(show = TRUE), con_lines)
 
     # Setup Plotting Canvas
-    default_mar_left <- if (sub3$show && any(sub1$show, sub2$show)) 3 else 6
-    default_mar <- c(5, default_mar_left, 2, 2)
+    three_plus_layout <- sub3$show && any(sub1$show, sub2$show)
+    default_mar <- if (three_plus_layout) c(4, 3, 1, 1) else c(4, 6, 2, 2)
     local_par(mar = mar %||% default_mar)
     plot_empty()
 
@@ -429,17 +433,17 @@ plot_spectrum <- function(x,
 #' `n` and `digits`, where `n = 5` means "Draw 5 tickmarks over  the  full  axis
 #' range" and `digits = 3` means "round the label shown beside each tickmark  to
 #' 3 digits". If `n` is omitted, a suitable value is chosen automatically  using
-#' [axTicks()]. If `digits` is omitted, a default of `2:12` is used. Providing a
-#' vector of `digits` causes each digit to be tried as argument  for  [round()],
-#' until a digit is encountered that results in `n` unique labels. Example:
+#' [axTicks()]. If `digits` is omitted, a default of `0:12` is used. Providing a
+#' vector of `digits` causes each digit to be tried until a digit is encountered
+#' that results in `n` unique labels. Example:
 #'
 #' Assume we have `n = 4` and the corresponding  calculated  tickmark  positions
 #' are: 1.02421, 1.02542, 1.02663 and 1.02784. If we provide `digits = 1:5`, the
-#' following roundings are tried:
+#' following representations are tried:
 #'
 #' | digit  | label 1 | label 2 | label 3 | label 4 |
 #' | ------ | ------- | ------- | ------- | ------- |
-#' | 1      | 1       | 1       | 1       | 1       |
+#' | 1      | 1.0     | 1.0     | 1.0     | 1.0      |
 #' | 2      | 1.02    | 1.03    | 1.03    | 1.03    |
 #' | 3      | 1.024   | 1.025   | 1.027   | 1.028   |
 #' | 4      | 1.0242  | 1.0254  | 1.0266  | 1.0278  |
@@ -898,9 +902,39 @@ plot_sfr <- function(cs, si, sfr) {
         type = "l",
         xlab = "Chemical Shift [ppm]",
         ylab = "Signal Intensity [au]",
-        xlim = c(max(cs), min(cs))
+        xlim = xlim <- c(max(cs), min(cs)),
+        xaxs = "i",
     )
-    graphics::abline(v = sfr, col = "green")
+    txt <- "Signal Free Region"
+    usr <- par("usr")
+    xmid <- (min(cs) + max(cs)) / 2
+    mtext(txt, side = 3, line = 0, at = xmid, col = "darkgreen")
+    rect(
+        xleft   = c(usr[1], min(sfr)),
+        xright  = c(max(sfr), usr[2]),
+        ybottom = rep(usr[3], 2),
+        ytop    = rep(usr[4], 2),
+        col     = transp("darkgreen", 0.2),
+        border  = "darkgreen"
+    )
+    # text(
+    #     x = c(usr[1] + max(sfr), min(sfr) + usr[2]) / 2,
+    #     y = rep((usr[4] + usr[3]) / 2, 2),
+    #     labels = c("SFR", "SFR"),
+    #     pos = 3,
+    #     col = "darkgreen"
+    # )
+    # arrows(
+    #     x0 = c(xmid, xmid),
+    #     y0 = c(usr[4], usr[4]),
+    #     x1 = c(usr[1] + max(sfr), min(sfr) + usr[2]) / 2,
+    #     y1 = rep(0.8 * usr[4] - 0.2 * usr[3] , 2),
+    #     col = "darkgreen",
+    #     lty = 2,
+    #     length = 0.1,
+    #     # angle = 20
+    # )
+    # graphics::abline(v = sfr, col = "darkgreen")
 }
 
 #' @noRd
@@ -926,7 +960,7 @@ plot_ws <- function(cs, si, wshw) {
         ybottom = par("usr")[3],
         ytop = par("usr")[4],
         col = rgb(0, 0, 1, alpha = 0.2),
-        border = NA
+        border = rgb(0, 0, 1)
     )
 }
 
@@ -1089,7 +1123,7 @@ draw_lc_rect <- function(p, x, args = list(), ymin = 0) {
 draw_axis <- function(lim, side = 1, args = list()) {
     if (isFALSE(pop(args, "show"))) return()
     n          <- pop(args, "n", default = 5)
-    digits     <- pop(args, "digits", default = 2:12)
+    digits     <- pop(args, "digits", default = 0:12)
     sf         <- pop(args, "sf", default = 1)
     skip_first <- pop(args, "skip_first", FALSE)
     skip_last  <- pop(args, "skip_last", FALSE)
@@ -1100,7 +1134,7 @@ draw_axis <- function(lim, side = 1, args = list()) {
     if (!isFALSE(args$labels)) {
         args$labels <- format(labs_sc, digits = 7) # default used by normal axis
         for (i in digits) {
-            args$labels <- format(labs_sc, digits = i)
+            args$labels <- sprintf(paste0("%.", i, "f"), labs_sc)
             if (length(unique(args$labels)) >= n) break
         }
         if (skip_first) args$labels[1] <- ""
@@ -1225,21 +1259,21 @@ get_sub_fig_args <- function(obj, foc_frac, foc_rgn, sub1, sub2, sub3, dot_args)
         if (isFALSE(sub2$show)) "_" else "2",
         if (isFALSE(sub3$show)) "_" else "3"
     )
-    fig_rgns <- switch(layout,           # x1 x2 y1    y2
+    fig_rgns <- switch(layout,                  # x1    x2    y1    y2
         "___" = list(c(0.00, 0.00, 0.00, 0.00), c(0.00, 0.00, 0.00, 0.00), c(0.00, 0.00, 0.00, 0.00)),
         "1__" = list(c(0.00, 1.00, 0.00, 1.00), c(0.00, 0.00, 0.00, 0.00), c(0.00, 0.00, 0.00, 0.00)),
         "_2_" = list(c(0.00, 0.00, 0.00, 0.00), c(0.00, 1.00, 0.00, 1.00), c(0.00, 0.00, 0.00, 0.00)),
         "__3" = list(c(0.00, 1.00, 0.00, 1.00), c(0.00, 0.00, 0.00, 0.00), c(0.00, 1.00, 0.00, 1.00)),
         "12_" = list(c(0.00, 1.00, 0.20, 1.00), c(0.00, 1.00, 0.00, 0.20), c(0.00, 0.00, 0.00, 0.00)),
-        "1_3" = list(c(0.00, 1.00, 0.40, 1.00), c(0.00, 0.00, 0.00, 0.00), c(0.00, 1.00, 0.00, 0.20)),
+        "1_3" = list(c(0.00, 1.00, 0.30, 1.00), c(0.00, 0.00, 0.00, 0.00), c(0.00, 1.00, 0.00, 0.20)),
         "_23" = list(c(0.00, 0.00, 0.00, 0.00), c(0.00, 1.00, 0.50, 1.00), c(0.00, 1.00, 0.00, 0.30)),
         "123" = list(c(0.00, 1.00, 0.50, 1.00), c(0.00, 1.00, 0.30, 0.50), c(0.00, 1.00, 0.00, 0.20)),
         stop("Invalid layout")
     )
     mars <- switch(layout,          # b  l  t  r
-        "1_3" = list(c(1, 6, 2, 2), c(0, 0, 0, 0), c(0, 0, 1, 0)),
+        "1_3" = list(c(1, 4, 2, 2), c(0, 0, 0, 0), c(0, 0, 1, 0)),
         "_23" = list(c(0, 0, 0, 0), c(1, 2, 2, 2), c(0, 0, 1, 0)),
-        "123" = list(c(0, 6, 2, 2), c(1, 6, 0, 2), c(0, 0, 1, 0)),
+        "123" = list(c(0, 4, 2, 2), c(1, 4, 0, 2), c(0, 0, 1, 0)),
         list(c(0, 0, 0, 0), c(0, 0, 0, 0), c(0, 0, 0, 0))
     )
     for (i in 1:3) {
@@ -1255,17 +1289,17 @@ get_sub_fig_args <- function(obj, foc_frac, foc_rgn, sub1, sub2, sub3, dot_args)
         mar = mars[[i]]
     ))
     # Subfig 1
-    def_args[[1]]$bt_axis  <- if (sub2$show) FALSE
-    def_args[[1]]$bt_text  <- if (sub2$show || sub3$show) FALSE
+    def_args[[1]]$bt_axis  <- list(show = FALSE)
+    def_args[[1]]$bt_text  <- if (sub2$show || sub3$show) list(show = FALSE)
     # Subfig 2
-    def_args[[2]]$bt_text  <- if (sub3$show) FALSE
-    def_args[[2]]$lt_axis  <- if (layout == "_2_") list() else FALSE
+    def_args[[2]]$bt_text  <- if (sub3$show) list(show = FALSE)
+    def_args[[2]]$lt_axis  <- if (layout != "_2_") list(show = FALSE)
     def_args[[2]]$show_d2  <- TRUE
     # Subfig 3
     def_args[[3]]$bg_rect  <- if (layout != "__3") list(border = NA)
     def_args[[3]]$foc_only <- FALSE
-    def_args[[3]]$foc_rect <- if (layout == "__3") FALSE
-    def_args[[3]]$lgd      <- FALSE
+    def_args[[3]]$foc_rect <- if (layout == "__3") list(show = FALSE)
+    def_args[[3]]$lgd      <- list(show = FALSE)
     def_args[[3]]$lt_text  <- if (layout != "__3") list(text = "")
     structure(
         mapply(modifyList, def_args, usr_args, SIMPLIFY = FALSE),

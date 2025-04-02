@@ -67,8 +67,7 @@ urlchecker::url_check()
 
 # Slower, but more realistic tests than devtools::check()
 rcmdcheck::rcmdcheck(
-    args = c("--no-manual", "--as-cran"),
-    build_args = ("--no-manual"),
+    args = c("--as-cran"),
     error_on = ("warning"),
     check_dir = "../metabodecon-RCMDcheck"
 )
