@@ -76,5 +76,5 @@ Config/testthat/start-first:
 RdMacros: mathjaxr
 BuildManual: TRUE
 Language: en-US
-Remotes: spang-lab/mdrb
+Additional_repositories: https://github.com/spang-lab/mdrb
 VignetteBuilder: knitr

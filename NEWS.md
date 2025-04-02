@@ -1,3 +1,12 @@
+# metabodecon 1.4.1
+
+- Added `get_started()` and `metabodecon-package` to manual
+- Improved `plot_spectrum()` default margins.
+- Improved plots shown during `deconvolute()`: SFW and WSHW are now both shown as rectangles instead of lines.
+- Improved `install_mdrb()` example
+- Improved `Get_Started` article
+- Included `Get_Started` article as vignette within the package
+
 # metabodecon 1.4.0
 
 - Improved Github Workflow (GWF) to test installation on a clean Windows/Linux/Mac OS with R pre-installed, but without R-tools and any packages.
