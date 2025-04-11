@@ -806,7 +806,7 @@ MetaboDecon1D_silent <- function(# Passed on to [MetaboDecon1D()]
                                  procno = 10) {
     answers <- get_MetaboDecon1D_answers(
         ns = if (is.na(filename)) length(list.dirs(filepath)) else 1,
-        wshw = range_water_signal_ppm,
+        wshw = if (is.null(range_water_signal_ppm)) 0 else range_water_signal_ppm,
         sfr = signal_free_region,
         format = file_format,
         expno = expno,
