@@ -176,7 +176,7 @@ To perform the alignment, you can use `align()`. To visualize  the  data  before
 and after the alignment, you can use `plot_spectra()`:
 
 ```{r chunk-align, echo=TRUE}
-# Plot spectra before alignment. Only shows spectra 1-8 for clarity.
+# Plot spectra before alignment. Only show spectra 1-8 for clarity.
 metabodecon::plot_spectra(deconvoluted_spectra[1:8], lgd = FALSE)
 
 # Align spectra and plot again.
