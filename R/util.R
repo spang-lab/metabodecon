@@ -488,8 +488,7 @@ logf <- function(fmt,
                  prefix = function() now_ms(usetz = FALSE, color = "\033[1;30m"),
                  sep1 = " ",
                  sep2 = "",
-                 end = "\n",
-                 verbose = TRUE) {
+                 end = "\n") {
     cat(prefix(), sep1, sprintf(fmt, ...), sep2, end, sep = "", file = file, append = append)
 }
 
