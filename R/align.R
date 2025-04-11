@@ -55,7 +55,7 @@
 #' decons <- deconvolute(sim[1:2], sfr = c(3.55, 3.35))
 #' aligned <- align(decons)
 #' aligned
-align <- function(x, maxShift = 50, maxCombine = 5, verbose = FALSE, install_deps = NULL) {
+align <- function(x, maxShift = 50, maxCombine = 5, verbose = TRUE, install_deps = NULL) {
 
     # Check for required packages
     pkgvec <- c("MassSpecWavelet", "impute")

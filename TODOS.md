@@ -8,6 +8,10 @@ When you submit your package to CRAN, all of its dependencies must also be avail
 
 Installation via `install.packages("metabodecon")` does not install `MassSpecWavelet` and `impute`. So if a user doesn't copy paste the installation instructions but installed via `install.packages("metabodecon")`, these dependencies will be missing. In such scenarios, we should print an error message with the required install commands and abort.
 
+## Change verbose defaults
+
+Change verbose argument for deconvolute and align to TRUE.
+
 ## Update expno/procno defaults
 
 Expno and procno should use NULL as default.
@@ -15,10 +19,6 @@ If NULL, the function should look for the first available expno/procno folder.
 If there is only one, it should use that one.
 If there are multiple, it should use expno=10 and procno=10.
 If there are multiple but no 10, it should throw an error.
-
-## Change verbose defaults
-
-Change verbose argument for deconvolute and align to TRUE.
 
 ## Improve questions
 

@@ -141,8 +141,8 @@ NULL
 #' @export
 #' @rdname deconvolute
 deconvolute <- function(x,
-    nfit=3,    smopts=c(2,5), delta=6.4,     sfr=NULL,   wshw=0,
-    ask=FALSE, force=FALSE,   verbose=FALSE, nworkers=1, use_rust=FALSE
+    nfit=3,    smopts=c(2,5), delta=6.4,   sfr=NULL,   wshw=0,
+    ask=FALSE, force=FALSE,   verbose=TUE, nworkers=1, use_rust=FALSE
 ) {
     # Check inputs
     stopifnot(
