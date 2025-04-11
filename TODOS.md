@@ -1,10 +1,12 @@
-# NEXT
+# PLANNED
 
 ## Remove Remotes field from DESCRIPTION
 
 When you submit your package to CRAN, all of its dependencies must also be available on CRAN. For this reason, release() will warn you if you try to release a package with a Remotes field.
 
-# PLANNED
+## Check missing pkgs in align
+
+Installation via `install.packages("metabodecon")` does not install `MassSpecWavelet` and `impute`. So if a user doesn't copy paste the installation instructions but installed via `install.packages("metabodecon")`, these dependencies will be missing. In such scenarios, we should print an error message with the required install commands and abort.
 
 ## Update expno/procno defaults
 
@@ -17,10 +19,6 @@ If there are multiple but no 10, it should throw an error.
 ## Change verbose defaults
 
 Change verbose argument for deconvolute and align to TRUE.
-
-## Check missing pkgs in align
-
-Installation via `install.packages("metabodecon")` does not install `MassSpecWavelet` and `impute`. So if a user doesn't copy paste the installation instructions but installed via `install.packages("metabodecon")`, these dependencies will be missing. In such scenarios, we should print an error message with the required install commands and abort.
 
 ## Improve questions
 
