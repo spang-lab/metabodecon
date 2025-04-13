@@ -4,7 +4,7 @@
 \alias{align}
 \title{Align Spectra}
 \usage{
-align(x, maxShift = 50, maxCombine = 5, verbose = FALSE)
+align(x, maxShift = 50, maxCombine = 5, verbose = TRUE, install_deps = NULL)
 }
 \arguments{
 \item{x}{An   object   of   type   \code{decons1}   or   \code{decons2}    as    described    in
@@ -25,6 +25,17 @@ value most probably has to be increased. Passed  as  argument  \code{maxShift}  
 Passed as argument \code{range} to \code{\link[=combine_peaks]{combine_peaks()}}.}
 
 \item{verbose}{Whether to print additional information during the alignment process.}
+
+\item{install_deps}{Alignment relies on the 'speaq' package, which itself relies on the
+'MassSpecWavelet' and 'impute' packages. Both, 'MassSpecWavelet' and 'impute'
+are not available on CRAN, but can be installed from
+\href{https://www.bioconductor.org/}{Bioconductor} or
+\href{https://r-universe.dev/}{R-Universe}. If \code{install_deps = TRUE}, these
+packages will be automatically installed from R-Universe without asking for
+confirmation. If \code{install_deps = NULL} (default), the user will be asked for
+confirmation before installing missing dependencies. If asking for
+confirmation is not possible or \code{install_deps = FALSE}, the function will
+raise an error if the packages are not installed.}
 }
 \value{
 An object of type \code{align} as described in \href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{Metabodecon Classes}.
@@ -37,7 +48,7 @@ algorithm from the 'speaq' package, described  in  Beirnaert  et  al.  (2018)
 in \code{\link[=combine_peaks]{combine_peaks()}}.
 }
 \examples{
-decons <- deconvolute(sim, sfr = c(3.55, 3.35))
+decons <- deconvolute(sim[1:2], sfr = c(3.55, 3.35))
 aligned <- align(decons)
 aligned
 }

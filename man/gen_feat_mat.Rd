@@ -71,6 +71,7 @@ sim_subset <- metabodecon_file("sim_subset")
 decons <- generate_lorentz_curves_sim(sim_subset)
 obj <- gen_feat_mat(decons)
 str(obj, 2, give.attr = FALSE)
+seventh point from left are peaks, we want the numbers 3 and 7, but we get
 }
 \author{
 Initial version from Wolfram Gronwald.
