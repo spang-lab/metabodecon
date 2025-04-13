@@ -1,4 +1,4 @@
-# PLANNED
+# DONE WITH 1.4.2 (PR 14)
 
 ## [x] Remove Remotes field from DESCRIPTION
 
@@ -22,6 +22,8 @@ Currently the test-install workflow is split over three jobs, with huge amounts 
 The corresponding commands for "CRAN-Modern", "CRAN-Old" or "Github" can be take from the current version `test-install.yaml`.
 
 After ou created `test-install.R`, update the workflow to use it.
+
+# PLANNED
 
 ## Improve questions
 
@@ -132,7 +134,7 @@ Assumption: it's a bug and leads to this peak being missed. If this is the case,
 
 Check special handling for cases with A[i] == 0 and lambda[i] == 0 in parameter approximaton. Max analyzed it and concluded that checks are not necessary. My thought: copy paste artifacts from the the w[i] == 0 check (which is wrong).
 
-# Backlog
+# BACKLOG
 
 ## Show prarp in plot_spectrum
 
@@ -181,13 +183,15 @@ Make sure that all suitable articles are included as vignettes and built from sc
 
 # DONE
 
-## Test install on clean OS
+## DONE WITH PR 12 (v1.4.0)
+
+### Test install on clean OS
 
 Add a workflow for testing installation on a clean Windows/Linux/Mac OS with R pre-installed, but without R-tools and any packages.
 
 *Done: Mar 10. Branch: mdrb. PR: https://github.com/spang-lab/metabodecon/pull/12.*
 
-## Add Rust Backend Installer
+### Add Rust Backend Installer
 
 The Rust backend should only be built for R versions >= 4.2.0 and if RTools is available. If any of these conditions is not fulfilled, compilation should be skipped.
 
@@ -207,13 +211,13 @@ Update 10.3.2025: Instead of making compilation optional we should provide a sep
 
 *Done: Mar 14. Branch: mdrb. PR: https://github.com/spang-lab/metabodecon/pull/12.*
 
-## Rename deconvolute_ispec
+### Rename deconvolute_ispec
 
 This is a preparation for issue *Add Rust Backend Argument*. Rename `deconvolute_ispec()` to `deconvolute_spectrum()` and `deconvolute_ispecs()` to `deconvolute_spectra()`.
 
 *Done: Mar 18-22. Branch: mdrb. PR: https://github.com/spang-lab/metabodecon/pull/12.*
 
-## Add Rust Backend Argument
+### Add Rust Backend Argument
 
 Add an experimental argument `use_rust` in `deconvolute()` causing the following behaviour:
 
@@ -240,19 +244,9 @@ Sub-Tasks
 
 *Done: Mar 18-25. Branch: mdrb. PR: https://github.com/spang-lab/metabodecon/pull/12.*
 
-## Implement deconvolute_spectra
+## DONE WITH PR 13 (v1.4.1)
 
-Implement `deconvolute_spectra()` and `deconvolute_spectrum()` which should be the successors of `deconvolute_ispec()` and `deconvolute_ispecs()`. In particular it should:
-
-1. Accept `spectrum` objects as input (as returned by `read_spectra`). See FEATURE-9
-2. Use the correct SFR calculation as described in CHECK-2
-3. Uses the correct water signal calculation as described in CHECK-3
-4. Use 1-based indexing for data points as described in CHECK-4
-5. Remove the scale factor and scaled data point numbers as described in CHECK-4
-
-*Done with 1.2 or 1.3 (not sure) somewhere in between Sep24 and Jan25*
-
-## Check mse calculation in Rust
+### Check mse calculation in Rust
 
 `x$mdrb_decon$mse()` deviates from `mse(si, sup, norm=FALSE)` in `as_decon2.rdecon()`, which is why we have to calculate the MSE ourselves in R. This should be fixed in mdrb.
 
@@ -268,21 +262,21 @@ mse <- function(y, yhat, normed = FALSE) {
 }
 ```
 
-*Update 3. April 2025: clarified with max. MSE calculation is done using only points in the signal region. This is the cause for the discrepancy. We should add a test for this.*
+*Update 3. April 2025: clarified with Maximilian Sombke. MSE calculation is done using only points in the signal region. This is the cause for the discrepancy. We should add a test for this.*
 
-## Show SFR and WSHW as rects
+### Show SFR and WSHW as rects
 
 `plot_ws()` and `plot_sfr()` should show the SFR and WSHW as rectangles instead of border lines. This is more intuitive and allows to see the width of the SFR and WSHW.
 
 *Done: Tue Apr 1 2025. Branch: feat14x. PR: #13.*
 
-## Add Getting Started to Reference
+### Add Getting Started to Reference
 
 Add a function `Getting_Started()` or `get_started()` to the package that contains a link to the online documentation. This should be the first function in the reference manual (if possible).
 
 *Done: Mon Mar 31 2025. Branch: feat14x. PR: #13.*
 
-## Fix unsafe calls
+### Fix unsafe calls
 
 With the 1.4.0 Release we get the following R CMD check notes:
 

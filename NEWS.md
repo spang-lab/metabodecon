@@ -1,3 +1,9 @@
+# metabodecon 1.4.2
+
+- Fixed `aaa_Get_Started` entry in Manual
+- Changed default value of argument `verbose` from FALSE to TRUE for function `align()` and `deconvolute()`.
+- Added argument `install_deps` to `align()`. If non-CRAN dependencies required by `align()` are missing and `install_deps` is TRUE, these dependencies are now installed automatically. If `install_deps` is NULL (default), the user is asked interactively for confirmation before attempting the install.
+
 # metabodecon 1.4.1
 
 - Added `get_started()` and `metabodecon-package` to manual
