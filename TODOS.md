@@ -1,16 +1,27 @@
 # PLANNED
 
-## Remove Remotes field from DESCRIPTION
+## [x] Remove Remotes field from DESCRIPTION
 
 When you submit your package to CRAN, all of its dependencies must also be available on CRAN. For this reason, release() will warn you if you try to release a package with a Remotes field.
 
-## Check missing pkgs in align
+## [x] Check missing pkgs in align
 
 Installation via `install.packages("metabodecon")` does not install `MassSpecWavelet` and `impute`. So if a user doesn't copy paste the installation instructions but installed via `install.packages("metabodecon")`, these dependencies will be missing. In such scenarios, we should print an error message with the required install commands and abort.
 
-## Change verbose defaults
+## [x] Change verbose defaults
 
 Change verbose argument for deconvolute and align to TRUE.
+
+## [x] Shrink test-install workflow
+
+Currently the test-install workflow is split over three jobs, with huge amounts of code copy pasted. Extract the R commands into a single `test-install.R` R script, that can be called as `Rscript -e test-install.R <method>` and,
+
+1. Deletes all previously available dependencies incl. Rtools on Windows (i.e. it must be removed from the PATH)
+2. Does the installation according to the `method` commandline argument, e.g. "CRAN-Modern", "CRAN-Old" or "Github".
+
+The corresponding commands for "CRAN-Modern", "CRAN-Old" or "Github" can be take from the current version `test-install.yaml`.
+
+After ou created `test-install.R`, update the workflow to use it.
 
 ## Improve questions
 
@@ -167,13 +178,6 @@ Links:
 ## Turn articles into vignettes
 
 Make sure that all suitable articles are included as vignettes and built from scratch so they don't take up too much space.
-
-## Shrink test-install workflow
-
-Currently the test-install workflow is split over three jobs, with huge amounts of code copy pasted. Extract the test into a single script that:
-
-1. Deletes all previously available dependencies incl. Rtools on Windows (i.e. it must be removed from the PATH)
-2. Does the installation according to the `method` commandline argument, e.g. "CRAN-Modern", "CRAN-Old" or "Github".
 
 # DONE
 
