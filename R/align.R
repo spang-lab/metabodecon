@@ -35,15 +35,43 @@
 #' @param verbose
 #' Whether to print additional information during the alignment process.
 #'
+#' @param install_deps
+#' Alignment relies on the 'speaq' package, which itself relies on the
+#' 'MassSpecWavelet' and 'impute' packages. Both, 'MassSpecWavelet' and 'impute'
+#' are not available on CRAN, but can be installed from
+#' [Bioconductor](https://www.bioconductor.org/) or
+#' [R-Universe](https://r-universe.dev/). If `install_deps = TRUE`, these
+#' packages will be automatically installed from R-Universe without asking for
+#' confirmation. If `install_deps = NULL` (default), the user will be asked for
+#' confirmation before installing missing dependencies. If asking for
+#' confirmation is not possible or `install_deps = FALSE`, the function will
+#' raise an error if the packages are not installed.
+#'
 #' @return
 #' An object of type `align` as described in [Metabodecon
 #' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
 #'
 #' @examples
-#' decons <- deconvolute(sim, sfr = c(3.55, 3.35))
+#' decons <- deconvolute(sim[1:2], sfr = c(3.55, 3.35))
 #' aligned <- align(decons)
 #' aligned
-align <- function(x, maxShift = 50, maxCombine = 5, verbose = FALSE) {
+align <- function(x, maxShift = 50, maxCombine = 5, verbose = TRUE, install_deps = NULL) {
+
+    # Check for required packages
+    pkgvec <- c("MassSpecWavelet", "impute")
+    if (isTRUE(install_deps)) install_bioconductor_pkgs(pkgvec, ask = FALSE, verbose = verbose)
+    if (is.null(install_deps)) install_bioconductor_pkgs(pkgvec, ask = TRUE, verbose = verbose)
+    is_installed <- sapply(pkgvec, requireNamespace, quietly = TRUE)
+    if (any(!is_installed)) {
+        pkgvec_missing <- pkgvec[!is_installed]
+        pkgstr_missing <- paste(pkgvec_missing, collapse = ", ")
+        msg <- paste(
+            "The following required packages are missing: %s.",
+            "Please install them manually from Bioconductor or R-Universe",
+            "or try again with `install_deps = TRUE`"
+        )
+        stop(sprintf(msg, pkgstr_missing))
+    }
 
     # Check and convert inputs
     xx <- as_decons2(x)
@@ -917,4 +945,53 @@ get_peak_indices <- function(decon2) {
 
 get_sup_mat <- function(decons2) {
     do.call(rbind, lapply(decons2, function(d) d$sit$sup))
+}
+
+#' @noRd
+#' @author Tobias Schmidt
+#'
+#' @title Install Bioconductor packages from R-Universe
+#'
+#' @description
+#' Installs `pkgs` from [R-Universe](https://r-universe.dev/). (By installing
+#' from R Universe instead of Bioconductor, we can skip the additional
+#' dependency of BiocManager.)
+#'
+#' @param pkgs A character vector of package names to install.
+#' @param ask Whether to ask the user for confirmation before installing the
+#' packages.
+#'
+#' @details
+#' The function works as follows:
+#'
+#' | req | ask  | ia   | action                                     |
+#' | --- | ---- | ---- | ------------------------------------------ |
+#' | F   | [TF] | [TF] | Return                                     |
+#' | T   | T    | T    | Ask user and install or return accordingly |
+#' | T   | T    | F    | Stop with error                            |
+#' | T   | F    | [TF] | Install                                    |
+#'
+#' req = Installation required (because requested packages are not yet installed
+#' on the system)
+#'
+#' @examples
+#' pkgs <- c("MassSpecWavelet", "impute")
+#' evalwith(answers = "n", install_bioconductor_pkgs(pkgs))
+install_bioconductor_pkgs <- function(pkgs, ask = TRUE, verbose = TRUE) {
+    is_installed <- sapply(pkgs, requireNamespace, quietly = TRUE)
+    pkgs_missing <- pkgs[!is_installed]
+    if (length(pkgs_missing) == 0) {
+        if (verbose) logf("All requested packages are already installed.\n")
+        return(invisible())
+    }
+    if (ask) {
+        if (!interactive()) stop("Cannot ask for confirmation in non-interactive mode.")
+        pkgs_missing_str <- paste(pkgs_missing, collapse = " and ")
+        pkgs_word <- if (length(pkgs_missing) == 1) "package" else "packages"
+        msg <- "Proceeding will install the following %s: %s. Continue?"
+        msg <- sprintf(msg, pkgs_word, pkgs_missing_str)
+        if (isFALSE(get_yn_input(msg))) return()
+    }
+    repos <- c('https://bioc.r-universe.dev', 'https://cloud.r-project.org')
+    utils::install.packages(pkgs_missing, repos = repos)
 }

@@ -22,23 +22,23 @@
 #' @export
 #' @title Get URL of Metabodecon "Get Started" Page
 #' @description
-#' `get_started` and `aaa_get_started` both return (and optionally open) the URL
+#' `get_started` and `aaa_Get_Started` both return (and optionally open) the URL
 #' of the "Get Started" page of the metabodecon documentation. The
-#' `aaa_get_started` version exists, because functions are listed alphabetically
+#' `aaa_Get_Started` version exists, because functions are listed alphabetically
 #' in the reference manual and we want `get_started` to be shown at the top of
-#' the list.
+#' the list (i.e., it needs to start with an 'a').
 #' @param open_browser If TRUE, the "Get Stated" page is opened in the default
 #' browser.
 #' @return A character string containing the URL of the "Get Started" page.
 #' @examples
 #' get_started(open_browser = FALSE)
 #' get_started()
-get_started <- function(open_browser = interactive()) {
+aaa_Get_Started <- function(open_browser = interactive()) {
     url <- "https://spang-lab.github.io/metabodecon/articles/Get_Started.html"
     if (open_browser) utils::browseURL(url)
     url
 }
 
 #' @export
-#' @rdname get_started
-`aaa_get_started` <- get_started
+#' @rdname aaa_Get_Started
+get_started <- aaa_Get_Started

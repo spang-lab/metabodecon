@@ -1,12 +1,34 @@
-# NEXT OPEN
+# DONE WITH 1.4.2 (PR 14)
 
-## Turn articles into vignettes
-
-Make sure that the vignettes are built from scratch so they don't take up too much space. If thats not possible, add one vignette to the package that is as small as possible and contains links to the online documentation.
-
-## Remove Remotes field from DESCRIPTION
+## [x] Remove Remotes field from DESCRIPTION
 
 When you submit your package to CRAN, all of its dependencies must also be available on CRAN. For this reason, release() will warn you if you try to release a package with a Remotes field.
+
+## [x] Check missing pkgs in align
+
+Installation via `install.packages("metabodecon")` does not install `MassSpecWavelet` and `impute`. So if a user doesn't copy paste the installation instructions but installed via `install.packages("metabodecon")`, these dependencies will be missing. In such scenarios, we should print an error message with the required install commands and abort.
+
+## [x] Change verbose defaults
+
+Change verbose argument for deconvolute and align to TRUE.
+
+## [x] Shrink test-install workflow
+
+Currently the test-install workflow is split over three jobs, with huge amounts of code copy pasted. Extract the R commands into a single `test-install.R` R script, that can be called as `Rscript -e test-install.R <method>` and,
+
+1. Deletes all previously available dependencies incl. Rtools on Windows (i.e. it must be removed from the PATH)
+2. Does the installation according to the `method` commandline argument, e.g. "CRAN-Modern", "CRAN-Old" or "Github".
+
+The corresponding commands for "CRAN-Modern", "CRAN-Old" or "Github" can be take from the current version `test-install.yaml`.
+
+After ou created `test-install.R`, update the workflow to use it.
+
+# PLANNED
+
+## Improve questions
+
+1. Question `Signal free region correctly selected? (y/n)` should be replaced by `Borders to Signal Free Regions (green) correctly selected? (y/n)`
+2. Question `Water artefact fully inside red vertical lines? (y/n)` should be replaced by `Water artefact fully inside blue area? (y/n)`
 
 ## Update expno/procno defaults
 
@@ -16,19 +38,6 @@ If there is only one, it should use that one.
 If there are multiple, it should use expno=10 and procno=10.
 If there are multiple but no 10, it should throw an error.
 
-## Change verbose defaults
-
-Change verbose argument for deconvolute and align to TRUE.
-
-## Check missing pkgs in align
-
-Installation via `install.packages("metabodecon")` do not install `MassSpecWavelet` and `impute`. So if a user doesn't copy paste the installation instructions but installed via `install.packages("metabodecon")`, these dependencies will be missing. In such scenarios, we should print an error message with the required install commands and abort.
-
-## Improve questions
-
-1. Question `Signal free region correctly selected? (y/n)` should be replaced by `Borders to Signal Free Regions (green) correctly selected? (y/n)`
-2. Question `Water artefact fully inside red vertical lines? (y/n)` should be replaced by `Water artefact fully inside blue area? (y/n)`
-
 ## Add function get_si_mat
 
 Add a function `get_si_mat()` for extracting a matrix of signal intensities (SI) from a metabodecon object. The type of returned SI should be `raw` for `spectra`, `sup` for `decons` and `al` for `aligns`.
@@ -36,35 +45,6 @@ Add a function `get_si_mat()` for extracting a matrix of signal intensities (SI)
 ## Add authors to functions
 
 ## Add lifecycle badges to functions
-
-# NEXT DONE
-
-## Show SFR and WSHW as rects
-
-`plot_ws()` and `plot_sfr()` should show the SFR and WSHW as rectangles instead of border lines. This is more intuitive and allows to see the width of the SFR and WSHW.
-
-*Done: Tue Apr 1 2025. Branch: feat14x. PR: #13.*
-
-## Add Getting Started to Reference
-
-Add a function `Getting_Started()` or `get_started()` to the package that contains a link to the online documentation. This should be the first function in the reference manual (if possible).
-
-*Done: Mon Mar 31 2025. Branch: feat14x. PR: #13.*
-
-## Fix unsafe calls
-
-With the 1.4.0 Release we get the following R CMD check notes:
-
-Found the following possibly unsafe calls:
-- In `test.R`: `unlockBinding("assert", ns)`
-- In `util.R:699:is_list_of_nums`: no visible global function definition for `returns`
-- In `test.R:283:not_cran`: no visible binding for global variable `x`
-
-https://github.com/spang-lab/metabodecon/actions/runs/14069618152/job/39400480535
-
-*Done: Fri Mar 28 2025. Branch: feat14x. PR: #13.*
-
-# BACKLOG
 
 ## Improve Sap Dataset
 
@@ -125,13 +105,6 @@ If `c(11.44494, -1.8828)` is part of the ppm range, use these values, otherwise 
 1. `wshw = 0.01 * width(cs)` (where `0.01` is `round(0.007629452, 2)` and `0.007629452` equals `0.1527692 / 20.0236144338963` which is the width of the default WSHW dividided by the width of the `urine_1` spectrum. I.e., the new calculation would give approximately the same proportion of the spectrum width as the default value.)
 2. `sfr = max(cs) - c(1/6, 5/6) * width(cs)`
 
-## Shrink test-install workflow
-
-Currently the test-install workflow is split over three jobs, with huge amounts of code copy pasted. Extract the test into a single script that:
-
-1. Deletes all previously available dependencies incl. Rtools on Windows (i.e. it must be removed from the PATH)
-2. Does the installation according to the `method` commandline argument, e.g. "CRAN-Modern", "CRAN-Old" or "Github".
-
 ## Refactor integral calculations
 
 We should use `A * pi` everywhere unless `bwc = 0`.
@@ -160,6 +133,8 @@ Assumption: it's a bug and leads to this peak being missed. If this is the case,
 ## Remove unneeded checks
 
 Check special handling for cases with A[i] == 0 and lambda[i] == 0 in parameter approximaton. Max analyzed it and concluded that checks are not necessary. My thought: copy paste artifacts from the the w[i] == 0 check (which is wrong).
+
+# BACKLOG
 
 ## Show prarp in plot_spectrum
 
@@ -202,31 +177,21 @@ Links:
 - https://spang-lab.github.io/metabodecon/articles/Classes.html#spectrum
 - https://spang-lab.github.io/metabodecon/articles/Classes.html#elements-v1-2
 
-## Check mse calculation in Rust
+## Turn articles into vignettes
 
-`x$mdrb_decon$mse()` deviates from `mse(si, sup, norm=FALSE)` in `as_decon2.rdecon()`, which is why we have to calculate the MSE ourselves in R. This should be fixed in the Rust backend.
-
-MSE calculation in R is implemented in `decon.R` as:
-
-```R
-mse <- function(y, yhat, normed = FALSE) {
-    if (normed) {
-        mean(((y / sum(y)) - (yhat / sum(yhat)))^2)
-    } else {
-        mean((y - yhat)^2)
-    }
-}
-```
+Make sure that all suitable articles are included as vignettes and built from scratch so they don't take up too much space.
 
 # DONE
 
-## Test install on clean OS
+## DONE WITH PR 12 (v1.4.0)
+
+### Test install on clean OS
 
 Add a workflow for testing installation on a clean Windows/Linux/Mac OS with R pre-installed, but without R-tools and any packages.
 
 *Done: Mar 10. Branch: mdrb. PR: https://github.com/spang-lab/metabodecon/pull/12.*
 
-## Add Rust Backend Installer
+### Add Rust Backend Installer
 
 The Rust backend should only be built for R versions >= 4.2.0 and if RTools is available. If any of these conditions is not fulfilled, compilation should be skipped.
 
@@ -246,13 +211,13 @@ Update 10.3.2025: Instead of making compilation optional we should provide a sep
 
 *Done: Mar 14. Branch: mdrb. PR: https://github.com/spang-lab/metabodecon/pull/12.*
 
-## Rename deconvolute_ispec
+### Rename deconvolute_ispec
 
 This is a preparation for issue *Add Rust Backend Argument*. Rename `deconvolute_ispec()` to `deconvolute_spectrum()` and `deconvolute_ispecs()` to `deconvolute_spectra()`.
 
 *Done: Mar 18-22. Branch: mdrb. PR: https://github.com/spang-lab/metabodecon/pull/12.*
 
-## Add Rust Backend Argument
+### Add Rust Backend Argument
 
 Add an experimental argument `use_rust` in `deconvolute()` causing the following behaviour:
 
@@ -279,14 +244,47 @@ Sub-Tasks
 
 *Done: Mar 18-25. Branch: mdrb. PR: https://github.com/spang-lab/metabodecon/pull/12.*
 
-## Implement deconvolute_spectra
+## DONE WITH PR 13 (v1.4.1)
 
-Implement `deconvolute_spectra()` and `deconvolute_spectrum()` which should be the successors of `deconvolute_ispec()` and `deconvolute_ispecs()`. In particular it should:
+### Check mse calculation in Rust
 
-1. Accept `spectrum` objects as input (as returned by `read_spectra`). See FEATURE-9
-2. Use the correct SFR calculation as described in CHECK-2
-3. Uses the correct water signal calculation as described in CHECK-3
-4. Use 1-based indexing for data points as described in CHECK-4
-5. Remove the scale factor and scaled data point numbers as described in CHECK-4
+`x$mdrb_decon$mse()` deviates from `mse(si, sup, norm=FALSE)` in `as_decon2.rdecon()`, which is why we have to calculate the MSE ourselves in R. This should be fixed in mdrb.
 
-*Done with 1.2 or 1.3 (not sure) somewhere in between Sep24 and Jan25*
+MSE calculation in R is implemented in `decon.R` as:
+
+```R
+mse <- function(y, yhat, normed = FALSE) {
+    if (normed) {
+        mean(((y / sum(y)) - (yhat / sum(yhat)))^2)
+    } else {
+        mean((y - yhat)^2)
+    }
+}
+```
+
+*Update 3. April 2025: clarified with Maximilian Sombke. MSE calculation is done using only points in the signal region. This is the cause for the discrepancy. We should add a test for this.*
+
+### Show SFR and WSHW as rects
+
+`plot_ws()` and `plot_sfr()` should show the SFR and WSHW as rectangles instead of border lines. This is more intuitive and allows to see the width of the SFR and WSHW.
+
+*Done: Tue Apr 1 2025. Branch: feat14x. PR: #13.*
+
+### Add Getting Started to Reference
+
+Add a function `Getting_Started()` or `get_started()` to the package that contains a link to the online documentation. This should be the first function in the reference manual (if possible).
+
+*Done: Mon Mar 31 2025. Branch: feat14x. PR: #13.*
+
+### Fix unsafe calls
+
+With the 1.4.0 Release we get the following R CMD check notes:
+
+Found the following possibly unsafe calls:
+- In `test.R`: `unlockBinding("assert", ns)`
+- In `util.R:699:is_list_of_nums`: no visible global function definition for `returns`
+- In `test.R:283:not_cran`: no visible binding for global variable `x`
+
+https://github.com/spang-lab/metabodecon/actions/runs/14069618152/job/39400480535
+
+*Done: Fri Mar 28 2025. Branch: feat14x. PR: #13.*

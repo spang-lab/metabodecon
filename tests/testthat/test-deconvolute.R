@@ -71,7 +71,13 @@ skip_if_not(mdrb_available) # (1)
 # following tests and spam the log file.
 
 rust_backend <- test_that("deconvolute works with rust backend", {
-    # Mdrb missing
+
+    # | Abbreviations | Meaning                         |
+    # | --------------| ------------------------------- |
+    # | rt, rn, rf    |  use_rust = {TRUE, NULL, FALSE} |
+    # | mm, ma        |  mdrb = {missing, available}    |
+
+    # Mdrb missing (mm)
     with_mocked_bindings(get_mdrb_version=get_zero_version, code = {
         rt_mm <- try(deconvolute_sap1(use_rust=TRUE), silent=TRUE)
         rn_mm <- try(deconvolute_sap1(use_rust=NULL), silent=TRUE)
@@ -80,7 +86,7 @@ rust_backend <- test_that("deconvolute works with rust backend", {
     expect_sap1_deconvolution_failed(rt_mm, "Using.*Rust.*requires mdrb.*")
     expect_sap1_deconvolution_worked(rn_mm)
     expect_sap1_deconvolution_worked(rf_mm)
-    # Mdrb available
+    # Mdrb available (ma)
     rt_ma <- try(deconvolute_sap1(use_rust=TRUE), silent=TRUE)
     rn_ma <- try(deconvolute_sap1(use_rust=NULL), silent=TRUE)
     rf_ma <- try(deconvolute_sap1(use_rust=FALSE), silent=TRUE)

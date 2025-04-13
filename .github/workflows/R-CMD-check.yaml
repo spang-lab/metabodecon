@@ -45,10 +45,11 @@ jobs:
           r-version: ${{ matrix.config.r }}
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
+          extra-repositories: https://spang-lab.r-universe.dev
 
       - name: Install MacOS System Dependencies
         uses: r-hub/actions/setup-r-sysreqs@v1
-        with: {type: "minimal"}
+        with: { type: "minimal" }
 
       - name: Install Linux System Dependencies
         if: runner.os == 'Linux'
@@ -56,12 +57,8 @@ jobs:
 
       - name: Set up R dependencies
         uses: r-lib/actions/setup-r-dependencies@v2
-        with: {
-          extra-packages: "any::rcmdcheck, mdrb=?ignore-before-r=4.2.0",
-          needs: "check"
-        }
+        with: { extra-packages: "any::rcmdcheck, mdrb=?ignore-before-r=4.2.0", needs: "check" }
 
       - name: Test package
         uses: r-lib/actions/check-r-package@v2
-        env:
-          _R_CHECK_FORCE_SUGGESTS_: false
+        env: { _R_CHECK_FORCE_SUGGESTS_: false }

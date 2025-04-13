@@ -23,6 +23,7 @@ jobs:
       R_KEEP_PKG_SOURCE: yes
       RUN_SLOW_TESTS: "TRUE"
     steps:
+      - uses: actions/checkout@v4
 
       - name: Set up R
         uses: r-lib/actions/setup-r@v2
@@ -31,154 +32,13 @@ jobs:
           rtools-version: 'none'
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
+          extra-repositories: https://spang-lab.r-universe.dev
 
       - name: Test modern Installation from CRAN
-        shell: Rscript {0}
-        run: |
-
-          cat("===============================================\n")
-          cat("1. Ensure we have no pre-installed dependencies\n")
-          cat("===============================================\n")
-          x <- rownames(installed.packages())
-          if ("impute" %in% x) {
-              cat("Removing impute\n")
-              remove.packages("impute")
-          }
-          if ("MassSpecWavelet" %in% x) {
-              cat("Removing MassSpecWavelet\n")
-              remove.packages("MassSpecWavelet")
-          }
-          if (!"pkgbuild" %in% x) {
-              cat("Installing pkgbuild\n")
-              install.packages("pkgbuild")
-          }
-
-          cat("===============================================\n")
-          cat("2. Install pak\n")
-          cat("===============================================\n")
-          install.packages("pak")
-
-          cat("===============================================\n")
-          cat("3. Install metabodecon\n")
-          cat("===============================================\n")
-          pak::pkg_install("metabodecon")
-
-  test-oldschool-cran-install:
-    runs-on: ${{ matrix.config.os }}
-    name: CRAN Old, ${{ matrix.config.os }}, ${{ matrix.config.r }}
-    strategy:
-      fail-fast: false
-      matrix:
-        config:
-          - {os: macos-latest,   r: 'release'}
-          - {os: windows-latest, r: 'release'}
-          - {os: ubuntu-latest,  r: 'release'}
-    env:
-      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-      R_KEEP_PKG_SOURCE: yes
-      RUN_SLOW_TESTS: "TRUE"
-    steps:
-
-      - name: Set up R
-        uses: r-lib/actions/setup-r@v2
-        with:
-          r-version: ${{ matrix.config.r }}
-          rtools-version: 'none'
-          http-user-agent: ${{ matrix.config.http-user-agent }}
-          use-public-rspm: true
+        run: Rscript scripts/test-install.R CRAN-Modern
 
       - name: Test old-school Installation from CRAN
-        shell: Rscript {0}
-        run: |
-
-          cat("===============================================\n")
-          cat("1. Ensure we have no pre-installed dependencies\n")
-          cat("===============================================\n")
-          x <- rownames(installed.packages())
-          if ("impute" %in% x) {
-              cat("Removing impute\n")
-              remove.packages("impute")
-          }
-          if ("MassSpecWavelet" %in% x) {
-              cat("Removing MassSpecWavelet\n")
-              remove.packages("MassSpecWavelet")
-          }
-          if (!"pkgbuild" %in% x) {
-              cat("Installing pkgbuild\n")
-              install.packages("pkgbuild")
-          }
-
-          cat("===============================================\n")
-          cat("2. Install pak\n")
-          cat("===============================================\n")
-          install.packages("pak")
-
-          cat("===============================================\n")
-          cat("3. Install metabodecon\n")
-          cat("===============================================\n")
-          install.packages("BiocManager")
-          BiocManager::install(c("MassSpecWavelet", "impute"))
-          install.packages("metabodecon")
-
-
-  test-github-install:
-    runs-on: ${{ matrix.config.os }}
-    name: Github, ${{ matrix.config.os }}, ${{ matrix.config.r }}
-    strategy:
-      fail-fast: false
-      matrix:
-        config:
-          - {os: macos-latest,   r: 'release'}
-          - {os: windows-latest, r: 'release'}
-          - {os: ubuntu-latest,  r: 'release'}
-    env:
-      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-      R_KEEP_PKG_SOURCE: yes
-      RUN_SLOW_TESTS: "TRUE"
-    steps:
-
-      - name: Set up R
-        uses: r-lib/actions/setup-r@v2
-        with:
-          r-version: ${{ matrix.config.r }}
-          rtools-version: 'none'
-          http-user-agent: ${{ matrix.config.http-user-agent }}
-          use-public-rspm: true
-
-      - name: Remove Rtools
-        if: runner.os == 'Windows'
-        shell: PowerShell
-        run: |
-          $x = winget list --id RProject.Rtools
-          if ("Rtools" -in $x) { winget uninstall --id RProject.Rtools }
+        run: Rscript scripts/test-install.R CRAN-Old
 
       - name: Test Installation from Github
-        shell: Rscript {0}
-        run: |
-
-          cat("===============================================\n")
-          cat("1. Ensure we have no pre-installed dependencies\n")
-          cat("===============================================\n")
-          x <- rownames(installed.packages())
-          if ("impute" %in% x) {
-              cat("Removing impute\n")
-              remove.packages("impute")
-          }
-          if ("MassSpecWavelet" %in% x) {
-              cat("Removing MassSpecWavelet\n")
-              remove.packages("MassSpecWavelet")
-          }
-          if (!"pkgbuild" %in% x) {
-              cat("Installing pkgbuild\n")
-              install.packages("pkgbuild")
-          }
-
-          cat("===============================================\n")
-          cat("2. Install pak\n")
-          cat("===============================================\n")
-          install.packages("pak")
-
-          cat("===============================================\n")
-          cat("3. Install metabodecon\n")
-          cat("===============================================\n")
-          pak::pkg_install("spang-lab/metabodecon")
+        run: Rscript scripts/test-install.R Github

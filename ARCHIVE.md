@@ -442,6 +442,18 @@ Right now, output gets scrambled because all procs share one stdout. We can fix 
 
 *Done in branch v1.2 with commit bea9348 at Thu Sep 12 17:14:20 2024 +0200*
 
+## FEATURE-21: Implement deconvolute_spectra
+
+Implement `deconvolute_spectra()` and `deconvolute_spectrum()` which should be the successors of `deconvolute_ispec()` and `deconvolute_ispecs()`. In particular it should:
+
+1. Accept `spectrum` objects as input (as returned by `read_spectra`). See FEATURE-9
+2. Use the correct SFR calculation as described in CHECK-2
+3. Uses the correct water signal calculation as described in CHECK-3
+4. Use 1-based indexing for data points as described in CHECK-4
+5. Remove the scale factor and scaled data point numbers as described in CHECK-4
+
+*Done with v1.2 or v1.3 (not sure) somewhere in between Sep24 and Jan25*
+
 ## FEATURE-18: Implement plot_spectrum
 
 Implement `plot_spectrum` which should be the successor of the following functions:

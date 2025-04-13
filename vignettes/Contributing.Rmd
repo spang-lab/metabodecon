@@ -65,13 +65,11 @@ CRAN, they should:
 devtools::spell_check()
 urlchecker::url_check()
 
-# Slower, but more realistic tests than devtools::check()
-rcmdcheck::rcmdcheck(
-    args = c("--as-cran"),
-    error_on = ("warning"),
-    check_dir = "../metabodecon-RCMDcheck"
-)
+# Slower, but more realistic tests than normal devtools::check()
 devtools::check(
+    args = c("--as-cran", "--timings"),
+    error_on = ("warning"),
+    check_dir = "../metabodecon-RCMDcheck",
     remote = TRUE,
     manual = TRUE,
     run_dont_test = TRUE

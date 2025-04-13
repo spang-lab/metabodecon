@@ -1,3 +1,18 @@
+# metabodecon 1.4.2
+
+- Fixed `aaa_Get_Started` entry in Manual
+- Changed default value of argument `verbose` from FALSE to TRUE for function `align()` and `deconvolute()`.
+- Added argument `install_deps` to `align()`. If non-CRAN dependencies required by `align()` are missing and `install_deps` is TRUE, these dependencies are now installed automatically. If `install_deps` is NULL (default), the user is asked interactively for confirmation before attempting the install.
+
+# metabodecon 1.4.1
+
+- Added `get_started()` and `metabodecon-package` to manual
+- Improved `plot_spectrum()` default margins.
+- Improved plots shown during `deconvolute()`: SFW and WSHW are now both shown as rectangles instead of lines.
+- Improved `install_mdrb()` example
+- Improved `Get_Started` article
+- Included `Get_Started` article as vignette within the package
+
 # metabodecon 1.4.0
 
 - Improved Github Workflow (GWF) to test installation on a clean Windows/Linux/Mac OS with R pre-installed, but without R-tools and any packages.
