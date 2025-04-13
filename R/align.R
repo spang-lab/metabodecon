@@ -284,7 +284,7 @@ gen_feat_mat <- function(data_path,
     # (1) We get the indices in SDPs, which decrease from left to right, but we
     # need them as normal indices for speaq (i.e. increasing from left to
     # right). For example if we have n = 8 datapoints, and the third and the
-#' seventh point from left are peaks, we want the numbers 3 and 7, but we get
+    # seventh point from left are peaks, we want the numbers 3 and 7, but we get
     # 0.005 and 0.001. To fix this, we first revert the scaling and then
     # subtract from n = 8, i.e.
     #
