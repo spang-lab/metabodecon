@@ -40,5 +40,5 @@ aaa_Get_Started <- function(open_browser = interactive()) {
 }
 
 #' @export
-#' @rdname get_started
+#' @rdname aaa_Get_Started
 get_started <- aaa_Get_Started
