@@ -18,7 +18,6 @@ class="caption">` elements.
 [^1] built using `pkgdown::build_article()`)
 [^2] built using `rmarkdown::render()`
 */
-
 figure, div.figure
 {
     border: 1px solid #dee2e6;
@@ -112,7 +111,16 @@ correct values.
 
 <a id="fig-deconvolute"></a>
 
-```{r fig-deconvolute, eval=TRUE, fig.cap='<strong>Figure 1.</strong> The first spectrum of the Sim dataset. The x-Axis gives the chemical shift of each datapoint in parts per million (ppm). The y-Axis gives the signal intensity of each datapoint in arbitrary units (au). The signal free regions are shown as green rectangles in the left plot. The water signal region, usually shown as blue rectangle, is shown in the right plot. Because the water signal half width is set to zero in this case, the rectangle collapses to a vertical line.'}
+```{r fig-deconvolute, eval=TRUE}
+#| fig.cap: |
+#|    <strong>Figure 1.</strong> The first spectrum  of  the  Sim  dataset.  The
+#|    x-Axis gives the chemical shift of each datapoint  in  parts  per  million
+#|    (ppm). The  y-Axis  gives  the  signal  intensity  of  each  datapoint  in
+#|    arbitrary  units  (au).  The  signal  free  regions  are  shown  as  green
+#|    rectangles in the left plot. The water signal  region,  usually  shown  as
+#|    blue rectangle, is shown in the right plot. Because the water signal  half
+#|    width is set to zero in this case, the rectangle collapses to  a  vertical
+#|    line.
 metabodecon::evalwith(
     answers = list(sameParams = "y", adjNo="1", sfrOk = "y", wsOk = "y"),
     pars = list(mar = c(4, 4, 2, 2)),
@@ -162,7 +170,13 @@ Out of the 16 generated plots, the first two are shown as  examples  in  [Figure
 
 <a id="fig-plot-spectrum"></a>
 
-```{r fig-plot-spectrum, eval=TRUE, fig.cap="<strong>Figure 2.</strong> Deconvolution results for the first two spectra of the Sim dataset. The raw SI (black), smoothed SI (blue), and superposition of Lorentz curves (red) are closely aligned, indicating that <code>smopts</code> and <code>delta</code> were chosen well and that the deconvolution was successful."}
+```{r fig-plot-spectrum, eval=TRUE}
+#| fig.cap: |
+#|   <strong>Figure 2.</strong> Deconvolution results for the first two  spectra
+#|   of  the  Sim  dataset.  The  raw  SI  (black),  smoothed  SI  (blue),   and
+#|   superposition of Lorentz curves (red) are closely aligned, indicating  that
+#|   <code>smopts</code> and <code>delta</code> were chosen well  and  that  the
+#|   deconvolution was successful.
 <<chunk-plot-spectrum>>
 ```
 
@@ -191,7 +205,14 @@ that the alignment was  successful.  Notably,  spectrum  two  has  been  shifted
 significantly to the left.
 
 <a id="fig-align"></a>
-```{r fig-align, eval=TRUE, fig.cap='<strong>Figure 3.</strong> Overlay of the first eight deconvoluted spectra from the Sim dataset before alignment (left) and after alignment (right). The x-Axis gives the chemical shift of each datapoint in parts per million (ppm). The y-Axis gives the signal intensity of each datapoint in arbitrary units (au). All specta are pretty similar to each other except for Spectrum 2, which got shifted approx. 0.01 ppm to the right.'}
+```{r fig-align, eval=TRUE}
+#| fig.cap: |
+#|   <strong>Figure 3.</strong> Overlay of the first eight deconvoluted  spectra
+#|   from the Sim dataset before alignment (left) and after  alignment  (right).
+#|   The x-Axis gives the chemical shift of each datapoint in parts per  million
+#|   (ppm). The y-Axis gives the signal intensity of each datapoint in arbitrary
+#|   units (au). All specta are pretty similar to each other except for Spectrum
+#|   2, which got shifted approx. 0.01 ppm to the right.
 <<chunk-align>>
 ```
 
