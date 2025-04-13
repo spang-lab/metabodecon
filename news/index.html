@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metabodecon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.4.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.4.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -41,6 +41,21 @@
       <small>Source: <a href="https://github.com/spang-lab/metabodecon/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="1.4.2" id="metabodecon-142">metabodecon 1.4.2<a class="anchor" aria-label="anchor" href="#metabodecon-142"></a></h2>
+<ul><li>Fixed <code>aaa_Get_Started</code> entry in Manual</li>
+<li>Changed default value of argument <code>verbose</code> from FALSE to TRUE for function <code><a href="../reference/align.html">align()</a></code> and <code><a href="../reference/deconvolute.html">deconvolute()</a></code>.</li>
+<li>Added argument <code>install_deps</code> to <code><a href="../reference/align.html">align()</a></code>. If non-CRAN dependencies required by <code><a href="../reference/align.html">align()</a></code> are missing and <code>install_deps</code> is TRUE, these dependencies are now installed automatically. If <code>install_deps</code> is NULL (default), the user is asked interactively for confirmation before attempting the install.</li>
+</ul></div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="1.4.1" id="metabodecon-141">metabodecon 1.4.1<a class="anchor" aria-label="anchor" href="#metabodecon-141"></a></h2>
+<ul><li>Added <code><a href="../reference/aaa_Get_Started.html">get_started()</a></code> and <code>metabodecon-package</code> to manual</li>
+<li>Improved <code><a href="../reference/plot_spectrum.html">plot_spectrum()</a></code> default margins.</li>
+<li>Improved plots shown during <code><a href="../reference/deconvolute.html">deconvolute()</a></code>: SFW and WSHW are now both shown as rectangles instead of lines.</li>
+<li>Improved <code><a href="../reference/install_mdrb.html">install_mdrb()</a></code> example</li>
+<li>Improved <code>Get_Started</code> article</li>
+<li>Included <code>Get_Started</code> article as vignette within the package</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.4.0" id="metabodecon-140">metabodecon 1.4.0<a class="anchor" aria-label="anchor" href="#metabodecon-140"></a></h2>
 <ul><li>Improved Github Workflow (GWF) to test installation on a clean Windows/Linux/Mac OS with R pre-installed, but without R-tools and any packages.</li>
