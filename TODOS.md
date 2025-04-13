@@ -12,6 +12,11 @@ Installation via `install.packages("metabodecon")` does not install `MassSpecWav
 
 Change verbose argument for deconvolute and align to TRUE.
 
+## Improve questions
+
+1. Question `Signal free region correctly selected? (y/n)` should be replaced by `Borders to Signal Free Regions (green) correctly selected? (y/n)`
+2. Question `Water artefact fully inside red vertical lines? (y/n)` should be replaced by `Water artefact fully inside blue area? (y/n)`
+
 ## Update expno/procno defaults
 
 Expno and procno should use NULL as default.
@@ -19,11 +24,6 @@ If NULL, the function should look for the first available expno/procno folder.
 If there is only one, it should use that one.
 If there are multiple, it should use expno=10 and procno=10.
 If there are multiple but no 10, it should throw an error.
-
-## Improve questions
-
-1. Question `Signal free region correctly selected? (y/n)` should be replaced by `Borders to Signal Free Regions (green) correctly selected? (y/n)`
-2. Question `Water artefact fully inside red vertical lines? (y/n)` should be replaced by `Water artefact fully inside blue area? (y/n)`
 
 ## Add function get_si_mat
 
@@ -92,13 +92,6 @@ If `c(11.44494, -1.8828)` is part of the ppm range, use these values, otherwise 
 1. `wshw = 0.01 * width(cs)` (where `0.01` is `round(0.007629452, 2)` and `0.007629452` equals `0.1527692 / 20.0236144338963` which is the width of the default WSHW dividided by the width of the `urine_1` spectrum. I.e., the new calculation would give approximately the same proportion of the spectrum width as the default value.)
 2. `sfr = max(cs) - c(1/6, 5/6) * width(cs)`
 
-## Shrink test-install workflow
-
-Currently the test-install workflow is split over three jobs, with huge amounts of code copy pasted. Extract the test into a single script that:
-
-1. Deletes all previously available dependencies incl. Rtools on Windows (i.e. it must be removed from the PATH)
-2. Does the installation according to the `method` commandline argument, e.g. "CRAN-Modern", "CRAN-Old" or "Github".
-
 ## Refactor integral calculations
 
 We should use `A * pi` everywhere unless `bwc = 0`.
@@ -127,6 +120,8 @@ Assumption: it's a bug and leads to this peak being missed. If this is the case,
 ## Remove unneeded checks
 
 Check special handling for cases with A[i] == 0 and lambda[i] == 0 in parameter approximaton. Max analyzed it and concluded that checks are not necessary. My thought: copy paste artifacts from the the w[i] == 0 check (which is wrong).
+
+# Backlog
 
 ## Show prarp in plot_spectrum
 
@@ -172,6 +167,13 @@ Links:
 ## Turn articles into vignettes
 
 Make sure that all suitable articles are included as vignettes and built from scratch so they don't take up too much space.
+
+## Shrink test-install workflow
+
+Currently the test-install workflow is split over three jobs, with huge amounts of code copy pasted. Extract the test into a single script that:
+
+1. Deletes all previously available dependencies incl. Rtools on Windows (i.e. it must be removed from the PATH)
+2. Does the installation according to the `method` commandline argument, e.g. "CRAN-Modern", "CRAN-Old" or "Github".
 
 # DONE
 
