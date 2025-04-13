@@ -15,7 +15,7 @@ deconvolute(
   wshw = 0,
   ask = FALSE,
   force = FALSE,
-  verbose = TUE,
+  verbose = TRUE,
   nworkers = 1,
   use_rust = FALSE
 )
