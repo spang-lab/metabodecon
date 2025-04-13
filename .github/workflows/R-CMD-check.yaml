@@ -45,7 +45,7 @@ jobs:
           r-version: ${{ matrix.config.r }}
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
-          extra-repositories: ["https://spang-lab.r-universe.dev", "https://bioc.r-universe.dev"]
+          extra-repositories: https://spang-lab.r-universe.dev
 
 
       - name: Install MacOS System Dependencies
