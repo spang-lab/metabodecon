@@ -9,7 +9,7 @@ a spectrum as Lorentz Curve."><meta property="og:image" content="https://spang-l
 
     <a class="navbar-brand me-2" href="../index.html">metabodecon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.4.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,7 +40,7 @@ a spectrum as Lorentz Curve."><meta property="og:image" content="https://spang-l
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.svg" class="logo" alt=""><h1>Deconvolute one or more NMR spectra</h1>
-      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/v1.4.1/R/decon.R" class="external-link"><code>R/decon.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/v1.3.0/R/decon.R" class="external-link"><code>R/decon.R</code></a></small>
       <div class="d-none name"><code>deconvolute.Rd</code></div>
     </div>
 
@@ -61,8 +61,7 @@ a spectrum as Lorentz Curve.</p>
 <span>  ask <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  force <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  nworkers <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>  use_rust <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  nworkers <span class="op">=</span> <span class="fl">1</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">generate_lorentz_curves</span><span class="op">(</span></span>
@@ -160,14 +159,6 @@ deconvolution process.</p></dd>
 <dd><p>Number of workers to use for parallel processing. If
 <code>"auto"</code>, the number of workers will be determined automatically. If a number
 greater than 1, it will be limited to the number of spectra.</p></dd>
-
-
-<dt id="arg-use-rust">use_rust<a class="anchor" aria-label="anchor" href="#arg-use-rust"></a></dt>
-<dd><p>Logical. Whether to use the Rust backend for deconvolution.
-Requires the <a href="https://github.com/spang-lab/mdrb" class="external-link">mdrb</a> package. If TRUE and
-mdrb is missing, an error is thrown. If FALSE, the R implementation is used.
-If NULL, the Rust backend is used if available, otherwise the R implementation
-is used.</p></dd>
 
 
 <dt id="arg-data-path">data_path<a class="anchor" aria-label="anchor" href="#arg-data-path"></a></dt>
