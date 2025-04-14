@@ -1,9 +1,11 @@
-# PLANNED
+# DONE 2025-04-XX (PR 15)
 
 ## Improve questions
 
 1. Question `Signal free region correctly selected? (y/n)` should be replaced by `Borders to Signal Free Regions (green) correctly selected? (y/n)`
 2. Question `Water artefact fully inside red vertical lines? (y/n)` should be replaced by `Water artefact fully inside blue area? (y/n)`
+
+# PLANNED
 
 ## Update expno/procno defaults
 

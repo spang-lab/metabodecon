@@ -832,19 +832,13 @@ https://github.com/spang-lab/metabodecon/actions/runs/14069618152/job/3940048053
 
 When you submit your package to CRAN, all of its dependencies must also be available on CRAN. For this reason, release() will warn you if you try to release a package with a Remotes field.
 
-*Done 13.4.2025. Branch v1.4.2. PR 14.*
-
 ## Check missing pkgs in align
 
 Installation via `install.packages("metabodecon")` does not install `MassSpecWavelet` and `impute`. So if a user doesn't copy paste the installation instructions but installed via `install.packages("metabodecon")`, these dependencies will be missing. In such scenarios, we should print an error message with the required install commands and abort.
 
-*Done 13.4.2025. Branch v1.4.2. PR 14.*
-
 ## Change verbose defaults
 
 Change verbose argument for deconvolute and align to TRUE.
-
-*Done 13.4.2025. Branch v1.4.2. PR 14.*
 
 ## Shrink test-install workflow
 
@@ -856,5 +850,3 @@ Currently the test-install workflow is split over three jobs, with huge amounts 
 The corresponding commands for "CRAN-Modern", "CRAN-Old" or "Github" can be take from the current version `test-install.yaml`.
 
 After ou created `test-install.R`, update the workflow to use it.
-
-*Done 13.4.2025. Branch v1.4.2. PR 14.*
