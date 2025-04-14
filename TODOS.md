@@ -21,39 +21,17 @@ Add a function `get_si_mat()` for extracting a matrix of signal intensities (SI)
 
 ## Add lifecycle badges to functions
 
-## Improve Sap Dataset
+## Test deconvolute with huge nfit
 
-Sap spectra should be simulated as follows:
+## Test deconvolute with peak at zero ppm
 
-1. Find three metabolites `mets` related to diabetes with only 1-3 peaks each.
-2. Look up their signal centers `x0_` and halfwidths `lambda_`.
-3. Define two groups: `healthy` and `diabetes`.
-4. Draw signal areas for each sample from a distribution. The distribution should be different for `healthy` and `diabetes`.
-5. Draw metabolite shifts for each sample from a normal distribution.
-6. Apply the shifts to the signal centers.
-7. Simulate data as usual using `simulate_spectra`
-8. Make sure, all of the above information is stored inside `$meta$simpar`
+It's unclear why <https://github.com/spang-lab/metabodecon/blob/v1.2.0/R/21_decon_helpers.R#L315> checks for w[i] == 0.
 
-## Improve Get-Started vignette
-
-Add nicer plots.
-Improve alignment part.
-
-## Write Deconvolution-Details Vignette
-
-## Write Alignment Details Vignette
-
-## Analyze runtime
-
-Do a benchmark about which parts take up the most time in `deconvolute` and `align` and create issues for improving them. Some of the slow parts should already be mentioned in issues. If this is the case, increase the priority of these issue.
-
-## Write paper
-
-Reformat the vignettes as paper and send to Wolfram for proofreading.
+Assumption: it's a bug and leads to this peak being missed. If this is the case, remove the check from the code as well.
 
 ## Warn user if peaks in SFR
 
-If delta is small (e.g. 1), peaks in SFR might not be filtered out. Either implement this and warn user about it (this is a strong indication that delta was chosen too small).
+If delta is small (e.g. 1), peaks in SFR might not be filtered out. Implement this and maybe warn user about it (this is a strong indication that delta was chosen too small).
 
 Note 23.1.2025: in Rust implementation peaks found in IGNORE-REGION are already filtered out automatically before parameter approximation AND points in IGNORE-REGIONS do not contribute to MSE and/or PRARP.
 
@@ -67,26 +45,9 @@ In function `add_return_list`:
 
 2. Return `mse_normed_raw` in addition to `mse_normed` (which is calculated based on `y <- spec$y_smooth`). `mse_normed_raw` should be based on `y <- spec$y_raw`.
 
-## Check negative A values
-
-Check why there are negative values for the estimated lorentz curve area A.
-
-## Improve SFR and WS defaults
-
-Replace the default values `wshw = 0.1527692` and `sfr = c(11.44494, -1.8828)` in `generate_lorentz_curves()` with `wshw = "auto"` and `sfr = "auto"`, which should be calculated as follows:
-
-If `c(11.44494, -1.8828)` is part of the ppm range, use these values, otherwise calculate them as
-
-1. `wshw = 0.01 * width(cs)` (where `0.01` is `round(0.007629452, 2)` and `0.007629452` equals `0.1527692 / 20.0236144338963` which is the width of the default WSHW dividided by the width of the `urine_1` spectrum. I.e., the new calculation would give approximately the same proportion of the spectrum width as the default value.)
-2. `sfr = max(cs) - c(1/6, 5/6) * width(cs)`
-
 ## Refactor integral calculations
 
 We should use `A * pi` everywhere unless `bwc = 0`.
-
-## Calculate mandatory SITs in as_decon2
-
-Elements `wsrm` and `nvrm` are mandatory in `decon2` and should therefor be calculated during `as_decon2`. If additional data is needed to do this from `decon0` and/or `decon1` objects, add an argument that allows users to provide this information.
 
 ## Refactor mse calculations
 
@@ -97,23 +58,61 @@ We should use `mse()` everywhere.
 Implement [Max' parameter approximation algorithms](https://gitlab.spang-lab.de/bachelorthesis/ws2425_msombke_metabodecon-v2/-/blob/main/new_method_docs/main.R
 ) in `calc_A`, `calc_lambda` and `calc_w`.
 
-## Test deconvolute with huge nfit
+Probably also solves
+[Remove unneeded checks](#remove-unneeded-checks) and
+[Check negative A values](#check-negative-a-values).
 
-## Test deconvolute with peak at zero ppm
+## Improve Sap Dataset
 
-It's unclear why <https://github.com/spang-lab/metabodecon/blob/v1.2.0/R/21_decon_helpers.R#L315> checks for w[i] == 0.
+Sap spectra should be simulated as follows:
 
-Assumption: it's a bug and leads to this peak being missed. If this is the case, remove the check from the code as well.
+1. Find three metabolites `mets` related to diabetes with only 1-3 peaks each.
+2. Look up their signal centers `x0_` and halfwidths `lambda_`.
+3. Define two groups: `healthy` and `diabetes`.
+4. Draw signal areas for each sample from a distribution. The distribution should be different for `healthy` and `diabetes`.
+5. Draw metabolite shifts for each sample from a normal distribution.
+6. Apply the shifts to the signal centers.
+7. Simulate data as usual using `simulate_spectra`
+8. Make sure, all of the above information is stored inside `$meta$simpar`
+
+## Analyze runtime
+
+Do a benchmark about which parts take up the most time in `deconvolute` and `align` and create issues for improving them. Some of the slow parts should already be mentioned in issues. If this is the case, increase the priority of these issue.
+
+## Write paper
+
+Reformat the vignettes as paper and send to Wolfram for proofreading.
+
+# CONDITIONAL
+
+## Improve Get-Started vignette
+
+Do after [Add function get_si_mat](#add-function-get_si_mat).
+
+In alignment part: add a code snippet showcasing usage of `get_si_mat()` .
+In deconvolution part: replace `generate_lorentz_curves()` with `deconvolute()`.
+
+## Check negative A values
+
+Do after [Refactor parameter approximation](#refactor-parameter-approximation).
+
+Check why there are negative values for the estimated lorentz curve area A.
 
 ## Remove unneeded checks
 
+Do after [Refactor parameter approximation](#refactor-parameter-approximation).
+
 Check special handling for cases with A[i] == 0 and lambda[i] == 0 in parameter approximaton. Max analyzed it and concluded that checks are not necessary. My thought: copy paste artifacts from the the w[i] == 0 check (which is wrong).
 
+## Write Deconvolution-Details Vignette
+
+Do after [Write paper](#write-paper).
+
+## Write Alignment Details Vignette
+
+Do after [Write paper](#write-paper).
+
 # BACKLOG
-
-## Show prarp in plot_spectrum
-
-## Show peak scores in plot_spectrum
 
 ## Check spectrum type
 
@@ -156,3 +155,23 @@ Links:
 
 Make sure that all suitable articles are included as vignettes and built from scratch so they don't take up too much space.
 
+## Improve SFR and WS defaults
+
+Replace the default values `wshw = 0.1527692` and `sfr = c(11.44494, -1.8828)` in `generate_lorentz_curves()` with `wshw = "auto"` and `sfr = "auto"`, which should be calculated as follows:
+
+If `c(11.44494, -1.8828)` is part of the ppm range, use these values, otherwise calculate them as
+
+1. `wshw = 0.01 * width(cs)` (where `0.01` is `round(0.007629452, 2)` and `0.007629452` equals `0.1527692 / 20.0236144338963` which is the width of the default WSHW dividided by the width of the `urine_1` spectrum. I.e., the new calculation would give approximately the same proportion of the spectrum width as the default value.)
+2. `sfr = max(cs) - c(1/6, 5/6) * width(cs)`
+
+## Calculate mandatory SITs in as_decon2
+
+Elements `wsrm` and `nvrm` are mandatory in `decon2` and should therefor be calculated during `as_decon2`. If additional data is needed to do this from `decon0` and/or `decon1` objects, add an argument that allows users to provide this information.
+
+## Plot wsr and sfr in plot_spectrum
+
+WSR and SFR should be plotted by plot_spectrum. As soon as this works, we can create a new issue for replacing the `plot_sfr` and `plot_wsr` functions with calls to `plot_spectrum`.
+
+## Show prarp in plot_spectrum
+
+## Show peak scores in plot_spectrum
