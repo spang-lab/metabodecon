@@ -12,12 +12,10 @@
 #' in [combine_peaks()].
 #'
 #' @param x
-#' An   object   of   type   `decons1`   or   `decons2`    as    described    in
-#' [Metabodecon
-#' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html). To
-#' align `decons0` objects (as  returned  by  the  now deprecated
-#' [MetaboDecon1D]), you can use [as_decons2()] to convert  it  to  a `decons2`
-#' object first.
+#' An object of  type  `decons1`  or  `decons2`  as  described  in  [Metabodecon
+#' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).   To
+#' align `decons0` objects (as returned by the now deprecated  [MetaboDecon1D]),
+#' you can use [as_decons2()] to convert it to a `decons2` object first.
 #'
 #' @param maxShift
 #' Maximum number of points along the "ppm-axis" a value can  be  moved  by  the
@@ -36,16 +34,16 @@
 #' Whether to print additional information during the alignment process.
 #'
 #' @param install_deps
-#' Alignment relies on the 'speaq' package, which itself relies on the
+#' Alignment  relies  on  the  'speaq'  package,  which  itself  relies  on  the
 #' 'MassSpecWavelet' and 'impute' packages. Both, 'MassSpecWavelet' and 'impute'
-#' are not available on CRAN, but can be installed from
-#' [Bioconductor](https://www.bioconductor.org/) or
-#' [R-Universe](https://r-universe.dev/). If `install_deps = TRUE`, these
-#' packages will be automatically installed from R-Universe without asking for
-#' confirmation. If `install_deps = NULL` (default), the user will be asked for
-#' confirmation before installing missing dependencies. If asking for
-#' confirmation is not possible or `install_deps = FALSE`, the function will
-#' raise an error if the packages are not installed.
+#' are   not   available    on    CRAN,    but    can    be    installed    from
+#' [Bioconductor](https://www.bioconductor.org/)                              or
+#' [R-Universe](https://r-universe.dev/). If `install_deps=TRUE`, these packages
+#' will  be  automatically  installed  from  R-Universe   without   asking   for
+#' confirmation. If `install_deps=NULL` (default), the user will  be  asked  for
+#' confirmation  before  installing  missing   dependencies.   If   asking   for
+#' confirmation is not possible or `install_deps=FALSE`, the function will raise
+#' an error if the packages are not installed.
 #'
 #' @return
 #' An object of type `align` as described in [Metabodecon
@@ -59,8 +57,8 @@ align <- function(x, maxShift = 50, maxCombine = 5, verbose = TRUE, install_deps
 
     # Check for required packages
     pkgvec <- c("MassSpecWavelet", "impute")
-    if (isTRUE(install_deps)) install_bioconductor_pkgs(pkgvec, ask = FALSE, verbose = verbose)
-    if (is.null(install_deps)) install_bioconductor_pkgs(pkgvec, ask = TRUE, verbose = verbose)
+    if (isTRUE(install_deps)) bioc_install(pkgvec, ask = FALSE, verbose = verbose)
+    if (is.null(install_deps)) bioc_install(pkgvec, ask = TRUE, verbose = verbose)
     is_installed <- sapply(pkgvec, requireNamespace, quietly = TRUE)
     if (any(!is_installed)) {
         pkgvec_missing <- pkgvec[!is_installed]
@@ -976,8 +974,8 @@ get_sup_mat <- function(decons2) {
 #'
 #' @examples
 #' pkgs <- c("MassSpecWavelet", "impute")
-#' evalwith(answers = "n", install_bioconductor_pkgs(pkgs))
-install_bioconductor_pkgs <- function(pkgs, ask = TRUE, verbose = TRUE) {
+#' evalwith(answers = "n", bioc_install(pkgs))
+bioc_install <- function(pkgs, ask = TRUE, verbose = TRUE) {
     is_installed <- sapply(pkgs, requireNamespace, quietly = TRUE)
     pkgs_missing <- pkgs[!is_installed]
     if (length(pkgs_missing) == 0) {
