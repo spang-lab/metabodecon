@@ -5,19 +5,11 @@
 1. Question `Signal free region correctly selected? (y/n)` should be replaced by `Borders to Signal Free Regions (green) correctly selected? (y/n)`
 2. Question `Water artefact fully inside red vertical lines? (y/n)` should be replaced by `Water artefact fully inside blue area? (y/n)`
 
-# PLANNED
-
-## Update expno/procno defaults
-
-Expno and procno should use NULL as default.
-If NULL, the function should look for the first available expno/procno folder.
-If there is only one, it should use that one.
-If there are multiple, it should use expno=10 and procno=10.
-If there are multiple but no 10, it should throw an error.
-
 ## Add function get_si_mat
 
 Add a function `get_si_mat()` for extracting a matrix of signal intensities (SI) from a metabodecon object. The type of returned SI should be `raw` for `spectra`, `sup` for `decons` and `al` for `aligns`.
+
+# PLANNED
 
 ## Add authors to functions
 
@@ -37,15 +29,7 @@ If delta is small (e.g. 1), peaks in SFR might not be filtered out. Implement th
 
 Note 23.1.2025: in Rust implementation peaks found in IGNORE-REGION are already filtered out automatically before parameter approximation AND points in IGNORE-REGIONS do not contribute to MSE and/or PRARP.
 
-## Improve mse_normed calculation
-
-In function `add_return_list`:
-
-1. Make the following part faster (or remove completely):
-
-   `s <- sapply(x, function(x_i) sum(abs(A * (lambda / (lambda^2 + (x_i - w)^2))))) # takes approx. 2.2 seconds for urine_1`
-
-2. Return `mse_normed_raw` in addition to `mse_normed` (which is calculated based on `y <- spec$y_smooth`). `mse_normed_raw` should be based on `y <- spec$y_raw`.
+## Use R-Universe for mdrb_install
 
 ## Refactor integral calculations
 
@@ -86,6 +70,18 @@ Do a benchmark about which parts take up the most time in `deconvolute` and `ali
 Reformat the vignettes as paper and send to Wolfram for proofreading.
 
 # CONDITIONAL
+
+## Improve mse_normed calculation
+
+Do after [Analyze Runtime](#analyze-runtime).
+
+In function `add_return_list`:
+
+1. Make the following part faster (or remove completely):
+
+   `s <- sapply(x, function(x_i) sum(abs(A * (lambda / (lambda^2 + (x_i - w)^2))))) # takes approx. 2.2 seconds for urine_1`
+
+2. Return `mse_normed_raw` in addition to `mse_normed` (which is calculated based on `y <- spec$y_smooth`). `mse_normed_raw` should be based on `y <- spec$y_raw`.
 
 ## Improve Get-Started vignette
 
@@ -165,6 +161,14 @@ If `c(11.44494, -1.8828)` is part of the ppm range, use these values, otherwise 
 
 1. `wshw = 0.01 * width(cs)` (where `0.01` is `round(0.007629452, 2)` and `0.007629452` equals `0.1527692 / 20.0236144338963` which is the width of the default WSHW dividided by the width of the `urine_1` spectrum. I.e., the new calculation would give approximately the same proportion of the spectrum width as the default value.)
 2. `sfr = max(cs) - c(1/6, 5/6) * width(cs)`
+
+## Update expno/procno defaults
+
+Expno and procno should use NULL as default.
+If NULL, the function should look for the first available expno/procno folder.
+If there is only one, it should use that one.
+If there are multiple, it should use expno=10 and procno=10.
+If there are multiple but no 10, it should throw an error.
 
 ## Calculate mandatory SITs in as_decon2
 

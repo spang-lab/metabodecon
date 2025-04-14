@@ -152,8 +152,35 @@ align <- function(x, maxShift = 50, maxCombine = 5, verbose = TRUE, install_deps
     aligns
 }
 
+# Exported Helpers #####
 
-# Exported Helpers (deprecated) #####
+#' @export
+#' @title Extract Matrix of aligned Signal Intensities
+#'
+#' @description
+#' Takes an object of type `aligns`, i.e., a list of deconvoluted and aligned
+#' spectra, extracts the vector of aligned signal integrals for each spectrum
+#' and returns them as a matrix with datapoints in rows and spectra in columns.
+#'
+#' @param x
+#' An object of type `aligns`.
+#'
+#' @return
+#' A matrix of aligned signal intensities.
+#'
+#' @author
+#' Initial version written in 2025 by Tobias Schmidt.
+#'
+#' @examples
+#' decons <- deconvolute(sim[1:2], sfr = c(3.55, 3.35))
+#' aligns <- align(decons)
+#' si_mat <- get_si_mat(aligns) # 2048 x 2 matrix (2048 datapoints, 2 spectra)
+get_si_mat <- function(x) {
+    stopifnot(is_aligns(x))
+    sapply(x, function(s) s$sit$al)
+}
+
+# Exported Helpers (Deprecated) #####
 
 #' @export
 #'
@@ -174,8 +201,8 @@ align <- function(x, maxShift = 50, maxCombine = 5, verbose = TRUE, install_deps
 #' provided deconvoluted spectra.
 #'
 #' @author
-#' Wolfram Gronwald, 2023: initial version.
-#' Tobias Schmidt, 2024: .
+#' Initial version from Wolfram Gronwald.
+#' Refactored by Tobias Schmidt in 2024.
 #'
 #' @examples
 #' spectrum_data <- generate_lorentz_curves(
