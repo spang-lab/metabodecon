@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">metabodecon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.4.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.4.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -38,7 +38,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="logo.svg" class="logo" alt=""><h1>DONE (2024)</h1>
-      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/v1.4.1/ARCHIVE.md" class="external-link"><code>ARCHIVE.md</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/v1.4.2/ARCHIVE.md" class="external-link"><code>ARCHIVE.md</code></a></small>
     </div>
 
 <div id="done-2024" class="section level1">
@@ -457,6 +457,16 @@
 <h2 id="feature-16-improve-multiprocessing">FEATURE-16: Improve multiprocessing<a class="anchor" aria-label="anchor" href="#feature-16-improve-multiprocessing"></a></h2>
 <p>Right now, output gets scrambled because all procs share one stdout. We can fix this by not using parLapply, but distributing the tasks ourselver over the cores and in a mainloop collecting outputs and results.</p>
 <p><em>Done in branch v1.2 with commit bea9348 at Thu Sep 12 17:14:20 2024 +0200</em></p>
+</div>
+<div class="section level2">
+<h2 id="feature-21-implement-deconvolute_spectra">FEATURE-21: Implement deconvolute_spectra<a class="anchor" aria-label="anchor" href="#feature-21-implement-deconvolute_spectra"></a></h2>
+<p>Implement <code>deconvolute_spectra()</code> and <code>deconvolute_spectrum()</code> which should be the successors of <code>deconvolute_ispec()</code> and <code>deconvolute_ispecs()</code>. In particular it should:</p>
+<ol style="list-style-type: decimal"><li>Accept <code>spectrum</code> objects as input (as returned by <code>read_spectra</code>). See FEATURE-9</li>
+<li>Use the correct SFR calculation as described in CHECK-2</li>
+<li>Uses the correct water signal calculation as described in CHECK-3</li>
+<li>Use 1-based indexing for data points as described in CHECK-4</li>
+<li>Remove the scale factor and scaled data point numbers as described in CHECK-4</li>
+</ol><p><em>Done with v1.2 or v1.3 (not sure) somewhere in between Sep24 and Jan25</em></p>
 </div>
 <div class="section level2">
 <h2 id="feature-18-implement-plot_spectrum">FEATURE-18: Implement plot_spectrum<a class="anchor" aria-label="anchor" href="#feature-18-implement-plot_spectrum"></a></h2>

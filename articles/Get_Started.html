@@ -26,7 +26,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metabodecon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.3.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.4.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -70,22 +70,48 @@
       <img src="../logo.svg" class="logo" alt=""><h1>Get Started</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/v1.3.0/vignettes/Get_Started.Rmd" class="external-link"><code>vignettes/Get_Started.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/v1.4.2/vignettes/Get_Started.Rmd" class="external-link"><code>vignettes/Get_Started.Rmd</code></a></small>
       <div class="d-none name"><code>Get_Started.Rmd</code></div>
     </div>
 
     
     
 <style>
-figure{
-    border: 1px solid #dee2e6; border-radius: .375rem; padding: 0;
+/*
+IMPORTANT: pkgdown articles [^1] and  rmarkdown  html  vignettes  [^2]  generate
+different HTML elements from the same rmarkdown content. Therefore  we  need  to
+take care to handle both usecases. In particular, articles  use  `<figure>`  and
+`<caption>`  elements,  where  vignettes  use  `<div  class="figure">`  and  `<p
+class="caption">` elements.
+
+[^1] built using `pkgdown::build_article()`)
+[^2] built using `rmarkdown::render()`
+*/
+
+figure, div.figure
+{
+    border: 1px solid #dee2e6;
+    border-radius: .375rem;
+    padding: 0;
+    margin: 1em 0;
 }
-figcaption{
-    text-align: center; font-style: italic; border-top: 1px solid #dee2e6;
-    padding: 0.75rem; background-color: #ffffff;
+caption, p.caption {
+    text-align: center;
+    font-style: italic;
+    border-top: 1px solid #dee2e6;
+    padding: 0.75rem;
+    background-color: #ffffff;
 }
-.sourceCode.txt{
-    background-color: #f1f3f5;
+img {
+    margin: 0 auto;
+    padding: 0;
+    border: none;
+    width: 50%;
+}
+@media (max-width: 500px) {
+    img {
+        width: 100%; /* Full width for smaller viewports */
+    }
 }
 </style>
 <p>This article shows how Metabodecon can be used for deconvoluting and
@@ -129,7 +155,7 @@ deconvolution parameters:</p>
 measured in the same lab with the same acquisition and processing
 parameters. However, for heterogeneous datasets, it’s advisable to
 optimize parameters for each batch of spectra individually.</p>
-<p>Questions three and four are accompanied by two plots, shown in <a href="#fig-sim01-sfr-and-wsr">Figure 1</a>, which help you to verify the
+<p>Questions three and four are accompanied by two plots, shown in <a href="#fig-deconvolute">Figure 1</a>, which help you to verify the
 accuracy of the selected signal-free region (SFR) and water signal
 half-width (WSHW) <a class="footnote-ref" tabindex="0" data-bs-toggle="popover" data-bs-content="&lt;p&gt;Since the used dataset was simulated based on actual
 measurements in the range of approx. 3.6 to 3.3 ppm, it doesn’t contain
@@ -138,16 +164,20 @@ zero.&lt;/p&gt;"><sup>1</sup></a>. In this case, the provided parameters are
 already fine, so you can answer both questions with <code>y</code>. If
 adjustments are needed, you can respond with <code>n</code> and input
 the correct values.</p>
-<figure id="fig-sim01-sfr-and-wsr"><a href="Get_Started/sim_01_param_checking.svg"><img src="Get_Started%2Fsim_01_param_checking.svg" alt="sim_01_param_checking.svg"></a>
-<figcaption><strong>Figure 1.</strong> The first spectrum of the Sim dataset. The
+<p><a id="fig-deconvolute"></a></p>
+<div class="figure">
+<img src="Get_Started_files/figure-html/fig-deconvolute-1.png" alt="&lt;strong&gt;Figure 1.&lt;/strong&gt; The first spectrum of the Sim dataset. The x-Axis gives the chemical shift of each datapoint in parts per million (ppm). The y-Axis gives the signal intensity of each datapoint in arbitrary units (au). The signal free regions are shown as green rectangles in the left plot. The water signal region, usually shown as blue rectangle, is shown in the right plot. Because the water signal half width is set to zero in this case, the rectangle collapses to a vertical line." width="480" height="auto"><img src="Get_Started_files/figure-html/fig-deconvolute-2.png" alt="&lt;strong&gt;Figure 1.&lt;/strong&gt; The first spectrum of the Sim dataset. The x-Axis gives the chemical shift of each datapoint in parts per million (ppm). The y-Axis gives the signal intensity of each datapoint in arbitrary units (au). The signal free regions are shown as green rectangles in the left plot. The water signal region, usually shown as blue rectangle, is shown in the right plot. Because the water signal half width is set to zero in this case, the rectangle collapses to a vertical line." width="480" height="auto"><p class="caption">
+<strong>Figure 1.</strong> The first spectrum of the Sim dataset. The
 x-Axis gives the chemical shift of each datapoint in parts per million
 (ppm). The y-Axis gives the signal intensity of each datapoint in
-arbitrary units (au). The borders of the signal free region are shown as
-green vertical lines in the left plot. The center of the water signal is
-shown as a red vertical line in the right plot. Because the water signal
-half width is set to zero, the borders of the water signal region equal
-its center.
-</figcaption></figure><p>When using the function in scripts, where interactive user input is
+arbitrary units (au). The signal free regions are shown as green
+rectangles in the left plot. The water signal region, usually shown as
+blue rectangle, is shown in the right plot. Because the water signal
+half width is set to zero in this case, the rectangle collapses to a
+vertical line.
+</p>
+</div>
+<p>When using the function in scripts, where interactive user input is
 not desired, you can disable the interactive prompting by setting
 parameter <code>ask</code> to <code>FALSE</code>. In this case, the
 provided parameters will be used for the deconvolution of all spectra
@@ -161,25 +191,25 @@ subsequent runs.&lt;/p&gt;"><sup>2</sup></a></p>
 </h2>
 <p>After completing the deconvolution, it is advisable to visualize the
 extracted signals using <code><a href="../reference/plot_spectrum.html">plot_spectrum()</a></code> to assess the
-quality of the deconvolution:</p>
+quality of the deconvolution.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Visualize the first spectrum only</span></span>
+<code class="sourceCode R"><span><span class="co"># Visualize the first spectrum.</span></span>
 <span><span class="fu">metabodecon</span><span class="fu">::</span><span class="fu"><a href="../reference/plot_spectrum.html">plot_spectrum</a></span><span class="op">(</span><span class="va">deconvoluted_spectra</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Visualize the second spectrum, this time without the legend.</span></span>
+<span><span class="fu">metabodecon</span><span class="fu">::</span><span class="fu"><a href="../reference/plot_spectrum.html">plot_spectrum</a></span><span class="op">(</span><span class="va">deconvoluted_spectra</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>, lgd <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Visualize all spectra and save them to a pdf file</span></span>
 <span><span class="va">pdfpath</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".pdf"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/grDevices/pdf.html" class="external-link">pdf</a></span><span class="op">(</span><span class="va">pdfpath</span>, width <span class="op">=</span> <span class="fl">12</span>, height <span class="op">=</span> <span class="fl">8</span><span class="op">)</span></span>
-<span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_along</a></span><span class="op">(</span><span class="va">deconvoluted_spectra</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="fu">metabodecon</span><span class="fu">::</span><span class="fu"><a href="../reference/plot_spectrum.html">plot_spectrum</a></span><span class="op">(</span></span>
-<span>        x <span class="op">=</span> <span class="va">deconvoluted_spectra</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span>,</span>
-<span>        main <span class="op">=</span> <span class="va">deconvoluted_spectra</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">filename</span>,</span>
-<span>        foc_frac <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.25</span>, <span class="fl">0.75</span><span class="op">)</span></span>
-<span>    <span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/grDevices/pdf.html" class="external-link">pdf</a></span><span class="op">(</span><span class="va">pdfpath</span><span class="op">)</span></span>
+<span><span class="kw">for</span> <span class="op">(</span><span class="va">x</span> <span class="kw">in</span> <span class="va">deconvoluted_spectra</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="fu">metabodecon</span><span class="fu">::</span><span class="fu"><a href="../reference/plot_spectrum.html">plot_spectrum</a></span><span class="op">(</span><span class="va">x</span>, main <span class="op">=</span> <span class="va">x</span><span class="op">$</span><span class="va">filename</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/grDevices/dev.html" class="external-link">dev.off</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Plots saved to"</span>, <span class="va">pdfpath</span>, <span class="st">"\n"</span><span class="op">)</span></span></code></pre></div>
 <p>Out of the 16 generated plots, the first two are shown as examples in
-<a href="#fig-sim1-plots">Figure 2</a>. Things to look out for are:</p>
+<a href="#fig-plot-spectrum">Figure 2</a>. Things to look out for
+are:</p>
 <ol style="list-style-type: decimal">
 <li>That the smoothing does not remove any real signals. If the
 smoothing is too strong, i.e., the smoothed signal intensity (SI) is
@@ -191,14 +221,16 @@ of the smoothed SI. If major peaks are missed by the algorithm, you
 should reduce the threshold <code>delta</code> in the call to
 <code><a href="../reference/deconvolute.html">generate_lorentz_curves()</a></code>.</li>
 </ol>
-<figure id="fig-sim1-plots"><a href="Get_Started/sim_01_spectrum.svg"><img src="Get_Started%2Fsim_01_spectrum.svg" alt="sim_01_spectrum.svg" width="49%"></a>
-<a href="Get_Started/sim_02_spectrum.svg"><img src="Get_Started%2Fsim_02_spectrum.svg" alt="sim_02_spectrum.svg" width="49%"></a>
-<figcaption><strong>Figure 2.</strong> Deconvolution results for the first two
+<p><a id="fig-plot-spectrum"></a></p>
+<div class="figure">
+<img src="Get_Started_files/figure-html/fig-plot-spectrum-1.png" alt="&lt;strong&gt;Figure 2.&lt;/strong&gt; Deconvolution results for the first two spectra of the Sim dataset. The raw SI (black), smoothed SI (blue), and superposition of Lorentz curves (red) are closely aligned, indicating that &lt;code&gt;smopts&lt;/code&gt; and &lt;code&gt;delta&lt;/code&gt; were chosen well and that the deconvolution was successful." width="480" height="auto"><img src="Get_Started_files/figure-html/fig-plot-spectrum-2.png" alt="&lt;strong&gt;Figure 2.&lt;/strong&gt; Deconvolution results for the first two spectra of the Sim dataset. The raw SI (black), smoothed SI (blue), and superposition of Lorentz curves (red) are closely aligned, indicating that &lt;code&gt;smopts&lt;/code&gt; and &lt;code&gt;delta&lt;/code&gt; were chosen well and that the deconvolution was successful." width="480" height="auto"><p class="caption">
+<strong>Figure 2.</strong> Deconvolution results for the first two
 spectra of the Sim dataset. The raw SI (black), smoothed SI (blue), and
 superposition of Lorentz curves (red) are closely aligned, indicating
 that <code>smopts</code> and <code>delta</code> were chosen well and
 that the deconvolution was successful.
-</figcaption></figure>
+</p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="align-deconvoluted-spectra">Align deconvoluted spectra<a class="anchor" aria-label="anchor" href="#align-deconvoluted-spectra"></a>
@@ -207,23 +239,35 @@ that the deconvolution was successful.
 deconvoluted spectra. This is necessary because the chemical shifts of
 the peaks in the spectra may vary slightly due to differences in the
 measurement conditions.</p>
-<p>To visualize the data before and after the alignment, you can use
-<code><a href="../reference/plot_spectra.html">plot_spectra()</a></code>. To do the alignment, you can use
-<code><a href="../reference/align.html">align()</a></code>:</p>
+<p>To perform the alignment, you can use <code><a href="../reference/align.html">align()</a></code>. To
+visualize the data before and after the alignment, you can use
+<code><a href="../reference/plot_spectra.html">plot_spectra()</a></code>:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">metabodecon</span><span class="fu">::</span><span class="fu"><a href="../reference/plot_spectra.html">plot_spectra</a></span><span class="op">(</span><span class="va">deconvoluted_spectra</span><span class="op">)</span></span>
-<span><span class="va">aligned_spectra</span> <span class="op">&lt;-</span> <span class="fu">metabodecon</span><span class="fu">::</span><span class="fu"><a href="../reference/align.html">align</a></span><span class="op">(</span><span class="va">deconvoluted_spectra</span>, maxCombine <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
-<span><span class="fu">metabodecon</span><span class="fu">::</span><span class="fu"><a href="../reference/plot_spectra.html">plot_spectra</a></span><span class="op">(</span><span class="va">aligned_spectra</span><span class="op">)</span></span></code></pre></div>
-<p>The resulting plots are shown in <a href="#fig-sim-spectra-overlayed">Figure 3</a></p>
-<figure id="fig-sim-spectra-overlayed"><a href="Get_Started/sim_spectra_overlayed.svg">
-<img src="Get_Started%2Fsim_spectra_overlayed.svg" alt="sim_spectra_overlayed.svg"></a>
-<figcaption><strong>Figure 3.</strong> Overlay of all 16 deconvoluted spectra from
-the Sim dataset. The x-Axis gives the chemical shift of each datapoint
-in parts per million (ppm). The y-Axis gives the signal intensity of
-each datapoint in arbitrary units (au). All specta are pretty similar to
-each other except for Spetrum 2, which appears to be shifted approx.
-0.01 ppm to the right.
-</figcaption></figure><!-- Footnotes -->
+<code class="sourceCode R"><span><span class="co"># Plot spectra before alignment. Only show spectra 1-8 for clarity.</span></span>
+<span><span class="fu">metabodecon</span><span class="fu">::</span><span class="fu"><a href="../reference/plot_spectra.html">plot_spectra</a></span><span class="op">(</span><span class="va">deconvoluted_spectra</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">8</span><span class="op">]</span>, lgd <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Align spectra and plot again.</span></span>
+<span><span class="va">aligned_spectra</span> <span class="op">&lt;-</span> <span class="fu">metabodecon</span><span class="fu">::</span><span class="fu"><a href="../reference/align.html">align</a></span><span class="op">(</span><span class="va">deconvoluted_spectra</span><span class="op">)</span></span>
+<span><span class="fu">metabodecon</span><span class="fu">::</span><span class="fu"><a href="../reference/plot_spectra.html">plot_spectra</a></span><span class="op">(</span><span class="va">aligned_spectra</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">8</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<p>The resulting plots are shown in <a href="#fig-align">Figure 3</a>.
+Before the alignment, the spectra exhibit generally similar shapes but
+do not perfectly overlap. After the alignment, the spectra are much more
+consistent with each other, indicating that the alignment was
+successful. Notably, spectrum two has been shifted significantly to the
+left.</p>
+<a id="fig-align"></a>
+<div class="figure">
+<img src="Get_Started_files/figure-html/fig-align-1.png" alt="&lt;strong&gt;Figure 3.&lt;/strong&gt; Overlay of the first eight deconvoluted spectra from the Sim dataset before alignment (left) and after alignment (right). The x-Axis gives the chemical shift of each datapoint in parts per million (ppm). The y-Axis gives the signal intensity of each datapoint in arbitrary units (au). All specta are pretty similar to each other except for Spectrum 2, which got shifted approx. 0.01 ppm to the right." width="480" height="auto"><img src="Get_Started_files/figure-html/fig-align-2.png" alt="&lt;strong&gt;Figure 3.&lt;/strong&gt; Overlay of the first eight deconvoluted spectra from the Sim dataset before alignment (left) and after alignment (right). The x-Axis gives the chemical shift of each datapoint in parts per million (ppm). The y-Axis gives the signal intensity of each datapoint in arbitrary units (au). All specta are pretty similar to each other except for Spectrum 2, which got shifted approx. 0.01 ppm to the right." width="480" height="auto"><p class="caption">
+<strong>Figure 3.</strong> Overlay of the first eight deconvoluted
+spectra from the Sim dataset before alignment (left) and after alignment
+(right). The x-Axis gives the chemical shift of each datapoint in parts
+per million (ppm). The y-Axis gives the signal intensity of each
+datapoint in arbitrary units (au). All specta are pretty similar to each
+other except for Spectrum 2, which got shifted approx. 0.01 ppm to the
+right.
+</p>
+</div>
+<!-- Footnotes -->
 </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

@@ -1,5 +1,6 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://spang-lab.github.io/metabodecon/404.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/ARCHIVE.html</loc></url>
 <url><loc>https://spang-lab.github.io/metabodecon/LICENSE.html</loc></url>
 <url><loc>https://spang-lab.github.io/metabodecon/TODOS.html</loc></url>
 <url><loc>https://spang-lab.github.io/metabodecon/articles/Classes.html</loc></url>
@@ -11,12 +12,15 @@
 <url><loc>https://spang-lab.github.io/metabodecon/articles/MetaboDecon1D.html</loc></url>
 <url><loc>https://spang-lab.github.io/metabodecon/articles/index.html</loc></url>
 <url><loc>https://spang-lab.github.io/metabodecon/authors.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/copilot-instructions.html</loc></url>
 <url><loc>https://spang-lab.github.io/metabodecon/index.html</loc></url>
 <url><loc>https://spang-lab.github.io/metabodecon/news/index.html</loc></url>
 <url><loc>https://spang-lab.github.io/metabodecon/reference/MetaboDecon1D.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/aaa_Get_Started.html</loc></url>
 <url><loc>https://spang-lab.github.io/metabodecon/reference/align.html</loc></url>
 <url><loc>https://spang-lab.github.io/metabodecon/reference/as_metabodecon_class.html</loc></url>
 <url><loc>https://spang-lab.github.io/metabodecon/reference/calculate_lorentz_curves.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/check_mdrb.html</loc></url>
 <url><loc>https://spang-lab.github.io/metabodecon/reference/combine_peaks.html</loc></url>
 <url><loc>https://spang-lab.github.io/metabodecon/reference/convert_pos.html</loc></url>
 <url><loc>https://spang-lab.github.io/metabodecon/reference/datadir.html</loc></url>
@@ -31,8 +35,10 @@
 <url><loc>https://spang-lab.github.io/metabodecon/reference/get_data_dir.html</loc></url>
 <url><loc>https://spang-lab.github.io/metabodecon/reference/get_ppm_range.html</loc></url>
 <url><loc>https://spang-lab.github.io/metabodecon/reference/index.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/install_mdrb.html</loc></url>
 <url><loc>https://spang-lab.github.io/metabodecon/reference/is_metabodecon_class.html</loc></url>
 <url><loc>https://spang-lab.github.io/metabodecon/reference/make_spectrum.html</loc></url>
+<url><loc>https://spang-lab.github.io/metabodecon/reference/metabodecon-package.html</loc></url>
 <url><loc>https://spang-lab.github.io/metabodecon/reference/metabodecon_file.html</loc></url>
 <url><loc>https://spang-lab.github.io/metabodecon/reference/plot_lorentz_curves_save_as_png.html</loc></url>
 <url><loc>https://spang-lab.github.io/metabodecon/reference/plot_spectra.html</loc></url>

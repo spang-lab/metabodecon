@@ -26,7 +26,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metabodecon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.3.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.4.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -70,7 +70,7 @@
       <img src="../logo.svg" class="logo" alt=""><h1>Metabodecon Classes</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/v1.3.0/vignettes/Classes.Rmd" class="external-link"><code>vignettes/Classes.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/v1.4.2/vignettes/Classes.Rmd" class="external-link"><code>vignettes/Classes.Rmd</code></a></small>
       <div class="d-none name"><code>Classes.Rmd</code></div>
     </div>
 
@@ -80,7 +80,8 @@
 certain elements in corresponding objects. The order of elements may
 vary between different versions of Metabodecon, thus elements should
 always be accessed by name, for example, using <code>x$si</code> or
-<code>x[["cs"]]</code>.</p>
+<code>x[["cs"]]</code>. Elements marked as optional can be present, NULL
+or missing, i.e. they should only be used conditionally.</p>
 <p>The classes itself are described in section <a href="#class-overview">Class Overview</a>. The elements associated with
 a class are described in section <a href="#elements">Elements</a>. A
 graphical visualization of the classes and their corresponding functions
@@ -145,7 +146,7 @@ are named: <a href="#spectra">spectra</a>, <a href="#decons0">decons0</a>, <a hr
 </h3>
 <ol style="list-style-type: decimal">
 <li>
-<code>cs</code>: Vector of chemical shifts (CS) in parts per pillion
+<code>cs</code>: Vector of chemical shifts (CS) in parts per million
 (ppm). Must be of the same length as <code>si</code>.</li>
 <li>
 <code>si</code>: Vector of signal intensities (SI) in arbitrary
@@ -153,47 +154,70 @@ units (au). Element <code>si[i]</code> is the signal intensity measured
 at chemical shift <code>cs[i]</code>, i.e. <code>si</code> must be of
 the same length as <code>cs</code>.</li>
 <li>
-<code>meta</code>: List of additional metadata about the spectrum,
+<code>meta</code>: Optional. List of metadata about the spectrum,
 e.g.:
 <ul>
 <li>
-<code>name</code>: The name of the spectrum,
+<code>name</code>: Optional. The name of the spectrum,
 e.g. <code>"Blood 1"</code> or <code>"Urine 2"</code>.</li>
 <li>
-<code>path</code>: The path of the file/folder containing the
-spectrum data. E.g.
+<code>path</code>: Optional. The path of the file/folder containing
+the spectrum data. E.g.
 <code>"example_datasets/jcampdx/urine/urine_1.dx"</code> or
 <code>"example_datasets/bruker/urine/urine"</code>.</li>
 <li>
-<code>type</code>: The type of experiment,
+<code>type</code>: Optional. The type of experiment,
 e.g. <code>"H1 CPMG"</code> or <code>"H1 NOESY"</code>.</li>
 <li>
-<code>fq</code>: Vector of signal frequencies in Hertz (Hz). Must be
-of the same length as <code>si</code> and <code>cs</code>.</li>
+<code>fq</code>: Optional. Vector of signal frequencies in Hertz
+(Hz). Must be of the same length as <code>si</code> and
+<code>cs</code>.</li>
 <li>
-<code>mfs</code>: Magnetic field strength in Tesla,
+<code>mfs</code>: Optional. Magnetic field strength in Tesla,
 e.g. <code>14.1</code>.</li>
 <li>
-<code>simpar</code>: True Lorentz Curve parameters. List with
-elements <code>A</code>, <code>lambda</code> and <code>x0</code>. For
-details see element <code>lcpar</code>. Only available if a spectrum has
-been simulated.</li>
+<code>simpar</code>: Optional. True Lorentz Curve parameters. List
+with elements <code>A</code>, <code>lambda</code> and <code>x0</code>.
+For details see element <code>lcpar</code>. Only available if a spectrum
+has been simulated.</li>
 </ul>
 </li>
 <li>
-<code>args</code>: List of deconvolution parameters:
+<code>args</code>: Optional. List of deconvolution parameters, i.e.:
 <ul>
 <li>
-<code>nfit</code>: The number of fitting iterations.</li>
+<code>nfit</code>: Optional. The number of fitting iterations.</li>
 <li>
-<code>smopts</code>: The smoothing parameters used for the
+<code>smopts</code>: Optional. The smoothing parameters used for the
 deconvolution.</li>
 <li>
-<code>delta</code>: The threshold used for peak filtering.</li>
+<code>delta</code>: Optional. The threshold used for peak
+filtering.</li>
 <li>
-<code>sfr</code>: Borders of the signal free region in ppm.</li>
+<code>sfr</code>: Optional. Borders of the signal free region in
+ppm.</li>
 <li>
-<code>wshw</code>: Water signal half width in ppm.</li>
+<code>wshw</code>: Optional. Water signal half width in ppm.</li>
+<li>
+<code>ask</code>: Optional. Whether interactive mode was
+enabled.</li>
+<li>
+<code>verbose</code>: Optional. Whether verbose output was
+enabled.</li>
+<li>
+<code>bwc</code>: Optional. Level of backwards compatibility used by
+internal calculations.</li>
+<li>
+<code>nworkers</code>: Optional. Number of workers used for parallel
+processing.</li>
+<li>
+<code>use_rust</code>: Optional. Whether the Rust backend was used
+for deconvolution. <em>(v1.4.0+)</em>
+</li>
+<li>
+<code>rtyp</code>: Optional. Object type returned by internal
+function <code>deconvolute_spectrum</code>. <em>(v1.4.0+)</em>
+</li>
 </ul>
 </li>
 <li>
@@ -210,7 +234,14 @@ applying various transformations:
 <li>
 <code>sup</code>: SIs as superposition of Lorentz Curves.</li>
 <li>
-<code>al</code>: SIs after alignment.</li>
+<code>supal</code>: SIs as superposition of aligned Lorentz Curves.
+<em>(v1.4.0+)</em>
+</li>
+<li>
+<code>al</code>: SIs as integrals of aligned Lorentz Curves. I.e.,
+the intensity of a peak-center-datapoint equals the integral value of
+the corresponding peak. The intensity of a other datapoints is
+zero.</li>
 </ul>
 </li>
 <li>
