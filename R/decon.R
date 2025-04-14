@@ -688,13 +688,13 @@ confirm_sfr <- function(x, sfr = c(11.44494, -1.8828)) {
     cs_min <- min(cs)
     cs_max <- max(cs)
     plot_sfr(cs, si, sfr)
-    sfr_ok <- get_yn_input("Signal free region correctly selected?")
+    sfr_ok <- get_yn_input("Borders of signal free region (green) correctly selected?")
     while (!sfr_ok) {
         get_border <- function(msg) get_num_input(msg, cs_min, cs_max)
         sfr[1] <- get_border("Choose another left border: [e.g. 12]")
         sfr[2] <- get_border("Choose another right border: [e.g. -2]")
         plot_sfr(cs, si, sfr)
-        sfr_ok <- get_yn_input("Signal free region correctly selected?")
+        sfr_ok <- get_yn_input("Borders of signal free region (green) correctly selected?")
     }
     sfr
 }
@@ -705,11 +705,11 @@ confirm_wshw <- function(x, wshw) {
     cs <- x$cs %||% x$ppm
     si <- x$si %||% x$y_scaled
     plot_ws(cs, si, wshw)
-    ws_ok <- get_yn_input("Water artefact fully inside red vertical lines?")
+    ws_ok <- get_yn_input("Water artefact fully inside blue area?")
     while (!ws_ok) {
         wshw <- get_num_input("Choose another half width range (in ppm) for the water artefact: [e.g. 0.1222154]")
         plot_ws(cs, si, wshw)
-        ws_ok <- get_yn_input("Water artefact fully inside red vertical lines?")
+        ws_ok <- get_yn_input("Water artefact fully inside blue area?")
     }
     wshw
 }
