@@ -8,9 +8,8 @@ on: {
 
 jobs:
 
-  test-modern-cran-install:
+  test-install:
     runs-on: ${{ matrix.config.os }}
-    name: CRAN Modern, ${{ matrix.config.os }}, ${{ matrix.config.r }}
     strategy:
       fail-fast: false
       matrix:
@@ -33,6 +32,10 @@ jobs:
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
           extra-repositories: https://spang-lab.r-universe.dev
+
+      - name: Install Linux System Dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update -y && sudo apt-get install -y libgsl0-dev libcurl4-openssl-dev
 
       - name: Test modern Installation from CRAN
         run: Rscript scripts/test-install.R CRAN-Modern
