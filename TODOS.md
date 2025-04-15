@@ -17,6 +17,17 @@ Add author information all functions (exported and unexported).
 
 ## Add lifecycle badges to functions
 
+Add lifecycle badges to all exported, non-stable functions.
+
+## Emit deprecatian warnings
+
+1. Exported functions that will be removed from the package, should emit a deprecation warning when called.
+2. Exported functions that will be made private, should check the environment of the calling function:
+   - If the environment of the caller is the package namespace, nothing should be done.
+   - Else, a deprecation warning should be emitted.
+
+For details see https://lifecycle.r-lib.org/articles/communicate.html
+
 ## Test deconvolute with huge nfit
 
 ## Test deconvolute with peak at zero ppm
@@ -32,6 +43,10 @@ If delta is small (e.g. 1), peaks in SFR might not be filtered out. Implement th
 Note 23.1.2025: in Rust implementation peaks found in IGNORE-REGION are already filtered out automatically before parameter approximation AND points in IGNORE-REGIONS do not contribute to MSE and/or PRARP.
 
 ## Use R-Universe for mdrb_install
+
+Currently, `mdrb_install()` always installs from source from Github. Installing from R-Univserse should be much faster, as we can install pre-compiled binary packages or at least pre-processed source bundles.
+
+If the user chooses type = "binary", we can also skip the checks for `cargo` and `rustc`.
 
 ## Refactor integral calculations
 
