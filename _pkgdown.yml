@@ -31,6 +31,7 @@ reference:
   - gen_feat_mat
   - get_ppm_range
   - speaq_align
+  - get_si_mat
 - title: Datasets
   desc: Functions to download and/or find example datasets.
   contents:
