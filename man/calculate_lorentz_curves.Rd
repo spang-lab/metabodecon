@@ -19,9 +19,6 @@ list of such matrices is returned.
 }
 \description{
 Calculates the lorentz curves of each investigated spectrum.
-
-Martina Haeckl, 2021: Initial version.
-Tobias Schmidt, 2024: Minor updates to pass CRAN checks
 }
 \examples{
 ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
@@ -57,4 +54,8 @@ legend("topright", legend = desc, col = col, lty = 1)
 \code{\link[=plot_triplets]{plot_triplets()}},
 \code{\link[=plot_lorentz_curves_save_as_png]{plot_lorentz_curves_save_as_png()}},
 \code{\link[=plot_spectrum_superposition_save_as_png]{plot_spectrum_superposition_save_as_png()}}
+}
+\author{
+Martina Haeckl, 2020-2021: initial version.
+Tobias Schmidt, 2024-2025: Minor updates to pass CRAN checks
 }

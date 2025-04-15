@@ -32,6 +32,6 @@ ppm_rng <- get_ppm_range(spectrum_data)
 print(ppm_rng)
 }
 \author{
-Wolfram Gronwald, 2023: initial version.
-Tobias Schmidt, 2024: .
+Wolfram Gronwald, 2021-2024: initial version.
+Tobias Schmidt, 2024-2025: refactored initial version.
 }

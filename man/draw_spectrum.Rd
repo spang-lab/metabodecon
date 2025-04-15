@@ -186,3 +186,6 @@ draw_spectrum(obj = decon, add = TRUE, lgd = FALSE,
               fig = c(0.2, 0.8, 0.6, 0.8), mar = c(0, 0, 0, 0))
 draw_spectrum(obj = decon, lc_lines = NULL, lc_rects = NULL, foc_only = FALSE)
 }
+\author{
+Tobias Schmidt, 2024-2025: initial version.
+}

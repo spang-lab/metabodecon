@@ -27,3 +27,6 @@ tmpdir("simulate_spectra")
 \code{\link[=datadir_temp]{datadir_temp()}}
 \code{\link[=datadir_persistent]{datadir_persistent()}}
 }
+\author{
+Tobias Schmidt, 2024-2025: initial version.
+}

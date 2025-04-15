@@ -9,9 +9,11 @@
 
 Add a function `get_si_mat()` for extracting a matrix of signal intensities (SI) from a metabodecon object. The type of returned SI should be `raw` for `spectra`, `sup` for `decons` and `al` for `aligns`.
 
-# PLANNED
-
 ## Add authors to functions
+
+Add author information all functions (exported and unexported).
+
+# PLANNED
 
 ## Add lifecycle badges to functions
 

@@ -14,11 +14,6 @@
 #'
 #' `r lifecycle::badge("deprecated")`
 #'
-#' @author
-#' Martina Haeckl, 2021: Initial version.
-#' Tobias Schmidt, 2024: Added parameters `debug` and `store_results`. Added
-#' minor improvements to pass CRAN checks.
-#'
 #' @param filepath
 #' Complete path of the file folder (Notice for Bruker format: filepath needs to
 #' be the spectrum folder containing one or more different spectra
@@ -84,6 +79,10 @@
 #' Oefner, P.J.; Gronwald, W. An R-Package for the Deconvolution and Integration
 #' of 1D NMR Data: MetaboDecon1D. Metabolites 2021, 11, 452.
 #' https://doi.org/10.3390/metabo11070452
+#'
+#' @author Martina Haeckl, 2020-2021: initial version.
+#' Tobias Schmidt, 2024-2025: Minor updates to pass CRAN checks. Parameters
+#' `debug` and `store_results` added.
 #'
 #' @examples
 #'
@@ -544,9 +543,6 @@ MetaboDecon1D <- function(filepath,
 #'
 #' @description Calculates the lorentz curves of each investigated spectrum.
 #'
-#' Martina Haeckl, 2021: Initial version.
-#' Tobias Schmidt, 2024: Minor updates to pass CRAN checks
-#'
 #' @param deconv_result
 #' A list as returned by [generate_lorentz_curves()] or [MetaboDecon1D].
 #'
@@ -563,6 +559,9 @@ MetaboDecon1D <- function(filepath,
 #' [plot_triplets()],
 #' [plot_lorentz_curves_save_as_png()],
 #' [plot_spectrum_superposition_save_as_png()]
+#'
+#' @author Martina Haeckl, 2020-2021: initial version.
+#' Tobias Schmidt, 2024-2025: Minor updates to pass CRAN checks
 #'
 #' @examples
 #' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
@@ -703,9 +702,8 @@ calculate_lorentz_curves <- function(deconv_result, number_of_files = NA) {
 #' [MetaboDecon1D()], [calculate_lorentz_curves()], [plot_lorentz_curves_save_as_png()],
 #' [plot_spectrum_superposition_save_as_png()]
 #'
-#' @author
-#' Martina Haeckl, 2021: Initial version.
-#' Tobias Schmidt, 2024: Minor updates to pass CRAN checks.
+#' @author Martina Haeckl, 2020-2021: initial version.
+#' Tobias Schmidt, 2024-2025: Minor updates to pass CRAN checks.
 #'
 #' @examples
 #' sim <- metabodecon_file("bruker/sim_subset")
@@ -875,6 +873,9 @@ plot_triplets <- function(deconv_result, x_range = c(), y_range = c(), out_dir =
 #' @seealso
 #' [MetaboDecon1D()], [plot_triplets()], [plot_spectrum_superposition_save_as_png()]
 #'
+#' @author Martina Haeckl, 2020-2021: initial version.
+#' Tobias Schmidt, 2024-2025: Minor updates to pass CRAN checks
+#'
 #' @examples
 #' sim <- metabodecon_file("bruker/sim_subset")
 #' sim_decon <- generate_lorentz_curves_sim(sim)
@@ -1031,8 +1032,7 @@ plot_lorentz_curves_save_as_png <- function(deconv_result, x_range = c(), y_rang
 #'
 #' `r lifecycle::badge("deprecated")`
 #'
-#' @author
-#' Martina Haeckl, 2021.
+#' @author Martina Haeckl, 2020-2021: initial version.
 #'
 #' @param deconv_result
 #' Saved result of the MetaboDecon1D() function
@@ -1190,8 +1190,7 @@ plot_spectrum_superposition_save_as_png <- function(deconv_result,
 # MetaboDecon1D Helpers (Private) #####
 
 #' @noRd
-#' @author
-#' Martina Haeckl, 2021.
+#' @author Martina Haeckl, 2020-2021: initial version.
 deconvolution <- function(filepath,
                           name,
                           file_format,
@@ -2324,6 +2323,8 @@ deconvolution <- function(filepath,
 
 # Plotting (Private) #####
 
+#' @noRd
+#' @author Tobias Schmidt, 2024-2025: initial version.
 plot_si_mat <- function(X = generate_lorentz_curves_sim("bruker/sim"),
                         lgdcex = "auto",
                         main = NULL,
@@ -2350,6 +2351,7 @@ plot_si_mat <- function(X = generate_lorentz_curves_sim("bruker/sim"),
 #' @noRd
 #' @title Plots a spectrum simulated with [get_sim_params()]
 #' @param simspec A simulated spectrum as returned by [get_sim_params()].
+#' @author Tobias Schmidt, 2024-2025: initial version.
 #' @examples
 #' simspec <- get_sim_params()
 #' plot_sim_spec(simspec)
@@ -2379,6 +2381,8 @@ plot_sim_spec <- function(simspec = get_sim_params()) {
     mtext(line3_text, side = 3, line = -3.1, col = "red", cex = 1, adj = 0.99)
 }
 
+#' @noRd
+#' @author Tobias Schmidt, 2024-2025: initial version.
 plot_noise_methods <- function(siRND, siSFR, n = 300, start = 5000) {
     ymin <- min(c(min(siRND), min(siSFR)))
     ymax <- max(c(max(siRND), max(siSFR)))
@@ -2406,9 +2410,8 @@ plot_noise_methods <- function(siRND, siSFR, n = 300, start = 5000) {
 # Alignment (Private) #####
 
 #' @noRd
-#' @author
-#' Initial version written by from Wolfram Gronwald as part of `gen_feat_mat`.
-#' Moved into seperate function in 2024 by Tobias Schmidt.
+#' @author Wolfram Gronwald, 2021-2023: wrote initial version as part of (gen_feat_mat[]).
+#' Tobias Schmidt, 2024-2025: refactored into a separate function.
 read_decon_params_original <- function(data_path) {
     files <- list.files(data_path, ".txt", full.names = TRUE)
     num_spectra <- length(files) / 2
@@ -2476,7 +2479,7 @@ read_decon_params_original <- function(data_path) {
 #' point. Each entry corresponds to the integral of a deconvoluted signal with
 #' the signal center at this specific position after alignment by speaq.
 #'
-#' @author Wolfram Gronwald
+#' @author Wolfram Gronwald, 2021-2023: initial version.
 #'
 #' @examples
 #' spectrum_data <- generate_lorentz_curves_sim("bruker/sim")
@@ -2555,6 +2558,8 @@ speaq_align_original <- function(feat = gen_feat_mat(spectrum_data),
 
 # Data Management (Private) #####
 
+#' @noRd
+#' @author Tobias Schmidt, 2024-2025: initial version.
 simulate_from_decon <- function(x,
                                 # Simulation Params
                                 cs_min = 3.4,
@@ -2633,11 +2638,19 @@ simulate_from_decon <- function(x,
 
 #' @noRd
 #' @title Count Stretches of Increases and Decreases
-#' @description Counts the lengths of consecutive increases and decreases in a
-#' numeric vector.
+#'
+#' @description
+#' Counts the lengths of consecutive increases and decreases in a numeric
+#' vector.
+#'
 #' @param x A numeric vector.
-#' @return A numeric vector containing the lengths of stretches of increases and
+#'
+#' @return
+#' A numeric vector containing the lengths of stretches of increases and
 #' decreases.
+#'
+#' @author Tobias Schmidt, 2024-2025: initial version.
+#'
 #' @examples
 #' #
 #' # Example Data (x)
@@ -2674,8 +2687,10 @@ count_stretches <- function(x) {
 }
 
 #' @noRd
-#' @description Used during development of `simulate_spectra()` to find a
-#' realistic method for noise generation.
+#' @description
+#' Used during development of `simulate_spectra()` to find a realistic method
+#' for noise generation.
+#' @author Tobias Schmidt, 2024-2025: initial version.
 analyze_noise_methods <- function(ask = TRUE) {
     download_example_datasets()
     blood_1 <- datadir("example_datasets/bruker/blood/blood_01")

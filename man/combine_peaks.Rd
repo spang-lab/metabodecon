@@ -82,6 +82,6 @@ obj <- combine_peaks(shifted_mat, range, lower_bound)
 str(obj)
 }
 \author{
-Initial version from Wolfram Gronwald.
-Refactored by Tobias Schmidt in 2024.
+Wolfram Gronwald, 2021-2024: initial version.
+Tobias Schmidt, 2024-2025: refactored initial version.
 }

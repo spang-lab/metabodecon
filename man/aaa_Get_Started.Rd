@@ -27,3 +27,6 @@ the list (i.e., it needs to start with an 'a').
 get_started(open_browser = FALSE)
 get_started()
 }
+\author{
+Tobias Schmidt, 2024-2025: initial version.
+}

@@ -49,6 +49,8 @@
 #' An object of type `align` as described in [Metabodecon
 #' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
 #'
+#' @author Tobias Schmidt, 2024-2025: initial version.
+#'
 #' @examples
 #' decons <- deconvolute(sim[1:2], sfr = c(3.55, 3.35))
 #' aligned <- align(decons)
@@ -168,8 +170,7 @@ align <- function(x, maxShift = 50, maxCombine = 5, verbose = TRUE, install_deps
 #' @return
 #' A matrix of aligned signal intensities.
 #'
-#' @author
-#' Initial version written in 2025 by Tobias Schmidt.
+#' @author Tobias Schmidt, 2024-2025: initial version.
 #'
 #' @examples
 #' decons <- deconvolute(sim[1:2], sfr = c(3.55, 3.35))
@@ -200,9 +201,8 @@ get_si_mat <- function(x) {
 #' A vector containing the lowest and highest ppm value over all peaks of the
 #' provided deconvoluted spectra.
 #'
-#' @author
-#' Initial version from Wolfram Gronwald.
-#' Refactored by Tobias Schmidt in 2024.
+#' @author Wolfram Gronwald, 2021-2024: initial version.
+#' Tobias Schmidt, 2024-2025: refactored initial version.
 #'
 #' @examples
 #' spectrum_data <- generate_lorentz_curves(
@@ -287,9 +287,8 @@ get_ppm_range <- function(spectrum_data, full_range = FALSE) {
 #' `lambda`: A list of vectors where each vector contains the "width
 #'           parameter" of the peaks in the corresponding spectrum.
 #'
-#' @author
-#' Initial version from Wolfram Gronwald.
-#' Refactored by Tobias Schmidt in 2024.
+#' @author Wolfram Gronwald, 2021-2024: initial version.
+#' Tobias Schmidt, 2024-2025: refactored initial version.
 #'
 #' @examples
 #' sim_subset <- metabodecon_file("sim_subset")
@@ -383,9 +382,8 @@ gen_feat_mat <- function(data_path,
 #' SpNr
 #' ```
 #'
-#' @author
-#' Initial version from Wolfram Gronwald.
-#' Refactored by Tobias Schmidt in 2024.
+#' @author Wolfram Gronwald, 2021-2024: initial version.
+#' Tobias Schmidt, 2024-2025: refactored initial version.
 #'
 #' @examples
 #' sim_subset <- metabodecon_file("bruker/sim_subset")
@@ -492,9 +490,8 @@ speaq_align <- function(feat = gen_feat_mat(spectrum_data),
 #'    column 3 and 4, as they have more mergeable entries and after merging
 #'    column 3 and 4, column 4 and 5 have a common non-zero entry.
 #'
-#' @author
-#' Initial version from Wolfram Gronwald.
-#' Refactored by Tobias Schmidt in 2024.
+#' @author Wolfram Gronwald, 2021-2024: initial version.
+#' Tobias Schmidt, 2024-2025: refactored initial version.
 #'
 #' @examples
 #' sim_subset <- metabodecon_file("bruker/sim_subset")
@@ -574,6 +571,9 @@ combine_peaks <- function(shifted_mat,
 #' efficient if the function is called multiple times, as the conversion must
 #' not be done multiple times.
 #'
+#' @author Wolfram Gronwald, 2021-2024: initial version.
+#' Tobias Schmidt, 2024-2025: refactored initial version.
+#'
 #' @examples
 #' M <- rbind(
 #'     c(2, 0, 2, 2, 0),
@@ -636,9 +636,8 @@ combine_scores <- function(U, uu, j, nn) {
 #' contains the aligned spectra, the second one contains the aligned signals of
 #' each spectrum.
 #'
-#' @author
-#' Initial version from Wolfram Gronwald.
-#' Refactored by Tobias Schmidt in 2024.
+#' @author Wolfram Gronwald, 2021-2024: initial version.
+#' Tobias Schmidt, 2024-2025: refactored initial version.
 #'
 #' @examples
 #' sim_subset <- metabodecon_file("bruker/sim_subset")
@@ -680,10 +679,9 @@ dohCluster <- function(X,
     return(res)
 }
 
-#' @author Wolfram Gronwald
-#'
 #' @noRd
-#'
+#' @author Wolfram Gronwald, 2021-2024: initial version.
+#' Tobias Schmidt, 2024-2025: refactored initial version.
 dohCluster_withoutMaxShift <- function(X,
                                        peakList,
                                        refInd = 0,
@@ -774,10 +772,9 @@ dohCluster_withoutMaxShift <- function(X,
     return(return_list)
 }
 
-#' @author Wolfram Gronwald
-#'
 #' @noRd
-#'
+#' @author Wolfram Gronwald, 2021-2024: initial version.
+#' Tobias Schmidt, 2024-2025: refactored initial version.
 dohCluster_withMaxShift <- function(X,
                                     peakList,
                                     refInd = 0,
@@ -861,12 +858,11 @@ dohCluster_withMaxShift <- function(X,
 #' (logical) Whether to sanity check the deconvolution parameters before
 #' returning them.
 #'
-#' @author Tobias Schmidt
+#' @author Tobias Schmidt, 2024-2025: initial version.
 #'
 #' @return
 #' A list containing the deconvolution parameters, i.e. `w`, `lambda`, `A`, and
 #' `spectrum_superposition`.
-#'
 get_decon_params <- function(data_path, warn = TRUE, check = TRUE) {
     dd <- data_path
     if (is.list(dd)) {
@@ -885,7 +881,7 @@ get_decon_params <- function(data_path, warn = TRUE, check = TRUE) {
 }
 
 #' @noRd
-#' @author Tobias Schmidt
+#' @author Tobias Schmidt, 2024-2025: initial version.
 read_decon_params <- function(data_path) {
     par_txt <- dir(data_path, "(.*) parameters.txt", full.names = TRUE)
     spc_txt <- dir(data_path, "(.*) approximated_spectrum.txt", full.names = TRUE)
@@ -911,14 +907,14 @@ read_decon_params <- function(data_path) {
 }
 
 #' @noRd
-#' @author Tobias Schmidt
+#' @author Tobias Schmidt, 2024-2025: initial version.
 check_decon_params <- function(params) {
     nulls <- unlist(sapply(params, function(pp) sapply(pp, is.null)))
     if (any(nulls)) warning("Detected missing params: ", names(nulls)[nulls])
 }
 
 #' @noRd
-#' @author Tobias Schmidt
+#' @author Tobias Schmidt, 2024-2025: initial version.
 rm_zero_width_peaks <- function(params) {
     for (i in seq_len(params$A)) {
         not_zero <- params$w[[i]] != 0
@@ -930,7 +926,7 @@ rm_zero_width_peaks <- function(params) {
 }
 
 #' @noRd
-#' @author Tobias Schmidt
+#' @author Tobias Schmidt, 2024-2025: initial version.
 is_decon_obj <- function(x) {
     keys <- c(
         "number_of_files",
@@ -957,24 +953,26 @@ is_decon_obj <- function(x) {
 }
 
 #' @noRd
-#' @author Tobias Schmidt
+#' @author Tobias Schmidt, 2024-2025: initial version.
 is_decon_list <- function(x) {
     if (is.list(x) && all(sapply(x, is_decon_obj))) TRUE else FALSE
 }
 
+#' @noRd
+#' @author Tobias Schmidt, 2024-2025: initial version.
 get_peak_indices <- function(decon2) {
     x0 <- decon2$lcpar$x0
     cs <- decon2$cs
     convert_pos(x0, cs, seq_along(cs))
 }
 
+#' @noRd
+#' @author Tobias Schmidt, 2024-2025: initial version.
 get_sup_mat <- function(decons2) {
     do.call(rbind, lapply(decons2, function(d) d$sit$sup))
 }
 
 #' @noRd
-#' @author Tobias Schmidt
-#'
 #' @title Install Bioconductor packages from R-Universe
 #'
 #' @description
@@ -998,6 +996,8 @@ get_sup_mat <- function(decons2) {
 #'
 #' req = Installation required (because requested packages are not yet installed
 #' on the system)
+#'
+#' @author Tobias Schmidt, 2024-2025: initial version.
 #'
 #' @examples
 #' pkgs <- c("MassSpecWavelet", "impute")

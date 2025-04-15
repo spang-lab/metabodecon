@@ -10,8 +10,6 @@
 \alias{as_decons0}
 \alias{as_decons1}
 \alias{as_decons2}
-\alias{as_ispecs}
-\alias{as_idecons}
 \title{Convert to a Metabodecon Object}
 \usage{
 as_spectrum(x, sf = c(1000, 1e+06))
@@ -67,10 +65,6 @@ as_decons2(
   bwc = 2,
   nworkers = 1
 )
-
-as_ispecs(x, sf = c(1000, 1e+06))
-
-as_idecons(x)
 }
 \arguments{
 \item{x}{The object to convert.}
@@ -134,4 +128,7 @@ spectrum <- spectra[[1]]
 decons1 <- generate_lorentz_curves_sim(spectra)
 decon1 <- generate_lorentz_curves_sim(spectrum)
 decon2 <- as_decon2(decon1)
+}
+\author{
+Tobias Schmidt, 2024-2025: initial version.
 }

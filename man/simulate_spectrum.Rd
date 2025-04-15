@@ -60,3 +60,6 @@ plot_spectrum(simC)
 if (!identical(simA, simA_copy)) stop()
 if ( identical(simA, simB     )) stop()
 }
+\author{
+Tobias Schmidt, 2024-2025: initial version.
+}

@@ -44,3 +44,6 @@ plot_spectra(obj)
 \code{\link[=plot_spectrum]{plot_spectrum()}} for a much more sophisticated plotting routine
 suitable for plotting a single spectrum.
 }
+\author{
+Tobias Schmidt, 2024-2025: initial version.
+}

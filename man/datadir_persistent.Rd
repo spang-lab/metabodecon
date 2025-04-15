@@ -15,9 +15,11 @@ metabodecon's data sets are stored. This directory equals the data directory
 returned by \code{\link[tools:userdir]{tools::R_user_dir()}} plus additional path normalization.
 }
 \examples{
-
 datadir_persistent()
 }
 \seealso{
 \code{\link[=datadir]{datadir()}}, \code{\link[=datadir_temp]{datadir_temp()}}
+}
+\author{
+Tobias Schmidt, 2024-2025: initial version.
 }

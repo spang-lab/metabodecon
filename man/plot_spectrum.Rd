@@ -158,3 +158,6 @@ plot_spectrum(decon,
 plot_spectrum(decon, sub1 = list(fig_rgn_npc = c(0,1,.3,1), mar = c(0,5,0,0)))
 
 }
+\author{
+Tobias Schmidt, 2024-2025: initial version.
+}

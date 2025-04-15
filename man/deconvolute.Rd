@@ -200,3 +200,6 @@ all.equal(  decons_from_spectra_dir, decons_from_spectra_obj     )
 most.equal( decon_from_spectrum_dir, decons_from_spectra_obj[[1]])
 most.equal( decon_from_spectrum_dir, decons_from_spectra_dir[[1]])
 }
+\author{
+Tobias Schmidt, 2024-2025: initial version.
+}

@@ -57,3 +57,6 @@ str(xx)
 str(x1)
 stopifnot(all.equal(x1, xx$urine_1))
 }
+\author{
+Tobias Schmidt, 2024-2025: initial version.
+}

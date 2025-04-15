@@ -7,11 +7,9 @@
 align(x, maxShift = 50, maxCombine = 5, verbose = TRUE, install_deps = NULL)
 }
 \arguments{
-\item{x}{An   object   of   type   \code{decons1}   or   \code{decons2}    as    described    in
-\href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{Metabodecon Classes}. To
-align \code{decons0} objects (as  returned  by  the  now deprecated
-\link{MetaboDecon1D}), you can use \code{\link[=as_decons2]{as_decons2()}} to convert  it  to  a \code{decons2}
-object first.}
+\item{x}{An object of  type  \code{decons1}  or  \code{decons2}  as  described  in  \href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{Metabodecon Classes}.   To
+align \code{decons0} objects (as returned by the now deprecated  \link{MetaboDecon1D}),
+you can use \code{\link[=as_decons2]{as_decons2()}} to convert it to a \code{decons2} object first.}
 
 \item{maxShift}{Maximum number of points along the "ppm-axis" a value can  be  moved  by  the
 'speaq' package. 50 is a suitable starting value for plasma  spectra  with  a
@@ -26,16 +24,16 @@ Passed as argument \code{range} to \code{\link[=combine_peaks]{combine_peaks()}}
 
 \item{verbose}{Whether to print additional information during the alignment process.}
 
-\item{install_deps}{Alignment relies on the 'speaq' package, which itself relies on the
+\item{install_deps}{Alignment  relies  on  the  'speaq'  package,  which  itself  relies  on  the
 'MassSpecWavelet' and 'impute' packages. Both, 'MassSpecWavelet' and 'impute'
-are not available on CRAN, but can be installed from
-\href{https://www.bioconductor.org/}{Bioconductor} or
-\href{https://r-universe.dev/}{R-Universe}. If \code{install_deps = TRUE}, these
-packages will be automatically installed from R-Universe without asking for
-confirmation. If \code{install_deps = NULL} (default), the user will be asked for
-confirmation before installing missing dependencies. If asking for
-confirmation is not possible or \code{install_deps = FALSE}, the function will
-raise an error if the packages are not installed.}
+are   not   available    on    CRAN,    but    can    be    installed    from
+\href{https://www.bioconductor.org/}{Bioconductor}                              or
+\href{https://r-universe.dev/}{R-Universe}. If \code{install_deps=TRUE}, these packages
+will  be  automatically  installed  from  R-Universe   without   asking   for
+confirmation. If \code{install_deps=NULL} (default), the user will  be  asked  for
+confirmation  before  installing  missing   dependencies.   If   asking   for
+confirmation is not possible or \code{install_deps=FALSE}, the function will raise
+an error if the packages are not installed.}
 }
 \value{
 An object of type \code{align} as described in \href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{Metabodecon Classes}.
@@ -51,4 +49,7 @@ in \code{\link[=combine_peaks]{combine_peaks()}}.
 decons <- deconvolute(sim[1:2], sfr = c(3.55, 3.35))
 aligned <- align(decons)
 aligned
+}
+\author{
+Tobias Schmidt, 2024-2025: initial version.
 }

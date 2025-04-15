@@ -7,6 +7,7 @@ cacheenv <- environment()
 #' @param s Scaling Factor for the created figure. By making the figure `s` times bigger than the textwidth you can make the font, lines, etc. `s` times smaller, thinner, etc. because it will get scaled down when included in the LaTeX document.
 #' @param w Figure width. Should be the textwidth of the Latex document in inches.
 #' @param h Figure height. Should be the textheight of the LaTeX document in inches minus some space for the fiure caption. Example: if the textheight is 9.5 inches, h = 8 could be a good choice.
+#' @author Tobias Schmidt, 2024-2025: initial version.
 #' @examples
 #' spectra <- sim[1:3]
 #' decons <- deconvolute(sim[1:3])
@@ -41,6 +42,9 @@ mkfig_nmr_challenges <- function(spectra = metabodecon::sim[1:3],
 }
 
 # Plot #####
+
+#' @noRd
+#' @author Tobias Schmidt, 2024-2025: initial version.
 test_plot_nmr_challenges <- function(interactive = TRUE) {
     spectra <- metabodecon::sim[1:3]
     decons <- deconvolute(spectra)
@@ -56,6 +60,8 @@ test_plot_nmr_challenges <- function(interactive = TRUE) {
     }
 }
 
+#' @noRd
+#' @author Tobias Schmidt, 2024-2025: initial version.
 plot_nmr_challenges <- function(spectra = metabodecon::sim[1:3],
                                 decons = deconvolute(spectra),
                                 aligns = align(decons)) {
@@ -72,6 +78,8 @@ plot_nmr_challenges <- function(spectra = metabodecon::sim[1:3],
     plot_10_annotated_spectra(aligns)
 }
 
+#' @noRd
+#' @author Tobias Schmidt, 2024-2025: initial version.
 plot_1_nmr_experiment <- function() {
     local_par(mar = c(2, 2, 2, 1))
     plot_empty(main = "NMR Experiment")
@@ -84,6 +92,8 @@ plot_1_nmr_experiment <- function() {
     draw_nmr_spectrometer(x1 = .5, y1 = .0, h = .8)
 }
 
+#' @noRd
+#' @author Tobias Schmidt, 2024-2025: initial version.
 plot_2_raw_fids <- function() {
     local_par(mar = c(2, 2, 2, 1))
     plot_empty(main = "FID Signals")
@@ -107,6 +117,8 @@ plot_2_raw_fids <- function() {
     mtext2(2, "Signal Intensity")
 }
 
+#' @noRd
+#' @author Tobias Schmidt, 2024-2025: initial version.
 plot_2_raw_fid <- function(seed = 1) {
     set.seed(seed)
     ymar <- abs(grconvertH(0.1, "nfc", "lines"))
@@ -127,6 +139,7 @@ plot_2_raw_fid <- function(seed = 1) {
 #' Correction, Referencing
 #' @param cex Character Expansion.
 #' @param lex Line Height Expansion. Must be greater than cex.
+#' @author Tobias Schmidt, 2024-2025: initial version.
 plot_3_preprocessing <- function(cex = par("cex"),
                                  lex = cex * 1.5) {
     local_par(mar = c(1, 0, 2, 0))
@@ -159,6 +172,8 @@ plot_3_preprocessing <- function(cex = par("cex"),
     mtext("Referencing",        3, (cl - 2) * lex, cex = cex)
 }
 
+#' @noRd
+#' @author Tobias Schmidt, 2024-2025: initial version.
 plot_3_blackbox_preprocessing <- function(cex = par("cex"),
                                           lex = cex * 1.5) {
     local_par(mar = c(2, 2, 2, 1))
@@ -179,6 +194,8 @@ plot_3_blackbox_preprocessing <- function(cex = par("cex"),
     m3text(-2, "Referencing")
 }
 
+#' @noRd
+#' @author Tobias Schmidt, 2024-2025: initial version.
 plot_4_raw_spectra <- function(spectra) {
     local_par(mar = c(2, 2, 2, 1))
     plot_empty(main = "Raw Data in Frequency Domain")
@@ -195,6 +212,8 @@ plot_4_raw_spectra <- function(spectra) {
     mtext2(2, "Signal Intensity")
 }
 
+#' @noRd
+#' @author Tobias Schmidt, 2024-2025: initial version.
 plot_4_raw_spectrum <- function(spectrum) {
     args <- draw_spectrum_plain_args
     args$obj <- spectrum
@@ -202,6 +221,8 @@ plot_4_raw_spectrum <- function(spectrum) {
     with_par(list(mar = c(0, 0, 0, 0)), box())
 }
 
+#' @noRd
+#' @author Tobias Schmidt, 2024-2025: initial version.
 plot_5_deconvolutions <- function(decons) {
     local_par(mar = c(2, 2, 2, 1))
     plot_empty(main = "Deconvolution")
@@ -218,6 +239,8 @@ plot_5_deconvolutions <- function(decons) {
     mtext2(2, "Signal Intensity")
 }
 
+#' @noRd
+#' @author Tobias Schmidt, 2024-2025: initial version.
 plot_5_deconvolution <- function(decon) {
     args <- draw_spectrum_plain_args
     args$obj <- decon
@@ -225,6 +248,8 @@ plot_5_deconvolution <- function(decon) {
     with_par(list(mar = c(0, 0, 0, 0)), box())
 }
 
+#' @noRd
+#' @author Tobias Schmidt, 2024-2025: initial version.
 plot_6_deconvoluted_spectra <- function(decons) {
     local_par(mar = c(2, 2, 2, 1))
     plot_empty(main = "Deconvoluted Signal Integrals")
@@ -241,6 +266,8 @@ plot_6_deconvoluted_spectra <- function(decons) {
     mtext2(2, "Signal Integral")
 }
 
+#' @noRd
+#' @author Tobias Schmidt, 2024-2025: initial version.
 plot_6_deconvoluted_spectrum <- function(decon) {
     args <- draw_spectrum_plain_args
     args$obj <- decon
@@ -250,6 +277,8 @@ plot_6_deconvoluted_spectrum <- function(decon) {
     with_par(list(mar = c(0, 0, 0, 0)), box())
 }
 
+#' @noRd
+#' @author Tobias Schmidt, 2024-2025: initial version.
 plot_7_alignments <- function(aligns) {
     local_par(mar = c(2, 2, 2, 1))
     plot_empty(main = "Alignment")
@@ -266,6 +295,8 @@ plot_7_alignments <- function(aligns) {
     mtext2(2, "Signal Intensity")
 }
 
+#' @noRd
+#' @author Tobias Schmidt, 2024-2025: initial version.
 plot_7_alignment <- function(align) {
     args <- draw_spectrum_plain_args
     args$obj <- align
@@ -275,6 +306,8 @@ plot_7_alignment <- function(align) {
     with_par(list(mar = c(0, 0, 0, 0)), box())
 }
 
+#' @noRd
+#' @author Tobias Schmidt, 2024-2025: initial version.
 plot_8_aligned_spectra <- function(aligns) {
     local_par(mar = c(2, 2, 2, 1))
     plot_empty(main = "Aligned Signal Integrals")
@@ -292,6 +325,8 @@ plot_8_aligned_spectra <- function(aligns) {
 
 }
 
+#' @noRd
+#' @author Tobias Schmidt, 2024-2025: initial version.
 plot_8_aligned_spectrum <- function(align) {
     args <- draw_spectrum_plain_args
     args$obj <- align
@@ -304,6 +339,8 @@ plot_8_aligned_spectrum <- function(align) {
     with_par(list(mar = c(0, 0, 0, 0)), box())
 }
 
+#' @noRd
+#' @author Tobias Schmidt, 2024-2025: initial version.
 plot_9_annotations <- function(aligns) {
     local_par(mar = c(2, 2, 2, 1))
     plot_empty(main = "Identification")
@@ -320,6 +357,8 @@ plot_9_annotations <- function(aligns) {
     mtext2(2, "Signal Intensity")
 }
 
+#' @noRd
+#' @author Tobias Schmidt, 2024-2025: initial version.
 plot_9_annotation <- function(align) {
     # Name        Formula  Peaks  Description
     # Methane     CH4      1      Simple alkane with one equivalent proton environment.
@@ -345,6 +384,8 @@ plot_9_annotation <- function(align) {
     with_par(list(mar = c(0, 0, 0, 0)), box())
 }
 
+#' @noRd
+#' @author Tobias Schmidt, 2024-2025: initial version.
 plot_10_annotated_spectra <- function(aligns) {
     local_par(mar = c(2, 2, 2, 1))
     plot_empty(main = "Metabolite Concentrations")
@@ -365,6 +406,8 @@ plot_10_annotated_spectra <- function(aligns) {
 
 # Draw #####
 
+#' @noRd
+#' @author Tobias Schmidt, 2024-2025: initial version.
 draw_vial <- function(x1 = 10, y1 = 10, h = 20, w = NULL) {
     # See `misc/sketches/blood_vial.drawio` for a sketch of the vial
     if (is.null(w)) w <- (h/3) * ipu_ratio()
@@ -397,6 +440,8 @@ draw_vial <- function(x1 = 10, y1 = 10, h = 20, w = NULL) {
         col = "white", border = NA) # vial
 }
 
+#' @noRd
+#' @author Tobias Schmidt, 2024-2025: initial version.
 draw_nmr_spectrometer <- function(x1 = 10, y1 = 20, h = 60, w = NULL) {
     if (is.null(w)) w <- ((2 * h) / 3) * ipu_ratio()
     x2 <- x1 + w
@@ -438,6 +483,8 @@ draw_nmr_spectrometer <- function(x1 = 10, y1 = 20, h = 60, w = NULL) {
 
 # Plot Helpers #####
 
+#' @noRd
+#' @author Tobias Schmidt, 2024-2025: initial version.
 init_dev <- function(s = 1, w = 5.45, h = 8) {
     if (dev.cur() == 1) dev.new(
         width = w * s,
@@ -446,6 +493,8 @@ init_dev <- function(s = 1, w = 5.45, h = 8) {
     )
 }
 
+#' @noRd
+#' @author Tobias Schmidt, 2024-2025: initial version.
 fill_dev <- function() {
     mfg <- par("mfg")
     while (mfg[1] != mfg[3] || mfg[2] != mfg[[4]]) {
@@ -457,6 +506,8 @@ fill_dev <- function() {
     # par(mfg = mfg)
 }
 
+#' @noRd
+#' @author Tobias Schmidt, 2024-2025: initial version.
 get_ndc <- function() {
     usr <- par("usr")  # returns c(x1, x2, y1, y2)
     xndc <- grconvertX(usr[1:2], from = "user", to = "ndc")
@@ -464,14 +515,20 @@ get_ndc <- function() {
     ndc <- c(x1 = xndc[1], x2 = xndc[2], y1 = yndc[1], y2 = yndc[2])
 }
 
+#' @noRd
+#' @author Tobias Schmidt, 2024-2025: initial version.
 marbox <- function() {
     withr::with_par(list(mar = c(0,0,0,0)), box())
 }
 
+#' @noRd
+#' @author Tobias Schmidt, 2024-2025: initial version.
 circles <- function(x, y, radii, inches = FALSE, add = TRUE, ...) {
     symbols(x, y, circles = radii, inches = inches, add = add, ...)
 }
 
+#' @noRd
+#' @author Tobias Schmidt, 2024-2025: initial version.
 figsize <- function() {
     inches <- par("pin")
     cm <- inches * 2.54
@@ -482,7 +539,9 @@ figsize <- function() {
     cat("Size in pixels:", dp, "\n")
 }
 
-# Inch per Unit Ratio
+#' @noRd
+#' @title Inch per Unit Ratio
+#' @author Tobias Schmidt, 2024-2025: initial version.
 ipu_ratio <- function() {
     d_inch <- par("pin") # plot dimension in inches
     w_inch <- d_inch[1]  # plot width in inches
@@ -496,20 +555,28 @@ ipu_ratio <- function() {
     ipu_ratio
 }
 
+#' @noRd
+#' @author Tobias Schmidt, 2024-2025: initial version.
 grconvertW <- function(x, from = "user", to = "inches") {
     grconvertX(x, from, to) - grconvertX(0, from, to)
 }
 
+#' @noRd
+#' @author Tobias Schmidt, 2024-2025: initial version.
 grconvertH <- function(y, from = "user", to = "inches") {
     grconvertY(y, from, to) - grconvertY(0, from, to)
 }
 
+#' @noRd
+#' @author Tobias Schmidt, 2024-2025: initial version.
 mtext2 <- function(side, text, line = 0.5, cex = par("cex"), ...) {
     mtext(text, side, line, cex = cex, ...)
 }
 
 # Datasets #####
 
+#' @noRd
+#' @author Tobias Schmidt, 2024-2025: initial version.
 mkdat_sim2 <- function() {
     set.seed(815)
     nA <- 4
@@ -525,6 +592,8 @@ mkdat_sim2 <- function() {
 
 # Constants
 
+#' @noRd
+#' @author Tobias Schmidt, 2024-2025: initial version.
 draw_spectrum_plain_args <- local({
     decon_dark  <- "#6C8EBFFF" # transp("#6c8ebf", 1.0)
     decon_light <- "#DAE8FC80" # transp("#dae8fc", 0.5)
