@@ -481,7 +481,7 @@ as_decon1 <- function(x,
         lambda_sdp <- convert_width(lambda_ppm, cs, sdp)
         lambda_hz <- if (!is.null(fq)) abs(convert_width(lambda_ppm, cs, fq))
         limits_sdp <- range(sdp)
-        if (bwc < 2) limits_sdp[2] <- limits_sdp[2] + sdp_step
+        if (bwc < 1) limits_sdp[2] <- limits_sdp[2] + sdp_step
         integrals <- t(lorentz_int(x0_sdp, A_sc_sdp, lambda_sdp, limits = limits_sdp))
         # Outputs
         y <- structure(class = "decon1", .Data = list())
