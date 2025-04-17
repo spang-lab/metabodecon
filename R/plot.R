@@ -49,20 +49,22 @@ plot_spectra <- function(obj,
                          ylab = paste("Signal Intensity [au] /", sfy),
                          mar = c(4.1, 4.1, 1.1, 0.1),
                          lgd = TRUE) {
-    decons <- as_v12_collection(obj, ...)
-    sis <- lapply(decons, function(x) (x$sit$supal %||% x$sit$sup %||% x$si) / sfy)
-    x0s <- lapply(decons, function(x) x$lcpar$x0)
-    css <- lapply(decons, function(x) x$cs)
+    objs <- as_v12_collection(obj, ...)
+    sis <- lapply(objs, function(x) (x$sit$supal %||% x$sit$sup %||% x$si) / sfy)
+    x0s <- lapply(objs, function(x) x$lcpar$x0)
+    css <- lapply(objs, function(x) x$cs)
     si_min <- 0
     si_max <- max(sapply(sis, max))
     cs_min <- min(sapply(css, min))
     cs_max <- max(sapply(css, max))
-    x0_min <- min(sapply(x0s, min))
-    x0_max <- max(sapply(x0s, max))
-    x0_width <- x0_max - x0_min
-    x0_quart <- x0_width / 4
-    line_colors <- rainbow(length(decons))
-    legend_text <- paste("Spectrum", 1:length(decons))
+    if (is_decons2(objs)) {
+        x0_min <- min(sapply(x0s, min))
+        x0_max <- max(sapply(x0s, max))
+        x0_width <- x0_max - x0_min
+        x0_quart <- x0_width / 4
+    }
+    line_colors <- rainbow(length(objs))
+    legend_text <- paste("Spectrum", 1:length(objs))
     local_par(mar = mar)
     plot(
         x = NA,
@@ -76,29 +78,31 @@ plot_spectra <- function(obj,
         v = c(x0_min, x0_max),
         lty = 2
     )
-    for (i in seq_along(decons)) {
+    for (i in seq_along(objs)) {
         lines(x = css[[i]], y = sis[[i]], col = line_colors[[i]])
     }
-    arrows(
-        x0 = c(x0_min + x0_quart, x0_max - x0_quart),
-        x1 = c(x0_min, x0_max),
-        y0 = si_max * 0.8,
-        y1 = si_max * 0.8,
-        length = 0.2,
-        lty = 2,
-        col = "black"
-    )
-    text(
-        x = mean(c(x0_min, x0_max)),
-        y = 0.8 * si_max,
-        labels = "ppm range"
-    )
-    mtext(
-        text = round(c(x0_min, x0_max), 4),
-        side = 3,
-        line = 0,
-        at = c(x0_min, x0_max)
-    )
+    if (is_decons2(objs)) {
+        arrows(
+            x0 = c(x0_min + x0_quart, x0_max - x0_quart),
+            x1 = c(x0_min, x0_max),
+            y0 = si_max * 0.8,
+            y1 = si_max * 0.8,
+            length = 0.2,
+            lty = 2,
+            col = "black"
+        )
+        text(
+            x = mean(c(x0_min, x0_max)),
+            y = 0.8 * si_max,
+            labels = "ppm range"
+        )
+        mtext(
+            text = round(c(x0_min, x0_max), 4),
+            side = 3,
+            line = 0,
+            at = c(x0_min, x0_max)
+        )
+    }
     if (lgd) legend(
         x = "topright",
         legend = legend_text,
