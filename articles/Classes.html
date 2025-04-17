@@ -26,7 +26,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metabodecon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.4.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.4.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -70,7 +70,7 @@
       <img src="../logo.svg" class="logo" alt=""><h1>Metabodecon Classes</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/v1.4.2/vignettes/Classes.Rmd" class="external-link"><code>vignettes/Classes.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/main/vignettes/Classes.Rmd" class="external-link"><code>vignettes/Classes.Rmd</code></a></small>
       <div class="d-none name"><code>Classes.Rmd</code></div>
     </div>
 
@@ -94,7 +94,7 @@ Workflow</a>.</p>
 <h3 id="spectrum">spectrum<a class="anchor" aria-label="anchor" href="#spectrum"></a>
 </h3>
 <p>Represents one NMR spectrum. Objects of class ‘spectrum’ have at
-least elements 1-3 from section <a href="#elements-v1.2+">Elements
+least elements 1-3 from section <a href="#elements-v1-2">Elements
 v1.2+</a>.</p>
 </div>
 <div class="section level3">
@@ -102,20 +102,20 @@ v1.2+</a>.</p>
 </h3>
 <p>Represents one deconvoluted NMR spectrum stored in the old <a href="https://spang-lab.github.io/metabodecon/reference/MetaboDecon1D.html">MetaboDecon1D()</a>
 format. Objects of class ‘decon0’ have at least elements 1-18 from
-section <a href="#elements-v0.2+">Elements v0.2+</a>.</p>
+section <a href="#elements-v0-2">Elements v0.2+</a>.</p>
 </div>
 <div class="section level3">
 <h3 id="decon1">decon1<a class="anchor" aria-label="anchor" href="#decon1"></a>
 </h3>
 <p>Represents one deconvoluted NMR spectrum stored in the backwards
 compatible <a href="https://spang-lab.github.io/metabodecon/reference/generate_lorentz_curves.html">generate_lorentz_curves()</a>
-format. Objects of class ‘decon1’ have all elements from section <a href="#elements-v0.2+">Elements v0.2+</a>.</p>
+format. Objects of class ‘decon1’ have all elements from section <a href="#elements-v0-2">Elements v0.2+</a>.</p>
 </div>
 <div class="section level3">
 <h3 id="decon2">decon2<a class="anchor" aria-label="anchor" href="#decon2"></a>
 </h3>
 <p>Represents one deconvoluted NMR spectrum stored in the new <a href="https://spang-lab.github.io/metabodecon/reference/deconvolute()">deconvolute()</a>
-format. Objects of class ‘decon2’ have all elements from section <a href="#elements-v1.2+">Elements v1.2+</a> with elements
+format. Objects of class ‘decon2’ have all elements from section <a href="#elements-v1-2">Elements v1.2+</a> with elements
 <code>sit$al</code> and <code>lcpar$x0al</code> set to
 <code>NULL</code>.</p>
 </div>
@@ -124,7 +124,7 @@ format. Objects of class ‘decon2’ have all elements from section <a href="#e
 </h3>
 <p>Represents one deconvoluted NMR spectrum for which the individual
 peaks have been aligned using [align()]. Objects of class ‘align’ have
-all elements from section <a href="#elements-v1.2+">Elements
+all elements from section <a href="#elements-v1-2">Elements
 v1.2+</a>.</p>
 </div>
 <div class="section level3">
@@ -289,7 +289,7 @@ aligned.</li>
 <li>
 <code>smnorm</code>: MSE between <code>sit$sm</code> and
 <code>sit$sup</code>, divided by <code>sum(sit$sup)</code>. Equals
-<code>mse_normed</code> in <a href="#elements-v0.2+">Elements
+<code>mse_normed</code> in <a href="#elements-v0-2">Elements
 v0.2+</a>.</li>
 </ul>
 </li>

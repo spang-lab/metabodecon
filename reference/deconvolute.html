@@ -9,7 +9,7 @@ a spectrum as Lorentz Curve."><meta property="og:image" content="https://spang-l
 
     <a class="navbar-brand me-2" href="../index.html">metabodecon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.4.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.4.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,7 +40,7 @@ a spectrum as Lorentz Curve."><meta property="og:image" content="https://spang-l
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.svg" class="logo" alt=""><h1>Deconvolute one or more NMR spectra</h1>
-      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/v1.4.2/R/decon.R" class="external-link"><code>R/decon.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/main/R/decon.R" class="external-link"><code>R/decon.R</code></a>, <a href="https://github.com/spang-lab/metabodecon/blob/main/R/depr.R" class="external-link"><code>R/depr.R</code></a></small>
       <div class="d-none name"><code>deconvolute.Rd</code></div>
     </div>
 
@@ -63,24 +63,6 @@ a spectrum as Lorentz Curve.</p>
 <span>  verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  nworkers <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  use_rust <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu">generate_lorentz_curves</span><span class="op">(</span></span>
-<span>  <span class="va">data_path</span>,</span>
-<span>  file_format <span class="op">=</span> <span class="st">"bruker"</span>,</span>
-<span>  make_rds <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  expno <span class="op">=</span> <span class="fl">10</span>,</span>
-<span>  procno <span class="op">=</span> <span class="fl">10</span>,</span>
-<span>  raw <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  nfit <span class="op">=</span> <span class="fl">10</span>,</span>
-<span>  smopts <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">5</span><span class="op">)</span>,</span>
-<span>  delta <span class="op">=</span> <span class="fl">6.4</span>,</span>
-<span>  sfr <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">11.44494</span>, <span class="op">-</span><span class="fl">1.8828</span><span class="op">)</span>,</span>
-<span>  wshw <span class="op">=</span> <span class="fl">0.1527692</span>,</span>
-<span>  ask <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  force <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  nworkers <span class="op">=</span> <span class="fl">1</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">generate_lorentz_curves_sim</span><span class="op">(</span></span>
@@ -171,9 +153,9 @@ is used.</p></dd>
 
 
 <dt id="arg-data-path">data_path<a class="anchor" aria-label="anchor" href="#arg-data-path"></a></dt>
-<dd><p>Either the path to a directory containing measured NMR
-spectra, a dataframe as returned by <code><a href="read_spectrum.html">read_spectrum()</a></code>, or a list of such
-dataframes.</p></dd>
+<dd><p>The path of the file/folder containing the spectrum data. E.g.
+<code>"example_datasets/jcampdx/urine/urine_1.dx"</code> or
+<code>"example_datasets/bruker/urine/urine"</code>.</p></dd>
 
 
 <dt id="arg-file-format">file_format<a class="anchor" aria-label="anchor" href="#arg-file-format"></a></dt>
@@ -212,22 +194,26 @@ Acquisition &amp; Processing &gt; TopSpin Processing Commands and Parameters'
 signal is represented by 3 data points to allow the determination of initial
 Lorentz curves. These Lorentz curves are then iteratively adjusted to
 optimally approximate the measured spectrum.</p>
-<p><code>generate_lorentz_curves_sim()</code> is identical to <code>generate_lorentz_curves()</code>
+<p><code>generate_lorentz_curves_sim()</code> is identical to <code><a href="generate_lorentz_curves.html">generate_lorentz_curves()</a></code>
 except for the defaults, which are optimized for deconvoluting the 'Sim'
 dataset, shipped with 'metabodecon'. The 'Sim' dataset is a simulated
 dataset, which is much smaller than a real NMR spectra and lacks a water
 signal. This makes it ideal for use in examples or as a default value for
 functions. However, the default values for <code>sfr</code>, <code>wshw</code>, and <code>delta</code> in the
-"normal" <code>generate_lorentz_curves()</code> function are not optimal for this
+"normal" <code><a href="generate_lorentz_curves.html">generate_lorentz_curves()</a></code> function are not optimal for this
 dataset. To avoid having to define the optimal parameters repeatedly in
 examples, this function is provided to deconvolute the "Sim" dataset with
 suitable parameters.</p>
-<p>In <code>generate_lorentz_curves()</code> the parameters <code>nfit</code>, <code>smopts</code>, <code>delta</code>,
+<p>In <code><a href="generate_lorentz_curves.html">generate_lorentz_curves()</a></code> the parameters <code>nfit</code>, <code>smopts</code>, <code>delta</code>,
 <code>sfr</code> and <code>wshw</code> must be fully specified. In <code>deconvolute()</code>, these
 parameters can be set to <code>NULL</code> (the default value). In this case, the
 function will try to determine the optimal values for these parameters
 automatically. The values chosen are stored in field <code>args</code> of the returned
 <code>decon2</code> object.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="author">Author<a class="anchor" aria-label="anchor" href="#author"></a></h2>
+    <p>2024-2025 Tobias Schmidt: initial version.</p>
     </div>
 
     <div class="section level2">
@@ -249,7 +235,7 @@ automatically. The values chosen are stored in field <code>args</code> of the re
 <span class="r-in"><span><span class="co">## Show that `generate_lorentz_curves()` and `generate_lorentz_curves_sim()`</span></span></span>
 <span class="r-in"><span><span class="co">## produce the same results:</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="va">sim_1_decon0</span> <span class="op">&lt;-</span> <span class="fu">generate_lorentz_curves</span><span class="op">(</span></span></span>
+<span class="r-in"><span><span class="va">sim_1_decon0</span> <span class="op">&lt;-</span> <span class="fu"><a href="generate_lorentz_curves.html">generate_lorentz_curves</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>    data_path <span class="op">=</span> <span class="va">sim_1_dir</span>, <span class="co"># Path to directory containing spectra</span></span></span>
 <span class="r-in"><span>    sfr <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3.55</span>, <span class="fl">3.35</span><span class="op">)</span>, <span class="co"># Borders of signal free region (SFR) in ppm</span></span></span>
 <span class="r-in"><span>    wshw <span class="op">=</span> <span class="fl">0</span>, <span class="co"># Half width of water signal (WS) in ppm</span></span></span>

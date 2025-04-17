@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metabodecon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.4.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.4.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -38,9 +38,16 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.svg" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/spang-lab/metabodecon/blob/v1.4.2/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/spang-lab/metabodecon/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="1.4.3" id="metabodecon-143">metabodecon 1.4.3<a class="anchor" aria-label="anchor" href="#metabodecon-143"></a></h2>
+<ul><li>Improvded questions asked by <code><a href="../reference/deconvolute.html">deconvolute()</a></code> in interactive mode</li>
+<li>Added function <code><a href="../reference/get_si_mat.html">get_si_mat()</a></code> for extracting a matrix of aligned signal integrals from <code>aligns</code> objects</li>
+<li>Added author details to every function</li>
+<li>Added deprecation notes to <code><a href="../reference/get_ppm_range.html">get_ppm_range()</a></code>, <code><a href="../reference/gen_feat_mat.html">gen_feat_mat()</a></code>, <code><a href="../reference/speaq_align.html">speaq_align()</a></code>, <code><a href="../reference/combine_peaks.html">combine_peaks()</a></code>, <code><a href="../reference/dohCluster.html">dohCluster()</a></code>, <code>calculate_lorentz_curves</code>, <code><a href="../reference/generate_lorentz_curves.html">generate_lorentz_curves()</a></code> and <code><a href="../reference/deconvolute.html">generate_lorentz_curves_sim()</a></code>.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.4.2" id="metabodecon-142">metabodecon 1.4.2<a class="anchor" aria-label="anchor" href="#metabodecon-142"></a></h2>
 <ul><li>Fixed <code>aaa_Get_Started</code> entry in Manual</li>
@@ -51,7 +58,7 @@
 <h2 class="pkg-version" data-toc-text="1.4.1" id="metabodecon-141">metabodecon 1.4.1<a class="anchor" aria-label="anchor" href="#metabodecon-141"></a></h2>
 <ul><li>Added <code><a href="../reference/aaa_Get_Started.html">get_started()</a></code> and <code>metabodecon-package</code> to manual</li>
 <li>Improved <code><a href="../reference/plot_spectrum.html">plot_spectrum()</a></code> default margins.</li>
-<li>Improved plots shown during <code><a href="../reference/deconvolute.html">deconvolute()</a></code>: SFW and WSHW are now both shown as rectangles instead of lines.</li>
+<li>Improved plots shown during <code><a href="../reference/deconvolute.html">deconvolute()</a></code>: SFR and WSHW are now both shown as rectangles instead of lines.</li>
 <li>Improved <code><a href="../reference/install_mdrb.html">install_mdrb()</a></code> example</li>
 <li>Improved <code>Get_Started</code> article</li>
 <li>Included <code>Get_Started</code> article as vignette within the package</li>
@@ -145,7 +152,7 @@
 <li>REFACTOR-06: Use a single unit as source of truth</li>
 <li>REFACTOR-07: Split monolithic functions into smaller parts</li>
 <li>REFACTOR-08: Improve docs for Metabodecon1D return value</li>
-<li>REFACTOR-09: Replace glc with <code><a href="../reference/deconvolute.html">generate_lorentz_curves()</a></code>
+<li>REFACTOR-09: Replace glc with <code><a href="../reference/generate_lorentz_curves.html">generate_lorentz_curves()</a></code>
 </li>
 <li>REFACTOR-10: Replace all md1d with <code><a href="../reference/MetaboDecon1D.html">MetaboDecon1D()</a></code> calls</li>
 <li>REFACTOR-11: Implement <code>calc_prarp()</code>
@@ -156,14 +163,14 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.1.1" id="metabodecon-111">metabodecon 1.1.1<a class="anchor" aria-label="anchor" href="#metabodecon-111"></a></h2>
 <p>API:</p>
-<ul><li>Fixed a bug in <code><a href="../reference/deconvolute.html">generate_lorentz_curves()</a></code> that caused the function to always use file format “bruker”, even when file format “jcampdx” was specified.</li>
+<ul><li>Fixed a bug in <code><a href="../reference/generate_lorentz_curves.html">generate_lorentz_curves()</a></code> that caused the function to always use file format “bruker”, even when file format “jcampdx” was specified.</li>
 </ul><p>Datasets:</p>
 <ul><li>Fixed filenames of samples in blood dataset (renamed from <code>Bood_&lt;nr&gt;</code> to <code>blood_&lt;nr&gt;</code>).</li>
 <li>Renamed <code>example_datasets/jcampdx/urine/urine.dx</code> to <code>example_datasets/jcampdx/urine/urine_1.dx</code> and renamed <code>example_datasets/bruker/urine/urine/</code> to <code>example_datasets/bruker/urine/urine_1/</code>. This was done because <code>list.files</code> seems to return different orderings for <code>urine.dx</code> and <code>urine_2.dx</code> in different operating systems, whereas <code>urine_1.dx</code> and <code>urine_2.dx</code> are sorted the same way everywhere. This makes it easier to write clear and concise test cases, because we don’t need to check for file ordering.</li>
 </ul><p>Documentation:</p>
 <ul><li>Fixed broken image in <a href="https://github.com/spang-lab/metabodecon/blob/main/vignettes/FAQ.Rmd" class="external-link">vignettes/FAQ.Rmd</a>.</li>
 </ul><p>Testing:</p>
-<ul><li>Added unit tests for <code><a href="../reference/deconvolute.html">generate_lorentz_curves()</a></code>.</li>
+<ul><li>Added unit tests for <code><a href="../reference/generate_lorentz_curves.html">generate_lorentz_curves()</a></code>.</li>
 <li>Enabled parallel processing for unit tests.</li>
 <li>Created initial versions of <code>tests/testthat/test-generate_lorentz_curves-[1-4].R</code>.</li>
 <li>Added <code>generate_lorentz_curves_v2()</code> to <code>DESCRIPTION/Config/testthat/start-first</code>.</li>
@@ -209,7 +216,7 @@
 <li>Added <code>grDevices</code>, <code>stats</code> and <code>utils</code> as internal imports</li>
 <li>Added lots of test helper functions in <code>R/test_helpers.R</code>
 </li>
-<li>Added function <code>generate_lorentz_curves_v2()</code> which will replace <code><a href="../reference/deconvolute.html">generate_lorentz_curves()</a></code> as soon as we have new features AND 100% backwards compatibility</li>
+<li>Added function <code>generate_lorentz_curves_v2()</code> which will replace <code><a href="../reference/generate_lorentz_curves.html">generate_lorentz_curves()</a></code> as soon as we have new features AND 100% backwards compatibility</li>
 <li>Fixed bug in <code><a href="https://rdrr.io/r/base/with.html" class="external-link">with()</a></code> that caused <code>get_datadir_mock()</code> to be called after redirection took place causing unexpected message output</li>
 <li>Fixed bug in <code><a href="../reference/datadir.html">datadir()</a></code> that caused the resulting path to end with a slash on Unix-like systems and without a slash on Windows, if <code>file</code> was not specified</li>
 <li>
