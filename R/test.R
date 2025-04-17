@@ -89,6 +89,8 @@
 #' - `testdir`: The path to the test directory.
 #' - `inputs`: The paths to the copied input files.
 #'
+#' @author 2024-2025 Tobias Schmidt: initial version.
+#'
 #' @examples
 #' x1 <- evalwith(output = "captured", cat("Helloworld\n"))
 #' str(x1)
@@ -218,6 +220,8 @@ evalwith <- function(expr, # nolint: cyclocomp_linter.
 #' A function that mimics the readline function, returning the next element from
 #' `texts` each time it's called.
 #'
+#' @author 2024-2025 Tobias Schmidt: initial version.
+#'
 #' @examples
 #' readline_mock <- get_readline_mock(c("yes", "no", "maybe"))
 #' readline_mock("Continue? ") # Returns "yes"
@@ -243,18 +247,26 @@ get_readline_mock <- function(texts, env = as.environment(list())) {
 
 #' @noRd
 #' @title Get a mock for the datadir functions
-#' @description Returns a function that, when called, returns a path to a mock
-#' data directory. The type and state of the mock data directory can be
-#' specified. Used internally by [mock_datadir()].
-#' @param type The type of data directory to mock. Can be "persistent" or
-#' "temp".
-#' @param state The state of the data directory to mock. Can be "missing",
-#' "empty", or "filled".
-#' @return A function that when called, returns a path to the mock data
-#' directory.
+#'
+#' @description
+#' Returns a function  that,  when  called,  returns  a  path  to  a  mock  data
+#' directory. The type and state of the mock data directory  can  be  specified.
+#' Used internally by [mock_datadir()].
+#'
+#' @param type
+#' Type of data directory to mock. Can be "persistent" or "temp".
+#'
+#' @param state
+#' State of data directory to mock. Can be "missing", "empty", or "filled".
+#'
+#' @return
+#' A function that when called, returns a path to the mock data directory.
+#'
+#' @author 2024-2025 Tobias Schmidt: initial version.
+#'
 #' @examples
-#' datadir_persistent_mock <- get_datadir_mock(type = "persistent", state = "missing")
-#' datadir_temp_mock <- get_datadir_mock(type = "temp", state = "empty")
+#' datadir_persistent_mock <- get_datadir_mock(type="persistent", state="missing")
+#' datadir_temp_mock <- get_datadir_mock(type="temp", state="empty")
 #' datadir_persistent_mock()
 #' datadir_temp_mock()
 get_datadir_mock <- function(type = "temp", state = "default") {
@@ -275,26 +287,41 @@ get_datadir_mock <- function(type = "temp", state = "default") {
 
 # Testthat Helpers (private) #####
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 r_geq <- function(x) {
     getRversion() >= numeric_version(x)
 }
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 not_cran <- function() {
     interactive() || isTRUE(as.logical(Sys.getenv("NOT_CRAN", "FALSE")))
 }
 
 #' @noRd
 #' @title Run tests with the option to skip slow tests
-#' @description Runs the tests in the current R package. If `all` is TRUE, it
-#' will set environment variable `RUN_SLOW_TESTS` to "TRUE" so that all tests
-#' are run. If `all` is FALSE, it will set `RUN_SLOW_TESTS` to "FALSE" so that
-#' slow tests are skipped. If `func` is provided, only the corresponding test file
-#' will be run.
-#' @param func Character or function. The name of the function whose test file should be run.
-#' If NULL (default), all tests are run.
-#' @param all Logical. If TRUE, all tests are run. If FALSE, slow tests are
-#' skipped.
-#' @return The result of devtools::test() or testthat::test_file() for a specific function.
+#'
+#' @description
+#' Runs the tests in the current R package.  If  `all`  is  TRUE,  it  will  set
+#' environment variable `RUN_SLOW_TESTS` to "TRUE" so that all tests are run. If
+#' `all` is FALSE, it will set `RUN_SLOW_TESTS` to "FALSE" so  that  slow  tests
+#' are skipped. If `func` is provided, only the corresponding test file will  be
+#' run.
+#'
+#' @param func
+#' Character or function. The name of the function whose  test  file  should  be
+#' run. If NULL (default), all tests are run.
+#'
+#' @param all
+#' Logical. If TRUE, all tests are run. If FALSE, slow tests are skipped.
+#'
+#' @return
+#' The result of devtools::test() or testthat::test_file() for a specific
+#' function.
+#'
+#' @author 2024-2025 Tobias Schmidt: initial version.
+#'
 #' @examples
 #' run_tests(get_smopts)           # Runs fast tests for get_smopts
 #' run_tests(get_smopts, all=TRUE) # Runs all tests for get_smopts
@@ -319,12 +346,16 @@ run_tests <- function(func = NULL, all = FALSE) {
     }
 }
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 skip_if_slow_tests_disabled <- function() {
     if (!Sys.getenv("RUN_SLOW_TESTS") == "TRUE") {
         testthat::skip("Slow tests (Use `Sys.setenv(RUN_SLOW_TESTS=TRUE)` or `run_tests(all=TRUE)` to enable).")
     }
 }
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 skip_if_not_in_globenv <- function() {
     if (!identical(environment(), .GlobalEnv)) {
         testthat::skip("Manual tests (To run, open file and execute the code manually).")
@@ -332,14 +363,22 @@ skip_if_not_in_globenv <- function() {
 }
 
 #' @noRd
-#' @title Check if the size of each file in a directory is within a certain
-#' range
-#' @description Check if the size of each file in a directory is within 90% to
-#' 110% of the expected size.
-#' If a file size is not within this range, a message is printed and an error is thrown.
-#' @param testdir A character string specifying the directory to check.
-#' @param size_exp A named numeric vector where the names are filenames and the
-#' values are the expected file sizes.
+#' @title Check files sizes
+#'
+#' @description
+#' Check if the size of each file in a directory is within 90% to 110% of the
+#' expected size. If a file size is not within this range, a message is printed
+#' and an error is thrown.
+#'
+#' @param testdir
+#' A character string specifying the directory to check.
+#'
+#' @param size_exp
+#' A named numeric vector where the names are filenames and the values are the
+#' expected file sizes.
+#'
+#' @author 2024-2025 Tobias Schmidt: initial version.
+#'
 #' @examples
 #' testdir <- tmpdir("examples/expect_file_size", create = TRUE)
 #' cat("Helloworld\n", file = file.path(testdir, "file1.txt"))
@@ -376,9 +415,10 @@ expect_file_size <- function(testdir, size_exp) {
 #' A logical value indicating whether the structure of the object matches the
 #' expected string.
 #'
+#' @author 2024-2025 Tobias Schmidt: initial version.
+#'
 #' @examples
 #' expect_str(list(a = 1, b = 2), c("List of 2", " $ a: num 1", " $ b: num 2"))
-#'
 expect_str <- function(obj, expected_str, ...) {
     testthat::expect_identical(capture.output(str(obj, ...)), expected_str)
 }
@@ -413,6 +453,8 @@ expect_str <- function(obj, expected_str, ...) {
 #' I.e., the score is close to 1 if the number of peaks and the area of the
 #' peaks are similar in the true and found spectra and the score is close to 0
 #' if the number of peaks and/or the area of the peaks are very different.
+#'
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' ## Bad deconvolution (PRARP ~= 0.2)
@@ -453,10 +495,14 @@ calc_prarp <- function(x, truepar = NULL, ...) {
     named(prarpx, prarp, peak_ratio_x, peak_ratio, np_true, np_found, np_correct, np_wrong, area_ratio, area_spectrum, area_residuals)
 }
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 calc_prarpx <- function(x, truepar = NULL, ...) {
     calc_prarp(x, truepar)$prarpx
 }
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 plot_prarp <- function(decon, truepar) {
 
     # Calculate PRARP score
@@ -529,6 +575,8 @@ plot_prarp <- function(decon, truepar) {
     named(prarp, peak_ratio, area_ratio)
 }
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 calc_y0 <- function(x, y, x0) {
     i0 <- convert_pos(x0, x, 1:length(x))
     i0_floor <- floor(i0)
@@ -541,24 +589,34 @@ calc_y0 <- function(x, y, x0) {
 
 # Compare (Private) #####
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 pairwise_identical <- function(x) {
     lapply(seq_len(length(x) - 1), function(i) identical(x[[i]], x[[i + 1]]))
 }
 
 #' @noRd
 #' @title Compare two vectors
-#' @description Checks if `x` and `y` are identical, all.equal or different
-#' vectors. If differences are greated than expected, the differing elements are
-#' printed.
-#' @param x First vector.
-#' @param y Second vector.
-#' @param xpct Expected result. 0==identical, 1==all.equal, 2==different,
-#' 3==error.
-#' @param silent Logical indicating whether to print the results.
-#' @return 0==identical, 1==all.equal, 2==different, 3==error
-#' @details The function compares the vectors `x` and `y` and prints the
-#' results. If the vectors are different, the differing elements are printed as
-#' follows:
+#'
+#' @description
+#' Checks if `x` and `y` are identical, all.equal or different vectors. If
+#' differences are greated than expected, the differing elements are printed.
+#'
+#' @param x,y
+#' Vectors to compare.
+#'
+#' @param xpct
+#' Expected result. 0==identical, 1==all.equal, 2==different, 3==error.
+#'
+#' @param silent
+#' Logical indicating whether to print the results.
+#'
+#' @return
+#' Integer exitcode (0==identical, 1==all.equal, 2==different, 3==error).
+#'
+#' @details
+#' The function compares the vectors `x` and `y` and prints the results. If the
+#' vectors are different, the differing elements are printed as follows:
 #'
 #' ```R
 #'              x       y  i  a                b                     z
@@ -574,6 +632,8 @@ pairwise_identical <- function(x) {
 #' - `a` == the differing elements from `x`
 #' - `b` == the differing elements from `y`
 #' - `z` == the difference between `a` and `b`
+#'
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' x <- 1:10
@@ -624,11 +684,17 @@ vcomp <- function(x, y, xpct = 0, silent = FALSE) {
 }
 
 #' @noRd
-#' @description Compares a spectrum deconvoluted with
-#' [generate_lorentz_curves_v12()] with a spectrum deconvoluted with
-#' [MetaboDecon1D()].
-#' @param x Result of [generate_lorentz_curves_v12()].
-#' @param y Result of [MetaboDecon1D()].
+#'
+#' @description
+#' Compares a spectrum deconvoluted with [generate_lorentz_curves_v12()] with a
+#' spectrum deconvoluted with [MetaboDecon1D()].
+#'
+#' @param new Result of [generate_lorentz_curves_v12()].
+#' @param old Result of [MetaboDecon1D()].
+#' @param silent Logical. If TRUE, no output is printed.
+#'
+#' @author 2024-2025 Tobias Schmidt: initial version.
+#'
 #' @examples
 #' sim_01 <- metabodecon_file("sim_01")[1]
 #' new <- generate_lorentz_curves_sim(sim_01)
@@ -771,6 +837,7 @@ compare_spectra <- function(new, old, silent = FALSE) { # styler: off
 
 #' @noRd
 #' @description Helper of [compare_spectra()].
+#' @author 2024-2025 Tobias Schmidt: initial version.
 update_defaults <- function(func, ...) {
     kwargs <- list(...)
     defaults <- formals(func)
@@ -784,7 +851,7 @@ update_defaults <- function(func, ...) {
 # Deconvolution #####
 
 #' @noRd
-#' @author Tobias Schmidt
+#' @author 2024-2025 Tobias Schmidt: initial version.
 MetaboDecon1D_silent <- function(# Passed on to [MetaboDecon1D()]
                                  filepath,
                                  filename = NA,
@@ -827,7 +894,7 @@ MetaboDecon1D_silent <- function(# Passed on to [MetaboDecon1D()]
 }
 
 #' @noRd
-#' @author Tobias Schmidt
+#' @author 2024-2025 Tobias Schmidt: initial version.
 MetaboDecon1D_silent_sim <- function(# Passed on to [MetaboDecon1D()]
                                      filepath,
                                      filename = NA,
@@ -856,7 +923,7 @@ MetaboDecon1D_silent_sim <- function(# Passed on to [MetaboDecon1D()]
 }
 
 #' @noRd
-#' @author Tobias Schmidt
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #' @examples
 #' sim <- metabodecon_file("bruker/sim_subset")
 #' answers <- get_MetaboDecon1D_answers(ns = 1, wshw = 0, sfr = c(3.55, 3.35))

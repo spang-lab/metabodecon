@@ -50,3 +50,6 @@ installation status of mdrb and its dependencies.
 check_mdrb()
 check_mdrb_deps()
 }
+\author{
+2024-2025 Tobias Schmidt: initial version.
+}

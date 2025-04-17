@@ -45,8 +45,10 @@ if (interactive()) {
      zip <- download_example_datasets(extract = FALSE, persistent = FALSE)
      dir <- download_example_datasets(extract = TRUE)
 }
-
 }
 \seealso{
 \code{\link[=datadir]{datadir()}}
+}
+\author{
+2024-2025 Tobias Schmidt: initial version.
 }

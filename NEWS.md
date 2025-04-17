@@ -1,3 +1,10 @@
+# metabodecon 1.4.3
+
+* Improvded questions asked by `deconvolute()` in interactive mode
+* Added function `get_si_mat()` for extracting a matrix of aligned signal integrals from `aligns` objects
+* Added author details to every function
+* Added deprecation notes to `get_ppm_range()`, `gen_feat_mat()`, `speaq_align()`, `combine_peaks()`, `dohCluster()`, `calculate_lorentz_curves`, `generate_lorentz_curves()` and `generate_lorentz_curves_sim()`.
+
 # metabodecon 1.4.2
 
 - Fixed `aaa_Get_Started` entry in Manual
@@ -8,7 +15,7 @@
 
 - Added `get_started()` and `metabodecon-package` to manual
 - Improved `plot_spectrum()` default margins.
-- Improved plots shown during `deconvolute()`: SFW and WSHW are now both shown as rectangles instead of lines.
+- Improved plots shown during `deconvolute()`: SFR and WSHW are now both shown as rectangles instead of lines.
 - Improved `install_mdrb()` example
 - Improved `Get_Started` article
 - Included `Get_Started` article as vignette within the package

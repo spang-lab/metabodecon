@@ -78,3 +78,6 @@ is_decons2(dd) # TRUE
 is_aligns(aa) # TRUE
 
 }
+\author{
+2024-2025 Tobias Schmidt: initial version.
+}

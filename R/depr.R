@@ -9,15 +9,10 @@
 #' the integration of them. The NMR file needs to be in Bruker format or
 #' jcamp-dx format.
 #'
-#' Deprecated since metabodecon v1.2.0. Please use [generate_lorentz_curves()]
-#' instead. See examples below for usage.
+#' This function has been deprecated with metabodecon version v1.2.0 and will be
+#' removed with version 2.0.0. Please use [deconvolute()] instead.
 #'
 #' `r lifecycle::badge("deprecated")`
-#'
-#' @author
-#' Martina Haeckl, 2021: Initial version.
-#' Tobias Schmidt, 2024: Added parameters `debug` and `store_results`. Added
-#' minor improvements to pass CRAN checks.
 #'
 #' @param filepath
 #' Complete path of the file folder (Notice for Bruker format: filepath needs to
@@ -85,10 +80,15 @@
 #' of 1D NMR Data: MetaboDecon1D. Metabolites 2021, 11, 452.
 #' https://doi.org/10.3390/metabo11070452
 #'
+#' @author
+#' 2020-2021 Martina Haeckl: initial version.\cr
+#' 2024-2025 Tobias Schmidt: Minor updates to pass CRAN checks. Parameters
+#' `debug` and `store_results` added.
+#'
 #' @examples
 #'
 #' ## ATTENTION: using MetaboDecon1D() for deconvolution is deprecated. Please use
-#' ## generate_lorentz_curves() instead.
+#' ## deconvolute() instead.
 #'
 #' ## The following example shows how a subset of the Sim dataset, consisting
 #' ## of two spectrum objects, can be deconvoluted using `MetaboDecon1D()`. The
@@ -542,10 +542,16 @@ MetaboDecon1D <- function(filepath,
 #'
 #' @title Calculate lorentz curves for each analyzed spectrum
 #'
-#' @description Calculates the lorentz curves of each investigated spectrum.
+#' @description
+#' Helper function of [plot_lorentz_curves_save_as_png()].
+#' Should not be called directly by the user.
 #'
-#' Martina Haeckl, 2021: Initial version.
-#' Tobias Schmidt, 2024: Minor updates to pass CRAN checks
+#' Calculates the lorentz curves of each investigated spectrum.
+#'
+#' This function has been deprecated with metabodecon version v1.4.3 and will be
+#' removed with version 2.0.0.
+#'
+#' `r lifecycle::badge("deprecated")`
 #'
 #' @param deconv_result
 #' A list as returned by [generate_lorentz_curves()] or [MetaboDecon1D].
@@ -564,13 +570,16 @@ MetaboDecon1D <- function(filepath,
 #' [plot_lorentz_curves_save_as_png()],
 #' [plot_spectrum_superposition_save_as_png()]
 #'
+#' @author
+#' 2020-2021 Martina Haeckl: initial version.\cr
+#' 2024-2025 Tobias Schmidt: Minor updates to pass CRAN checks
+#'
 #' @examples
 #' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
 #' ## Deconvolute the spectra in folder "bruker/sim_subset" into a list of
 #' ## Lorentz Curves (specified via the parameters A, lambda and x_0).
 #' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
-#' sim <- metabodecon_file("bruker/sim_subset")
-#' decons <- generate_lorentz_curves_sim(sim)
+#' decons <- generate_lorentz_curves_sim(sim[1:2])
 #' decon0 <- decons[[1]]
 #'
 #' ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
@@ -704,8 +713,8 @@ calculate_lorentz_curves <- function(deconv_result, number_of_files = NA) {
 #' [plot_spectrum_superposition_save_as_png()]
 #'
 #' @author
-#' Martina Haeckl, 2021: Initial version.
-#' Tobias Schmidt, 2024: Minor updates to pass CRAN checks.
+#' 2020-2021 Martina Haeckl: initial version.\cr
+#' 2024-2025 Tobias Schmidt: Minor updates to pass CRAN checks.
 #'
 #' @examples
 #' sim <- metabodecon_file("bruker/sim_subset")
@@ -847,8 +856,10 @@ plot_triplets <- function(deconv_result, x_range = c(), y_range = c(), out_dir =
 #' Plots the original spectrum and all generated Lorentz curves and save the
 #' result as png under the filepath.
 #'
-#' Superseded by [plot_spectrum()] since metabodecon v1.2.0. Will be replaced with
-#' v2.`r lifecycle::badge("deprecated")`
+#' Superseded by [plot_spectrum()] since metabodecon v1.2.0. Will be replaced
+#' with metabodecon v2.
+#'
+#' `r lifecycle::badge("deprecated")`
 #'
 #' @param deconv_result
 #' Saved result of the MetaboDecon1D() function
@@ -874,6 +885,10 @@ plot_triplets <- function(deconv_result, x_range = c(), y_range = c(), out_dir =
 #'
 #' @seealso
 #' [MetaboDecon1D()], [plot_triplets()], [plot_spectrum_superposition_save_as_png()]
+#'
+#' @author
+#' 2020-2021 Martina Haeckl: initial version.\cr
+#' 2024-2025 Tobias Schmidt: Minor updates to pass CRAN checks
 #'
 #' @examples
 #' sim <- metabodecon_file("bruker/sim_subset")
@@ -1031,8 +1046,7 @@ plot_lorentz_curves_save_as_png <- function(deconv_result, x_range = c(), y_rang
 #'
 #' `r lifecycle::badge("deprecated")`
 #'
-#' @author
-#' Martina Haeckl, 2021.
+#' @author 2020-2021 Martina Haeckl: initial version.
 #'
 #' @param deconv_result
 #' Saved result of the MetaboDecon1D() function
@@ -1190,8 +1204,7 @@ plot_spectrum_superposition_save_as_png <- function(deconv_result,
 # MetaboDecon1D Helpers (Private) #####
 
 #' @noRd
-#' @author
-#' Martina Haeckl, 2021.
+#' @author 2020-2021 Martina Haeckl: initial version.
 deconvolution <- function(filepath,
                           name,
                           file_format,
@@ -2322,8 +2335,150 @@ deconvolution <- function(filepath,
     return(return_list)
 }
 
+# Deconvolution (Public) #####
+
+#' @export
+#'
+#' @title Deconvolute one or more NMR spectra
+#'
+#' @description
+#' Deconvolutes NMR spectra by modeling each detected signal within a spectrum
+#' as Lorentz Curve.
+#'
+#' This function has been deprecated with metabodecon version v1.4.3 and will be
+#' removed with version 2.0.0. Please use [deconvolute()] instead.
+#'
+#' `r lifecycle::badge("deprecated")`
+#'
+#' @inheritParams read_spectrum
+#' @inheritParams deconvolute
+#'
+#' @return
+#' A 'decon1' object if a single spectrum was provided. A 'decons1' object if
+#' multiple spectra were provided. See [Metabodecon
+#' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html) for
+#' details.
+#'
+#' @details
+#'
+#' First, an automated curvature based signal selection is performed. Each
+#' signal is represented by 3 data points to allow the determination of initial
+#' Lorentz curves. These Lorentz curves are then iteratively adjusted to
+#' optimally approximate the measured spectrum.
+#'
+#' [generate_lorentz_curves_sim()] is identical to [generate_lorentz_curves()]
+#' except for the defaults, which are optimized for deconvoluting the 'sim'
+#' dataset, shipped with 'metabodecon'. The 'sim' dataset is a simulated
+#' dataset, which is much smaller than a real NMR spectra and lacks a water
+#' signal. This makes it ideal for use in examples. However, the default values
+#' for `sfr`, `wshw`, and `delta` in the "normal" [generate_lorentz_curves()]
+#' function are not optimal for this dataset. To avoid having to define the
+#' optimal parameters repeatedly in examples, this function is provided to
+#' deconvolute the "Sim" dataset with suitable parameters.
+#'
+#' @author 2024-2025 Tobias Schmidt: initial version.
+#'
+#' @examples
+#'
+#' ## Define the paths to the example datasets we want to deconvolute:
+#' ## `sim_dir`: directory containing 16 simulated spectra
+#' ## `sim_01`: path to the first spectrum in the `sim` directory
+#' ## `sim_01_spec`: the first spectrum in the `sim` directory as a dataframe
+#'
+#' sim_dir        <- metabodecon_file("sim_subset")
+#' sim_1_dir      <- file.path(sim_dir, "sim_01")
+#' sim_2_dir      <- file.path(sim_dir, "sim_02")
+#' sim_1_spectrum <- read_spectrum(sim_1_dir)
+#' sim_2_spectrum <- read_spectrum(sim_2_dir)
+#' sim_spectra    <- read_spectra(sim_dir)
+#'
+#'
+#' ## Show that `generate_lorentz_curves()` and `generate_lorentz_curves_sim()`
+#' ## produce the same results:
+#'
+#' sim_1_decon0 <- generate_lorentz_curves(
+#'     data_path = sim_1_dir, # Path to directory containing spectra
+#'     sfr = c(3.55, 3.35),   # Borders of signal free region (SFR) in ppm
+#'     wshw = 0,              # Half width of water signal (WS) in ppm
+#'     ask = FALSE,           # Don't ask for user input
+#'     verbose = FALSE        # Suppress status messages
+#' )
+#' sim_1_decon1 <- generate_lorentz_curves_sim(sim_1_dir)
+#' stopifnot(all.equal(sim_1_decon0, sim_1_decon1))
+#'
+#'
+#' ## Show that passing a spectrum produces the same results as passing the
+#' ## the corresponding directory:
+#'
+#' decon_from_spectrum_dir <- generate_lorentz_curves_sim(sim_1_dir)
+#' decon_from_spectrum_obj <- generate_lorentz_curves_sim(sim_1_spectrum)
+#' decons_from_spectra_obj <- generate_lorentz_curves_sim(sim_spectra)
+#' decons_from_spectra_dir <- generate_lorentz_curves_sim(sim_dir)
+#'
+#' most.equal <- function(x1, x2) {
+#'     ignore <- which(names(x1) %in% c("number_of_files", "filename"))
+#'     equal <- all.equal(x1[-ignore], x2[-ignore])
+#'     invisible(stopifnot(isTRUE(equal)))
+#' }
+#'
+#' all.equal(  decon_from_spectrum_dir, decon_from_spectrum_obj     )
+#' all.equal(  decons_from_spectra_dir, decons_from_spectra_obj     )
+#' most.equal( decon_from_spectrum_dir, decons_from_spectra_obj[[1]])
+#' most.equal( decon_from_spectrum_dir, decons_from_spectra_dir[[1]])
+generate_lorentz_curves <- function(data_path,
+    file_format="bruker", make_rds=FALSE, expno=10, procno=10, raw=TRUE,
+    nfit=10, smopts=c(2,5), delta=6.4, sfr=c(11.44494,-1.8828), wshw=0.1527692,
+    ask=TRUE, force=FALSE, verbose=TRUE, nworkers=1
+) {
+    # Check inputs
+    stopifnot(
+        is_existing_path(data_path) ||
+        is_spectrum(data_path) || is_spectra(data_path) ||
+        is_ispec(data_path) || is_ispecs(data_path),
+        is_char(file_format,1,"(bruker|jcampdx)"),
+        is_bool(make_rds,1) || is_char(make_rds,1),
+        is_int(expno,1),    is_int(procno,1),   is_int(nfit,1),
+        is_int(smopts,2),   is_num(delta,1),    is_num(sfr,2),
+        is_num(wshw,1),     is_bool(ask,1),     is_bool(force,1),
+        is_bool(verbose,1), is_int(nworkers,1)
+    )
+
+    # Read spectra
+    spectra <- as_spectra(
+        data_path, file_format, expno, procno, raw,
+        silent = !verbose, force = force
+    )
+
+    # Deconvolute
+    decons1 <- deconvolute_spectra(spectra,
+        nfit, smopts, delta, sfr, wshw,
+        ask, force, verbose, bwc=1,
+        use_rust=FALSE, nw=nworkers, igr=list(), rtyp="decon1"
+    )
+
+    # Store and return
+    store_as_rds(decons1, make_rds, data_path)
+    if (length(decons1) == 1) decons1[[1]] else decons1
+}
+
+#' @export
+#' @rdname deconvolute
+generate_lorentz_curves_sim <- function(data_path,
+    file_format="bruker", make_rds=FALSE, expno=10, procno=10, raw=TRUE,
+    nfit=10, smopts=c(2,5), delta=6.4, sfr=c(3.55,3.35), wshw=0,
+    ask=FALSE, force=FALSE, verbose=FALSE, nworkers=1
+) {
+    generate_lorentz_curves(
+        data_path, file_format, make_rds, expno, procno, raw,
+        nfit, smopts, delta, sfr, wshw,
+        ask, force, verbose, nworkers
+    )
+}
+
 # Plotting (Private) #####
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 plot_si_mat <- function(X = generate_lorentz_curves_sim("bruker/sim"),
                         lgdcex = "auto",
                         main = NULL,
@@ -2350,6 +2505,7 @@ plot_si_mat <- function(X = generate_lorentz_curves_sim("bruker/sim"),
 #' @noRd
 #' @title Plots a spectrum simulated with [get_sim_params()]
 #' @param simspec A simulated spectrum as returned by [get_sim_params()].
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #' @examples
 #' simspec <- get_sim_params()
 #' plot_sim_spec(simspec)
@@ -2379,6 +2535,8 @@ plot_sim_spec <- function(simspec = get_sim_params()) {
     mtext(line3_text, side = 3, line = -3.1, col = "red", cex = 1, adj = 0.99)
 }
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 plot_noise_methods <- function(siRND, siSFR, n = 300, start = 5000) {
     ymin <- min(c(min(siRND), min(siSFR)))
     ymax <- max(c(max(siRND), max(siSFR)))
@@ -2407,8 +2565,8 @@ plot_noise_methods <- function(siRND, siSFR, n = 300, start = 5000) {
 
 #' @noRd
 #' @author
-#' Initial version written by from Wolfram Gronwald as part of `gen_feat_mat`.
-#' Moved into seperate function in 2024 by Tobias Schmidt.
+#' 2021-2024 Wolfram Gronwald: wrote initial version as part of (gen_feat_mat[]).\cr
+#' 2024-2025 Tobias Schmidt: refactored into a separate function.
 read_decon_params_original <- function(data_path) {
     files <- list.files(data_path, ".txt", full.names = TRUE)
     num_spectra <- length(files) / 2
@@ -2476,7 +2634,7 @@ read_decon_params_original <- function(data_path) {
 #' point. Each entry corresponds to the integral of a deconvoluted signal with
 #' the signal center at this specific position after alignment by speaq.
 #'
-#' @author Wolfram Gronwald
+#' @author 2021-2024 Wolfram Gronwald: initial version.
 #'
 #' @examples
 #' spectrum_data <- generate_lorentz_curves_sim("bruker/sim")
@@ -2555,6 +2713,8 @@ speaq_align_original <- function(feat = gen_feat_mat(spectrum_data),
 
 # Data Management (Private) #####
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 simulate_from_decon <- function(x,
                                 # Simulation Params
                                 cs_min = 3.4,
@@ -2633,11 +2793,19 @@ simulate_from_decon <- function(x,
 
 #' @noRd
 #' @title Count Stretches of Increases and Decreases
-#' @description Counts the lengths of consecutive increases and decreases in a
-#' numeric vector.
+#'
+#' @description
+#' Counts the lengths of consecutive increases and decreases in a numeric
+#' vector.
+#'
 #' @param x A numeric vector.
-#' @return A numeric vector containing the lengths of stretches of increases and
+#'
+#' @return
+#' A numeric vector containing the lengths of stretches of increases and
 #' decreases.
+#'
+#' @author 2024-2025 Tobias Schmidt: initial version.
+#'
 #' @examples
 #' #
 #' # Example Data (x)
@@ -2674,8 +2842,10 @@ count_stretches <- function(x) {
 }
 
 #' @noRd
-#' @description Used during development of `simulate_spectra()` to find a
-#' realistic method for noise generation.
+#' @description
+#' Used during development of `simulate_spectra()` to find a realistic method
+#' for noise generation.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 analyze_noise_methods <- function(ask = TRUE) {
     download_example_datasets()
     blood_1 <- datadir("example_datasets/bruker/blood/blood_01")

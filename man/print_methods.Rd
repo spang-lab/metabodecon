@@ -10,8 +10,6 @@
 \alias{print.decons1}
 \alias{print.decons2}
 \alias{print.aligns}
-\alias{print.idecons}
-\alias{print.rdecons}
 \title{S3 Methods for Printing Metabodecon Objects}
 \usage{
 \method{print}{spectrum}(x, name = FALSE, ...)
@@ -29,10 +27,6 @@
 \method{print}{decons2}(x, ...)
 
 \method{print}{aligns}(x, ...)
-
-\method{print}{idecons}(x, ...)
-
-\method{print}{rdecons}(x, ...)
 }
 \arguments{
 \item{x}{The object to print.}
@@ -53,4 +47,7 @@ print(sim[[1]], name = TRUE)
 print(sim)
 decon <- deconvolute(sim[[1]], sfr = c(3.55, 3.35))
 print(decon)
+}
+\author{
+2024-2025 Tobias Schmidt: initial version.
 }

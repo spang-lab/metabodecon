@@ -48,6 +48,6 @@ dir(png_dir, full.names = TRUE)
 \code{\link[=plot_spectrum_superposition_save_as_png]{plot_spectrum_superposition_save_as_png()}}
 }
 \author{
-Martina Haeckl, 2021: Initial version.
-Tobias Schmidt, 2024: Minor updates to pass CRAN checks.
+2020-2021 Martina Haeckl: initial version.\cr
+2024-2025 Tobias Schmidt: Minor updates to pass CRAN checks.
 }

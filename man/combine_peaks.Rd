@@ -29,15 +29,22 @@ longer required since version 1.2 of Metabodecon.}
 written to \code{data_path} as "aligned_res_long.csv" and "aligned_res_short.csv".}
 }
 \value{
-A list containing two data frames \code{long} and \code{short}. The first data frame
-contains one column for each data point in the original spectrum. The second
-data frame contains only columns where at least one entry is non-zero.
+A list containing two data frames \code{long} and \code{short}. The first data
+frame contains one column for each data point in the original spectrum. The
+second data frame contains only columns where at least one entry is non-zero.
 }
 \description{
-Even after calling \code{speaq_align()}, the alignment of individual signals is
+Helper function of \code{align()}. Should not be called directly by the user.
+
+Even after calling \code{\link[=speaq_align]{speaq_align()}}, the alignment of individual signals is
 not always perfect, as 'speaq' performs a segment-wise alignment i.e. groups
 of signals are aligned. For further improvements, partly filled neighboring
 columns are merged. See 'Details' for an illustrative example.
+
+Direct usage of this function has been deprecated with metabodecon version
+1.4.3 and will be removed with metabodecon version 2.0.0.
+
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
 }
 \details{
 Example of what the function does:
@@ -73,6 +80,7 @@ column 3 and 4, column 4 and 5 have a common non-zero entry.
 }
 }
 \examples{
+
 sim_subset <- metabodecon_file("bruker/sim_subset")
 spectrum_data <- generate_lorentz_curves_sim(sim_subset)
 shifted_mat <- speaq_align(spectrum_data = spectrum_data, verbose = FALSE)
@@ -82,6 +90,6 @@ obj <- combine_peaks(shifted_mat, range, lower_bound)
 str(obj)
 }
 \author{
-Initial version from Wolfram Gronwald.
-Refactored by Tobias Schmidt in 2024.
+2021-2024 Wolfram Gronwald: initial version.\cr 2024-2025 Tobias Schmidt:
+refactored initial version.
 }

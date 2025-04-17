@@ -37,6 +37,8 @@
 #' [plot_spectrum()] for a much more sophisticated plotting routine
 #' suitable for plotting a single spectrum.
 #'
+#' @author 2024-2025 Tobias Schmidt: initial version.
+#'
 #' @examples
 #' obj <- deconvolute(sim[1:4], sfr = c(3.55, 3.35))
 #' plot_spectra(obj)
@@ -111,6 +113,7 @@ plot_spectra <- function(obj,
 #'
 #' @description
 #' Plot a spectrum and zoom in on a specific region.
+#'
 #' `r lifecycle::badge("experimental")`
 #'
 #' @param x
@@ -155,6 +158,8 @@ plot_spectra <- function(obj,
 #'
 #' @return
 #' NULL. Called for side effect of plotting as sketched in 'Details'.
+#'
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @details
 #' This function first initializes a new plotting canvas.  After  that  it  calls
@@ -452,6 +457,8 @@ plot_spectrum <- function(x,
 #' In the above example the process would stop at `digit = 3`, because  at  this
 #' point we have n = 4 unique labels (1.024, 1.025, 1.027 and 1.028).
 #'
+#' @author 2024-2025 Tobias Schmidt: initial version.
+#'
 #' @examples
 #' decon <- deconvolute(sim[[1]], sfr = c(3.55, 3.35))
 #' draw_spectrum(obj = decon)
@@ -677,6 +684,7 @@ draw_spectrum <- function(
 
 #' @noRd
 #' @title Setup a development environment for `plot_spectrum`
+#' @author 2024-2025 Tobias Schmidt: initial version.
 mkenv_plot_spectrum <- function() {
     args <- stub(
         func = plot_spectrum,
@@ -686,6 +694,8 @@ mkenv_plot_spectrum <- function() {
     )
 }
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 mkenv_draw_spectrum <- function() {
     decons <- deconvolute(metabodecon::sim[1:4], sfr = c(3.55, 3.35))
     aligns <- align(decons, maxShift = 100, maxCombine = 0)
@@ -697,6 +707,7 @@ mkenv_draw_spectrum <- function() {
 }
 
 #' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #' @examples
 #' test_plot_spectrum(1, 2) # first two plots
 #' test_plot_spectrum(2:4) # second to fourth plot
@@ -770,6 +781,8 @@ test_plot_spectrum <- function(figs = 1:6, store = FALSE) {
     if (store) "tmp/test_plot_spectrum.pdf"
 }
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 test_draw_spectrum <- function(figs = 1:8,
                                mfrow = c(4, 2),
                                mar = c(5, 4, 1, 1) + 0.1,
@@ -856,6 +869,8 @@ test_draw_spectrum <- function(figs = 1:8,
     if (store) "tmp/test_draw_spectrum.pdf"
 }
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 test_grafical_units <- function() {
     par(mfrow = c(1, 2), xpd = TRUE)
     plot_empty()
@@ -895,6 +910,7 @@ test_grafical_units <- function() {
 #' @title Plot Signal Free Region
 #' @description Draws the SFR as green vertical lines into the given spectrum.
 #' @return NULL. Called for side effect of plotting the signal free region.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 plot_sfr <- function(cs, si, sfr) {
     plot(
         x = cs,
@@ -917,30 +933,13 @@ plot_sfr <- function(cs, si, sfr) {
         col     = transp("darkgreen", 0.2),
         border  = "darkgreen"
     )
-    # text(
-    #     x = c(usr[1] + max(sfr), min(sfr) + usr[2]) / 2,
-    #     y = rep((usr[4] + usr[3]) / 2, 2),
-    #     labels = c("SFR", "SFR"),
-    #     pos = 3,
-    #     col = "darkgreen"
-    # )
-    # arrows(
-    #     x0 = c(xmid, xmid),
-    #     y0 = c(usr[4], usr[4]),
-    #     x1 = c(usr[1] + max(sfr), min(sfr) + usr[2]) / 2,
-    #     y1 = rep(0.8 * usr[4] - 0.2 * usr[3] , 2),
-    #     col = "darkgreen",
-    #     lty = 2,
-    #     length = 0.1,
-    #     # angle = 20
-    # )
-    # graphics::abline(v = sfr, col = "darkgreen")
 }
 
 #' @noRd
 #' @title Plot Water Signal
 #' @description Draws the water signal as red vertical lines into the given spectrum.
 #' @return NULL. Called for side effect of plotting the water signal.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 plot_ws <- function(cs, si, wshw) {
     xmid <- (min(cs) + max(cs)) / 2
     xlim <- if (wshw > 0) c(xmid + 5 * wshw, xmid - 5 * wshw) else range(cs)[2:1]
@@ -966,15 +965,26 @@ plot_ws <- function(cs, si, wshw) {
 
 #' @noRd
 #' @title Plot Aligned Spectra
-#' @description Plots the aligned and unaligned spectra for comparison.
-#' @param YA,YB Matrix.
+#'
+#' @description
+#' Plots the aligned and unaligned spectra for comparison.
+#'
+#' @param YA,YB
+#' Matrix.
 #' `YA[i,j]` == Signal Intensity of spectrum i at index j AFTER alignmnent.
 #' `YB[i,j]` == Signal Intensity of spectrum i at index j BEFORE alignment.
-#' @param PA,PB List of vectors.
+#'
+#' @param PA,PB
+#' List of vectors.
 #' `PA[[i]][j]` == index of peak j of spectrum i AFTER alignment.
 #' `PB[[i]][j]` == index of peak j of spectrum i BEFORE alignment.
-#' @param mfcol Vector of two integers specifying the number of rows and columns
+#'
+#' @param mfcol
+#' Vector of two integers specifying the number of rows and columns
 #' of the plot grid
+#'
+#' @author 2024-2025 Tobias Schmidt: initial version.
+#'
 #' @examples
 #' x <- seq(1.5 * pi, 9.5 * pi, length.out = 90)
 #' y <- 10 * sin(x) # y without noise
@@ -1019,6 +1029,8 @@ plot_align <- function(YA, YB, PA, PB, mfcol = c(nrow(YA), 1)) {
     mtext("Signal Intensity", side = 2, outer = TRUE, line = 1)
 }
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 plot_empty <- function(xlim = c(0, 1),
                        ylim = c(0, 1),
                        xlab = "",
@@ -1034,6 +1046,8 @@ plot_empty <- function(xlim = c(0, 1),
          axes = axes, xaxs = xaxs, yaxs = yaxs, type = type)
 }
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 plot_dummy <- function(text = "Dummy Text") {
     plot(
         x = 0, y = 0, main = "",
@@ -1046,6 +1060,8 @@ plot_dummy <- function(text = "Dummy Text") {
 
 # Draw Helpers (Private) #####
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 draw_legend <- function(args, si_line, sm_line, lc_lines, sp_line, d2_line,
                         cent_pts, bord_pts, norm_pts,
                         lc_verts, tp_verts) {
@@ -1078,6 +1094,8 @@ draw_legend <- function(args, si_line, sm_line, lc_lines, sp_line, d2_line,
     do.call(legend, args)
 }
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 draw_con_lines <- function(top_fig, bot_fig, con_lines) {
     if (isFALSE(pop(con_lines, "show"))) return()
     if (is.null(top_fig$plt_rgn_ndc)) return()
@@ -1095,6 +1113,8 @@ draw_con_lines <- function(top_fig, bot_fig, con_lines) {
     do.call(segments, con_lines)
 }
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 draw_lc_line <- function(p, x, args = list(), threshold = 0, overwrites = NULL) {
     if (isFALSE(pop(args, "show")) || is.null(names(p))) return()
     y <- lorentz(x, p[["x0"]], p[["A"]], p[["lambda"]])
@@ -1108,6 +1128,8 @@ draw_lc_line <- function(p, x, args = list(), threshold = 0, overwrites = NULL) 
     draw_line(x, y, args)
 }
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 draw_lc_rect <- function(p, x, args = list(), ymin = 0) {
     if (isFALSE(pop(args, "show"))) return()
     A <- p[["A"]]
@@ -1120,6 +1142,8 @@ draw_lc_rect <- function(p, x, args = list(), ymin = 0) {
     do.call(rect, args)
 }
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 draw_axis <- function(lim, side = 1, args = list()) {
     if (isFALSE(pop(args, "show"))) return()
     n          <- pop(args, "n", default = 5)
@@ -1144,6 +1168,8 @@ draw_axis <- function(lim, side = 1, args = list()) {
     do.call(axis, args)
 }
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 draw_mtext <- function(side = 1, args = list()) {
     if (isFALSE(pop(args, "show"))) return()
     if (is.null(args$text)) return()
@@ -1153,6 +1179,8 @@ draw_mtext <- function(side = 1, args = list()) {
     do.call(mtext, args)
 }
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 draw_rect <- function(xlim, ylim, args = list()) {
     if (isFALSE(pop(args, "show"))) return()
     args$xleft <- xlim[1]
@@ -1162,11 +1190,15 @@ draw_rect <- function(xlim, ylim, args = list()) {
     do.call(rect, args)
 }
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 draw_box <- function(args = list()) {
     if (isFALSE(pop(args, "show"))) return()
     do.call(box, args)
 }
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 draw_line <- function(x, y, args = list()) {
     if (isFALSE(pop(args, "show"))) return()
     fill <- pop(args, "fill")
@@ -1183,6 +1215,8 @@ draw_line <- function(x, y, args = list()) {
     do.call(lines, args)
 }
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 draw_verts <- function(x, h, args = list()) {
     if (isFALSE(pop(args, "show"))
         || length(x) == 0
@@ -1195,6 +1229,8 @@ draw_verts <- function(x, h, args = list()) {
     do.call(segments, args)
 }
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 draw_arrows <- function(x0, x1, h, args = list()) {
     if (isFALSE(pop(args, "show"))
         || length(x0) == 0
@@ -1213,6 +1249,8 @@ draw_arrows <- function(x0, x1, h, args = list()) {
     do.call(arrows, args)
 }
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 draw_points <- function(x, y, args = list()) {
     if (isFALSE(pop(args, "show"))) return()
     args$x <- x
@@ -1222,6 +1260,8 @@ draw_points <- function(x, y, args = list()) {
 
 # Get Helpers (Private) #####
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 get_foc_frac <- function(obj, foc_rgn = NULL) {
     assert(
         is_num(obj$cs),
@@ -1237,6 +1277,8 @@ get_foc_frac <- function(obj, foc_rgn = NULL) {
     }
 }
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 get_foc_rgn <- function(obj, foc_frac = NULL) {
     assert(
         is_num(obj$cs),
@@ -1246,6 +1288,8 @@ get_foc_rgn <- function(obj, foc_frac = NULL) {
     quantile(obj$cs, foc_frac)
 }
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 get_sub_fig_args <- function(obj, foc_frac, foc_rgn, sub1, sub2, sub3, dot_args) {
     if ((n <- length(dot_args)) != (k <- length(names(dot_args)))) {
         if (n == 1) dot_args <- dot_args[[1]]
@@ -1307,6 +1351,8 @@ get_sub_fig_args <- function(obj, foc_frac, foc_rgn, sub1, sub2, sub3, dot_args)
     )
 }
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 get_draw_spectrum_defaults <- function(show_d2 = FALSE,
                                        foc_only = TRUE,
                                        aligned = FALSE) {
@@ -1363,30 +1409,38 @@ get_draw_spectrum_defaults <- function(show_d2 = FALSE,
 
 # Other Helpers (Private) #####
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 combine <- function(defaults, x, name = NULL) {
     name <- name %||% deparse(substitute(x))
     x <- if (is.null(x)) list()
         else if (isFALSE(x)) list(show = FALSE)
         else if (isTRUE(x)) list(show = TRUE)
         else if (is.list(x)) x
-        else stopf("%s must be a bool or list", name)
+        else stop(sprintf("%s must be a bool or list", name))
     modifyList(defaults, x)
 }
 
 # Convert Helpers (Private) #####
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 usr_to_ndc <- function(usr = par("usr")) {
     x_ndc <- grconvertX(usr[1:2], from = "user", to = "ndc")
     y_ndc <- grconvertY(usr[3:4], from = "user", to = "ndc")
     c(x_ndc, y_ndc)
 }
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 ndc_to_usr <- function(ndc) {
     x_usr <- grconvertX(ndc[1:2], from = "ndc", to = "user")
     y_usr <- grconvertY(ndc[3:4], from = "ndc", to = "user")
     c(x_usr, y_usr)
 }
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 npc_to_ndc <- function(npc = c(0, 1, 0, 1)) {
     if (is.null(npc)) return(NULL)
     x_ndc <- grconvertX(npc[1:2], from = "npc", to = "ndc")
@@ -1430,6 +1484,9 @@ npc_to_ndc <- function(npc = c(0, 1, 0, 1)) {
 #' would be bad in a multi-figure environment). I.e., the figure number must be
 #' advanced manually, as would have been done by a normal plot. This manual
 #' increment must be done before the MFC is reset by `par(fig=xxyy, new=TRUE)`.
+#'
+#' @author 2024-2025 Tobias Schmidt: initial version.
+#'
 #' @examples
 #' plot_dummy <- function() {
 #'     plot(0, 0, ylim = c(0, 1), xlim = c(0, 1), xaxs = "i", yaxs = "i")
@@ -1469,6 +1526,7 @@ set_fig <- function(fig = NULL, add = TRUE) {
 #' @noRd
 #' @title Plot into specific figure region
 #' @description For Details see [set_fig()].
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #' @examples
 #' plot_dummy <- function() {
 #'     plot(0, 0, ylim = c(0, 1), xlim = c(0, 1), xaxs = "i", yaxs = "i")
@@ -1489,6 +1547,8 @@ with_fig <- function(expr, fig = NULL, pos = NULL, add = TRUE) {
     expr
 }
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 local_fig <- function(fig = NULL, add = TRUE, envir = parent.frame()) {
   reset_mfc <- set_fig(fig = fig, add = add)
   defer(reset_mfc(), envir = envir)
@@ -1497,6 +1557,7 @@ local_fig <- function(fig = NULL, add = TRUE, envir = parent.frame()) {
 #' @noRd
 #' @description
 #' Returns TRUE if the current multi-figure gets filled by row, else FALSE.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #' @examples
 #' callwith <- function(by_row = TRUE) {
 #'     grid <- c(2, 2)

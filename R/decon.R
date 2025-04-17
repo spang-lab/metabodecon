@@ -1,6 +1,6 @@
 # Public API #####
 
-#' @name deconvolute
+#' @export
 #'
 #' @title Deconvolute one or more NMR spectra
 #'
@@ -14,10 +14,6 @@
 #'
 #' @param x A `spectrum` or `spectra` object as described in [Metabodecon
 #' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
-#'
-#' @param data_path Either the path to a directory containing measured NMR
-#' spectra, a dataframe as returned by [read_spectrum()], or a list of such
-#' dataframes.
 #'
 #' @param delta Threshold for peak filtering. Higher values result in more peaks
 #' being filtered out. A peak is filtered if its score is below \eqn{\mu +
@@ -89,6 +85,8 @@
 #' automatically. The values chosen are stored in field `args` of the returned
 #' `decon2` object.
 #'
+#' @author 2024-2025 Tobias Schmidt: initial version.
+#'
 #' @examples
 #'
 #' ## Define the paths to the example datasets we want to deconvolute:
@@ -136,10 +134,6 @@
 #' all.equal(  decons_from_spectra_dir, decons_from_spectra_obj     )
 #' most.equal( decon_from_spectrum_dir, decons_from_spectra_obj[[1]])
 #' most.equal( decon_from_spectrum_dir, decons_from_spectra_dir[[1]])
-NULL
-
-#' @export
-#' @rdname deconvolute
 deconvolute <- function(x,
     nfit=3,    smopts=c(2,5), delta=6.4,    sfr=NULL,   wshw=0,
     ask=FALSE, force=FALSE,   verbose=TRUE, nworkers=1, use_rust=FALSE
@@ -170,58 +164,6 @@ deconvolute <- function(x,
     if (length(decons2) == 1) decons2[[1]] else decons2
 }
 
-#' @export
-#' @rdname deconvolute
-generate_lorentz_curves <- function(data_path,
-    file_format="bruker", make_rds=FALSE, expno=10, procno=10, raw=TRUE,
-    nfit=10, smopts=c(2,5), delta=6.4, sfr=c(11.44494,-1.8828), wshw=0.1527692,
-    ask=TRUE, force=FALSE, verbose=TRUE, nworkers=1
-) {
-    # Check inputs
-    stopifnot(
-        is_existing_path(data_path) ||
-        is_spectrum(data_path) || is_spectra(data_path) ||
-        is_ispec(data_path) || is_ispecs(data_path),
-        is_char(file_format,1,"(bruker|jcampdx)"),
-        is_bool(make_rds,1) || is_char(make_rds,1),
-        is_int(expno,1),    is_int(procno,1),   is_int(nfit,1),
-        is_int(smopts,2),   is_num(delta,1),    is_num(sfr,2),
-        is_num(wshw,1),     is_bool(ask,1),     is_bool(force,1),
-        is_bool(verbose,1), is_int(nworkers,1)
-    )
-
-    # Read spectra
-    spectra <- as_spectra(
-        data_path, file_format, expno, procno, raw,
-        silent = !verbose, force = force
-    )
-
-    # Deconvolute
-    decons1 <- deconvolute_spectra(spectra,
-        nfit, smopts, delta, sfr, wshw,
-        ask, force, verbose, bwc=1,
-        use_rust=FALSE, nw=nworkers, igr=list(), rtyp="decon1"
-    )
-
-    # Store and return
-    store_as_rds(decons1, make_rds, data_path)
-    if (length(decons1) == 1) decons1[[1]] else decons1
-}
-
-#' @export
-#' @rdname deconvolute
-generate_lorentz_curves_sim <- function(data_path,
-    file_format="bruker", make_rds=FALSE, expno=10, procno=10, raw=TRUE,
-    nfit=10, smopts=c(2,5), delta=6.4, sfr=c(3.55,3.35), wshw=0,
-    ask=FALSE, force=FALSE, verbose=FALSE, nworkers=1
-) {
-    generate_lorentz_curves(
-        data_path, file_format, make_rds, expno, procno, raw,
-        nfit, smopts, delta, sfr, wshw,
-        ask, force, verbose, nworkers
-    )
-}
-
 # Internal main functions #####
 
 #' @noRd
@@ -233,6 +175,7 @@ generate_lorentz_curves_sim <- function(data_path,
 #' == 2`, all bug fixes and features introduced after version 0.2.2 are used.
 #'
 #' Support for `bwc == 0` will be removed in 'metabodecon v2.0'.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 deconvolute_spectra <- function(x,
     nfit=3, smopts=c(2,5), delta=6.4, sfr=c(3.55,3.35), wshw=0,
     ask=FALSE, force=FALSE, verbose=TRUE, bwc=2,
@@ -285,6 +228,9 @@ deconvolute_spectra <- function(x,
     decons
 }
 
+#' @noRd
+#' @inheritParams deconvolute_spectra
+#' @author 2024-2025 Tobias Schmidt: initial version.
 deconvolute_spectrum <- function(x,
     nfit=3, smopts=c(2,5), delta=6.4, sfr=c(3.55, 3.35), wshw=0,
     ask=FALSE, force=FALSE, verbose=TRUE, bwc=2,
@@ -348,6 +294,7 @@ deconvolute_spectrum <- function(x,
 #' @description
 #' Get number of spectrum that should be used to adjust all others. If ask is
 #' FALSE or every spectrum should be adjusted individually, zero is returned.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 get_adjno <- function(x, ask) {
     assert(is_spectra(x), is_bool(ask, 1))
     if (isFALSE(ask) ||
@@ -362,17 +309,16 @@ get_adjno <- function(x, ask) {
 }
 
 #' @noRd
-#' @description Converts one or more SFR vectors to list of vectors of the
-#' correct length. If `ask` is TRUE, let user confirm entries.
+#' @description
+#' Converts one or more SFR vectors to list of vectors of the correct length. If
+#' `ask` is TRUE, let user confirm entries.
 #' @param x Any metabodecon collection object.
 #' @param sfr SFR defaults. Can be a vector of length 2 or a list. If a list is
 #' provided, it must have the same length as `x`.
 #' @param ask Ask user to confirm suggested defaults?
 #' @param adjno Number of spectrum to show when user is asked for confirmation.
 #' If 0, the user is asked to confirm each entry individually.
-#' @description
-#' Convert to list of correct length (one per spectrum) and let user confirm
-#' each entry.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 get_sfr <- function(x, sfr, ask, adjno) {
     n <- length(x)
     if (is_num(sfr, 2)) sfr <- rep(list(sfr), n)
@@ -385,6 +331,7 @@ get_sfr <- function(x, sfr, ask, adjno) {
 
 #' @noRd
 #' @description Same as [get_sfr()], but for WSHW.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 get_wshw <- function(x, wshw, ask, adjno) {
     n <- length(x)
     if (is_num(wshw, 1)) wshw <- rep(list(wshw), n)
@@ -397,11 +344,19 @@ get_wshw <- function(x, wshw, ask, adjno) {
 }
 
 #' @noRd
-#' @param x Any metabodecon collection object.
+#' @title Get Smoothing Options
+#'
+#' @description
+#' Convert one or more SMOPTS vectors to list of vectors of the correct length.
+#'
+#' @param x
+#' Any metabodecon collection object.
+#'
 #' @param smopts
-#' Defaults smoothing options. Can be a vector of length 2 or a list of such
+#' Default smoothing options. Can be a vector of length 2 or a list of such
 #' vectors. If a list if provided, it must have the same length as `x`.
-#' @description Convert to list of correct length (one per spectrum).
+#'
+#' @author 2024-2025 Tobias Schmidt: initial version.
 get_smopts <- function(x, smopts) {
     n <- length(x)
     if (is_int(smopts, 2)) smopts <- rep(list(smopts), n)
@@ -413,6 +368,11 @@ get_smopts <- function(x, smopts) {
 
 # Helpers for deconvolute_spectrum #####
 
+#' @noRd
+#' @author
+#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
+#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
+#' MetaboDecon1D. Added code for bwc > 1.
 rm_water_signal <- function(x, wshw, bwc) {
     assert(is_ispec(x), is_num(wshw, 1), is_num(bwc, 1))
     logf("Removing water signal")
@@ -436,6 +396,11 @@ rm_water_signal <- function(x, wshw, bwc) {
     x
 }
 
+#' @noRd
+#' @author
+#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
+#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
+#' MetaboDecon1D. Added code for bwc > 1.
 rm_negative_signals <- function(spec) {
     logf("Removing negative signals")
     errmsg <- "Water signal not removed yet. Call `rm_water_signal()` first."
@@ -467,6 +432,11 @@ rm_negative_signals <- function(spec) {
 #' @details
 #' Old and slow version producing the same results as the
 #' implementation within `deconvolution` from `MetaboDecon1D_deconvolution.R`.
+#'
+#' @author
+#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
+#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
+#' MetaboDecon1D.
 smooth_signals <- function(spec, reps = 2, k = 5, verbose = TRUE) {
     if (verbose) logf("Smoothing signals")
     if (k %% 2 == 0) stop("k must be odd")
@@ -496,6 +466,8 @@ smooth_signals <- function(spec, reps = 2, k = 5, verbose = TRUE) {
 #' compared to the old version.
 #'
 #' WORK IN PROGRESS
+#'
+#' @author 2024-2025 Tobias Schmidt: initial version.
 smooth_signals_v20 <- function(spec, reps = 2, k = 5) {
     if (k %% 2 == 0) stop("k must be odd")
     Z <- vector("list", length = reps)
@@ -532,6 +504,11 @@ smooth_signals_v20 <- function(spec, reps = 2, k = 5) {
     spec
 }
 
+#' @noRd
+#' @author
+#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
+#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
+#' MetaboDecon1D.
 find_peaks <- function(spec) {
     logf("Starting peak selection")
     d <- spec$d <- calc_second_derivative(y = spec$y_smooth)
@@ -551,7 +528,9 @@ find_peaks <- function(spec) {
     return(spec)
 }
 
-# WORK IN PROGRESS
+#' @noRd
+#' @title WORK IN PROGRESS
+#' @author 2024-2025 Tobias Schmidt: initial version.
 filter_peaks_v13 <- function(ppm, # x values in ppm
                              pc, # peak center indices
                              ps, # peak scores
@@ -608,8 +587,12 @@ filter_peaks_v13 <- function(ppm, # x values in ppm
 #' FALSE, the function stops and issues an error message. If `force` is TRUE,
 #' the function proceeds without filtering, potentially increasing runtime.
 #'
-#' @examples
+#' @author
+#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
+#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
+#' MetaboDecon1D. Added code for bwc > 1.
 #'
+#' @examples
 #' peak <- list(score = c(1, 5, 2), center = c(1, 2, 3))
 #' sdp <- c(3, 2, 1)
 #' ispec <- named(peak, sdp)
@@ -661,6 +644,11 @@ filter_peaks <- function(ispec, sfr, delta = 6.4, force = FALSE, bwc = 1) {
     ispec
 }
 
+#' @noRd
+#' @author
+#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
+#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
+#' MetaboDecon1D. Added code for bwc > 1.
 fit_lorentz_curves <- function(spec, nfit = 3, bwc = 1) {
     logf("Initializing Lorentz curves")
     spec$lci <- lc <- init_lc(spec) # Lorentz Curves Initialized
@@ -679,37 +667,39 @@ fit_lorentz_curves <- function(spec, nfit = 3, bwc = 1) {
 
 # Helpers for get_sfr and get_wshw #####
 
+#' @noRd
 #' @description Repeatedly ask the user to confirm/refine SFR borders.
 #' @param x Any metabodecon object.
-#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 confirm_sfr <- function(x, sfr = c(11.44494, -1.8828)) {
     si <- x$y_scaled %||% x$si
     cs <- x$ppm %||% x$cs
     cs_min <- min(cs)
     cs_max <- max(cs)
     plot_sfr(cs, si, sfr)
-    sfr_ok <- get_yn_input("Signal free region correctly selected?")
+    sfr_ok <- get_yn_input("Borders of signal free region (green) correctly selected?")
     while (!sfr_ok) {
         get_border <- function(msg) get_num_input(msg, cs_min, cs_max)
         sfr[1] <- get_border("Choose another left border: [e.g. 12]")
         sfr[2] <- get_border("Choose another right border: [e.g. -2]")
         plot_sfr(cs, si, sfr)
-        sfr_ok <- get_yn_input("Signal free region correctly selected?")
+        sfr_ok <- get_yn_input("Borders of signal free region (green) correctly selected?")
     }
     sfr
 }
 
-#' @description Repeatedly ask the user to confirm/refine the WSHW.
 #' @noRd
+#' @description Repeatedly ask the user to confirm/refine the WSHW.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 confirm_wshw <- function(x, wshw) {
     cs <- x$cs %||% x$ppm
     si <- x$si %||% x$y_scaled
     plot_ws(cs, si, wshw)
-    ws_ok <- get_yn_input("Water artefact fully inside red vertical lines?")
+    ws_ok <- get_yn_input("Water artefact fully inside blue area?")
     while (!ws_ok) {
         wshw <- get_num_input("Choose another half width range (in ppm) for the water artefact: [e.g. 0.1222154]")
         plot_ws(cs, si, wshw)
-        ws_ok <- get_yn_input("Water artefact fully inside red vertical lines?")
+        ws_ok <- get_yn_input("Water artefact fully inside blue area?")
     }
     wshw
 }
@@ -727,6 +717,7 @@ confirm_wshw <- function(x, wshw) {
 #' Instead, to only work with the correct ppm values, set `bwc = 2` in
 #' [filter_peaks()]. For details see `CHECK-2: signal free region calculation`
 #' in `TODOS.md`.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 enrich_sfr <- function(sfr, x) {
     assert(is_ispec(x) || is_idecon(x))
     left_ppm <- sfr[1]
@@ -749,6 +740,7 @@ enrich_sfr <- function(sfr, x) {
 #' Instead, to only work with the correct ppm values, set `bwc = 2` in
 #' [rm_water_signal()]. For details see `CHECK-3: water signal calculation` in
 #' `TODOS.md`.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 enrich_wshw <- function(wshw, x) {
     assert(is_ispec(x) || is_idecon(x))
     x <- as_ispec(x)
@@ -769,6 +761,8 @@ enrich_wshw <- function(wshw, x) {
 
 # Helpers for find_peak #####
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 calc_second_derivative <- function(y) {
     n <- length(y)
     x <- c(NA, y[-n]) # x[i] == y[i-1]
@@ -777,6 +771,11 @@ calc_second_derivative <- function(y) {
     d
 }
 
+#' @noRd
+#' @author
+#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
+#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
+#' MetaboDecon1D.
 get_right_border <- function(j, d, m) {
     r <- j + 1
     while (r < m) { # use r<m instead of r<=m because c4 requires d[r+1]
@@ -793,6 +792,11 @@ get_right_border <- function(j, d, m) {
     return(NA)
 }
 
+#' @noRd
+#' @author
+#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
+#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
+#' MetaboDecon1D.
 get_left_border <- function(j, d) {
     l <- j - 1
     while (l > 1) { # use l>1 instead of l>=1 because c4 requires d[l-1]
@@ -824,6 +828,11 @@ get_left_border <- function(j, d) {
 #'
 #' @return The score of the peak.
 #'
+#' @author
+#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
+#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
+#' MetaboDecon1D.
+#'
 #' @examples
 #'
 #' #      ____________________________________________________
@@ -832,7 +841,6 @@ get_left_border <- function(j, d) {
 #' #     |          x  x  x  x                    x           |
 #' #     |       x  x  x  x  x  x              x  x           |
 #' #     |_.__x__x__x__x__x__x__x__x__.__.__x__x__x__x__x__.__|
-#' #          |----2---|-----4-----|        |--3--|--6--|
 #'
 #' y <- c( 0, 1, 2, 3, 4, 3, 3, 2, 1, 0, 0, 1, 2, 3, 1, 1, 0  )
 #' a <- c(NA, 0, 0, 0, 2, 1, 1, 0, 0, 1, 1, 0, 0, 3, 2, 1, NA )
@@ -840,7 +848,7 @@ get_left_border <- function(j, d) {
 #'
 #' s1 <- get_peak_score( 5, 2,   9, a)
 #' s2 <- get_peak_score(14, 12, 16, a)
-#' stopifnot(s1 == min(sum(a[2:5]), sum(a[5:9])))
+#' stopifnot(s1 == min(sum(a[ 2:5]),  sum(a[ 5:9] )))
 #' stopifnot(s2 == min(sum(a[12:14]), sum(a[14:16])))
 get_peak_score <- function(j, l, r, a) {
     if (any(is.na(a[c(l, j, r)]))) {
@@ -852,10 +860,15 @@ get_peak_score <- function(j, l, r, a) {
 
 # Helpers for fit_lorentz_curves #####
 
-#' @title Initialize Lorentz Curve Parameters
-#' @param spec List with elements: `x`, `y`, `peak` where `peak` is a list with
-#' elements `center`, `left`, `right` and `high`.
 #' @noRd
+#' @title Initialize Lorentz Curve Parameters
+#' @param spec
+#' List with elements: `x`, `y`, `peak` where `peak` is a list with elements
+#' `center`, `left`, `right` and `high`.
+#' @author
+#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
+#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
+#' MetaboDecon1D.
 init_lc <- function(spec, verbose = TRUE) {
 
     # Init values
@@ -909,6 +922,11 @@ init_lc <- function(spec, verbose = TRUE) {
     named(A, lambda, w, Z, D, P) # nolint: object_usage_linter
 }
 
+#' @noRd
+#' @author
+#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
+#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
+#' MetaboDecon1D.\cr
 refine_lc_v14 <- function(spec, Z) {
 
     # Init x and y values
@@ -1016,7 +1034,12 @@ refine_lc_v14 <- function(spec, Z) {
     named(A, lambda, w, Z, D, P) # nolint: object_usage_linter
 }
 
-# Taken from Appendix E of Koh et. al. 2009
+#' @noRd
+#' @author
+#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D
+#' based on Appendix E of Koh et. al. 2009.\cr
+#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
+#' MetaboDecon1D.
 calc_w <- function(wr, wc, wl, yr, yc, yl, wrc, wrl, wcl, yrc, yrl, ycl, xr) {
     t1 <- wr^2 * yr * ycl
     t2 <- wl^2 * yl * yrc
@@ -1029,14 +1052,24 @@ calc_w <- function(wr, wc, wl, yr, yc, yl, wrc, wrl, wcl, yrc, yrl, ycl, xr) {
     w
 }
 
-# Taken from Appendix E of Koh et. al. 2009
+#' @noRd
+#' @author
+#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D
+#' based on Appendix E of Koh et. al. 2009.\cr
+#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
+#' MetaboDecon1D.
 calc_lambda <- function(wr, wc, wl, yr, yc, yl, wrc, wrl, wcl, yrc, yrl, ycl, xr) {
     lambda <- -((sqrt(abs((-wc^4 * yc^2 * yrl^2 - wr^4 * yr^2 * ycl^2 - wl^4 * yrc^2 * yl^2 + 4 * wc * wl^3 * yc * ((-yr) + yc) * yl^2 + 4 * wc^3 * wl * yc^2 * yl * ((-yr) + yl) + 4 * wr^3 * yr^2 * ycl * (wc * yc - wl * yl) + 4 * wr * yr * (wc^3 * yc^2 * yrl - wc * wl^2 * yc * (yr + yc - 2 * yl) * yl + wl^3 * yrc * yl^2 - wc^2 * wl * yc * yl * (yr - 2 * yc + yl)) + 2 * wc^2 * wl^2 * yc * yl * (yr^2 - 3 * yc * yl + yr * (yc + yl)) + 2 * wr^2 * yr * (-2 * wc * wl * yc * yl * (-2 * yr + yc + yl) + wl^2 * yl * (yr * (yc - 3 * yl) + yc * (yc + yl)) + wc^2 * yc * (yr * (-3 * yc + yl) + yl * (yc + yl)))))))) / (2 * sqrt((wr * yr * ycl + wl * yrc * yl + wc * yc * ((-yr) + yl))^2))
     lambda[is.nan(lambda)] <- 0
     lambda
 }
 
-# Taken from Appendix E of Koh et. al. 2009
+#' @noRd
+#' @author
+#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D
+#' based on Appendix E of Koh et. al. 2009.\cr
+#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
+#' MetaboDecon1D.
 calc_A <- function(wr, wc, wl, yr, yc, yl, wrc, wrl, wcl, yrc, yrl, ycl, lambda, w, xr) {
     A <- (-4 * wrc * wrl * wcl * yr * yc * yl * (wr * yr * ycl + wl * yl * yrc + wc * yc * (-yrl)) * lambda) / (wrc^4 * yr^2 * yc^2 - 2 * wrc^2 * yr * yc * (wrl^2 * yr + wcl^2 * yc) * yl + (wrl^2 * yr - wcl^2 * yc)^2 * yl^2)
     A[is.nan(A)] <- 0
@@ -1060,6 +1093,19 @@ calc_A <- function(wr, wc, wl, yr, yc, yl, wrc, wrl, wcl, yrc, yrl, ycl, lambda,
 #'
 #' @return Numeric vector of y values.
 #'
+#' @details
+#' 1. The argument names as based on the names used by Koh et al. (2009).
+#' 2. In Wikipedia, Lorentz Curves are described in article
+#' [Cauchy_distribution]. The formula below sentence "In physics, a
+#' three-parameter Lorentzian function is often used" (section
+#' [Properties_of_PDF]) is equivalent to the one used by Koh. et al (2009),
+#' although the variables have different names.
+#'
+#' [Cauchy_distribution]: https://en.wikipedia.org/wiki/Cauchy_distribution
+#' [Properties_of_PDF]: https://en.wikipedia.org/wiki/Cauchy_distribution#Properties_of_PDF
+#'
+#' @author 2024-2025 Tobias Schmidt: initial version.
+#'
 #' @examples
 #' x <- 1:10
 #' x0 <- 5
@@ -1069,10 +1115,6 @@ calc_A <- function(wr, wc, wl, yr, yc, yl, wrc, wrl, wcl, yrc, yrl, ycl, lambda,
 #' y2 <- A * pi * dcauchy(x, location = x0, scale = lambda)
 #' stopifnot(all.equal(y1, y2))
 lorentz <- function(x, x0, A, lambda, lcpar = NULL) {
-    # For details see [Wikipedia > Cauchy_distribution > Properties_of_PDF]
-    # (https://en.wikipedia.org/wiki/Cauchy_distribution#Properties_of_PDF)
-    # in particular the formula below sentence "In physics, a three-parameter
-    # Lorentzian function is often used".
     if (!is.null(lcpar)) {
         nams <- names(lcpar)
         if ("A" %in% nams) A <- lcpar[["A"]]
@@ -1084,6 +1126,8 @@ lorentz <- function(x, x0, A, lambda, lcpar = NULL) {
     A * (lambda / (lambda^2 + (x - x0)^2))
 }
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 lorentz_sup <- function(x, x0, A, lambda, lcpar = NULL) {
     if (!is.null(lcpar)) {
         nams <- names(lcpar)
@@ -1102,6 +1146,7 @@ lorentz_sup <- function(x, x0, A, lambda, lcpar = NULL) {
 #' @title Calculate Lorentz Curve Integrals
 #' @description
 #' Calculates the integral of a Lorentz curve for a vector of input values `x`.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 lorentz_int <- function(x0, A, lambda, lcpar = NULL, limits = NULL) {
     if (is.list(lcpar)) {
         nams <- names(lcpar)
@@ -1120,6 +1165,11 @@ lorentz_int <- function(x0, A, lambda, lcpar = NULL, limits = NULL) {
     }
 }
 
+#' @noRd
+#' @author
+#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
+#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
+#' MetaboDecon1D.
 mse <- function(y, yhat, normed = FALSE) {
     if (normed) {
         mean(((y / sum(y)) - (yhat / sum(yhat)))^2)
@@ -1144,6 +1194,7 @@ mse <- function(y, yhat, normed = FALSE) {
 #' the output of `generate_lorentz_curves()` as input and creates the (now
 #' deprecated) "SPEC_NAME parameter.txt" and "SPEC_NAME
 #' approximated_spectrum.txt" in folder `outdir`.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 write_parameters_txt <- function(decon, outdir, verbose = FALSE) {
     if (is_decon_list(decon)) {
         for (obj in decon) write_parameters_txt(obj, outdir)
@@ -1164,6 +1215,8 @@ write_parameters_txt <- function(decon, outdir, verbose = FALSE) {
     utils::write.table(supdf, supfile, sep = ",", col.names = FALSE, append = FALSE)
 }
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 store_as_rds <- function(decons, make_rds, data_path) {
     if (is.character(make_rds)) {
         cat("Saving results as", make_rds, "\n")

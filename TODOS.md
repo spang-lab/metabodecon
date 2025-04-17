@@ -1,50 +1,44 @@
-# DONE WITH 1.4.2 (PR 14)
-
-## [x] Remove Remotes field from DESCRIPTION
-
-When you submit your package to CRAN, all of its dependencies must also be available on CRAN. For this reason, release() will warn you if you try to release a package with a Remotes field.
-
-## [x] Check missing pkgs in align
-
-Installation via `install.packages("metabodecon")` does not install `MassSpecWavelet` and `impute`. So if a user doesn't copy paste the installation instructions but installed via `install.packages("metabodecon")`, these dependencies will be missing. In such scenarios, we should print an error message with the required install commands and abort.
-
-## [x] Change verbose defaults
-
-Change verbose argument for deconvolute and align to TRUE.
-
-## [x] Shrink test-install workflow
-
-Currently the test-install workflow is split over three jobs, with huge amounts of code copy pasted. Extract the R commands into a single `test-install.R` R script, that can be called as `Rscript -e test-install.R <method>` and,
-
-1. Deletes all previously available dependencies incl. Rtools on Windows (i.e. it must be removed from the PATH)
-2. Does the installation according to the `method` commandline argument, e.g. "CRAN-Modern", "CRAN-Old" or "Github".
-
-The corresponding commands for "CRAN-Modern", "CRAN-Old" or "Github" can be take from the current version `test-install.yaml`.
-
-After ou created `test-install.R`, update the workflow to use it.
-
 # PLANNED
 
-## Improve questions
+## Emit deprecatian warnings
 
-1. Question `Signal free region correctly selected? (y/n)` should be replaced by `Borders to Signal Free Regions (green) correctly selected? (y/n)`
-2. Question `Water artefact fully inside red vertical lines? (y/n)` should be replaced by `Water artefact fully inside blue area? (y/n)`
+1. Exported functions that will be removed from the package, should emit a deprecation warning when called.
+2. Exported functions that will be made private, should check the environment of the calling function:
+   - If the environment of the caller is the package namespace, nothing should be done.
+   - Else, a deprecation warning should be emitted.
 
-## Update expno/procno defaults
+For details see https://lifecycle.r-lib.org/articles/communicate.html
 
-Expno and procno should use NULL as default.
-If NULL, the function should look for the first available expno/procno folder.
-If there is only one, it should use that one.
-If there are multiple, it should use expno=10 and procno=10.
-If there are multiple but no 10, it should throw an error.
+This should be done with a new minor release, e.g. `1.5.0`.
 
-## Add function get_si_mat
+## Warn user if peaks in SFR
 
-Add a function `get_si_mat()` for extracting a matrix of signal intensities (SI) from a metabodecon object. The type of returned SI should be `raw` for `spectra`, `sup` for `decons` and `al` for `aligns`.
+If delta is small (e.g. 1), peaks in SFR might not be filtered out. Implement this and maybe warn user about it (this is a strong indication that delta was chosen too small).
 
-## Add authors to functions
+Note 23.1.2025: in Rust implementation peaks found in IGNORE-REGION are already filtered out automatically before parameter approximation AND points in IGNORE-REGIONS do not contribute to MSE and/or PRARP.
 
-## Add lifecycle badges to functions
+## Use R-Universe for mdrb_install
+
+Currently, `mdrb_install()` always installs from source from Github. Installing from R-Univserse should be much faster, as we can install pre-compiled binary packages or at least pre-processed source bundles.
+
+If the user chooses type = "binary", we can also skip the checks for `cargo` and `rustc`.
+
+## Refactor integral calculations
+
+We should use `A * pi` everywhere unless `bwc = 0`.
+
+## Refactor mse calculations
+
+We should use `mse()` everywhere.
+
+## Refactor parameter approximation
+
+Implement [Max' parameter approximation algorithms](https://gitlab.spang-lab.de/bachelorthesis/ws2425_msombke_metabodecon-v2/-/blob/main/new_method_docs/main.R
+) in `calc_A`, `calc_lambda` and `calc_w`.
+
+Probably also solves
+[Remove unneeded checks](#remove-unneeded-checks) and
+[Check negative A values](#check-negative-a-values).
 
 ## Improve Sap Dataset
 
@@ -59,15 +53,6 @@ Sap spectra should be simulated as follows:
 7. Simulate data as usual using `simulate_spectra`
 8. Make sure, all of the above information is stored inside `$meta$simpar`
 
-## Improve Get-Started vignette
-
-Add nicer plots.
-Improve alignment part.
-
-## Write Deconvolution-Details Vignette
-
-## Write Alignment Details Vignette
-
 ## Analyze runtime
 
 Do a benchmark about which parts take up the most time in `deconvolute` and `align` and create issues for improving them. Some of the slow parts should already be mentioned in issues. If this is the case, increase the priority of these issue.
@@ -76,13 +61,11 @@ Do a benchmark about which parts take up the most time in `deconvolute` and `ali
 
 Reformat the vignettes as paper and send to Wolfram for proofreading.
 
-## Warn user if peaks in SFR
-
-If delta is small (e.g. 1), peaks in SFR might not be filtered out. Either implement this and warn user about it (this is a strong indication that delta was chosen too small).
-
-Note 23.1.2025: in Rust implementation peaks found in IGNORE-REGION are already filtered out automatically before parameter approximation AND points in IGNORE-REGIONS do not contribute to MSE and/or PRARP.
+# CONDITIONAL
 
 ## Improve mse_normed calculation
+
+Do after [Analyze Runtime](#analyze-runtime).
 
 In function `add_return_list`:
 
@@ -92,35 +75,34 @@ In function `add_return_list`:
 
 2. Return `mse_normed_raw` in addition to `mse_normed` (which is calculated based on `y <- spec$y_smooth`). `mse_normed_raw` should be based on `y <- spec$y_raw`.
 
+## Improve Get-Started vignette
+
+Do after [Add function get_si_mat](#add-function-get_si_mat).
+
+In alignment part: add a code snippet showcasing usage of `get_si_mat()` .
+In deconvolution part: replace `generate_lorentz_curves()` with `deconvolute()`.
+
 ## Check negative A values
+
+Do after [Refactor parameter approximation](#refactor-parameter-approximation).
 
 Check why there are negative values for the estimated lorentz curve area A.
 
-## Improve SFR and WS defaults
+## Remove unneeded checks
 
-Replace the default values `wshw = 0.1527692` and `sfr = c(11.44494, -1.8828)` in `generate_lorentz_curves()` with `wshw = "auto"` and `sfr = "auto"`, which should be calculated as follows:
+Do after [Refactor parameter approximation](#refactor-parameter-approximation).
 
-If `c(11.44494, -1.8828)` is part of the ppm range, use these values, otherwise calculate them as
+Check special handling for cases with A[i] == 0 and lambda[i] == 0 in parameter approximaton. Max analyzed it and concluded that checks are not necessary. My thought: copy paste artifacts from the the w[i] == 0 check (which is wrong).
 
-1. `wshw = 0.01 * width(cs)` (where `0.01` is `round(0.007629452, 2)` and `0.007629452` equals `0.1527692 / 20.0236144338963` which is the width of the default WSHW dividided by the width of the `urine_1` spectrum. I.e., the new calculation would give approximately the same proportion of the spectrum width as the default value.)
-2. `sfr = max(cs) - c(1/6, 5/6) * width(cs)`
+## Write Deconvolution-Details Vignette
 
-## Refactor integral calculations
+Do after [Write paper](#write-paper).
 
-We should use `A * pi` everywhere unless `bwc = 0`.
+## Write Alignment Details Vignette
 
-## Calculate mandatory SITs in as_decon2
+Do after [Write paper](#write-paper).
 
-Elements `wsrm` and `nvrm` are mandatory in `decon2` and should therefor be calculated during `as_decon2`. If additional data is needed to do this from `decon0` and/or `decon1` objects, add an argument that allows users to provide this information.
-
-## Refactor mse calculations
-
-We should use `mse()` everywhere.
-
-## Refactor parameter approximation
-
-Implement [Max' parameter approximation algorithms](https://gitlab.spang-lab.de/bachelorthesis/ws2425_msombke_metabodecon-v2/-/blob/main/new_method_docs/main.R
-) in `calc_A`, `calc_lambda` and `calc_w`.
+# BACKLOG
 
 ## Test deconvolute with huge nfit
 
@@ -129,16 +111,6 @@ Implement [Max' parameter approximation algorithms](https://gitlab.spang-lab.de/
 It's unclear why <https://github.com/spang-lab/metabodecon/blob/v1.2.0/R/21_decon_helpers.R#L315> checks for w[i] == 0.
 
 Assumption: it's a bug and leads to this peak being missed. If this is the case, remove the check from the code as well.
-
-## Remove unneeded checks
-
-Check special handling for cases with A[i] == 0 and lambda[i] == 0 in parameter approximaton. Max analyzed it and concluded that checks are not necessary. My thought: copy paste artifacts from the the w[i] == 0 check (which is wrong).
-
-# BACKLOG
-
-## Show prarp in plot_spectrum
-
-## Show peak scores in plot_spectrum
 
 ## Check spectrum type
 
@@ -181,110 +153,31 @@ Links:
 
 Make sure that all suitable articles are included as vignettes and built from scratch so they don't take up too much space.
 
-# DONE
+## Improve SFR and WS defaults
 
-## DONE WITH PR 12 (v1.4.0)
+Replace the default values `wshw = 0.1527692` and `sfr = c(11.44494, -1.8828)` in `generate_lorentz_curves()` with `wshw = "auto"` and `sfr = "auto"`, which should be calculated as follows:
 
-### Test install on clean OS
+If `c(11.44494, -1.8828)` is part of the ppm range, use these values, otherwise calculate them as
 
-Add a workflow for testing installation on a clean Windows/Linux/Mac OS with R pre-installed, but without R-tools and any packages.
+1. `wshw = 0.01 * width(cs)` (where `0.01` is `round(0.007629452, 2)` and `0.007629452` equals `0.1527692 / 20.0236144338963` which is the width of the default WSHW dividided by the width of the `urine_1` spectrum. I.e., the new calculation would give approximately the same proportion of the spectrum width as the default value.)
+2. `sfr = max(cs) - c(1/6, 5/6) * width(cs)`
 
-*Done: Mar 10. Branch: mdrb. PR: https://github.com/spang-lab/metabodecon/pull/12.*
+## Update expno/procno defaults
 
-### Add Rust Backend Installer
+Expno and procno should use NULL as default.
+If NULL, the function should look for the first available expno/procno folder.
+If there is only one, it should use that one.
+If there are multiple, it should use expno=10 and procno=10.
+If there are multiple but no 10, it should throw an error.
 
-The Rust backend should only be built for R versions >= 4.2.0 and if RTools is available. If any of these conditions is not fulfilled, compilation should be skipped.
+## Calculate mandatory SITs in as_decon2
 
-If skipping compilation is not possible, because we load the dynamic lib in NAMESPACE, it should be generated in a way that does not use any features required by R 4.2.0 or greater. If we choose backend == "rust", we need to check whether the required functions are available.
+Elements `wsrm` and `nvrm` are mandatory in `decon2` and should therefor be calculated during `as_decon2`. If additional data is needed to do this from `decon0` and/or `decon1` objects, add an argument that allows users to provide this information.
 
-Update 10.3.2025: Instead of making compilation optional we should provide a seperate R package [mdrb](https://github.com/spang-lab/mdrb) (Metabodecon Rust Backend) which we can install upon request. I.e. we need to implement:
+## Plot wsr and sfr in plot_spectrum
 
-1. A function `check_mdrb()` that checks whether mdrb is already installed.
-2. A function `check_mdrb_deps()` that checks whether mdrb can be installed. Required dependencies are
-   - R version 4.2 or higher
-   - Build tools for R (RTools on Windows, build-essentials on Linux, XCode on Mac)
-   - Cargo and rustc version 1.78 or higher
-3. A function `install_mdrb()`, that
-   1. Does nothing if mdrb is already installed
-   2. Prints installation instructions for mdrb dependencies if `check_mdrb_deps()` lists missing dependencies
-   3. Calls `pak::pkg_install("spang-lab/mdrb")` if all requirements are satisfied
+WSR and SFR should be plotted by plot_spectrum. As soon as this works, we can create a new issue for replacing the `plot_sfr` and `plot_wsr` functions with calls to `plot_spectrum`.
 
-*Done: Mar 14. Branch: mdrb. PR: https://github.com/spang-lab/metabodecon/pull/12.*
+## Show prarp in plot_spectrum
 
-### Rename deconvolute_ispec
-
-This is a preparation for issue *Add Rust Backend Argument*. Rename `deconvolute_ispec()` to `deconvolute_spectrum()` and `deconvolute_ispecs()` to `deconvolute_spectra()`.
-
-*Done: Mar 18-22. Branch: mdrb. PR: https://github.com/spang-lab/metabodecon/pull/12.*
-
-### Add Rust Backend Argument
-
-Add an experimental argument `use_rust` in `deconvolute()` causing the following behaviour:
-
-| use_rust | check_mdrb | call                        |
-| -------- | ---------- | --------------------------- |
-| FALSE    | anything   | deconvolute_spectrum_r()    |
-| NULL     | FALSE      | deconvolute_spectrum_r()    |
-| NULL     | TRUE       | deconvolute_spectrum_rust() |
-| TRUE     | TRUE       | deconvolute_spectrum_rust() |
-| TRUE     | FALSE      | stop(MESSAGE)               |
-
-With MESSAGE being something like "Rust backend not installed yet. Please call install_mdrb() first."
-
-Sub-Tasks
-
-- [x] Add `use_rust` argument to `deconvolute`, `deconvolute_spectra()` and `deconvolute_spectrum()` and assert that it is passed on correctly
-- [x] Implement usage of rust in `deconvolute_spectrum()`
-- [x] Write testcases for `deconvolute_spectrum(use_rust=TRUE, rtyp="idecon')`
-- [x] Write testcases for `deconvolute_spectrum(use_rust=TRUE, rtyp="decon2')`
-- [x] Write testcases for `deconvolute_spectra(use_rust=TRUE, rtyp="idecon')`
-- [x] Write testcases for `deconvolute_spectra(use_rust=TRUE, rtyp="decon2')`
-- [x] Write testcases for `deconvolute(use_rust=TRUE)` with mdrb installed
-- [x] Write testcases for `deconvolute(use_rust=TRUE)` with mdrb missing
-
-*Done: Mar 18-25. Branch: mdrb. PR: https://github.com/spang-lab/metabodecon/pull/12.*
-
-## DONE WITH PR 13 (v1.4.1)
-
-### Check mse calculation in Rust
-
-`x$mdrb_decon$mse()` deviates from `mse(si, sup, norm=FALSE)` in `as_decon2.rdecon()`, which is why we have to calculate the MSE ourselves in R. This should be fixed in mdrb.
-
-MSE calculation in R is implemented in `decon.R` as:
-
-```R
-mse <- function(y, yhat, normed = FALSE) {
-    if (normed) {
-        mean(((y / sum(y)) - (yhat / sum(yhat)))^2)
-    } else {
-        mean((y - yhat)^2)
-    }
-}
-```
-
-*Update 3. April 2025: clarified with Maximilian Sombke. MSE calculation is done using only points in the signal region. This is the cause for the discrepancy. We should add a test for this.*
-
-### Show SFR and WSHW as rects
-
-`plot_ws()` and `plot_sfr()` should show the SFR and WSHW as rectangles instead of border lines. This is more intuitive and allows to see the width of the SFR and WSHW.
-
-*Done: Tue Apr 1 2025. Branch: feat14x. PR: #13.*
-
-### Add Getting Started to Reference
-
-Add a function `Getting_Started()` or `get_started()` to the package that contains a link to the online documentation. This should be the first function in the reference manual (if possible).
-
-*Done: Mon Mar 31 2025. Branch: feat14x. PR: #13.*
-
-### Fix unsafe calls
-
-With the 1.4.0 Release we get the following R CMD check notes:
-
-Found the following possibly unsafe calls:
-- In `test.R`: `unlockBinding("assert", ns)`
-- In `util.R:699:is_list_of_nums`: no visible global function definition for `returns`
-- In `test.R:283:not_cran`: no visible binding for global variable `x`
-
-https://github.com/spang-lab/metabodecon/actions/runs/14069618152/job/39400480535
-
-*Done: Fri Mar 28 2025. Branch: feat14x. PR: #13.*
+## Show peak scores in plot_spectrum

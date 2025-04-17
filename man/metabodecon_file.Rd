@@ -29,3 +29,6 @@ metabodecon_file("urine")
 # Non-existing paths (i.e. a character vector of length zero gets returned)
 metabodecon_file("asdfasdf")
 }
+\author{
+2024-2025 Tobias Schmidt: initial version.
+}

@@ -67,3 +67,6 @@ fq_width <- 12005
 spectrum <- make_spectrum(si, cs_max, cs_width, fq_ref, fq_width)
 spectrum2 <- make_spectrum(si, cs_max, cs_width, fq_ref, fq_width = 12010, force = FALSE)
 }
+\author{
+2024-2025 Tobias Schmidt: initial version.
+}

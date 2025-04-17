@@ -1,4 +1,4 @@
-# DONE (2024)
+# DONE 2024
 
 ## CHECK-1: Use of DTYPP in load_spectrum
 
@@ -719,3 +719,169 @@ Document the whole package in vignettes, including chapters about:
 - [x] Get_Started.Rmd
 
 *Done on 2025/01/14 in branch v1.2.0 with commit 14e0326..71fdc2c*
+
+# DONE 2025-03-26 (PR 12)
+
+## Test install on clean OS
+
+Add a workflow for testing installation on a clean Windows/Linux/Mac OS with R pre-installed, but without R-tools and any packages.
+
+*Done: Mar 10. Branch: mdrb. PR: https://github.com/spang-lab/metabodecon/pull/12.*
+
+## Add Rust Backend Installer
+
+The Rust backend should only be built for R versions >= 4.2.0 and if RTools is available. If any of these conditions is not fulfilled, compilation should be skipped.
+
+If skipping compilation is not possible, because we load the dynamic lib in NAMESPACE, it should be generated in a way that does not use any features required by R 4.2.0 or greater. If we choose backend == "rust", we need to check whether the required functions are available.
+
+Update 10.3.2025: Instead of making compilation optional we should provide a seperate R package [mdrb](https://github.com/spang-lab/mdrb) (Metabodecon Rust Backend) which we can install upon request. I.e. we need to implement:
+
+1. A function `check_mdrb()` that checks whether mdrb is already installed.
+2. A function `check_mdrb_deps()` that checks whether mdrb can be installed. Required dependencies are
+   - R version 4.2 or higher
+   - Build tools for R (RTools on Windows, build-essentials on Linux, XCode on Mac)
+   - Cargo and rustc version 1.78 or higher
+3. A function `install_mdrb()`, that
+   1. Does nothing if mdrb is already installed
+   2. Prints installation instructions for mdrb dependencies if `check_mdrb_deps()` lists missing dependencies
+   3. Calls `pak::pkg_install("spang-lab/mdrb")` if all requirements are satisfied
+
+*Done: Mar 14. Branch: mdrb. PR: https://github.com/spang-lab/metabodecon/pull/12.*
+
+## Rename deconvolute_ispec
+
+This is a preparation for issue *Add Rust Backend Argument*. Rename `deconvolute_ispec()` to `deconvolute_spectrum()` and `deconvolute_ispecs()` to `deconvolute_spectra()`.
+
+*Done: Mar 18-22. Branch: mdrb. PR: https://github.com/spang-lab/metabodecon/pull/12.*
+
+## Add Rust Backend Argument
+
+Add an experimental argument `use_rust` in `deconvolute()` causing the following behaviour:
+
+| use_rust | check_mdrb | call                        |
+| -------- | ---------- | --------------------------- |
+| FALSE    | anything   | deconvolute_spectrum_r()    |
+| NULL     | FALSE      | deconvolute_spectrum_r()    |
+| NULL     | TRUE       | deconvolute_spectrum_rust() |
+| TRUE     | TRUE       | deconvolute_spectrum_rust() |
+| TRUE     | FALSE      | stop(MESSAGE)               |
+
+With MESSAGE being something like "Rust backend not installed yet. Please call install_mdrb() first."
+
+Sub-Tasks
+
+- [x] Add `use_rust` argument to `deconvolute`, `deconvolute_spectra()` and `deconvolute_spectrum()` and assert that it is passed on correctly
+- [x] Implement usage of rust in `deconvolute_spectrum()`
+- [x] Write testcases for `deconvolute_spectrum(use_rust=TRUE, rtyp="idecon')`
+- [x] Write testcases for `deconvolute_spectrum(use_rust=TRUE, rtyp="decon2')`
+- [x] Write testcases for `deconvolute_spectra(use_rust=TRUE, rtyp="idecon')`
+- [x] Write testcases for `deconvolute_spectra(use_rust=TRUE, rtyp="decon2')`
+- [x] Write testcases for `deconvolute(use_rust=TRUE)` with mdrb installed
+- [x] Write testcases for `deconvolute(use_rust=TRUE)` with mdrb missing
+
+*Done: Mar 18-25. Branch: mdrb. PR: https://github.com/spang-lab/metabodecon/pull/12.*
+
+# DONE 2025-04-03 (PR 13)
+
+## Check mse calculation in Rust
+
+`x$mdrb_decon$mse()` deviates from `mse(si, sup, norm=FALSE)` in `as_decon2.rdecon()`, which is why we have to calculate the MSE ourselves in R. This should be fixed in mdrb.
+
+MSE calculation in R is implemented in `decon.R` as:
+
+```R
+mse <- function(y, yhat, normed = FALSE) {
+    if (normed) {
+        mean(((y / sum(y)) - (yhat / sum(yhat)))^2)
+    } else {
+        mean((y - yhat)^2)
+    }
+}
+```
+
+*Update 3. April 2025: clarified with Maximilian Sombke. MSE calculation is done using only points in the signal region. This is the cause for the discrepancy. We should add a test for this.*
+
+## Show SFR and WSHW as rects
+
+`plot_ws()` and `plot_sfr()` should show the SFR and WSHW as rectangles instead of border lines. This is more intuitive and allows to see the width of the SFR and WSHW.
+
+*Done: Tue Apr 1 2025. Branch: feat14x. PR: #13.*
+
+## Add Getting Started to Reference
+
+Add a function `Getting_Started()` or `get_started()` to the package that contains a link to the online documentation. This should be the first function in the reference manual (if possible).
+
+*Done: Mon Mar 31 2025. Branch: feat14x. PR: #13.*
+
+## Fix unsafe calls
+
+With the 1.4.0 Release we get the following R CMD check notes:
+
+Found the following possibly unsafe calls:
+- In `test.R`: `unlockBinding("assert", ns)`
+- In `util.R:699:is_list_of_nums`: no visible global function definition for `returns`
+- In `test.R:283:not_cran`: no visible binding for global variable `x`
+
+https://github.com/spang-lab/metabodecon/actions/runs/14069618152/job/39400480535
+
+*Done: Fri Mar 28 2025. Branch: feat14x. PR: #13.*
+
+# DONE 2025-04-13 (PR 14)
+
+## Remove Remotes field from DESCRIPTION
+
+When you submit your package to CRAN, all of its dependencies must also be available on CRAN. For this reason, release() will warn you if you try to release a package with a Remotes field.
+
+## Check missing pkgs in align
+
+Installation via `install.packages("metabodecon")` does not install `MassSpecWavelet` and `impute`. So if a user doesn't copy paste the installation instructions but installed via `install.packages("metabodecon")`, these dependencies will be missing. In such scenarios, we should print an error message with the required install commands and abort.
+
+## Change verbose defaults
+
+Change verbose argument for deconvolute and align to TRUE.
+
+## Shrink test-install workflow
+
+Currently the test-install workflow is split over three jobs, with huge amounts of code copy pasted. Extract the R commands into a single `test-install.R` R script, that can be called as `Rscript -e test-install.R <method>` and,
+
+1. Deletes all previously available dependencies incl. Rtools on Windows (i.e. it must be removed from the PATH)
+2. Does the installation according to the `method` commandline argument, e.g. "CRAN-Modern", "CRAN-Old" or "Github".
+
+The corresponding commands for "CRAN-Modern", "CRAN-Old" or "Github" can be take from the current version `test-install.yaml`.
+
+After ou created `test-install.R`, update the workflow to use it.
+
+# DONE 2025-04-17 (PR 15)
+
+## Improve questions
+
+1. Question `Signal free region correctly selected? (y/n)` should be replaced by `Borders to Signal Free Regions (green) correctly selected? (y/n)`
+2. Question `Water artefact fully inside red vertical lines? (y/n)` should be replaced by `Water artefact fully inside blue area? (y/n)`
+
+## Add function get_si_mat
+
+Add a function `get_si_mat()` for extracting a matrix of signal intensities (SI) from a metabodecon object. The type of returned SI should be `raw` for `spectra`, `sup` for `decons` and `al` for `aligns`.
+
+## Add authors to functions
+
+Add author information all functions (exported and unexported).
+
+## Add lifecycle badges to functions
+
+Add lifecycle badges to all exported, non-stable functions. I.e., add one of the following code blocks at the end of the function description:
+
+```R
+#' Superseded by [FUNCTION()] since metabodecon version X.X.X.
+#' Will be replaced with metabodecon version 2.0.0.
+#'
+#' `r lifecycle::badge("deprecated")`
+#'
+```
+
+or
+
+```R
+#'
+#' `r lifecycle::badge("experimental")`
+#'
+```

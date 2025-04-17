@@ -122,3 +122,6 @@ str(x3)
 x4 <- evalwith(Sys.sleep(0.02))
 str(x4)
 }
+\author{
+2024-2025 Tobias Schmidt: initial version.
+}

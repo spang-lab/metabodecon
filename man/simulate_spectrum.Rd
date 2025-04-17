@@ -49,6 +49,7 @@ A \code{spectrum} object as described in \href{https://spang-lab.github.io/metab
 }
 \description{
 Simulates a 1D NMR spectrum based on the provided parameters.
+
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 }
 \examples{
@@ -59,4 +60,7 @@ simC <- simulate_spectrum("simC", npk = 20)
 plot_spectrum(simC)
 if (!identical(simA, simA_copy)) stop()
 if ( identical(simA, simB     )) stop()
+}
+\author{
+2024-2025 Tobias Schmidt: initial version.
 }

@@ -17,7 +17,14 @@ A vector containing the lowest and highest ppm value over all peaks of the
 provided deconvoluted spectra.
 }
 \description{
+Helper function of \code{align()}. Should not be called directly by the user.
+
 Returns the ppm range across all peaks of the provided deconvoluted spectra.
+
+Direct usage of this function has been deprecated with metabodecon version
+1.4.3 and will be removed with metabodecon version 2.0.0.
+
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
 }
 \examples{
 spectrum_data <- generate_lorentz_curves(
@@ -32,6 +39,6 @@ ppm_rng <- get_ppm_range(spectrum_data)
 print(ppm_rng)
 }
 \author{
-Wolfram Gronwald, 2023: initial version.
-Tobias Schmidt, 2024: .
+2021-2024 Wolfram Gronwald: initial version.\cr
+2024-2025 Tobias Schmidt: refactored initial version.
 }

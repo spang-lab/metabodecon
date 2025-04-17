@@ -56,6 +56,8 @@ SpNr
 }\if{html}{\out{</div>}}
 }
 \description{
+Helper function of \code{align()}. Should not be called directly by the user.
+
 Performs signal alignment across the individual spectra using the 'speaq'
 package (Beirnaert C, Meysman P, Vu TN, Hermans N, Apers S, Pieters L, et al.
 (2018) speaq 2.0: A complete workflow for high-throughput 1D NMRspectra
@@ -66,6 +68,11 @@ measurement conditions, e.g. pH variations, signal positions may vary
 slightly across spectra. As a consequence, prior to further analysis signals
 belonging to the same compound have to be aligned across spectra. This is the
 purpose of the 'speaq' package.
+
+Direct usage of this function has been deprecated with metabodecon version
+1.4.3 and will be removed with metabodecon version 2.0.0.
+
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
 }
 \examples{
 sim_subset <- metabodecon_file("bruker/sim_subset")
@@ -76,6 +83,6 @@ M <- speaq_align(feat, maxShift, spectrum_data, show = TRUE)
 str(M)
 }
 \author{
-Initial version from Wolfram Gronwald.
-Refactored by Tobias Schmidt in 2024.
+2021-2024 Wolfram Gronwald: initial version.\cr
+2024-2025 Tobias Schmidt: refactored initial version.
 }

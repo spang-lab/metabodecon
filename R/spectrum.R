@@ -41,6 +41,8 @@
 #' @return A `spectrum` object as described in [Metabodecon
 #' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
 #'
+#' @author 2024-2025 Tobias Schmidt: initial version.
+#'
 #' @examples
 #' relpath <- "example_datasets/bruker/urine"
 #' urine <- system.file(relpath, package = "metabodecon")
@@ -167,6 +169,8 @@ read_spectra <- function(data_path = pkg_file("example_datasets/bruker/urine"),
 #' @return A `spectrum` object as described in [Metabodecon
 #' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
 #'
+#' @author 2024-2025 Tobias Schmidt: initial version.
+#'
 #' @examples
 #' si <- c(1, 1, 3, 7, 8, 3, 8, 5, 2, 1)
 #' cs_max <- 14.8
@@ -194,7 +198,7 @@ make_spectrum <- function(si,
     if (!is.null(fq_width) && !is_equal(fq_width_calc, fq_width)) {
         if (force) {
             msg <- "Calculated spectrum width in Hz (%s) does not match the provided value (%s). Please read in the data manually or set `force = TRUE` to ignore this error. Please note that by doing so, all downstream calculations involving frequencies might be wrong, so be sure to double check the results."
-            stopf(msg, round(fq_width_calc, 5), round(fq_width, 5))
+            stop(sprintf(msg, round(fq_width_calc, 5), round(fq_width, 5)))
         } else if (!silent) {
             msg <- "Calculated spectrum width in Hz (%s) does not match the provided value (%s). Continuing anyways, because `force` equals `TRUE`. Please note that all downstream calculations using frequencies might be wrong, so be sure to double check the results."
             logf(msg, round(fq_width_calc, 5), round(fq_width, 5))
@@ -210,6 +214,7 @@ make_spectrum <- function(si,
 #'
 #' @description
 #' Simulates a 1D NMR spectrum based on the provided parameters.
+#'
 #' `r lifecycle::badge("experimental")`
 #'
 #' @param name The name of the spectrum.
@@ -227,6 +232,8 @@ make_spectrum <- function(si,
 #'
 #' @return A `spectrum` object as described in [Metabodecon
 #' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
+#'
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' simA <- simulate_spectrum("simA")
@@ -266,6 +273,7 @@ simulate_spectrum <- function(name = "sim_00",
 #' @noRd
 #' @title Read single Bruker TopSpin 3 Spectrum
 #' @inheritParams read_spectrum
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #' @examples
 #' spldir <- pkg_file("example_datasets/bruker/urine/urine_1")
 #' x <- read_bruker(spldir)
@@ -302,6 +310,7 @@ read_bruker <- function(spldir,
 #' @noRd
 #' @title Read single JCAMPDX Spectrum
 #' @inheritParams read_spectrum
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #' @examples
 #' # ATTENTION: Takes 30s on the development machine
 #' xds_path <- download_example_datasets()
@@ -341,6 +350,7 @@ read_jcampdx <- function(path,
 
 #' @noRd
 #' @title Parse Metadata File
+#'
 #' @description
 #' Parses a metadata file like Bruker's `acqu[s]` or `proc[s]` files and return
 #' the metadata as a named list.
@@ -354,6 +364,8 @@ read_jcampdx <- function(path,
 #' @details
 #' For a detailed description of the format of burker parameter files, refer to
 #' 'Bruker_NMR_Data_Formats.pdf'.
+#'
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' path <- pkg_file("example_datasets/bruker/urine/urine_1/10/acqus")
@@ -397,6 +409,8 @@ parse_metadata <- function(path = NULL, lines = NULL) {
 #' @return
 #' The signals acquisition parameters read from the file as named list.
 #'
+#' @author 2024-2025 Tobias Schmidt: initial version.
+#'
 #' @examples
 #' blood1_dir <- pkg_file("example_datasets/bruker/urine/urine_1")
 #' acqus <- read_acqus(blood1_dir)
@@ -413,6 +427,7 @@ read_acqus <- function(spldir, expno = 10) {
 #' @title Read Bruker TopSpin Processing Parameters
 #' @inheritParams read_spectrum read_acqus
 #' @return The processing parameters read from the file as named list.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #' @examples
 #' blood1_dir <- pkg_file("example_datasets/bruker/urine/urine_1")
 #' procs <- read_procs_file(blood1_dir)
@@ -434,6 +449,7 @@ read_procs_file <- function(spldir, expno = 10, procno = 10) {
 #' list object holding the simulation parameters.
 #' @inheritParams read_spectrum read_acqus
 #' @return The simulation parameters read from the file as named list.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #' @examples
 #' sim_1_dir <- pkg_file("example_datasets/bruker/sim/sim_01")
 #' simpar <- read_simpar(blood1_dir)
@@ -446,6 +462,7 @@ read_simpar <- function(spldir, expno = 10, procno = 10) {
 #' @noRd
 #' @title Read signal intensities from Bruker TopSpin 1r file
 #' @inheritParams read_spectrum read_acqus
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #' @examples
 #' spldir <- pkg_file("example_datasets/bruker/urine/urine_1")
 #' oneR <- (spldir, 10, 10)
@@ -511,35 +528,30 @@ read_one_r <- function(spldir,
     raw <- readBin(con, what = type, n = n, size = nbytes, signed = TRUE, endian = endian)
     scaled <- if (type == "integer") raw * 2^ncproc else raw
     named(
-        # -~-~-~-~-~-~-~-~-~-~-~
         # Path related variables
-        # -~-~-~-~-~-~-~-~-~-~-~
-        spldir, # Path of dir holding NMR measurements of one sample
-        expno, # Experiment number for the file
-        procno, # Processing number for the file
-        path_1r, # Path of the 1r file
+        spldir,     # Path of dir holding NMR measurements of one sample
+        expno,      # Experiment number for the file
+        procno,     # Processing number for the file
+        path_1r,    # Path of the 1r file
         path_procs, # Path of the procs file
-        # -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
         # Processing parameters and derived value
-        # -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
-        procs, # Parsed content of `procs` file from `read_procs_file()`
-        byteordp, # Byte ordering of the data. 0/1 = little/big endian
-        dtypp, # Type of the data. 0/not0 = integer/double
-        endian, # Endianess of the data. Either "little" or "big"
-        nbytes, # Number of bytes used to store a single value. Either 4 or 8
-        ncproc, # Exponent of the data. Only relevant if `dtypp` is 0
-        type, # Type as string. Either "integer" or "double". Like `dtypp`
-        n, # Number of data points
-        # -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+        procs,      # Parsed content of `procs` file from `read_procs_file()`
+        byteordp,   # Byte ordering of the data. 0/1 = little/big endian
+        dtypp,      # Type of the data. 0/not0 = integer/double
+        endian,     # Endianess of the data. Either "little" or "big"
+        nbytes,     # How many bytes encode a single value? Either 4 or 8
+        ncproc,     # Exponent of the data. Only relevant if `dtypp` is 0
+        type,       # Type as string. Either "integer" or "double". Like `dtypp`
+        n,          # Number of data points
         # Raw and scaled signal intensity value
-        # -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
-        raw, # The raw signal intensity values
-        scaled # The scaled signal intensity values
+        raw,        # The raw signal intensity values
+        scaled      # The scaled signal intensity values
     )
 }
 
 #' @noRd
 #' @title Write spectrum to disk in Bruker format
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #' @examples
 #' x <- simulate_spectrum()
 #' path <- save_spectrum(x)
@@ -622,6 +634,7 @@ save_spectrum <- function(x,
 }
 
 #' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #' @title Save Spectra to Disk in Bruker Format
 save_spectra <- function(x, path, force = FALSE, verbose = TRUE) {
     assert(

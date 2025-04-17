@@ -21,7 +21,7 @@ reference:
   - plot_spectrum
   - plot_spectra
   - draw_spectrum
-  - generate_lorentz_curves # shares docs with `deconvolute()`
+  - deconvolute
 - title: Alignment
   desc: Functions to align multiple spectra.
   contents:
@@ -31,6 +31,7 @@ reference:
   - gen_feat_mat
   - get_ppm_range
   - speaq_align
+  - get_si_mat
 - title: Datasets
   desc: Functions to download and/or find example datasets.
   contents:
@@ -63,8 +64,10 @@ reference:
   desc: Deprecated functions. These functions should no longer be used. They will be retained for a short period of time to give users time to migrate to their replacement function, but will be removed in future releases of the package.
   contents:
   - get_data_dir # Superseded by `datadir()`
-  - MetaboDecon1D # supersed by `generate_lorentz_curves()`
+  - MetaboDecon1D # supersed by `deconvolute()`
   - calculate_lorentz_curves
   - plot_lorentz_curves_save_as_png
   - plot_spectrum_superposition_save_as_png
   - plot_triplets
+  - generate_lorentz_curves # supersed by `deconvolute()`
+

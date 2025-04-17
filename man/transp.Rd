@@ -21,3 +21,6 @@ Make a color transparent by adding an alpha channel.
 transp("violet", 0.08)
 transp("black", 0.5)
 }
+\author{
+2024-2025 Tobias Schmidt: initial version.
+}

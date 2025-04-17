@@ -137,8 +137,8 @@ The classes mentioned above represent individual objects, such as a single spect
 [decons2]: #decons2
 [decons3]: #decons3
 [Elements]: #elements
-[Elements v1.2+]: #elements-v1.2+
-[Elements v0.2+]: #elements-v0.2+
+[Elements v1.2+]: #elements-v1-2
+[Elements v0.2+]: #elements-v0-2
 [Metabodecon Workflow]: #metabodecon-workflow
 [Multiple Object Classes]: #multiple-object-classes
 [Single Object Classes]: #single-object-classes

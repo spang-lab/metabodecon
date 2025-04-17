@@ -16,9 +16,11 @@ of metabodecons temporary session directory \code{\link[=tmpdir]{tmpdir()}} plus
 normalization.
 }
 \examples{
-
 datadir_temp()
 }
 \seealso{
 \code{\link[=tmpdir]{tmpdir()}}, \code{\link[=datadir]{datadir()}}, \code{\link[=datadir_persistent]{datadir_persistent()}}
+}
+\author{
+2024-2025 Tobias Schmidt: initial version.
 }

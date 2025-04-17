@@ -29,3 +29,6 @@ yb <- c(15, 10, 5, 0, -5)
 convert_width(c(2, 4, 8), ya, yb)
 convert_pos(c(247, 249), ya, yb)
 }
+\author{
+2024-2025 Tobias Schmidt: initial version.
+}

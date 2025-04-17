@@ -32,3 +32,6 @@ cat(x, y, sep = "\n")
 \seealso{
 \code{\link[=download_example_datasets]{download_example_datasets()}}
 }
+\author{
+2024-2025 Tobias Schmidt: initial version.
+}

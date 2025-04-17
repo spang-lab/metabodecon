@@ -1,4 +1,4 @@
-# S3 Public #####
+# Print (Public) #####
 
 #' @name print_methods
 #' @rdname print_methods
@@ -20,6 +20,8 @@
 #'
 #' @return
 #' NULL, called for side effect of printing to the standard output device.
+#'
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' print(sim[[1]])
@@ -97,7 +99,7 @@ print.aligns <- function(x, ...) {
     invisible(sapply(x, print, name = TRUE))
 }
 
-# S3 Private #####
+# Print (Private) #####
 
 #' @export
 print.ispec <- function(x, name = FALSE, ...) {
@@ -139,7 +141,6 @@ print.ispecs <- function(x, ...) {
 }
 
 #' @export
-#' @rdname print_methods
 print.idecons <- function(x, ...) {
     catf("idecons object with %s idecon elements\n", length(x))
     nams <- get_names(x)
@@ -147,13 +148,16 @@ print.idecons <- function(x, ...) {
 }
 
 #' @export
-#' @rdname print_methods
 print.rdecons <- function(x, ...) {
     catf("rdecons object with %s rdecon elements\n", length(x))
     nams <- get_names(x)
     invisible(mapply(print, x, nams))
 }
 
+# Subset (Private) #####
+
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 `[.collection` <- function(x, i, ...) {
     result <- NextMethod("[")
     class(result) <- class(x)
@@ -212,6 +216,8 @@ print.rdecons <- function(x, ...) {
 #'
 #' @return
 #' TRUE if the object is an instance of the specified class, otherwise FALSE.
+#'
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' ss <- sim[1:2]
@@ -358,6 +364,8 @@ is_rdecons <- function(x) inherits(x, "rdecons")
 #' Number of workers for parallel processing.
 #'
 #' @return An object of the specified class.
+#'
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' dirpath <- metabodecon_file("sim_subset")
@@ -545,7 +553,7 @@ as_decon1 <- function(x,
         y$lambda_dp <- convert_width(x$lcr$lambda, x$sdp, x$dp)
         y$lambda_ppm <- convert_width(x$lcr$lambda, x$sdp, x$ppm)
     } else {
-        stopf("Converting %s to decon1 is not supported", class(x)[1])
+        stop(sprintf("Converting %s to decon1 is not supported", class(x)[1]))
     }
     y
 }
@@ -559,107 +567,6 @@ as_decon2 <- function(x, sf = c(1e3, 1e6), spectrum = NULL, sfr = NULL, wshw = N
     else if (is_idecon(x)) as_decon2.idecon(x)
     else if (is_rdecon(x)) as_decon2.rdecon(x)
     else stop(sprintf("Converting %s to decon2 is not supported", class(x)[1]))
-}
-
-as_decon2.decon1 <- function(x, ...) {
-    cs <- x$x_values_ppm
-    si <- x$y_values_raw
-    meta <- list(
-        name = x$filename,
-        fq = x$x_values_hz
-    )
-    args <- list(
-        nfit = NA, smopts = NA, delta = NA,
-        sfr = sfr_in_ppm_bwc(x$signal_free_region, x$x_values, x$x_values_ppm),
-        wshw = x$range_water_signal_ppm,
-        ask = NA, force = NA, verbose = NA, bwc = NA, nworkers = NA
-    )
-    sit <- data.frame(
-        wsrm = NA, nvrm = NA,
-        sm = x$y_values * 1e6,
-        sup = x$spectrum_superposition[1, ] * 1e6
-    )
-    peak <- data.frame(
-        left = x$index_peak_triplets_right, # decon[01] has left and right inverted
-        center = x$index_peak_triplets_middle,
-        right = x$index_peak_triplets_left
-    )
-    lcpar <- data.frame(
-        x0 = x$x_0_ppm,
-        A = -(x$A_ppm * 1e6),
-        lambda = -(x$lambda_ppm)
-    )
-    mse <- list(
-        raw = mse(si, sit$sup, normed = FALSE),
-        norm = x$mse_normed_raw,
-        sm = mse(sit$sm, sit$sup, normed = FALSE),
-        smnorm = x$mse_normed
-    )
-    obj <- named(cs, si, meta, args, sit, peak, lcpar, mse)
-    class(obj) <- "decon2"
-    obj
-}
-
-as_decon2.idecon <- function(x, ...) {
-    cs <- x$ppm
-    si <- x$y_raw
-    meta <- x$meta
-    args <- x$args
-    lcpar <- data.frame(
-        x0 = convert_pos(x$lcr$w, x$sdp, x$ppm),
-        A = -convert_width(x$lcr$A, x$sdp, x$ppm) * 1e6,
-        lambda = -convert_width(x$lcr$lambda, x$sdp, x$ppm)
-    )
-    sit <- data.frame(
-        wsrm = x$y_nows * 1e6,
-        nvrm = x$y_pos * 1e6,
-        sm = x$y_smooth * 1e6,
-        sup = lorentz_sup(cs, lcpar = lcpar)
-    )
-    peak <- data.frame(
-        left = x$peak$left[x$peak$high],
-        center = x$peak$center[x$peak$high],
-        right = x$peak$right[x$peak$high]
-    )
-    mse <- list(
-        raw = mse(si, sit$sup, normed = FALSE),
-        norm = mse(si, sit$sup, normed = TRUE),
-        sm = mse(sit$sm, sit$sup, normed = FALSE),
-        smnorm = mse(sit$sm, sit$sup, normed = TRUE)
-    )
-    obj <- named(cs, si, meta, args, sit, peak, lcpar, mse)
-    class(obj) <- "decon2"
-    obj
-}
-
-as_decon2.rdecon <- function(x, ...) {
-    assert(is_rdecon(x))
-    cs <- x$mdrb_spectrum$chemical_shifts()
-    si <- x$mdrb_spectrum$intensities()
-    meta <- x$spectrum$meta
-    args <- x$args
-    sup <- x$mdrb_decon$superposition_vec(cs)
-    lcpar <- as.data.frame(x$mdrb_decon$lorentzians())
-    wsrm <- si # Rust backend doesn't remove the water signal
-    nvrm <- si # Rust backend doesn't remove negative values
-    spec <- list(y_pos = nvrm)
-    reps <- args$smopts[[1]]
-    size <- args$smopts[[2]]
-    sm <- smooth_signals(spec, reps, size, verbose = FALSE)$y_smooth
-    sit <- named(wsrm, nvrm, sm, sup)
-    mse <- list(
-        raw = mse(si, sup, norm=FALSE), # (1)
-        norm = mse(si, sup, norm=TRUE),
-        sm = mse(sm, sup, norm=FALSE),
-        smnorm = mse(sm, sup, norm=TRUE)
-        # (1) x$mdrb_decon$mse() deviates from mse() results, so we need to
-        # calculate ourselves until Rust backend provides the correct values
-        # (see TODOS.md
-    )
-    peak <- get_peak(lcpar$x0, cs) # Should be provided directly by Rust backend in future versions
-    obj <- named(cs, si, meta, args, sit, peak, lcpar, mse)
-    class(obj) <- "decon2"
-    obj
 }
 
 #' @export
@@ -769,6 +676,115 @@ as_decons2 <- function(x,
 
 # Convert (Private) #####
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
+as_decon2.decon1 <- function(x, ...) {
+    cs <- x$x_values_ppm
+    si <- x$y_values_raw
+    meta <- list(
+        name = x$filename,
+        fq = x$x_values_hz
+    )
+    args <- list(
+        nfit = NA, smopts = NA, delta = NA,
+        sfr = sfr_in_ppm_bwc(x$signal_free_region, x$x_values, x$x_values_ppm),
+        wshw = x$range_water_signal_ppm,
+        ask = NA, force = NA, verbose = NA, bwc = NA, nworkers = NA
+    )
+    sit <- data.frame(
+        wsrm = NA, nvrm = NA,
+        sm = x$y_values * 1e6,
+        sup = x$spectrum_superposition[1, ] * 1e6
+    )
+    peak <- data.frame(
+        left = x$index_peak_triplets_right, # decon[01] has left and right inverted
+        center = x$index_peak_triplets_middle,
+        right = x$index_peak_triplets_left
+    )
+    lcpar <- data.frame(
+        x0 = x$x_0_ppm,
+        A = -(x$A_ppm * 1e6),
+        lambda = -(x$lambda_ppm)
+    )
+    mse <- list(
+        raw = mse(si, sit$sup, normed = FALSE),
+        norm = x$mse_normed_raw,
+        sm = mse(sit$sm, sit$sup, normed = FALSE),
+        smnorm = x$mse_normed
+    )
+    obj <- named(cs, si, meta, args, sit, peak, lcpar, mse)
+    class(obj) <- "decon2"
+    obj
+}
+
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
+as_decon2.idecon <- function(x, ...) {
+    cs <- x$ppm
+    si <- x$y_raw
+    meta <- x$meta
+    args <- x$args
+    lcpar <- data.frame(
+        x0 = convert_pos(x$lcr$w, x$sdp, x$ppm),
+        A = -convert_width(x$lcr$A, x$sdp, x$ppm) * 1e6,
+        lambda = -convert_width(x$lcr$lambda, x$sdp, x$ppm)
+    )
+    sit <- data.frame(
+        wsrm = x$y_nows * 1e6,
+        nvrm = x$y_pos * 1e6,
+        sm = x$y_smooth * 1e6,
+        sup = lorentz_sup(cs, lcpar = lcpar)
+    )
+    peak <- data.frame(
+        left = x$peak$left[x$peak$high],
+        center = x$peak$center[x$peak$high],
+        right = x$peak$right[x$peak$high]
+    )
+    mse <- list(
+        raw = mse(si, sit$sup, normed = FALSE),
+        norm = mse(si, sit$sup, normed = TRUE),
+        sm = mse(sit$sm, sit$sup, normed = FALSE),
+        smnorm = mse(sit$sm, sit$sup, normed = TRUE)
+    )
+    obj <- named(cs, si, meta, args, sit, peak, lcpar, mse)
+    class(obj) <- "decon2"
+    obj
+}
+
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
+as_decon2.rdecon <- function(x, ...) {
+    assert(is_rdecon(x))
+    cs <- x$mdrb_spectrum$chemical_shifts()
+    si <- x$mdrb_spectrum$intensities()
+    meta <- x$spectrum$meta
+    args <- x$args
+    sup <- x$mdrb_decon$superposition_vec(cs)
+    lcpar <- as.data.frame(x$mdrb_decon$lorentzians())
+    wsrm <- si # Rust backend doesn't remove the water signal
+    nvrm <- si # Rust backend doesn't remove negative values
+    spec <- list(y_pos = nvrm)
+    reps <- args$smopts[[1]]
+    size <- args$smopts[[2]]
+    sm <- smooth_signals(spec, reps, size, verbose = FALSE)$y_smooth
+    sit <- named(wsrm, nvrm, sm, sup)
+    mse <- list(
+        raw = mse(si, sup, norm=FALSE), # (1)
+        norm = mse(si, sup, norm=TRUE),
+        sm = mse(sm, sup, norm=FALSE),
+        smnorm = mse(sm, sup, norm=TRUE)
+        # (1) x$mdrb_decon$mse() deviates from mse() results, so we need to
+        # calculate ourselves until Rust backend provides the correct values
+        # (see TODOS.md
+    )
+    peak <- get_peak(lcpar$x0, cs) # Should be provided directly by Rust backend in future versions
+    obj <- named(cs, si, meta, args, sit, peak, lcpar, mse)
+    class(obj) <- "decon2"
+    obj
+}
+
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 as_ispec <- function(x, sf = c(1e3, 1e6)) {
     if (is_ispec(x)) {
         return(x)
@@ -798,6 +814,8 @@ as_ispec <- function(x, sf = c(1e3, 1e6)) {
     #       MetaboDecon1D results)
 }
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 as_idecon <- function(x) {
     if (is_idecon(x)) {
         x
@@ -847,6 +865,8 @@ as_idecon <- function(x) {
     }
 }
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 as_rdecon <- function(x) {
     assert( # (1)
         is_spectrum(x$spectrum),
@@ -874,8 +894,8 @@ as_rdecon <- function(x) {
     # headaches in the future.
 }
 
-#' @export
-#' @rdname as_metabodecon_class
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 as_ispecs <- function(x, sf = c(1e3, 1e6)) {
     if (is_ispecs(x)) {
         return(x)
@@ -894,21 +914,25 @@ as_ispecs <- function(x, sf = c(1e3, 1e6)) {
     gg
 }
 
-#' @export
-#' @rdname as_metabodecon_class
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 as_idecons <- function(x) {
     if (is_idecons(x)) return(x)
     stopifnot(is.list(x), all(sapply(x, is_idecon)))
     structure(x, class = "idecons")
 }
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 as_rdecons <- function(x) {
     if (is_rdecons(x)) return(x)
     assert(is.list(x), all(sapply(x, is_rdecon)))
     structure(x, class = "rdecons")
 }
 
-# Convert a list of singlets to a collection
+#' @noRd
+#' @title Convert a List of Singlets to a Collection
+#' @author 2024-2025 Tobias Schmidt: initial version.
 as_collection <- function(x, cls) {
     assert(
         is.list(x),
@@ -925,7 +949,9 @@ as_collection <- function(x, cls) {
     )
 }
 
-# Convert a metabodecon singlet to a metabodecon "v1.2+" singlet
+#' @noRd
+#' @title Convert any Singlet to a "v1.2+" Singlet
+#' @author 2024-2025 Tobias Schmidt: initial version.
 as_v12_singlet <- function(obj) {
     if (is_spectrum(obj)) obj
     else if (is_ispec(obj)) as_spectrum(obj)
@@ -938,7 +964,9 @@ as_v12_singlet <- function(obj) {
     else stop(sprintf("Objects of class %s are not supported.", class(obj)))
 }
 
-# Convert a metabodecon collection to a metabodecon "v1.2+" collection
+#' @noRd
+#' @title Convert a Collection to a "v1.2+" Collection
+#' @author 2024-2025 Tobias Schmidt: initial version.
 as_v12_collection <- function(obj) {
     if (is_spectra(obj)) obj
     else if (is_ispecs(obj)) as_spectra(obj)
@@ -952,6 +980,8 @@ as_v12_collection <- function(obj) {
 
 # Constructors (Private) #####
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 new_rdecon <- function(spectrum, args, mdrb_spectrum, mdrb_deconvr, mdrb_decon) {
     x <- named(spectrum, args, mdrb_spectrum, mdrb_deconvr, mdrb_decon)
     as_rdecon(x)
@@ -964,6 +994,7 @@ new_rdecon <- function(spectrum, args, mdrb_spectrum, mdrb_deconvr, mdrb_decon) 
 #' @param x An iterable object, e.g. a single metabodecon object.
 #' @param default Default name if no name is found.
 #' @return The name of the object as string or whatever is given as `default`.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #' @examples
 #' s1 <- list()
 #' s2 <- list(name = "foo")
@@ -980,6 +1011,7 @@ get_name <- function(x, default = "") {
 #' @param x A metabodecon collection object.
 #' @param default Default names if no names are found. Passed on to `get_default_names`.
 #' @return A character vector of names.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #' @examples
 #' s1 <- list()
 #' s2 <- list(name = "foo")
@@ -1005,6 +1037,8 @@ get_names <- function(x, default = "spectrum_%d") {
     obj_names
 }
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 get_default_names <- function(x, default) {
     if (length(default) == 1 && grepl("%d", default)) {
         return(sprintf(default, seq_along(x)))
@@ -1018,8 +1052,22 @@ get_default_names <- function(x, default) {
     ))
 }
 
-# Temporary Helper Function until metabodecon-rust/mdrb offer a method to
-# retrieve peak selection results from the mdrb_decon element.
+#' @noRd
+#' @description
+#' Generates dummy peak selection results based on  peak  centers  and  chemical
+#' shifts. Returns the results in a format suitable  for  the  specified  target
+#' type (`decon2` or `idecon`).
+#'
+#' @details
+#' This helper function creates plausible peak selection results from the  final
+#' peak centers after peak parameter approximation. It is necessary because  the
+#' metabodecon-rust  backend  currently  does  not  provide  an  interface   for
+#' accessing the true peak selection results.  These  results  are  required  by
+#' `decon2` and `idecon` objects (e.g., for plotting). If  the  metabodecon-rust
+#' backend introduces a way to access the peak selection results in the  future,
+#' this function can be removed.
+#'
+#' @author 2024-2025 Tobias Schmidt: initial version.
 get_peak <- function(x0, cs, target = "decon2") {
     assert(
         is_num(x0),
@@ -1044,6 +1092,8 @@ get_peak <- function(x0, cs, target = "decon2") {
 
 # Setters #####
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 set_names <- function(x, nams) {
     assert(is.list(x))
     has_names <- all(sapply(x, function(e) "name" %in% names(e)))
@@ -1056,7 +1106,11 @@ set_names <- function(x, nams) {
 
 # Members (Private) #####
 
-spectrum_members <- c("cs", "si", "meta")
+spectrum_members <- c(
+    "cs",
+    "si",
+    "meta"
+)
 
 ispec_members <- c(
     "y_raw",

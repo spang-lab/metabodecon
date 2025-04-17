@@ -21,3 +21,6 @@ the maximum and minimum values in the vector.
 vec <- c(1, 3, 5, 7, 9)
 width(vec)
 }
+\author{
+2024-2025 Tobias Schmidt: initial version.
+}

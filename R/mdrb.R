@@ -16,6 +16,8 @@
 #' If TRUE, an error is thrown if the check fails, providing instructions on how
 #' to install or upgrade mdrb.
 #'
+#' @author 2024-2025 Tobias Schmidt: initial version.
+#'
 #' @return
 #' `check_mdrb()` returns TRUE if a suitable version of mdrb is installed,
 #' else FALSE.
@@ -137,6 +139,8 @@ check_mdrb_deps <- function() {
 #'
 #' @return NULL. Called for side effect of installing the Rust backend.
 #'
+#' @author 2024-2025 Tobias Schmidt: initial version.
+#'
 #' @examples
 #' if (interactive()) try(install_mdrb())
 install_mdrb <- function(ask = TRUE,
@@ -177,6 +181,8 @@ install_mdrb <- function(ask = TRUE,
 
 # Internal #####
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 get_mdrb_version <- function() {
     tryCatch(
         packageVersion("mdrb"),
