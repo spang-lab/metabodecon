@@ -1,6 +1,6 @@
 # Public API #####
 
-#' @name deconvolute
+#' @export
 #'
 #' @title Deconvolute one or more NMR spectra
 #'
