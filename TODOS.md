@@ -1,38 +1,3 @@
-# DONE 2025-04-17 (PR 15)
-
-## Improve questions
-
-1. Question `Signal free region correctly selected? (y/n)` should be replaced by `Borders to Signal Free Regions (green) correctly selected? (y/n)`
-2. Question `Water artefact fully inside red vertical lines? (y/n)` should be replaced by `Water artefact fully inside blue area? (y/n)`
-
-## Add function get_si_mat
-
-Add a function `get_si_mat()` for extracting a matrix of signal intensities (SI) from a metabodecon object. The type of returned SI should be `raw` for `spectra`, `sup` for `decons` and `al` for `aligns`.
-
-## Add authors to functions
-
-Add author information all functions (exported and unexported).
-
-## Add lifecycle badges to functions
-
-Add lifecycle badges to all exported, non-stable functions. I.e., add one of the following code blocks at the end of the function description:
-
-```R
-#' Superseded by [FUNCTION()] since metabodecon version X.X.X.
-#' Will be replaced with metabodecon version 2.0.0.
-#'
-#' `r lifecycle::badge("deprecated")`
-#'
-```
-
-or
-
-```R
-#'
-#' `r lifecycle::badge("experimental")`
-#'
-```
-
 # PLANNED
 
 ## Emit deprecatian warnings
