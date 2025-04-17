@@ -54,7 +54,7 @@ parameter" of the peaks in the corresponding spectrum.
 Helper function of \code{align()}. Should not be called directly by the user.
 
 Generates a list of elements required by \code{\link[=speaq_align]{speaq_align()}}.
-See 'Value' for a detailled description of the list elements.
+See 'Value' for a detailed description of the list elements.
 
 Direct usage of this function has been deprecated with metabodecon version
 1.4.3 and will be removed with metabodecon version 2.0.0.
