@@ -2462,7 +2462,7 @@ generate_lorentz_curves <- function(data_path,
 }
 
 #' @export
-#' @rdname deconvolute
+#' @rdname generate_lorentz_curves
 generate_lorentz_curves_sim <- function(data_path,
     file_format="bruker", make_rds=FALSE, expno=10, procno=10, raw=TRUE,
     nfit=10, smopts=c(2,5), delta=6.4, sfr=c(3.55,3.35), wshw=0,
