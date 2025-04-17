@@ -7,8 +7,6 @@
 #' @description Deconvolutes NMR spectra by modeling each detected signal within
 #' a spectrum as Lorentz Curve.
 #'
-#' @inheritParams read_spectrum
-#'
 #' @param ask Logical. Whether to ask for user input during the deconvolution
 #' process. If FALSE, the provided default values will be used.
 #'
@@ -67,73 +65,17 @@
 #' Lorentz curves. These Lorentz curves are then iteratively adjusted to
 #' optimally approximate the measured spectrum.
 #'
-#' [generate_lorentz_curves_sim()] is identical to [generate_lorentz_curves()]
-#' except for the defaults, which are optimized for deconvoluting the 'Sim'
-#' dataset, shipped with 'metabodecon'. The 'Sim' dataset is a simulated
-#' dataset, which is much smaller than a real NMR spectra and lacks a water
-#' signal. This makes it ideal for use in examples or as a default value for
-#' functions. However, the default values for `sfr`, `wshw`, and `delta` in the
-#' "normal" [generate_lorentz_curves()] function are not optimal for this
-#' dataset. To avoid having to define the optimal parameters repeatedly in
-#' examples, this function is provided to deconvolute the "Sim" dataset with
-#' suitable parameters.
-#'
-#' In [generate_lorentz_curves()] the parameters `nfit`, `smopts`, `delta`,
-#' `sfr` and `wshw` must be fully specified. In [deconvolute()], these
-#' parameters can be set to `NULL` (the default value). In this case, the
-#' function will try to determine the optimal values for these parameters
-#' automatically. The values chosen are stored in field `args` of the returned
-#' `decon2` object.
-#'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
+#' ## Deconvolute a single spectrum
+#' spectrum <- sim[1]
+#' decon <- deconvolute(spectrum)
 #'
-#' ## Define the paths to the example datasets we want to deconvolute:
-#' ## `sim_dir`: directory containing 16 simulated spectra
-#' ## `sim_01`: path to the first spectrum in the `sim` directory
-#' ## `sim_01_spec`: the first spectrum in the `sim` directory as a dataframe
-#'
-#' sim_dir <- metabodecon_file("sim_subset")
-#' sim_1_dir <- file.path(sim_dir, "sim_01")
-#' sim_2_dir <- file.path(sim_dir, "sim_02")
-#' sim_1_spectrum <- read_spectrum(sim_1_dir)
-#' sim_2_spectrum <- read_spectrum(sim_2_dir)
-#' sim_spectra <- read_spectra(sim_dir)
-#'
-#'
-#' ## Show that `generate_lorentz_curves()` and `generate_lorentz_curves_sim()`
-#' ## produce the same results:
-#'
-#' sim_1_decon0 <- generate_lorentz_curves(
-#'     data_path = sim_1_dir, # Path to directory containing spectra
-#'     sfr = c(3.55, 3.35), # Borders of signal free region (SFR) in ppm
-#'     wshw = 0, # Half width of water signal (WS) in ppm
-#'     ask = FALSE, # Don't ask for user input
-#'     verbose = FALSE # Suppress status messages
-#' )
-#' sim_1_decon1 <- generate_lorentz_curves_sim(sim_1_dir)
-#' stopifnot(all.equal(sim_1_decon0, sim_1_decon1))
-#'
-#'
-#' ## Show that passing a spectrum produces the same results as passing the
-#' ## the corresponding directory:
-#'
-#' decon_from_spectrum_dir <- generate_lorentz_curves_sim(sim_1_dir)
-#' decon_from_spectrum_obj <- generate_lorentz_curves_sim(sim_1_spectrum)
-#' decons_from_spectra_obj <- generate_lorentz_curves_sim(sim_spectra)
-#' decons_from_spectra_dir <- generate_lorentz_curves_sim(sim_dir)
-#'
-#' most.equal <- function(x1, x2) {
-#'     ignore <- which(names(x1) %in% c("number_of_files", "filename"))
-#'     equal <- all.equal(x1[-ignore], x2[-ignore])
-#'     invisible(stopifnot(isTRUE(equal)))
-#' }
-#'
-#' all.equal(  decon_from_spectrum_dir, decon_from_spectrum_obj     )
-#' all.equal(  decons_from_spectra_dir, decons_from_spectra_obj     )
-#' most.equal( decon_from_spectrum_dir, decons_from_spectra_obj[[1]])
-#' most.equal( decon_from_spectrum_dir, decons_from_spectra_dir[[1]])
+#' ## Read multiple spectra from disk and deconvolute at once
+#' spectra_dir <- metabodecon_file("sim_subset")
+#' spectra <- read_spectra(sim_dir)
+#' decons <- deconvolute(spectra, sfr = c(3.55, 3.35))
 deconvolute <- function(x,
     nfit=3,    smopts=c(2,5), delta=6.4,    sfr=NULL,   wshw=0,
     ask=FALSE, force=FALSE,   verbose=TRUE, nworkers=1, use_rust=FALSE
@@ -658,9 +600,12 @@ fit_lorentz_curves <- function(spec, nfit = 3, bwc = 1) {
     A <- lc$A
     lambda <- lc$lambda
     w <- lc$w
-    limits <- range(spec$sdp)
-    if (bwc < 2) limits[2] <- limits[2] + (1 / spec$sf[1])
-    integrals <- lorentz_int(w, A, lambda, limits = limits)
+    if (bwc < 1) {
+        limits <- c(0, max(spec$sdp) + (1 / spec$sf[1]))
+        integrals <- lorentz_int(w, A, lambda, limits = limits)
+    } else {
+        integrals <- A * (- pi)
+    }
     spec$lcr <- list(A = A, lambda = lambda, w = w, integrals = integrals)
     spec
 }
