@@ -28,5 +28,5 @@ get_started(open_browser = FALSE)
 get_started()
 }
 \author{
-Tobias Schmidt, 2024-2025: initial version.
+2024-2025 Tobias Schmidt: initial version.
 }

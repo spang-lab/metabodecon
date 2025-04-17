@@ -30,7 +30,7 @@
 #' @param open_browser If TRUE, the "Get Stated" page is opened in the default
 #' browser.
 #' @return A character string containing the URL of the "Get Started" page.
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #' @examples
 #' get_started(open_browser = FALSE)
 #' get_started()

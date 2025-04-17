@@ -50,5 +50,5 @@ if (interactive()) {
 \code{\link[=datadir]{datadir()}}
 }
 \author{
-Tobias Schmidt, 2024-2025: initial version.
+2024-2025 Tobias Schmidt: initial version.
 }

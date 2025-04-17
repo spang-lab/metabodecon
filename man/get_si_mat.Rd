@@ -23,5 +23,5 @@ aligns <- align(decons)
 si_mat <- get_si_mat(aligns) # 2048 x 2 matrix (2048 datapoints, 2 spectra)
 }
 \author{
-Tobias Schmidt, 2024-2025: initial version.
+2024-2025 Tobias Schmidt: initial version.
 }

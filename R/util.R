@@ -18,7 +18,7 @@
 #' @return
 #' A numeric vector of values converted from unit A to unit B.
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' ya <- c(244, 246, 248, 250, 252)
@@ -71,7 +71,7 @@ convert_width <- function(xa, ya, yb) {
 #' The width of the vector, calculated as the difference between its maximum and
 #' minimum values.
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' vec <- c(1, 3, 5, 7, 9)
@@ -88,7 +88,7 @@ width <- function(x) {
 #' in Hz.
 #' @param cs Vector of chemical shifts in ppm.
 #' @param fqref Frequency of the reference molecule in Hz.
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 in_hz <- function(cs, fqref) {
     fqmax <- fqref - (min(cs) * 1e-6 * fqref) # Highest frequency in Hz
     fqmin <- fqref - (max(cs) * 1e-6 * fqref) # Lowest frequency in Hz
@@ -109,7 +109,7 @@ in_hz <- function(cs, fqref) {
 #' @param sdp All datapoints in SDP.
 #' @param ppm All datapoints in ppm.
 #' @details See 'CHECK-2: Signal free region (SFR) calculation' in `TODOS.md`.
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 sfr_in_ppm_bwc <- function(sfr_sdp, sdp, ppm) {
     assert(
         is.numeric(sfr_sdp), length(sfr_sdp) == 2,
@@ -129,7 +129,7 @@ sfr_in_ppm_bwc <- function(sfr_sdp, sdp, ppm) {
 #' @noRd
 #' @rdname sfr_in_ppm_bwc
 #' @param sfr_ppm Signal free region borders (SFR) in parts per million (PPM).
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 sfr_in_sdp_bwc <- function(sfr_ppm, ppm, sf) {
     sfr_left  <- max(sfr_ppm)
     sfr_right <- min(sfr_ppm)
@@ -176,7 +176,7 @@ sfr_in_sdp_bwc <- function(sfr_ppm, ppm, sf) {
 #' checksums every time they are recreated, likely due to the inclusion of
 #' timestamps or similar metadata within the file.
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' checksum(pkg_file("R"))
@@ -203,7 +203,7 @@ checksum <- function(path, method = "size", ignore = c()) {
 #' @noRd
 #' @description
 #' Recursively create a dirctory without warnings and return its path.
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 mkdirs <- function(path) {
     if (!dir.exists(path)) {
         dir.create(path, showWarnings = FALSE, recursive = TRUE)
@@ -212,14 +212,14 @@ mkdirs <- function(path) {
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 clear <- function(dir) {
     unlink(dir, recursive = TRUE, force = TRUE)
     mkdirs(dir)
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 norm_path <- function(path, winslash = "/", mustWork = FALSE) {
     normalizePath(path, winslash = winslash, mustWork = mustWork)
 }
@@ -229,7 +229,7 @@ norm_path <- function(path, winslash = "/", mustWork = FALSE) {
 #' @param file (string) Relative path to file.
 #' @param ... Arguments passed on to [system.file()].
 #' @return Absolute path to `file` with '/' as file separator.
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #' @examples
 #' pkg_file("DESCRIPTION")
 #' pkg_file()
@@ -242,7 +242,7 @@ pkg_file <- function(...) {
 #' @description Stores the object returned by the provided expression in the
 #' provided path.
 #' @param ... Additional arguments passed to the device function
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #' @examples
 #' tmp_png <- tempfile(fileext = ".png")
 #' tmp_pdf <- tempfile(fileext = ".pdf")
@@ -277,7 +277,7 @@ store <- function(expr,
 #' @details
 #' We must have our own copy so we can replace if with mock functions during
 #' testing. That's not (easily) possible for base functions.
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 readline <- function(...) {
     base::readline(...)
 }
@@ -298,7 +298,7 @@ readline <- function(...) {
 #'
 #' @return The user's input as a numeric value.
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' if (interactive()) {
@@ -319,14 +319,14 @@ get_num_input <- function(prompt, min = -Inf, max = Inf, int = FALSE) {
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 get_int_input <- function(prompt, min = -Inf, max = Inf) {
     x <- get_num_input(prompt, min, max, int = TRUE)
     return(x)
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 get_str_input <- function(prompt, valid) {
     x <- readline(prompt = prompt)
     n <- length(valid)
@@ -351,7 +351,7 @@ get_str_input <- function(prompt, valid) {
 #' @return
 #' TRUE if the user entered 'y' and FALSE if they entered 'n'.
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' if (interactive()) {
@@ -370,43 +370,43 @@ get_yn_input <- function(prompt) {
 # Operators (Private) #########################################################
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 `%||%` <- function(x, y) {
     if (is.null(x)) y else x
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 `%&&%` <- function(x, y) {
     if (is.null(x)) x else y
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 `%==%` <- function(x, y) {
     isTRUE(all.equal(x, y))
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 `%!=%` <- function(x, y) {
     !isTRUE(all.equal(x, y))
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 `%===%` <- function(x, y) {
     identical(x, y)
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 `%!==%` <- function(x, y) {
     !identical(x, y)
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 `%notin` <- function(x, y) {
     !(x %in% y)
 }
@@ -415,7 +415,7 @@ get_yn_input <- function(prompt) {
 # Print Functions (Private) #####
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 esc <- list(
     # https://en.wikipedia.org/wiki/ANSI_escape_code
     reset = "\033[0m", # Reset all formatting
@@ -473,7 +473,7 @@ esc <- list(
 )
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 capture.output2 <- function(..., collapse = "\n", trim = FALSE) {
     x <- utils::capture.output(...)
     if (trim) {
@@ -486,14 +486,14 @@ capture.output2 <- function(..., collapse = "\n", trim = FALSE) {
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 dput2 <- function(..., collapse = " ", trim = TRUE) {
     x <- capture.output2(dput(...), collapse = collapse, trim = trim)
     return(x)
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 str0 <- function(object,
                  max.level = 1,
                  give.attr = FALSE, ...) {
@@ -506,7 +506,7 @@ str0 <- function(object,
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 str2 <- function(...) {
     capture.output2(str(...))
 }
@@ -517,7 +517,7 @@ str2 <- function(...) {
 #' @param x A vector to collapse.
 #' @param sep A string to use as the separator between elements. Default is ", ".
 #' @return A single string with elements of x separated by sep.
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #' @examples
 #' collapse(c("a", "b", "c")) # "a, b, c"
 #' collapse(1:5, sep = "-") # "1-2-3-4-5"
@@ -537,7 +537,7 @@ collapse <- function(x, sep = ", ", last = NULL) {
 #' Fixed copy of [toscutil::logf()]. Can be replaced with original after issue
 #' [Fix: logf ignores file and append
 #' arguments](https://github.com/toscm/toscutil/issues/10) has been fixed.
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 logf <- function(fmt,
                  ...,
                  file = getOption("toscutil.logf.file", ""),
@@ -550,13 +550,13 @@ logf <- function(fmt,
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 get_logv <- function(verbose) {
     if (verbose) logf else function(...) NULL
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 human_readable <- function(x, unit, fmt = "%.1f") {
     m <- max(abs(x))
     # styler: off
@@ -590,7 +590,7 @@ human_readable <- function(x, unit, fmt = "%.1f") {
 #' @return
 #' Aa character string indicating the type of the object.
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' obj <- structure(list(a="a", b=1:5), class = "abc")
@@ -611,13 +611,13 @@ type <- function(x) {
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 is_num <- function(x, n = NULL) {
     is.numeric(x) && (is.null(n) || length(x) == n)
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 is_int <- function(x, n = NULL) {
     x_is_int <- is.integer(x) || (is.numeric(x) && all(abs(x - round(x)) < sqrt(.Machine$double.eps)))
     has_correct_length <- is.null(n) || length(x) == n
@@ -625,7 +625,7 @@ is_int <- function(x, n = NULL) {
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 is_char <- function(x, n = NULL, pattern = NULL) {
     is.character(x) &&
         (is.null(n) || length(x) == n ) &&
@@ -633,43 +633,43 @@ is_char <- function(x, n = NULL, pattern = NULL) {
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 is_bool <- function(x, n = NULL) {
     is.logical(x) && (is.null(n) || length(x) == n)
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 is_str <- function(x) {
     is.character(x) && length(x) == 1
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 is_num_or_null <- function(x, n = NULL) {
     is.null(x) || is_num(x, n)
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 is_int_or_null <- function(x, n = NULL) {
     is.null(x) || is_int(x, n)
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 is_char_or_null <- function(x, n = NULL, pattern = NULL) {
     is.null(x) || is_char(x, n, pattern)
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 is_bool_or_null <- function(x, n = NULL) {
     is.null(x) || is_bool(x, n)
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 is_str_or_null <- function(x) {
     is.null(x) || is_str(x)
 }
@@ -691,7 +691,7 @@ is_str_or_null <- function(x) {
 #' A logical vector indicating TRUE for elements that represent integer values
 #' and FALSE otherwise.
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' fixed_point_notation <- c("2.0", "3.", ".4", "-5.", "-.6")
@@ -726,7 +726,7 @@ is_int_str <- function(x) {
 #' without a decimal point) and scientific notation. Allows for optional leading
 #' and trailing whitespace, and optional leading + or - signs.
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 is_float_str <- function(x) {
     grepl(
         paste0(
@@ -742,31 +742,31 @@ is_float_str <- function(x) {
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 is_existing_path <- function(x) {
     is_str(x) && file.exists(x)
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 is_existing_dirpath <- function(x) {
     is_str(x) && dir.exists(x)
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 is_equal <- function(x, y) {
     isTRUE(all.equal(x, y))
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 all_identical <- function(x) {
     all(sapply(x, identical, x[[1]]))
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 is_list_of_nums <- function(x, nl = NULL, nv = NULL) {
     if (!is.list(x)) return(FALSE)
     if (!(is.null(nl) || length(x) == nl)) return(FALSE)
@@ -777,7 +777,7 @@ is_list_of_nums <- function(x, nl = NULL, nv = NULL) {
 # Misc (Private) ##############################################################
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 called_from_globalenv <- function() {
     identical(parent.frame(), .GlobalEnv)
 }
@@ -813,7 +813,7 @@ called_from_globalenv <- function() {
 #' the complete global environment into a list, meaning it can be extremely
 #' slow.)
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' f <- function(a, b = 1, c = NULL, ...) {
@@ -848,7 +848,7 @@ get_args <- function(func = NULL, ignore = character(), env = parent.frame())
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 empty_df <- function(names) {
     df <- data.frame(matrix(ncol = length(names), nrow = 0))
     colnames(df) <- names
@@ -877,7 +877,7 @@ empty_df <- function(names) {
 #' @return
 #' The magnetic field strength in Tesla.
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' x <- read_spectrum(pkg_file("example_datasets/bruker/urine/urine_1"))
@@ -934,7 +934,7 @@ calc_B <- function(x = read_spectrum()) {
 #' The total size of the object, including its subcomponents, as a character
 #' string with the specified unit.
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' obj <- list(
@@ -996,7 +996,7 @@ du <- function(obj, pname = "", level = 0, max_level = 1, max_len = 50, unit = "
 #' @return
 #' NULL, called for its side effect of printing the directory structure.
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' metabodecon_dir <- system.file(package = "metabodecon")
@@ -1029,7 +1029,7 @@ tree <- function(path, max.level = 2, level = 0, prefix = "") {
 #' the value to NULL. I.e. setting values using `set` is closer to `[<-` than
 #' to `[[<-`. Example:
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' # Inputs
@@ -1067,7 +1067,7 @@ set <- function(...) {
 #' @param obj A list.
 #' @param key The key to pop from the list.
 #' @param default The default value to return if the key does not exist in the list.
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #' @examples
 #' tmp <- list(a = NULL, b = 2); pop(tmp, "a")    # Returns NULL
 #' tmp <- list(a = NULL, b = 2); pop(tmp, "a", 5) # Returns NULL
@@ -1090,7 +1090,7 @@ pop <- function(obj, key, default = NULL, env = parent.frame()) {
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 timestamp <- function() {
     format(Sys.time(), "%Y-%m-%d_%H-%M-%S")
 }
@@ -1101,7 +1101,7 @@ timestamp <- function() {
 #' @param col Character string specifying the color to make transparent.
 #' @param alpha Numeric value between 0 and 1 specifying the transparency level.
 #' @return A character string representing the color with an alpha channel.
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #' @examples
 #' transp("violet", 0.08)
 #' transp("black", 0.5)
@@ -1114,7 +1114,7 @@ transp <- function(col = "violet", alpha = 0.08) {
 #' @description
 #' Multi core version of mapply with automatic logging of worker output.
 #' For `nw == 1` normal `mapply` is used.
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 mcmapply <- function(nw, FUN, ..., loadpkg = TRUE, log = TRUE) {
     if (nw == 1) return(mapply(FUN, ..., SIMPLIFY = FALSE))
     logf("Creating pool of worker processes")
@@ -1134,7 +1134,7 @@ mcmapply <- function(nw, FUN, ..., loadpkg = TRUE, log = TRUE) {
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 get_worker_logs <- function(nw, create = TRUE) {
     timestamp <- format(Sys.time(), "%Y%m%d_%H%M%OS3")
     timestamp <- gsub(".", "_", timestamp, fixed = TRUE)
@@ -1147,7 +1147,7 @@ get_worker_logs <- function(nw, create = TRUE) {
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 load_all <- function() {
     x <- Sys.time()
     logf("Calling: pkgload::load_all(reset = TRUE)")
@@ -1160,7 +1160,7 @@ load_all <- function() {
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 document <- function() {
     x <- Sys.time()
     logf("Calling: devtools::document(quiet = TRUE)")
@@ -1179,7 +1179,7 @@ document <- function() {
 #' @description
 #' Acts like [stopifnot()] during development but does nothing in production.
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @details
 #' In  the  package  source  code,  this  function  is  defined  as  a  copy  of
@@ -1217,7 +1217,7 @@ document <- function() {
 assert <- stopifnot
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 .onLoad <- function(libname, pkgname){
     pkgenv <- topenv()
     if (!loaded_via_devtools()) pkgenv$assert <- function(...) {}
@@ -1225,7 +1225,7 @@ assert <- stopifnot
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 loaded_via_devtools <- function() {
     pkg_dir <- dirname(system.file("DESCRIPTION", package = "metabodecon"))
     loaded_via_devtools <- dir.exists(file.path(pkg_dir, "inst"))

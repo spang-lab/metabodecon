@@ -51,5 +51,5 @@ aligned <- align(decons)
 aligned
 }
 \author{
-Tobias Schmidt, 2024-2025: initial version.
+2024-2025 Tobias Schmidt: initial version.
 }

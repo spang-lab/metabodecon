@@ -66,15 +66,15 @@ Automatic deconvolution of a 1D NMR spectrum into several Lorentz curves and
 the integration of them. The NMR file needs to be in Bruker format or
 jcamp-dx format.
 
-Deprecated since metabodecon v1.2.0. Please use \code{\link[=generate_lorentz_curves]{generate_lorentz_curves()}}
-instead. See examples below for usage.
+This function has been deprecated with metabodecon version v1.2.0 and will be
+removed with version 2.0.0. Please use \code{\link[=deconvolute]{deconvolute()}} instead.
 
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
 }
 \examples{
 
 ## ATTENTION: using MetaboDecon1D() for deconvolution is deprecated. Please use
-## generate_lorentz_curves() instead.
+## deconvolute() instead.
 
 ## The following example shows how a subset of the Sim dataset, consisting
 ## of two spectrum objects, can be deconvoluted using `MetaboDecon1D()`. The
@@ -119,7 +119,7 @@ https://doi.org/10.3390/metabo11070452
 \code{\link[=plot_spectrum_superposition_save_as_png]{plot_spectrum_superposition_save_as_png()}}
 }
 \author{
-Martina Haeckl, 2020-2021: initial version.
-Tobias Schmidt, 2024-2025: Minor updates to pass CRAN checks. Parameters
+2020-2021 Martina Haeckl: initial version.\cr
+2024-2025 Tobias Schmidt: Minor updates to pass CRAN checks. Parameters
 \code{debug} and \code{store_results} added.
 }

@@ -49,5 +49,5 @@ decon <- deconvolute(sim[[1]], sfr = c(3.55, 3.35))
 print(decon)
 }
 \author{
-Tobias Schmidt, 2024-2025: initial version.
+2024-2025 Tobias Schmidt: initial version.
 }

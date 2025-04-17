@@ -187,5 +187,5 @@ draw_spectrum(obj = decon, add = TRUE, lgd = FALSE,
 draw_spectrum(obj = decon, lc_lines = NULL, lc_rects = NULL, foc_only = FALSE)
 }
 \author{
-Tobias Schmidt, 2024-2025: initial version.
+2024-2025 Tobias Schmidt: initial version.
 }

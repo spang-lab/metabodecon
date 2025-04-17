@@ -36,11 +36,18 @@ contains the aligned spectra, the second one contains the aligned signals of
 each spectrum.
 }
 \description{
+Helper function of \code{align()}. Should not be called directly by the user.
+
 Rewrite of \code{speaq::dohCluster()}, compatible with the data format returned by
 'generate_lorentz_curves()' and 'gen_feat_mat()'. The function name
 "dohCluster" comes from "Do Hierarchical Clustering" which is part of the
 Alignment algorithm proposed by Vu et al. (2011) in
 \url{doi:10.1186/1471-2105-12-405}.
+
+Direct usage of this function has been deprecated with metabodecon version
+1.4.3 and will be removed with metabodecon version 2.0.0.
+
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
 }
 \examples{
 sim_subset <- metabodecon_file("bruker/sim_subset")
@@ -58,6 +65,6 @@ hclObj <- dohCluster(
 str(hclObj, 1)
 }
 \author{
-Wolfram Gronwald, 2021-2024: initial version.
-Tobias Schmidt, 2024-2025: refactored initial version.
+2021-2024 Wolfram Gronwald: initial version.\cr
+2024-2025 Tobias Schmidt: refactored initial version.
 }

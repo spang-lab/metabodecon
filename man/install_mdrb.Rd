@@ -35,5 +35,5 @@ first via \code{\link[utils:install.packages]{utils::install.packages()}}
 if (interactive()) try(install_mdrb())
 }
 \author{
-Tobias Schmidt, 2024-2025: initial version.
+2024-2025 Tobias Schmidt: initial version.
 }

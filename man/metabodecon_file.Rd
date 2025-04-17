@@ -30,5 +30,5 @@ metabodecon_file("urine")
 metabodecon_file("asdfasdf")
 }
 \author{
-Tobias Schmidt, 2024-2025: initial version.
+2024-2025 Tobias Schmidt: initial version.
 }

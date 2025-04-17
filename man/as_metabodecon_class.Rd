@@ -130,5 +130,5 @@ decon1 <- generate_lorentz_curves_sim(spectrum)
 decon2 <- as_decon2(decon1)
 }
 \author{
-Tobias Schmidt, 2024-2025: initial version.
+2024-2025 Tobias Schmidt: initial version.
 }

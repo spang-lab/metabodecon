@@ -41,7 +41,7 @@
 #' @return A `spectrum` object as described in [Metabodecon
 #' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' relpath <- "example_datasets/bruker/urine"
@@ -169,7 +169,7 @@ read_spectra <- function(data_path = pkg_file("example_datasets/bruker/urine"),
 #' @return A `spectrum` object as described in [Metabodecon
 #' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' si <- c(1, 1, 3, 7, 8, 3, 8, 5, 2, 1)
@@ -214,6 +214,7 @@ make_spectrum <- function(si,
 #'
 #' @description
 #' Simulates a 1D NMR spectrum based on the provided parameters.
+#'
 #' `r lifecycle::badge("experimental")`
 #'
 #' @param name The name of the spectrum.
@@ -232,7 +233,7 @@ make_spectrum <- function(si,
 #' @return A `spectrum` object as described in [Metabodecon
 #' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' simA <- simulate_spectrum("simA")
@@ -272,7 +273,7 @@ simulate_spectrum <- function(name = "sim_00",
 #' @noRd
 #' @title Read single Bruker TopSpin 3 Spectrum
 #' @inheritParams read_spectrum
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #' @examples
 #' spldir <- pkg_file("example_datasets/bruker/urine/urine_1")
 #' x <- read_bruker(spldir)
@@ -309,7 +310,7 @@ read_bruker <- function(spldir,
 #' @noRd
 #' @title Read single JCAMPDX Spectrum
 #' @inheritParams read_spectrum
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #' @examples
 #' # ATTENTION: Takes 30s on the development machine
 #' xds_path <- download_example_datasets()
@@ -364,7 +365,7 @@ read_jcampdx <- function(path,
 #' For a detailed description of the format of burker parameter files, refer to
 #' 'Bruker_NMR_Data_Formats.pdf'.
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' path <- pkg_file("example_datasets/bruker/urine/urine_1/10/acqus")
@@ -408,7 +409,7 @@ parse_metadata <- function(path = NULL, lines = NULL) {
 #' @return
 #' The signals acquisition parameters read from the file as named list.
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' blood1_dir <- pkg_file("example_datasets/bruker/urine/urine_1")
@@ -426,7 +427,7 @@ read_acqus <- function(spldir, expno = 10) {
 #' @title Read Bruker TopSpin Processing Parameters
 #' @inheritParams read_spectrum read_acqus
 #' @return The processing parameters read from the file as named list.
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #' @examples
 #' blood1_dir <- pkg_file("example_datasets/bruker/urine/urine_1")
 #' procs <- read_procs_file(blood1_dir)
@@ -448,7 +449,7 @@ read_procs_file <- function(spldir, expno = 10, procno = 10) {
 #' list object holding the simulation parameters.
 #' @inheritParams read_spectrum read_acqus
 #' @return The simulation parameters read from the file as named list.
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #' @examples
 #' sim_1_dir <- pkg_file("example_datasets/bruker/sim/sim_01")
 #' simpar <- read_simpar(blood1_dir)
@@ -461,7 +462,7 @@ read_simpar <- function(spldir, expno = 10, procno = 10) {
 #' @noRd
 #' @title Read signal intensities from Bruker TopSpin 1r file
 #' @inheritParams read_spectrum read_acqus
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #' @examples
 #' spldir <- pkg_file("example_datasets/bruker/urine/urine_1")
 #' oneR <- (spldir, 10, 10)
@@ -550,7 +551,7 @@ read_one_r <- function(spldir,
 
 #' @noRd
 #' @title Write spectrum to disk in Bruker format
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #' @examples
 #' x <- simulate_spectrum()
 #' path <- save_spectrum(x)
@@ -633,7 +634,7 @@ save_spectrum <- function(x,
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #' @title Save Spectra to Disk in Bruker Format
 save_spectra <- function(x, path, force = FALSE, verbose = TRUE) {
     assert(

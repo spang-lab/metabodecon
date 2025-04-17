@@ -31,5 +31,5 @@ metabodecon_dir <- system.file(package = "metabodecon")
 tree(metabodecon_dir, max.level = 1)
 }
 \author{
-Tobias Schmidt, 2024-2025: initial version.
+2024-2025 Tobias Schmidt: initial version.
 }

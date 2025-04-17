@@ -17,7 +17,23 @@ Add author information all functions (exported and unexported).
 
 ## Add lifecycle badges to functions
 
-Add lifecycle badges to all exported, non-stable functions.
+Add lifecycle badges to all exported, non-stable functions. I.e., add one of the following code blocks at the end of the function description:
+
+```R
+#' Superseded by [FUNCTION()] since metabodecon version X.X.X.
+#' Will be replaced with metabodecon version 2.0.0.
+#'
+#' `r lifecycle::badge("deprecated")`
+#'
+```
+
+or
+
+```R
+#'
+#' `r lifecycle::badge("experimental")`
+#'
+```
 
 ## Emit deprecatian warnings
 
@@ -28,13 +44,7 @@ Add lifecycle badges to all exported, non-stable functions.
 
 For details see https://lifecycle.r-lib.org/articles/communicate.html
 
-## Test deconvolute with huge nfit
-
-## Test deconvolute with peak at zero ppm
-
-It's unclear why <https://github.com/spang-lab/metabodecon/blob/v1.2.0/R/21_decon_helpers.R#L315> checks for w[i] == 0.
-
-Assumption: it's a bug and leads to this peak being missed. If this is the case, remove the check from the code as well.
+This should be done with a new minor release, e.g. `1.5.0`.
 
 ## Warn user if peaks in SFR
 
@@ -128,6 +138,14 @@ Do after [Write paper](#write-paper).
 Do after [Write paper](#write-paper).
 
 # BACKLOG
+
+## Test deconvolute with huge nfit
+
+## Test deconvolute with peak at zero ppm
+
+It's unclear why <https://github.com/spang-lab/metabodecon/blob/v1.2.0/R/21_decon_helpers.R#L315> checks for w[i] == 0.
+
+Assumption: it's a bug and leads to this peak being missed. If this is the case, remove the check from the code as well.
 
 ## Check spectrum type
 

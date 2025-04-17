@@ -38,7 +38,7 @@
 #' @seealso
 #' [datadir()]
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' if (interactive()) {
@@ -84,7 +84,7 @@ download_example_datasets <- function(dst_dir = NULL,
 #'
 #' @return The file or directory path.
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' # Unambiguous paths
@@ -152,7 +152,7 @@ metabodecon_file <- function(name = "sim_01") {
 #' [datadir_persistent()],
 #' [datadir_temp()]
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' # Get temporary datadir and persistent datadir
@@ -193,7 +193,7 @@ datadir <- function(file = NULL, warn = TRUE, persistent = NULL) {
 #'
 #' @seealso [datadir()], [datadir_temp()]
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' datadir_persistent()
@@ -215,7 +215,7 @@ datadir_persistent <- function() {
 #'
 #' @seealso [tmpdir()], [datadir()], [datadir_persistent()]
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' datadir_temp()
@@ -244,7 +244,7 @@ datadir_temp <- function() {
 #' [datadir_temp()]
 #' [datadir_persistent()]
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' tmpdir()
@@ -279,7 +279,7 @@ tmpdir <- function(subdir = NULL, create = FALSE) {
 #'
 #' @seealso [download_example_datasets()]
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' x <- get_data_dir("urine")                     # Deprecated
@@ -318,7 +318,7 @@ get_data_dir <- function(dataset_name = c("", "blood", "test", "urine"), warn = 
 #' @field n_files The expected total number of files in the example_datasets
 #' folder after extraction.
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' str(xds)
@@ -360,7 +360,7 @@ xds <- list(
 #'
 #' @return The path to the cached datasets.
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' \donttest{
@@ -410,7 +410,7 @@ cache_example_datasets <- function(persistent = NULL,
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 extract_example_datasets <- function(path = datadir("example_datasets.zip")) {
     utils::unzip(zipfile = path, exdir = dirname(path))
 }
@@ -428,7 +428,7 @@ extract_example_datasets <- function(path = datadir("example_datasets.zip")) {
 #'
 #' @return The path where the downloaded file is saved.
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' \donttest{
@@ -447,40 +447,40 @@ download_example_datasets_zip <- function(path, copyfrom = NULL, silent = FALSE)
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 zip_temp <- function() {
     p <- file.path(datadir_temp(), "example_datasets.zip")
     normalizePath(p, "/", mustWork = FALSE)
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 zip_persistent <- function() {
     p <- file.path(datadir_persistent(), "example_datasets.zip")
     normalizePath(p, "/", mustWork = FALSE)
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 tmpfile <- function(pattern = "file", fileext = "") {
     tempfile(pattern, tmpdir(create = TRUE), fileext)
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 testdir <- function(p = NULL) {
     norm_path(paste(tmpdir("tests"), p, sep = "/"))
     # use paste instead of file.path, because it can deal with NULL
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 mockdir <- function() {
     norm_path(file.path(tmpdir(), "mocks"))
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #' @description
 #' Create and return cache dir. If existing, the persistent cache dir is
 #' returned, else the temp cache dir. To force creation of the persistent cache
@@ -524,7 +524,7 @@ cachedir <- function(persistent = NULL) {
 "sap"
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 make_sap <- function() {
     sap_01 <- simulate_spectrum(
         name   = "sap_01",
@@ -540,7 +540,7 @@ make_sap <- function() {
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 update_sap <- function() {
     path <- file.path(pkg_file("example_datasets/bruker"), "sap")
     logf("Updating %s." , path)
@@ -568,7 +568,7 @@ update_sap <- function() {
 "sim"
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 make_sim <- function(nworkers = 1) {
     decons <- deconvolute_blood(nworkers = nworkers)
     simpars <- lapply(decons, get_sim_params, pkr = c(3.52, 3.37))
@@ -593,7 +593,7 @@ make_sim <- function(nworkers = 1) {
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 update_sim <- function(nworkers = 1) {
     path <- file.path(pkg_file("example_datasets/bruker"), "sim")
     logf("Overwrite is TRUE. Updating %s." , path)
@@ -626,7 +626,7 @@ update_sim <- function(nworkers = 1) {
 #' A `decons2` object containing the deconvolution results. For details
 #' see [deconvolute()].
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' deconvolute_blood() # Use cache file if it exists
@@ -660,7 +660,7 @@ deconvolute_blood <- function(read_cache = TRUE,
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #' @examples
 #' xdir <- download_example_datasets()
 #' path <- file.path(xdir, "bruker/blood/blood_01")

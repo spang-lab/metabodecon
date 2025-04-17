@@ -49,7 +49,7 @@
 #' An object of type `align` as described in [Metabodecon
 #' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' decons <- deconvolute(sim[1:2], sfr = c(3.55, 3.35))
@@ -170,7 +170,7 @@ align <- function(x, maxShift = 50, maxCombine = 5, verbose = TRUE, install_deps
 #' @return
 #' A matrix of aligned signal intensities.
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' decons <- deconvolute(sim[1:2], sfr = c(3.55, 3.35))
@@ -178,7 +178,7 @@ align <- function(x, maxShift = 50, maxCombine = 5, verbose = TRUE, install_deps
 #' si_mat <- get_si_mat(aligns) # 2048 x 2 matrix (2048 datapoints, 2 spectra)
 get_si_mat <- function(x) {
     stopifnot(is_aligns(x))
-    sapply(x, function(s) s$sit$al)
+    sapply(x, function(xi) xi$sit$al)
 }
 
 # Exported Helpers (Deprecated) #####
@@ -188,7 +188,14 @@ get_si_mat <- function(x) {
 #' @title Get PPM Range covered by Spectra
 #'
 #' @description
+#' Helper function of `align()`. Should not be called directly by the user.
+#'
 #' Returns the ppm range across all peaks of the provided deconvoluted spectra.
+#'
+#' Direct usage of this function has been deprecated with metabodecon version
+#' 1.4.3 and will be removed with metabodecon version 2.0.0.
+#'
+#' `r lifecycle::badge("deprecated")`
 #'
 #' @param spectrum_data
 #' A list of deconvoluted spectra as returned by [generate_lorentz_curves()].
@@ -201,8 +208,9 @@ get_si_mat <- function(x) {
 #' A vector containing the lowest and highest ppm value over all peaks of the
 #' provided deconvoluted spectra.
 #'
-#' @author Wolfram Gronwald, 2021-2024: initial version.
-#' Tobias Schmidt, 2024-2025: refactored initial version.
+#' @author
+#' 2021-2024 Wolfram Gronwald: initial version.\cr
+#' 2024-2025 Tobias Schmidt: refactored initial version.
 #'
 #' @examples
 #' spectrum_data <- generate_lorentz_curves(
@@ -237,7 +245,16 @@ get_ppm_range <- function(spectrum_data, full_range = FALSE) {
 #'
 #' @title Generate Feature Matrix.
 #'
-#' @description Generate a feature matrix.
+#' @description
+#' Helper function of `align()`. Should not be called directly by the user.
+#'
+#' Generates a list of elements required by [speaq_align()].
+#' See 'Value' for a detailled description of the list elements.
+#'
+#' Direct usage of this function has been deprecated with metabodecon version
+#' 1.4.3 and will be removed with metabodecon version 2.0.0.
+#'
+#' `r lifecycle::badge("deprecated")`
 #'
 #' @param data_path A list of deconvoluted spectra as returned by
 #' `generate_lorentz_curves()`. In older versions, this could also be the path
@@ -253,7 +270,7 @@ get_ppm_range <- function(spectrum_data, full_range = FALSE) {
 #' @param warn Whether to print a warning in case a file path is passed to
 #' `data_path` instead of a list of deconvoluted spectra.
 #'
-#' @details Before version 1.2 of 'metabodecon', the deconvolution functions
+#' @details Before version 1.2 of metabodecon, the deconvolution functions
 #' `generate_lorentz_curves` and `MetaboDecon1D` wrote their output partially as
 #' txt files to their input folder. Back then, `gen_feat_mat()` used those txt
 #' files as input to generate the feature matrix. Since version 1.2 these txt
@@ -287,8 +304,9 @@ get_ppm_range <- function(spectrum_data, full_range = FALSE) {
 #' `lambda`: A list of vectors where each vector contains the "width
 #'           parameter" of the peaks in the corresponding spectrum.
 #'
-#' @author Wolfram Gronwald, 2021-2024: initial version.
-#' Tobias Schmidt, 2024-2025: refactored initial version.
+#' @author
+#' 2021-2024 Wolfram Gronwald: initial version.\cr
+#' 2024-2025 Tobias Schmidt: refactored initial version.
 #'
 #' @examples
 #' sim_subset <- metabodecon_file("sim_subset")
@@ -329,6 +347,8 @@ gen_feat_mat <- function(data_path,
 #' @title Align Signals using 'speaq'
 #'
 #' @description
+#' Helper function of `align()`. Should not be called directly by the user.
+#'
 #' Performs signal alignment across the individual spectra using the 'speaq'
 #' package (Beirnaert C, Meysman P, Vu TN, Hermans N, Apers S, Pieters L, et al.
 #' (2018) speaq 2.0: A complete workflow for high-throughput 1D NMRspectra
@@ -339,6 +359,11 @@ gen_feat_mat <- function(data_path,
 #' slightly across spectra. As a consequence, prior to further analysis signals
 #' belonging to the same compound have to be aligned across spectra. This is the
 #' purpose of the 'speaq' package.
+#'
+#' Direct usage of this function has been deprecated with metabodecon version
+#' 1.4.3 and will be removed with metabodecon version 2.0.0.
+#'
+#' `r lifecycle::badge("deprecated")`
 #'
 #' @param feat Output of `gen_feat_mat()`.
 #'
@@ -382,8 +407,9 @@ gen_feat_mat <- function(data_path,
 #' SpNr
 #' ```
 #'
-#' @author Wolfram Gronwald, 2021-2024: initial version.
-#' Tobias Schmidt, 2024-2025: refactored initial version.
+#' @author
+#' 2021-2024 Wolfram Gronwald: initial version.\cr
+#' 2024-2025 Tobias Schmidt: refactored initial version.
 #'
 #' @examples
 #' sim_subset <- metabodecon_file("bruker/sim_subset")
@@ -430,10 +456,18 @@ speaq_align <- function(feat = gen_feat_mat(spectrum_data),
 #' @title Combine Peaks
 #'
 #' @description
-#' Even after calling `speaq_align()`, the alignment of individual signals is
+#'
+#' Helper function of `align()`. Should not be called directly by the user.
+#'
+#' Even after calling [speaq_align()], the alignment of individual signals is
 #' not always perfect, as 'speaq' performs a segment-wise alignment i.e. groups
 #' of signals are aligned. For further improvements, partly filled neighboring
 #' columns are merged. See 'Details' for an illustrative example.
+#'
+#' Direct usage of this function has been deprecated with metabodecon version
+#' 1.4.3 and will be removed with metabodecon version 2.0.0.
+#'
+#' `r lifecycle::badge("deprecated")`
 #'
 #' @param shifted_mat The matrix returned by `speaq_align()`.
 #'
@@ -450,10 +484,9 @@ speaq_align <- function(feat = gen_feat_mat(spectrum_data),
 #' @param data_path If not NULL, the returned dataframes `long` and `short` are
 #' written to `data_path` as "aligned_res_long.csv" and "aligned_res_short.csv".
 #'
-#' @return
-#' A list containing two data frames `long` and `short`. The first data frame
-#' contains one column for each data point in the original spectrum. The second
-#' data frame contains only columns where at least one entry is non-zero.
+#' @return A list containing two data frames `long` and `short`. The first data
+#' frame contains one column for each data point in the original spectrum. The
+#' second data frame contains only columns where at least one entry is non-zero.
 #'
 #' @details
 #'
@@ -490,16 +523,17 @@ speaq_align <- function(feat = gen_feat_mat(spectrum_data),
 #'    column 3 and 4, as they have more mergeable entries and after merging
 #'    column 3 and 4, column 4 and 5 have a common non-zero entry.
 #'
-#' @author Wolfram Gronwald, 2021-2024: initial version.
-#' Tobias Schmidt, 2024-2025: refactored initial version.
+#' @author
+#'
+#' 2021-2024 Wolfram Gronwald: initial version.\cr 2024-2025 Tobias Schmidt:
+#' refactored initial version.
 #'
 #' @examples
-#' sim_subset <- metabodecon_file("bruker/sim_subset")
-#' spectrum_data <- generate_lorentz_curves_sim(sim_subset)
-#' shifted_mat <- speaq_align(spectrum_data = spectrum_data, verbose = FALSE)
-#' range <- 5
-#' lower_bound <- 1
-#' obj <- combine_peaks(shifted_mat, range, lower_bound)
+#'
+#' sim_subset <- metabodecon_file("bruker/sim_subset") spectrum_data <-
+#' generate_lorentz_curves_sim(sim_subset) shifted_mat <-
+#' speaq_align(spectrum_data = spectrum_data, verbose = FALSE) range <- 5
+#' lower_bound <- 1 obj <- combine_peaks(shifted_mat, range, lower_bound)
 #' str(obj)
 combine_peaks <- function(shifted_mat,
                           range = 5,
@@ -537,83 +571,24 @@ combine_peaks <- function(shifted_mat,
     list("short" = S, "long" = M)
 }
 
-#' @noRd
-#'
-#' @description
-#' Calculates a "combine score" for a set of columns `nn` of a
-#' Matrix `M`. The score describes how "beneficial" it is to merge column `n`
-#' (from `nn`) into column `j`. A column `n` is considered "combinable" if there
-#' is no row where columns `n` and `j` both have a non-zero element. If a column
-#' is not combinable, its combine score is 0. If a column is combinable, its
-#' combine score is the amount of non-zero elements in the column. This function
-#' calculates the combine score for all columns `n` in `nn` and then returns the
-#' calculated combine scores as vector.
-#'
-#' @param U Matrix describing nonzero entries of `M.` `U[i,j]` should be `TRUE`
-#' if `M[i,j]` is nonzero, else `FALSE.` I.e. for any matrix `M` you can
-#' generate `U` as `U <- M != 0`.
-#'
-#' @param uu Vector describing the amount of nonzero elements in each column of
-#' `M`. I.e. for any matrix `M` you can generate `uu` as `uu <- colSums(M !=
-#' 0)`. Called `uu` because it denotes the amount of elements that are *unequal
-#' zero*.
-#'
-#' @param j Index of the column where the neighbor columns `nn` should be
-#' combined into.
-#'
-#' @param nn Indices of the columns to calculate the combine score for. Called
-#' `nn` because this should be a set of *neighbor columns*.
-#'
-#' @details
-#' Since we only need to know whether an element is nonzero in order to
-#' calculate the combine scores, the function takes the matrix `U` and the
-#' vector `uu` as input instead of their common ancestor `M`. This is much more
-#' efficient if the function is called multiple times, as the conversion must
-#' not be done multiple times.
-#'
-#' @author Wolfram Gronwald, 2021-2024: initial version.
-#' Tobias Schmidt, 2024-2025: refactored initial version.
-#'
-#' @examples
-#' M <- rbind(
-#'     c(2, 0, 2, 2, 0),
-#'     c(2, 1, 0, 2, 0),
-#'     c(0, 1, 0, 2, 0),
-#'     c(0, 0, 3, 0, 1)
-#' )
-#' U <- M != 0
-#' uu <- colSums(U) # 2 2 2 3 1
-#'
-#' cc <- combine_scores(U, uu, j = 2, nn = c(1, 3))
-#' cc[1] == 0  # M[,1] and M[, 2] are not combinable
-#' cc[2] == 2  # M[,3] and M[, 2] are combinable and M[, 3] has two nonzero elements
-#'
-#' cc <- combine_scores(U, uu, j = 1, nn = 2:5)
-#' cc[1] == 0  # M[, 2] and M[, 1] are not combinable
-#' cc[2] == 0  # M[, 3] and M[, 1] are not combinable
-#' cc[3] == 0  # M[, 4] and M[, 1] are not combinable
-#' cc[4] == 1  # M[, 5] and M[, 1] are combinable and M[, 5] has one nonzero element
-combine_scores <- function(U, uu, j, nn) {
-    sapply(seq_along(nn), function(k) {
-        n <- nn[k] # Index of neighboring column
-        combinable <- sum(U[, n] & U[, j]) == 0
-        if (combinable) uu[n] else 0
-    })
-}
-
-
-# Private Helpers #####
-
 #' @export
 #'
 #' @title Cluster Based Peak Alignment
 #'
 #' @description
+#'
+#' Helper function of `align()`. Should not be called directly by the user.
+#'
 #' Rewrite of `speaq::dohCluster()`, compatible with the data format returned by
 #' 'generate_lorentz_curves()' and 'gen_feat_mat()'. The function name
 #' "dohCluster" comes from "Do Hierarchical Clustering" which is part of the
 #' Alignment algorithm proposed by Vu et al. (2011) in
 #' <doi:10.1186/1471-2105-12-405>.
+#'
+#' Direct usage of this function has been deprecated with metabodecon version
+#' 1.4.3 and will be removed with metabodecon version 2.0.0.
+#'
+#' `r lifecycle::badge("deprecated")`
 #'
 #' @param X Dataframe of signal intensities from all spectra as returned by
 #' [gen_feat_mat()].
@@ -636,8 +611,9 @@ combine_scores <- function(U, uu, j, nn) {
 #' contains the aligned spectra, the second one contains the aligned signals of
 #' each spectrum.
 #'
-#' @author Wolfram Gronwald, 2021-2024: initial version.
-#' Tobias Schmidt, 2024-2025: refactored initial version.
+#' @author
+#' 2021-2024 Wolfram Gronwald: initial version.\cr
+#' 2024-2025 Tobias Schmidt: refactored initial version.
 #'
 #' @examples
 #' sim_subset <- metabodecon_file("bruker/sim_subset")
@@ -679,9 +655,77 @@ dohCluster <- function(X,
     return(res)
 }
 
+# Private Helpers #####
+
 #' @noRd
-#' @author Wolfram Gronwald, 2021-2024: initial version.
-#' Tobias Schmidt, 2024-2025: refactored initial version.
+#'
+#' @description
+#' Calculates a "combine score" for a set of columns `nn` of a
+#' Matrix `M`. The score describes how "beneficial" it is to merge column `n`
+#' (from `nn`) into column `j`. A column `n` is considered "combinable" if there
+#' is no row where columns `n` and `j` both have a non-zero element. If a column
+#' is not combinable, its combine score is 0. If a column is combinable, its
+#' combine score is the amount of non-zero elements in the column. This function
+#' calculates the combine score for all columns `n` in `nn` and then returns the
+#' calculated combine scores as vector.
+#'
+#' @param U Matrix describing nonzero entries of `M.` `U[i,j]` should be `TRUE`
+#' if `M[i,j]` is nonzero, else `FALSE.` I.e. for any matrix `M` you can
+#' generate `U` as `U <- M != 0`.
+#'
+#' @param uu Vector describing the amount of nonzero elements in each column of
+#' `M`. I.e. for any matrix `M` you can generate `uu` as `uu <- colSums(M !=
+#' 0)`. Called `uu` because it denotes the amount of elements that are *unequal
+#' zero*.
+#'
+#' @param j Index of the column where the neighbor columns `nn` should be
+#' combined into.
+#'
+#' @param nn Indices of the columns to calculate the combine score for. Called
+#' `nn` because this should be a set of *neighbor columns*.
+#'
+#' @details
+#' Since we only need to know whether an element is nonzero in order to
+#' calculate the combine scores, the function takes the matrix `U` and the
+#' vector `uu` as input instead of their common ancestor `M`. This is much more
+#' efficient if the function is called multiple times, as the conversion must
+#' not be done multiple times.
+#'
+#' @author
+#' 2021-2024 Wolfram Gronwald: initial version.\cr
+#' 2024-2025 Tobias Schmidt: refactored initial version.
+#'
+#' @examples
+#' M <- rbind(
+#'     c(2, 0, 2, 2, 0),
+#'     c(2, 1, 0, 2, 0),
+#'     c(0, 1, 0, 2, 0),
+#'     c(0, 0, 3, 0, 1)
+#' )
+#' U <- M != 0
+#' uu <- colSums(U) # 2 2 2 3 1
+#'
+#' cc <- combine_scores(U, uu, j = 2, nn = c(1, 3))
+#' cc[1] == 0  # M[,1] and M[, 2] are not combinable
+#' cc[2] == 2  # M[,3] and M[, 2] are combinable and M[, 3] has two nonzero elements
+#'
+#' cc <- combine_scores(U, uu, j = 1, nn = 2:5)
+#' cc[1] == 0  # M[, 2] and M[, 1] are not combinable
+#' cc[2] == 0  # M[, 3] and M[, 1] are not combinable
+#' cc[3] == 0  # M[, 4] and M[, 1] are not combinable
+#' cc[4] == 1  # M[, 5] and M[, 1] are combinable and M[, 5] has one nonzero element
+combine_scores <- function(U, uu, j, nn) {
+    sapply(seq_along(nn), function(k) {
+        n <- nn[k] # Index of neighboring column
+        combinable <- sum(U[, n] & U[, j]) == 0
+        if (combinable) uu[n] else 0
+    })
+}
+
+#' @noRd
+#' @author
+#' 2021-2024 Wolfram Gronwald: initial version.\cr
+#' 2024-2025 Tobias Schmidt: refactored initial version.
 dohCluster_withoutMaxShift <- function(X,
                                        peakList,
                                        refInd = 0,
@@ -773,8 +817,9 @@ dohCluster_withoutMaxShift <- function(X,
 }
 
 #' @noRd
-#' @author Wolfram Gronwald, 2021-2024: initial version.
-#' Tobias Schmidt, 2024-2025: refactored initial version.
+#' @author
+#' 2021-2024 Wolfram Gronwald: initial version.\cr
+#' 2024-2025 Tobias Schmidt: refactored initial version.
 dohCluster_withMaxShift <- function(X,
                                     peakList,
                                     refInd = 0,
@@ -858,7 +903,7 @@ dohCluster_withMaxShift <- function(X,
 #' (logical) Whether to sanity check the deconvolution parameters before
 #' returning them.
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @return
 #' A list containing the deconvolution parameters, i.e. `w`, `lambda`, `A`, and
@@ -881,7 +926,7 @@ get_decon_params <- function(data_path, warn = TRUE, check = TRUE) {
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 read_decon_params <- function(data_path) {
     par_txt <- dir(data_path, "(.*) parameters.txt", full.names = TRUE)
     spc_txt <- dir(data_path, "(.*) approximated_spectrum.txt", full.names = TRUE)
@@ -907,14 +952,14 @@ read_decon_params <- function(data_path) {
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 check_decon_params <- function(params) {
     nulls <- unlist(sapply(params, function(pp) sapply(pp, is.null)))
     if (any(nulls)) warning("Detected missing params: ", names(nulls)[nulls])
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 rm_zero_width_peaks <- function(params) {
     for (i in seq_len(params$A)) {
         not_zero <- params$w[[i]] != 0
@@ -926,7 +971,7 @@ rm_zero_width_peaks <- function(params) {
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 is_decon_obj <- function(x) {
     keys <- c(
         "number_of_files",
@@ -953,13 +998,13 @@ is_decon_obj <- function(x) {
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 is_decon_list <- function(x) {
     if (is.list(x) && all(sapply(x, is_decon_obj))) TRUE else FALSE
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 get_peak_indices <- function(decon2) {
     x0 <- decon2$lcpar$x0
     cs <- decon2$cs
@@ -967,7 +1012,7 @@ get_peak_indices <- function(decon2) {
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 get_sup_mat <- function(decons2) {
     do.call(rbind, lapply(decons2, function(d) d$sit$sup))
 }
@@ -997,7 +1042,7 @@ get_sup_mat <- function(decons2) {
 #' req = Installation required (because requested packages are not yet installed
 #' on the system)
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' pkgs <- c("MassSpecWavelet", "impute")

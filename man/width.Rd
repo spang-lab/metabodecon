@@ -22,5 +22,5 @@ vec <- c(1, 3, 5, 7, 9)
 width(vec)
 }
 \author{
-Tobias Schmidt, 2024-2025: initial version.
+2024-2025 Tobias Schmidt: initial version.
 }

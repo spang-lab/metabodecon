@@ -34,8 +34,10 @@ NULL, called for side effects.
 Plots the original spectrum and all generated Lorentz curves and save the
 result as png under the filepath.
 
-Superseded by \code{\link[=plot_spectrum]{plot_spectrum()}} since metabodecon v1.2.0. Will be replaced with
-v2.\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
+Superseded by \code{\link[=plot_spectrum]{plot_spectrum()}} since metabodecon v1.2.0. Will be replaced
+with metabodecon v2.
+
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
 }
 \examples{
 sim <- metabodecon_file("bruker/sim_subset")
@@ -48,6 +50,6 @@ dir(png_dir, full.names = TRUE)
 \code{\link[=MetaboDecon1D]{MetaboDecon1D()}}, \code{\link[=plot_triplets]{plot_triplets()}}, \code{\link[=plot_spectrum_superposition_save_as_png]{plot_spectrum_superposition_save_as_png()}}
 }
 \author{
-Martina Haeckl, 2020-2021: initial version.
-Tobias Schmidt, 2024-2025: Minor updates to pass CRAN checks
+2020-2021 Martina Haeckl: initial version.\cr
+2024-2025 Tobias Schmidt: Minor updates to pass CRAN checks
 }

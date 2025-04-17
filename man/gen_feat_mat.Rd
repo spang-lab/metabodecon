@@ -51,10 +51,18 @@ the peaks in the corresponding spectrum.
 parameter" of the peaks in the corresponding spectrum.
 }
 \description{
-Generate a feature matrix.
+Helper function of \code{align()}. Should not be called directly by the user.
+
+Generates a list of elements required by \code{\link[=speaq_align]{speaq_align()}}.
+See 'Value' for a detailled description of the list elements.
+
+Direct usage of this function has been deprecated with metabodecon version
+1.4.3 and will be removed with metabodecon version 2.0.0.
+
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
 }
 \details{
-Before version 1.2 of 'metabodecon', the deconvolution functions
+Before version 1.2 of metabodecon, the deconvolution functions
 \code{generate_lorentz_curves} and \code{MetaboDecon1D} wrote their output partially as
 txt files to their input folder. Back then, \code{gen_feat_mat()} used those txt
 files as input to generate the feature matrix. Since version 1.2 these txt
@@ -73,6 +81,6 @@ obj <- gen_feat_mat(decons)
 str(obj, 2, give.attr = FALSE)
 }
 \author{
-Wolfram Gronwald, 2021-2024: initial version.
-Tobias Schmidt, 2024-2025: refactored initial version.
+2021-2024 Wolfram Gronwald: initial version.\cr
+2024-2025 Tobias Schmidt: refactored initial version.
 }

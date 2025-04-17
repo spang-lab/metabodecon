@@ -21,5 +21,5 @@ datadir_persistent()
 \code{\link[=datadir]{datadir()}}, \code{\link[=datadir_temp]{datadir_temp()}}
 }
 \author{
-Tobias Schmidt, 2024-2025: initial version.
+2024-2025 Tobias Schmidt: initial version.
 }

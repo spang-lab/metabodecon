@@ -89,7 +89,7 @@
 #' - `testdir`: The path to the test directory.
 #' - `inputs`: The paths to the copied input files.
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' x1 <- evalwith(output = "captured", cat("Helloworld\n"))
@@ -220,7 +220,7 @@ evalwith <- function(expr, # nolint: cyclocomp_linter.
 #' A function that mimics the readline function, returning the next element from
 #' `texts` each time it's called.
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' readline_mock <- get_readline_mock(c("yes", "no", "maybe"))
@@ -262,7 +262,7 @@ get_readline_mock <- function(texts, env = as.environment(list())) {
 #' @return
 #' A function that when called, returns a path to the mock data directory.
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' datadir_persistent_mock <- get_datadir_mock(type="persistent", state="missing")
@@ -288,13 +288,13 @@ get_datadir_mock <- function(type = "temp", state = "default") {
 # Testthat Helpers (private) #####
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 r_geq <- function(x) {
     getRversion() >= numeric_version(x)
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 not_cran <- function() {
     interactive() || isTRUE(as.logical(Sys.getenv("NOT_CRAN", "FALSE")))
 }
@@ -320,7 +320,7 @@ not_cran <- function() {
 #' The result of devtools::test() or testthat::test_file() for a specific
 #' function.
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' run_tests(get_smopts)           # Runs fast tests for get_smopts
@@ -347,7 +347,7 @@ run_tests <- function(func = NULL, all = FALSE) {
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 skip_if_slow_tests_disabled <- function() {
     if (!Sys.getenv("RUN_SLOW_TESTS") == "TRUE") {
         testthat::skip("Slow tests (Use `Sys.setenv(RUN_SLOW_TESTS=TRUE)` or `run_tests(all=TRUE)` to enable).")
@@ -355,7 +355,7 @@ skip_if_slow_tests_disabled <- function() {
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 skip_if_not_in_globenv <- function() {
     if (!identical(environment(), .GlobalEnv)) {
         testthat::skip("Manual tests (To run, open file and execute the code manually).")
@@ -377,7 +377,7 @@ skip_if_not_in_globenv <- function() {
 #' A named numeric vector where the names are filenames and the values are the
 #' expected file sizes.
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' testdir <- tmpdir("examples/expect_file_size", create = TRUE)
@@ -415,7 +415,7 @@ expect_file_size <- function(testdir, size_exp) {
 #' A logical value indicating whether the structure of the object matches the
 #' expected string.
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' expect_str(list(a = 1, b = 2), c("List of 2", " $ a: num 1", " $ b: num 2"))
@@ -454,7 +454,7 @@ expect_str <- function(obj, expected_str, ...) {
 #' peaks are similar in the true and found spectra and the score is close to 0
 #' if the number of peaks and/or the area of the peaks are very different.
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' ## Bad deconvolution (PRARP ~= 0.2)
@@ -496,13 +496,13 @@ calc_prarp <- function(x, truepar = NULL, ...) {
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 calc_prarpx <- function(x, truepar = NULL, ...) {
     calc_prarp(x, truepar)$prarpx
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 plot_prarp <- function(decon, truepar) {
 
     # Calculate PRARP score
@@ -576,7 +576,7 @@ plot_prarp <- function(decon, truepar) {
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 calc_y0 <- function(x, y, x0) {
     i0 <- convert_pos(x0, x, 1:length(x))
     i0_floor <- floor(i0)
@@ -590,7 +590,7 @@ calc_y0 <- function(x, y, x0) {
 # Compare (Private) #####
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 pairwise_identical <- function(x) {
     lapply(seq_len(length(x) - 1), function(i) identical(x[[i]], x[[i + 1]]))
 }
@@ -633,7 +633,7 @@ pairwise_identical <- function(x) {
 #' - `b` == the differing elements from `y`
 #' - `z` == the difference between `a` and `b`
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' x <- 1:10
@@ -693,7 +693,7 @@ vcomp <- function(x, y, xpct = 0, silent = FALSE) {
 #' @param old Result of [MetaboDecon1D()].
 #' @param silent Logical. If TRUE, no output is printed.
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' sim_01 <- metabodecon_file("sim_01")[1]
@@ -837,7 +837,7 @@ compare_spectra <- function(new, old, silent = FALSE) { # styler: off
 
 #' @noRd
 #' @description Helper of [compare_spectra()].
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 update_defaults <- function(func, ...) {
     kwargs <- list(...)
     defaults <- formals(func)
@@ -851,7 +851,7 @@ update_defaults <- function(func, ...) {
 # Deconvolution #####
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 MetaboDecon1D_silent <- function(# Passed on to [MetaboDecon1D()]
                                  filepath,
                                  filename = NA,
@@ -894,7 +894,7 @@ MetaboDecon1D_silent <- function(# Passed on to [MetaboDecon1D()]
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 MetaboDecon1D_silent_sim <- function(# Passed on to [MetaboDecon1D()]
                                      filepath,
                                      filename = NA,
@@ -923,7 +923,7 @@ MetaboDecon1D_silent_sim <- function(# Passed on to [MetaboDecon1D()]
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #' @examples
 #' sim <- metabodecon_file("bruker/sim_subset")
 #' answers <- get_MetaboDecon1D_answers(ns = 1, wshw = 0, sfr = c(3.55, 3.35))

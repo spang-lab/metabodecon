@@ -7,6 +7,7 @@ file_ignore <- c()
 fn_ignore <- c(
     # align.R
     "align", # stable
+    "get_si_mat", # stable
     # class.R
     "print.spectrum", # s3
     "print.decon1", # s3
@@ -48,7 +49,8 @@ fn_ignore <- c(
     "datadir_temp", # stable
     "tmpdir", # stable
     # decon.R
-    "deconvolute",
+    "deconvolute", # stable
+    "generate_lorentz_curves_sim", # documented with "generate_lorentz_curves"
     # mdrb.R
     "check_mdrb",
     "check_mdrb_deps",

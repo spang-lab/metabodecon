@@ -79,5 +79,5 @@ is_aligns(aa) # TRUE
 
 }
 \author{
-Tobias Schmidt, 2024-2025: initial version.
+2024-2025 Tobias Schmidt: initial version.
 }

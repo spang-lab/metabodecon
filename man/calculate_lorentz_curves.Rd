@@ -18,15 +18,22 @@ one Lorentz curve. If \code{deconv_result} is a list of deconvoluted spectra, a
 list of such matrices is returned.
 }
 \description{
+Helper function of \code{\link[=plot_lorentz_curves_save_as_png]{plot_lorentz_curves_save_as_png()}}.
+Should not be called directly by the user.
+
 Calculates the lorentz curves of each investigated spectrum.
+
+This function has been deprecated with metabodecon version v1.4.3 and will be
+removed with version 2.0.0.
+
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
 }
 \examples{
 ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
 ## Deconvolute the spectra in folder "bruker/sim_subset" into a list of
 ## Lorentz Curves (specified via the parameters A, lambda and x_0).
 ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
-sim <- metabodecon_file("bruker/sim_subset")
-decons <- generate_lorentz_curves_sim(sim)
+decons <- generate_lorentz_curves_sim(sim[1:2])
 decon0 <- decons[[1]]
 
 ## -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
@@ -56,6 +63,6 @@ legend("topright", legend = desc, col = col, lty = 1)
 \code{\link[=plot_spectrum_superposition_save_as_png]{plot_spectrum_superposition_save_as_png()}}
 }
 \author{
-Martina Haeckl, 2020-2021: initial version.
-Tobias Schmidt, 2024-2025: Minor updates to pass CRAN checks
+2020-2021 Martina Haeckl: initial version.\cr
+2024-2025 Tobias Schmidt: Minor updates to pass CRAN checks
 }

@@ -30,5 +30,5 @@ convert_width(c(2, 4, 8), ya, yb)
 convert_pos(c(247, 249), ya, yb)
 }
 \author{
-Tobias Schmidt, 2024-2025: initial version.
+2024-2025 Tobias Schmidt: initial version.
 }

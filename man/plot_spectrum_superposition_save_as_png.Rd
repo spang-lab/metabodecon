@@ -52,5 +52,5 @@ dir(png_dir, full.names = TRUE)
 \code{\link[=plot_lorentz_curves_save_as_png]{plot_lorentz_curves_save_as_png()}}
 }
 \author{
-Martina Haeckl, 2020-2021: initial version.
+2020-2021 Martina Haeckl: initial version.
 }

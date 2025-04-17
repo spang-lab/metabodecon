@@ -21,7 +21,7 @@
 #' @return
 #' NULL, called for side effect of printing to the standard output device.
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' print(sim[[1]])
@@ -157,7 +157,7 @@ print.rdecons <- function(x, ...) {
 # Subset (Private) #####
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 `[.collection` <- function(x, i, ...) {
     result <- NextMethod("[")
     class(result) <- class(x)
@@ -217,7 +217,7 @@ print.rdecons <- function(x, ...) {
 #' @return
 #' TRUE if the object is an instance of the specified class, otherwise FALSE.
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' ss <- sim[1:2]
@@ -365,7 +365,7 @@ is_rdecons <- function(x) inherits(x, "rdecons")
 #'
 #' @return An object of the specified class.
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' dirpath <- metabodecon_file("sim_subset")
@@ -677,7 +677,7 @@ as_decons2 <- function(x,
 # Convert (Private) #####
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 as_decon2.decon1 <- function(x, ...) {
     cs <- x$x_values_ppm
     si <- x$y_values_raw
@@ -718,7 +718,7 @@ as_decon2.decon1 <- function(x, ...) {
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 as_decon2.idecon <- function(x, ...) {
     cs <- x$ppm
     si <- x$y_raw
@@ -752,7 +752,7 @@ as_decon2.idecon <- function(x, ...) {
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 as_decon2.rdecon <- function(x, ...) {
     assert(is_rdecon(x))
     cs <- x$mdrb_spectrum$chemical_shifts()
@@ -784,7 +784,7 @@ as_decon2.rdecon <- function(x, ...) {
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 as_ispec <- function(x, sf = c(1e3, 1e6)) {
     if (is_ispec(x)) {
         return(x)
@@ -815,7 +815,7 @@ as_ispec <- function(x, sf = c(1e3, 1e6)) {
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 as_idecon <- function(x) {
     if (is_idecon(x)) {
         x
@@ -866,7 +866,7 @@ as_idecon <- function(x) {
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 as_rdecon <- function(x) {
     assert( # (1)
         is_spectrum(x$spectrum),
@@ -895,7 +895,7 @@ as_rdecon <- function(x) {
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 as_ispecs <- function(x, sf = c(1e3, 1e6)) {
     if (is_ispecs(x)) {
         return(x)
@@ -915,7 +915,7 @@ as_ispecs <- function(x, sf = c(1e3, 1e6)) {
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 as_idecons <- function(x) {
     if (is_idecons(x)) return(x)
     stopifnot(is.list(x), all(sapply(x, is_idecon)))
@@ -923,7 +923,7 @@ as_idecons <- function(x) {
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 as_rdecons <- function(x) {
     if (is_rdecons(x)) return(x)
     assert(is.list(x), all(sapply(x, is_rdecon)))
@@ -932,7 +932,7 @@ as_rdecons <- function(x) {
 
 #' @noRd
 #' @title Convert a List of Singlets to a Collection
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 as_collection <- function(x, cls) {
     assert(
         is.list(x),
@@ -951,7 +951,7 @@ as_collection <- function(x, cls) {
 
 #' @noRd
 #' @title Convert any Singlet to a "v1.2+" Singlet
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 as_v12_singlet <- function(obj) {
     if (is_spectrum(obj)) obj
     else if (is_ispec(obj)) as_spectrum(obj)
@@ -966,7 +966,7 @@ as_v12_singlet <- function(obj) {
 
 #' @noRd
 #' @title Convert a Collection to a "v1.2+" Collection
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 as_v12_collection <- function(obj) {
     if (is_spectra(obj)) obj
     else if (is_ispecs(obj)) as_spectra(obj)
@@ -981,7 +981,7 @@ as_v12_collection <- function(obj) {
 # Constructors (Private) #####
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 new_rdecon <- function(spectrum, args, mdrb_spectrum, mdrb_deconvr, mdrb_decon) {
     x <- named(spectrum, args, mdrb_spectrum, mdrb_deconvr, mdrb_decon)
     as_rdecon(x)
@@ -994,7 +994,7 @@ new_rdecon <- function(spectrum, args, mdrb_spectrum, mdrb_deconvr, mdrb_decon) 
 #' @param x An iterable object, e.g. a single metabodecon object.
 #' @param default Default name if no name is found.
 #' @return The name of the object as string or whatever is given as `default`.
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #' @examples
 #' s1 <- list()
 #' s2 <- list(name = "foo")
@@ -1011,7 +1011,7 @@ get_name <- function(x, default = "") {
 #' @param x A metabodecon collection object.
 #' @param default Default names if no names are found. Passed on to `get_default_names`.
 #' @return A character vector of names.
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #' @examples
 #' s1 <- list()
 #' s2 <- list(name = "foo")
@@ -1038,7 +1038,7 @@ get_names <- function(x, default = "spectrum_%d") {
 }
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 get_default_names <- function(x, default) {
     if (length(default) == 1 && grepl("%d", default)) {
         return(sprintf(default, seq_along(x)))
@@ -1067,7 +1067,7 @@ get_default_names <- function(x, default) {
 #' backend introduces a way to access the peak selection results in the  future,
 #' this function can be removed.
 #'
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 get_peak <- function(x0, cs, target = "decon2") {
     assert(
         is_num(x0),
@@ -1093,7 +1093,7 @@ get_peak <- function(x0, cs, target = "decon2") {
 # Setters #####
 
 #' @noRd
-#' @author Tobias Schmidt, 2024-2025: initial version.
+#' @author 2024-2025 Tobias Schmidt: initial version.
 set_names <- function(x, nams) {
     assert(is.list(x))
     has_names <- all(sapply(x, function(e) "name" %in% names(e)))

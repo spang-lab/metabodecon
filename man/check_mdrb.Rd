@@ -51,5 +51,5 @@ check_mdrb()
 check_mdrb_deps()
 }
 \author{
-Tobias Schmidt, 2024-2025: initial version.
+2024-2025 Tobias Schmidt: initial version.
 }
