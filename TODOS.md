@@ -1,15 +1,14 @@
+# DONE 2025-04-XX (PR 16)
+
+## Refactor integral calculations
+
+We should use `A * pi` everywhere unless `bwc = 0`.
+
 # PLANNED
 
-## Emit deprecatian warnings
+## Refactor mse calculations
 
-1. Exported functions that will be removed from the package, should emit a deprecation warning when called.
-2. Exported functions that will be made private, should check the environment of the calling function:
-   - If the environment of the caller is the package namespace, nothing should be done.
-   - Else, a deprecation warning should be emitted.
-
-For details see https://lifecycle.r-lib.org/articles/communicate.html
-
-This should be done with a new minor release, e.g. `1.5.0`.
+We should use `mse()` everywhere.
 
 ## Warn user if peaks in SFR
 
@@ -22,14 +21,6 @@ Note 23.1.2025: in Rust implementation peaks found in IGNORE-REGION are already 
 Currently, `mdrb_install()` always installs from source from Github. Installing from R-Univserse should be much faster, as we can install pre-compiled binary packages or at least pre-processed source bundles.
 
 If the user chooses type = "binary", we can also skip the checks for `cargo` and `rustc`.
-
-## Refactor integral calculations
-
-We should use `A * pi` everywhere unless `bwc = 0`.
-
-## Refactor mse calculations
-
-We should use `mse()` everywhere.
 
 ## Refactor parameter approximation
 
@@ -52,6 +43,21 @@ Sap spectra should be simulated as follows:
 6. Apply the shifts to the signal centers.
 7. Simulate data as usual using `simulate_spectra`
 8. Make sure, all of the above information is stored inside `$meta$simpar`
+
+## Remove generate_lorentz_curves from docs
+
+Replace all occurences of `generate_lorentz_curves()` with `deconvolute()` in the vignettes and articles.
+
+## Emit deprecatian warnings
+
+1. Exported functions that will be removed from the package, should emit a deprecation warning when called.
+2. Exported functions that will be made private, should check the environment of the calling function:
+   - If the environment of the caller is the package namespace, nothing should be done.
+   - Else, a deprecation warning should be emitted.
+
+For details see https://lifecycle.r-lib.org/articles/communicate.html
+
+This should be done with a new minor release, e.g. `1.5.0`.
 
 ## Analyze runtime
 
