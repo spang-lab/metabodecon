@@ -249,7 +249,7 @@ get_ppm_range <- function(spectrum_data, full_range = FALSE) {
 #' Helper function of `align()`. Should not be called directly by the user.
 #'
 #' Generates a list of elements required by [speaq_align()].
-#' See 'Value' for a detailled description of the list elements.
+#' See 'Value' for a detailed description of the list elements.
 #'
 #' Direct usage of this function has been deprecated with metabodecon version
 #' 1.4.3 and will be removed with metabodecon version 2.0.0.
@@ -530,10 +530,12 @@ speaq_align <- function(feat = gen_feat_mat(spectrum_data),
 #'
 #' @examples
 #'
-#' sim_subset <- metabodecon_file("bruker/sim_subset") spectrum_data <-
-#' generate_lorentz_curves_sim(sim_subset) shifted_mat <-
-#' speaq_align(spectrum_data = spectrum_data, verbose = FALSE) range <- 5
-#' lower_bound <- 1 obj <- combine_peaks(shifted_mat, range, lower_bound)
+#' sim_subset <- metabodecon_file("bruker/sim_subset")
+#' spectrum_data <- generate_lorentz_curves_sim(sim_subset)
+#' shifted_mat <- speaq_align(spectrum_data = spectrum_data, verbose = FALSE)
+#' range <- 5
+#' lower_bound <- 1
+#' obj <- combine_peaks(shifted_mat, range, lower_bound)
 #' str(obj)
 combine_peaks <- function(shifted_mat,
                           range = 5,
