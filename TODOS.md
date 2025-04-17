@@ -1,4 +1,4 @@
-# DONE 2025-04-XX (PR 15)
+# DONE 2025-04-17 (PR 15)
 
 ## Improve questions
 
@@ -12,8 +12,6 @@ Add a function `get_si_mat()` for extracting a matrix of signal intensities (SI)
 ## Add authors to functions
 
 Add author information all functions (exported and unexported).
-
-# PLANNED
 
 ## Add lifecycle badges to functions
 
@@ -34,6 +32,8 @@ or
 #' `r lifecycle::badge("experimental")`
 #'
 ```
+
+# PLANNED
 
 ## Emit deprecatian warnings
 
