@@ -2643,9 +2643,9 @@ read_decon_params_original <- function(data_path) {
 #' si_size_real_spectrum <- length(spectrum_data[[1]]$y_values)
 #' after_speaq_mat <- speaq_align(feat, maxShift, spectrum_data, si_size_real_spectrum)
 speaq_align_original <- function(feat = gen_feat_mat(spectrum_data),
-                           maxShift = 50,
-                           spectrum_data = generate_lorentz_curves_sim(),
-                           si_size_real_spectrum = length(spectrum_data[[1]]$y_values)) {
+                                 maxShift = 50,
+                                 spectrum_data = generate_lorentz_curves_sim(),
+                                 si_size_real_spectrum = length(spectrum_data[[1]]$y_values)) {
 
     # Find reference spectrum, i.e the spectrum to which all others will be aligned to
     resFindRef <- speaq::findRef(feat$peakList)
