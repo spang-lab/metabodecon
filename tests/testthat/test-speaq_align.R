@@ -39,5 +39,13 @@ test_that("speaq_align is backwards compatible to speaq_align_original", {
     if (identical(environment(), globalenv())) deferred_run()
     expect_equal(colnames(old), colnames(new))
     expect_equal(rownames(old), rownames(new))
-    expect_true(all.equal(old, new))
+    old_vals <- old[!is.na(old)]
+    new_vals <- new[!is.na(new)]
+    expect_equal(old, new, tolerance = 1e-5) # (1)
+    # (1) With version 1.5.0 of metabodecon, the integral calculation done in
+    # speaq_align was refactored to use `A * pi` instead of `A * (atan((n - p) /
+    # l) - atan((0 - p) / l))` (with limits from 0 to n). This means the values
+    # between speaq_align and speaq_align_original are not identical anymore and
+    # we need to set a higher tolerance (1e-5 in this case instead of the
+    # appox. default of 1e-8).
 })

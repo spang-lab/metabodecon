@@ -140,7 +140,7 @@ align <- function(x, maxShift = 50, maxCombine = 5, verbose = TRUE, install_deps
     n <- length(cs)
     for (i in seq_along(xx)) {
         al <- rep(0, n)
-        pciac <- which(cmat[i, ] != 0)  # Peak center indices after alignment
+        pciac <- which(cmat[i, ] != 0)  # Peak center indices after combine_peaks
         lcpar <- xx[[i]]$lcpar          # Lorentzian curve parameters
         x0_al <- cs[pciac]              # Chemical shifts of peak centers
         al[pciac] <- lcpar$A * pi       # SIs as integrals of aligned lorentzians
@@ -427,26 +427,22 @@ speaq_align <- function(feat = gen_feat_mat(spectrum_data),
                         mfrow = c(2, 1)) {
     acceptLostPeak <- FALSE # Must be FALSE so we can assign A and lambda to the respective peaks
     Y <- feat$data_matrix
-    s <- nrow(Y) # Number of spectra
-    n <- ncol(Y) # Number of data points
-    U <- feat$peakList # Unaligned peak center indices (PCIs) in increasing order (i.e. the leftmost value index 1).
-    r <- speaq::findRef(U)$refInd # Reference spectrum
-    C <- dohCluster(Y, U, r, maxShift, acceptLostPeak, verbose) # list(Y, new_peakList)
-    Q <- C$new_peakList # Aligned PCIs in increasing order.
-    P <- lapply(Q, function(p) n - p) # Aligned PCIs in decreasing order.
-    integrals <- mapply(SIMPLIFY = FALSE, feat$A, feat$lambda, P, FUN = function(A, l, p) {
-        integral <- A * (atan((n - p) / l) - atan((0 - p) / l))
-        integral[p == 0] <- NA
-        integral
-    })
+    nsp <- nrow(Y) # Number of spectra
+    ndp <- ncol(Y) # Number of data points
+    upci_list <- feat$peakList # Unaligned peak center indices
+    idx_ref <- speaq::findRef(upci_list)$refInd # Reference spectrum
+    clust_obj <- dohCluster(Y, upci_list, idx_ref, maxShift, acceptLostPeak, verbose) # list(Y, new_peakList)
+    apci_list <- clust_obj$new_peakList # Aligned peak center indices
     ppm <- spectrum_data[[1]]$x_values_ppm
-    M <- matrix(nrow = s, ncol = n, dimnames = list(NULL, ppm))
-    for (i in seq_len(s)) M[i, round(Q[[i]])] <- integrals[[i]]
+    M <- matrix(nrow = nsp, ncol = ndp, dimnames = list(NULL, ppm))
+    for (i in seq_len(nsp)) {
+        M[i, round(apci_list[[i]])] <- feat$A[[i]] * (-pi)
+    }
     if (show) {
         opar <- par(mfrow = mfrow, mar = c(5.1, 4.1, 2.1, 0.1))
         on.exit(par(opar), add = TRUE)
         plot_si_mat(feat$data_matrix, main = "Original Spectra")
-        plot_si_mat(C$Y, main = "Aligned Spectra")
+        plot_si_mat(clust_obj$Y, main = "Aligned Spectra")
     }
     return(M)
 }
