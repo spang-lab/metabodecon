@@ -57,12 +57,6 @@ plot_spectra <- function(obj,
     si_max <- max(sapply(sis, max))
     cs_min <- min(sapply(css, min))
     cs_max <- max(sapply(css, max))
-    if (is_decons2(objs)) {
-        x0_min <- min(sapply(x0s, min))
-        x0_max <- max(sapply(x0s, max))
-        x0_width <- x0_max - x0_min
-        x0_quart <- x0_width / 4
-    }
     line_colors <- rainbow(length(objs))
     legend_text <- paste("Spectrum", 1:length(objs))
     local_par(mar = mar)
@@ -74,14 +68,18 @@ plot_spectra <- function(obj,
         xlim = c(cs_max, cs_min),
         ylim = c(si_min, si_max)
     )
-    abline(
-        v = c(x0_min, x0_max),
-        lty = 2
-    )
     for (i in seq_along(objs)) {
         lines(x = css[[i]], y = sis[[i]], col = line_colors[[i]])
     }
     if (is_decons2(objs)) {
+        x0_min <- min(sapply(x0s, min))
+        x0_max <- max(sapply(x0s, max))
+        x0_width <- x0_max - x0_min
+        x0_quart <- x0_width / 4
+        abline(
+            v = c(x0_min, x0_max),
+            lty = 2
+        )
         arrows(
             x0 = c(x0_min + x0_quart, x0_max - x0_quart),
             x1 = c(x0_min, x0_max),
