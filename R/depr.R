@@ -2353,6 +2353,11 @@ deconvolution <- function(filepath,
 #' @inheritParams read_spectrum
 #' @inheritParams deconvolute
 #'
+#' @param make_rds Logical or character. If TRUE, stores results as an RDS file
+#' on disk. If a character string, saves the RDS file with the specified name.
+#' Should be set to TRUE if many spectra are evaluated to decrease computation
+#' time.
+#'
 #' @return
 #' A 'decon1' object if a single spectrum was provided. A 'decons1' object if
 #' multiple spectra were provided. See [Metabodecon

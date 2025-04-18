@@ -48,6 +48,11 @@ generate_lorentz_curves_sim(
 
 \item{file_format}{The file_format of the spectrum file. E.g. \code{"bruker"} or \code{"jcampdx"}.}
 
+\item{make_rds}{Logical or character. If TRUE, stores results as an RDS file
+on disk. If a character string, saves the RDS file with the specified name.
+Should be set to TRUE if many spectra are evaluated to decrease computation
+time.}
+
 \item{expno, procno}{The experiment/processing number for the file. E.g. \code{"10"}. Only relevant if
 \code{file_format} equals \code{"bruker"}. For details see section \href{https://spang-lab.github.io/metabodecon/articles/FAQ.html#file-structure}{File Structure} in
 the metabodecon FAQ.}
