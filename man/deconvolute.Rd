@@ -60,11 +60,6 @@ Requires the \href{https://github.com/spang-lab/mdrb}{mdrb} package. If TRUE and
 mdrb is missing, an error is thrown. If FALSE, the R implementation is used.
 If NULL, the Rust backend is used if available, otherwise the R implementation
 is used.}
-
-\item{make_rds}{Logical or character. If TRUE, stores results as an RDS file
-on disk. If a character string, saves the RDS file with the specified name.
-Should be set to TRUE if many spectra are evaluated to decrease computation
-time.}
 }
 \value{
 A 'decon2' object as described in \href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{Metabodecon Classes}.
@@ -86,7 +81,7 @@ decon <- deconvolute(spectrum)
 
 ## Read multiple spectra from disk and deconvolute at once
 spectra_dir <- metabodecon_file("sim_subset")
-spectra <- read_spectra(sim_dir)
+spectra <- read_spectra(spectra_dir)
 decons <- deconvolute(spectra, sfr = c(3.55, 3.35))
 }
 \author{

@@ -25,11 +25,6 @@
 #' peak filtering, potentially increasing runtime and memory usage
 #' significantly.
 #'
-#' @param make_rds Logical or character. If TRUE, stores results as an RDS file
-#' on disk. If a character string, saves the RDS file with the specified name.
-#' Should be set to TRUE if many spectra are evaluated to decrease computation
-#' time.
-#'
 #' @param nfit Integer. Number of iterations for approximating the parameters
 #' for the Lorentz curves. See 'Details'.
 #'
