@@ -74,7 +74,7 @@
 #'
 #' ## Read multiple spectra from disk and deconvolute at once
 #' spectra_dir <- metabodecon_file("sim_subset")
-#' spectra <- read_spectra(sim_dir)
+#' spectra <- read_spectra(spectra_dir)
 #' decons <- deconvolute(spectra, sfr = c(3.55, 3.35))
 deconvolute <- function(x,
     nfit=3,    smopts=c(2,5), delta=6.4,    sfr=NULL,   wshw=0,
