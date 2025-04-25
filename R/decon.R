@@ -165,6 +165,10 @@ deconvolute_spectra <- function(x,
     decons
 }
 
+#" EXAMPLES
+#" urine_1_path <- metabodecon_file("urine_1")
+#" urine_1 <- read_spectrum(urine_1_path)
+#" system.time(deconvolute_spectrum(urine_1, use_rust = TRUE, nw = 4))
 #' @noRd
 #' @inheritParams deconvolute_spectra
 #' @author 2024-2025 Tobias Schmidt: initial version.
@@ -197,7 +201,12 @@ deconvolute_spectrum <- function(x,
         mdrb_deconvr$set_moving_average_smoother(smopts[1], smopts[2])
         mdrb_deconvr$set_noise_score_selector(delta)
         mdrb_deconvr$set_analytical_fitter(nfit)
-        mdrb_decon <- mdrb_deconvr$deconvolute_spectrum(mdrb_spectrum)
+        mdrb_decon <- if (nw > 1) {
+            mdrb_deconvr$set_threads(nw)
+            mdrb_deconvr$par_deconvolute_spectrum(mdrb_spectrum)
+        } else {
+            mdrb_deconvr$deconvolute_spectrum(mdrb_spectrum)
+        }
         decon <- new_rdecon(x, args, mdrb_spectrum, mdrb_deconvr, mdrb_decon)
     } else {
         # Sys.setenv(RAYON_NUM_THREADS=nw) # Must be set before R is started
