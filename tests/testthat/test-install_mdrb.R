@@ -38,7 +38,11 @@ test_that("install_mdrb works", {
         answers = "y",
         output = "captured",
         message = "captured",
-        expr = x <- try(install_mdrb(type = "source", keep_outputs = TRUE))
+        expr = {
+            x <- try(install_mdrb(type = "source", keep_outputs = TRUE))
+            unlink("mdrb.out") # If executed by testthat
+            unlink("tests/testthat/mdrb.out") # If executed interactively
+        }
     )
     mdrb_available <- check_mdrb()
     if (getRversion() <  numeric_version("4.2")) {
