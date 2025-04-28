@@ -1061,5 +1061,5 @@ bioc_install <- function(pkgs, ask = TRUE, verbose = TRUE) {
         if (isFALSE(get_yn_input(msg))) return()
     }
     repos <- c('https://bioc.r-universe.dev', 'https://cloud.r-project.org')
-    utils::install.packages(pkgs_missing, repos = repos)
+    utils::install.packages(pkgs_missing, repos = repos, keep_outputs = tmpdir("bioc_install"))
 }
