@@ -14,6 +14,7 @@ test_that("install_mdrb works", {
     n_libs <- length(old_libs)
     defer(.libPaths(old_libs))
     .libPaths(c(tmp_lib, old_libs[n_libs]), include.site = FALSE)
+    unloadNamespace("mdrb")
 
     mdrb_available <- check_mdrb()
     expect_false(mdrb_available)
