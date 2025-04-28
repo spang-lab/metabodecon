@@ -18,9 +18,9 @@
 #'
 #' @param type
 #' The planned installation type. Either "binary" or "source". Binary
-#' installation of `mdrb` only R >= 4.2. Source installation requires R
-#' >= 4.2, R Buildtools and cargo and rustc >= 1.80. Parameter added with
-#' metabodecon version 1.5.0.
+#' installation of `mdrb` requires R >= 4.2. Source installation requires
+#' R >= 4.2, R Buildtools, cargo >= 1.80 and rustc >= 1.80. Parameter added
+#' with metabodecon version 1.5.0.
 #'
 #' @details
 #' `check_mdrb_deps()` uses [pkgbuild::has_build_tools] to determine whether
@@ -29,7 +29,8 @@
 #' it looks for a suitable compiler. If this fails, the function tries to build
 #' a package from source, to check whether buildtools are available. Depending
 #' on the environment this can take several seconds. This step can be disabled
-#' by setting option `"buildtools.check"` to `FALSE`.
+#' by setting option `"buildtools.check"` to `FALSE`, e.g. via
+#' `options(buildtools.check = FALSE)`.
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
@@ -165,10 +166,8 @@ check_mdrb_deps <- function(type = "binary") {
 #'
 #' @param type
 #' Installation type. Either "binary" or "source". Passed to
-#' [utils::install.packages()].
-#'
-#' @param verbose
-#' Whether to print messages to the console. Default is TRUE.
+#' [utils::install.packages()]. Leave at NULL to use the default type for your
+#' operating system.
 #'
 #' @param ...
 #' Additional arguments to pass to [utils::install.packages()] when attempting
@@ -180,7 +179,7 @@ check_mdrb_deps <- function(type = "binary") {
 #'
 #' @examples
 #' if (interactive()) try(install_mdrb())
-install_mdrb <- function(ask = TRUE, type = "binary", ...) {
+install_mdrb <- function(ask = TRUE, type = NULL, ...) {
     msg <- "Proceeding will install package 'mdrb'. Continue?"
     cont <- if (isTRUE(ask) && isFALSE(get_yn_input(msg))) return()
     invisible(install.packages(
