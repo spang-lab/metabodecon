@@ -7,16 +7,13 @@
 \usage{
 check_mdrb(stop_on_fail = FALSE)
 
-check_mdrb_deps(type = "binary")
+check_mdrb_deps(verbose = FALSE)
 }
 \arguments{
 \item{stop_on_fail}{If TRUE, an error is thrown if the check fails, providing instructions on how
 to install or upgrade mdrb.}
 
-\item{type}{The planned installation type. Either "binary" or "source". Binary
-installation of \code{mdrb} requires R >= 4.2. Source installation requires
-R >= 4.2, R Buildtools, cargo >= 1.80 and rustc >= 1.80. Parameter added
-with metabodecon version 1.5.0.}
+\item{verbose}{If TRUE, additional information is printed during the check process.}
 }
 \value{
 \code{check_mdrb()} returns TRUE if a suitable version of mdrb is installed,

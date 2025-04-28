@@ -4,14 +4,11 @@
 \alias{install_mdrb}
 \title{Install Rust Backend}
 \usage{
-install_mdrb(ask = TRUE, type = "both", ...)
+install_mdrb(ask = TRUE, ...)
 }
 \arguments{
 \item{ask}{Whether to ask for confirmation before attempting installation. Default is
 TRUE.}
-
-\item{type}{Preffered installation type. Either "binary", "source" or "both". Passed to
-\code{\link[utils:install.packages]{utils::install.packages()}}.}
 
 \item{...}{Additional arguments to pass to \code{\link[utils:install.packages]{utils::install.packages()}} when attempting
 installation of mdrb.}

@@ -19,15 +19,24 @@ test_that("install_mdrb works", {
     mdrb_available <- check_mdrb()
     expect_false(mdrb_available)
 
-    # Try installation from binary
+    # Skip on Linux, to prevent source install, which takes up to 2 minutes.
+    if (Sys.info()[["sysname"]] == "Linux") {
+        skip_if_slow_tests_disabled()
+    }
+
     obj <- evalwith(
         output = "captured",
         message = "captured",
-        expr = x <- try(install_mdrb(ask = FALSE))
+        expr = {
+            x <- try(install_mdrb(ask = FALSE, keep_outputs = TRUE))
+            unlink("mdrb.out") # If executed by testthat
+            unlink("tests/testthat/mdrb.out") # If executed interactively
+        }
     )
     mdrb_available <- check_mdrb()
-    if (getRversion() <  numeric_version("4.2") || Sys.info()[["sysname"]] == "Linux") {
+    if (getRversion() <  numeric_version("4.2")) {
         expect_true(inherits(x, "try-error"))
+        expect_equal(obj$message, "Error : installation of mdrb requires R version 4.2 or greater")
         expect_false(mdrb_available)
     } else {
         if (inherits(x, "try-error")) {
@@ -36,29 +45,6 @@ test_that("install_mdrb works", {
             message("Captured output:")
             message(paste("|", obj$output, collapse = "\n"))
         }
-        expect_true(is.null(x))
-        expect_true(mdrb_available)
-    }
-
-    skip_if_slow_tests_disabled()
-
-    # Test source installation
-    if (mdrb_available) remove.packages("mdrb", lib = tmp_lib)
-    obj <- evalwith(
-        answers = "y",
-        output = "captured",
-        message = "captured",
-        expr = {
-            x <- try(install_mdrb(type = "source", keep_outputs = TRUE))
-            unlink("mdrb.out") # If executed by testthat
-            unlink("tests/testthat/mdrb.out") # If executed interactively
-        }
-    )
-    mdrb_available <- check_mdrb()
-    if (getRversion() <  numeric_version("4.2")) {
-        expect_true(inherits(x, "try-error"))
-        expect_false(mdrb_available)
-    } else {
         expect_true(is.null(x))
         expect_true(mdrb_available)
     }

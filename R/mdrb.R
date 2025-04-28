@@ -16,11 +16,8 @@
 #' If TRUE, an error is thrown if the check fails, providing instructions on how
 #' to install or upgrade mdrb.
 #'
-#' @param type
-#' The planned installation type. Either "binary" or "source". Binary
-#' installation of `mdrb` requires R >= 4.2. Source installation requires
-#' R >= 4.2, R Buildtools, cargo >= 1.80 and rustc >= 1.80. Parameter added
-#' with metabodecon version 1.5.0.
+#' @param verbose
+#' If TRUE, additional information is printed during the check process.
 #'
 #' @details
 #' `check_mdrb_deps()` uses [pkgbuild::has_build_tools] to determine whether
@@ -83,36 +80,25 @@ check_mdrb <- function(stop_on_fail = FALSE) {
 
 #' @export
 #' @rdname check_mdrb
-check_mdrb_deps <- function(type = "binary") {
-
-    stopifnot(is_char(type, 1, "(binary|source)"))
+check_mdrb_deps <- function(verbose = FALSE) {
 
     check <- c("R >= 4.2", "Rtools exist", "cargo >= 1.80", "rustc >= 1.80")
     df <- data.frame(check, passed = NA, comment = NA)
     rownames(df) <- c("r", "rtools", "cargo", "rustc")
 
     # Check R version
-    logf("Check R version...")
+    if (verbose) logf("Checking R version...")
     r_cur <- package_version(getRversion())
     r_req <- package_version("4.2.0")
     df["r", "passed"] <- r_cur >= r_req
     df["r", "comment"] <- paste("Current: R", r_cur)
 
-    # Skip most checks if type is binary (added in version 1.5.0)
-    if (type == "binary") {
-        skip <- c("rtools", "cargo", "rustc")
-        df[skip, "passed"]  <- TRUE
-        df[skip, "comment"] <- "Not required for binary installation"
-        return(df)
-    }
-
     # Check buildtools exist
-    logf("Check buildtools exist...")
+    if (verbose) logf("Checking if buildtools exist...")
     df["rtools", "passed"] <- pkgbuild::has_build_tools()
     df["rtools", "comment"] <- "Testcall: pkgbuild::has_build_tools()"
 
     # Add $HOME/.cargo/bin to PATH before checking cargo and rustc
-    logf("Add $HOME/.cargo/bin to PATH before checking cargo and rustc...")
     win <- .Platform$OS.type == "windows"
     home_cargo_bin <- paste(home(), ".cargo", "bin", sep = .Platform$file.sep)
     PATH <- Sys.getenv("PATH")
@@ -120,7 +106,7 @@ check_mdrb_deps <- function(type = "binary") {
     Sys.setenv(PATH = PATH)
 
     # Check cargo version
-    logf("Check cargo version...")
+    if (verbose) logf("Checking cargo version...")
     cargo_out <- "not found in PATH"
     cargo_str <- "0.0.0"
     try(silent = TRUE, {
@@ -134,7 +120,7 @@ check_mdrb_deps <- function(type = "binary") {
     df["cargo", "comment"] <- paste("Current:", cargo_out)
 
     # Check rustc version
-    logf("Check rustc version...")
+    if (verbose) logf("Checking rustc version...")
     rustc_out <- "not found in PATH"
     rustc_str <- "0.0.0"
     try(silent = TRUE, {
@@ -147,6 +133,7 @@ check_mdrb_deps <- function(type = "binary") {
     df["rustc", "passed"] <- rustc_cur >= rustc_req
     df["rustc", "comment"] <- paste("Current:", rustc_out)
 
+    if (verbose) logf("Done")
     df
 }
 
@@ -164,10 +151,6 @@ check_mdrb_deps <- function(type = "binary") {
 #' Whether to ask for confirmation before attempting installation. Default is
 #' TRUE.
 #'
-#' @param type
-#' Preffered installation type. Either "binary", "source" or "both". Passed to
-#' [utils::install.packages()].
-#'
 #' @param ...
 #' Additional arguments to pass to [utils::install.packages()] when attempting
 #' installation of mdrb.
@@ -178,15 +161,13 @@ check_mdrb_deps <- function(type = "binary") {
 #'
 #' @examples
 #' if (interactive()) try(install_mdrb())
-install_mdrb <- function(ask = TRUE, type = "both", ...) {
+install_mdrb <- function(ask = TRUE, ...) {
+    if (getRversion() < numeric_version("4.2")) {
+        stop("installation of mdrb requires R version 4.2 or greater", call. = FALSE)
+    }
     msg <- "Proceeding will install package 'mdrb'. Continue?"
-    cont <- if (isTRUE(ask) && isFALSE(get_yn_input(msg))) return()
-    invisible(install.packages(
-        'mdrb',
-        repos = 'https://spang-lab.r-universe.dev',
-        type = type,
-        ...
-    ))
+    if (isTRUE(ask) && isFALSE(get_yn_input(msg))) return()
+    invisible(install.packages("mdrb", repos = "https://spang-lab.r-universe.dev", ...))
 }
 
 # Internal #####
