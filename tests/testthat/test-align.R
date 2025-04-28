@@ -88,7 +88,7 @@ test_that("align can install its dependencies", {
     old_libs <- .libPaths()
     n_libs <- length(old_libs)
     defer(.libPaths(old_libs))
-    .libPaths(c(tmp_lib, old_libs[n_libs]))
+    .libPaths(c(tmp_lib, old_libs[n_libs]), include.site = FALSE)
 
     # Unload speaq, impute and MassSpecWavelet
     deps <- c("impute", "MassSpecWavelet")
