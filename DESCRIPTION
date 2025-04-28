@@ -63,20 +63,17 @@ LazyData: true
 Config/testthat/edition: 3
 Config/testthat/parallel: true
 Config/testthat/start-first:
-    cache_example_datasets,
-    datadir,
-    deconvolute_ispecs,
-    diffobj,
-    download_example_datasets,
-    generate_lorentz_curves,
-    get_decon_params,
-    glue,
     install_mdrb,
-    mcmapply,
     read_spectrum,
+    download_example_datasets,
+    cache_example_datasets,
+    align,
+    mcmapply,
+    datadir,
+    get_decon_params,
+    generate_lorentz_curves,
     smooth_signals,
-    speaq_align,
-    waldo
+    speaq_align
 RdMacros: mathjaxr
 BuildManual: TRUE
 Language: en-US
