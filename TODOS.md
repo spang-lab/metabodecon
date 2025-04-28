@@ -18,10 +18,6 @@ If the user chooses type = "binary", we can also skip the checks for `cargo` and
 # 2. PLANNED
 
 
-## 2.1. Get codecov to 100%
-
-Make sure all functions are tested or excluded from testing with a corresponding comment giving a reason for the exclusion.
-
 
 ## 2.2. Refactor mse calculations
 
@@ -236,3 +232,8 @@ WSR and SFR should be plotted by plot_spectrum. As soon as this works, we can cr
 ## 4.12. Support more file formats
 
 Support NMR formats used by Varian and JEOL.
+
+
+## 2.1. Get codecov to 100%
+
+Make sure all functions are tested or excluded from testing with a corresponding comment giving a reason for the exclusion.
