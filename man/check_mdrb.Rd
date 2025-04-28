@@ -7,11 +7,16 @@
 \usage{
 check_mdrb(stop_on_fail = FALSE)
 
-check_mdrb_deps()
+check_mdrb_deps(type = "binary")
 }
 \arguments{
 \item{stop_on_fail}{If TRUE, an error is thrown if the check fails, providing instructions on how
 to install or upgrade mdrb.}
+
+\item{type}{The planned installation type. Either "binary" or "source". Binary
+installation of \code{mdrb} requires R >= 4.2. Source installation requires
+R >= 4.2, R Buildtools, cargo >= 1.80 and rustc >= 1.80. Parameter added
+with metabodecon version 1.5.0.}
 }
 \value{
 \code{check_mdrb()} returns TRUE if a suitable version of mdrb is installed,
@@ -34,8 +39,8 @@ Example:
 ##                check passed                                      comment
 ## r           R >= 4.2   TRUE                             Current: R 4.4.2
 ## rtools  Rtools exist   TRUE     Tested with: pkgbuild::has_build_tools()
-## cargo  cargo >= 1.78   TRUE Current: cargo 1.84.1 (66221abde 2024-11-19)
-## rustc  rustc >= 1.78   TRUE Current: rustc 1.84.1 (e71f9a9a9 2025-01-27)
+## cargo  cargo >= 1.80   TRUE Current: cargo 1.84.1 (66221abde 2024-11-19)
+## rustc  rustc >= 1.80   TRUE Current: rustc 1.84.1 (e71f9a9a9 2025-01-27)
 }\if{html}{\out{</div>}}
 }
 \description{
@@ -43,12 +48,26 @@ Example:
 metabodecon Rust backend \href{https://github.com/spang-lab/mdrb}{mdrb} is
 currently installed.
 
-\code{check_mdrb_deps()} returns a list with detailed information about the
-installation status of mdrb and its dependencies.
+\code{check_mdrb_deps()} returns a list with information about the
+installation status of mdrb system dependencies.
+}
+\details{
+\code{check_mdrb_deps()} uses \link[pkgbuild:has_build_tools]{pkgbuild::has_build_tools} to determine whether
+buildtools are available on the current system. On Windows,
+\link[pkgbuild:has_build_tools]{pkgbuild::has_build_tools} searches for RTools. On other operating systems
+it looks for a suitable compiler. If this fails, the function tries to build
+a package from source, to check whether buildtools are available. Depending
+on the environment this can take several seconds. This step can be disabled
+by setting option \code{"buildtools.check"} to \code{FALSE}, e.g. via
+\code{options(buildtools.check = FALSE)}.
 }
 \examples{
 check_mdrb()
-check_mdrb_deps()
+withr::with_options(
+    list(buildtools.check = FALSE), # (1)
+    check_mdrb_deps()
+    # (1) # Use faster, but less reliable check. See 'Details'
+)
 }
 \author{
 2024-2025 Tobias Schmidt: initial version.
