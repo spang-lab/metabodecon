@@ -372,7 +372,7 @@ cache_example_datasets <- function(persistent = NULL,
                                    silent = FALSE) {
 
     pdir <- datadir_persistent()
-    pzip <- file.path(pdir, "example_datasets.zip")
+    pzip <- norm_path(file.path(pdir, "example_datasets.zip"))
     pzip_exists <- file.exists(pzip)
     pzip_is_missing <- !pzip_exists
     pzip_has_correct_size <- isTRUE(file.size(pzip) == xds$zip_size) # Implies existence
