@@ -46,7 +46,9 @@ Imports:
 Suggests:
     covr,
     devtools,
+    diffobj,
     digest,
+    glue,
     knitr,
     lifecycle,
     mdrb,
@@ -58,7 +60,8 @@ Suggests:
     rmarkdown,
     testthat (>= 3.0.0),
     usethis,
-    vdiffr
+    vdiffr,
+    waldo
 LazyData: true
 Config/testthat/edition: 3
 Config/testthat/parallel: true
