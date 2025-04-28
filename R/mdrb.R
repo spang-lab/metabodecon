@@ -165,9 +165,8 @@ check_mdrb_deps <- function(type = "binary") {
 #' TRUE.
 #'
 #' @param type
-#' Installation type. Either "binary" or "source". Passed to
-#' [utils::install.packages()]. Leave at NULL to use the default type for your
-#' operating system.
+#' Preffered installation type. Either "binary", "source" or "both". Passed to
+#' [utils::install.packages()].
 #'
 #' @param ...
 #' Additional arguments to pass to [utils::install.packages()] when attempting
@@ -179,7 +178,7 @@ check_mdrb_deps <- function(type = "binary") {
 #'
 #' @examples
 #' if (interactive()) try(install_mdrb())
-install_mdrb <- function(ask = TRUE, type = NULL, ...) {
+install_mdrb <- function(ask = TRUE, type = "both", ...) {
     msg <- "Proceeding will install package 'mdrb'. Continue?"
     cont <- if (isTRUE(ask) && isFALSE(get_yn_input(msg))) return()
     invisible(install.packages(
