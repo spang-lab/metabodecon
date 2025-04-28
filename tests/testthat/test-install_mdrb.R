@@ -6,6 +6,8 @@ test_that("install_mdrb works", {
     # Load packages required for the test before doing this.
     requireNamespace("waldo", quietly = TRUE)   # required by `expect_false(<bool>)`
     requireNamespace("diffobj", quietly = TRUE) # required by `expect_false(<try-error>)`
+    requireNamespace("glue", quietly = TRUE)    # required by testthat for test failure messages
+
     tmp_lib <- norm_path(tmpfile("tmp-library/"))
     dir.create(tmp_lib, recursive = TRUE)
     old_libs <- .libPaths()
