@@ -19,16 +19,6 @@
 #' @param verbose
 #' If TRUE, additional information is printed during the check process.
 #'
-#' @details
-#' `check_mdrb_deps()` uses [pkgbuild::has_build_tools] to determine whether
-#' buildtools are available on the current system. On Windows,
-#' [pkgbuild::has_build_tools] searches for RTools. On other operating systems
-#' it looks for a suitable compiler. If this fails, the function tries to build
-#' a package from source, to check whether buildtools are available. Depending
-#' on the environment this can take several seconds. This step can be disabled
-#' by setting option `"buildtools.check"` to `FALSE`, e.g. via
-#' `options(buildtools.check = FALSE)`.
-#'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @return
@@ -58,11 +48,7 @@
 #'
 #' @examples
 #' check_mdrb()
-#' withr::with_options(
-#'     list(buildtools.check = FALSE), # (1)
-#'     check_mdrb_deps()
-#'     # (1) # Use faster, but less reliable check. See 'Details'
-#' )
+#' check_mdrb_deps(verbose = TRUE)
 check_mdrb <- function(stop_on_fail = FALSE) {
     stopifnot(is_bool(stop_on_fail, 1))
     mdrb_version <- get_mdrb_version()
@@ -95,7 +81,7 @@ check_mdrb_deps <- function(verbose = FALSE) {
 
     # Check buildtools exist
     if (verbose) logf("Checking if buildtools exist...")
-    df["rtools", "passed"] <- pkgbuild::has_build_tools()
+    df["rtools", "passed"] <- pkgbuild::has_build_tools(debug = verbose)
     df["rtools", "comment"] <- "Testcall: pkgbuild::has_build_tools()"
 
     # Add $HOME/.cargo/bin to PATH before checking cargo and rustc

@@ -48,23 +48,9 @@ currently installed.
 \code{check_mdrb_deps()} returns a list with information about the
 installation status of mdrb system dependencies.
 }
-\details{
-\code{check_mdrb_deps()} uses \link[pkgbuild:has_build_tools]{pkgbuild::has_build_tools} to determine whether
-buildtools are available on the current system. On Windows,
-\link[pkgbuild:has_build_tools]{pkgbuild::has_build_tools} searches for RTools. On other operating systems
-it looks for a suitable compiler. If this fails, the function tries to build
-a package from source, to check whether buildtools are available. Depending
-on the environment this can take several seconds. This step can be disabled
-by setting option \code{"buildtools.check"} to \code{FALSE}, e.g. via
-\code{options(buildtools.check = FALSE)}.
-}
 \examples{
 check_mdrb()
-withr::with_options(
-    list(buildtools.check = FALSE), # (1)
-    check_mdrb_deps()
-    # (1) # Use faster, but less reliable check. See 'Details'
-)
+check_mdrb_deps(verbose = TRUE)
 }
 \author{
 2024-2025 Tobias Schmidt: initial version.
