@@ -11,5 +11,6 @@ linters: linters_with_defaults(
     semicolon_linter = NULL
   )
 exclusions: list(
-    "R/MetaboDecon1D.R"
+    "R/MetaboDecon1D.R",
+    "R/depr.R"
   )
