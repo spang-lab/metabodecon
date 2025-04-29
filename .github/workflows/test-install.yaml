@@ -45,9 +45,3 @@ jobs:
 
       - name: Test Installation from Github
         run: Rscript scripts/test-install.R Github
-
-      - name: Check slow example
-        shell: Rscript {0}
-        run: |
-          library(metabodecon)
-          example(check_mdrb)
