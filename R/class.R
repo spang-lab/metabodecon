@@ -552,7 +552,6 @@ as_decon1.decon0 <- function(x,
     ppm <- x$x_values_ppm
     sdp <- x$x_values
     dp <- round(x$x_values * sf[1])
-    ppm_nstep <- diff(range(ppm)) / (length(ppm))
     y <- x
     # Append optional elements if missing
     if (is.null(x[["signal_free_region"]])) {
@@ -568,7 +567,7 @@ as_decon1.decon0 <- function(x,
     # Calculate decon1 elements
     y$y_values_raw <- si
     y$x_values_hz <- fq
-    y$mse_normed_raw <- mean(((si / sum(si)) - (ssp / sum(ssp)))^2)
+    y$mse_normed_raw <- mse(si, ssp, normed = TRUE) # OLD: mean(((si / sum(si)) - (ssp / sum(ssp)))^2)
     y$signal_free_region_ppm <- sfr %||% sfr_in_ppm_bwc(x[["signal_free_region"]], sdp, ppm)
     y$x_0_hz <- convert_pos(x$x_0, sdp, fq)
     y$x_0_dp <- convert_pos(x$x_0, sdp, dp)
@@ -659,7 +658,7 @@ as_decon1.idecon <- function(x, sf, spectrum, sfr, wshw, bwc) {
     y$x_values_ppm <- x$ppm
     y$y_values <- x$y_smooth
     y$spectrum_superposition <- t(s <- lorentz_sup(x = x$sdp, lcpar = x$lcr))
-    y$mse_normed <- mean(((x$y_smooth / sum(x$y_smooth)) - (s / sum(s)))^2)
+    y$mse_normed <- mse(x$y_smooth, s, normed = TRUE) # OLD: mean(((x$y_smooth / sum(x$y_smooth)) - (s / sum(s)))^2)
     y$index_peak_triplets_middle <- as.numeric(x$peak$center[x$peak$high])
     y$index_peak_triplets_left <- as.numeric(x$peak$right[x$peak$high]) # decon[01] has left and right inverted
     y$index_peak_triplets_right <- as.numeric(x$peak$left[x$peak$high]) # decon[01] has left and right inverted
@@ -674,7 +673,7 @@ as_decon1.idecon <- function(x, sf, spectrum, sfr, wshw, bwc) {
     y$x_0 <- x$lcr$w
     y$y_values_raw <- x$y_raw
     y$x_values_hz <- x$hz
-    y$mse_normed_raw <- mean(((x$y_raw / sum(x$y_raw)) - (s / sum(s)))^2)
+    y$mse_normed_raw <- mse(x$y_raw, s, normed = TRUE) # OLD: mean(((x$y_raw / sum(x$y_raw)) - (s / sum(s)))^2)
     y$signal_free_region_ppm <- x$args$sfr
     y$x_0_hz <- convert_pos(x$lcr$w, x$sdp, x$hz)
     y$x_0_dp <- convert_pos(x$lcr$w, x$sdp, x$dp)
@@ -719,7 +718,7 @@ as_decon2.decon1 <- function(x, ...) {
         lambda = -(x$lambda_ppm)
     )
     mse <- list(
-        raw = mse(si, sit$sup, normed = FALSE),
+        raw  = mse(si, sit$sup, normed = FALSE),
         norm = x$mse_normed_raw,
         sm = mse(sit$sm, sit$sup, normed = FALSE),
         smnorm = x$mse_normed
@@ -787,7 +786,7 @@ as_decon2.rdecon <- function(x, ...) {
         smnorm = mse(sm, sup, norm=TRUE)
         # (1) x$mdrb_decon$mse() deviates from mse() results, so we need to
         # calculate ourselves until Rust backend provides the correct values
-        # (see TODOS.md
+        # (see TODOS.md)
     )
     peak <- get_peak(lcpar$x0, cs) # Should be provided directly by Rust backend in future versions
     obj <- named(cs, si, meta, args, sit, peak, lcpar, mse)
@@ -817,7 +816,11 @@ as_ispec <- function(x, sf = c(1e3, 1e6)) {
     ppm_nstep <- ppm_range / n # Wrong, but backwards compatible [^2].
     name <- s$meta$name # Name of the spectrum
     meta <- s$meta # Other Metadata to the spectrum
-    g <- locals()[ispec_members]
+    g <- named(
+        y_raw, y_scaled, n, dp, sdp, sf, ppm, hz,
+        ppm_range, ppm_max, ppm_min, ppm_step, ppm_nstep,
+        name, meta
+    )
     structure(g, class = "ispec")
     # [^1]: Same as `dp / sf[1]`, but with slight numeric differences, so we
     #       stick with the old calculation method for backwards compatibility.
@@ -839,7 +842,6 @@ as_idecon <- function(x) {
         meta <- x$spectrum$meta
         args <- x$args
         lcpar <- x$mdrb_decon$lorentzians()
-        y_sup <- x$mdrb_decon$superposition_vec(ppm)
         n <- length(y_raw)
         dp <- seq(n - 1, 0, -1)
         sdp <- dp / 1e3
@@ -869,7 +871,13 @@ as_idecon <- function(x) {
         region <- rep("norm", npeaks)
         peak <- data.frame(left, center, right, score, high, region)
         Z <- lci <- lca <- NA
-        structure(locals(without = "x")[idecon_members], class = "idecon")
+        x <- named(
+            y_raw, y_scaled, n, dp, sdp, sf, ppm, hz,
+            ppm_range, ppm_max, ppm_min, ppm_step, ppm_nstep,
+            name, meta,
+            args, y_nows, y_pos, Z, y_smooth, d, peak, lci, lca, lcr
+        )
+        structure(x, class = "idecon")
     } else if (all(idecon_members %in% names(x))) {
         structure(x, class = "idecon")
     } else {
@@ -951,7 +959,7 @@ as_collection <- function(x, cls) {
         is_char(cls, 1, "(decon[0-2]|idecon|rdecon)"),
         cls == "decon0" || all(sapply(x, class) == cls)
     )
-    decons <- switch(cls,
+    switch(cls,
         "decon0" = as_decons0(x),
         "decon1" = as_decons1(x),
         "decon2" = as_decons2(x),

@@ -72,8 +72,8 @@
 #' spectra <- read_spectra(spectra_dir)
 #' decons <- deconvolute(spectra, sfr = c(3.55, 3.35))
 deconvolute <- function(x,
-    nfit=3,    smopts=c(2,5), delta=6.4,    sfr=NULL,   wshw=0,
-    ask=FALSE, force=FALSE,   verbose=TRUE, nworkers=1, use_rust=FALSE
+    nfit=3,    smopts=c(2, 5), delta=6.4,    sfr=NULL,   wshw=0,
+    ask=FALSE, force=FALSE,    verbose=TRUE, nworkers=1, use_rust=FALSE
 ) {
     # Check inputs
     stopifnot(
@@ -114,21 +114,22 @@ deconvolute <- function(x,
 #' Support for `bwc == 0` will be removed in 'metabodecon v2.0'.
 #' @author 2024-2025 Tobias Schmidt: initial version.
 deconvolute_spectra <- function(x,
-    nfit=3, smopts=c(2,5), delta=6.4, sfr=c(3.55,3.35), wshw=0,
-    ask=FALSE, force=FALSE, verbose=TRUE, bwc=2,
-    use_rust=FALSE, nw=1, igr=list(), rtyp="idecon"
+    nfit=3,        smopts=c(2, 5),    delta=6.4,      sfr=c(3.55, 3.35),
+    wshw=0,        ask=FALSE,         force=FALSE,    verbose=TRUE,
+    bwc=2,         use_rust=FALSE,    nw=1,           igr=list(),
+    rtyp="idecon"
 ) {
 
     # Check inputs
     assert(
         is_spectrum(x) || is_spectra(x),
-        is_int(nfit,1), is_int(smopts,2), is_num(delta,1),
-        is_bool(ask,1), is_bool(force,1), is_bool(verbose,1),
-        is_num(bwc,1),
-        is_num(sfr,2)  || is_list_of_nums(sfr,length(x),2),
-        is_num(wshw,1) || is_list_of_nums(wshw,length(x),1),
+        is_int(nfit, 1), is_int(smopts, 2), is_num(delta, 1),
+        is_bool(ask, 1), is_bool(force, 1), is_bool(verbose, 1),
+        is_num(bwc, 1),
+        is_num(sfr, 2)  || is_list_of_nums(sfr, length(x), 2),
+        is_num(wshw, 1) || is_list_of_nums(wshw, length(x), 1),
         if (rtyp == "rdecon") isTRUE(use_rust) else is_bool(use_rust),
-        is_char(rtyp,1,"(decon[0-2]|idecon|rdecon)")
+        is_char(rtyp, 1, "(decon[0-2]|idecon|rdecon)")
     )
 
     # Configure logging
@@ -173,18 +174,18 @@ deconvolute_spectra <- function(x,
 #' @inheritParams deconvolute_spectra
 #' @author 2024-2025 Tobias Schmidt: initial version.
 deconvolute_spectrum <- function(x,
-    nfit=3, smopts=c(2,5), delta=6.4, sfr=c(3.55, 3.35), wshw=0,
+    nfit=3, smopts=c(2, 5), delta=6.4, sfr=c(3.55, 3.35), wshw=0,
     ask=FALSE, force=FALSE, verbose=TRUE, bwc=2,
     use_rust=FALSE, nw=1, igr=list(), rtyp="idecon"
 ) {
     # Check inputs
     assert(
         is_spectrum(x),
-        is_int(nfit,1), is_int(smopts,2),    is_num(delta,1),
-        is_num(sfr,2),  is_num(wshw,1),      is_bool(force,1),
-        is_num(bwc,1),  is_bool(use_rust,1), is_int(nw,1),
+        is_int(nfit, 1),  is_int(smopts, 2),     is_num(delta, 1),
+        is_num(sfr, 2),   is_num(wshw, 1),       is_bool(force, 1),
+        is_num(bwc, 1),   is_bool(use_rust, 1),  is_int(nw, 1),
         is_list_of_nums(igr, nv=2),
-        is_char(rtyp,1,"(decon[0-2]|idecon|rdecon)")
+        is_char(rtyp, 1, "(decon[0-2]|idecon|rdecon)")
     )
 
     # Init locals
@@ -471,7 +472,7 @@ find_peaks <- function(spec) {
         spec$peak$score[i] <- get_peak_score(j, l, r, a)
     }
     logf("Detected %d peaks", length(center))
-    return(spec)
+    spec
 }
 
 #' @noRd
@@ -733,12 +734,10 @@ get_right_border <- function(j, d, m) {
         c3 <- d[r] < 0
         c4 <- d[r + 1] >= 0
         is_right_border <- (c1 && c2) || (c1 && c3 && c4)
-        if (isTRUE(is_right_border)) {
-            return(r)
-        }
+        if (isTRUE(is_right_border)) return(r)
         r <- r + 1
     }
-    return(NA)
+    NA
 }
 
 #' @noRd
@@ -754,12 +753,10 @@ get_left_border <- function(j, d) {
         c3 <- d[l] < 0
         c4 <- d[l - 1] >= 0
         is_left_border <- (c1 && c2) || (c1 && c3 && c4)
-        if (isTRUE(is_left_border)) {
-            return(l)
-        }
+        if (isTRUE(is_left_border)) return(l)
         l <- l - 1
     }
-    return(NA)
+    NA
 }
 
 #' @noRd
@@ -862,7 +859,7 @@ init_lc <- function(spec, verbose = TRUE) {
     }
 
     # Print MSE
-    mse <- mean((y[lmr] - rowSums(Z))^2)
+    mse <- mse(y[lmr], rowSums(Z)) # OLD: mean((y[lmr] - rowSums(Z))^2)
     if (verbose) logf("MSE at peak tiplet positions: %.22f", mse)
 
     # Create return list
@@ -974,7 +971,7 @@ refine_lc_v14 <- function(spec, Z) {
     }
 
     # Print MSE
-    mse <- mean((y[lmr] - rowSums(Z))^2)
+    mse <- mse(y[lmr], rowSums(Z)) # OLD: mean((y[lmr] - rowSums(Z))^2)
     logf("MSE at peak tiplet positions: %.22f", mse)
 
     # Create return list
