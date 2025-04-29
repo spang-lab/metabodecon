@@ -1,13 +1,13 @@
 # Workflow derived from https://github.com/r-lib/actions/tree/v2/examples
 # Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
-name: R-CMD-check
+name: Slow-Example-Check
 permissions: read-all
 on: {
   push: {branches: [main, master]},
   pull_request: {branches: [main, master]}
 }
 jobs:
-  R-CMD-check:
+  Slow-Example-Check:
     runs-on: ${{ matrix.config.os }}
     name: ${{ matrix.config.os }} (${{ matrix.config.r }})
     strategy:
@@ -59,3 +59,32 @@ jobs:
         run: |
           library(metabodecon)
           example(check_mdrb)
+
+          nowstr <- function() format(Sys.time(), "%Y-%m-%d %H:%M:%OS3: ")
+          is_windows <- pkgbuild:::is_windows
+          is_R4 <- pkgbuild:::is_R4
+          has_rtools <- pkgbuild:::has_rtools
+          has_compiler <- pkgbuild:::has_compiler
+          debug <- TRUE
+
+          check <- getOption("buildtools.check", NULL)
+          message(nowstr(), "'", check, "'")
+
+          has <- if (is_windows() && is_R4() && has_rtools(debug = debug)) {
+              message(nowstr(), "Branch 1")
+              TRUE
+          } else if (is_windows()) {
+              message(nowstr(), "Branch 2")
+              has_rtools(debug = debug)
+          } else {
+              message(nowstr(), "Branch 3")
+              has_compiler(debug = debug)
+          }
+
+          if (!has && !is.null(check)) {
+              message(nowstr(), "Branch 4")
+              check("Building R package from source")
+          } else {
+              message(nowstr(), "Branch 5")
+              has
+          }
