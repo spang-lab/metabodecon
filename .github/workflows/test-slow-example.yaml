@@ -88,3 +88,12 @@ jobs:
               message(nowstr(), "Branch 5")
               has
           }
+
+      - name: Check rustc and cargo versions
+        shell: bash
+        run: |
+          echo "$(date '+%Y-%m-%d %H:%M:%S'): rustc --version"
+          rustc --version
+          echo "$(date '+%Y-%m-%d %H:%M:%S'): cargo --version"
+          cargo --version
+          echo "$(date '+%Y-%m-%d %H:%M:%S'): done"

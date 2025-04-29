@@ -54,6 +54,8 @@ test_that("align works", {
     expect_equal(supal, lorentz_sup(cs, x0_al, A, lambda))
 })
 
+skip_if_slow_tests_disabled()
+
 test_that("align can install its dependencies", {
 
     # TEST PURPOSE: If `metabodecon` or `speaq` is installed via
@@ -102,7 +104,7 @@ test_that("align can install its dependencies", {
     deps_installed <- sapply(deps, requireNamespace, quietly = TRUE)
     expect_false(any(deps_installed))
 
-    # Try installation from binary
+    # Call align with auto-installation of dependencies enabled
     obj <- evalwith(
         output = "captured",
         message = "captured",
