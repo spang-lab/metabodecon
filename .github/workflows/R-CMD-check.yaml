@@ -62,8 +62,3 @@ jobs:
       - name: Test package
         uses: r-lib/actions/check-r-package@v2
         env: { _R_CHECK_FORCE_SUGGESTS_: false }
-
-      - name: Check slow example
-        shell: Rscript {0}
-        run: |
-          pkgbuild::has_build_tools(debug = TRUE)
