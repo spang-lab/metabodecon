@@ -25,26 +25,21 @@
 #' `check_mdrb()` returns TRUE if a suitable version of mdrb is installed,
 #' else FALSE.
 #'
-#' `check_mdrb_deps()` returns a data.frame with the following columns:
-#'
-#' - `check`: description of the checked dependency as a string
-#' - `passed`: boolean indicating whether the check passed
-#' - `comment`: free text string describing the check result
-#'
-#' The rownames of the dataframe are: `r`, `rtools`, `cargo` and `rustc` and
-#' correspond to the checked dependencies.
-#'
-#' Example:
+#' `check_mdrb_deps()` returns a data.frame as follows:
 #'
 #' ```R
-#' check_mdrb_deps()
-#'
-#' ##                check passed                                      comment
-#' ## r           R >= 4.2   TRUE                             Current: R 4.4.2
-#' ## rtools  Rtools exist   TRUE     Tested with: pkgbuild::has_build_tools()
-#' ## cargo  cargo >= 1.80   TRUE Current: cargo 1.84.1 (66221abde 2024-11-19)
-#' ## rustc  rustc >= 1.80   TRUE Current: rustc 1.84.1 (e71f9a9a9 2025-01-27)
+#'             check           passed  comment
+#'     r       R >= 4.2        TRUE    Current: R 4.4.2
+#'     rtools  Rtools exist    TRUE    Tested with: pkgbuild::has_build_tools()
+#'     cargo   cargo >= 1.80   TRUE    Current: cargo 1.84.1 (66221abde 2024-11-19)
+#'     rustc   rustc >= 1.80   TRUE    Current: rustc 1.84.1 (e71f9a9a9 2025-01-27)
 #' ```
+#'
+#' Column `check` is a string describing the performed check.\cr
+#' Column `passed` is a boolean indicating whether the check passed.\cr
+#' Column `comment` is a string string describing the check result.
+#'
+#' The rownames of the dataframe one-word descriptions of the performed checks.
 #'
 #' @examples
 #' check_mdrb()
