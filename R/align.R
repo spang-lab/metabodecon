@@ -91,10 +91,10 @@ align <- function(x, maxShift = 50, maxCombine = 5, verbose = TRUE, install_deps
     obj <- dohCluster(
         X <- get_sup_mat(xx),
         peakList <- lapply(xx, get_peak_indices),
-        refInd <- speaq::findRef(peakList)$refInd,
-        maxShift,
-        acceptLostPeak <- FALSE,
-        verbose
+        refInd = speaq::findRef(peakList)$refInd,
+        maxShift = maxShift,
+        acceptLostPeak = FALSE,
+        verbose = verbose
     )
     pciaa <- obj$new_peakList
 
@@ -144,7 +144,6 @@ align <- function(x, maxShift = 50, maxCombine = 5, verbose = TRUE, install_deps
         lcpar <- xx[[i]]$lcpar          # Lorentzian curve parameters
         x0_al <- cs[pciac]              # Chemical shifts of peak centers
         al[pciac] <- lcpar$A * pi       # SIs as integrals of aligned lorentzians
-        supal <- lorentz_sup(cs, x0_al, lcpar$A, lcpar$lambda)
         xx[[i]]$lcpar$x0_al <- x0_al
         xx[[i]]$sit$al <- al
         xx[[i]]$sit$supal <- lorentz_sup(cs, x0_al, lcpar$A, lcpar$lambda)
@@ -807,7 +806,7 @@ dohCluster_withoutMaxShift <- function(X,
     }
     if (verbose) {
         endTime <- proc.time()
-        cat("\n Alignment time: ", (endTime[3] - startTime[3]) / 60," minutes")
+        cat("\n Alignment time: ", (endTime[3] - startTime[3]) / 60, " minutes")
     }
     # Added by me at 31.08.21
     return_list <- list("Y" = bestY, "new_peakList" = peakListNew)
@@ -932,7 +931,7 @@ read_decon_params <- function(data_path) {
     spc_nam <- sub(" approximated_spectrum.txt", "", basename(spc_txt))
     if (length(par_txt) != length(spc_txt)) stop("Number of parameter files and spectrum files differs.")
     if (length(par_txt) == 0) stop("No parameter files found in the given directory.")
-    tmp <- mapply(par_nam, spc_nam, FUN = function(p, s) if (p != s) warning(sprintf("Mismatched file names: %s and %s\n", p, s)) )
+    mapply(par_nam, spc_nam, FUN = function(p, s) if (p != s) warning(sprintf("Mismatched file names: %s and %s\n", p, s)) )
     par_lst <- lapply(par_txt, function(file) {
         data <- as.matrix(data.table::fread(file, header = FALSE))
         rownames(data) <- data[, 1]
@@ -1060,6 +1059,6 @@ bioc_install <- function(pkgs, ask = TRUE, verbose = TRUE) {
         msg <- sprintf(msg, pkgs_word, pkgs_missing_str)
         if (isFALSE(get_yn_input(msg))) return()
     }
-    repos <- c('https://bioc.r-universe.dev', 'https://cloud.r-project.org')
+    repos <- c("https://bioc.r-universe.dev", "https://cloud.r-project.org")
     utils::install.packages(pkgs_missing, repos = repos, keep_outputs = tmpdir("bioc_install"))
 }
