@@ -1,6 +1,6 @@
 Package: metabodecon
 Title: Deconvolution and Alignment of 1d NMR Spectra
-Version: 1.4.3
+Version: 1.5.0
 Authors@R: c(
     person(given = "Tobias",
            family = "Schmidt",
@@ -46,7 +46,9 @@ Imports:
 Suggests:
     covr,
     devtools,
+    diffobj,
     digest,
+    glue,
     knitr,
     lifecycle,
     mdrb,
@@ -58,15 +60,17 @@ Suggests:
     rmarkdown,
     testthat (>= 3.0.0),
     usethis,
-    vdiffr
+    vdiffr,
+    waldo
 LazyData: true
 Config/testthat/edition: 3
 Config/testthat/parallel: true
 Config/testthat/start-first:
+    install_mdrb,
     read_spectrum,
     download_example_datasets,
     cache_example_datasets,
-    deconvolute_ispecs,
+    align,
     mcmapply,
     datadir,
     get_decon_params,

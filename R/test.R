@@ -578,13 +578,13 @@ plot_prarp <- function(decon, truepar) {
 #' @noRd
 #' @author 2024-2025 Tobias Schmidt: initial version.
 calc_y0 <- function(x, y, x0) {
-    i0 <- convert_pos(x0, x, 1:length(x))
+    i0 <- convert_pos(x0, x, seq_along(x))
     i0_floor <- floor(i0)
     i0_ceil <- ceiling(i0)
     i0_frac <- i0 - i0_floor
     y_floor <- y[i0_floor]
     y_ceil <- y[i0_ceil]
-    y0 <- y_floor + (y_ceil - y_floor) * i0_frac
+    y_floor + (y_ceil - y_floor) * i0_frac
 }
 
 # Compare (Private) #####
@@ -707,7 +707,6 @@ compare_spectra <- function(new, old, silent = FALSE) { # styler: off
     if (!is_decon0(old)) stop("old must be an object of type decon0")
     msg <- "old$debuglist is missing (set debug = TRUE in MetaboDecon1D())"
     if (!"debuglist" %in% names(old)) stop(msg)
-    dbg <- old$debuglist
 
     # Define comparison functions
     ident <- update_defaults(vcomp, xpct = 0, silent = silent)
@@ -718,14 +717,13 @@ compare_spectra <- function(new, old, silent = FALSE) { # styler: off
 
     # Compare values after spectrum has been read and scaled
     o2 <- old$debuglist$data
-    r[1] <-  equal(new$y_raw, dbg$data$spectrum_y_raw)
-    r[1] <-  ident(as.numeric(new$y_raw), as.numeric(dbg$data$spectrum_y_raw))
-    r[2] <-  ident(new$y_scaled, dbg$data$spectrum_y)
+    r[1] <-  equal(new$y_raw, o2$spectrum_y_raw)
+    r[1] <-  ident(as.numeric(new$y_raw), as.numeric(o2$spectrum_y_raw))
+    r[2] <-  ident(new$y_scaled, o2$spectrum_y)
 
     # Compare values after water signal removal
     o3 <- old$debuglist$wsrm
     new_sfr <- enrich_sfr(sfr = new$args$sfr, x = new)
-    new_wsr <- enrich_wshw(new$args$wsr, new)
     r[3] <-  ident(new$n, o3$spectrum_length)
     r[4] <-  ident(new$sdp, o3$spectrum_x)
     r[5] <-  equal(new$ppm, o3$spectrum_x_ppm)
@@ -941,7 +939,7 @@ get_MetaboDecon1D_answers <- function(ns = 1, # Number of spectra
                                       format = "bruker",
                                       expno = 10,
                                       procno = 10) {
-    answers <- c(
+    c(
         ExpNo       = if (format == "bruker") expno else NULL,
         ProcNo      = if (format == "bruker") procno else NULL,
         SameParam   = if (ns > 1) "y" else NULL,

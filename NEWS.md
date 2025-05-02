@@ -1,6 +1,14 @@
+# metabodecon 1.5.0
+
+* Soft-deprecated `generate_lorentz_curves()`
+* Improved `install_mdrb()`. Instalallation is now done from R Universe instead of Github, allowing installation of pre-compiled binaries, which is way faster.
+* Added argument `verbose` to `check_mdrb_deps()`.
+* Added the possibility to provide plain `spectra` objects to `plot_spectra()`. Previously, only deconvoluted spectra were accepted, i.e. objects of class `decons0`, `decons1` or `decons2`.
+* Improved `align()`. Integrals are now calculated as `A * pi`, representing the area under the Lorentzian curve as an improper integral, rather than being bounded by the signal range as a definite integral. That's faster and more accurate.
+
 # metabodecon 1.4.3
 
-* Improvded questions asked by `deconvolute()` in interactive mode
+* Improved questions asked by `deconvolute()` in interactive mode
 * Added function `get_si_mat()` for extracting a matrix of aligned signal integrals from `aligns` objects
 * Added author details to every function
 * Added deprecation notes to `get_ppm_range()`, `gen_feat_mat()`, `speaq_align()`, `combine_peaks()`, `dohCluster()`, `calculate_lorentz_curves`, `generate_lorentz_curves()` and `generate_lorentz_curves_sim()`.
@@ -30,7 +38,7 @@
 
 # metabodecon 1.3.0
 
-- Added Github Workflow (GWF) to test installation on a clean Windows/Linux/Mac OS with R pre-installed, but without R-tools and any packages. Closes Todo [Test Install on clean OS].
+- Added Github Workflow (GWF) to test installation on a clean Windows/Linux/Mac OS with R pre-installed, but without R-tools and any packages. Closes Todo 'Test Install on clean OS'.
 - Fixed GWF for testing code coverage script
 - Improved formatting for R-CMD-check-GWF and pkgdown-GWF
 - Improved `align()`. The new implementation is faster and returns more information. In particular, the chemical shifts of the aligned peaks centers as well as the superposition of the aligned peaks are returned.
@@ -40,8 +48,6 @@
     - Added parameter `sf_vert` to `plot_spectrum()` to allow configuration of the height of the vertical lines drawn at the peak centers.
     - Added the option to fill the area under lorentzian curves with color.
     - Improved the legend of the plot.
-
-[Test Install on clean OS]: TODOS.md#test-install-on-clean-os
 
 # metabodecon 1.2.6
 

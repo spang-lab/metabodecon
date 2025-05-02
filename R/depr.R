@@ -2353,6 +2353,11 @@ deconvolution <- function(filepath,
 #' @inheritParams read_spectrum
 #' @inheritParams deconvolute
 #'
+#' @param make_rds Logical or character. If TRUE, stores results as an RDS file
+#' on disk. If a character string, saves the RDS file with the specified name.
+#' Should be set to TRUE if many spectra are evaluated to decrease computation
+#' time.
+#'
 #' @return
 #' A 'decon1' object if a single spectrum was provided. A 'decons1' object if
 #' multiple spectra were provided. See [Metabodecon
@@ -2462,7 +2467,7 @@ generate_lorentz_curves <- function(data_path,
 }
 
 #' @export
-#' @rdname deconvolute
+#' @rdname generate_lorentz_curves
 generate_lorentz_curves_sim <- function(data_path,
     file_format="bruker", make_rds=FALSE, expno=10, procno=10, raw=TRUE,
     nfit=10, smopts=c(2,5), delta=6.4, sfr=c(3.55,3.35), wshw=0,
@@ -2643,9 +2648,9 @@ read_decon_params_original <- function(data_path) {
 #' si_size_real_spectrum <- length(spectrum_data[[1]]$y_values)
 #' after_speaq_mat <- speaq_align(feat, maxShift, spectrum_data, si_size_real_spectrum)
 speaq_align_original <- function(feat = gen_feat_mat(spectrum_data),
-                           maxShift = 50,
-                           spectrum_data = generate_lorentz_curves_sim(),
-                           si_size_real_spectrum = length(spectrum_data[[1]]$y_values)) {
+                                 maxShift = 50,
+                                 spectrum_data = generate_lorentz_curves_sim(),
+                                 si_size_real_spectrum = length(spectrum_data[[1]]$y_values)) {
 
     # Find reference spectrum, i.e the spectrum to which all others will be aligned to
     resFindRef <- speaq::findRef(feat$peakList)

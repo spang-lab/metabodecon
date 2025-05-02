@@ -7,48 +7,44 @@
 \usage{
 check_mdrb(stop_on_fail = FALSE)
 
-check_mdrb_deps()
+check_mdrb_deps(verbose = FALSE)
 }
 \arguments{
 \item{stop_on_fail}{If TRUE, an error is thrown if the check fails, providing instructions on how
 to install or upgrade mdrb.}
+
+\item{verbose}{If TRUE, additional information is printed during the check process.}
 }
 \value{
 \code{check_mdrb()} returns TRUE if a suitable version of mdrb is installed,
 else FALSE.
 
-\code{check_mdrb_deps()} returns a data.frame with the following columns:
-\itemize{
-\item \code{check}: description of the checked dependency as a string
-\item \code{passed}: boolean indicating whether the check passed
-\item \code{comment}: free text string describing the check result
-}
+\code{check_mdrb_deps()} returns a data.frame as follows:
 
-The rownames of the dataframe are: \code{r}, \code{rtools}, \code{cargo} and \code{rustc} and
-correspond to the checked dependencies.
-
-Example:
-
-\if{html}{\out{<div class="sourceCode R">}}\preformatted{check_mdrb_deps()
-
-##                check passed                                      comment
-## r           R >= 4.2   TRUE                             Current: R 4.4.2
-## rtools  Rtools exist   TRUE     Tested with: pkgbuild::has_build_tools()
-## cargo  cargo >= 1.78   TRUE Current: cargo 1.84.1 (66221abde 2024-11-19)
-## rustc  rustc >= 1.78   TRUE Current: rustc 1.84.1 (e71f9a9a9 2025-01-27)
+\if{html}{\out{<div class="sourceCode R">}}\preformatted{            check           passed  comment
+    r       R >= 4.2        TRUE    Current: R 4.4.2
+    rtools  Rtools exist    TRUE    Tested with: pkgbuild::has_build_tools()
+    cargo   cargo >= 1.80   TRUE    Current: cargo 1.84.1 (66221abde 2024-11-19)
+    rustc   rustc >= 1.80   TRUE    Current: rustc 1.84.1 (e71f9a9a9 2025-01-27)
 }\if{html}{\out{</div>}}
+
+Column \code{check} is a string describing the performed check.\cr
+Column \code{passed} is a boolean indicating whether the check passed.\cr
+Column \code{comment} is a string string describing the check result.
+
+The rownames of the dataframe one-word descriptions of the performed checks.
 }
 \description{
 \code{check_mdrb()} returns a boolean indicating whether a suitable version of the
 metabodecon Rust backend \href{https://github.com/spang-lab/mdrb}{mdrb} is
 currently installed.
 
-\code{check_mdrb_deps()} returns a list with detailed information about the
-installation status of mdrb and its dependencies.
+\code{check_mdrb_deps()} returns a list with information about the
+installation status of mdrb system dependencies.
 }
 \examples{
 check_mdrb()
-check_mdrb_deps()
+check_mdrb_deps(verbose = TRUE)
 }
 \author{
 2024-2025 Tobias Schmidt: initial version.

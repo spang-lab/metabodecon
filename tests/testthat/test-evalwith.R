@@ -11,7 +11,7 @@ test_that("evalwith works", {
             readline("Continue?") # readline is mocked
             message("Roar") # messages are captured
             warning("Blub") # warnings are transformed to messages and captured as well
-            test_wd <- getwd() # working dir is set to '{testdir()}/with/1'
+            test_wd <- norm_path(getwd()) # working dir is set to '{testdir()}/with/1'
             y <- 2
             z <- 3 # vars can be assigned
             list(y = y, z = z) # return value of expression is captured in rv

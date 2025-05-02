@@ -2,6 +2,7 @@
 % Please edit documentation in R/depr.R
 \name{generate_lorentz_curves}
 \alias{generate_lorentz_curves}
+\alias{generate_lorentz_curves_sim}
 \title{Deconvolute one or more NMR spectra}
 \usage{
 generate_lorentz_curves(
@@ -19,6 +20,24 @@ generate_lorentz_curves(
   ask = TRUE,
   force = FALSE,
   verbose = TRUE,
+  nworkers = 1
+)
+
+generate_lorentz_curves_sim(
+  data_path,
+  file_format = "bruker",
+  make_rds = FALSE,
+  expno = 10,
+  procno = 10,
+  raw = TRUE,
+  nfit = 10,
+  smopts = c(2, 5),
+  delta = 6.4,
+  sfr = c(3.55, 3.35),
+  wshw = 0,
+  ask = FALSE,
+  force = FALSE,
+  verbose = FALSE,
   nworkers = 1
 )
 }

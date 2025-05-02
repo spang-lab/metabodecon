@@ -7,8 +7,6 @@
 #' @description Deconvolutes NMR spectra by modeling each detected signal within
 #' a spectrum as Lorentz Curve.
 #'
-#' @inheritParams read_spectrum
-#'
 #' @param ask Logical. Whether to ask for user input during the deconvolution
 #' process. If FALSE, the provided default values will be used.
 #'
@@ -26,11 +24,6 @@
 #' reference for peak filtering. If TRUE, the function instead proceeds without
 #' peak filtering, potentially increasing runtime and memory usage
 #' significantly.
-#'
-#' @param make_rds Logical or character. If TRUE, stores results as an RDS file
-#' on disk. If a character string, saves the RDS file with the specified name.
-#' Should be set to TRUE if many spectra are evaluated to decrease computation
-#' time.
 #'
 #' @param nfit Integer. Number of iterations for approximating the parameters
 #' for the Lorentz curves. See 'Details'.
@@ -67,76 +60,20 @@
 #' Lorentz curves. These Lorentz curves are then iteratively adjusted to
 #' optimally approximate the measured spectrum.
 #'
-#' [generate_lorentz_curves_sim()] is identical to [generate_lorentz_curves()]
-#' except for the defaults, which are optimized for deconvoluting the 'Sim'
-#' dataset, shipped with 'metabodecon'. The 'Sim' dataset is a simulated
-#' dataset, which is much smaller than a real NMR spectra and lacks a water
-#' signal. This makes it ideal for use in examples or as a default value for
-#' functions. However, the default values for `sfr`, `wshw`, and `delta` in the
-#' "normal" [generate_lorentz_curves()] function are not optimal for this
-#' dataset. To avoid having to define the optimal parameters repeatedly in
-#' examples, this function is provided to deconvolute the "Sim" dataset with
-#' suitable parameters.
-#'
-#' In [generate_lorentz_curves()] the parameters `nfit`, `smopts`, `delta`,
-#' `sfr` and `wshw` must be fully specified. In [deconvolute()], these
-#' parameters can be set to `NULL` (the default value). In this case, the
-#' function will try to determine the optimal values for these parameters
-#' automatically. The values chosen are stored in field `args` of the returned
-#' `decon2` object.
-#'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
+#' ## Deconvolute a single spectrum
+#' spectrum <- sim[1]
+#' decon <- deconvolute(spectrum)
 #'
-#' ## Define the paths to the example datasets we want to deconvolute:
-#' ## `sim_dir`: directory containing 16 simulated spectra
-#' ## `sim_01`: path to the first spectrum in the `sim` directory
-#' ## `sim_01_spec`: the first spectrum in the `sim` directory as a dataframe
-#'
-#' sim_dir <- metabodecon_file("sim_subset")
-#' sim_1_dir <- file.path(sim_dir, "sim_01")
-#' sim_2_dir <- file.path(sim_dir, "sim_02")
-#' sim_1_spectrum <- read_spectrum(sim_1_dir)
-#' sim_2_spectrum <- read_spectrum(sim_2_dir)
-#' sim_spectra <- read_spectra(sim_dir)
-#'
-#'
-#' ## Show that `generate_lorentz_curves()` and `generate_lorentz_curves_sim()`
-#' ## produce the same results:
-#'
-#' sim_1_decon0 <- generate_lorentz_curves(
-#'     data_path = sim_1_dir, # Path to directory containing spectra
-#'     sfr = c(3.55, 3.35), # Borders of signal free region (SFR) in ppm
-#'     wshw = 0, # Half width of water signal (WS) in ppm
-#'     ask = FALSE, # Don't ask for user input
-#'     verbose = FALSE # Suppress status messages
-#' )
-#' sim_1_decon1 <- generate_lorentz_curves_sim(sim_1_dir)
-#' stopifnot(all.equal(sim_1_decon0, sim_1_decon1))
-#'
-#'
-#' ## Show that passing a spectrum produces the same results as passing the
-#' ## the corresponding directory:
-#'
-#' decon_from_spectrum_dir <- generate_lorentz_curves_sim(sim_1_dir)
-#' decon_from_spectrum_obj <- generate_lorentz_curves_sim(sim_1_spectrum)
-#' decons_from_spectra_obj <- generate_lorentz_curves_sim(sim_spectra)
-#' decons_from_spectra_dir <- generate_lorentz_curves_sim(sim_dir)
-#'
-#' most.equal <- function(x1, x2) {
-#'     ignore <- which(names(x1) %in% c("number_of_files", "filename"))
-#'     equal <- all.equal(x1[-ignore], x2[-ignore])
-#'     invisible(stopifnot(isTRUE(equal)))
-#' }
-#'
-#' all.equal(  decon_from_spectrum_dir, decon_from_spectrum_obj     )
-#' all.equal(  decons_from_spectra_dir, decons_from_spectra_obj     )
-#' most.equal( decon_from_spectrum_dir, decons_from_spectra_obj[[1]])
-#' most.equal( decon_from_spectrum_dir, decons_from_spectra_dir[[1]])
+#' ## Read multiple spectra from disk and deconvolute at once
+#' spectra_dir <- metabodecon_file("sim_subset")
+#' spectra <- read_spectra(spectra_dir)
+#' decons <- deconvolute(spectra, sfr = c(3.55, 3.35))
 deconvolute <- function(x,
-    nfit=3,    smopts=c(2,5), delta=6.4,    sfr=NULL,   wshw=0,
-    ask=FALSE, force=FALSE,   verbose=TRUE, nworkers=1, use_rust=FALSE
+    nfit=3,    smopts=c(2, 5), delta=6.4,    sfr=NULL,   wshw=0,
+    ask=FALSE, force=FALSE,    verbose=TRUE, nworkers=1, use_rust=FALSE
 ) {
     # Check inputs
     stopifnot(
@@ -177,21 +114,22 @@ deconvolute <- function(x,
 #' Support for `bwc == 0` will be removed in 'metabodecon v2.0'.
 #' @author 2024-2025 Tobias Schmidt: initial version.
 deconvolute_spectra <- function(x,
-    nfit=3, smopts=c(2,5), delta=6.4, sfr=c(3.55,3.35), wshw=0,
-    ask=FALSE, force=FALSE, verbose=TRUE, bwc=2,
-    use_rust=FALSE, nw=1, igr=list(), rtyp="idecon"
+    nfit=3,        smopts=c(2, 5),    delta=6.4,      sfr=c(3.55, 3.35),
+    wshw=0,        ask=FALSE,         force=FALSE,    verbose=TRUE,
+    bwc=2,         use_rust=FALSE,    nw=1,           igr=list(),
+    rtyp="idecon"
 ) {
 
     # Check inputs
     assert(
         is_spectrum(x) || is_spectra(x),
-        is_int(nfit,1), is_int(smopts,2), is_num(delta,1),
-        is_bool(ask,1), is_bool(force,1), is_bool(verbose,1),
-        is_num(bwc,1),
-        is_num(sfr,2)  || is_list_of_nums(sfr,length(x),2),
-        is_num(wshw,1) || is_list_of_nums(wshw,length(x),1),
+        is_int(nfit, 1), is_int(smopts, 2), is_num(delta, 1),
+        is_bool(ask, 1), is_bool(force, 1), is_bool(verbose, 1),
+        is_num(bwc, 1),
+        is_num(sfr, 2)  || is_list_of_nums(sfr, length(x), 2),
+        is_num(wshw, 1) || is_list_of_nums(wshw, length(x), 1),
         if (rtyp == "rdecon") isTRUE(use_rust) else is_bool(use_rust),
-        is_char(rtyp,1,"(decon[0-2]|idecon|rdecon)")
+        is_char(rtyp, 1, "(decon[0-2]|idecon|rdecon)")
     )
 
     # Configure logging
@@ -228,22 +166,26 @@ deconvolute_spectra <- function(x,
     decons
 }
 
+#" EXAMPLES
+#" urine_1_path <- metabodecon_file("urine_1")
+#" urine_1 <- read_spectrum(urine_1_path)
+#" system.time(deconvolute_spectrum(urine_1, use_rust = TRUE, nw = 4))
 #' @noRd
 #' @inheritParams deconvolute_spectra
 #' @author 2024-2025 Tobias Schmidt: initial version.
 deconvolute_spectrum <- function(x,
-    nfit=3, smopts=c(2,5), delta=6.4, sfr=c(3.55, 3.35), wshw=0,
+    nfit=3, smopts=c(2, 5), delta=6.4, sfr=c(3.55, 3.35), wshw=0,
     ask=FALSE, force=FALSE, verbose=TRUE, bwc=2,
     use_rust=FALSE, nw=1, igr=list(), rtyp="idecon"
 ) {
     # Check inputs
     assert(
         is_spectrum(x),
-        is_int(nfit,1), is_int(smopts,2),    is_num(delta,1),
-        is_num(sfr,2),  is_num(wshw,1),      is_bool(force,1),
-        is_num(bwc,1),  is_bool(use_rust,1), is_int(nw,1),
+        is_int(nfit, 1),  is_int(smopts, 2),     is_num(delta, 1),
+        is_num(sfr, 2),   is_num(wshw, 1),       is_bool(force, 1),
+        is_num(bwc, 1),   is_bool(use_rust, 1),  is_int(nw, 1),
         is_list_of_nums(igr, nv=2),
-        is_char(rtyp,1,"(decon[0-2]|idecon|rdecon)")
+        is_char(rtyp, 1, "(decon[0-2]|idecon|rdecon)")
     )
 
     # Init locals
@@ -260,7 +202,12 @@ deconvolute_spectrum <- function(x,
         mdrb_deconvr$set_moving_average_smoother(smopts[1], smopts[2])
         mdrb_deconvr$set_noise_score_selector(delta)
         mdrb_deconvr$set_analytical_fitter(nfit)
-        mdrb_decon <- mdrb_deconvr$deconvolute_spectrum(mdrb_spectrum)
+        mdrb_decon <- if (nw > 1) {
+            mdrb_deconvr$set_threads(nw)
+            mdrb_deconvr$par_deconvolute_spectrum(mdrb_spectrum)
+        } else {
+            mdrb_deconvr$deconvolute_spectrum(mdrb_spectrum)
+        }
         decon <- new_rdecon(x, args, mdrb_spectrum, mdrb_deconvr, mdrb_decon)
     } else {
         # Sys.setenv(RAYON_NUM_THREADS=nw) # Must be set before R is started
@@ -525,7 +472,7 @@ find_peaks <- function(spec) {
         spec$peak$score[i] <- get_peak_score(j, l, r, a)
     }
     logf("Detected %d peaks", length(center))
-    return(spec)
+    spec
 }
 
 #' @noRd
@@ -658,9 +605,12 @@ fit_lorentz_curves <- function(spec, nfit = 3, bwc = 1) {
     A <- lc$A
     lambda <- lc$lambda
     w <- lc$w
-    limits <- range(spec$sdp)
-    if (bwc < 2) limits[2] <- limits[2] + (1 / spec$sf[1])
-    integrals <- lorentz_int(w, A, lambda, limits = limits)
+    if (bwc < 1) {
+        limits <- c(0, max(spec$sdp) + (1 / spec$sf[1]))
+        integrals <- lorentz_int(w, A, lambda, limits = limits)
+    } else {
+        integrals <- A * (- pi)
+    }
     spec$lcr <- list(A = A, lambda = lambda, w = w, integrals = integrals)
     spec
 }
@@ -784,12 +734,10 @@ get_right_border <- function(j, d, m) {
         c3 <- d[r] < 0
         c4 <- d[r + 1] >= 0
         is_right_border <- (c1 && c2) || (c1 && c3 && c4)
-        if (isTRUE(is_right_border)) {
-            return(r)
-        }
+        if (isTRUE(is_right_border)) return(r)
         r <- r + 1
     }
-    return(NA)
+    NA
 }
 
 #' @noRd
@@ -805,12 +753,10 @@ get_left_border <- function(j, d) {
         c3 <- d[l] < 0
         c4 <- d[l - 1] >= 0
         is_left_border <- (c1 && c2) || (c1 && c3 && c4)
-        if (isTRUE(is_left_border)) {
-            return(l)
-        }
+        if (isTRUE(is_left_border)) return(l)
         l <- l - 1
     }
-    return(NA)
+    NA
 }
 
 #' @noRd
@@ -913,7 +859,7 @@ init_lc <- function(spec, verbose = TRUE) {
     }
 
     # Print MSE
-    mse <- mean((y[lmr] - rowSums(Z))^2)
+    mse <- mse(y[lmr], rowSums(Z))
     if (verbose) logf("MSE at peak tiplet positions: %.22f", mse)
 
     # Create return list
@@ -1025,7 +971,7 @@ refine_lc_v14 <- function(spec, Z) {
     }
 
     # Print MSE
-    mse <- mean((y[lmr] - rowSums(Z))^2)
+    mse <- mse(y[lmr], rowSums(Z))
     logf("MSE at peak tiplet positions: %.22f", mse)
 
     # Create return list

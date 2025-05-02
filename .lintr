@@ -1,4 +1,6 @@
 linters: linters_with_defaults(
+    brace_linter = NULL,
+    infix_spaces_linter = NULL,
     line_length_linter(9999),
     object_length_linter(9999),
     commented_code_linter = NULL,
@@ -9,5 +11,6 @@ linters: linters_with_defaults(
     semicolon_linter = NULL
   )
 exclusions: list(
-    "R/MetaboDecon1D.R"
+    "R/MetaboDecon1D.R",
+    "R/depr.R"
   )

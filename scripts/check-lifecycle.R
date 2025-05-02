@@ -51,10 +51,6 @@ fn_ignore <- c(
     # decon.R
     "deconvolute", # stable
     "generate_lorentz_curves_sim", # documented with "generate_lorentz_curves"
-    # mdrb.R
-    "check_mdrb",
-    "check_mdrb_deps",
-    "install_mdrb",
     # plot.R
     "plot_spectra", # stable
     # spectrum.R

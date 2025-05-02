@@ -1,0 +1,99 @@
+# Workflow derived from https://github.com/r-lib/actions/tree/v2/examples
+# Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
+name: Slow-Example-Check
+permissions: read-all
+on: {
+  push: {branches: [main, master]},
+  pull_request: {branches: [main, master]}
+}
+jobs:
+  Slow-Example-Check:
+    runs-on: ${{ matrix.config.os }}
+    name: ${{ matrix.config.os }} (${{ matrix.config.r }})
+    strategy:
+      fail-fast: false
+      matrix:            # Examples with CPU (user + system) or elapsed time > 5s
+        config:                                 #             user system elapsed
+          - {os: windows-latest, r: 'release'}  # check_mdrb  0.05   0.05    9.33
+          - {os: windows-latest, r: 'oldrel-4'} # check_mdrb     0   0.01    5.16
+          - {os: ubuntu-latest,  r: 'oldrel-1'} # check_mdrb 0.283  0.837  15.525
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      R_KEEP_PKG_SOURCE: yes
+      RUN_SLOW_TESTS: "TRUE"
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Pandoc
+        uses: r-lib/actions/setup-pandoc@v2
+
+      - name: Set up R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: ${{ matrix.config.r }}
+          http-user-agent: ${{ matrix.config.http-user-agent }}
+          use-public-rspm: true
+          extra-repositories: https://spang-lab.r-universe.dev
+
+      - name: Install MacOS System Dependencies
+        uses: r-hub/actions/setup-r-sysreqs@v1
+        with: { type: "minimal" }
+
+      - name: Install Linux System Dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update -y && sudo apt-get install -y libgsl0-dev
+
+      - name: Set up R dependencies
+        uses: r-lib/actions/setup-r-dependencies@v2
+        with: { extra-packages: "any::rcmdcheck, mdrb=?ignore-before-r=4.2.0", needs: "check" }
+
+      - name: Install package
+        shell: Rscript {0}
+        run: |
+          devtools::install()
+
+      - name: Check slow example
+        shell: Rscript {0}
+        run: |
+          library(metabodecon)
+          example(check_mdrb)
+
+          nowstr <- function() format(Sys.time(), "%Y-%m-%d %H:%M:%OS3: ")
+          is_windows <- pkgbuild:::is_windows
+          is_R4 <- pkgbuild:::is_R4
+          has_rtools <- pkgbuild:::has_rtools
+          has_compiler <- pkgbuild:::has_compiler
+          debug <- TRUE
+
+          check <- getOption("buildtools.check", NULL)
+          message(nowstr(), "'", check, "'")
+
+          has <- if (is_windows() && is_R4() && has_rtools(debug = debug)) {
+              message(nowstr(), "Branch 1")
+              TRUE
+          } else if (is_windows()) {
+              message(nowstr(), "Branch 2")
+              has_rtools(debug = debug)
+          } else {
+              message(nowstr(), "Branch 3")
+              has_compiler(debug = debug)
+          }
+
+          if (!has && !is.null(check)) {
+              message(nowstr(), "Branch 4")
+              check("Building R package from source")
+          } else {
+              message(nowstr(), "Branch 5")
+              has
+          }
+
+      - name: Check rustc and cargo versions
+        shell: bash
+        run: |
+          echo "$(date '+%Y-%m-%d %H:%M:%S'): rustc --version"
+          rustc --version
+          echo "$(date '+%Y-%m-%d %H:%M:%S'): cargo --version"
+          cargo --version
+          echo "$(date '+%Y-%m-%d %H:%M:%S'): done"

@@ -118,8 +118,6 @@ sfr_in_ppm_bwc <- function(sfr_sdp, sdp, ppm) {
     )
     n <- length(sdp)
     sdp_step <- diff(range(sdp)) / (n - 1)
-    sdp_nstep <- diff(range(sdp)) / n
-    ppm_step <- diff(range(ppm)) / (n - 1)
     ppm_nstep <- diff(range(ppm)) / n
     sfr_dp <- sfr_sdp / sdp_step
     sfr_ppm <- max(ppm) - (n + 1 - sfr_dp) * ppm_nstep
@@ -321,8 +319,7 @@ get_num_input <- function(prompt, min = -Inf, max = Inf, int = FALSE) {
 #' @noRd
 #' @author 2024-2025 Tobias Schmidt: initial version.
 get_int_input <- function(prompt, min = -Inf, max = Inf) {
-    x <- get_num_input(prompt, min, max, int = TRUE)
-    return(x)
+    get_num_input(prompt, min, max, int = TRUE)
 }
 
 #' @noRd
@@ -335,7 +332,7 @@ get_str_input <- function(prompt, valid) {
         message("Error. Please type either ", valid_str, ".")
         x <- readline(prompt = prompt)
     }
-    return(x)
+    x
 }
 
 #' @noRd
@@ -363,8 +360,7 @@ get_yn_input <- function(prompt) {
         prompt <- paste0(prompt, " (y/n) ")
     }
     x <- get_str_input(prompt, c("y", "n"))
-    y <- if (x == "y") TRUE else FALSE
-    return(y)
+    if (x == "y") TRUE else FALSE
 }
 
 # Operators (Private) #########################################################
@@ -560,15 +556,14 @@ get_logv <- function(verbose) {
 human_readable <- function(x, unit, fmt = "%.1f") {
     m <- max(abs(x))
     # styler: off
-    if      (m >= 1e+9) {prefix <- "G"; x <- x / 1e+9}
-    else if (m >= 1e+6) {prefix <- "M"; x <- x / 1e+6}
-    else if (m >= 1e+3) {prefix <- "k"; x <- x / 1e+3}
-    else if (m <= 1e-3) {prefix <- "m"; x <- x / 1e-3}
-    else if (m <= 1e-6) {prefix <- "u"; x <- x / 1e-6}
-    else if (m <= 1e-9) {prefix <- "n"; x <- x / 1e-9}
-    else                {prefix <- "";  x <- x / 1e+0}
+    if      (m >= 1e+9) { prefix <- "G"; x <- x / 1e+9 }
+    else if (m >= 1e+6) { prefix <- "M"; x <- x / 1e+6 }
+    else if (m >= 1e+3) { prefix <- "k"; x <- x / 1e+3 }
+    else if (m <= 1e-3) { prefix <- "m"; x <- x / 1e-3 }
+    else if (m <= 1e-6) { prefix <- "u"; x <- x / 1e-6 }
+    else if (m <= 1e-9) { prefix <- "n"; x <- x / 1e-9 }
+    else                { prefix <- "";  x <- x / 1e+0 }
     # styler: off
-    xhr <- sprintf(fmt, x)
     fmtstr <- paste0(fmt, " %s%s")
     sprintf(fmtstr, x, prefix, unit)
 }
@@ -1014,7 +1009,7 @@ tree <- function(path, max.level = 2, level = 0, prefix = "") {
     for (i in seq_along(all_entries)) {
         entry <- all_entries[i]
         is_last <- i == num_entries
-        prefix2 <- if(is_last) "\u2514\u2500\u2500 " else "\u251C\u2500\u2500 "
+        prefix2 <- if (is_last) "\u2514\u2500\u2500 " else "\u251C\u2500\u2500 "
         cat(prefix, prefix2, basename(entry), ifelse(file.info(entry)$isdir, "/", ""), "\n", sep = "")
         new_prefix <- if (is_last) paste0(prefix, "    ") else paste0(prefix, "\u2502   ")
         if (file.info(entry)$isdir) tree(entry, max.level, level + 1, new_prefix)
@@ -1218,7 +1213,7 @@ assert <- stopifnot
 
 #' @noRd
 #' @author 2024-2025 Tobias Schmidt: initial version.
-.onLoad <- function(libname, pkgname){
+.onLoad <- function(libname, pkgname) {
     pkgenv <- topenv()
     if (!loaded_via_devtools()) pkgenv$assert <- function(...) {}
     if (!is.null(x <- .Options$metabodecon.assert)) pkgenv$assert <- x
@@ -1228,6 +1223,5 @@ assert <- stopifnot
 #' @author 2024-2025 Tobias Schmidt: initial version.
 loaded_via_devtools <- function() {
     pkg_dir <- dirname(system.file("DESCRIPTION", package = "metabodecon"))
-    loaded_via_devtools <- dir.exists(file.path(pkg_dir, "inst"))
-    return(loaded_via_devtools)
+    dir.exists(file.path(pkg_dir, "inst"))
 }
