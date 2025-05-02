@@ -859,7 +859,7 @@ init_lc <- function(spec, verbose = TRUE) {
     }
 
     # Print MSE
-    mse <- mse(y[lmr], rowSums(Z)) # OLD: mean((y[lmr] - rowSums(Z))^2)
+    mse <- mse(y[lmr], rowSums(Z))
     if (verbose) logf("MSE at peak tiplet positions: %.22f", mse)
 
     # Create return list
@@ -971,7 +971,7 @@ refine_lc_v14 <- function(spec, Z) {
     }
 
     # Print MSE
-    mse <- mse(y[lmr], rowSums(Z)) # OLD: mean((y[lmr] - rowSums(Z))^2)
+    mse <- mse(y[lmr], rowSums(Z))
     logf("MSE at peak tiplet positions: %.22f", mse)
 
     # Create return list

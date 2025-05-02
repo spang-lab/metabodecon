@@ -567,7 +567,7 @@ as_decon1.decon0 <- function(x,
     # Calculate decon1 elements
     y$y_values_raw <- si
     y$x_values_hz <- fq
-    y$mse_normed_raw <- mse(si, ssp, normed = TRUE) # OLD: mean(((si / sum(si)) - (ssp / sum(ssp)))^2)
+    y$mse_normed_raw <- mse(si, ssp, normed = TRUE)
     y$signal_free_region_ppm <- sfr %||% sfr_in_ppm_bwc(x[["signal_free_region"]], sdp, ppm)
     y$x_0_hz <- convert_pos(x$x_0, sdp, fq)
     y$x_0_dp <- convert_pos(x$x_0, sdp, dp)
@@ -658,7 +658,7 @@ as_decon1.idecon <- function(x, sf, spectrum, sfr, wshw, bwc) {
     y$x_values_ppm <- x$ppm
     y$y_values <- x$y_smooth
     y$spectrum_superposition <- t(s <- lorentz_sup(x = x$sdp, lcpar = x$lcr))
-    y$mse_normed <- mse(x$y_smooth, s, normed = TRUE) # OLD: mean(((x$y_smooth / sum(x$y_smooth)) - (s / sum(s)))^2)
+    y$mse_normed <- mse(x$y_smooth, s, normed = TRUE)
     y$index_peak_triplets_middle <- as.numeric(x$peak$center[x$peak$high])
     y$index_peak_triplets_left <- as.numeric(x$peak$right[x$peak$high]) # decon[01] has left and right inverted
     y$index_peak_triplets_right <- as.numeric(x$peak$left[x$peak$high]) # decon[01] has left and right inverted
@@ -673,7 +673,7 @@ as_decon1.idecon <- function(x, sf, spectrum, sfr, wshw, bwc) {
     y$x_0 <- x$lcr$w
     y$y_values_raw <- x$y_raw
     y$x_values_hz <- x$hz
-    y$mse_normed_raw <- mse(x$y_raw, s, normed = TRUE) # OLD: mean(((x$y_raw / sum(x$y_raw)) - (s / sum(s)))^2)
+    y$mse_normed_raw <- mse(x$y_raw, s, normed = TRUE)
     y$signal_free_region_ppm <- x$args$sfr
     y$x_0_hz <- convert_pos(x$lcr$w, x$sdp, x$hz)
     y$x_0_dp <- convert_pos(x$lcr$w, x$sdp, x$dp)
