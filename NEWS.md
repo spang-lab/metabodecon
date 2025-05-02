@@ -1,3 +1,11 @@
+# metabodecon 1.5.0
+
+* Soft-deprecated `generate_lorentz_curves()`
+* Improved `install_mdrb()`. Instalallation is now done from R Universe instead of Github, allowing installation of pre-compiled binaries, which is way faster.
+* Added argument `verbose` to `check_mdrb_deps()`.
+* Added the possibility to provide plain `spectra` objects to `plot_spectra()`. Previously, only deconvoluted spectra were accepted, i.e. objects of class `decons0`, `decons1` or `decons2`.
+* Improved `align()`. Integrals are now calculated as `A * pi`, representing the area under the Lorentzian curve as an improper integral, rather than being bounded by the signal range as a definite integral. That's faster and more accurate.
+
 # metabodecon 1.4.3
 
 * Improved questions asked by `deconvolute()` in interactive mode
