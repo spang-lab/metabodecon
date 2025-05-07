@@ -46,7 +46,7 @@ in combine_peaks()."><meta property="og:image" content="https://spang-lab.github
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.svg" class="logo" alt=""><h1>Align Spectra</h1>
-      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/main/R/align.R" class="external-link"><code>R/align.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/v1.5.0/R/align.R" class="external-link"><code>R/align.R</code></a></small>
       <div class="d-none name"><code>align.Rd</code></div>
     </div>
 
@@ -117,42 +117,42 @@ an error if the packages are not installed.</p></dd>
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">decons</span> <span class="op">&lt;-</span> <span class="fu"><a href="deconvolute.html">deconvolute</a></span><span class="op">(</span><span class="va">sim</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>, sfr <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3.55</span>, <span class="fl">3.35</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-02 08:18:27.46 Starting deconvolution of 2 spectra using 1 worker</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-02 08:18:27.46 Starting deconvolution of sim_01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-02 08:18:27.46 Removing water signal</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-02 08:18:27.46 Removing negative signals</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-02 08:18:27.46 Smoothing signals</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-02 08:18:27.47 Starting peak selection</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-02 08:18:27.48 Detected 314 peaks</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-02 08:18:27.48 Removing peaks with low pscores</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-02 08:18:27.48 Removed 287 peaks</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-02 08:18:27.48 Initializing Lorentz curves</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-02 08:18:27.48 MSE at peak tiplet positions: 4.0838805770844048836921</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-02 08:18:27.48 Refining Lorentz Curves</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-02 08:18:27.48 MSE at peak tiplet positions: 0.1609359876216345797140</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-02 08:18:27.49 MSE at peak tiplet positions: 0.0228015051613790313556</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-02 08:18:27.49 MSE at peak tiplet positions: 0.0071638016610617799920</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-02 08:18:27.49 Formatting return object as decon2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-02 08:18:27.49 Finished deconvolution of sim_01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-02 08:18:27.49 Starting deconvolution of sim_02</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-02 08:18:27.49 Removing water signal</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-02 08:18:27.49 Removing negative signals</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-02 08:18:27.49 Smoothing signals</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-02 08:18:27.50 Starting peak selection</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-02 08:18:27.51 Detected 316 peaks</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-02 08:18:27.51 Removing peaks with low pscores</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-02 08:18:27.51 Removed 286 peaks</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-02 08:18:27.51 Initializing Lorentz curves</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-02 08:18:27.51 MSE at peak tiplet positions: 3.8338943428876719465848</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-02 08:18:27.51 Refining Lorentz Curves</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-02 08:18:27.52 MSE at peak tiplet positions: 0.1289481941626757499630</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-02 08:18:27.52 MSE at peak tiplet positions: 0.0135651899090413786964</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-02 08:18:27.52 MSE at peak tiplet positions: 0.0025556755331531087749</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-02 08:18:27.52 Formatting return object as decon2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-02 08:18:27.53 Finished deconvolution of sim_02</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-02 08:18:27.53 Finished deconvolution of 2 spectra in 0.069 secs</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:35.88 Starting deconvolution of 2 spectra using 1 worker</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:35.88 Starting deconvolution of sim_01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:35.88 Removing water signal</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:35.88 Removing negative signals</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:35.88 Smoothing signals</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:35.89 Starting peak selection</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:35.90 Detected 314 peaks</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:35.90 Removing peaks with low pscores</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:35.90 Removed 287 peaks</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:35.90 Initializing Lorentz curves</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:35.90 MSE at peak tiplet positions: 4.0838805770844048836921</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:35.91 Refining Lorentz Curves</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:35.91 MSE at peak tiplet positions: 0.1609359876216345797140</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:35.91 MSE at peak tiplet positions: 0.0228015051613790313556</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:35.91 MSE at peak tiplet positions: 0.0071638016610617799920</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:35.91 Formatting return object as decon2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:35.92 Finished deconvolution of sim_01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:35.92 Starting deconvolution of sim_02</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:35.92 Removing water signal</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:35.92 Removing negative signals</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:35.92 Smoothing signals</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:35.92 Starting peak selection</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:35.94 Detected 316 peaks</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:35.94 Removing peaks with low pscores</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:35.94 Removed 286 peaks</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:35.94 Initializing Lorentz curves</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:35.94 MSE at peak tiplet positions: 3.8338943428876719465848</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:35.94 Refining Lorentz Curves</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:35.94 MSE at peak tiplet positions: 0.1289481941626757499630</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:35.94 MSE at peak tiplet positions: 0.0135651899090413786964</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:35.94 MSE at peak tiplet positions: 0.0025556755331531087749</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:35.95 Formatting return object as decon2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:35.95 Finished deconvolution of sim_02</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:35.95 Finished deconvolution of 2 spectra in 0.07 secs</span>
 <span class="r-in"><span><span class="va">aligned</span> <span class="op">&lt;-</span> <span class="fu">align</span><span class="op">(</span><span class="va">decons</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-02 08:18:27.53 All requested packages are already installed.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:35.96 All requested packages are already installed.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  --------------------------------</span>
@@ -163,7 +163,7 @@ an error if the packages are not installed.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  aligning spectrum  1</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  Median pearson correlation of aligned spectra: 0.9976321</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Alignment time:  0.005316667  minutes</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Alignment time:  0.006533333  minutes</span>
 <span class="r-in"><span><span class="va">aligned</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> aligns object with 2 align elements</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> sim_01: align object (2048 dp, 3.6 to 3.3 ppm, 27 peaks)</span>
