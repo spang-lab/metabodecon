@@ -363,6 +363,16 @@ skip_if_not_in_globenv <- function() {
 }
 
 #' @noRd
+#' @author 2025 Tobias Schmidt: initial version.
+skip_if_speaq_deps_missing <- function() {
+    deps <- c("MassSpecWavelet", "impute")
+    inst <- sapply(deps, requireNamespace, quietly = TRUE)
+    if (!all(inst)) {
+        testthat::skip(paste("Missing deps:", collapse(deps[!inst])))
+    }
+}
+
+#' @noRd
 #' @title Check files sizes
 #'
 #' @description

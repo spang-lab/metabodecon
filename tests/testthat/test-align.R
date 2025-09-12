@@ -15,12 +15,9 @@ decons <- deconvolute(spectra, smopts=c(1,3), delta=3, sfr=c(3.2,-3.2), verbose 
 
 test_that("align works", {
 
-    aligns <- align(decons, verbose = FALSE)
+    skip_if_speaq_deps_missing()
 
-    # 'speaq' requires 'MassSpecWavelet' and 'impute' to be installed
-    deps <- c("MassSpecWavelet", "impute")
-    inst <- sapply(deps, requireNamespace, quietly = TRUE)
-    if (!all(inst)) skip(paste("Missing deps:", collapse(deps[!inst])))
+    aligns <- align(decons, verbose = FALSE)
 
     # Check structure of returned object. Strategy: add all fields to the
     # decons object that we expect [align()] to add. At the end the objects
