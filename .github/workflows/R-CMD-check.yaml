@@ -9,7 +9,7 @@ on: {
 jobs:
   R-CMD-check:
     runs-on: ${{ matrix.config.os }}
-    name: ${{ matrix.config.os }} (${{ matrix.config.r }}) (bioc: ${{ matrix.config.bioc }})
+    name: "${{ matrix.config.os }} (${{ matrix.config.r }}) (bioc: ${{ matrix.config.bioc }})"
     strategy:
       fail-fast: false
       matrix:
