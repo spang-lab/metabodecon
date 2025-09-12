@@ -235,7 +235,7 @@ print.rdecons <- function(x, ...) {
 #' is_decon1(d1) # FALSE
 #' is_decon2(d1) # TRUE
 #'
-#' #' if (interactive()) {
+#' if (interactive()) {
 #'     # Example requires an interactive R session, because in case of missing
 #'     # dependencies the user will be asked for confirmation to install them.
 #'     aa <- align(dd)
