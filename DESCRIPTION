@@ -56,6 +56,7 @@ Suggests:
     pkgbuild,
     pkgload,
     R.devices,
+    rcmdcheck,
     remotes,
     rmarkdown,
     testthat (>= 3.0.0),

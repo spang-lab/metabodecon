@@ -1,5 +1,21 @@
 # Copilot Instructions for MetaboDecon
 
+## Coding Guidelines
+
+- All roxygen comments should start with a tag, in particular title and
+  description should be formatted as `#' @title ...` and `#' @description ...`.
+- Character limit is 80. Prefer short variable names like `x` and `y` to achieve
+  that. If it's not clear from the function docs what a variable means, use a
+  comment to describe it upon first use.
+- Prefer the use of helper variables instead of function nesting to reduce line
+  length and improve readability. E.g. `x <- f(a); y <- g(x)` instead of `y <-
+  g(f(a))`. Function nesting is ok if everything still fits in 80 chars and the
+  function names are short and readable.
+- Do not use pipe operators `%>%` or `|>`.
+- Always use fully qualified names for functions from other packages, e.g.
+  `ggplot2::ggplot()`. Exceptions are functions from R's standard library like
+  `sum()`, `mean()`, etc.
+
 ## Project Structure
 
 - `_pkgdown.yml`: Configuration file for the pkgdown website.
@@ -22,6 +38,16 @@
 - `R/`: Contains the R scripts for the package.
 - `tests/`: Unit tests for the package.
 - `vignettes/`: Long-form documentation and tutorials.
+
+## Vignettes
+
+- `Classes.Rmd`: Documentation for the `Classes` module.
+- `Compatibility.Rmd`: Details on compatibility with other tools.
+- `Contributing.Rmd`: Guidelines for contributing to the project.
+- `Datasets.Rmd`: Information about the datasets included in the package.
+- `FAQ.Rmd`: Frequently asked questions.
+- `Get_Started.Rmd`: A guide to getting started with the package.
+- `MetaboDecon1D.Rmd`: Documentation for the `MetaboDecon1D` module.
 
 ## Modules
 
@@ -293,13 +319,3 @@ Test live inside ./tests/testthat. The followings tests exist:
 39. `test-smooth_signals.R`
 40. `test-speaq_align.R`
 41. `test-vcomp.R`
-
-## Vignettes
-
-- `Classes.Rmd`: Documentation for the `Classes` module.
-- `Compatibility.Rmd`: Details on compatibility with other tools.
-- `Contributing.Rmd`: Guidelines for contributing to the project.
-- `Datasets.Rmd`: Information about the datasets included in the package.
-- `FAQ.Rmd`: Frequently asked questions.
-- `Get_Started.Rmd`: A guide to getting started with the package.
-- `MetaboDecon1D.Rmd`: Documentation for the `MetaboDecon1D` module.
