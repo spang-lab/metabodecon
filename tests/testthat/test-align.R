@@ -17,6 +17,10 @@ test_that("align works", {
 
     aligns <- align(decons, verbose = FALSE)
 
+    deps <- c("MassSpecWavelet", "impute")
+    inst <- sapply(deps, requireNamespace, quietly = TRUE)
+    if (!all(inst)) skip(paste("Missing deps:", collapse(deps[!inst])))
+
     # Check structure of returned object. Strategy: add all fields to the
     # decons object that we expect [align()] to add. At the end the objects
     # should be equal.

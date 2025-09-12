@@ -92,7 +92,7 @@ check_mdrb_deps <- function(verbose = FALSE) {
     cargo_str <- "0.0.0"
     try(silent = TRUE, {
         local_options(warn = -1)
-        cargo_out <- system("cargo --version", intern = TRUE, ignore.stderr = TRUE)
+        cargo_out <- system2("cargo", args = "--version", stdout = TRUE, stderr = FALSE)
         cargo_str <- strsplit(cargo_out, " ")[[1]][2] # cargo_out == 'cargo x.y.z (commitsha yyyy-mm-dd)'
     })
     cargo_cur <- package_version(cargo_str)
@@ -106,7 +106,7 @@ check_mdrb_deps <- function(verbose = FALSE) {
     rustc_str <- "0.0.0"
     try(silent = TRUE, {
         local_options(warn = -1)
-        rustc_out <- system("rustc --version", intern = TRUE, ignore.stderr = TRUE)
+        rustc_out <- system2("rustc", args = "--version", stdout = TRUE, stderr = FALSE)
         rustc_str <- strsplit(rustc_out, " ")[[1]][2] # rustc_out == 'rustc x.y.z (commitsha yyyy-mm-dd)'
     })
     rustc_cur <- package_version(rustc_str)

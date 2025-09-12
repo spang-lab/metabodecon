@@ -52,9 +52,12 @@
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
-#' decons <- deconvolute(sim[1:2], sfr = c(3.55, 3.35))
-#' aligned <- align(decons)
-#' aligned
+#' if (interactive()) {
+#'     # Example requires an interactive R session, because in case of missing
+#'     # dependencies the user will be asked for confirmation to install them.
+#'     decons <- deconvolute(sim[1:2], sfr = c(3.55, 3.35))
+#'     aligned <- align(decons)
+#' }
 align <- function(x, maxShift = 50, maxCombine = 5, verbose = TRUE, install_deps = NULL) {
 
     # Check for required packages
