@@ -117,7 +117,7 @@ deconvolute_spectra <- function(x,
     nfit=3,        smopts=c(2, 5),    delta=6.4,      sfr=c(3.55, 3.35),
     wshw=0,        ask=FALSE,         force=FALSE,    verbose=TRUE,
     bwc=2,         use_rust=FALSE,    nw=1,           igr=list(),
-    rtyp="idecon"
+    rtyp="decon2"
 ) {
 
     # Check inputs
@@ -129,7 +129,7 @@ deconvolute_spectra <- function(x,
         is_num(sfr, 2)  || is_list_of_nums(sfr, length(x), 2),
         is_num(wshw, 1) || is_list_of_nums(wshw, length(x), 1),
         if (rtyp == "rdecon") isTRUE(use_rust) else is_bool(use_rust),
-        is_char(rtyp, 1, "(decon[0-2]|idecon|rdecon)")
+        is_char(rtyp, 1, "(decon[0-2]|rdecon)")
     )
 
     # Configure logging
@@ -176,7 +176,7 @@ deconvolute_spectra <- function(x,
 deconvolute_spectrum <- function(x,
     nfit=3, smopts=c(2, 5), delta=6.4, sfr=c(3.55, 3.35), wshw=0,
     ask=FALSE, force=FALSE, verbose=TRUE, bwc=2,
-    use_rust=FALSE, nw=1, igr=list(), rtyp="idecon"
+    use_rust=FALSE, nw=1, igr=list(), rtyp="decon2"
 ) {
     # Check inputs
     assert(
@@ -185,7 +185,7 @@ deconvolute_spectrum <- function(x,
         is_num(sfr, 2),   is_num(wshw, 1),       is_bool(force, 1),
         is_num(bwc, 1),   is_bool(use_rust, 1),  is_int(nw, 1),
         is_list_of_nums(igr, nv=2),
-        is_char(rtyp, 1, "(decon[0-2]|idecon|rdecon)")
+        is_char(rtyp, 1, "(decon[0-2]|rdecon)")
     )
 
     # Init locals
@@ -227,34 +227,55 @@ deconvolute_spectrum <- function(x,
         filtered_peak <- filter_peaks(spectrum, peak_results$peak, sfr, delta, force, bwc, sf)
         lc_results <- fit_lorentz_curves(spectrum, filtered_peak, smooth_results$y_smooth, nfit, bwc, sf)
         
-        # Build idecon-like object for conversion
+        # Build decon2 object directly
         cs <- spectrum$cs
-        n <- length(cs)
-        dp <- seq(n - 1, 0, -1)
-        sdp <- seq((n - 1) / sf[1], 0, -1 / sf[1])
-        hz <- spectrum$meta$fq
-        ppm_range <- diff(range(cs))
-        ppm_max <- max(cs)
-        ppm_min <- min(cs)
-        ppm_step <- ppm_range / (n - 1)
-        ppm_nstep <- ppm_range / n
-        name <- spectrum$meta$name
+        si <- spectrum$si
         meta <- spectrum$meta
         
-        decon <- list(
-            y_raw = y_raw, y_scaled = y_scaled, n = n, dp = dp, sdp = sdp, sf = sf,
-            ppm = cs, hz = hz, ppm_range = ppm_range, ppm_max = ppm_max, ppm_min = ppm_min,
-            ppm_step = ppm_step, ppm_nstep = ppm_nstep, name = name, meta = meta,
-            args = args, y_nows = y_nows, y_pos = y_pos, Z = smooth_results$Z,
-            y_smooth = smooth_results$y_smooth, d = peak_results$d, peak = filtered_peak,
-            lci = lc_results$lci, lca = lc_results$lca, lcr = lc_results$lcr
+        # Calculate superposition using Lorentz curves
+        lcpar <- data.frame(
+            x0 = lc_results$lcr$w,  # These are in scaled data point units
+            A = -lc_results$lcr$A * 1e6,  # Convert back to original scale and sign
+            lambda = -lc_results$lcr$lambda  # Convert back to original sign
         )
-        class(decon) <- "idecon"
+        
+        # Convert positions to ppm for superposition calculation
+        lcpar_ppm <- data.frame(
+            x0 = convert_pos(lcpar$x0, seq((length(cs) - 1) / sf[1], 0, -1 / sf[1]), cs),
+            A = lcpar$A,
+            lambda = convert_width(lcpar$lambda, seq((length(cs) - 1) / sf[1], 0, -1 / sf[1]), cs)
+        )
+        
+        sup <- lorentz_sup(cs, lcpar = lcpar_ppm)
+        
+        sit <- data.frame(
+            wsrm = y_nows * sf[2],
+            nvrm = y_pos * sf[2], 
+            sm = smooth_results$y_smooth * sf[2],
+            sup = sup
+        )
+        
+        # Format peak results for decon2
+        peak <- data.frame(
+            left = filtered_peak$left[filtered_peak$high],
+            center = filtered_peak$center[filtered_peak$high],
+            right = filtered_peak$right[filtered_peak$high]
+        )
+        
+        mse <- list(
+            raw = mse(si, sup, normed = FALSE),
+            norm = mse(si, sup, normed = TRUE),
+            sm = mse(sit$sm, sup, normed = FALSE),
+            smnorm = mse(sit$sm, sup, normed = TRUE)
+        )
+        
+        decon <- named(cs, si, meta, args, sit, peak, lcpar=lcpar_ppm, mse)
+        class(decon) <- "decon2"
     }
     logf("Formatting return object as %s", rtyp)
     convert <- switch(rtyp,
         "decon0"=as_decon0, "decon1"=as_decon1, "decon2"=as_decon2,
-        "idecon"=as_idecon, "rdecon"=as_rdecon
+        "rdecon"=as_rdecon
     )
     decon <- convert(decon)
     logf("Finished deconvolution of %s", name)

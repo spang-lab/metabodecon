@@ -2438,8 +2438,7 @@ generate_lorentz_curves <- function(data_path,
     # Check inputs
     stopifnot(
         is_existing_path(data_path) ||
-        is_spectrum(data_path) || is_spectra(data_path) ||
-        is_ispec(data_path) || is_ispecs(data_path),
+        is_spectrum(data_path) || is_spectra(data_path),
         is_char(file_format,1,"(bruker|jcampdx)"),
         is_bool(make_rds,1) || is_char(make_rds,1),
         is_int(expno,1),    is_int(procno,1),   is_int(nfit,1),

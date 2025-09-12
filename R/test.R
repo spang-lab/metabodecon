@@ -703,7 +703,7 @@ vcomp <- function(x, y, xpct = 0, silent = FALSE) {
 compare_spectra <- function(new, old, silent = FALSE) { # styler: off
 
     # Check args
-    if (!is_idecon(new)) stop("new must be an object of type idecon")
+    if (!is_decon2(new)) stop("new must be an object of type decon2")
     if (!is_decon0(old)) stop("old must be an object of type decon0")
     msg <- "old$debuglist is missing (set debug = TRUE in MetaboDecon1D())"
     if (!"debuglist" %in% names(old)) stop(msg)

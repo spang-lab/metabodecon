@@ -740,7 +740,7 @@ as_rdecons <- function(x) {
 as_collection <- function(x, cls) {
     assert(
         is.list(x),
-        is_char(cls, 1, "(decon[0-2]|idecon|rdecon)"),
+        is_char(cls, 1, "(decon[0-2]|rdecon)"),
         cls == "decon0" || all(sapply(x, class) == cls)
     )
     switch(cls,
@@ -855,14 +855,14 @@ get_default_names <- function(x, default) {
 #' @description
 #' Generates dummy peak selection results based on  peak  centers  and  chemical
 #' shifts. Returns the results in a format suitable  for  the  specified  target
-#' type (`decon2` or `idecon`).
+#' type (`decon2`).
 #'
 #' @details
 #' This helper function creates plausible peak selection results from the  final
 #' peak centers after peak parameter approximation. It is necessary because  the
 #' metabodecon-rust  backend  currently  does  not  provide  an  interface   for
 #' accessing the true peak selection results.  These  results  are  required  by
-#' `decon2` and `idecon` objects (e.g., for plotting). If  the  metabodecon-rust
+#' `decon2` objects (e.g., for plotting). If  the  metabodecon-rust
 #' backend introduces a way to access the peak selection results in the  future,
 #' this function can be removed.
 #'
@@ -871,21 +871,15 @@ get_peak <- function(x0, cs, target = "decon2") {
     assert(
         is_num(x0),
         is_num(cs),
-        is_char(target, 1, "(idecon|decon2)")
+        is_char(target, 1, "(decon2)")
     )
     center <- round(convert_pos(x0, cs, seq_along(cs)))
     npeaks <- length(center)
     left <- center - 1
     center <- center
     right <- center + 1
-    if (target == "idecon") {
-        score <- rep(999, npeaks)
-        high <- rep(TRUE, npeaks)
-        region <- rep("norm", npeaks)
-        peak <- data.frame(left, center, right, score, high, region)
-    } else {
-        peak <- data.frame(left, center, right)
-    }
+    # Only decon2 format is now supported
+    peak <- data.frame(left, center, right)
     peak
 }
 
