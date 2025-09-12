@@ -53,9 +53,10 @@ request.
 Whenever a package maintainer wants to release a new version of the package to
 CRAN, they should:
 
-1.  Check whether the
-    [release requirements](https://r-pkgs.org/release.html#sec-release-initial)
-    are fulfilled
+1.  Check that all [release
+    requirements](https://r-pkgs.org/release.html#sec-release-initial) and [CRAN
+    Policies](https://cran.r-project.org/web/packages/policies.html) are
+    fulfilled
 2.  Use the following commands to do a final check of the package and release it
     to CRAN
 
@@ -77,7 +78,8 @@ devtools::check(
 
 # Check reverse dependencies. For details see:
 # https://r-pkgs.org/release.html#sec-release-revdep-checks
-revdepcheck::revdep_check(num_workers = 8)
+pak::pkg_install("r-lib/revdepcheck")
+revdepcheck::revdep_check(num_workers = 8) # working again at 2025/09/12
 
 # Send your package to CRAN's builder services. You should receive an e-mail
 # within about 30 minutes with a link to the check results. Checking with
@@ -88,7 +90,7 @@ devtools::check_win_release()
 devtools::check_win_devel()
 devtools::check_mac_release()
 
-# Use the following command to submit the package to CRAN of submit via the web
+# Use the following command to submit the package to CRAN or submit via the web
 # interface available at https://cran.r-project.org/submit.html.
 devtools::submit_cran()
 ```
