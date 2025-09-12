@@ -42,6 +42,12 @@ jobs:
           use-public-rspm: true
           extra-repositories: https://spang-lab.r-universe.dev
 
+      - name: Set up R Dependencies
+        uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::rcmdcheck
+          needs: check
+
       - name: Install MacOS System Dependencies
         uses: r-hub/actions/setup-r-sysreqs@v1
         with: { type: "minimal" }
