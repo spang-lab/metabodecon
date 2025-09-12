@@ -64,15 +64,8 @@ jobs:
       - name: Test package without Bioconductor Deps
         if: ${{ !matrix.config.bioc }}
         run: |
-
           export _R_CHECK_FORCE_SUGGESTS_=false
-
-          echo "Removing Bioconductor dependencies"
           Rscript -e "remove.packages(c('MassSpecWavelet', 'impute'))"
-
-          echo "Reinstalling speaq without Bioconductor dependencies"
-          Rscript -e "install.packages('speaq', repos='https://cran.r-project.org')"
-
           echo "Building and checking package"
           cd ..
           R CMD build metabodecon
