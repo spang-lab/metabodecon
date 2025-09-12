@@ -211,17 +211,45 @@ deconvolute_spectrum <- function(x,
         decon <- new_rdecon(x, args, mdrb_spectrum, mdrb_deconvr, mdrb_decon)
     } else {
         # Sys.setenv(RAYON_NUM_THREADS=nw) # Must be set before R is started
-        ispec <- as_ispec(x)
-        ispec <- set(ispec, args=args)
-        ispec <- rm_water_signal(ispec, wshw, bwc)
-        ispec <- rm_negative_signals(ispec)
-        ispec <- smooth_signals(ispec, smopts[1], smopts[2], bwc)
-
-        ispec <- find_peaks(ispec)
-        ispec <- filter_peaks(ispec, sfr, delta, force, bwc)
-        ispec <- fit_lorentz_curves(ispec, nfit, bwc)
-
-        decon <- as_idecon(ispec)
+        spectrum <- x
+        sf <- c(1e3, 1e6)
+        
+        # Create scaled intensities
+        y_raw <- spectrum$si # Raw signal intensities
+        y_scaled <- y_raw / sf[2] # Scaled signal intensities
+        
+        # Process spectrum step by step
+        y_nows <- rm_water_signal(spectrum, y_scaled, wshw, bwc, sf)
+        y_pos <- rm_negative_signals(y_nows)
+        smooth_results <- smooth_signals(y_pos, smopts[1], smopts[2], bwc)
+        
+        peak_results <- find_peaks(smooth_results$y_smooth)
+        filtered_peak <- filter_peaks(spectrum, peak_results$peak, sfr, delta, force, bwc, sf)
+        lc_results <- fit_lorentz_curves(spectrum, filtered_peak, smooth_results$y_smooth, nfit, bwc, sf)
+        
+        # Build idecon-like object for conversion
+        cs <- spectrum$cs
+        n <- length(cs)
+        dp <- seq(n - 1, 0, -1)
+        sdp <- seq((n - 1) / sf[1], 0, -1 / sf[1])
+        hz <- spectrum$meta$fq
+        ppm_range <- diff(range(cs))
+        ppm_max <- max(cs)
+        ppm_min <- min(cs)
+        ppm_step <- ppm_range / (n - 1)
+        ppm_nstep <- ppm_range / n
+        name <- spectrum$meta$name
+        meta <- spectrum$meta
+        
+        decon <- list(
+            y_raw = y_raw, y_scaled = y_scaled, n = n, dp = dp, sdp = sdp, sf = sf,
+            ppm = cs, hz = hz, ppm_range = ppm_range, ppm_max = ppm_max, ppm_min = ppm_min,
+            ppm_step = ppm_step, ppm_nstep = ppm_nstep, name = name, meta = meta,
+            args = args, y_nows = y_nows, y_pos = y_pos, Z = smooth_results$Z,
+            y_smooth = smooth_results$y_smooth, d = peak_results$d, peak = filtered_peak,
+            lci = lc_results$lci, lca = lc_results$lca, lcr = lc_results$lcr
+        )
+        class(decon) <- "idecon"
     }
     logf("Formatting return object as %s", rtyp)
     convert <- switch(rtyp,
@@ -320,27 +348,28 @@ get_smopts <- function(x, smopts) {
 #' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
 #' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
 #' MetaboDecon1D. Added code for bwc > 1.
-rm_water_signal <- function(x, wshw, bwc) {
-    assert(is_ispec(x), is_num(wshw, 1), is_num(bwc, 1))
+rm_water_signal <- function(spectrum, y_scaled, wshw, bwc, sf = c(1e3, 1e6)) {
+    assert(is_spectrum(spectrum), is_num(y_scaled), is_num(wshw, 1), is_num(bwc, 1))
     logf("Removing water signal")
+    cs <- spectrum$cs
     if (bwc >= 1) {
-        ppm_center <- (x$ppm[1] + x$ppm[length(x$ppm)]) / 2
-        idx_wsr <- which(x$ppm > ppm_center - wshw & x$ppm < ppm_center + wshw)
-        x$y_nows <- x$y_scaled
-        x$y_nows[idx_wsr] <- min(x$y_nows)
+        ppm_center <- (cs[1] + cs[length(cs)]) / 2
+        idx_wsr <- which(cs > ppm_center - wshw & cs < ppm_center + wshw)
+        y_nows <- y_scaled
+        y_nows[idx_wsr] <- min(y_nows)
     } else {
-        wsr <- enrich_wshw(wshw, x)
+        wsr <- enrich_wshw(wshw, spectrum, sf)
         left <- wsr$left_dp
         right <- wsr$right_dp
         idx_wsr <- right:left # (1)
-        x$y_nows <- x$y_scaled
-        x$y_nows[idx_wsr] <- 0.01 / x$sf[2]
+        y_nows <- y_scaled
+        y_nows[idx_wsr] <- 0.01 / sf[2]
         # (1) Order is important here, because right and left are floats. Example:
         # right <- 3.3; left <- 1.4
         # right:left == c(3.3, 2.3)
         # left:right == c(1.4, 2.4)
     }
-    x
+    y_nows
 }
 
 #' @noRd
@@ -348,12 +377,11 @@ rm_water_signal <- function(x, wshw, bwc) {
 #' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
 #' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
 #' MetaboDecon1D. Added code for bwc > 1.
-rm_negative_signals <- function(spec) {
+rm_negative_signals <- function(y_nows) {
     logf("Removing negative signals")
-    errmsg <- "Water signal not removed yet. Call `rm_water_signal()` first."
-    if (is.null(spec$y_nows)) stop(errmsg)
-    spec$y_pos <- abs(spec$y_nows)
-    spec
+    if (is.null(y_nows)) stop("Water signal not removed yet. Call `rm_water_signal()` first.")
+    y_pos <- abs(y_nows)
+    y_pos
 }
 
 #' @noRd
@@ -384,24 +412,23 @@ rm_negative_signals <- function(spec) {
 #' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
 #' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
 #' MetaboDecon1D.
-smooth_signals <- function(spec, reps = 2, k = 5, verbose = TRUE) {
+smooth_signals <- function(y_pos, reps = 2, k = 5, verbose = TRUE) {
     if (verbose) logf("Smoothing signals")
     if (k %% 2 == 0) stop("k must be odd")
-    n <- length(spec$y_pos) # number of data points in total
+    n <- length(y_pos) # number of data points in total
     ws <- floor(k / 2) # window size left/right of center
     ct <- seq_len(n) # center positions
     lb <- pmax(ct - ws, 1) # left borders
     rb <- pmin(ct + ws, n) # right borders
     nw <- rb - lb + 1 # number of data points in window
-    Z <- data.frame(spec$y_pos)
+    Z <- data.frame(y_pos)
     for (j in seq_len(reps)) {
         zj <- Z[[j]]
         zk <- sapply(seq_len(n), function(i) sum(zj[lb[i]:rb[i]]))
         zk <- (1 / nw) * zk
         Z[[j + 1]] <- zk
     }
-    spec[c("Z", "y_smooth")] <- list(Z[, -1], Z[, reps + 1])
-    spec
+    list(Z = Z[, -1], y_smooth = Z[, reps + 1])
 }
 
 #' @noRd
@@ -456,23 +483,23 @@ smooth_signals_v20 <- function(spec, reps = 2, k = 5) {
 #' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
 #' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
 #' MetaboDecon1D.
-find_peaks <- function(spec) {
+find_peaks <- function(y_smooth) {
     logf("Starting peak selection")
-    d <- spec$d <- calc_second_derivative(y = spec$y_smooth)
+    d <- calc_second_derivative(y = y_smooth)
     a <- abs(d)
     m <- length(d)
     dl <- c(NA, d[-m]) # dl[i] == d[i-1]
     dr <- c(d[-1], NA) # dr[i] == d[i+1]
     center <- which(d < 0 & d <= dl & d < dr)
-    spec$peak <- data.frame(left = NA, center = center, right = NA, score = NA)
+    peak <- data.frame(left = NA, center = center, right = NA, score = NA)
     for (i in seq_along(center)) {
         j <- center[i]
-        l <- spec$peak$left[i] <- get_left_border(j, d)
-        r <- spec$peak$right[i] <- get_right_border(j, d, m)
-        spec$peak$score[i] <- get_peak_score(j, l, r, a)
+        l <- peak$left[i] <- get_left_border(j, d)
+        r <- peak$right[i] <- get_right_border(j, d, m)
+        peak$score[i] <- get_peak_score(j, l, r, a)
     }
     logf("Detected %d peaks", length(center))
-    spec
+    list(d = d, peak = peak)
 }
 
 #' @noRd
@@ -546,23 +573,25 @@ filter_peaks_v13 <- function(ppm, # x values in ppm
 #' sfr <- list(left_sdp = 2.8, right_sdp = 1.2)
 #' rm3 <- filtered_ispec <- filter_peaks(ispec, sfr)
 #' rm2 <- filtered_ispec <- filter_peaks(ispec, sfr, delta = 1)
-filter_peaks <- function(ispec, sfr, delta = 6.4, force = FALSE, bwc = 1) {
-    assert(is_ispec(ispec))
+filter_peaks <- function(spectrum, peak, sfr, delta = 6.4, force = FALSE, bwc = 1, sf = c(1e3, 1e6)) {
+    assert(is_spectrum(spectrum))
     logf("Removing peaks with low pscores")
-    sdp <- ispec$sdp
-    ppm <- ispec$ppm
-    plb <- ispec$peak$left
-    prb <- ispec$peak$right
-    pct <- ispec$peak$center
-    psc <- ispec$peak$score
+    cs <- spectrum$cs
+    n <- length(cs)
+    # Create scaled data point numbers for backwards compatibility
+    sdp <- seq((n - 1) / sf[1], 0, -1 / sf[1])
+    plb <- peak$left
+    prb <- peak$right
+    pct <- peak$center
+    psc <- peak$score
     pok <- !is.na(plb) & !is.na(pct) & !is.na(prb)
     if (bwc < 1) {
-        sfr <- enrich_sfr(sfr, ispec)
-        in_left_sfr <- sdp[pct] >= sfr$left_sdp
-        in_right_sfr <- sdp[pct] <= sfr$right_sdp
+        sfr_enriched <- enrich_sfr(sfr, spectrum, sf)
+        in_left_sfr <- sdp[pct] >= sfr_enriched$left_sdp
+        in_right_sfr <- sdp[pct] <= sfr_enriched$right_sdp
     } else {
-        in_left_sfr <- ppm[pct] >= max(sfr)
-        in_right_sfr <- ppm[pct] <= min(sfr)
+        in_left_sfr <- cs[pct] >= max(sfr)
+        in_right_sfr <- cs[pct] <= min(sfr)
     }
     in_sfr <- in_left_sfr | in_right_sfr
     if (sum(in_sfr) > 1) {
@@ -583,12 +612,12 @@ filter_peaks <- function(ispec, sfr, delta = 6.4, force = FALSE, bwc = 1) {
         mu <- 0
         sigma <- 0
     }
-    ispec$peak$high <- pok & (psc > mu + delta * sigma)
-    ispec$peak$region <- "norm"
-    ispec$peak$region[in_left_sfr] <- "sfrl"
-    ispec$peak$region[in_right_sfr] <- "sfrr"
-    logf("Removed %d peaks", sum(!ispec$peak$high))
-    ispec
+    peak$high <- pok & (psc > mu + delta * sigma)
+    peak$region <- "norm"
+    peak$region[in_left_sfr] <- "sfrl"
+    peak$region[in_right_sfr] <- "sfrr"
+    logf("Removed %d peaks", sum(!peak$high))
+    peak
 }
 
 #' @noRd
@@ -596,23 +625,26 @@ filter_peaks <- function(ispec, sfr, delta = 6.4, force = FALSE, bwc = 1) {
 #' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
 #' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
 #' MetaboDecon1D. Added code for bwc > 1.
-fit_lorentz_curves <- function(spec, nfit = 3, bwc = 1) {
+fit_lorentz_curves <- function(spectrum, peak, y_smooth, nfit = 3, bwc = 1, sf = c(1e3, 1e6)) {
     logf("Initializing Lorentz curves")
-    spec$lci <- lc <- init_lc(spec) # Lorentz Curves Initialized
-    spec$lca <- vector("list", length = nfit) # Lorentz Curves Approximated
+    lci <- lc <- init_lc(spectrum, peak, y_smooth, sf) # Lorentz Curves Initialized
+    lca <- vector("list", length = nfit) # Lorentz Curves Approximated
     logf("Refining Lorentz Curves")
-    for (i in 1:nfit) spec$lca[[i]] <- lc <- refine_lc_v14(spec, lc$Z)
+    for (i in 1:nfit) lca[[i]] <- lc <- refine_lc_v14(spectrum, peak, y_smooth, lc$Z, sf)
     A <- lc$A
     lambda <- lc$lambda
     w <- lc$w
+    cs <- spectrum$cs
+    n <- length(cs)
     if (bwc < 1) {
-        limits <- c(0, max(spec$sdp) + (1 / spec$sf[1]))
+        sdp <- seq((n - 1) / sf[1], 0, -1 / sf[1])
+        limits <- c(0, max(sdp) + (1 / sf[1]))
         integrals <- lorentz_int(w, A, lambda, limits = limits)
     } else {
         integrals <- A * (- pi)
     }
-    spec$lcr <- list(A = A, lambda = lambda, w = w, integrals = integrals)
-    spec
+    lcr <- list(A = A, lambda = lambda, w = w, integrals = integrals)
+    list(lci = lci, lca = lca, lcr = lcr)
 }
 
 # Helpers for get_sfr and get_wshw #####
@@ -668,14 +700,21 @@ confirm_wshw <- function(x, wshw) {
 #' [filter_peaks()]. For details see `CHECK-2: signal free region calculation`
 #' in `TODOS.md`.
 #' @author 2024-2025 Tobias Schmidt: initial version.
-enrich_sfr <- function(sfr, x) {
-    assert(is_ispec(x) || is_idecon(x))
+enrich_sfr <- function(sfr, spectrum, sf = c(1e3, 1e6)) {
+    assert(is_spectrum(spectrum))
     left_ppm <- sfr[1]
     right_ppm <- sfr[2]
-    left_dp <- (x$n + 1) - (x$ppm_max - left_ppm) / x$ppm_nstep
-    left_sdp <- left_dp / x$sf[1]
-    right_dp <- (x$n + 1) - (x$ppm_max - right_ppm) / x$ppm_nstep
-    right_sdp <- right_dp / x$sf[1]
+    # Calculate values needed from spectrum
+    cs <- spectrum$cs
+    n <- length(cs)
+    ppm_max <- max(cs)
+    ppm_range <- diff(range(cs))
+    ppm_nstep <- ppm_range / n # Backwards compatible calculation
+    # Convert ppm to data point indices and scaled data point indices
+    left_dp <- (n + 1) - (ppm_max - left_ppm) / ppm_nstep
+    left_sdp <- left_dp / sf[1]
+    right_dp <- (n + 1) - (ppm_max - right_ppm) / ppm_nstep
+    right_sdp <- right_dp / sf[1]
     named(left_ppm, right_ppm, left_dp, right_dp, left_sdp, right_sdp)
 }
 
@@ -691,18 +730,23 @@ enrich_sfr <- function(sfr, x) {
 #' [rm_water_signal()]. For details see `CHECK-3: water signal calculation` in
 #' `TODOS.md`.
 #' @author 2024-2025 Tobias Schmidt: initial version.
-enrich_wshw <- function(wshw, x) {
-    assert(is_ispec(x) || is_idecon(x))
-    x <- as_ispec(x)
+enrich_wshw <- function(wshw, spectrum, sf = c(1e3, 1e6)) {
+    assert(is_spectrum(spectrum))
+    # Calculate values needed from spectrum
+    cs <- spectrum$cs
+    n <- length(cs)
+    ppm_range <- diff(range(cs))
+    ppm_nstep <- ppm_range / n # Backwards compatible calculation
+    # Calculate water signal region
     hwidth_ppm <- wshw
-    hwidth_dp <- hwidth_ppm / x$ppm_nstep
-    center_dp <- x$n / 2
+    hwidth_dp <- hwidth_ppm / ppm_nstep
+    center_dp <- n / 2
     right_dp <- center_dp + hwidth_dp
     left_dp <- center_dp - hwidth_dp
-    center_ppm <- x$ppm[center_dp]
-    right_ppm <- x$ppm[right_dp]
-    left_ppm <- x$ppm[left_dp]
-    if (left_dp <= 1 || right_dp >= x$n) stop("WSR is out of range")
+    center_ppm <- cs[center_dp]
+    right_ppm <- cs[right_dp]
+    left_ppm <- cs[left_dp]
+    if (left_dp <= 1 || right_dp >= n) stop("WSR is out of range")
     named(
         left_ppm, right_ppm, center_ppm, hwidth_ppm,
         left_dp, right_dp, center_dp, hwidth_dp
@@ -815,10 +859,10 @@ get_peak_score <- function(j, l, r, a) {
 #' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
 #' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
 #' MetaboDecon1D.
-init_lc <- function(spec, verbose = TRUE) {
+init_lc <- function(spectrum, peak, y_smooth, sf = c(1e3, 1e6), verbose = TRUE) {
 
     # Init values
-    p <- spec$peak
+    p <- peak
     ir <- p$right[p$high]  #
     ic <- p$center[p$high] # Index of each peak triplet position (PTP)
     il <- p$left[p$high]   #
@@ -826,7 +870,11 @@ init_lc <- function(spec, verbose = TRUE) {
     rr <- match(ir, lmr) #
     rc <- match(ic, lmr) # Rank of each PTP
     rl <- match(il, lmr) #
-    x <- spec$sdp; y <- spec$y_smooth # X and Y value for each data point
+    # Create scaled data point numbers for backwards compatibility
+    cs <- spectrum$cs
+    n <- length(cs)
+    x <- sdp <- seq((n - 1) / sf[1], 0, -1 / sf[1])
+    y <- y_smooth # X and Y value for each data point
     xlmr <- x[lmr]; # X value for each PTP
     yr <- y[ir]; yc <- y[ic]; yl <- y[il]; # Intensity of each PTP
     xr <- x[ir]; xc <- x[ic]; xl <- x[il]; # Position of each PTP
@@ -873,13 +921,16 @@ init_lc <- function(spec, verbose = TRUE) {
 #' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
 #' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
 #' MetaboDecon1D.\cr
-refine_lc_v14 <- function(spec, Z) {
+refine_lc_v14 <- function(spectrum, peak, y_smooth, Z, sf = c(1e3, 1e6)) {
 
     # Init x and y values
-    x <- spec$sdp; y <- spec$y_smooth # x and y value for each data point
+    cs <- spectrum$cs
+    n <- length(cs)
+    x <- seq((n - 1) / sf[1], 0, -1 / sf[1])  # scaled data point numbers for backwards compatibility
+    y <- y_smooth # x and y value for each data point
 
     # Init peak related variables
-    p <- spec$peak
+    p <- peak
     ir <- p$right[p$high]; ic <- p$center[p$high]; il <- p$left[p$high] # index of each peak triplet position (PTP)
     lmr <- sort(unique(c(il, ic, ir))) # combined PTP indices
     rr <- match(ir, lmr);  rc <- match(ic, lmr);   rl <- match(il, lmr) # rank  of each PTP

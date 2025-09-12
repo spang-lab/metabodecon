@@ -777,7 +777,7 @@ as_decon2.rdecon <- function(x, ...) {
     spec <- list(y_pos = nvrm)
     reps <- args$smopts[[1]]
     size <- args$smopts[[2]]
-    sm <- smooth_signals(spec, reps, size, verbose = FALSE)$y_smooth
+    sm <- smooth_signals(nvrm, reps, size, verbose = FALSE)$y_smooth
     sit <- named(wsrm, nvrm, sm, sup)
     mse <- list(
         raw = mse(si, sup, norm=FALSE), # (1)
@@ -854,7 +854,7 @@ as_idecon <- function(x) {
         y_scaled <- y_raw / 1e6
         y_nows <- y_scaled
         y_pos <- abs(y_scaled)
-        y_smooth <- smooth_signals(named(y_pos), args$smopts[[1]], args$smopts[[2]], verbose = FALSE)$y_smooth
+        y_smooth <- smooth_signals(y_pos, args$smopts[[1]], args$smopts[[2]], verbose = FALSE)$y_smooth
         d <- (calc_second_derivative(y_smooth))
         A <- (-convert_width(lcpar$A, ppm, sdp) / 1e6)
         lambda <- (-convert_width(lcpar$lambda, ppm, sdp))
