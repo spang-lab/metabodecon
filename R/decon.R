@@ -442,10 +442,10 @@ smooth_signals <- function(y_pos, reps = 2, k = 5, verbose = TRUE) {
 #' WORK IN PROGRESS
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
-smooth_signals_v20 <- function(spec, reps = 2, k = 5) {
+smooth_signals_v20 <- function(y_pos, reps = 2, k = 5) {
     if (k %% 2 == 0) stop("k must be odd")
     Z <- vector("list", length = reps)
-    y <- spec$y_pos
+    y <- y_pos
     n <- length(y)
     for (i in seq_len(reps)) {
         filter <- rep(1 / k, k)
@@ -473,9 +473,7 @@ smooth_signals_v20 <- function(spec, reps = 2, k = 5) {
         # with the old version completely. So not even `all.equal(v1, v2)` would
         # be TRUE anymore.
     }
-    spec$Z <- Z
-    spec$y_smooth <- Z[[reps]]
-    spec
+    list(Z = Z, y_smooth = Z[[reps]])
 }
 
 #' @noRd

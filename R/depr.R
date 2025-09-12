@@ -2867,8 +2867,8 @@ analyze_noise_methods <- function(ask = TRUE) {
     }
 
     logf("Visualizing smoothed SIs for noise methods RND and SFR")
-    siRND_sm <- smooth_signals(list(y_pos = siRND))$y_smooth
-    siSFR_sm <- smooth_signals(list(y_pos = siSFR))$y_smooth
+    siRND_sm <- smooth_signals(siRND)$y_smooth
+    siSFR_sm <- smooth_signals(siSFR)$y_smooth
     plot_noise_methods(siRND_sm, siSFR_sm)
     if (!get_yn_input("Continue?")) {
         return()
