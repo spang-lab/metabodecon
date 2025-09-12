@@ -17,6 +17,7 @@ test_that("align works", {
 
     aligns <- align(decons, verbose = FALSE)
 
+    # 'speaq' requires 'MassSpecWavelet' and 'impute' to be installed
     deps <- c("MassSpecWavelet", "impute")
     inst <- sapply(deps, requireNamespace, quietly = TRUE)
     if (!all(inst)) skip(paste("Missing deps:", collapse(deps[!inst])))

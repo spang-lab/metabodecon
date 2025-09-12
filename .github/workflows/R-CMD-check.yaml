@@ -14,14 +14,15 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - {os: macos-latest,   r: 'release'}
-          - {os: windows-latest, r: 'release'}
-          - {os: windows-latest, r: 'oldrel-4'}
-          - {os: ubuntu-latest,  r: 'release'}
-          - {os: ubuntu-latest,  r: 'oldrel-1'}
-          - {os: ubuntu-latest,  r: 'oldrel-2'}
-          - {os: ubuntu-latest,  r: 'oldrel-3'}
-          - {os: ubuntu-latest,  r: 'oldrel-4'}
+          - {os: macos-latest,   r: 'release', bioc: true}
+          - {os: windows-latest, r: 'release', bioc: true}
+          - {os: windows-latest, r: 'oldrel-4', bioc: true}
+          - {os: ubuntu-latest,  r: 'release', bioc: false}
+          - {os: ubuntu-latest,  r: 'release', bioc: true}
+          - {os: ubuntu-latest,  r: 'oldrel-1', bioc: true}
+          - {os: ubuntu-latest,  r: 'oldrel-2', bioc: true}
+          - {os: ubuntu-latest,  r: 'oldrel-3', bioc: true}
+          - {os: ubuntu-latest,  r: 'oldrel-4', bioc: true}
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
@@ -59,3 +60,17 @@ jobs:
       - name: Test package
         uses: r-lib/actions/check-r-package@v2
         env: { _R_CHECK_FORCE_SUGGESTS_: false }
+
+      - name: Test package without Bioconductor Deps
+        if: ${{ !matrix.config.bioc }}
+        env: { _R_CHECK_FORCE_SUGGESTS_: false }
+        run: |
+          # Remove Bioconductor dependencies and reinstall speaq without them
+          Rscript -e "remove.packages(c('MassSpecWavelet', 'impute'))"
+          Rscript -e "install.packages(c('speaq'))"
+          # Call R CMD check manually, as the r-lib action notices that speaq
+          # (mandatory dependency) cannot be imported without impute and
+          # MassSpecWavelet and therefore does not even try to run R CMD check.
+          cd ..
+          R CMD build metabodecon
+          R CMD check --no-manual --as-cran metabodecon_*.tar.gz

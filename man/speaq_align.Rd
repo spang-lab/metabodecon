@@ -75,12 +75,17 @@ Direct usage of this function has been deprecated with metabodecon version
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
 }
 \examples{
-sim_subset <- metabodecon_file("bruker/sim_subset")
-spectrum_data <- generate_lorentz_curves_sim(sim_subset)
-feat <- gen_feat_mat(spectrum_data)
-maxShift <- 200
-M <- speaq_align(feat, maxShift, spectrum_data, show = TRUE)
-str(M)
+deps <- c("MassSpecWavelet", "impute")
+deps_installed <- sapply(deps, requireNamespace, quietly = TRUE)
+if (all(deps_installed)) {
+    # 'speaq' requires 'MassSpecWavelet' and 'impute' to be installed
+    sim_subset <- metabodecon_file("bruker/sim_subset")
+    spectrum_data <- generate_lorentz_curves_sim(sim_subset)
+    feat <- gen_feat_mat(spectrum_data)
+    maxShift <- 200
+    M <- speaq_align(feat, maxShift, spectrum_data, show = TRUE)
+    str(M)
+}
 }
 \author{
 2021-2024 Wolfram Gronwald: initial version.\cr
