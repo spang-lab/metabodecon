@@ -9,7 +9,7 @@ on: {
 jobs:
   R-CMD-check:
     runs-on: ${{ matrix.config.os }}
-    name: ${{ matrix.config.os }} (${{ matrix.config.r }})
+    name: ${{ matrix.config.os }} (${{ matrix.config.r }}) (bioc: ${{ matrix.config.bioc }})
     strategy:
       fail-fast: false
       matrix:
@@ -67,7 +67,7 @@ jobs:
         run: |
           # Remove Bioconductor dependencies and reinstall speaq without them
           Rscript -e "remove.packages(c('MassSpecWavelet', 'impute'))"
-          Rscript -e "install.packages(c('speaq'))"
+          Rscript -e "install.packages('speaq', dependencies=FALSE, repos='https://cran.r-project.org')"
           # Call R CMD check manually, as the r-lib action notices that speaq
           # (mandatory dependency) cannot be imported without impute and
           # MassSpecWavelet and therefore does not even try to run R CMD check.
