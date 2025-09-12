@@ -65,12 +65,16 @@ jobs:
         if: ${{ !matrix.config.bioc }}
         env: { _R_CHECK_FORCE_SUGGESTS_: false }
         run: |
-          # Remove Bioconductor dependencies and reinstall speaq without them
+          # Debug: print environment variable
+          echo "_R_CHECK_FORCE_SUGGESTS_ is set to: $(_R_CHECK_FORCE_SUGGESTS_)"
+          export _R_CHECK_FORCE_SUGGESTS_=false
+          Rscript -e "cat('_R_CHECK_FORCE_SUGGESTS_ from R: ', Sys.getenv('_R_CHECK_FORCE_SUGGESTS_'), '\n')"
+          echo "Removing Bioconductor dependencies..."
           Rscript -e "remove.packages(c('MassSpecWavelet', 'impute'))"
+          echo "Reinstalling speaq without Bioconductor dependencies..."
           Rscript -e "install.packages('speaq', dependencies=FALSE, repos='https://cran.r-project.org')"
-          # Call R CMD check manually, as the r-lib action notices that speaq
-          # (mandatory dependency) cannot be imported without impute and
-          # MassSpecWavelet and therefore does not even try to run R CMD check.
+          echo "Running R CMD build metabodecon..."
           cd ..
           R CMD build metabodecon
+          echo "Running R CMD check..."
           R CMD check --no-manual --as-cran metabodecon_*.tar.gz
