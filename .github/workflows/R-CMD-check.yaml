@@ -68,10 +68,7 @@ jobs:
           Rscript -e "remove.packages(c('MassSpecWavelet', 'impute'))"
           echo "Building and checking package"
           cd ..
-
-          Rscript -e "devtools::document()"
-          R CMD BUILD metabodecon
           R CMD INSTALL --install-tests metabodecon
           Rscript -e "testthat::test_package('metabodecon')"
-
-          R CMD CHECK --no-manual --as-cran metabodecon_*.tar.gz
+          R CMD build metabodecon
+          R CMD check --no-manual --as-cran metabodecon_*.tar.gz
