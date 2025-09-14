@@ -43,7 +43,15 @@
 #'
 #' @examples
 #' check_mdrb()
+#'
+#' \donttest{
+#' # Checking dependencies might take more than 5 seconds, as it
+#' # requires the compilation of a small test program as well as
+#' # running `cargo --version` and `rustc --version`, which,
+#' # depending on your system, might involve updating or installing
+#' # Rust toolchain components.
 #' check_mdrb_deps(verbose = TRUE)
+#' }
 check_mdrb <- function(stop_on_fail = FALSE) {
     stopifnot(is_bool(stop_on_fail, 1))
     mdrb_version <- get_mdrb_version()
@@ -92,7 +100,7 @@ check_mdrb_deps <- function(verbose = FALSE) {
     cargo_str <- "0.0.0"
     try(silent = TRUE, {
         local_options(warn = -1)
-        cargo_out <- system("cargo --version", intern = TRUE, ignore.stderr = TRUE)
+        cargo_out <- system2("cargo", args = "--version", stdout = TRUE, stderr = FALSE)
         cargo_str <- strsplit(cargo_out, " ")[[1]][2] # cargo_out == 'cargo x.y.z (commitsha yyyy-mm-dd)'
     })
     cargo_cur <- package_version(cargo_str)
@@ -106,7 +114,7 @@ check_mdrb_deps <- function(verbose = FALSE) {
     rustc_str <- "0.0.0"
     try(silent = TRUE, {
         local_options(warn = -1)
-        rustc_out <- system("rustc --version", intern = TRUE, ignore.stderr = TRUE)
+        rustc_out <- system2("rustc", args = "--version", stdout = TRUE, stderr = FALSE)
         rustc_str <- strsplit(rustc_out, " ")[[1]][2] # rustc_out == 'rustc x.y.z (commitsha yyyy-mm-dd)'
     })
     rustc_cur <- package_version(rustc_str)

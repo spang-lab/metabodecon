@@ -18,9 +18,13 @@ spectra, extracts the vector of aligned signal integrals for each spectrum
 and returns them as a matrix with datapoints in rows and spectra in columns.
 }
 \examples{
-decons <- deconvolute(sim[1:2], sfr = c(3.55, 3.35))
-aligns <- align(decons)
-si_mat <- get_si_mat(aligns) # 2048 x 2 matrix (2048 datapoints, 2 spectra)
+if (interactive()) {
+    # Example requires an interactive R session, because in case of missing
+    # dependencies the user will be asked for confirmation to install them.
+    decons <- deconvolute(sim[1:2], sfr = c(3.55, 3.35))
+    aligns <- align(decons)
+    si_mat <- get_si_mat(aligns) # 2048 x 2 matrix (2048 datapoints, 2 spectra)
+}
 }
 \author{
 2024-2025 Tobias Schmidt: initial version.

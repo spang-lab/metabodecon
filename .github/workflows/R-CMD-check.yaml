@@ -9,24 +9,22 @@ on: {
 jobs:
   R-CMD-check:
     runs-on: ${{ matrix.config.os }}
-    name: ${{ matrix.config.os }} (${{ matrix.config.r }})
+    name: '${{ matrix.config.os }} (${{ matrix.config.r }}, ${{ matrix.config.test }})'
     strategy:
       fail-fast: false
       matrix:
         config:
-          - {os: macos-latest,   r: 'release'}
-          - {os: windows-latest, r: 'release'}
-          - {os: windows-latest, r: 'oldrel-4'}
-          - {os: ubuntu-latest,  r: 'devel', http-user-agent: 'release'}
-          - {os: ubuntu-latest,  r: 'release'}
-          - {os: ubuntu-latest,  r: 'oldrel-1'}
-          - {os: ubuntu-latest,  r: 'oldrel-3'}
-          # We do not test for oldrel-4 on Linux, because the most recent
-          # version of randomForst (4.7-1) requires R >= 4.1.0 and for some
-          # reason `pak::pkg_install()` is not (yet) smart enough to figure
-          # out that it can just install randomForest 4.6-14 instead. On
-          # Windows this works just fine, so we test it there and hope that
-          # `install.packages()` is smarter than `pak::pkg_install()`.
+          - {os: ubuntu-latest,  r: 'release',  test: 'all'}
+          - {os: ubuntu-latest,  r: 'release',  test: 'nobioc'}
+          - {os: ubuntu-latest,  r: 'release',  test: 'fast'}
+          - {os: ubuntu-latest,  r: 'devel',    test: 'fast'}
+          - {os: ubuntu-latest,  r: 'oldrel-1', test: 'fast'}
+          - {os: ubuntu-latest,  r: 'oldrel-2', test: 'fast'}
+          - {os: ubuntu-latest,  r: 'oldrel-3', test: 'fast'}
+          - {os: ubuntu-latest,  r: 'oldrel-4', test: 'fast'}
+          - {os: macos-latest,   r: 'release',  test: 'fast'}
+          - {os: windows-latest, r: 'release',  test: 'fast'}
+          - {os: windows-latest, r: 'oldrel-4', test: 'fast'}
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
@@ -47,7 +45,14 @@ jobs:
           use-public-rspm: true
           extra-repositories: https://spang-lab.r-universe.dev
 
+      - name: Set up R Dependencies
+        uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::rcmdcheck, mdrb=?ignore-before-r=4.3.0
+          needs: check
+
       - name: Install MacOS System Dependencies
+        if: runner.os == 'macOS'
         uses: r-hub/actions/setup-r-sysreqs@v1
         with: { type: "minimal" }
 
@@ -55,10 +60,27 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update -y && sudo apt-get install -y libgsl0-dev
 
-      - name: Set up R dependencies
-        uses: r-lib/actions/setup-r-dependencies@v2
-        with: { extra-packages: "any::rcmdcheck, mdrb=?ignore-before-r=4.2.0", needs: "check" }
-
-      - name: Test package
+      - name: Test package (fast tests only)
         uses: r-lib/actions/check-r-package@v2
-        env: { _R_CHECK_FORCE_SUGGESTS_: false }
+        if: ${{ matrix.config.test == 'fast' }}
+        env:
+          _R_CHECK_FORCE_SUGGESTS_: FALSE
+
+      - name: Test package (incl. slow tests)
+        uses: r-lib/actions/check-r-package@v2
+        if: ${{ matrix.config.test == 'all' }}
+        env:
+          _R_CHECK_FORCE_SUGGESTS_: FALSE
+          RUN_SLOW_TESTS: TRUE
+
+      - name: Test package (with Bioconductor dependencies removed)
+        if: ${{ matrix.config.test == 'nobioc' }}
+        run: |
+          export _R_CHECK_FORCE_SUGGESTS_=FALSE
+          export RUN_SLOW_TESTS=TRUE
+          Rscript -e "remove.packages(c('MassSpecWavelet', 'impute'))"
+          cd ..
+          R CMD INSTALL --install-tests metabodecon
+          Rscript -e "testthat::test_package('metabodecon')"
+          R CMD build metabodecon
+          R CMD check --no-manual --as-cran metabodecon_*.tar.gz

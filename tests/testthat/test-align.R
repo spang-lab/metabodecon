@@ -15,6 +15,8 @@ decons <- deconvolute(spectra, smopts=c(1,3), delta=3, sfr=c(3.2,-3.2), verbose 
 
 test_that("align works", {
 
+    skip_if_speaq_deps_missing()
+
     aligns <- align(decons, verbose = FALSE)
 
     # Check structure of returned object. Strategy: add all fields to the
@@ -80,6 +82,14 @@ test_that("align can install its dependencies", {
     requireNamespace("waldo", quietly = TRUE)   # required by `expect_false(<bool>)`
     requireNamespace("diffobj", quietly = TRUE) # required by `expect_false(<try-error>)`
     requireNamespace("glue", quietly = TRUE)    # required to print failure messages
+
+    # Update 2025/09/14: apparently, dependencies of speaq, which are no
+    # dependencies of metabodecon, might not be loaded automatically when
+    # metabodecon is loaded. Therefore, we need to load them as well to ensure
+    # they are available for the test.
+    speaq_deps <- tools::package_dependencies("speaq")[[1]]
+    speaq_deps <- setdiff(speaq_deps, c("impute", "MassSpecWavelet"))
+    sapply(speaq_deps, requireNamespace, quietly = TRUE)
 
     # Remember installation path of speaq
     speaq_path <- system.file(package = "speaq")

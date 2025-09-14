@@ -221,24 +221,28 @@ print.rdecons <- function(x, ...) {
 #'
 #' @examples
 #' ss <- sim[1:2]
-#' dd <- deconvolute(ss, sfr = c(3.55, 3.35))
-#' aa <- align(dd)
 #' s1 <- sim[[1]]
-#' d1 <- dd[[1]]
-#' a1 <- aa[[1]]
-#'
+#' is_spectra(ss) # TRUE
 #' is_spectrum(s1) # TRUE
 #' is_spectrum(s1, check_contents = TRUE) # TRUE
-#' is_decon0(d1) # FALSE
-#' is_decon1(d1) # FALSE
-#' is_decon2(d1) # TRUE
-#' is_align(a1) # TRUE
 #'
-#' is_spectra(ss) # TRUE
+#' dd <- deconvolute(ss, sfr = c(3.55, 3.35))
+#' d1 <- dd[[1]]
 #' is_decons0(dd) # FALSE
 #' is_decons1(dd) # FALSE
 #' is_decons2(dd) # TRUE
-#' is_aligns(aa) # TRUE
+#' is_decon0(d1) # FALSE
+#' is_decon1(d1) # FALSE
+#' is_decon2(d1) # TRUE
+#'
+#' if (interactive()) {
+#'     # Example requires an interactive R session, because in case of missing
+#'     # dependencies the user will be asked for confirmation to install them.
+#'     aa <- align(dd)
+#'     a1 <- aa[[1]]
+#'     is_align(a1) # TRUE
+#'     is_aligns(aa) # TRUE
+#' }
 #'
 is_spectrum <- function(x,
                         check_class = TRUE,

@@ -52,9 +52,12 @@
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
-#' decons <- deconvolute(sim[1:2], sfr = c(3.55, 3.35))
-#' aligned <- align(decons)
-#' aligned
+#' if (interactive()) {
+#'     # Example requires an interactive R session, because in case of missing
+#'     # dependencies the user will be asked for confirmation to install them.
+#'     decons <- deconvolute(sim[1:2], sfr = c(3.55, 3.35))
+#'     aligned <- align(decons)
+#' }
 align <- function(x, maxShift = 50, maxCombine = 5, verbose = TRUE, install_deps = NULL) {
 
     # Check for required packages
@@ -172,9 +175,13 @@ align <- function(x, maxShift = 50, maxCombine = 5, verbose = TRUE, install_deps
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
-#' decons <- deconvolute(sim[1:2], sfr = c(3.55, 3.35))
-#' aligns <- align(decons)
-#' si_mat <- get_si_mat(aligns) # 2048 x 2 matrix (2048 datapoints, 2 spectra)
+#' if (interactive()) {
+#'     # Example requires an interactive R session, because in case of missing
+#'     # dependencies the user will be asked for confirmation to install them.
+#'     decons <- deconvolute(sim[1:2], sfr = c(3.55, 3.35))
+#'     aligns <- align(decons)
+#'     si_mat <- get_si_mat(aligns) # 2048 x 2 matrix (2048 datapoints, 2 spectra)
+#' }
 get_si_mat <- function(x) {
     stopifnot(is_aligns(x))
     sapply(x, function(xi) xi$sit$al)
@@ -411,12 +418,17 @@ gen_feat_mat <- function(data_path,
 #' 2024-2025 Tobias Schmidt: refactored initial version.
 #'
 #' @examples
-#' sim_subset <- metabodecon_file("bruker/sim_subset")
-#' spectrum_data <- generate_lorentz_curves_sim(sim_subset)
-#' feat <- gen_feat_mat(spectrum_data)
-#' maxShift <- 200
-#' M <- speaq_align(feat, maxShift, spectrum_data, show = TRUE)
-#' str(M)
+#' deps <- c("MassSpecWavelet", "impute")
+#' deps_installed <- sapply(deps, requireNamespace, quietly = TRUE)
+#' if (all(deps_installed)) {
+#'     # 'speaq' requires 'MassSpecWavelet' and 'impute' to be installed
+#'     sim_subset <- metabodecon_file("bruker/sim_subset")
+#'     spectrum_data <- generate_lorentz_curves_sim(sim_subset)
+#'     feat <- gen_feat_mat(spectrum_data)
+#'     maxShift <- 200
+#'     M <- speaq_align(feat, maxShift, spectrum_data, show = TRUE)
+#'     str(M)
+#' }
 speaq_align <- function(feat = gen_feat_mat(spectrum_data),
                         maxShift = 50,
                         spectrum_data,
@@ -524,14 +536,18 @@ speaq_align <- function(feat = gen_feat_mat(spectrum_data),
 #' refactored initial version.
 #'
 #' @examples
-#'
-#' sim_subset <- metabodecon_file("bruker/sim_subset")
-#' spectrum_data <- generate_lorentz_curves_sim(sim_subset)
-#' shifted_mat <- speaq_align(spectrum_data = spectrum_data, verbose = FALSE)
-#' range <- 5
-#' lower_bound <- 1
-#' obj <- combine_peaks(shifted_mat, range, lower_bound)
-#' str(obj)
+#' deps <- c("MassSpecWavelet", "impute")
+#' deps_installed <- sapply(deps, requireNamespace, quietly = TRUE)
+#' if (all(deps_installed)) {
+#'     # 'speaq' requires 'MassSpecWavelet' and 'impute' to be installed
+#'     sim_subset <- metabodecon_file("bruker/sim_subset")
+#'     spectrum_data <- generate_lorentz_curves_sim(sim_subset)
+#'     shifted_mat <- speaq_align(spectrum_data = spectrum_data, verbose = FALSE)
+#'     range <- 5
+#'     lower_bound <- 1
+#'     obj <- combine_peaks(shifted_mat, range, lower_bound)
+#'     str(obj)
+#' }
 combine_peaks <- function(shifted_mat,
                           range = 5,
                           lower_bound = 1,
@@ -613,19 +629,24 @@ combine_peaks <- function(shifted_mat,
 #' 2024-2025 Tobias Schmidt: refactored initial version.
 #'
 #' @examples
-#' sim_subset <- metabodecon_file("bruker/sim_subset")
-#' decons <- generate_lorentz_curves_sim(sim_subset)
-#' feat <- gen_feat_mat(decons)
-#' refObj <- speaq::findRef(feat$peakList)
-#' hclObj <- dohCluster(
-#'      X = feat$data_matrix,
-#'      peakList = feat$peakList,
-#'      refInd = refObj$refInd,
-#'      maxShift = 100,
-#'      acceptLostPeak = TRUE,
-#'      verbose = TRUE
-#' )
-#' str(hclObj, 1)
+#' deps <- c("MassSpecWavelet", "impute")
+#' deps_installed <- sapply(deps, requireNamespace, quietly = TRUE)
+#' if (all(deps_installed)) {
+#'     # 'speaq' requires 'MassSpecWavelet' and 'impute' to be installed
+#'     sim_subset <- metabodecon_file("bruker/sim_subset")
+#'     decons <- generate_lorentz_curves_sim(sim_subset)
+#'     feat <- gen_feat_mat(decons)
+#'     refObj <- speaq::findRef(feat$peakList)
+#'     hclObj <- dohCluster(
+#'         X = feat$data_matrix,
+#'         peakList = feat$peakList,
+#'         refInd = refObj$refInd,
+#'         maxShift = 100,
+#'         acceptLostPeak = TRUE,
+#'         verbose = TRUE
+#'     )
+#'     str(hclObj, 1)
+#' }
 dohCluster <- function(X,
                        peakList,
                        refInd = 0,

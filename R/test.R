@@ -349,7 +349,7 @@ run_tests <- function(func = NULL, all = FALSE) {
 #' @noRd
 #' @author 2024-2025 Tobias Schmidt: initial version.
 skip_if_slow_tests_disabled <- function() {
-    if (!Sys.getenv("RUN_SLOW_TESTS") == "TRUE") {
+    if (!toupper(Sys.getenv("RUN_SLOW_TESTS")) == "TRUE") {
         testthat::skip("Slow tests (Use `Sys.setenv(RUN_SLOW_TESTS=TRUE)` or `run_tests(all=TRUE)` to enable).")
     }
 }
@@ -359,6 +359,16 @@ skip_if_slow_tests_disabled <- function() {
 skip_if_not_in_globenv <- function() {
     if (!identical(environment(), .GlobalEnv)) {
         testthat::skip("Manual tests (To run, open file and execute the code manually).")
+    }
+}
+
+#' @noRd
+#' @author 2025 Tobias Schmidt: initial version.
+skip_if_speaq_deps_missing <- function() {
+    deps <- c("MassSpecWavelet", "impute")
+    inst <- sapply(deps, requireNamespace, quietly = TRUE)
+    if (!all(inst)) {
+        testthat::skip(paste("Missing deps:", collapse(deps[!inst])))
     }
 }
 

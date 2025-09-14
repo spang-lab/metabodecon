@@ -80,14 +80,18 @@ column 3 and 4, column 4 and 5 have a common non-zero entry.
 }
 }
 \examples{
-
-sim_subset <- metabodecon_file("bruker/sim_subset")
-spectrum_data <- generate_lorentz_curves_sim(sim_subset)
-shifted_mat <- speaq_align(spectrum_data = spectrum_data, verbose = FALSE)
-range <- 5
-lower_bound <- 1
-obj <- combine_peaks(shifted_mat, range, lower_bound)
-str(obj)
+deps <- c("MassSpecWavelet", "impute")
+deps_installed <- sapply(deps, requireNamespace, quietly = TRUE)
+if (all(deps_installed)) {
+    # 'speaq' requires 'MassSpecWavelet' and 'impute' to be installed
+    sim_subset <- metabodecon_file("bruker/sim_subset")
+    spectrum_data <- generate_lorentz_curves_sim(sim_subset)
+    shifted_mat <- speaq_align(spectrum_data = spectrum_data, verbose = FALSE)
+    range <- 5
+    lower_bound <- 1
+    obj <- combine_peaks(shifted_mat, range, lower_bound)
+    str(obj)
+}
 }
 \author{
 2021-2024 Wolfram Gronwald: initial version.\cr 2024-2025 Tobias Schmidt:

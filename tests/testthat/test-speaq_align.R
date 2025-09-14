@@ -10,6 +10,9 @@ x <- generate_lorentz_curves(
 feat_mat <- gen_feat_mat(x)
 
 test_that("speaq_align works", {
+
+    skip_if_speaq_deps_missing()
+
     aligned_mat <- speaq_align(
         feat = feat_mat,
         maxShift = 200,
@@ -23,7 +26,11 @@ test_that("speaq_align works", {
 })
 
 test_that("speaq_align is backwards compatible to speaq_align_original", {
+
+    skip_if_speaq_deps_missing()
+
     local_output_sink(nullfile())
+
     new <- speaq_align(
         feat = feat_mat,
         maxShift = 200,

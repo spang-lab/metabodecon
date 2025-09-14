@@ -46,9 +46,12 @@ algorithm from the 'speaq' package, described  in  Beirnaert  et  al.  (2018)
 in \code{\link[=combine_peaks]{combine_peaks()}}.
 }
 \examples{
-decons <- deconvolute(sim[1:2], sfr = c(3.55, 3.35))
-aligned <- align(decons)
-aligned
+if (interactive()) {
+    # Example requires an interactive R session, because in case of missing
+    # dependencies the user will be asked for confirmation to install them.
+    decons <- deconvolute(sim[1:2], sfr = c(3.55, 3.35))
+    aligned <- align(decons)
+}
 }
 \author{
 2024-2025 Tobias Schmidt: initial version.

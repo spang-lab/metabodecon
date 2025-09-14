@@ -194,8 +194,14 @@ and after the alignment, you can use `plot_spectra()`:
 metabodecon::plot_spectra(deconvoluted_spectra[1:8], lgd = FALSE)
 
 # Align spectra and plot again.
-aligned_spectra <- metabodecon::align(deconvoluted_spectra)
+aligned_spectra <- try(metabodecon::align(deconvoluted_spectra)) # (1)
 metabodecon::plot_spectra(aligned_spectra[1:8])
+
+# (1) The call to align() is wrapped in try() because the function may fail
+# if speaq's Bioconductor dependencies (MassSpecWavelet, impute) are missing
+# and the code runs in a non-interactive R session (e.g., during vignette
+# creation). In interactive sessions, try() is not needed, as the user will
+# be prompted to install missing dependencies automatically.
 ```
 
 The resulting plots are shown in [Figure 3](#fig-align). Before  the  alignment,
@@ -205,6 +211,7 @@ that the alignment was  successful.  Notably,  spectrum  two  has  been  shifted
 significantly to the left.
 
 <a id="fig-align"></a>
+
 ```{r fig-align, eval=TRUE}
 #| fig.cap: |
 #|   <strong>Figure 3.</strong> Overlay of the first eight deconvoluted  spectra
@@ -213,7 +220,20 @@ significantly to the left.
 #|   (ppm). The y-Axis gives the signal intensity of each datapoint in arbitrary
 #|   units (au). All specta are pretty similar to each other except for Spectrum
 #|   2, which got shifted approx. 0.01 ppm to the right.
-<<chunk-align>>
+
+# Plot spectra before alignment. Only show spectra 1-8 for clarity.
+metabodecon::plot_spectra(deconvoluted_spectra[1:8], lgd = FALSE)
+
+# Align spectra and plot again.
+aligned_spectra <- try(
+    metabodecon::align(deconvoluted_spectra, install_deps = FALSE)
+    # We must wrap the call to align() in try() because the function
+    # may fail if speaq's Bioconductor dependencies (MassSpecWavelet,
+    # impute) are missing during vignette creation
+)
+if (!inherits(aligned_spectra, "try-error")) {
+    metabodecon::plot_spectra(aligned_spectra[1:8])
+}
 ```
 
 <!-- Footnotes -->
