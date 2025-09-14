@@ -28,7 +28,6 @@
 - `NAMESPACE`: Defines the exported and imported functions for the package.
 - `NEWS.md`: Changelog for the project.
 - `README.md`: Overview and instructions for the project.
-- `TODOS.md`: List of tasks and future improvements.
 - `data/`: Contains example datasets (e.g., `sap.rda`, `sim.rda`).
 - `docs/`: Generated documentation for the package.
 - `inst/`: Additional files to be included in the package.

@@ -120,8 +120,7 @@
 
 # metabodecon 1.2.0
 
-Finished the following tasks. For details about each task, see
-[TODOS.md](https://github.com/spang-lab/metabodecon/blob/main/TODOS.md).
+Finished the following tasks.
 
 - CRAN-0: Omit "Functions for" in title
 - CRAN-1: Omit "Functions for" in DESCRIPTION
@@ -282,7 +281,10 @@ Internal:
 * Added `docs` folder to `.gitignore`. Reason: we changed all vignettes to
   pkgdown articles which will be displayed only at our Github Pages website and
   can be regenerated from folder `vignettes` upon deployment.
-* Created `TODOS.md` and added it to `.Rbuildignore`
+* Created `TODOS.md` and added it to `.Rbuildignore` (Update 2025-09-14: TODOS
+  are no longer tracked in a separate file, but outside of the repository. To
+  retrieve the last actively maintained version of `TODOS.md`, checkout commit
+  8b1f61b, i.e., v1.5.0.)
 * Improved `.gitignore`
 
 # metabodecon 1.0.2

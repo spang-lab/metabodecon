@@ -666,7 +666,9 @@ confirm_wshw <- function(x, wshw) {
 #' MetaboDecon1D function, the behaviour is not changed in this function.
 #' Instead, to only work with the correct ppm values, set `bwc = 2` in
 #' [filter_peaks()]. For details see `CHECK-2: signal free region calculation`
-#' in `TODOS.md`.
+#' in `TODOS.md`. (Update 2025-09-14: TODOS are no longer tracked in a separate
+#' file, but outside of the repository. To retrieve the last actively maintained
+#' version of `TODOS.md`, checkout commit 8b1f61b, i.e., v1.5.0.)
 #' @author 2024-2025 Tobias Schmidt: initial version.
 enrich_sfr <- function(sfr, x) {
     assert(is_ispec(x) || is_idecon(x))
@@ -689,7 +691,9 @@ enrich_sfr <- function(sfr, x) {
 #' MetaboDecon1D function, the behaviour is not changed in this function.
 #' Instead, to only work with the correct ppm values, set `bwc = 2` in
 #' [rm_water_signal()]. For details see `CHECK-3: water signal calculation` in
-#' `TODOS.md`.
+#' `TODOS.md`. (Update 2025-09-14: TODOS are no longer tracked in a separate
+#' file, but outside of the repository. To retrieve the last actively maintained
+#' version of `TODOS.md`, checkout commit 8b1f61b, i.e., v1.5.0.)
 #' @author 2024-2025 Tobias Schmidt: initial version.
 enrich_wshw <- function(wshw, x) {
     assert(is_ispec(x) || is_idecon(x))

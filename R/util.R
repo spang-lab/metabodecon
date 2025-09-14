@@ -108,7 +108,11 @@ in_hz <- function(cs, fqref) {
 #' @param sfr_sdp SFR in SDP.
 #' @param sdp All datapoints in SDP.
 #' @param ppm All datapoints in ppm.
-#' @details See 'CHECK-2: Signal free region (SFR) calculation' in `TODOS.md`.
+#' @details
+#' See 'CHECK-2: Signal free region (SFR) calculation' in `TODOS.md`. (Update
+#' 2025-09-14: TODOS are no longer tracked in a separate file, but outside of
+#' the repository. To retrieve the last actively maintained version of
+#' `TODOS.md`, checkout commit 8b1f61b, i.e., v1.5.0.)
 #' @author 2024-2025 Tobias Schmidt: initial version.
 sfr_in_ppm_bwc <- function(sfr_sdp, sdp, ppm) {
     assert(
