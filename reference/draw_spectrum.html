@@ -13,7 +13,7 @@ test/testthat/test-draw_spectrum.R.
 
     <a class="navbar-brand me-2" href="../index.html">metabodecon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.5.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.5.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -44,7 +44,7 @@ test/testthat/test-draw_spectrum.R.
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.svg" class="logo" alt=""><h1>Draw Spectrum</h1>
-      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/v1.5.0/R/plot.R" class="external-link"><code>R/plot.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/main/R/plot.R" class="external-link"><code>R/plot.R</code></a></small>
       <div class="d-none name"><code>draw_spectrum.Rd</code></div>
     </div>
 
@@ -260,47 +260,47 @@ point we have n = 4 unique labels (1.024, 1.025, 1.027 and 1.028).</p>
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">decon</span> <span class="op">&lt;-</span> <span class="fu"><a href="deconvolute.html">deconvolute</a></span><span class="op">(</span><span class="va">sim</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>, sfr <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3.55</span>, <span class="fl">3.35</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:46.83 Starting deconvolution of 1 spectrum using 1 worker</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:46.83 Starting deconvolution of sim_01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:46.83 Removing water signal</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:46.83 Removing negative signals</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:46.83 Smoothing signals</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:46.85 Starting peak selection</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:46.86 Detected 314 peaks</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:46.86 Removing peaks with low pscores</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:46.86 Removed 287 peaks</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:46.86 Initializing Lorentz curves</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:46.86 MSE at peak tiplet positions: 4.0838805770844048836921</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:46.87 Refining Lorentz Curves</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:46.87 MSE at peak tiplet positions: 0.1609359876216345797140</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:46.87 MSE at peak tiplet positions: 0.0228015051613790313556</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:46.87 MSE at peak tiplet positions: 0.0071638016610617799920</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:46.87 Formatting return object as decon2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:46.88 Finished deconvolution of sim_01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:46.88 Finished deconvolution of 1 spectrum in 0.053 secs</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-14 14:07:44.89 Starting deconvolution of 1 spectrum using 1 worker</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-14 14:07:44.89 Starting deconvolution of sim_01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-14 14:07:44.89 Removing water signal</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-14 14:07:44.89 Removing negative signals</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-14 14:07:44.89 Smoothing signals</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-14 14:07:44.90 Starting peak selection</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-14 14:07:44.91 Detected 314 peaks</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-14 14:07:44.91 Removing peaks with low pscores</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-14 14:07:44.91 Removed 287 peaks</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-14 14:07:44.91 Initializing Lorentz curves</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-14 14:07:44.92 MSE at peak tiplet positions: 4.0838805770844048836921</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-14 14:07:44.92 Refining Lorentz Curves</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-14 14:07:44.92 MSE at peak tiplet positions: 0.1609359876216345797140</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-14 14:07:44.92 MSE at peak tiplet positions: 0.0228015051613790313556</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-14 14:07:44.92 MSE at peak tiplet positions: 0.0071638016610617799920</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-14 14:07:44.92 Formatting return object as decon2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-14 14:07:44.93 Finished deconvolution of sim_01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-14 14:07:44.93 Finished deconvolution of 1 spectrum in 0.037 secs</span>
 <span class="r-in"><span><span class="fu">draw_spectrum</span><span class="op">(</span>obj <span class="op">=</span> <span class="va">decon</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="draw_spectrum-1.png" alt="" width="700" height="433"></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $plt_rgn_ndc</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.1457143 0.9685714 0.1171429 0.9685714</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.153 0.967 0.123 0.967</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $foc_rgn_ndc</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.9691753 0.1451104 0.1171429 0.9685714</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.9675974 0.1524026 0.1230000 0.9670000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span><span class="fu">draw_spectrum</span><span class="op">(</span>obj <span class="op">=</span> <span class="va">decon</span>, lgd <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"top"</span>, bg <span class="op">=</span> <span class="cn">NA</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="draw_spectrum-2.png" alt="" width="700" height="433"></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $plt_rgn_ndc</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.1457143 0.9685714 0.1171429 0.9685714</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.153 0.967 0.123 0.967</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $foc_rgn_ndc</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.9691753 0.1451104 0.1171429 0.9685714</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.9675974 0.1524026 0.1230000 0.9670000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span><span class="fu">draw_spectrum</span><span class="op">(</span>obj <span class="op">=</span> <span class="va">decon</span>, foc_rgn <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3.45</span>, <span class="fl">3.37</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="draw_spectrum-3.png" alt="" width="700" height="433"></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $plt_rgn_ndc</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.1457143 0.9685714 0.1171429 0.9685714</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.153 0.967 0.123 0.967</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $foc_rgn_ndc</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.1446831 0.9696026 0.1171429 0.9685714</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.1519799 0.9680201 0.1230000 0.9670000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span><span class="fu">draw_spectrum</span><span class="op">(</span>obj <span class="op">=</span> <span class="va">decon</span>, add <span class="op">=</span> <span class="cn">FALSE</span>, lgd <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
 <span class="r-in"><span>              fig <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">.2</span>, <span class="fl">.8</span>, <span class="fl">.2</span>, <span class="fl">.4</span><span class="op">)</span>, mar <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span> <span class="fl">0</span>,  <span class="fl">0</span>,  <span class="fl">0</span>,  <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span></span>
@@ -322,10 +322,10 @@ point we have n = 4 unique labels (1.024, 1.025, 1.027 and 1.028).</p>
 <span class="r-in"><span><span class="fu">draw_spectrum</span><span class="op">(</span>obj <span class="op">=</span> <span class="va">decon</span>, lc_lines <span class="op">=</span> <span class="cn">NULL</span>, lc_rects <span class="op">=</span> <span class="cn">NULL</span>, foc_only <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="draw_spectrum-5.png" alt="" width="700" height="433"></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $plt_rgn_ndc</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.1457143 0.9685714 0.1171429 0.9685714</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.153 0.967 0.123 0.967</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $foc_rgn_ndc</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.6600000 0.4542857 0.1171429 0.8054141</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.6617500 0.4582500 0.1230000 0.8052662</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 </code></pre></div>
     </div>
@@ -338,7 +338,7 @@ point we have n = 4 unique labels (1.024, 1.025, 1.027 and 1.028).</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.2.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
 </div>
 
     </footer></div>

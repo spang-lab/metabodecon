@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">metabodecon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.5.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.5.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -38,11 +38,19 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="logo.svg" class="logo" alt=""><h1>Copilot Instructions for MetaboDecon</h1>
-      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/v1.5.0/.github/copilot-instructions.md" class="external-link"><code>.github/copilot-instructions.md</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/main/.github/copilot-instructions.md" class="external-link"><code>.github/copilot-instructions.md</code></a></small>
     </div>
 
 <div id="copilot-instructions-for-metabodecon" class="section level1">
 
+<div class="section level2">
+<h2 id="coding-guidelines">Coding Guidelines<a class="anchor" aria-label="anchor" href="#coding-guidelines"></a></h2>
+<ul><li>All roxygen comments should start with a tag, in particular title and description should be formatted as <code>#' @title ...</code> and <code>#' @description ...</code>.</li>
+<li>Character limit is 80. Prefer short variable names like <code>x</code> and <code>y</code> to achieve that. If it’s not clear from the function docs what a variable means, use a comment to describe it upon first use.</li>
+<li>Prefer the use of helper variables instead of function nesting to reduce line length and improve readability. E.g. <code>x &lt;- f(a); y &lt;- g(x)</code> instead of <code>y &lt;-   g(f(a))</code>. Function nesting is ok if everything still fits in 80 chars and the function names are short and readable.</li>
+<li>Do not use pipe operators <code>%&gt;%</code> or <code>|&gt;</code>.</li>
+<li>Always use fully qualified names for functions from other packages, e.g. <code><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot2::ggplot()</a></code>. Exceptions are functions from R’s standard library like <code><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum()</a></code>, <code><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean()</a></code>, etc.</li>
+</ul></div>
 <div class="section level2">
 <h2 id="project-structure">Project Structure<a class="anchor" aria-label="anchor" href="#project-structure"></a></h2>
 <ul><li>
@@ -85,6 +93,23 @@
 <code>tests/</code>: Unit tests for the package.</li>
 <li>
 <code>vignettes/</code>: Long-form documentation and tutorials.</li>
+</ul></div>
+<div class="section level2">
+<h2 id="vignettes">Vignettes<a class="anchor" aria-label="anchor" href="#vignettes"></a></h2>
+<ul><li>
+<code>Classes.Rmd</code>: Documentation for the <code>Classes</code> module.</li>
+<li>
+<code>Compatibility.Rmd</code>: Details on compatibility with other tools.</li>
+<li>
+<code>Contributing.Rmd</code>: Guidelines for contributing to the project.</li>
+<li>
+<code>Datasets.Rmd</code>: Information about the datasets included in the package.</li>
+<li>
+<code>FAQ.Rmd</code>: Frequently asked questions.</li>
+<li>
+<code>Get_Started.Rmd</code>: A guide to getting started with the package.</li>
+<li>
+<code>MetaboDecon1D.Rmd</code>: Documentation for the <code>MetaboDecon1D</code> module.</li>
 </ul></div>
 <div class="section level2">
 <h2 id="modules">Modules<a class="anchor" aria-label="anchor" href="#modules"></a></h2>
@@ -386,23 +411,6 @@
 <li><code>test-speaq_align.R</code></li>
 <li><code>test-vcomp.R</code></li>
 </ol></div>
-<div class="section level2">
-<h2 id="vignettes">Vignettes<a class="anchor" aria-label="anchor" href="#vignettes"></a></h2>
-<ul><li>
-<code>Classes.Rmd</code>: Documentation for the <code>Classes</code> module.</li>
-<li>
-<code>Compatibility.Rmd</code>: Details on compatibility with other tools.</li>
-<li>
-<code>Contributing.Rmd</code>: Guidelines for contributing to the project.</li>
-<li>
-<code>Datasets.Rmd</code>: Information about the datasets included in the package.</li>
-<li>
-<code>FAQ.Rmd</code>: Frequently asked questions.</li>
-<li>
-<code>Get_Started.Rmd</code>: A guide to getting started with the package.</li>
-<li>
-<code>MetaboDecon1D.Rmd</code>: Documentation for the <code>MetaboDecon1D</code> module.</li>
-</ul></div>
 </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
@@ -414,7 +422,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.2.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
 </div>
 
     </footer></div>

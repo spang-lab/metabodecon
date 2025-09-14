@@ -21,7 +21,7 @@ Direct usage of this function has been deprecated with metabodecon version
 
     <a class="navbar-brand me-2" href="../index.html">metabodecon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.5.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.5.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -52,7 +52,7 @@ Direct usage of this function has been deprecated with metabodecon version
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.svg" class="logo" alt=""><h1>Combine Peaks</h1>
-      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/v1.5.0/R/align.R" class="external-link"><code>R/align.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/main/R/align.R" class="external-link"><code>R/align.R</code></a></small>
       <div class="d-none name"><code>combine_peaks.Rd</code></div>
     </div>
 
@@ -146,14 +146,18 @@ refactored initial version.</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="va">sim_subset</span> <span class="op">&lt;-</span> <span class="fu"><a href="metabodecon_file.html">metabodecon_file</a></span><span class="op">(</span><span class="st">"bruker/sim_subset"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">spectrum_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="generate_lorentz_curves.html">generate_lorentz_curves_sim</a></span><span class="op">(</span><span class="va">sim_subset</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">shifted_mat</span> <span class="op">&lt;-</span> <span class="fu"><a href="speaq_align.html">speaq_align</a></span><span class="op">(</span>spectrum_data <span class="op">=</span> <span class="va">spectrum_data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">range</span> <span class="op">&lt;-</span> <span class="fl">5</span></span></span>
-<span class="r-in"><span><span class="va">lower_bound</span> <span class="op">&lt;-</span> <span class="fl">1</span></span></span>
-<span class="r-in"><span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu">combine_peaks</span><span class="op">(</span><span class="va">shifted_mat</span>, <span class="va">range</span>, <span class="va">lower_bound</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">deps</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"MassSpecWavelet"</span>, <span class="st">"impute"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">deps_installed</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="va">deps</span>, <span class="va">requireNamespace</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">deps_installed</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span>    <span class="co"># 'speaq' requires 'MassSpecWavelet' and 'impute' to be installed</span></span></span>
+<span class="r-in"><span>    <span class="va">sim_subset</span> <span class="op">&lt;-</span> <span class="fu"><a href="metabodecon_file.html">metabodecon_file</a></span><span class="op">(</span><span class="st">"bruker/sim_subset"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>    <span class="va">spectrum_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="generate_lorentz_curves.html">generate_lorentz_curves_sim</a></span><span class="op">(</span><span class="va">sim_subset</span><span class="op">)</span></span></span>
+<span class="r-in"><span>    <span class="va">shifted_mat</span> <span class="op">&lt;-</span> <span class="fu"><a href="speaq_align.html">speaq_align</a></span><span class="op">(</span>spectrum_data <span class="op">=</span> <span class="va">spectrum_data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
+<span class="r-in"><span>    <span class="va">range</span> <span class="op">&lt;-</span> <span class="fl">5</span></span></span>
+<span class="r-in"><span>    <span class="va">lower_bound</span> <span class="op">&lt;-</span> <span class="fl">1</span></span></span>
+<span class="r-in"><span>    <span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu">combine_peaks</span><span class="op">(</span><span class="va">shifted_mat</span>, <span class="va">range</span>, <span class="va">lower_bound</span><span class="op">)</span></span></span>
+<span class="r-in"><span>    <span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">}</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> List of 2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ short: num [1:2, 1:35] 0.000497 0.011831 0.190205 0.186338 0.003531 ...</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   ..- attr(*, "dimnames")=List of 2</span>
@@ -174,7 +178,7 @@ refactored initial version.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.2.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
 </div>
 
     </footer></div>

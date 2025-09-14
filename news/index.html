@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metabodecon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.5.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.5.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -38,14 +38,22 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.svg" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/spang-lab/metabodecon/blob/v1.5.0/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/spang-lab/metabodecon/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="1.5.1" id="metabodecon-151">metabodecon 1.5.1<a class="anchor" aria-label="anchor" href="#metabodecon-151"></a></h2>
+<ul><li>Enabled slow tests in automatic R-CMD-check workflow.</li>
+<li>Improved examples to also work in case the Bioconductor dependencies of ‘speaq’ are not installed.</li>
+<li>Improved Github Actions to test and handle the case of missing Bioconductor dependencies.</li>
+<li>Disabled the automatic testing of the <code><a href="../reference/check_mdrb.html">check_mdrb_deps()</a></code> example, as it can take longer than 5 seconds on some systems.</li>
+<li>Removed <code>TODOS.md</code> and <code>ARCHIVE.md</code> from the package.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.5.0" id="metabodecon-150">metabodecon 1.5.0<a class="anchor" aria-label="anchor" href="#metabodecon-150"></a></h2>
 <ul><li>Soft-deprecated <code><a href="../reference/generate_lorentz_curves.html">generate_lorentz_curves()</a></code>
 </li>
-<li>Improved <code><a href="../reference/install_mdrb.html">install_mdrb()</a></code>. Instalallation is now done from R Universe instead of Github, allowing installation of pre-compiled binaries, which is way faster.</li>
+<li>Improved <code><a href="../reference/install_mdrb.html">install_mdrb()</a></code>. Installation is now done from R Universe instead of Github, allowing installation of pre-compiled binaries, which is way faster.</li>
 <li>Added argument <code>verbose</code> to <code><a href="../reference/check_mdrb.html">check_mdrb_deps()</a></code>.</li>
 <li>Added the possibility to provide plain <code>spectra</code> objects to <code><a href="../reference/plot_spectra.html">plot_spectra()</a></code>. Previously, only deconvoluted spectra were accepted, i.e. objects of class <code>decons0</code>, <code>decons1</code> or <code>decons2</code>.</li>
 <li>Improved <code><a href="../reference/align.html">align()</a></code>. Integrals are now calculated as <code>A * pi</code>, representing the area under the Lorentzian curve as an improper integral, rather than being bounded by the signal range as a definite integral. That’s faster and more accurate.</li>
@@ -192,7 +200,7 @@
 <li>Fixed order of params in <code>deconvolution</code>.</li>
 <li>Fixed <code><a href="../reference/download_example_datasets.html">download_example_datasets()</a></code>. Argument <code>overwrite</code> is passed correctly on to <code>cache_example_datasets()</code>.</li>
 <li>Changed URL of example datasets <code>xds$url</code> from <code>https://github.com/spang-lab/metabodecon/releases/download/v1.0.2/example_datasets.zip</code> to <code>https://github.com/spang-lab/metabodecon/releases/download/v1.1.0/example_datasets.zip</code>.</li>
-<li>Improved <code>cache_example_datasets()</code>. Extraction now only is done if <code>extract == TRUE</code> AND the resulting folder does not yet exist (saves approx. 2-3s on each call). To overwrite a possible existing folder, argument <code>overwrite</code> can be set to TRUE.</li>
+<li>Improved <code>cache_example_datasets()</code>. Extraction now only is done if <code>extract   == TRUE</code> AND the resulting folder does not yet exist (saves approx. 2-3s on each call). To overwrite a possible existing folder, argument <code>overwrite</code> can be set to TRUE.</li>
 <li>Fixed formatting of <code>test_helpers.R</code>
 </li>
 <li>Added linter config <code>.lintr</code>
@@ -271,7 +279,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.2.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
 </div>
 
     </footer></div>

@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metabodecon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.5.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.5.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -69,7 +69,7 @@
       <img src="../logo.svg" class="logo" alt=""><h1>Contributing</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/v1.5.0/vignettes/Contributing.Rmd" class="external-link"><code>vignettes/Contributing.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/main/vignettes/Contributing.Rmd" class="external-link"><code>vignettes/Contributing.Rmd</code></a></small>
       <div class="d-none name"><code>Contributing.Rmd</code></div>
     </div>
 
@@ -126,8 +126,9 @@ create a pull request.</p>
 <p>Whenever a package maintainer wants to release a new version of the
 package to CRAN, they should:</p>
 <ol style="list-style-type: decimal">
-<li>Check whether the <a href="https://r-pkgs.org/release.html#sec-release-initial" class="external-link">release
-requirements</a> are fulfilled</li>
+<li>Check that all <a href="https://r-pkgs.org/release.html#sec-release-initial" class="external-link">release
+requirements</a> and <a href="https://cran.r-project.org/web/packages/policies.html" class="external-link">CRAN
+Policies</a> are fulfilled</li>
 <li>Use the following commands to do a final check of the package and
 release it to CRAN</li>
 </ol>
@@ -149,7 +150,8 @@ release it to CRAN</li>
 <span></span>
 <span><span class="co"># Check reverse dependencies. For details see:</span></span>
 <span><span class="co"># https://r-pkgs.org/release.html#sec-release-revdep-checks</span></span>
-<span><span class="fu">revdepcheck</span><span class="fu">::</span><span class="fu">revdep_check</span><span class="op">(</span>num_workers <span class="op">=</span> <span class="fl">8</span><span class="op">)</span></span>
+<span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pkg_install.html" class="external-link">pkg_install</a></span><span class="op">(</span><span class="st">"r-lib/revdepcheck"</span><span class="op">)</span></span>
+<span><span class="fu">revdepcheck</span><span class="fu">::</span><span class="fu">revdep_check</span><span class="op">(</span>num_workers <span class="op">=</span> <span class="fl">8</span><span class="op">)</span> <span class="co"># working again at 2025/09/12</span></span>
 <span></span>
 <span><span class="co"># Send your package to CRAN's builder services. You should receive an e-mail</span></span>
 <span><span class="co"># within about 30 minutes with a link to the check results. Checking with</span></span>
@@ -160,7 +162,7 @@ release it to CRAN</li>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/check_win.html" class="external-link">check_win_devel</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/check_mac_release.html" class="external-link">check_mac_release</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Use the following command to submit the package to CRAN of submit via the web</span></span>
+<span><span class="co"># Use the following command to submit the package to CRAN or submit via the web</span></span>
 <span><span class="co"># interface available at https://cran.r-project.org/submit.html.</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/submit_cran.html" class="external-link">submit_cran</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
@@ -175,7 +177,7 @@ release it to CRAN</li>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.2.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
 </div>
 
     </footer>

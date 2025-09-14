@@ -15,7 +15,7 @@ installation status of mdrb system dependencies."><meta property="og:image" cont
 
     <a class="navbar-brand me-2" href="../index.html">metabodecon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.5.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.5.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -46,7 +46,7 @@ installation status of mdrb system dependencies."><meta property="og:image" cont
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.svg" class="logo" alt=""><h1>Check Rust Backend Requirements</h1>
-      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/v1.5.0/R/mdrb.R" class="external-link"><code>R/mdrb.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/main/R/mdrb.R" class="external-link"><code>R/mdrb.R</code></a></small>
       <div class="d-none name"><code>check_mdrb.Rd</code></div>
     </div>
 
@@ -103,23 +103,30 @@ Column <code>comment</code> is a string string describing the check result.</p>
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">check_mdrb</span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] TRUE</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># \donttest{</span></span></span>
+<span class="r-in"><span><span class="co"># Checking dependencies might more than 5 seconds, as it requires the</span></span></span>
+<span class="r-in"><span><span class="co"># compilation of a small test program as well as running `cargo</span></span></span>
+<span class="r-in"><span><span class="co"># --version` and `rustc --version`, which, depending on your system,</span></span></span>
+<span class="r-in"><span><span class="co"># might involve updating or installing Rust toolchain components.</span></span></span>
 <span class="r-in"><span><span class="fu">check_mdrb_deps</span><span class="op">(</span>verbose <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:37.33 Checking R version...</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:37.33 Checking if buildtools exist...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-14 14:07:42.00 Checking R version...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-14 14:07:42.00 Checking if buildtools exist...</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Trying to compile a simple C file</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Running /opt/R/4.5.0/lib/R/bin/R CMD SHLIB foo.c</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Running /opt/R/4.5.1/lib/R/bin/R CMD SHLIB foo.c</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> using C compiler: ‘gcc (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0’</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> gcc -std=gnu2x -I"/opt/R/4.5.0/lib/R/include" -DNDEBUG   -I/usr/local/include    -fpic  -g -O2  -c foo.c -o foo.o</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> gcc -std=gnu2x -shared -L/opt/R/4.5.0/lib/R/lib -L/usr/local/lib -o foo.so foo.o -L/opt/R/4.5.0/lib/R/lib -lR</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> gcc -std=gnu2x -I"/opt/R/4.5.1/lib/R/include" -DNDEBUG   -I/usr/local/include    -fpic  -g -O2  -c foo.c -o foo.o</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> gcc -std=gnu2x -shared -L/opt/R/4.5.1/lib/R/lib -L/usr/local/lib -o foo.so foo.o -L/opt/R/4.5.1/lib/R/lib -lR</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:37.51 Checking cargo version...</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:40.35 Checking rustc version...</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-05-07 12:14:44.32 Done</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-14 14:07:42.17 Checking cargo version...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-14 14:07:42.22 Checking rustc version...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-14 14:07:42.27 Done</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                check passed                                      comment</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> r           R &gt;= 4.2   TRUE                             Current: R 4.5.0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> r           R &gt;= 4.2   TRUE                             Current: R 4.5.1</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> rtools  Rtools exist   TRUE        Testcall: pkgbuild::has_build_tools()</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> cargo  cargo &gt;= 1.80   TRUE Current: cargo 1.86.0 (adf9b6ad1 2025-02-28)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> rustc  rustc &gt;= 1.80   TRUE Current: rustc 1.86.0 (05f9846f8 2025-03-31)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> cargo  cargo &gt;= 1.80   TRUE Current: cargo 1.89.0 (c24e10642 2025-06-23)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> rustc  rustc &gt;= 1.80   TRUE Current: rustc 1.89.0 (29483883e 2025-08-04)</span>
+<span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
@@ -131,7 +138,7 @@ Column <code>comment</code> is a string string describing the check result.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.2.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
 </div>
 
     </footer></div>
