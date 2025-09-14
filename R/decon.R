@@ -683,6 +683,25 @@ enrich_sfr <- function(sfr, x) {
 
 #' @noRd
 #' @description
+#' Same as [enrich_sfr()], but only requires the chemical shift vector instead
+#' of the full `spectrum` or `idecon` object. That's easier to test and
+#' maintain.
+#' @author 2025 Tobias Schmidt: initial version.
+enrich_sfr2 <- function(sfr, cs) {
+    n <- length(cs)
+    ppm_max <- max(cs)
+    ppm_nstep <- diff(range(cs)) / n
+    left_ppm <- sfr[1]
+    right_ppm <- sfr[2]
+    left_dp <- (n + 1) - (ppm_max - left_ppm) / ppm_nstep
+    left_sdp <- left_dp / 1000
+    right_dp <- (n + 1) - (ppm_max - right_ppm) / ppm_nstep
+    right_sdp <- right_dp / 1000
+    named(left_ppm, right_ppm, left_dp, right_dp, left_sdp, right_sdp)
+}
+
+#' @noRd
+#' @description
 #' Calculates the WSR in dp and ppm from the WSHW in ppm.
 #' @note
 #' Because the conversion from PPM to DP/SDP is slightly off (by 1-2 data
@@ -707,6 +726,31 @@ enrich_wshw <- function(wshw, x) {
     right_ppm <- x$ppm[right_dp]
     left_ppm <- x$ppm[left_dp]
     if (left_dp <= 1 || right_dp >= x$n) stop("WSR is out of range")
+    named(
+        left_ppm, right_ppm, center_ppm, hwidth_ppm,
+        left_dp, right_dp, center_dp, hwidth_dp
+    )
+}
+
+#' @noRd
+#' @description
+#' Same as [enrich_wshw()], but only requires the chemical shift vector instead
+#' of the full `spectrum` or `idecon` object. That's easier to test and
+#' maintain.
+#' @author 2025 Tobias Schmidt: initial version.
+enrich_wshw2 <- function(wshw, cs) {
+    n <- length(cs)
+    ppm_max <- max(cs)
+    ppm_nstep <- diff(range(cs)) / n
+    hwidth_ppm <- wshw
+    hwidth_dp <- hwidth_ppm / ppm_nstep
+    center_dp <- n / 2
+    right_dp <- center_dp + hwidth_dp
+    left_dp <- center_dp - hwidth_dp
+    center_ppm <- cs[center_dp]
+    right_ppm <- cs[right_dp]
+    left_ppm <- cs[left_dp]
+    if (left_dp <= 1 || right_dp >= n) stop("WSR is out of range")
     named(
         left_ppm, right_ppm, center_ppm, hwidth_ppm,
         left_dp, right_dp, center_dp, hwidth_dp
