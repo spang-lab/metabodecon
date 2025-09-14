@@ -9,7 +9,10 @@ on: {
 jobs:
   R-CMD-check:
     runs-on: ${{ matrix.config.os }}
-    name: "${{ matrix.config.os }} (${{ matrix.config.r }}) (bioc: ${{ matrix.config.bioc }}, slow: ${{ matrix.config.slow }})"
+    name: >-
+      ${{ matrix.config.os }} (${{ matrix.config.r }}
+      ${{ matrix.config.rmbioc && ', rmbioc' || '' }}
+      ${{ matrix.config.slow && ', slow' || '' }})
     strategy:
       fail-fast: false
       matrix:
@@ -17,16 +20,16 @@ jobs:
           # os: Operating system to run the job on.
           # r: Version of R to use.
           # slow: Run additional tests declared as slow?
-          # bioc: Run additional tests with Bioconductor dependencies removed?
-          - {os: ubuntu-latest,  r: 'devel',    slow: false, bioc: true}
-          - {os: ubuntu-latest,  r: 'release',  slow: true,  bioc: false}
-          - {os: ubuntu-latest,  r: 'oldrel-1', slow: false, bioc: true}
-          - {os: ubuntu-latest,  r: 'oldrel-2', slow: false, bioc: true}
-          - {os: ubuntu-latest,  r: 'oldrel-3', slow: false, bioc: true}
-          - {os: ubuntu-latest,  r: 'oldrel-4', slow: false, bioc: true}
-          - {os: macos-latest,   r: 'release',  slow: false, bioc: true}
-          - {os: windows-latest, r: 'release',  slow: false, bioc: true}
-          - {os: windows-latest, r: 'oldrel-4', slow: false, bioc: true}
+          # rmbioc: Run additional tests with Bioconductor dependencies removed?
+          - {os: ubuntu-latest,  r: 'devel',    slow: false, rmbioc: true}
+          - {os: ubuntu-latest,  r: 'release',  slow: true,  rmbioc: false}
+          - {os: ubuntu-latest,  r: 'oldrel-1', slow: false, rmbioc: true}
+          - {os: ubuntu-latest,  r: 'oldrel-2', slow: false, rmbioc: true}
+          - {os: ubuntu-latest,  r: 'oldrel-3', slow: false, rmbioc: true}
+          - {os: ubuntu-latest,  r: 'oldrel-4', slow: false, rmbioc: true}
+          - {os: macos-latest,   r: 'release',  slow: false, rmbioc: true}
+          - {os: windows-latest, r: 'release',  slow: false, rmbioc: true}
+          - {os: windows-latest, r: 'oldrel-4', slow: false, rmbioc: true}
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
@@ -54,6 +57,7 @@ jobs:
           needs: check
 
       - name: Install MacOS System Dependencies
+        if: runner.os == 'macOS'
         uses: r-hub/actions/setup-r-sysreqs@v1
         with: { type: "minimal" }
 
@@ -63,10 +67,12 @@ jobs:
 
       - name: Test package
         uses: r-lib/actions/check-r-package@v2
-        env: { _R_CHECK_FORCE_SUGGESTS_: false }
+        env:
+          _R_CHECK_FORCE_SUGGESTS_: false
+          RUN_SLOW_TESTS: ${{ matrix.config.slow }}
 
-      - name: Test package without Bioconductor Deps
-        if: ${{ !matrix.config.bioc }}
+      - name: Test package with Bioconductor Dependencies Removed
+        if: ${{ matrix.config.rmbioc }}
         run: |
           export _R_CHECK_FORCE_SUGGESTS_=FALSE
           export RUN_SLOW_TESTS=TRUE

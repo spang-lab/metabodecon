@@ -349,7 +349,7 @@ run_tests <- function(func = NULL, all = FALSE) {
 #' @noRd
 #' @author 2024-2025 Tobias Schmidt: initial version.
 skip_if_slow_tests_disabled <- function() {
-    if (!Sys.getenv("RUN_SLOW_TESTS") == "TRUE") {
+    if (!toupper(Sys.getenv("RUN_SLOW_TESTS")) == "TRUE") {
         testthat::skip("Slow tests (Use `Sys.setenv(RUN_SLOW_TESTS=TRUE)` or `run_tests(all=TRUE)` to enable).")
     }
 }
