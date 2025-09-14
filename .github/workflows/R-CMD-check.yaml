@@ -14,10 +14,6 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          # os: Operating system to run the job on.
-          # r: Version of R to use.
-          # slow: Run additional tests declared as slow?
-          # rmbioc: Run additional tests with Bioconductor dependencies removed?
           - {os: ubuntu-latest,  r: 'release',  test: 'all'}
           - {os: ubuntu-latest,  r: 'release',  test: 'nobioc'}
           - {os: ubuntu-latest,  r: 'release',  test: 'fast'}
@@ -72,7 +68,7 @@ jobs:
 
       - name: Test package (incl. slow tests)
         uses: r-lib/actions/check-r-package@v2
-        if: ${{ matrix.config.test == 'slow' }}
+        if: ${{ matrix.config.test == 'all' }}
         env:
           _R_CHECK_FORCE_SUGGESTS_: FALSE
           RUN_SLOW_TESTS: TRUE
