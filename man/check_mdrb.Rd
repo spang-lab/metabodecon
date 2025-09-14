@@ -44,7 +44,14 @@ installation status of mdrb system dependencies.
 }
 \examples{
 check_mdrb()
+
+\donttest{
+# Checking dependencies might more than 5 seconds, as it requires the
+# compilation of a small test program as well as running `cargo
+# --version` and `rustc --version`, which, depending on your system,
+# might involve updating or installing Rust toolchain components.
 check_mdrb_deps(verbose = TRUE)
+}
 }
 \author{
 2024-2025 Tobias Schmidt: initial version.

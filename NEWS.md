@@ -1,7 +1,13 @@
 # metabodecon 1.5.1
 
-* Improved Github Actions
-* Removed TODOS.md and ARCHIVE.md from the package
+* Enabled slow tests in automatic R-CMD-check workflow.
+* Improved examples to also work in case the Bioconductor dependencies of
+  'speaq' are not installed.
+* Improved Github Actions to test and handle the case of missing Bioconductor
+  dependencies.
+* Disabled the automatic testing of the `check_mdrb_deps()` example, as it can
+  take longer than 5 seconds on some systems.
+* Removed `TODOS.md` and `ARCHIVE.md` from the package.
 
 # metabodecon 1.5.0
 
