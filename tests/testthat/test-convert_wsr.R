@@ -5,8 +5,9 @@ test_that("enrich_wshw works", {
     ispec <- structure(list(ppm = ppm, n = n, ppm_nstep = ppm_nstep), class = "ispec")
     wsr <- enrich_wshw(wshw = 0.2, ispec)
     # Below results are incorrect but expected nonetheless to maintain backwards
-    # compatibility. For details see [CHECK-3: water signal
-    # calculation](TODOS.md).
+    # compatibility. For details see 'CHECK-3: water signal calculation' from
+    # TODOS.md (no longer part of the repository). To retrieve it, fetch a
+    # commit older than 2025-09-14.
     expect_equal(rev(wsr), list(
         hwidth_dp = 0.175824175824176, # hwidth_ppm / spec$ppm_nstep
         center_dp = 4, # spec$n / 2

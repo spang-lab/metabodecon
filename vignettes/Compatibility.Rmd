@@ -61,22 +61,22 @@ and returned types is provided in
 
 | Feature                          | BWC  | F1  | F2  | F3  | Issue        |
 | -------------------------------- | ---- | --- | --- | --- | ------------ |
-| Doesn't write to disk by default | semi | x   | x   | x   | [CRAN-8]     |
-| Doesn't change wd or global opts | semi | x   | x   | x   | [CRAN-9]     |
-| Uses faster peak selection       | yes  |     | x   | x   | [CHECK-7]    |
-| Batch Mode                       | yes  |     | x   | x   | [FEATURE-3]  |
-| Parallelized                     | yes  |     | x   | x   | [FEATURE-4]  |
-| Improved plotting speed          | yes  |     | x   | x   | [REFACTOR-4] |
-| Uses micro functions             | yes  |     | x   | x   | [REFACTOR-7] |
-| Doesn't show License             | semi |     | x   | x   | [REFACTOR-2] |
-| Prints timestamps                | semi |     | x   | x   | [REFACTOR-2] |
-| Uses correctly scaled y values   | no   |     |     | x   | [CHECK-1]    |
-| Uses correct sfr calculation     | no   |     |     | x   | [CHECK-2]    |
-| Uses correct ws calculation      | no   |     |     | x   | [CHECK-3]    |
-| Uses dynamic signal removal      | no   |     |     | x   | [CHECK-5]    |
-| Uses improved return list        | no   |     |     | x   | [FEATURE-7]  |
-| Uses faster smoothing            | no   |     |     | x   | [REFACTOR-5] |
-| Does all calculations in ppm     | no   |     |     | x   | [REFACTOR-6] |
+| Doesn't write to disk by default | semi | x   | x   | x   | CRAN-8     |
+| Doesn't change wd or global opts | semi | x   | x   | x   | CRAN-9     |
+| Uses faster peak selection       | yes  |     | x   | x   | CHECK-7    |
+| Batch Mode                       | yes  |     | x   | x   | FEATURE-3  |
+| Parallelized                     | yes  |     | x   | x   | FEATURE-4  |
+| Improved plotting speed          | yes  |     | x   | x   | REFACTOR-4 |
+| Uses micro functions             | yes  |     | x   | x   | REFACTOR-7 |
+| Doesn't show License             | semi |     | x   | x   | REFACTOR-2 |
+| Prints timestamps                | semi |     | x   | x   | REFACTOR-2 |
+| Uses correctly scaled y values   | no   |     |     | x   | CHECK-1    |
+| Uses correct sfr calculation     | no   |     |     | x   | CHECK-2    |
+| Uses correct ws calculation      | no   |     |     | x   | CHECK-3    |
+| Uses dynamic signal removal      | no   |     |     | x   | CHECK-5    |
+| Uses improved return list        | no   |     |     | x   | FEATURE-7  |
+| Uses faster smoothing            | no   |     |     | x   | REFACTOR-5 |
+| Does all calculations in ppm     | no   |     |     | x   | REFACTOR-6 |
 
 - BWC == backwards compatible
 - F1 == MetaboDecon1D
@@ -86,19 +86,3 @@ and returned types is provided in
   most cases shouldn't have any effect, but in some rare cases might cause
   one peak to be missed.
 
-[CHECK-1]: ../TODOS.md#check-1-use-of-dtypp-in-load_spectrum
-[CHECK-2]: ../TODOS.md#check-2-signal-free-region-calculation
-[CHECK-3]: ../TODOS.md#check-3-water-signal-calculation
-[CHECK-5]: ../TODOS.md#check-5-signal-preprocessing
-[CHECK-7]: ../TODOS.md#check-7-peak-selection-procedure
-[CHECK-10]: ../TODOS.md#check-10-negative-values-for-estimated-a
-[CRAN-8]: ../TODOS.md#cran-8-functions-should-not-write-to-disk-by-default
-[CRAN-9]: ../TODOS.md#cran-9-functions-should-not-change-working-dir-or-global-options
-[FEATURE-3]: ../TODOS.md#feature-3-batch-mode
-[FEATURE-4]: ../TODOS.md#feature-4-parallelize
-[FEATURE-7]: ../TODOS.md#feature-7-improve-return-value
-[REFACTOR-2]: ../TODOS.md#refactor-2-text-output--license-timestamps
-[REFACTOR-4]: ../TODOS.md#refactor-4-plotting-speed
-[REFACTOR-5]: ../TODOS.md#refactor-5-speedup-smoothing
-[REFACTOR-6]: ../TODOS.md#refactor-6-use-a-single-unit-as-source-of-truth
-[REFACTOR-7]: ../TODOS.md#refactor-7-split-monolithic-functions-into-smaller-parts
