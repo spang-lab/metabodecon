@@ -287,7 +287,7 @@ Internal:
   pkgdown articles which will be displayed only at our Github Pages website and
   can be regenerated from folder `vignettes` upon deployment.
 * Created `TODOS.md` and added it to `.Rbuildignore` (Update 2025-09-14: TODOS
-  are no longer tracked in a separate file, but outside of the repository. To
+  are no longer tracked in `TODOS.md`, but outside of the repository. To
   retrieve the last actively maintained version of `TODOS.md`, checkout commit
   8b1f61b, i.e., v1.5.0.)
 * Improved `.gitignore`
