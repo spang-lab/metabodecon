@@ -1,3 +1,8 @@
+# metabodecon 1.5.2
+
+* Removed all links to the old `TODOS.md` and `ARCHIVE.md` from the package
+  documentation, as these files were removed with v1.5.1.
+
 # metabodecon 1.5.1
 
 * Enabled slow tests in automatic R-CMD-check workflow.
