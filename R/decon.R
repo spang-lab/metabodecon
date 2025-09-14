@@ -230,7 +230,79 @@ deconvolute_spectrum <- function(x,
     )
     decon <- convert(decon)
     logf("Finished deconvolution of %s", name)
+    decon
+}
 
+#' @noRd
+#' @description
+#' WORK IN PROGRESS.
+#'
+#' Planned replacement for `deconvolute_spectrum()`. Should directly produce a
+#' decon2 object, so we can remove the `ispec` and `idecon` classes.
+#'
+#' @inheritParams deconvolute_spectra
+#'
+#' @examples
+#' x <- sap[[1]];
+#' nfit <- 3; smopts <- c(1,3); delta <- 3; sfr <- c(3.2,-3.2); wshw <- 0;
+#' ask <- FALSE; force <- FALSE; verbose <- FALSE; bwc <- 0;
+#' use_rust <- FALSE; nw <- 1; igr <- list(); rtyp <- "idecon"
+#'
+#' @author 2024-2025 Tobias Schmidt: initial version.
+deconvolute_spectrum2 <- function(x,
+    nfit=3, smopts=c(2, 5), delta=6.4, sfr=c(3.55, 3.35), wshw=0,
+    ask=FALSE, force=FALSE, verbose=TRUE, bwc=2,
+    use_rust=FALSE, nw=1, igr=list(), rtyp="idecon"
+) {
+    # Check inputs
+    assert(
+        is_spectrum(x),
+        is_int(nfit, 1),  is_int(smopts, 2),     is_num(delta, 1),
+        is_num(sfr, 2),   is_num(wshw, 1),       is_bool(force, 1),
+        is_num(bwc, 1),   is_bool(use_rust, 1),  is_int(nw, 1),
+        is_list_of_nums(igr, nv=2),
+        is_char(rtyp, 1, "(decon[0-2]|idecon|rdecon)")
+    )
+
+    # Init locals
+    if (isFALSE(verbose)) local_options(toscutil.logf.file = nullfile())
+    name <- get_name(x)
+    suffix <- if (use_rust) " using Rust backend" else ""
+    args <- get_args(deconvolute_spectrum, ignore = "x")
+
+    # Deconvolute
+    logf("Starting deconvolution of %s%s", name, suffix)
+    if (use_rust) {
+        mdrb_spectrum <- mdrb::Spectrum$new(x$cs, x$si, sfr)
+        mdrb_deconvr <- mdrb::Deconvoluter$new()
+        mdrb_deconvr$set_moving_average_smoother(smopts[1], smopts[2])
+        mdrb_deconvr$set_noise_score_selector(delta)
+        mdrb_deconvr$set_analytical_fitter(nfit)
+        mdrb_decon <- if (nw > 1) {
+            mdrb_deconvr$set_threads(nw)
+            mdrb_deconvr$par_deconvolute_spectrum(mdrb_spectrum)
+        } else {
+            mdrb_deconvr$deconvolute_spectrum(mdrb_spectrum)
+        }
+        decon <- new_rdecon(x, args, mdrb_spectrum, mdrb_deconvr, mdrb_decon)
+    } else {
+        ispec <- as_ispec(x)
+        ispec <- set(ispec, args=args)
+        ispec <- rm_water_signal(ispec, wshw, bwc)
+        ispec <- rm_negative_signals(ispec)
+        ispec <- smooth_signals(ispec, smopts[1], smopts[2], bwc)
+        ispec <- find_peaks(ispec)
+        ispec <- filter_peaks(ispec, sfr, delta, force, bwc)
+        ispec <- fit_lorentz_curves(ispec, nfit, bwc)
+        decon <- as_idecon(ispec)
+    }
+    logf("Formatting return object as %s", rtyp)
+    convert <- switch(rtyp,
+        "decon0"=as_decon0, "decon1"=as_decon1, "decon2"=as_decon2,
+        "idecon"=as_idecon, "rdecon"=as_rdecon
+    )
+    decon <- convert(decon)
+    logf("Finished deconvolution of %s", name)
     decon
 }
 
@@ -875,6 +947,77 @@ init_lc <- function(spec, verbose = TRUE) {
     rc <- match(ic, lmr) # Rank of each PTP
     rl <- match(il, lmr) #
     x <- spec$sdp; y <- spec$y_smooth # X and Y value for each data point
+    xlmr <- x[lmr]; # X value for each PTP
+    yr <- y[ir]; yc <- y[ic]; yl <- y[il]; # Intensity of each PTP
+    xr <- x[ir]; xc <- x[ic]; xl <- x[il]; # Position of each PTP
+
+    # Replace shoulders
+    as <- (yr > yc) & (yc > yl) # Ascending shoulders (AS)
+    ds <- (yr < yc) & (yc < yl) # Descending shoulders (DS)
+    xl[ds] <- 2 * xc[ds] - xr[ds] # Replace DS with mirrored points (MP)
+    xr[as] <- 2 * xc[as] - xl[as] # Replace AS with MP
+    yl[ds] <- yr[ds] # Replace DS with MP
+    yr[as] <- yl[as] # Replace AS with MP
+
+    # Calculate distances
+    wr  <- xr - xr #
+    wc  <- xc - xr # Express positions wr/wc/wl as "distance to right border"
+    wl  <- xl - xr #
+    wrc <- wr - wc; wrl <- wr - wl; wcl <- wc - wl # x - distance between PTPs
+    yrc <- yr - yc; yrl <- yr - yl; ycl <- yc - yl # y - distance between PTPs
+
+    # Estimate parameters
+    w <- calc_w(wr, wc, wl, yr, yc, yl, wrc, wrl, wcl, yrc, yrl, ycl, xr)
+    lambda <- calc_lambda(wr, wc, wl, yr, yc, yl, wrc, wrl, wcl, yrc, yrl, ycl, xr)
+    A <- calc_A(wr, wc, wl, yr, yc, yl, wrc, wrl, wcl, yrc, yrl, ycl, lambda, w, xr)
+
+    # Calculate contribution of each lorentz curve to each PTP data point
+    Z <- matrix(0, nrow = length(lmr), ncol = length(ic)) # 3614 x 1227 urine_1
+    idx_A_non_zero <- which(A != 0)
+    for (j in idx_A_non_zero) {
+        Z[, j] <- abs(A[j] * (lambda[j] / (lambda[j]^2 + (xlmr - w[j])^2)))
+    }
+
+    # Print MSE
+    mse <- mse(y[lmr], rowSums(Z))
+    if (verbose) logf("MSE at peak tiplet positions: %.22f", mse)
+
+    # Create return list
+    P <- data.frame(il, ic, ir, rl, rc, rr, xl, xc, xr, yl, yc, yr, as, ds)
+    D <- data.frame(wl, wc, wr, wrc, wrl, wcl, yrc, yrl, ycl)
+    named(A, lambda, w, Z, D, P) # nolint: object_usage_linter
+}
+
+#' @noRd
+#' @title Initialize Lorentz Curve Parameters
+#' @param p
+#' data.frame with columns `center`, `left`, `right` and `high`, giving the
+#' indices of the datapoints identified as peak triplet positions (PTPs) and
+#' whether the peak is above the score threshold (`high == TRUE`) or not.
+#' @param x Vector of scaled data points (SDP).
+#' @param y Smoothed intensity values.
+#' @return
+#' A list with elements:
+#' * `A`: Area parameter of each Lorentz curve.
+#' * `lambda`: Width parameter of each Lorentz curve.
+#' * `w`: Position parameter of each Lorentz curve.
+#' * `Z`: Matrix with height of each Lorentz curve (col) at each PTP (row).
+#' * `D`: Data frame with distances between PTPs.
+#' * `P`: Data frame with information about each PTP.
+#' @author
+#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
+#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
+#' MetaboDecon1D.
+init_lc2 <- function(x, y, p, verbose = TRUE) {
+
+    # Init values
+    ir <- p$right[p$high]  #
+    ic <- p$center[p$high] # Index of each peak triplet position (PTP)
+    il <- p$left[p$high]   #
+    lmr <- sort(unique(c(il, ic, ir))) # Combined PTP indices
+    rr <- match(ir, lmr) #
+    rc <- match(ic, lmr) # Rank of each PTP
+    rl <- match(il, lmr) #
     xlmr <- x[lmr]; # X value for each PTP
     yr <- y[ir]; yc <- y[ic]; yl <- y[il]; # Intensity of each PTP
     xr <- x[ir]; xc <- x[ic]; xl <- x[il]; # Position of each PTP
