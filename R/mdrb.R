@@ -43,7 +43,14 @@
 #'
 #' @examples
 #' check_mdrb()
-#' check_mdrb_deps(verbose = TRUE)
+#'
+#' \donttest{
+#' # Checking dependencies might take a few seconds, as it requires the
+#' # compilation of a small test program as well as running `cargo
+#' # --version` and `rustc --version`, which, depending on your system,
+#' # might involve updating or installing Rust toolchain components.
+#' check_mdrb_deps(verbose = TRUE)}
+#' }
 check_mdrb <- function(stop_on_fail = FALSE) {
     stopifnot(is_bool(stop_on_fail, 1))
     mdrb_version <- get_mdrb_version()

@@ -9,7 +9,7 @@ on: {
 jobs:
   R-CMD-check:
     runs-on: ${{ matrix.config.os }}
-    name: '${{ matrix.config.os }} (${{ matrix.config.r }}, {{ matrix.config.test }})'
+    name: '${{ matrix.config.os }} (${{ matrix.config.r }}, ${{ matrix.config.test }})'
     strategy:
       fail-fast: false
       matrix:
@@ -66,19 +66,19 @@ jobs:
 
       - name: Test package (fast tests only)
         uses: r-lib/actions/check-r-package@v2
-        if: ${{ matrix.config.test }} == 'fast'
+        if: ${{ matrix.config.test == 'fast' }}
         env:
           _R_CHECK_FORCE_SUGGESTS_: FALSE
 
       - name: Test package (incl. slow tests)
         uses: r-lib/actions/check-r-package@v2
-        if: ${{ matrix.config.test }} == 'slow'
+        if: ${{ matrix.config.test == 'slow' }}
         env:
           _R_CHECK_FORCE_SUGGESTS_: FALSE
           RUN_SLOW_TESTS: TRUE
 
       - name: Test package (with Bioconductor dependencies removed)
-        if: ${{ matrix.config.test }} == 'nobioc'
+        if: ${{ matrix.config.test == 'nobioc' }}
         run: |
           export _R_CHECK_FORCE_SUGGESTS_=FALSE
           export RUN_SLOW_TESTS=TRUE
