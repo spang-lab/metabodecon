@@ -9,20 +9,24 @@ on: {
 jobs:
   R-CMD-check:
     runs-on: ${{ matrix.config.os }}
-    name: "${{ matrix.config.os }} (${{ matrix.config.r }}) (bioc: ${{ matrix.config.bioc }})"
+    name: "${{ matrix.config.os }} (${{ matrix.config.r }}) (bioc: ${{ matrix.config.bioc }}, slow: ${{ matrix.config.slow }})"
     strategy:
       fail-fast: false
       matrix:
         config:
-          - {os: macos-latest,   r: 'release', bioc: true}
-          - {os: windows-latest, r: 'release', bioc: true}
-          - {os: windows-latest, r: 'oldrel-4', bioc: true}
-          - {os: ubuntu-latest,  r: 'release', bioc: false}
-          - {os: ubuntu-latest,  r: 'release', bioc: true}
-          - {os: ubuntu-latest,  r: 'oldrel-1', bioc: true}
-          - {os: ubuntu-latest,  r: 'oldrel-2', bioc: true}
-          - {os: ubuntu-latest,  r: 'oldrel-3', bioc: true}
-          - {os: ubuntu-latest,  r: 'oldrel-4', bioc: true}
+          # os: Operating system to run the job on.
+          # r: Version of R to use.
+          # slow: Run additional tests declared as slow?
+          # bioc: Run additional tests with Bioconductor dependencies removed?
+          - {os: ubuntu-latest,  r: 'devel',    slow: false, bioc: true}
+          - {os: ubuntu-latest,  r: 'release',  slow: true,  bioc: false}
+          - {os: ubuntu-latest,  r: 'oldrel-1', slow: false, bioc: true}
+          - {os: ubuntu-latest,  r: 'oldrel-2', slow: false, bioc: true}
+          - {os: ubuntu-latest,  r: 'oldrel-3', slow: false, bioc: true}
+          - {os: ubuntu-latest,  r: 'oldrel-4', slow: false, bioc: true}
+          - {os: macos-latest,   r: 'release',  slow: false, bioc: true}
+          - {os: windows-latest, r: 'release',  slow: false, bioc: true}
+          - {os: windows-latest, r: 'oldrel-4', slow: false, bioc: true}
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
@@ -64,9 +68,9 @@ jobs:
       - name: Test package without Bioconductor Deps
         if: ${{ !matrix.config.bioc }}
         run: |
-          export _R_CHECK_FORCE_SUGGESTS_=false
+          export _R_CHECK_FORCE_SUGGESTS_=FALSE
+          export RUN_SLOW_TESTS=TRUE
           Rscript -e "remove.packages(c('MassSpecWavelet', 'impute'))"
-          echo "Building and checking package"
           cd ..
           R CMD INSTALL --install-tests metabodecon
           Rscript -e "testthat::test_package('metabodecon')"

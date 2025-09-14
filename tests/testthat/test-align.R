@@ -83,6 +83,14 @@ test_that("align can install its dependencies", {
     requireNamespace("diffobj", quietly = TRUE) # required by `expect_false(<try-error>)`
     requireNamespace("glue", quietly = TRUE)    # required to print failure messages
 
+    # Update 2025/09/14: apparently, dependencies of speaq, which are no
+    # dependencies of metabodecon, might not be loaded automatically when
+    # metabodecon is loaded. Therefore, we need to load them as well to ensure
+    # they are available for the test.
+    speaq_deps <- tools::package_dependencies("speaq")[[1]]
+    speaq_deps <- setdiff(speaq_deps, c("impute", "MassSpecWavelet"))
+    sapply(speaq_deps, requireNamespace, quietly = TRUE)
+
     # Remember installation path of speaq
     speaq_path <- system.file(package = "speaq")
 
