@@ -9,10 +9,7 @@ on: {
 jobs:
   R-CMD-check:
     runs-on: ${{ matrix.config.os }}
-    name: >-
-      ${{ matrix.config.os }} (${{ matrix.config.r }}
-      ${{ matrix.config.rmbioc && ', rmbioc' || '' }}
-      ${{ matrix.config.slow && ', slow' || '' }})
+    name: '${{ matrix.config.os }} (${{ matrix.config.r }}, {{ matrix.config.test }})'
     strategy:
       fail-fast: false
       matrix:
@@ -21,15 +18,17 @@ jobs:
           # r: Version of R to use.
           # slow: Run additional tests declared as slow?
           # rmbioc: Run additional tests with Bioconductor dependencies removed?
-          - {os: ubuntu-latest,  r: 'devel',    slow: false, rmbioc: true}
-          - {os: ubuntu-latest,  r: 'release',  slow: true,  rmbioc: false}
-          - {os: ubuntu-latest,  r: 'oldrel-1', slow: false, rmbioc: true}
-          - {os: ubuntu-latest,  r: 'oldrel-2', slow: false, rmbioc: true}
-          - {os: ubuntu-latest,  r: 'oldrel-3', slow: false, rmbioc: true}
-          - {os: ubuntu-latest,  r: 'oldrel-4', slow: false, rmbioc: true}
-          - {os: macos-latest,   r: 'release',  slow: false, rmbioc: true}
-          - {os: windows-latest, r: 'release',  slow: false, rmbioc: true}
-          - {os: windows-latest, r: 'oldrel-4', slow: false, rmbioc: true}
+          - {os: ubuntu-latest,  r: 'release',  test: 'all'}
+          - {os: ubuntu-latest,  r: 'release',  test: 'nobioc'}
+          - {os: ubuntu-latest,  r: 'release',  test: 'fast'}
+          - {os: ubuntu-latest,  r: 'devel',    test: 'fast'}
+          - {os: ubuntu-latest,  r: 'oldrel-1', test: 'fast'}
+          - {os: ubuntu-latest,  r: 'oldrel-2', test: 'fast'}
+          - {os: ubuntu-latest,  r: 'oldrel-3', test: 'fast'}
+          - {os: ubuntu-latest,  r: 'oldrel-4', test: 'fast'}
+          - {os: macos-latest,   r: 'release',  test: 'fast'}
+          - {os: windows-latest, r: 'release',  test: 'fast'}
+          - {os: windows-latest, r: 'oldrel-4', test: 'fast'}
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
@@ -65,14 +64,21 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update -y && sudo apt-get install -y libgsl0-dev
 
-      - name: Test package
+      - name: Test package (fast tests only)
         uses: r-lib/actions/check-r-package@v2
+        if: ${{ matrix.config.test }} == 'fast'
         env:
-          _R_CHECK_FORCE_SUGGESTS_: false
-          RUN_SLOW_TESTS: ${{ matrix.config.slow }}
+          _R_CHECK_FORCE_SUGGESTS_: FALSE
 
-      - name: Test package with Bioconductor Dependencies Removed
-        if: ${{ matrix.config.rmbioc }}
+      - name: Test package (incl. slow tests)
+        uses: r-lib/actions/check-r-package@v2
+        if: ${{ matrix.config.test }} == 'slow'
+        env:
+          _R_CHECK_FORCE_SUGGESTS_: FALSE
+          RUN_SLOW_TESTS: TRUE
+
+      - name: Test package (with Bioconductor dependencies removed)
+        if: ${{ matrix.config.test }} == 'nobioc'
         run: |
           export _R_CHECK_FORCE_SUGGESTS_=FALSE
           export RUN_SLOW_TESTS=TRUE

@@ -47,7 +47,10 @@ jobs:
 
       - name: Set up R dependencies
         uses: r-lib/actions/setup-r-dependencies@v2
-        with: { extra-packages: "any::rcmdcheck, mdrb=?ignore-before-r=4.2.0", needs: "check" }
+        with: {
+          extra-packages: "any::rcmdcheck, mdrb=?ignore-before-r=4.2.0",
+          needs: "check"
+        }
 
       - name: Install package
         shell: Rscript {0}
