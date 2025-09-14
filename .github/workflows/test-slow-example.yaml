@@ -54,41 +54,6 @@ jobs:
         run: |
           devtools::install()
 
-      - name: Check slow example
-        shell: Rscript {0}
-        run: |
-          library(metabodecon)
-          example(check_mdrb)
-
-          nowstr <- function() format(Sys.time(), "%Y-%m-%d %H:%M:%OS3: ")
-          is_windows <- pkgbuild:::is_windows
-          is_R4 <- pkgbuild:::is_R4
-          has_rtools <- pkgbuild:::has_rtools
-          has_compiler <- pkgbuild:::has_compiler
-          debug <- TRUE
-
-          check <- getOption("buildtools.check", NULL)
-          message(nowstr(), "'", check, "'")
-
-          has <- if (is_windows() && is_R4() && has_rtools(debug = debug)) {
-              message(nowstr(), "Branch 1")
-              TRUE
-          } else if (is_windows()) {
-              message(nowstr(), "Branch 2")
-              has_rtools(debug = debug)
-          } else {
-              message(nowstr(), "Branch 3")
-              has_compiler(debug = debug)
-          }
-
-          if (!has && !is.null(check)) {
-              message(nowstr(), "Branch 4")
-              check("Building R package from source")
-          } else {
-              message(nowstr(), "Branch 5")
-              has
-          }
-
       - name: Check rustc and cargo versions
         shell: bash
         run: |
@@ -97,3 +62,56 @@ jobs:
           echo "$(date '+%Y-%m-%d %H:%M:%S'): cargo --version"
           cargo --version
           echo "$(date '+%Y-%m-%d %H:%M:%S'): done"
+
+
+      - name: Check slow example
+        shell: Rscript {0}
+        run: |
+
+          catf <- function(...) {
+              now <- format(Sys.time(), "%Y-%m-%d %H:%M:%OS3: ")
+              msg <- sprintf(...)
+              cat(now, msg, "\n", sep = "")
+          }
+
+          if (TRUE) {
+            catf("Loading metabodecon")
+            x <- system.time(library(metabodecon))
+            catf("Done (%ss)", x[[3]])
+          }
+
+          if (TRUE) {
+            catf("Checking if on Windows")
+            x <- system.time(on_windows <- pkgbuild:::is_windows())
+            catf("on_windows: %s (%ss)", on_windows, x[[3]])
+          }
+
+          if (on_windows) {
+              catf("Checking for Rtools")
+              x <- system.time(rtools_available <- pkgbuild:::has_rtools(debug = TRUE))
+              catf("Rtools available: %s (%ss)", rtools_available, x[[3]])
+          }
+
+          if (!on_windows) {
+              catf("Checking for compiler")
+              x <- system.time(has_compiler <- pkgbuild:::has_compiler(debug = TRUE))
+              catf("Compiler available: %s (%ss)", has_compiler, x[[3]])
+          }
+
+          if (TRUE) {
+              catf("Checking whether buildtools.check is defined")
+              x <- system.time(buildtools.check <- getOption("buildtools.check", NULL))
+              catf("buildtools.check defined: %s (%ss)", is.function(buildtools.check), x[[3]])
+          }
+
+          if (is.function(buildtools.check)) {
+              catf('Calling `buildtools.check("Building R package from source")` ')
+              x <- system.time(check.result <- buildtools.check("Building R package from source"))
+              catf("check.result: %s (%ss)", check.result, x[[3]])
+          }
+
+          if (TRUE) {
+              catf("Calling slow example: `example(check_mdrb)`")
+              x <- system.time(example(check_mdrb))
+              catf("Done (%ss)", x[[3]])
+          }
