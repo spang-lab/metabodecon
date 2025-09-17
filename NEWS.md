@@ -1,3 +1,10 @@
+# metabodecon 1.6.0
+
+* Updated Getting-Started vignette to use `deconvolute()` instead of
+  `generate_lorentz_curves()`.
+* Fixed a bug in `find_peaks()` that sometimes caused the borders of a peak to
+  be chosen suboptimally. The new implementation is also about 100 times faster.
+
 # metabodecon 1.5.2
 
 * Removed all links to the old `TODOS.md` and `ARCHIVE.md` from the package

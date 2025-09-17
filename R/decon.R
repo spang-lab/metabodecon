@@ -589,7 +589,6 @@ smooth_signals2 <- function(y, reps = 2, k = 5) {
 #' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
 #' MetaboDecon1D.
 find_peaks <- function(spec) {
-    logf("Starting peak selection")
     spec$d <- calc_second_derivative(spec$y_smooth)
     spec$peak <- find_peaks2(spec$y_smooth)
     logf("Detected %d peaks", nrow(spec$peak))
