@@ -1,3 +1,8 @@
+# metabodecon 1.6.2
+
+* Added an exception to `test-install_mdrb.R` so the test also works on
+  r-universe machines.
+
 # metabodecon 1.6.1
 
 * Minor documentation improvements.
