@@ -40,7 +40,7 @@ pak::pkg_install("spang-lab/metabodecon")
 
 ## Usage
 
-At [Get Started](https://spang-lab.github.io/metabodecon/articles/metabodecon.html) you can see an example how metabodecon can be used to deconvolute an existing data set, followed by alignment of the data and some additional postprocessing steps, resulting in a data matrix of aligned signal integrals.
+At [Getting Started](https://spang-lab.github.io/metabodecon/articles/Get_Started.html) you can see an example how metabodecon can be used to deconvolute an existing data set, followed by alignment of the data and some additional postprocessing steps, resulting in a data matrix of aligned signal integrals.
 
 At [Function Reference](https://spang-lab.github.io/metabodecon/reference/index.html) you get an overview of all functions provided by metabodecon.
 
@@ -48,6 +48,6 @@ At [Function Reference](https://spang-lab.github.io/metabodecon/reference/index.
 
 metabodecon's documentation is available at [spang-lab.github.io/metabodecon](https://spang-lab.github.io/metabodecon/). It includes pages about
 
-- [Getting Started](https://spang-lab.github.io/metabodecon/articles/metabodecon.html)
+- [Getting Started](https://spang-lab.github.io/metabodecon/articles/Get_Started.html)
 - [Contribution Guidelines](https://spang-lab.github.io/metabodecon/articles/Contributing.html)
 - [Function Reference](https://spang-lab.github.io/metabodecon/reference/index.html)

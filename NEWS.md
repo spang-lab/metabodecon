@@ -1,3 +1,7 @@
+# metabodecon 1.6.1
+
+* Minor documentation improvements.
+
 # metabodecon 1.6.0
 
 * Updated Getting-Started vignette to use `deconvolute()` instead of
