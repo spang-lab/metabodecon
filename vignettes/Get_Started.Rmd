@@ -75,22 +75,24 @@ information on the Sim and Blood datasets, see [Datasets].
 
 To find the path to the  Sim  dataset,  you  can  use  the  `metabodecon_file()`
 function, which returns the path to any file or  directory  within  the  package
-directory. To deconvolute the  spectra  within  the  Sim  dataset  you  can  use
-`generate_lorentz_curves()`:
+directory. To deconvolute the  spectra  within  the  Sim  dataset  you  can read
+them into R using `read_spectra()` and then call `deconvolute()` as follows:
 
 ```{r chunk-deconvolute, echo=TRUE}
 sim_dir <- metabodecon::metabodecon_file("bruker/sim")
-deconvoluted_spectra <- metabodecon::generate_lorentz_curves(
-    data_path = sim_dir, # Path to directory containing spectra
+sim <- metabodecon::read_spectra(sim_dir)
+deconvoluted_spectra <- metabodecon::deconvolute(
+    sim,                 # The object containing spectra
     sfr = c(3.35, 3.55), # Borders of signal free region (SFR) in ppm
-    wshw = 0,            # Half width of water signal (WS) in ppm
-    smopts = c(2, 5),    # Configure smoothing parameters
-    verbose = FALSE      # Suppress status messages
+    smopts = c(2, 5),    # Smoothing parameters
+    verbose = FALSE,     # Disable verbose output
+    ask = TRUE           # Enable interactive prompting
 )
 ```
 
-After calling `generate_lorentz_curves()`, the function will ask you  to  answer
-the following questions to determine the optimal deconvolution parameters:
+After calling `deconvolute()`, the function will ask you to answer
+the following questions to determine the optimal deconvolution
+parameters interactively:
 
 1. Use same parameters for all spectra? (y/n)
 2. Number of spectrum for adjusting parameters? (1: sim_01, 2: sim_02, ...)

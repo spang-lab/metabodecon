@@ -43,6 +43,7 @@ draw_spectrum(
   tp_verts = list(),
   lc_verts = list(),
   al_verts = list(),
+  ze_hline = list(),
   al_arrows = list(),
   lgd = list()
 )
@@ -136,6 +137,8 @@ labels).}
 centers of estimated, true or aligned lorentzian curves. Setting
 \code{tp_verts$show} to TRUE requires \code{truepar} to be set.}
 
+\item{ze_hline}{List of parameters passed to \code{\link[=abline]{abline()}} when drawing a horizontal line at y = 0.}
+
 \item{al_arrows}{List of parameters passed to \code{\link[=arrows]{arrows()}} when drawing arrows between the
 estimated and aligned lorentzian curve centers.}
 
@@ -155,10 +158,9 @@ usually  the  recommended  way  to  plot  spectra.  For  usage  examples  see
 Parameters \code{bt_axis}, \code{lt_axis}, \code{tp_axis} and \code{rt_axis} all  support  option
 \code{n} and \code{digits}, where \code{n = 5} means "Draw 5 tickmarks over  the  full  axis
 range" and \code{digits = 3} means "round the label shown beside each tickmark  to
-3 digits". If \code{n} is omitted, a suitable value is chosen automatically  using
-\code{\link[=axTicks]{axTicks()}}. If \code{digits} is omitted, a default of \code{0:12} is used. Providing a
-vector of \code{digits} causes each digit to be tried until a digit is encountered
-that results in \code{n} unique labels. Example:
+3 digits". If \code{n} or \code{digits} is omitted, a suitable value is chosen
+automatically. Providing a vector of \code{digits} causes each digit to be tried
+until a digit is encountered that results in \code{n} unique labels. Example:
 
 Assume we have \code{n = 4} and the corresponding  calculated  tickmark  positions
 are: 1.02421, 1.02542, 1.02663 and 1.02784. If we provide \code{digits = 1:5}, the
