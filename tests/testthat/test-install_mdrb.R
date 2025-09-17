@@ -13,11 +13,15 @@ test_that("install_mdrb works", {
     old_libs <- .libPaths()
     n_libs <- length(old_libs)
     defer(.libPaths(old_libs))
-    .libPaths(c(tmp_lib, old_libs[n_libs]), include.site = FALSE)
+    .libPaths(tmp_lib, include.site = FALSE)
     unloadNamespace("mdrb")
 
     mdrb_available <- check_mdrb()
+    if ((Sys.getenv("UNIVERSE_NAME") != "") && (!mdrb_available)) {
+        skip("Skipping test as mdrb is installed in Sys Library and cannot be uninstalled.")
+    }
     expect_false(mdrb_available)
+
 
     # Skip on Linux, to prevent source install, which takes up to 2 minutes.
     if (Sys.info()[["sysname"]] == "Linux") {
