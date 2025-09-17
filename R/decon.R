@@ -166,10 +166,21 @@ deconvolute_spectra <- function(x,
     decons
 }
 
-#" EXAMPLES
-#" urine_1_path <- metabodecon_file("urine_1")
-#" urine_1 <- read_spectrum(urine_1_path)
-#" system.time(deconvolute_spectrum(urine_1, use_rust = TRUE, nw = 4))
+#' @examples
+#' x <- sap[[1]];
+#' nfit <- 3; smopts <- c(1,3); delta <- 3; sfr <- c(3.2,-3.2); wshw <- 0;
+#' ask <- FALSE; force <- FALSE; verbose <- FALSE; bwc <- 2;
+#' use_rust <- FALSE; nw <- 1; igr <- list(); rtyp <- "idecon"
+#' idecon <- deconvolute_spectrum(
+#'      x, nfit, smopts, delta, sfr, wshw,
+#'      ask, force, verbose, bwc,
+#'      use_rust, nw, igr, rtyp
+#' )
+#'
+#' x <- read_spectrum(metabodecon_file("urine_1"))
+#' nfit <- 3; smopts <- c(2,5); delta <- 6.4; sfr <- c(3.55,3.35); wshw <- 0;
+#' ask <- FALSE; force <- FALSE; verbose <- FALSE; bwc <- 2;
+#' use_rust <- FALSE; nw <- 1; igr <- list(); rtyp <- "idecon"
 #' @noRd
 #' @inheritParams deconvolute_spectra
 #' @author 2024-2025 Tobias Schmidt: initial version.
@@ -216,11 +227,9 @@ deconvolute_spectrum <- function(x,
         ispec <- rm_water_signal(ispec, wshw, bwc)
         ispec <- rm_negative_signals(ispec)
         ispec <- smooth_signals(ispec, smopts[1], smopts[2], bwc)
-
         ispec <- find_peaks(ispec)
         ispec <- filter_peaks(ispec, sfr, delta, force, bwc)
         ispec <- fit_lorentz_curves(ispec, nfit, bwc)
-
         decon <- as_idecon(ispec)
     }
     logf("Formatting return object as %s", rtyp)
@@ -230,7 +239,84 @@ deconvolute_spectrum <- function(x,
     )
     decon <- convert(decon)
     logf("Finished deconvolution of %s", name)
+    decon
+}
 
+#' @noRd
+#' @description
+#' WORK IN PROGRESS.
+#'
+#' Planned replacement for `deconvolute_spectrum()`. Should directly produce a
+#' decon2 object, so we can remove the `ispec` and `idecon` classes.
+#'
+#' @inheritParams deconvolute_spectra
+#'
+#' @examples
+#'
+#' x <- sap[[1]];
+#' nfit <- 3; smopts <- c(1,3); delta <- 3; sfr <- c(3.2,-3.2); wshw <- 0;
+#' ask <- FALSE; force <- FALSE; verbose <- FALSE; bwc <- 2;
+#' use_rust <- FALSE; nw <- 1; igr <- list(); rtyp <- "idecon"
+#'
+#' x <- read_spectrum(metabodecon_file("urine_1"))
+#' nfit <- 3; smopts <- c(2,5); delta <- 6.4; sfr <- c(3.55,3.35); wshw <- 0;
+#' ask <- FALSE; force <- FALSE; verbose <- FALSE; bwc <- 2;
+#' use_rust <- FALSE; nw <- 1; igr <- list(); rtyp <- "idecon"
+#'
+#' @author 2024-2025 Tobias Schmidt: initial version.
+deconvolute_spectrum2 <- function(x,
+    nfit=3, smopts=c(2, 5), delta=6.4, sfr=c(3.55, 3.35), wshw=0,
+    ask=FALSE, force=FALSE, verbose=TRUE, bwc=2,
+    use_rust=FALSE, nw=1, igr=list(), rtyp="idecon"
+) {
+    # Check inputs
+    assert(
+        is_spectrum(x),
+        is_int(nfit, 1),  is_int(smopts, 2),     is_num(delta, 1),
+        is_num(sfr, 2),   is_num(wshw, 1),       is_bool(force, 1),
+        is_num(bwc, 1),   is_bool(use_rust, 1),  is_int(nw, 1),
+        is_list_of_nums(igr, nv=2),
+        is_char(rtyp, 1, "(decon[0-2]|idecon|rdecon)")
+    )
+
+    # Init locals
+    if (isFALSE(verbose)) local_options(toscutil.logf.file = nullfile())
+    name <- get_name(x)
+    suffix <- if (use_rust) " using Rust backend" else ""
+    args <- get_args(deconvolute_spectrum, ignore = "x")
+
+    # Deconvolute
+    logf("Starting deconvolution of %s%s", name, suffix)
+    if (use_rust) {
+        mdrb_spectrum <- mdrb::Spectrum$new(x$cs, x$si, sfr)
+        mdrb_deconvr <- mdrb::Deconvoluter$new()
+        mdrb_deconvr$set_moving_average_smoother(smopts[1], smopts[2])
+        mdrb_deconvr$set_noise_score_selector(delta)
+        mdrb_deconvr$set_analytical_fitter(nfit)
+        mdrb_decon <- if (nw > 1) {
+            mdrb_deconvr$set_threads(nw)
+            mdrb_deconvr$par_deconvolute_spectrum(mdrb_spectrum)
+        } else {
+            mdrb_deconvr$deconvolute_spectrum(mdrb_spectrum)
+        }
+        decon <- new_rdecon(x, args, mdrb_spectrum, mdrb_deconvr, mdrb_decon)
+    } else {
+        wsrm <- rm_water_signal2(x$cs, x$si, wshw)
+        nvrm <- rm_negative_signals2(wsrm)
+        sm <- smooth_signals2(nvrm, smopts[1], smopts[2])
+        peak <- find_peaks2(sm)
+        # CONTINUE HERE
+        ispec <- filter_peaks(ispec, sfr, delta, force, bwc)
+        ispec <- fit_lorentz_curves(ispec, nfit, bwc)
+        decon <- as_idecon(ispec)
+    }
+    logf("Formatting return object as %s", rtyp)
+    convert <- switch(rtyp,
+        "decon0"=as_decon0, "decon1"=as_decon1, "decon2"=as_decon2,
+        "idecon"=as_idecon, "rdecon"=as_rdecon
+    )
+    decon <- convert(decon)
+    logf("Finished deconvolution of %s", name)
     decon
 }
 
@@ -345,6 +431,27 @@ rm_water_signal <- function(x, wshw, bwc) {
 
 #' @noRd
 #' @author
+#' 2020-2021 Martina Haeckl:
+#' Wrote initial version as part of MetaboDecon1D.\cr
+#' 2024-2025 Tobias Schmidt:
+#' Extracted and refactored corresponding code from MetaboDecon1D.
+#' Added code for bwc > 1.
+#' Dropped support for bwc == 0.
+#' @param x Chemical Shifts in parts per million (ppm)
+#' @param y Signal Intensities in arbtary units (au)
+#' @param wshw Half-width of the water artifact in ppm
+#' @return
+#' A numeric vector of the signal intensities with the water signal removed.
+rm_water_signal2 <- function(x, y, wshw) {
+    assert(is_num(x), is_num(y), is_num(wshw, 1))
+    logf("Removing water signal")
+    cntr <- (x[1] + x[length(x)]) / 2
+    y[which(x > cntr - wshw & x < cntr + wshw)] <- min(y)
+    y
+}
+
+#' @noRd
+#' @author
 #' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
 #' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
 #' MetaboDecon1D. Added code for bwc > 1.
@@ -354,6 +461,18 @@ rm_negative_signals <- function(spec) {
     if (is.null(spec$y_nows)) stop(errmsg)
     spec$y_pos <- abs(spec$y_nows)
     spec
+}
+
+#' @noRd
+#' @author
+#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
+#' 2024-2025 Tobias Schmidt:
+#' Extracted and refactored corresponding code from MetaboDecon1D.
+#' Added code for bwc > 1.
+#' Dropped support for bwc == 0.
+rm_negative_signals2 <- function(y) {
+    logf("Removing negative signals")
+    abs(y)
 }
 
 #' @noRd
@@ -374,7 +493,9 @@ rm_negative_signals <- function(spec) {
 #' so the smoothed point is in the middle of the window.
 #'
 #' @return
-#' A numeric vector of the smoothed values.
+#' The input `spec` list with two additional entries:
+#' - `spec$Z`: A data frame containing the intermediate smoothed values after each iteration.
+#' - `spec$y_smooth`: A numeric vector of the smoothed values after
 #'
 #' @details
 #' Old and slow version producing the same results as the
@@ -405,20 +526,33 @@ smooth_signals <- function(spec, reps = 2, k = 5, verbose = TRUE) {
 }
 
 #' @noRd
-#' @inherit smooth_signals
-#' @details
-#' New and fast version for smoothing of signals. Implements the same algorithm
-#' as [smooth_signal_v12()] using different R functions (e.g.
-#' [stats::filter()]), causing a massive speedup but also numeric differences
-#' compared to the old version.
 #'
-#' WORK IN PROGRESS
+#' @title Smooth Signal Intensities using a Moving Average
 #'
-#' @author 2024-2025 Tobias Schmidt: initial version.
-smooth_signals_v20 <- function(spec, reps = 2, k = 5) {
+#' @description
+#' Smoothes signal intensities by applying a [moving average](
+#' https://en.wikipedia.org/wiki/Moving_average) filter with a window size of k.
+#'
+#' @param y Signal intensities in arbtary units (au)
+#'
+#' @param reps The number of times to apply the moving average.
+#'
+#' @param k The number of points within the moving average window. Must be odd,
+#' so the smoothed point is in the middle of the window.
+#'
+#' @return
+#' A numeric vector of the smoothed values.
+#'
+#' @author
+#' 2020-2021 Martina Haeckl:
+#' Wrote initial version as part of MetaboDecon1D.\cr
+#' 2024-2025 Tobias Schmidt:
+#' Extracted and refactored corresponding code from MetaboDecon1D.
+#' Added code for bwc > 1.
+#' Dropped support for bwc == 0.
+smooth_signals2 <- function(y, reps = 2, k = 5) {
     if (k %% 2 == 0) stop("k must be odd")
     Z <- vector("list", length = reps)
-    y <- spec$y_pos
     n <- length(y)
     for (i in seq_len(reps)) {
         filter <- rep(1 / k, k)
@@ -428,7 +562,7 @@ smooth_signals_v20 <- function(spec, reps = 2, k = 5) {
             z[j] <- mean(y[1:(q + j)]) # (3)
             z[n - j + 1] <- mean(y[(n - q - j + 1):n]) # (4)
         }
-        y <- Z[[i]] <- as.numeric(z)
+        y <- as.numeric(z)
         # Calling (1) gives NAs at both sides of vector, as there are not enough
         # values for the moving average. The number of NAs at each side is given
         # by (2). Example: if n==100 and k==5, then q==2, so z[1]==NA, z[2]==NA,
@@ -446,9 +580,7 @@ smooth_signals_v20 <- function(spec, reps = 2, k = 5) {
         # with the old version completely. So not even `all.equal(v1, v2)` would
         # be TRUE anymore.
     }
-    spec$Z <- Z
-    spec$y_smooth <- Z[[reps]]
-    spec
+    y
 }
 
 #' @noRd
@@ -457,44 +589,51 @@ smooth_signals_v20 <- function(spec, reps = 2, k = 5) {
 #' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
 #' MetaboDecon1D.
 find_peaks <- function(spec) {
-    logf("Starting peak selection")
-    d <- spec$d <- calc_second_derivative(y = spec$y_smooth)
-    a <- abs(d)
-    m <- length(d)
-    dl <- c(NA, d[-m]) # dl[i] == d[i-1]
-    dr <- c(d[-1], NA) # dr[i] == d[i+1]
-    center <- which(d < 0 & d <= dl & d < dr)
-    spec$peak <- data.frame(left = NA, center = center, right = NA, score = NA)
-    for (i in seq_along(center)) {
-        j <- center[i]
-        l <- spec$peak$left[i] <- get_left_border(j, d)
-        r <- spec$peak$right[i] <- get_right_border(j, d, m)
-        spec$peak$score[i] <- get_peak_score(j, l, r, a)
-    }
-    logf("Detected %d peaks", length(center))
+    spec$d <- calc_second_derivative(spec$y_smooth)
+    spec$peak <- find_peaks2(spec$y_smooth)
+    logf("Detected %d peaks", nrow(spec$peak))
     spec
 }
 
 #' @noRd
-#' @title WORK IN PROGRESS
-#' @author 2024-2025 Tobias Schmidt: initial version.
-filter_peaks_v13 <- function(ppm, # x values in ppm
-                             pc, # peak center indices
-                             ps, # peak scores
-                             sfrl, # signal free region left in ppm
-                             sfrr, # signal free region right in ppm
-                             delta = 6.4 # peak filter threshold parameter
-) {
-    if (any(is.na(ps))) stop("Peak scores must never be NA")
-    logf("Removing peaks with low scores")
-    in_sfr <- which(ppm[pc] >= ppm || ppm[pc] <= ppm)
-    if (!any(in_sfr)) stop("No signals found in signal free region. Please double check deconvolution parameters.")
-    mu <- mean(ps[in_sfr])
-    sd <- sd(ps[in_sfr])
-    threshold <- mu + delta * sd
-    above_threshold <- ps >= threshold
-    logf("Removed %d peaks", sum(!above_threshold))
-    list(in_sfr, above_threshold)
+#' @author
+#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
+#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
+#' MetaboDecon1D.
+find_peaks2 <- function(y) {
+    logf("Starting peak selection")
+    d <- calc_second_derivative(y)
+    a <- abs(d)
+    n <- length(d)
+    dl <- c(NA, d[-n]) # dl[i] == d[i-1]
+    dr <- c(d[-1], NA) # dr[i] == d[i+1]
+    center <- which(d < 0 & d <= dl & d < dr)
+    peak <- data.frame(left = NA, center = center, right = NA, score = NA)
+    for (i in seq_along(center)) {
+        j <- center[i]
+        l <- peak$left[i]  <- get_left_border(j, d)
+        r <- peak$right[i] <- get_right_border(j, d, n)
+        s <- peak$score[i] <- get_peak_score(j, l, r, a)
+    }
+    logf("Detected %d peaks", length(center))
+    peak
+}
+
+#' @noRd
+#' @author
+#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
+#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
+#' MetaboDecon1D.
+find_peaks2 <- function(y) {
+    logf("Starting peak selection")
+    d <- calc_second_derivative(y)
+    pc <- get_peak_centers_fast(d)
+    rb <- get_right_borders_fast(d, pc)
+    lb <- get_left_borders_fast(d, pc)
+    sc <- get_peak_scores_fast(d, pc, lb, rb)
+    P <- data.frame(left = lb, center = pc, right = rb, score = sc)
+    logf("Detected %d peaks", length(pc))
+    P
 }
 
 #' @noRd
@@ -548,7 +687,7 @@ filter_peaks_v13 <- function(ppm, # x values in ppm
 #' rm2 <- filtered_ispec <- filter_peaks(ispec, sfr, delta = 1)
 filter_peaks <- function(ispec, sfr, delta = 6.4, force = FALSE, bwc = 1) {
     assert(is_ispec(ispec))
-    logf("Removing peaks with low pscores")
+    logf("Removing peaks with low scores")
     sdp <- ispec$sdp
     ppm <- ispec$ppm
     plb <- ispec$peak$left
@@ -602,6 +741,32 @@ fit_lorentz_curves <- function(spec, nfit = 3, bwc = 1) {
     spec$lca <- vector("list", length = nfit) # Lorentz Curves Approximated
     logf("Refining Lorentz Curves")
     for (i in 1:nfit) spec$lca[[i]] <- lc <- refine_lc_v14(spec, lc$Z)
+    A <- lc$A
+    lambda <- lc$lambda
+    w <- lc$w
+    if (bwc < 1) {
+        limits <- c(0, max(spec$sdp) + (1 / spec$sf[1]))
+        integrals <- lorentz_int(w, A, lambda, limits = limits)
+    } else {
+        integrals <- A * (- pi)
+    }
+    spec$lcr <- list(A = A, lambda = lambda, w = w, integrals = integrals)
+    spec
+}
+
+#' @noRd
+#' @author
+#' 2020-2021 Martina Haeckl:
+#' Wrote initial version as part of MetaboDecon1D.\cr
+#' 2024-2025 Tobias Schmidt:
+#' Extracted and refactored corresponding code from MetaboDecon1D.
+#' Added code for bwc > 1.
+fit_lorentz_curves <- function(spec, nfit = 3, bwc = 1) {
+    logf("Initializing Lorentz curves")
+    spec$lci <- lc <- init_lc(spec) # Lorentz Curves Initialized
+    spec$lca <- vector("list", length = nfit) # Lorentz Curves Approximated
+    logf("Refining Lorentz Curves")
+    for (i in seq_len(nfit)) spec$lca[[i]] <- lc <- refine_lc_v14(spec, lc$Z)
     A <- lc$A
     lambda <- lc$lambda
     w <- lc$w
@@ -683,6 +848,25 @@ enrich_sfr <- function(sfr, x) {
 
 #' @noRd
 #' @description
+#' Same as [enrich_sfr()], but only requires the chemical shift vector instead
+#' of the full `spectrum` or `idecon` object. That's easier to test and
+#' maintain.
+#' @author 2025 Tobias Schmidt: initial version.
+enrich_sfr2 <- function(sfr, cs) {
+    n <- length(cs)
+    ppm_max <- max(cs)
+    ppm_nstep <- diff(range(cs)) / n
+    left_ppm <- sfr[1]
+    right_ppm <- sfr[2]
+    left_dp <- (n + 1) - (ppm_max - left_ppm) / ppm_nstep
+    left_sdp <- left_dp / 1000
+    right_dp <- (n + 1) - (ppm_max - right_ppm) / ppm_nstep
+    right_sdp <- right_dp / 1000
+    named(left_ppm, right_ppm, left_dp, right_dp, left_sdp, right_sdp)
+}
+
+#' @noRd
+#' @description
 #' Calculates the WSR in dp and ppm from the WSHW in ppm.
 #' @note
 #' Because the conversion from PPM to DP/SDP is slightly off (by 1-2 data
@@ -713,6 +897,31 @@ enrich_wshw <- function(wshw, x) {
     )
 }
 
+#' @noRd
+#' @description
+#' Same as [enrich_wshw()], but only requires the chemical shift vector instead
+#' of the full `spectrum` or `idecon` object. That's easier to test and
+#' maintain.
+#' @author 2025 Tobias Schmidt: initial version.
+enrich_wshw2 <- function(wshw, cs) {
+    n <- length(cs)
+    ppm_max <- max(cs)
+    ppm_nstep <- diff(range(cs)) / n
+    hwidth_ppm <- wshw
+    hwidth_dp <- hwidth_ppm / ppm_nstep
+    center_dp <- n / 2
+    right_dp <- center_dp + hwidth_dp
+    left_dp <- center_dp - hwidth_dp
+    center_ppm <- cs[center_dp]
+    right_ppm <- cs[right_dp]
+    left_ppm <- cs[left_dp]
+    if (left_dp <= 1 || right_dp >= n) stop("WSR is out of range")
+    named(
+        left_ppm, right_ppm, center_ppm, hwidth_ppm,
+        left_dp, right_dp, center_dp, hwidth_dp
+    )
+}
+
 # Helpers for find_peak #####
 
 #' @noRd
@@ -733,11 +942,9 @@ calc_second_derivative <- function(y) {
 get_right_border <- function(j, d, m) {
     r <- j + 1
     while (r < m) { # use r<m instead of r<=m because c4 requires d[r+1]
-        c1 <- d[r] > d[r - 1]
-        c2 <- d[r] >= d[r + 1]
-        c3 <- d[r] < 0
-        c4 <- d[r + 1] >= 0
-        is_right_border <- (c1 && c2) || (c1 && c3 && c4)
+        is_right_root <- (d[r] < 0 && d[r + 1] >= 0)
+        is_right_maximum <- (d[r] > d[r - 1] && d[r] >= d[r + 1])
+        is_right_border <- is_right_root || is_right_maximum
         if (isTRUE(is_right_border)) return(r)
         r <- r + 1
     }
@@ -752,11 +959,9 @@ get_right_border <- function(j, d, m) {
 get_left_border <- function(j, d) {
     l <- j - 1
     while (l > 1) { # use l>1 instead of l>=1 because c4 requires d[l-1]
-        c1 <- d[l] > d[l + 1]
-        c2 <- d[l] >= d[l - 1]
-        c3 <- d[l] < 0
-        c4 <- d[l - 1] >= 0
-        is_left_border <- (c1 && c2) || (c1 && c3 && c4)
+        is_left_root <- (d[l] < 0 && d[l - 1] >= 0)
+        is_left_maximum <- (d[l] > d[l + 1] && d[l] >= d[l - 1])
+        is_left_border <- is_left_root || is_left_maximum
         if (isTRUE(is_left_border)) return(l)
         l <- l - 1
     }
@@ -808,6 +1013,84 @@ get_peak_score <- function(j, l, r, a) {
     }
 }
 
+get_peak_centers_fast <- function(d) {
+    dl <- c(NA, d[-length(d)])
+    dr <- c(d[-1], NA)
+    pc <- which(d < 0 & d <= dl & d < dr)
+    pc
+}
+
+#' @noRd
+#' @param d Vector of second derivative (of the smoothed signal intensities).
+#' @param pc Peak center indices.
+#' @author 2025 Tobias Schmidt: initial version.
+get_right_borders_fast <- function(d, pc, bwc = 2) {
+    # Example Inputs:
+    # d <- c(-2, -4, -2, 1, 2, 1, -1, 1, -2, -1) # Second Derivative
+    # pc <- c(2, 7, 9) # Corresponding Peak Center Indices
+
+    dl <- c(NA, d[-length(d)])
+    # Second Derivative shifted left by 1 position. Example:
+    # dl == c(NA, -2, -4, -2, 1, 2, 1, -1, 1, -2)
+
+    dr <- c(d[-1], NA)
+    # Second Derivative shifted right by 1 position. Example:
+    # dr == c(-4, -2, 1, 2, 1, -1, 1, -2, -1, NA)
+
+    is_right_root <- (dr >= 0) & (d < 0)
+    is_local_maximum <- (dl < d) & (dr <= d)
+    isrbc <- is_right_root | is_local_maximum
+    isrbc[is.na(isrbc)] <- FALSE
+    # Is Right Border Candidate? Vector of booleans describing whether a certain
+    # position fulfills the criteria to be a right border. Example:
+    # isrbc == c(F, F, TRUE, F, TRUE, F, TRUE, TRUE, F, F)
+
+    rbc <- c(which(isrbc), NA)
+    # Right Border Candidates. Example:
+    # rbc == c(3, 5, 7, 8, NA)
+
+    rbci <- cumsum(isrbc) + 1
+    # Right Border Candidate Indices. I.e., for a peak at position i, rbci[i]
+    # gives the position of the nearest right border candidate in rbc. Example:
+    #
+    # rbci == c(1, 1, 2, 2, 3, 3, 4, 5, 5, 5)
+    #
+    # I.e., the first two positions (1:2) have their nearest right border
+    # candidate at rbc[1] (which points to position 3), the next two positions
+    # (3:4) have their nearest right border candidate at rbc[2] (== 5) and the
+    # next two positions (5:6) have their nearest right border candidate at
+    # rbc[3] (== 7). The next position (7) has its nearest right border
+    # candidate at rbc[4] (== 8) and the last three positions have their nearest
+    # right border candidate at rbc[5], which is NA, as there is no right border
+    # candidate after position 8.
+
+    rbc[rbci[pc]] # Right Borders.
+}
+
+get_left_borders_fast <- function(d, pc) {
+    nd <- length(d)
+    pcrev <- rev(length(d) - pc + 1)
+    drev <- rev(d)
+    lbrev <- get_right_borders_fast(drev, pcrev)
+    lb <- rev(nd - lbrev + 1)
+    lb
+}
+
+get_peak_scores_fast <- function(d, pc, lb, rb) {
+    # Calculate interval scores as minimum of left-to-center and center-to-right
+    # interval sums. Use cumsum for maximum speed. Prepend a zero so we can
+    # calculate interval sums as cumsum[pc+1]-cumsum[lb] instead of
+    # cumsum[pc]-cumsum[lb-1]. This way we don't need to handle the lb==1 case
+    # separately. Set scores to zero if lb or rb is NA.
+    a <- abs(d)
+    cumsum0 <- c(0, cumsum(replace(a, is.na(a), 0)))
+    sum_lj <- cumsum0[pc + 1] - cumsum0[lb]
+    sum_jr <- cumsum0[rb + 1] - cumsum0[pc]
+    score <- pmin(sum_lj, sum_jr)
+    score[is.na(score)] <- 0
+    score
+}
+
 # Helpers for fit_lorentz_curves #####
 
 #' @noRd
@@ -831,6 +1114,77 @@ init_lc <- function(spec, verbose = TRUE) {
     rc <- match(ic, lmr) # Rank of each PTP
     rl <- match(il, lmr) #
     x <- spec$sdp; y <- spec$y_smooth # X and Y value for each data point
+    xlmr <- x[lmr]; # X value for each PTP
+    yr <- y[ir]; yc <- y[ic]; yl <- y[il]; # Intensity of each PTP
+    xr <- x[ir]; xc <- x[ic]; xl <- x[il]; # Position of each PTP
+
+    # Replace shoulders
+    as <- (yr > yc) & (yc > yl) # Ascending shoulders (AS)
+    ds <- (yr < yc) & (yc < yl) # Descending shoulders (DS)
+    xl[ds] <- 2 * xc[ds] - xr[ds] # Replace DS with mirrored points (MP)
+    xr[as] <- 2 * xc[as] - xl[as] # Replace AS with MP
+    yl[ds] <- yr[ds] # Replace DS with MP
+    yr[as] <- yl[as] # Replace AS with MP
+
+    # Calculate distances
+    wr  <- xr - xr #
+    wc  <- xc - xr # Express positions wr/wc/wl as "distance to right border"
+    wl  <- xl - xr #
+    wrc <- wr - wc; wrl <- wr - wl; wcl <- wc - wl # x - distance between PTPs
+    yrc <- yr - yc; yrl <- yr - yl; ycl <- yc - yl # y - distance between PTPs
+
+    # Estimate parameters
+    w <- calc_w(wr, wc, wl, yr, yc, yl, wrc, wrl, wcl, yrc, yrl, ycl, xr)
+    lambda <- calc_lambda(wr, wc, wl, yr, yc, yl, wrc, wrl, wcl, yrc, yrl, ycl, xr)
+    A <- calc_A(wr, wc, wl, yr, yc, yl, wrc, wrl, wcl, yrc, yrl, ycl, lambda, w, xr)
+
+    # Calculate contribution of each lorentz curve to each PTP data point
+    Z <- matrix(0, nrow = length(lmr), ncol = length(ic)) # 3614 x 1227 urine_1
+    idx_A_non_zero <- which(A != 0)
+    for (j in idx_A_non_zero) {
+        Z[, j] <- abs(A[j] * (lambda[j] / (lambda[j]^2 + (xlmr - w[j])^2)))
+    }
+
+    # Print MSE
+    mse <- mse(y[lmr], rowSums(Z))
+    if (verbose) logf("MSE at peak tiplet positions: %.22f", mse)
+
+    # Create return list
+    P <- data.frame(il, ic, ir, rl, rc, rr, xl, xc, xr, yl, yc, yr, as, ds)
+    D <- data.frame(wl, wc, wr, wrc, wrl, wcl, yrc, yrl, ycl)
+    named(A, lambda, w, Z, D, P) # nolint: object_usage_linter
+}
+
+#' @noRd
+#' @title Initialize Lorentz Curve Parameters
+#' @param p
+#' data.frame with columns `center`, `left`, `right` and `high`, giving the
+#' indices of the datapoints identified as peak triplet positions (PTPs) and
+#' whether the peak is above the score threshold (`high == TRUE`) or not.
+#' @param x Vector of scaled data points (SDP).
+#' @param y Smoothed intensity values.
+#' @return
+#' A list with elements:
+#' * `A`: Area parameter of each Lorentz curve.
+#' * `lambda`: Width parameter of each Lorentz curve.
+#' * `w`: Position parameter of each Lorentz curve.
+#' * `Z`: Matrix with height of each Lorentz curve (col) at each PTP (row).
+#' * `D`: Data frame with distances between PTPs.
+#' * `P`: Data frame with information about each PTP.
+#' @author
+#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
+#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
+#' MetaboDecon1D.
+init_lc2 <- function(x, y, p, verbose = TRUE) {
+
+    # Init values
+    ir <- p$right[p$high]  #
+    ic <- p$center[p$high] # Index of each peak triplet position (PTP)
+    il <- p$left[p$high]   #
+    lmr <- sort(unique(c(il, ic, ir))) # Combined PTP indices
+    rr <- match(ir, lmr) #
+    rc <- match(ic, lmr) # Rank of each PTP
+    rl <- match(il, lmr) #
     xlmr <- x[lmr]; # X value for each PTP
     yr <- y[ir]; yc <- y[ic]; yl <- y[il]; # Intensity of each PTP
     xr <- x[ir]; xc <- x[ic]; xl <- x[il]; # Position of each PTP
@@ -982,6 +1336,15 @@ refine_lc_v14 <- function(spec, Z) {
     P <- data.frame(il, ic, ir, rl, rc, rr, xl, xc, xr, yl, yc, yr, sl, sc, sr, ql, qc, qr)
     D <- data.frame(wl, wc, wr, wrc, wrl, wcl, yrc, yrl, ycl)
     named(A, lambda, w, Z, D, P) # nolint: object_usage_linter
+}
+
+#' @noRd
+#' @author
+#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
+#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
+#' MetaboDecon1D.\cr
+refine_lc2 <- function(lc) {
+
 }
 
 #' @noRd

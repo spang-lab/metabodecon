@@ -1,7 +1,7 @@
 # testthat::skip_on_cran()
 # testthat::skip_on_ci()
 
-test_that("init_lorentz_curves works", {
+test_that("init_lc works", {
     sim <- metabodecon_file("sim_subset")
     obj <- MetaboDecon1D_silent(
         filepath = sim,

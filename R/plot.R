@@ -428,6 +428,9 @@ plot_spectrum <- function(x,
 #' centers of estimated, true or aligned lorentzian curves. Setting
 #' `tp_verts$show` to TRUE requires `truepar` to be set.
 #'
+#' @param ze_hline
+#' List of parameters passed to [abline()] when drawing a horizontal line at y = 0.
+#'
 #' @param al_arrows
 #' List of parameters passed to [arrows()] when drawing arrows between the
 #' estimated and aligned lorentzian curve centers.
@@ -439,10 +442,9 @@ plot_spectrum <- function(x,
 #' Parameters `bt_axis`, `lt_axis`, `tp_axis` and `rt_axis` all  support  option
 #' `n` and `digits`, where `n = 5` means "Draw 5 tickmarks over  the  full  axis
 #' range" and `digits = 3` means "round the label shown beside each tickmark  to
-#' 3 digits". If `n` is omitted, a suitable value is chosen automatically  using
-#' [axTicks()]. If `digits` is omitted, a default of `0:12` is used. Providing a
-#' vector of `digits` causes each digit to be tried until a digit is encountered
-#' that results in `n` unique labels. Example:
+#' 3 digits". If `n` or `digits` is omitted, a suitable value is chosen
+#' automatically. Providing a vector of `digits` causes each digit to be tried
+#' until a digit is encountered that results in `n` unique labels. Example:
 #'
 #' Assume we have `n = 4` and the corresponding  calculated  tickmark  positions
 #' are: 1.02421, 1.02542, 1.02663 and 1.02784. If we provide `digits = 1:5`, the
@@ -450,7 +452,7 @@ plot_spectrum <- function(x,
 #'
 #' | digit  | label 1 | label 2 | label 3 | label 4 |
 #' | ------ | ------- | ------- | ------- | ------- |
-#' | 1      | 1.0     | 1.0     | 1.0     | 1.0      |
+#' | 1      | 1.0     | 1.0     | 1.0     | 1.0     |
 #' | 2      | 1.02    | 1.03    | 1.03    | 1.03    |
 #' | 3      | 1.024   | 1.025   | 1.027   | 1.028   |
 #' | 4      | 1.0242  | 1.0254  | 1.0266  | 1.0278  |
@@ -478,14 +480,15 @@ draw_spectrum <- function(
     show      = TRUE,   show_d2  = FALSE,  truepar  = NULL,
     mar       = c(4.1, 5.1, 1.1, 1.1),
     sf_vert   = "auto",
-    si_line   = list(), sm_line  = list(), sp_line  = list(),
+    si_line   = list(), sm_line  = list(), sp_line   = list(),
     d2_line   = list(), al_line  = list(),
-    lc_lines  = list(), tp_lines = list(), al_lines = list(),
-    cent_pts  = list(), bord_pts = list(), norm_pts = list(),
-    bg_rect   = list(), foc_rect = list(), lc_rects = list(), tp_rects = list(),
-    bt_axis   = list(), lt_axis  = list(), tp_axis  = list(), rt_axis  = list(),
-    bt_text   = list(), lt_text  = list(), tp_text  = list(), rt_text  = list(),
-    tp_verts  = list(), lc_verts = list(), al_verts = list(),
+    lc_lines  = list(), tp_lines = list(), al_lines  = list(),
+    cent_pts  = list(), bord_pts = list(), norm_pts  = list(),
+    bg_rect   = list(), foc_rect = list(), lc_rects  = list(), tp_rects = list(),
+    bt_axis   = list(), lt_axis  = list(), tp_axis   = list(), rt_axis  = list(),
+    bt_text   = list(), lt_text  = list(), tp_text   = list(), rt_text  = list(),
+    tp_verts  = list(), lc_verts = list(), al_verts  = list(),
+    ze_hline  = list(),
     al_arrows = list(),
     lgd       = list()
 ) {
@@ -642,10 +645,13 @@ draw_spectrum <- function(
     draw_line(cs, si, si_line)
     draw_line(cs, sm, sm_line)
     draw_line(cs, d2, d2_line)
+    # Zero Horizontal Line
+    draw_hline(0, ze_hline)
     # Points
-    draw_points(cs[icp], sm[icp], cent_pts)
-    draw_points(cs[ibp], sm[ibp], bord_pts)
-    draw_points(cs[inp], sm[inp], norm_pts)
+    ypts <- if (show_d2) d2 else sm
+    draw_points(cs[icp], ypts[icp], cent_pts)
+    draw_points(cs[ibp], ypts[ibp], bord_pts)
+    draw_points(cs[inp], ypts[inp], norm_pts)
     # Deconvolution Lines
     draw_line(cs, sup, sp_line)
     apply(lcpar, 1, draw_lc_line, cs, lc_lines, ythresh) # 13ms
@@ -674,7 +680,8 @@ draw_spectrum <- function(
     draw_legend(
         lgd, si_line, sm_line, lc_lines, sp_line, d2_line,
         cent_pts, bord_pts, norm_pts,
-        lc_verts, tp_verts
+        lc_verts, tp_verts,
+        ze_hline
     )
     list(
         plt_rgn_ndc = usr_to_ndc(c(xlim, ylim)),
@@ -1066,7 +1073,8 @@ plot_dummy <- function(text = "Dummy Text") {
 #' @author 2024-2025 Tobias Schmidt: initial version.
 draw_legend <- function(args, si_line, sm_line, lc_lines, sp_line, d2_line,
                         cent_pts, bord_pts, norm_pts,
-                        lc_verts, tp_verts) {
+                        lc_verts, tp_verts,
+                        ze_hline) {
     if (isFALSE(pop(args, "show"))) return()
     lins <- list("Raw Signal" = si_line,
                  "Smoothed Signal" = sm_line,
@@ -1078,20 +1086,28 @@ draw_legend <- function(args, si_line, sm_line, lc_lines, sp_line, d2_line,
                  "NonPeak Point" = norm_pts)
     vrts <- list("Estimated Center" = lc_verts,
                  "True Center" = tp_verts)
+    hlns <- list("Zero Line" = ze_hline)
     is_visible <- function(x) isTRUE(x$show)
     lins <- lins[sapply(lins, is_visible)]
     pnts <- pnts[sapply(pnts, is_visible)]
     vrts <- vrts[sapply(vrts, is_visible)]
-    objs <- c(lins, pnts, vrts)
+    hlns <- hlns[sapply(hlns, is_visible)]
+    objs <- c(lins, pnts, vrts, hlns)
     if (length(objs) == 0) return()
     args$legend <- names(objs)
     args$col <- sapply(objs, function(obj) obj$col %||% "black")
-    args$lty <- c(  sapply(lins, function(obj) obj$lty %||% 1),
-                    rep(NA, length(pnts)),
-                    rep(NA, length(vrts))   )
-    args$pch <- c(  rep(NA, length(lins)),
-                    sapply(pnts, function(obj) obj$pch %||% 1),
-                    rep(124, length(vrts))  )
+    args$lty <- c(
+        unlist(sapply(lins, function(obj) obj$lty %||% 1)),
+        unlist(rep(NA, length(pnts))),
+        unlist(rep(NA, length(vrts))),
+        unlist(sapply(hlns, function(obj) obj$lty %||% 1))
+    )
+    args$pch <- c(
+        unlist(rep(NA, length(lins))),
+        unlist(sapply(pnts, function(obj) obj$pch %||% 1)),
+        unlist(rep(124, length(vrts))),
+        unlist(rep(NA, length(hlns)))
+    )
     args$x <- args$x %||% "topright"
     do.call(legend, args)
 }
@@ -1149,7 +1165,9 @@ draw_lc_rect <- function(p, x, args = list(), ymin = 0) {
 draw_axis <- function(lim, side = 1, args = list()) {
     if (isFALSE(pop(args, "show"))) return()
     n          <- pop(args, "n", default = 5)
-    digits     <- pop(args, "digits", default = 0:12)
+    cs_width   <- max(lim) - min(lim)
+    min_digit  <- min(max(0, floor(2 - log10(cs_width))), 12)
+    digits     <- pop(args, "digits", default = min_digit:12)
     sf         <- pop(args, "sf", default = 1)
     skip_first <- pop(args, "skip_first", FALSE)
     skip_last  <- pop(args, "skip_last", FALSE)
@@ -1215,6 +1233,15 @@ draw_line <- function(x, y, args = list()) {
     args$x <- x
     args$y <- y
     do.call(lines, args)
+}
+
+draw_hline <- function(y, args = list()) {
+    if (isFALSE(pop(args, "show"))) return()
+    args$x0 <- par("usr")[1]
+    args$x1 <- par("usr")[2]
+    args$y0 <- y
+    args$y1 <- y
+    do.call(segments, args)
 }
 
 #' @noRd
@@ -1389,6 +1416,8 @@ get_draw_spectrum_defaults <- function(show_d2 = FALSE,
         al_lines  = list(show = show_al && foc_only, col = "thistle4", fill = transp("thistle1", 0.5)),
         al_verts  = list(show = show_al, col = "thistle4"),
         al_arrows = list(show = show_al, col = "darkgrey", lty = 2),
+        # Zero Line
+        ze_hline  = list(show = show_d2, col = "black", lty = 3),
         # Points
         cent_pts  = list(show = show_si && foc_only, col = "blue", bg = "blue", pch = 24),
         bord_pts  = list(show = FALSE, col = "blue", pch = 124),

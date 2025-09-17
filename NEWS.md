@@ -1,3 +1,10 @@
+# metabodecon 1.6.0
+
+* Updated Getting-Started vignette to use `deconvolute()` instead of
+  `generate_lorentz_curves()`.
+* Fixed a bug in `find_peaks()` that sometimes caused the borders of a peak to
+  be chosen suboptimally. The new implementation is also about 100 times faster.
+
 # metabodecon 1.5.2
 
 * Removed all links to the old `TODOS.md` and `ARCHIVE.md` from the package
@@ -287,7 +294,7 @@ Internal:
   pkgdown articles which will be displayed only at our Github Pages website and
   can be regenerated from folder `vignettes` upon deployment.
 * Created `TODOS.md` and added it to `.Rbuildignore` (Update 2025-09-14: TODOS
-  are no longer tracked in a separate file, but outside of the repository. To
+  are no longer tracked in `TODOS.md`, but outside of the repository. To
   retrieve the last actively maintained version of `TODOS.md`, checkout commit
   8b1f61b, i.e., v1.5.0.)
 * Improved `.gitignore`

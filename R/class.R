@@ -389,6 +389,12 @@ as_spectrum <- function(x, sf = c(1e3, 1e6)) {
         meta <- named(name, fq)
         obj <- named(cs, si, meta)
         return(structure(obj, class = "spectrum"))
+    } else if (is_ispec(x)) {
+        cs <- x$ppm
+        si <- x$y_raw
+        meta <- x$meta
+        obj <- named(cs, si, meta)
+        return(structure(obj, class = "spectrum"))
     } else {
         msg <- "Converting %s to spectrum is not suppoorted"
         msg <- sprintf(msg, class(x)[1])
@@ -790,10 +796,10 @@ as_decon2.rdecon <- function(x, ...) {
         smnorm = mse(sm, sup, norm=TRUE)
         # (1) x$mdrb_decon$mse() deviates from mse() results, so we need to
         # calculate ourselves until Rust backend provides the correct values
-        # (see TODOS.md). (Update 2025-09-14: TODOS are no longer tracked in a
-        # separate file, but outside of the repository. To retrieve the last
-        # actively maintained version of `TODOS.md`, checkout commit 8b1f61b,
-        # i.e., v1.5.0.)
+        # (see TODOS.md). (Update 2025-09-14: TODOS are no longer tracked in
+        # TODOS.md, but outside of the repository. To retrieve the last actively
+        # maintained version of TODOS.md, checkout commit 8b1f61b, i.e.,
+        # v1.5.0.)
     )
     peak <- get_peak(lcpar$x0, cs) # Should be provided directly by Rust backend in future versions
     obj <- named(cs, si, meta, args, sit, peak, lcpar, mse)

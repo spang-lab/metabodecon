@@ -31,7 +31,7 @@ Represents one deconvoluted NMR spectrum stored in the new [deconvolute()] forma
 
 ## align
 
-Represents one deconvoluted NMR spectrum for which the individual peaks have been aligned using [align()]. Objects of class 'align' have all elements from section [Elements v1.2+].
+Represents one deconvoluted NMR spectrum for which the individual peaks have been aligned using `align()`. Objects of class 'align' have all elements from section [Elements v1.2+].
 
 ## Collections
 
