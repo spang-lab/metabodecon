@@ -15,8 +15,7 @@ plot_spectrum(
   sub3 = width(foc_rgn) < width(obj$cs),
   mar = NULL,
   frame = FALSE,
-  con_lines = TRUE,
-  verbose = FALSE
+  con_lines = TRUE
 )
 }
 \arguments{

@@ -304,7 +304,7 @@ deconvolute_spectrum2 <- function(x,
         wsrm <- rm_water_signal2(x$cs, x$si, wshw)
         nvrm <- rm_negative_signals2(wsrm)
         sm <- smooth_signals2(nvrm, smopts[1], smopts[2])
-        peak2 <- find_peaks2(sm)
+        peak <- find_peaks2(sm)
         # CONTINUE HERE
         ispec <- filter_peaks(ispec, sfr, delta, force, bwc)
         ispec <- fit_lorentz_curves(ispec, nfit, bwc)

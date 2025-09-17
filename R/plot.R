@@ -275,8 +275,7 @@ plot_spectrum <- function(x,
                           sub3 = width(foc_rgn) < width(obj$cs),
                           mar  = NULL,
                           frame = FALSE,
-                          con_lines = TRUE,
-                          verbose = FALSE)
+                          con_lines = TRUE)
 {
 
     # Check and parse inputs
@@ -291,7 +290,6 @@ plot_spectrum <- function(x,
     sub3 <- combine(list(show = width(foc_rgn) < width(obj$cs)), sub3)
     frame <- combine(list(show = FALSE), frame)
     con_lines <- combine(list(show = TRUE), con_lines)
-    if (!verbose) local_options(toscutil.logf.file = nullfile())
 
     # Setup Plotting Canvas
     three_plus_layout <- sub3$show && any(sub1$show, sub2$show)
@@ -303,13 +301,9 @@ plot_spectrum <- function(x,
     args <- get_sub_fig_args(obj, foc_frac, foc_rgn, sub1, sub2, sub3, dot_args)
 
     # Draw Sub-Figures
-    logf("Drawing Sub-Figure 1")
     fig1 <- do.call(draw_spectrum, args$sub1)
-    logf("Drawing Sub-Figure 2")
     fig2 <- do.call(draw_spectrum, args$sub2)
-    logf("Drawing Sub-Figure 3")
     fig3 <- do.call(draw_spectrum, args$sub3)
-    logf("Drawing Connection lines")
     figC <- draw_con_lines(fig1 %||% fig2, fig3, con_lines)
     figF <- draw_box(frame)
 
