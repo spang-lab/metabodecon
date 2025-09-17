@@ -44,7 +44,7 @@ test/testthat/test-draw_spectrum.R.
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.svg" class="logo" alt=""><h1>Draw Spectrum</h1>
-      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/main/R/plot.R" class="external-link"><code>R/plot.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/v1.6.3/R/plot.R" class="external-link"><code>R/plot.R</code></a></small>
       <div class="d-none name"><code>draw_spectrum.Rd</code></div>
     </div>
 
@@ -264,25 +264,25 @@ point we have n = 4 unique labels (1.024, 1.025, 1.027 and 1.028).</p>
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">decon</span> <span class="op">&lt;-</span> <span class="fu"><a href="deconvolute.html">deconvolute</a></span><span class="op">(</span><span class="va">sim</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>, sfr <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3.55</span>, <span class="fl">3.35</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 19:36:07.86 Starting deconvolution of 1 spectrum using 1 worker</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 19:36:07.86 Starting deconvolution of sim_01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 19:36:07.86 Removing water signal</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 19:36:07.86 Removing negative signals</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 19:36:07.86 Smoothing signals</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 19:36:07.87 Starting peak selection</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 19:36:07.87 Detected 314 peaks</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 19:36:07.87 Detected 314 peaks</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 19:36:07.87 Removing peaks with low scores</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 19:36:07.87 Removed 287 peaks</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 19:36:07.87 Initializing Lorentz curves</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 19:36:07.87 MSE at peak tiplet positions: 4.0838805770844048836921</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 19:36:07.87 Refining Lorentz Curves</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 19:36:07.87 MSE at peak tiplet positions: 0.1609359876216345797140</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 19:36:07.88 MSE at peak tiplet positions: 0.0228015051613790313556</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 19:36:07.88 MSE at peak tiplet positions: 0.0071638016610617799920</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 19:36:07.88 Formatting return object as decon2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 19:36:07.88 Finished deconvolution of sim_01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 19:36:07.89 Finished deconvolution of 1 spectrum in 0.022 secs</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 19:41:15.57 Starting deconvolution of 1 spectrum using 1 worker</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 19:41:15.57 Starting deconvolution of sim_01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 19:41:15.57 Removing water signal</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 19:41:15.57 Removing negative signals</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 19:41:15.57 Smoothing signals</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 19:41:15.58 Starting peak selection</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 19:41:15.58 Detected 314 peaks</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 19:41:15.58 Detected 314 peaks</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 19:41:15.58 Removing peaks with low scores</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 19:41:15.58 Removed 287 peaks</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 19:41:15.58 Initializing Lorentz curves</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 19:41:15.58 MSE at peak tiplet positions: 4.0838805770844048836921</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 19:41:15.58 Refining Lorentz Curves</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 19:41:15.58 MSE at peak tiplet positions: 0.1609359876216345797140</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 19:41:15.58 MSE at peak tiplet positions: 0.0228015051613790313556</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 19:41:15.59 MSE at peak tiplet positions: 0.0071638016610617799920</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 19:41:15.59 Formatting return object as decon2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 19:41:15.59 Finished deconvolution of sim_01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 19:41:15.59 Finished deconvolution of 1 spectrum in 0.021 secs</span>
 <span class="r-in"><span><span class="fu">draw_spectrum</span><span class="op">(</span>obj <span class="op">=</span> <span class="va">decon</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="draw_spectrum-1.png" alt="" width="700" height="433"></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $plt_rgn_ndc</span>
