@@ -13,7 +13,7 @@ test/testthat/test-draw_spectrum.R.
 
     <a class="navbar-brand me-2" href="../index.html">metabodecon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.5.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.6.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -44,7 +44,7 @@ test/testthat/test-draw_spectrum.R.
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.svg" class="logo" alt=""><h1>Draw Spectrum</h1>
-      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/v1.5.1/R/plot.R" class="external-link"><code>R/plot.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/v1.6.0/R/plot.R" class="external-link"><code>R/plot.R</code></a></small>
       <div class="d-none name"><code>draw_spectrum.Rd</code></div>
     </div>
 
@@ -96,6 +96,7 @@ usually  the  recommended  way  to  plot  spectra.  For  usage  examples  see
 <span>  tp_verts <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  lc_verts <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  al_verts <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  ze_hline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  al_arrows <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  lgd <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -225,6 +226,10 @@ centers of estimated, true or aligned lorentzian curves. Setting
 <code>tp_verts$show</code> to TRUE requires <code>truepar</code> to be set.</p></dd>
 
 
+<dt id="arg-ze-hline">ze_hline<a class="anchor" aria-label="anchor" href="#arg-ze-hline"></a></dt>
+<dd><p>List of parameters passed to <code><a href="https://rdrr.io/r/graphics/abline.html" class="external-link">abline()</a></code> when drawing a horizontal line at y = 0.</p></dd>
+
+
 <dt id="arg-al-arrows">al_arrows<a class="anchor" aria-label="anchor" href="#arg-al-arrows"></a></dt>
 <dd><p>List of parameters passed to <code><a href="https://rdrr.io/r/graphics/arrows.html" class="external-link">arrows()</a></code> when drawing arrows between the
 estimated and aligned lorentzian curve centers.</p></dd>
@@ -243,10 +248,9 @@ estimated and aligned lorentzian curve centers.</p></dd>
     <p>Parameters <code>bt_axis</code>, <code>lt_axis</code>, <code>tp_axis</code> and <code>rt_axis</code> all  support  option
 <code>n</code> and <code>digits</code>, where <code>n = 5</code> means "Draw 5 tickmarks over  the  full  axis
 range" and <code>digits = 3</code> means "round the label shown beside each tickmark  to
-3 digits". If <code>n</code> is omitted, a suitable value is chosen automatically  using
-<code><a href="https://rdrr.io/r/graphics/axTicks.html" class="external-link">axTicks()</a></code>. If <code>digits</code> is omitted, a default of <code>0:12</code> is used. Providing a
-vector of <code>digits</code> causes each digit to be tried until a digit is encountered
-that results in <code>n</code> unique labels. Example:</p>
+3 digits". If <code>n</code> or <code>digits</code> is omitted, a suitable value is chosen
+automatically. Providing a vector of <code>digits</code> causes each digit to be tried
+until a digit is encountered that results in <code>n</code> unique labels. Example:</p>
 <p>Assume we have <code>n = 4</code> and the corresponding  calculated  tickmark  positions
 are: 1.02421, 1.02542, 1.02663 and 1.02784. If we provide <code>digits = 1:5</code>, the
 following representations are tried:</p><table class="table table"><tr><td>digit</td><td>label 1</td><td>label 2</td><td>label 3</td><td>label 4</td></tr><tr><td>1</td><td>1.0</td><td>1.0</td><td>1.0</td><td>1.0</td></tr><tr><td>2</td><td>1.02</td><td>1.03</td><td>1.03</td><td>1.03</td></tr><tr><td>3</td><td>1.024</td><td>1.025</td><td>1.027</td><td>1.028</td></tr><tr><td>4</td><td>1.0242</td><td>1.0254</td><td>1.0266</td><td>1.0278</td></tr><tr><td>5</td><td>1.02421</td><td>1.02542</td><td>1.02663</td><td>1.02784</td></tr></table><p>In the above example the process would stop at <code>digit = 3</code>, because  at  this
@@ -260,24 +264,25 @@ point we have n = 4 unique labels (1.024, 1.025, 1.027 and 1.028).</p>
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">decon</span> <span class="op">&lt;-</span> <span class="fu"><a href="deconvolute.html">deconvolute</a></span><span class="op">(</span><span class="va">sim</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>, sfr <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3.55</span>, <span class="fl">3.35</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 14:04:07.97 Starting deconvolution of 1 spectrum using 1 worker</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 14:04:07.98 Starting deconvolution of sim_01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 14:04:07.98 Removing water signal</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 14:04:07.98 Removing negative signals</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 14:04:07.98 Smoothing signals</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 14:04:07.98 Starting peak selection</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 14:04:08.00 Detected 314 peaks</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 14:04:08.00 Removing peaks with low pscores</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 14:04:08.00 Removed 287 peaks</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 14:04:08.00 Initializing Lorentz curves</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 14:04:08.00 MSE at peak tiplet positions: 4.0838805770844048836921</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 14:04:08.00 Refining Lorentz Curves</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 14:04:08.00 MSE at peak tiplet positions: 0.1609359876216345797140</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 14:04:08.01 MSE at peak tiplet positions: 0.0228015051613790313556</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 14:04:08.01 MSE at peak tiplet positions: 0.0071638016610617799920</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 14:04:08.01 Formatting return object as decon2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 14:04:08.02 Finished deconvolution of sim_01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 14:04:08.02 Finished deconvolution of 1 spectrum in 0.04 secs</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 14:07:08.23 Starting deconvolution of 1 spectrum using 1 worker</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 14:07:08.23 Starting deconvolution of sim_01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 14:07:08.23 Removing water signal</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 14:07:08.23 Removing negative signals</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 14:07:08.23 Smoothing signals</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 14:07:08.23 Starting peak selection</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 14:07:08.23 Detected 314 peaks</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 14:07:08.23 Detected 314 peaks</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 14:07:08.23 Removing peaks with low scores</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 14:07:08.23 Removed 287 peaks</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 14:07:08.23 Initializing Lorentz curves</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 14:07:08.23 MSE at peak tiplet positions: 4.0838805770844048836921</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 14:07:08.24 Refining Lorentz Curves</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 14:07:08.24 MSE at peak tiplet positions: 0.1609359876216345797140</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 14:07:08.24 MSE at peak tiplet positions: 0.0228015051613790313556</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 14:07:08.24 MSE at peak tiplet positions: 0.0071638016610617799920</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 14:07:08.24 Formatting return object as decon2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 14:07:08.25 Finished deconvolution of sim_01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2025-09-17 14:07:08.25 Finished deconvolution of 1 spectrum in 0.022 secs</span>
 <span class="r-in"><span><span class="fu">draw_spectrum</span><span class="op">(</span>obj <span class="op">=</span> <span class="va">decon</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="draw_spectrum-1.png" alt="" width="700" height="433"></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $plt_rgn_ndc</span>
