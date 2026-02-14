@@ -389,9 +389,10 @@ plot_spectrum <- function(x,
 #' aligned lorentzian curves (al_lines),
 #' respectively.
 #'
-#' @param cent_pts,bord_pts,norm_pts
-#' List of parameters passed to [points()] when drawing the peak center  points,
-#' peak border points and non-peak points.
+#' @param cent_pts,tp_pts,fp_pts,miss_pts,bord_pts,norm_pts
+#' List of parameters passed to [points()] when drawing the peak center points,
+#' true positive peaks, false positive peaks, missed peaks, peak border points
+#' and non-peak points.
 #'
 #' @param bg_rect,lc_rects,foc_rect,tp_rects
 #' List of parameters passed to [rect()] when drawing the background, lorentzian
@@ -483,7 +484,8 @@ draw_spectrum <- function(
     si_line   = list(), sm_line  = list(), sp_line   = list(),
     d2_line   = list(), al_line  = list(),
     lc_lines  = list(), tp_lines = list(), al_lines  = list(),
-    cent_pts  = list(), bord_pts = list(), norm_pts  = list(),
+    cent_pts  = list(), tp_pts   = list(), fp_pts    = list(),
+    miss_pts  = list(), bord_pts = list(), norm_pts  = list(),
     bg_rect   = list(), foc_rect = list(), lc_rects  = list(), tp_rects = list(),
     bt_axis   = list(), lt_axis  = list(), tp_axis   = list(), rt_axis  = list(),
     bt_text   = list(), lt_text  = list(), tp_text   = list(), rt_text  = list(),
@@ -512,7 +514,10 @@ draw_spectrum <- function(
     for (var in names(defaults)) {
         env[[var]] <- combine(defaults[[var]], env[[var]], var)
     }
-    decon_only <- c("sm_line", "lc_lines", "sp_line", "lc_rects", "cent_pts", "bord_pts")
+    decon_only <- c(
+        "sm_line", "lc_lines", "sp_line", "lc_rects",
+        "cent_pts", "tp_pts", "fp_pts", "miss_pts", "bord_pts"
+    )
     align_only <- c("al_line", "al_verts", "al_arrows")
     if (is_spectrum(obj)) for (var in decon_only) env[[var]]$show <- FALSE
     if (!is_align(obj)) for (var in align_only) env[[var]]$show <- FALSE
@@ -563,14 +568,21 @@ draw_spectrum <- function(
     truepar <- truepar %||% obj$meta$simpar
     trpar <- if (is.null(truepar)) {
         warnmsg <- "True params missing. Provide 'truepar' or unset 'tp_*' arguments."
-        if (any(tp_rects$show, tp_lines$show, tp_verts$show)) warning(warnmsg, call. = FALSE)
+        if (any(tp_rects$show, tp_lines$show, tp_verts$show,
+                tp_pts$show, fp_pts$show, miss_pts$show)) {
+            warning(warnmsg, call. = FALSE)
+        }
         tp_rects$show <- FALSE
         tp_lines$show <- FALSE
         tp_verts$show <- FALSE
+        tp_pts$show <- FALSE
+        fp_pts$show <- FALSE
+        miss_pts$show <- FALSE
         empty_df(c("x0", "A", "lambda"))
     } else {
         as.data.frame(truepar[c("x0", "A", "lambda")])
     }
+
 
     # Calculate amplitude and display height for estimated and true lorentzians
     if (nrow(lcpar) > 0) {
@@ -652,6 +664,7 @@ draw_spectrum <- function(
     draw_points(cs[icp], ypts[icp], cent_pts)
     draw_points(cs[ibp], ypts[ibp], bord_pts)
     draw_points(cs[inp], ypts[inp], norm_pts)
+    draw_prarp_pts(cs, si, trpar, lcpar, tp_pts, fp_pts, miss_pts)
     # Deconvolution Lines
     draw_line(cs, sup, sp_line)
     apply(lcpar, 1, draw_lc_line, cs, lc_lines, ythresh) # 13ms
@@ -679,7 +692,7 @@ draw_spectrum <- function(
     # Legend
     draw_legend(
         lgd, si_line, sm_line, lc_lines, sp_line, d2_line,
-        cent_pts, bord_pts, norm_pts,
+        cent_pts, tp_pts, fp_pts, miss_pts, bord_pts, norm_pts,
         lc_verts, tp_verts,
         ze_hline
     )
@@ -1072,7 +1085,7 @@ plot_dummy <- function(text = "Dummy Text") {
 #' @noRd
 #' @author 2024-2025 Tobias Schmidt: initial version.
 draw_legend <- function(args, si_line, sm_line, lc_lines, sp_line, d2_line,
-                        cent_pts, bord_pts, norm_pts,
+                        cent_pts, tp_pts, fp_pts, miss_pts, bord_pts, norm_pts,
                         lc_verts, tp_verts,
                         ze_hline) {
     if (isFALSE(pop(args, "show"))) return()
@@ -1082,6 +1095,9 @@ draw_legend <- function(args, si_line, sm_line, lc_lines, sp_line, d2_line,
                  "Sum of Lorentzians" = sp_line,
                  "Second Derivative" = d2_line)
     pnts <- list("Center Point" = cent_pts,
+                 "True Positive" = tp_pts,
+                 "False Positive" = fp_pts,
+                 "Missed Peak" = miss_pts,
                  "Border Point" = bord_pts,
                  "NonPeak Point" = norm_pts)
     vrts <- list("Estimated Center" = lc_verts,
@@ -1109,6 +1125,7 @@ draw_legend <- function(args, si_line, sm_line, lc_lines, sp_line, d2_line,
         unlist(rep(NA, length(hlns)))
     )
     args$x <- args$x %||% "topright"
+    args$y.intersp <- args$y.intersp %||% 0.5
     do.call(legend, args)
 }
 
@@ -1287,6 +1304,80 @@ draw_points <- function(x, y, args = list()) {
     do.call(points, args)
 }
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
+get_prarp_match <- function(trpar, lcpar, tp_pts, fp_pts, miss_pts, tol = 0.001) {
+    tp_x <- fp_x <- miss_x <- numeric(0)
+    if (!any(tp_pts$show, fp_pts$show, miss_pts$show)) {
+        return(list(tp_x = tp_x, fp_x = fp_x, miss_x = miss_x))
+    }
+    if (nrow(trpar) == 0 || nrow(lcpar) == 0) {
+        tp_pts$show <- FALSE
+        fp_pts$show <- FALSE
+        miss_pts$show <- FALSE
+        return(list(tp_x = tp_x, fp_x = fp_x, miss_x = miss_x))
+    }
+
+    x0_true <- trpar$x0
+    x0_found <- lcpar$x0
+    idx_true <- sapply(x0_found, function(x0) {
+        which.min(abs(x0_true - x0))
+    })
+    dist_found <- abs(x0_found - x0_true[idx_true])
+    found_correct <- dist_found < tol
+
+    idx_found <- sapply(x0_true, function(x0) {
+        which.min(abs(x0_found - x0))
+    })
+    dist_true <- abs(x0_true - x0_found[idx_found])
+    true_found <- dist_true < tol
+
+    tp_x <- x0_found[found_correct]
+    fp_x <- x0_found[!found_correct]
+    miss_x <- x0_true[!true_found]
+    list(tp_x = tp_x, fp_x = fp_x, miss_x = miss_x)
+}
+
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
+draw_prarp_pts <- function(cs, si, trpar, lcpar, tp_pts, fp_pts, miss_pts) {
+    match <- get_prarp_match(trpar, lcpar, tp_pts, fp_pts, miss_pts)
+    tp_x <- match$tp_x
+    fp_x <- match$fp_x
+    miss_x <- match$miss_x
+    if (length(tp_x) == 0 && length(fp_x) == 0 && length(miss_x) == 0) return()
+    xmin <- min(cs)
+    xmax <- max(cs)
+    tp_x <- tp_x[tp_x >= xmin & tp_x <= xmax]
+    fp_x <- fp_x[fp_x >= xmin & fp_x <= xmax]
+    miss_x <- miss_x[miss_x >= xmin & miss_x <= xmax]
+    tp_y <- if (length(tp_x) > 0) calc_y0(cs, si, tp_x) else numeric(0)
+    fp_y <- if (length(fp_x) > 0) calc_y0(cs, si, fp_x) else numeric(0)
+    miss_y <- if (length(miss_x) > 0) calc_y0(cs, si, miss_x) else numeric(0)
+    ensure_filled_tri <- function(args) {
+        if (is.null(args$pch)) args$pch <- 24
+        if (args$pch %in% 21:25 && is.null(args$bg)) {
+            args$bg <- args$col %||% "black"
+        }
+        args
+    }
+    draw_points(tp_x, tp_y, ensure_filled_tri(tp_pts))
+    draw_points(fp_x, fp_y, ensure_filled_tri(fp_pts))
+    draw_points(miss_x, miss_y, ensure_filled_tri(miss_pts))
+}
+
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
+calc_y0 <- function(x, y, x0) {
+    i0 <- convert_pos(x0, x, seq_along(x))
+    i0_floor <- floor(i0)
+    i0_ceil <- ceiling(i0)
+    i0_frac <- i0 - i0_floor
+    y_floor <- y[i0_floor]
+    y_ceil <- y[i0_ceil]
+    y_floor + (y_ceil - y_floor) * i0_frac
+}
+
 # Get Helpers (Private) #####
 
 #' @noRd
@@ -1419,7 +1510,10 @@ get_draw_spectrum_defaults <- function(show_d2 = FALSE,
         # Zero Line
         ze_hline  = list(show = show_d2, col = "black", lty = 3),
         # Points
-        cent_pts  = list(show = show_si && foc_only, col = "blue", bg = "blue", pch = 24),
+        cent_pts  = list(show = FALSE, col = "blue", bg = "blue", pch = 24),
+        tp_pts    = list(show = show_si, col = "darkgreen", pch = 24),
+        fp_pts    = list(show = show_si, col = "red", pch = 24),
+        miss_pts  = list(show = show_si, col = "orange", pch = 24),
         bord_pts  = list(show = FALSE, col = "blue", pch = 124),
         norm_pts  = list(show = FALSE, col = "black", pch = 124),
         # Backgrounds
