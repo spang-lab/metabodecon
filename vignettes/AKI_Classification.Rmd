@@ -1,0 +1,49 @@
+---
+title: "AKI Classification"
+output: rmarkdown::html_vignette
+css: styles.css
+vignette: >
+  %\VignetteIndexEntry{AKI Classification}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r set-defaults, echo=FALSE, results=FALSE, message=FALSE}
+source("knitr_setup.R")
+```
+
+This article shows how Metabodecon can be used for deconvolution and alignment
+in a supervised classification task on the AKI dataset. The AKI dataset consists
+of 1D-NMR urine spectra from patients with acute kidney injury collected 24 h
+after surgery in Erlangen. Phenodata can be obtained with
+`download_aki_dataset()`, while the raw spectra are available on `r4` at
+`/data/aki/AKI-Studie_Urin_Erlangen/` for authorized users.
+
+# Estimation of End-to-End Performance through Classification
+
+To estimate the end-to-end performance of metabodecon in comparison to other,
+established methods, we evaluated its deconvolution and alignment workflow
+against three commonly used preprocessing strategies in a supervised
+classification setting: equidistant binning, wavelet-based peak detection and
+alignment using speaq, and the automated peak picking and alignment procedure
+implemented in Bruker TopSpin. Equidistant binning represents a widely adopted
+and robust baseline in NMR metabolomics (Emwas et al., 2019), while
+wavelet-based peak detection has been shown to improve peak localization and
+noise robustness compared to fixed binning approaches (Vu et al., 2011; Vu et
+al., 2019). Vendor-provided pipelines such as TopSpin reflect common analytical
+practice and therefore constitute a relevant real-world reference. Each
+preprocessing method yielded a feature matrix of aligned chemical shift
+positions with corresponding peak integrals or binned intensities. To assess
+discriminative performance between AKI patients and controls, we trained
+logistic regression models with an elastic-net penalty, which is well suited for
+high-dimensional, correlated metabolomics data with limited sample size (Zou &
+Hastie, 2005; Kirpich et al., 2018). Model hyperparameters (regularization
+strength and mixing parameter) were tuned using nested cross-validation, and
+predictive performance was quantified by balanced accuracy and area under the
+ROC curve (AUROC), with feature scaling performed within each training fold to
+prevent information leakage. This evaluation framework ensures an unbiased
+comparison of preprocessing strategies and quantifies their full end-to-end
+discriminative performance.
+
+
+<!-- Footnotes -->

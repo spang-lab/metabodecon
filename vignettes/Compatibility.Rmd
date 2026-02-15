@@ -1,6 +1,7 @@
 ---
 title: "Compatibility"
 output: rmarkdown::html_vignette
+css: styles.css
 vignette: >
   %\VignetteIndexEntry{Compatibility}
   %\VignetteEngine{knitr::rmarkdown}

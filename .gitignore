@@ -21,3 +21,4 @@ inst/doc/
 tests/testthat_outputs/
 tmp
 vdiffr.Rout.fail
+misc/example_datasets/bruker/aki/

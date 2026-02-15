@@ -1,0 +1,36 @@
+/*
+IMPORTANT: pkgdown articles [^1] and rmarkdown html vignettes [^2] generate
+different HTML elements from the same rmarkdown content. Therefore we need to
+handle both use cases. In particular, articles use <figure> and <caption>
+elements, where vignettes use <div class="figure"> and <p class="caption">
+elements.
+
+[^1] built using pkgdown::build_article()
+[^2] built using rmarkdown::render()
+*/
+figure,
+div.figure {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 0;
+    margin: 1em 0;
+}
+caption,
+p.caption {
+    text-align: center;
+    font-style: italic;
+    border-top: 1px solid #dee2e6;
+    padding: 0.75rem;
+    background-color: #ffffff;
+}
+img {
+    margin: 0 auto;
+    padding: 0;
+    border: none;
+    width: 50%;
+}
+@media (max-width: 500px) {
+    img {
+        width: 100%;
+    }
+}

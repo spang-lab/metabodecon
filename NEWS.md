@@ -1,3 +1,8 @@
+# metabodecon 1.6.3-branch:paper
+
+* Added option to show true/false/missed peaks in `draw_spectrum()`
+* Added internal functions `classify_aki_patients()`, `update_aki_dataset()` and `zip_aki_dataset()`
+
 # metabodecon 1.6.3
 
 * Improved exception for r-universe machine in `test-install_mdrb.R`.

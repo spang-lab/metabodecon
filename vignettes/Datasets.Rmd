@@ -1,6 +1,7 @@
 ---
 title: "Datasets"
 output: rmarkdown::html_vignette
+css: styles.css
 vignette: >
   %\VignetteIndexEntry{Datasets}
   %\VignetteEngine{knitr::rmarkdown}

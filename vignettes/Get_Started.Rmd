@@ -1,49 +1,12 @@
 ---
 title: "Get Started"
 output: rmarkdown::html_vignette
+css: styles.css
 vignette: >
   %\VignetteIndexEntry{Get Started}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
-
-<style>
-/*
-IMPORTANT: pkgdown articles [^1] and  rmarkdown  html  vignettes  [^2]  generate
-different HTML elements from the same rmarkdown content. Therefore  we  need  to
-take care to handle both usecases. In particular, articles  use  `<figure>`  and
-`<caption>`  elements,  where  vignettes  use  `<div  class="figure">`  and  `<p
-class="caption">` elements.
-
-[^1] built using `pkgdown::build_article()`)
-[^2] built using `rmarkdown::render()`
-*/
-figure, div.figure
-{
-    border: 1px solid #dee2e6;
-    border-radius: .375rem;
-    padding: 0;
-    margin: 1em 0;
-}
-caption, p.caption {
-    text-align: center;
-    font-style: italic;
-    border-top: 1px solid #dee2e6;
-    padding: 0.75rem;
-    background-color: #ffffff;
-}
-img {
-    margin: 0 auto;
-    padding: 0;
-    border: none;
-    width: 50%;
-}
-@media (max-width: 500px) {
-    img {
-        width: 100%; /* Full width for smaller viewports */
-    }
-}
-</style>
 
 ```{r set-defaults, echo=FALSE, results=FALSE, message=FALSE}
 knitr::opts_chunk$set(

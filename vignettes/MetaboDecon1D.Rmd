@@ -1,6 +1,7 @@
 ---
 title: "MetaboDecon1D"
 output: rmarkdown::html_vignette
+css: styles.css
 vignette: >
   %\VignetteIndexEntry{MetaboDecon1D}
   %\VignetteEngine{knitr::rmarkdown}
