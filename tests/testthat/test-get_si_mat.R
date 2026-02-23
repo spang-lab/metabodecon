@@ -1,5 +1,7 @@
 test_that("get_si_mat returns a matrix of the correct dimensions", {
 
+    withr::local_output_sink(nullfile())
+
     # 'speaq' requires 'MassSpecWavelet' and 'impute' to be installed
     deps <- c("MassSpecWavelet", "impute")
     inst <- sapply(deps, requireNamespace, quietly = TRUE)

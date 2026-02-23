@@ -35,6 +35,7 @@ mdrb_available <- check_mdrb()
 # Checks #####
 
 test_derivatives_idecon <- test_that("(idecon -> decon[0-2] works", {
+    withr::local_output_sink(nullfile())
     expect_equal(names(idecon),  idecon_members)
     expect_equal(names(decon2i), decon2_members)
     expect_equal(names(decon1i), decon1_members)
@@ -56,11 +57,13 @@ test_interactively_idecon <- if (identical(environment(), globalenv())) {
 }
 
 test_decon22i <- test_that("(decon2 <- decon2) == (decon2 <- idecon)", {
+    withr::local_output_sink(nullfile())
     decon22i <- as_decon2(decon2i)
     expect_equal(decon22i, decon2i)
 })
 
 test_decon21i <- test_that("(decon2 <- decon1) == (decon2 <- idecon)", {
+    withr::local_output_sink(nullfile())
     decon21i <- as_decon2(decon1i)
     # Diffs in `meta$simpar`, `args`, `sit$wsrm`, `sit$nvrm` are expected, so we
     # patch them first to make the comparsion possible.
@@ -72,6 +75,7 @@ test_decon21i <- test_that("(decon2 <- decon1) == (decon2 <- idecon)", {
 })
 
 test_decon20i <- test_that("(decon2 <- decon0) == (decon2 <- idecon)", {
+    withr::local_output_sink(nullfile())
     decon20i <- as_decon2(decon0i, spectrum = sap[[1]])
     # Diffs in `meta$simpar`, `args`, `sit$wsrm`, `sit$nvrm` are expected, so we
     # patch them first to make the comparsion possible.
@@ -83,36 +87,43 @@ test_decon20i <- test_that("(decon2 <- decon0) == (decon2 <- idecon)", {
 })
 
 test_decon12i <- test_that("(decon1 <- decon2) == (decon1 <- idecon)", {
+    withr::local_output_sink(nullfile())
     decon12i <- as_decon1(decon2i);
     expect_equal(decon12i, decon1i)
 })
 
 test_decon11i <- test_that("(decon1 <- decon1) == (decon1 <- idecon)", {
+    withr::local_output_sink(nullfile())
     decon11i <- as_decon1(decon1i)
     expect_equal(decon11i, decon1i)
 })
 
 test_decon10i <- test_that("(decon1 <- decon0) == (decon1 <- idecon)", {
+    withr::local_output_sink(nullfile())
     decon10i <- as_decon1(decon0i, spectrum = sap[[1]])
     expect_equal(decon10i, decon1i)
 })
 
 test_decon02i <- test_that("(decon0 <- decon2) == (decon0 <- idecon)", {
+    withr::local_output_sink(nullfile())
     decon02i <- as_decon0(decon2i);
     expect_equal(decon02i, decon0i)
 })
 
 test_decon01i <- test_that("(decon0 <- decon1) == (decon0 <- idecon)", {
+    withr::local_output_sink(nullfile())
     decon01i <- as_decon0(decon1i)
     expect_equal(decon01i, decon0i)
 })
 
 test_decon00i <- test_that("(decon0 <- decon0) == (decon0 <- idecon)", {
+    withr::local_output_sink(nullfile())
     decon00i <- as_decon0(decon0i)
     expect_equal(decon00i, decon0i)
 })
 
 test_idecon_reversibility <- test_that("conversion are reversible", {
+    withr::local_output_sink(nullfile())
 
     decon222 <- as_decon2(as_decon2(decon2i))
     decon212 <- as_decon2(as_decon1(decon2i))
@@ -162,6 +173,7 @@ skip_if_not(mdrb_available) # (1)
 # execute the following tests and spam the log file.
 
 test_derivatives_rdecon <- test_that("(idecon -> decon[0-2] works", {
+    withr::local_output_sink(nullfile())
     expect_equal(names(rdecon),  rdecon_members)
     expect_equal(names(decon2r), decon2_members)
     expect_equal(names(decon1r), NULL) # (1)
