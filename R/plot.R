@@ -484,14 +484,13 @@ draw_spectrum <- function(
     si_line   = list(), sm_line  = list(), sp_line   = list(),
     d2_line   = list(), al_line  = list(),
     lc_lines  = list(), tp_lines = list(), al_lines  = list(),
-    cent_pts  = list(), tp_pts   = list(), fp_pts    = list(),
-    miss_pts  = list(), bord_pts = list(), norm_pts  = list(),
+    cent_pts  = list(), bord_pts = list(), norm_pts  = list(),
+    tp_pts    = list(), fp_pts   = list(), miss_pts  = list(),
     bg_rect   = list(), foc_rect = list(), lc_rects  = list(), tp_rects = list(),
     bt_axis   = list(), lt_axis  = list(), tp_axis   = list(), rt_axis  = list(),
     bt_text   = list(), lt_text  = list(), tp_text   = list(), rt_text  = list(),
     tp_verts  = list(), lc_verts = list(), al_verts  = list(),
-    ze_hline  = list(),
-    al_arrows = list(),
+    ze_hline  = list(), al_arrows = list(),
     lgd       = list()
 ) {
     # Check and enrich inputs (278us)
@@ -1125,7 +1124,6 @@ draw_legend <- function(args, si_line, sm_line, lc_lines, sp_line, d2_line,
         unlist(rep(NA, length(hlns)))
     )
     args$x <- args$x %||% "topright"
-    args$y.intersp <- args$y.intersp %||% 0.5
     do.call(legend, args)
 }
 
@@ -1510,10 +1508,10 @@ get_draw_spectrum_defaults <- function(show_d2 = FALSE,
         # Zero Line
         ze_hline  = list(show = show_d2, col = "black", lty = 3),
         # Points
-        cent_pts  = list(show = FALSE, col = "blue", bg = "blue", pch = 24),
-        tp_pts    = list(show = show_si, col = "darkgreen", pch = 24),
-        fp_pts    = list(show = show_si, col = "red", pch = 24),
-        miss_pts  = list(show = show_si, col = "orange", pch = 24),
+        cent_pts  = list(show = show_si && foc_only, col = "blue", bg = "blue", pch = 24),
+        tp_pts    = list(show = FALSE, col = "darkgreen", pch = 24),
+        fp_pts    = list(show = FALSE, col = "red", pch = 24),
+        miss_pts  = list(show = FALSE, col = "orange", pch = 24),
         bord_pts  = list(show = FALSE, col = "blue", pch = 124),
         norm_pts  = list(show = FALSE, col = "black", pch = 124),
         # Backgrounds
