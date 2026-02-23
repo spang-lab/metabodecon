@@ -1,0 +1,163 @@
+---
+title: "AKI Original (Paper-Style Reproduction)"
+output: rmarkdown::html_vignette
+css: styles.css
+vignette: >
+  %\VignetteIndexEntry{AKI Original (Paper-Style Reproduction)}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r set-defaults, echo=FALSE, results=FALSE, message=FALSE}
+source("defaults.R")
+knitr::opts_chunk$set(fig.dim = c(7, 5), out.width = "50%", eval = TRUE)
+```
+
+## The Analysis Goal
+
+This vignette follows the procedure described in Zacharias et al. (2012) to
+classify AKI vs non-AKI patients based on 24h urine NMR spectra. The goal is to
+reproduce the reported performance of 76% accuracy and 83% AUC.
+
+## The Original Analysis Procedure
+
+Relevant parts from the original paper are:
+
+> The region from 9.5 to 0.5 ppm of the 1D spectra was evenly split into
+> bins of 0.01. After exclusion of the solvent area and the area
+> containing the broad urea signal from 6.5 to 4.5 ppm, 701 bins remained
+> for each 1D spectrum.
+>
+> All spectra were normalized prior to analysis by Quantile Normalization
+> (Bolstad et al. 2003; Kohl et al. 2012) to achieve equal distributions
+> of feature intensities across spectra.
+>
+> Classification of spectra was performed using a SVM provided in the
+> R-library e1071 (http://cran.r-project.org/ web/packages/e1071) within a
+> nested cross-validation approach.
+>
+> For this contribution a SVM with a radial basis function kernel was used
+> within a leave-five-out cross-validation.
+>
+> The internal parameters of the SVM were calibrated within an inner
+> cross-validation loop employing a grid search procedure.
+
+## Helper Functions
+
+Based on these instructions we're gonna implement the following helper functions:
+
+- `download_aki_data()`
+
+   For downloading and preparing the AKI example dataset from the Metabolights
+   database (MTBLS24) if not already available locally. The dataset will be
+   downloaded to a persistent location in R's user cache directory, similar to
+   how `download_example_datasets()` works for metabodecon's internal example datasets.
+
+- `bin_spectra(spectra, ignore_region = c(6.5, 4.5))`
+
+   For creating a matrix of binned features from a list of spectra, with
+   optional ppm region exclusion.
+
+- `get_quantile_reference(X)`
+
+   For computing the reference distribution for quantile normalization from a
+   feature matrix `X`.
+
+- `quantile_normalize(X, ref)`
+
+   For applying quantile normalization to a feature matrix `X` using a reference
+   distribution `ref`.
+
+- `train_svm(spectra, cls, cost = 0.5, gamma = 2^-10, nfeat=3, normalize = TRUE)`
+
+  For training a radial SVM classifier with margin regularization strength
+  `cost`, RBF kernel width `gamma` and `nfeat` number of features. Features are
+  obtained by binning the given input spectra using `bin_spectra()` and
+  selecting the top `nfeat` based on t-scores from a Welch t-test, comparing the
+  two classes in `cls`. If `normalize` is TRUE, quantile normalization is
+  applied to the binned features before feature selection and SVM training. The
+  feature-selection based on t-scores is described in 'Gronwald et al., 2011'.
+  The returned object will contain the trained SVM model, the
+  quantile-normalisation reference distribution and the indices of the selected
+  features.
+
+- `find_best_params(X, y, costs, gammas, nfeats, normalize, k = 5)`
+
+  For training multiple SVMs across a grid using k-fold cross-validation to
+  select the best parameters. In this vignette we use `costs = (1:10) / 10`,
+  `gammas = 2^(-12:-5)` and `nfeats = 2:3`. We limit the number of features to
+  such a narrow range, because the original paper states, that the average
+  optimum is 2.4 across validation folds with a standard deviation of 0.5. This
+  means, that only values of 2 and 3 can have been observed (e.g. 2,2,2,3,3) or
+  the SD would have been higher. Since the goal of this article is not to rerun
+  the whole analysis workflow, but to reproduce the reported results as closely
+  as possible, there is no need to search a wider range of feature counts.
+
+## The Final Classification Pipeline
+
+The final classification pipeline will then be implemented as follows:
+
+```{r pipeline, echo=TRUE}
+benchmark_aki_classification <- function() {
+
+    path <- download_aki_data()
+
+    spectra <- read_spectra(path)
+    meta <- read_metadata(path)
+    y <- meta$HasAKI
+    n <- nrow(meta)
+    k <- 5
+
+    train_ids <- get_train_ids(k, n)
+    test_ids <- get_test_ids(k, n)
+
+    results <- lapply(seq_len(k), function(i) {
+        X_train <- X[train_ids[[i]], ]
+        y_train <- y[train_ids[[i]]]
+        X_test <- X[test_ids[[i]], ]
+        y_test <- y[test_ids[[i]]]
+
+        param_grid <- find_best_params(X_train, y_train)
+        idx_best <- which.max(param_grid$auc)
+        cost <- param_grid[idx_best, "cost"]
+        gamma <- param_grid[idx_best, "gamma"]
+        nfeat <- param_grid[idx_best, "nfeat"]
+
+        svm <- train_svm(X_train, y_train, cost, gamma, nfeat)
+
+        y_pred <- predict(svm, X_test)
+        auc <- auc(y_test, y_pred)
+        acc <- mean(y_test == y_pred)
+
+        list(cost, gamma, nfeat, auc, acc)
+    })
+
+    results <- do.call(rbind, results)
+    colnames(results) <- c("cost", "gamma", "nfeat", "auc", "acc")
+    rownames(results) <- paste0("Fold", seq_len(k))
+    means <- colMeans(results)
+    sds <- apply(results, 2, sd)
+    rbind(results, Mean = means, SD = sds)
+
+    results # 7 * 5 data.frame with fold-wise and summary performance
+}
+```
+
+## Step by Step Execution
+
+To make the analysis as transparent as possible, we will now execute the above
+pipeline step by step, visualizing intermediate results and outputs along the
+way, before showing the final results at the end of the vignette.
+
+### Downloading the Data
+
+The first thing we need to do is to download the data, if not already available
+locally. This is done by the `download_aki_data()` function, which will download
+the data to a persistent location in R's user data directory. After that we will
+use metabodecon's `tree()` function to visualize the directory structure of the
+downloaded data.
+
+```
+aki_dir <- metabodecon::download_aki_data()
+metabodecon::tree(aki_dir)
+```
