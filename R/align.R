@@ -145,6 +145,14 @@ align <- function(x, maxShift = 50, maxCombine = 5, verbose = TRUE, install_deps
         al <- rep(0, n)
         pciac <- which(cmat[i, ] != 0)  # Peak center indices after combine_peaks
         lcpar <- xx[[i]]$lcpar          # Lorentzian curve parameters
+        if (length(pciac) != length(lcpar$A)) {
+            msg <- paste(
+                "Number of peak centers after alignment (%d)",
+                "does not match number of peaks",
+                "in original spectrum (%d)."
+            )
+            stop(sprintf(msg, length(pciac), length(lcpar$A)))
+        }
         x0_al <- cs[pciac]              # Chemical shifts of peak centers
         al[pciac] <- lcpar$A * pi       # SIs as integrals of aligned lorentzians
         xx[[i]]$lcpar$x0_al <- x0_al
