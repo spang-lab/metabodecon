@@ -101,6 +101,113 @@ deconvolute <- function(x,
     if (length(decons2) == 1) decons2[[1]] else decons2
 }
 
+#' @noRd
+#'
+#' @title Deconvolute one spectrum on a parameter grid
+#'
+#' @description
+#' Runs [deconvolute()] for all combinations of parameter values on a single
+#' spectrum.
+#'
+#' @inheritParams deconvolute
+#'
+#' @param x A single `spectrum` object.
+#' @param nfit Integer vector or list of integer scalars.
+#' @param smopts Integer vector of length 2 or list of such vectors.
+#' @param delta Numeric vector or list of numeric scalars.
+#' @param sfr Numeric vector of length 2 or list of such vectors.
+#' @param wshw Numeric vector or list of numeric scalars.
+#'
+#' @return
+#' A list of `decon2` objects with attribute `grid` containing the parameter
+#' grid used for deconvolution.
+grid_deconvolute <- function(x,
+    nfit=3,    smopts=c(2, 5), delta=6.4,    sfr=NULL,   wshw=0,
+    ask=FALSE, force=FALSE,    verbose=TRUE, nworkers=1, use_rust=FALSE
+) {
+    assert(
+        is_spectrum(x),         is_bool(ask, 1),     is_bool(force, 1),
+        is_bool(verbose, 1),    is_int(nworkers, 1),
+        is_bool_or_null(use_rust, 1)
+    )
+
+    sfr <- sfr %||% stats::quantile(x$cs, c(0.9, 0.1))
+
+    nfit_vals <- if (is.list(nfit)) {
+        unlist(nfit, use.names = FALSE)
+    } else {
+        nfit
+    }
+    if (length(nfit_vals) == 0 ||
+        !all(vapply(as.list(nfit_vals), is_int, logical(1), 1))) {
+        stop("nfit should be int(1) or list of int(1).")
+    }
+
+    smopts_list <- if (is_int(smopts, 2)) list(smopts) else smopts
+    if (!is.list(smopts_list) ||
+        length(smopts_list) == 0 ||
+        !all(vapply(smopts_list, is_int, logical(1), 2))) {
+        stop("smopts should be int(2) or list of int(2).")
+    }
+
+    delta_vals <- if (is.list(delta)) {
+        unlist(delta, use.names = FALSE)
+    } else {
+        delta
+    }
+    if (length(delta_vals) == 0 ||
+        !all(vapply(as.list(delta_vals), is_num, logical(1), 1))) {
+        stop("delta should be num(1) or list of num(1).")
+    }
+
+    sfr_list <- if (is_num(sfr, 2)) list(sfr) else sfr
+    if (!is.list(sfr_list) || length(sfr_list) == 0 ||
+        !all(vapply(sfr_list, is_num, logical(1), 2))) {
+        stop("sfr should be num(2) or list of num(2).")
+    }
+
+    wshw_vals <- if (is.list(wshw)) {
+        unlist(wshw, use.names = FALSE)
+    } else {
+        wshw
+    }
+    if (length(wshw_vals) == 0 ||
+        !all(vapply(as.list(wshw_vals), is_num, logical(1), 1))) {
+        stop("wshw should be num(1) or list of num(1).")
+    }
+
+    grid <- expand.grid(
+        nfit = nfit_vals,
+        smopts = I(smopts_list),
+        delta = delta_vals,
+        sfr = I(sfr_list),
+        wshw = wshw_vals,
+        stringsAsFactors = FALSE
+    )
+
+    res <- vector("list", nrow(grid))
+    for (i in seq_len(nrow(grid))) {
+        if (isTRUE(verbose)) logf("Grid %d/%d", i, nrow(grid))
+        row <- grid[i, ]
+        res[[i]] <- deconvolute(
+            x,
+            nfit = row$nfit,
+            smopts = row$smopts[[1]],
+            delta = row$delta,
+            sfr = row$sfr[[1]],
+            wshw = row$wshw,
+            ask = ask,
+            force = force,
+            verbose = verbose,
+            nworkers = nworkers,
+            use_rust = use_rust
+        )
+    }
+
+    attr(res, "grid") <- grid
+    res
+}
+
 # Internal main functions #####
 
 #' @noRd
