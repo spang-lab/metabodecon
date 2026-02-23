@@ -270,7 +270,7 @@ tmpdir <- function(subdir = NULL, create = FALSE) {
 #'
 #' `r lifecycle::badge("deprecated")`
 #'
-#' @param dataset_name Either `""`, `"test"`, `"blood"` or `"urine"`.
+#' @param dataset_name Either `""`, `"test"`, `"blood"`, `"urine"` or `"aki"`.
 #'
 #' @param warn Whether to print a warning message when the example folders do
 #' not yet exist, i.e. [download_example_datasets()] has not been called yet.
@@ -285,7 +285,7 @@ tmpdir <- function(subdir = NULL, create = FALSE) {
 #' x <- get_data_dir("urine")                     # Deprecated
 #' y <- datadir("example_datasets/bruker/urine")  # Preferred
 #' cat(x, y, sep = "\n")
-get_data_dir <- function(dataset_name = c("", "blood", "test", "urine"), warn = TRUE) {
+get_data_dir <- function(dataset_name = c("", "blood", "test", "urine", "aki"), warn = TRUE) {
   dataset_name <- match.arg(dataset_name)
   base_data_dir <- datadir()
   data_dir <- file.path(base_data_dir, "example_datasets/bruker", dataset_name, fsep = "/")
@@ -323,10 +323,10 @@ get_data_dir <- function(dataset_name = c("", "blood", "test", "urine"), warn = 
 #' @examples
 #' str(xds)
 xds <- list(
-    url = "https://github.com/spang-lab/metabodecon/releases/download/v1.1.0/example_datasets.zip",
-    zip_size = 38425397,
-    dir_size = 56378684,
-    n_files = 1018
+    url = "https://github.com/spang-lab/metabodecon/releases/download/v1.6.3/example_datasets.zip",
+    zip_size = 75391701,
+    dir_size = 113207749,
+    n_files = 1336
 )
 
 #' @noRd
@@ -352,7 +352,10 @@ xds <- list(
 #'
 #' @param overwrite
 #' First effect: If TRUE and the cached file exists but has a wrong size, the
-#' file is overwritten. If FALSE, an error is thrown in this case.
+#' file is overwritten. If FALSE, an error is thrown in this case. Important: if
+#' the zip exists and has the correct size, overwrite has no effect, i.e. the
+#' file will not be downloaded again. If you really want to force a re-download,
+#' delete the zip file manually before calling this function.
 #'
 #' Second effect (only relevant if `extract` is TRUE): If TRUE, the datasets are
 #' extracted even if the corresponding folder already exists. If FALSE, files
@@ -434,14 +437,22 @@ extract_example_datasets <- function(path = datadir("example_datasets.zip")) {
 #' \donttest{
 #' download_example_datasets_zip("/path/to/your/directory/example_datasets.zip")
 #' }
-download_example_datasets_zip <- function(path, copyfrom = NULL, silent = FALSE) {
+download_example_datasets_zip <- function(path,
+                                          copyfrom = NULL,
+                                          silent = FALSE,
+                                          url = xds$url,
+                                          zip_size = xds$zip_size) {
     mkdirs(dirname(path))
-    if (!is.null(copyfrom) && file.exists(copyfrom) && file.size(copyfrom) == xds$zip_size) {
+    if (!is.null(copyfrom) && file.exists(copyfrom) && file.size(copyfrom) == zip_size) {
         if (!silent) message(sprintf("Copying cached archive %s to %s", copyfrom, path))
         file.copy(copyfrom, path, overwrite = TRUE)
     } else {
-        if (!silent) message(sprintf("Downloading %s as %s", xds$url, path))
-        utils::download.file(xds$url, path, quiet = TRUE)
+        if (!silent) message(sprintf("Downloading %s as %s", url, path))
+        utils::download.file(url, path, quiet = TRUE)
+    }
+    if (!is.null(zip_size) && isTRUE(file.size(path) != zip_size)) {
+        msg <- "Downloaded zip at %s has size %d instead of expected %d"
+        stop(sprintf(msg, path, file.size(path), zip_size))
     }
     path
 }
@@ -676,4 +687,139 @@ get_sim_params <- function(x, pkr = c(3.4, 3.5)) {
     noiseSD <- sd(d$y_values_raw[c(1:10000, 121073:131072)])
     name <- d$filename
     named(A, x0, lambda, noiseSD, name)
+}
+
+# AKI (Public) #####
+
+#' @noRd
+#' @title Downloads the AKI dataset from the Metabolights Database
+#' @description
+#' Recursively downloads and extracts all files of the AKI dataset (MTBLS24)
+#' from the MetaboLights database, if not already available locally.
+#' @return Path to the local directory containing the AKI dataset.
+#' @examples
+#' \dontrun{
+#' aki_dir <- download_aki_data()
+#' }
+download_aki_data_from_metabolights <- function() {
+    url <- "ftp://ftp.ebi.ac.uk/pub/databases/metabolights/studies/public/MTBLS24/"
+    dest <- datadir("aki_raw", warn = FALSE, persistent = TRUE)
+    n_files <- length(dir(dest, recursive = TRUE))
+    if (n_files >= 2046) {
+        # Return early if all files have already been downloaded and extracted
+        return(dest)
+    }
+    ftp_download(url, dest, recursive = TRUE)
+    spectra_dir <- file.path(dest, "FILES")
+    zips <- dir(spectra_dir, ".zip$", full.names = TRUE)
+    lapply(zips, unzip, exdir = spectra_dir)
+    dest
+}
+
+#' @noRd
+#' @title Update AKI Example Dataset (Development Only)
+#' @description
+#' Downloads the AKI urine NMR dataset (`MTBLS24`) from MetaboLights and copies
+#' the Bruker files required by metabodecon (`1r`, `procs`, `acqus`) to
+#' `misc/example_datasets/bruker/aki`.
+#'
+#' For details about the AKI dataset see `Dataset.Rmd`.
+#'
+#' The full source dataset can be downloaded directly from MetaboLights:
+#' <https://www.ebi.ac.uk/metabolights/MTBLS24>. The copy prepared here is a
+#' convenience subset and includes `s_MTBLS24.txt` plus only the Bruker files
+#' required to read spectra (`1r`, `procs`, `acqus`). Other spectra-related
+#' outputs and early analysis/classifier result files from Zacharias et al.
+#' (2012) are excluded to keep archive size and download time low.
+#'
+#' To make the dataset available to package users, the `example_datasets.zip` in
+#' GitHub must be updated as well. See `update_example_datasets()` for details.
+#'
+#' @return Path to the updated AKI example dataset directory.
+#' @author 2026 Tobias Schmidt: initial version.
+update_aki <- function() {
+
+    stopifnot(loaded_via_devtools())
+
+    # Download and extract AKI raw data if not already available locally
+    raw <- download_aki_data_from_metabolights()
+    src <- file.path(raw, "FILES")
+    dst <- file.path(pkg_file("misc/example_datasets/bruker"), "aki")
+    if (dir.exists(dst)) {
+        cont <- get_yn_input(sprintf("Overwrite %s ?", dst))
+        if (!cont) return(invisible())
+        unlink(dst, recursive = TRUE, force = TRUE)
+    }
+
+    # Copy required Bruker files from all AKI sample folders
+    spectra <- list.files(src, pattern = "^AKI_8", full.names = TRUE)
+    spectra <- spectra[file.info(spectra)$isdir]
+    one_r_files <- file.path(spectra, "10/pdata/10/1r")
+    procs_files <- file.path(spectra, "10/pdata/10/procs")
+    acqus_files <- file.path(spectra, "10/acqus")
+    src_files <- c(one_r_files, procs_files, acqus_files)
+    dst_files <- gsub(src, dst, src_files)
+    dst_dirs <- unique(dirname(dst_files))
+    lapply(dst_dirs, mkdirs)
+    copied_successful <- file.copy(src_files, dst_files, overwrite = TRUE)
+    stopifnot(all(copied_successful))
+
+    # Copy study metadata file
+    src_meta <- file.path(raw, "s_MTBLS24.txt")
+    dst_meta <- file.path(dst, "s_MTBLS24.txt")
+    copied_successful <- file.copy(src_meta, dst_meta, overwrite = TRUE)
+    stopifnot(copied_successful)
+
+}
+
+# Example Datasets (Development) #####
+
+#' @noRd
+#' @title Update All Example Datasets (Development Only)
+#' @description
+#' Rebuilds `example_datasets.zip` from `misc/example_datasets/` and prints the
+#' values needed to update `xds` (Example Datasets Summary). The actual content
+#' of `misc/example_datasets/` must be updated manually before calling this
+#' function.
+#'
+#' The subdirectories `blood`, `test` and `urine` contain raw spectra files as
+#' created by the NMR spectrometer in the Oefner Lab and are not generated by
+#' any function in the package.
+#'
+#' The `aki` subdirectory contains raw spectra files downloaded from the
+#' MetaboLights database and can be recreated by calling [update_aki()].
+#'
+#' @return The path to the updated `example_datasets.zip` file.
+#'
+#' @author 2026 Tobias Schmidt: initial version.
+update_example_datasets <- function() {
+    stopifnot(loaded_via_devtools())
+    misc <- pkg_file("misc")
+    src <- file.path(misc, "example_datasets")
+    zip <- file.path(misc, "example_datasets.zip")
+    if (file.exists(zip)) unlink(zip)
+    logf("Creating %s", zip)
+    withr::with_dir(misc, utils::zip(zip, "example_datasets", "-rq9X"))
+    logf("Done")
+    files <- dir(src, recursive = TRUE, full.names = TRUE, include.dirs = FALSE)
+    sizes <- file.info(files)$size
+    zip_size <- file.info(zip)$size
+    dir_size <- sum(sizes, na.rm = TRUE)
+    n_files <- length(files)
+    logf("")
+    logf("Next steps:")
+    logf("")
+    logf("1. Upload example_datasets.zip to GitHub")
+    logf("2. Update the xds object in data.R as follows:")
+    logf("")
+    logf("    xds <- list(")
+    logf("        url = NEW_URL [^1],")
+    logf("        zip_size = %d,", zip_size)
+    logf("        dir_size = %d,", dir_size)
+    logf("        n_files = %d", n_files)
+    logf("    )")
+    logf("")
+    logf("[^1] OLD_URL was %s", xds$url)
+    logf("")
+    invisible(zip)
 }
