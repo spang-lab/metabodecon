@@ -4,13 +4,27 @@
 \alias{tree}
 \title{Print the Structure of a Directory Tree}
 \usage{
-tree(path, max.level = 2, level = 0, prefix = "")
+tree(
+  path,
+  max.level = 2,
+  max.entries = Inf,
+  show.counts = FALSE,
+  level = 0,
+  prefix = ""
+)
 }
 \arguments{
 \item{path}{The root path from which to start listing the directory
 structure.}
 
 \item{max.level}{The maximum depth of directories to list.}
+
+\item{max.entries}{Maximum number of children to print per directory.
+If a directory has more entries than this limit, only the first
+\code{max.entries} children are shown followed by \code{...}.}
+
+\item{show.counts}{Logical. If \code{TRUE}, prints the number of files (not
+subdirectories) in brackets after each directory name. Disabled by default.}
 
 \item{level}{Internal parameter used for recursion, indicating the current
 level of depth.}

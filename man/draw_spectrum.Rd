@@ -28,6 +28,9 @@ draw_spectrum(
   cent_pts = list(),
   bord_pts = list(),
   norm_pts = list(),
+  tp_pts = list(),
+  fp_pts = list(),
+  miss_pts = list(),
   bg_rect = list(),
   foc_rect = list(),
   lc_rects = list(),
@@ -102,8 +105,9 @@ true lorentzian curves (tp_lines) and
 aligned lorentzian curves (al_lines),
 respectively.}
 
-\item{cent_pts, bord_pts, norm_pts}{List of parameters passed to \code{\link[=points]{points()}} when drawing the peak center  points,
-peak border points and non-peak points.}
+\item{cent_pts, tp_pts, fp_pts, miss_pts, bord_pts, norm_pts}{List of parameters passed to \code{\link[=points]{points()}} when drawing the peak center points,
+true positive peaks, false positive peaks, missed peaks, peak border points
+and non-peak points.}
 
 \item{bg_rect, lc_rects, foc_rect, tp_rects}{List of parameters passed to \code{\link[=rect]{rect()}} when drawing the background, lorentzian
 curve substitutes, focus rectangle and/or true lorentzian curve substitutes.}

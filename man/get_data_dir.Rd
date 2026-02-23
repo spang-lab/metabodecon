@@ -4,10 +4,13 @@
 \alias{get_data_dir}
 \title{Retrieve directory path of an example dataset}
 \usage{
-get_data_dir(dataset_name = c("", "blood", "test", "urine"), warn = TRUE)
+get_data_dir(
+  dataset_name = c("", "blood", "test", "urine", "aki"),
+  warn = TRUE
+)
 }
 \arguments{
-\item{dataset_name}{Either \code{""}, \code{"test"}, \code{"blood"} or \code{"urine"}.}
+\item{dataset_name}{Either \code{""}, \code{"test"}, \code{"blood"}, \code{"urine"} or \code{"aki"}.}
 
 \item{warn}{Whether to print a warning message when the example folders do
 not yet exist, i.e. \code{\link[=download_example_datasets]{download_example_datasets()}} has not been called yet.}
