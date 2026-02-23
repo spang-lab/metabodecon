@@ -11,6 +11,10 @@
   length and improve readability. E.g. `x <- f(a); y <- g(x)` instead of `y <-
   g(f(a))`. Function nesting is ok if everything still fits in 80 chars and the
   function names are short and readable.
+- Avoid defining functions inside other functions, except for temporary
+  callbacks passed directly to `lapply()`, `sapply()`, `vapply()`, etc.
+  Prefer top-level private helper functions instead to keep function bodies
+  short and easy to scan.
 - Do not use pipe operators `%>%` or `|>`.
 - Always use fully qualified names for functions from other packages, e.g.
   `ggplot2::ggplot()`. Exceptions are functions from R's standard library like
