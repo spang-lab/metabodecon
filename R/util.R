@@ -1007,15 +1007,6 @@ du <- function(obj, pname = "", level = 0, max_level = 1, max_len = 50, unit = "
 #' @examples
 #' metabodecon_dir <- system.file(package = "metabodecon")
 #' tree(metabodecon_dir, max.level = 1)
-#' @noRd
-#' @description Count direct child files in a directory (excluding subdirectories).
-count_files_in_dir <- function(dir) {
-    entries <- list.files(dir, full.names = TRUE)
-    if (!length(entries)) return(0L)
-    is_dir <- file.info(entries)$isdir
-    as.integer(sum(!is_dir, na.rm = TRUE))
-}
-
 tree <- function(path,
                  max.level = 2,
                  max.entries = Inf,
@@ -1078,6 +1069,15 @@ tree <- function(path,
     }
 
     invisible(NULL)
+}
+
+#' @noRd
+#' @description Count direct child files in a directory (excluding subdirectories).
+count_files_in_dir <- function(dir) {
+    entries <- list.files(dir, full.names = TRUE)
+    if (!length(entries)) return(0L)
+    is_dir <- file.info(entries)$isdir
+    as.integer(sum(!is_dir, na.rm = TRUE))
 }
 
 #' @noRd
