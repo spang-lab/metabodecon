@@ -48,6 +48,7 @@ Suggests:
     devtools,
     diffobj,
     digest,
+    glmnet,
     glue,
     impute,
     knitr,
