@@ -1,3 +1,4 @@
+.DS_Store
 .Rhistory
 .Rproj.user
 .vscode/
@@ -18,7 +19,10 @@ dist/
 docs/
 inst/doc
 inst/doc/
+misc/*.rds
+misc/example_datasets/bruker/aki.bak/
 tests/testthat_outputs/
 tmp
 vdiffr.Rout.fail
-misc/example_datasets/bruker/aki/
+misc/example_datasets.zip
+testthat.log
