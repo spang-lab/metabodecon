@@ -60,6 +60,7 @@ skip_if_slow_tests_disabled()
 
 test_that("align can install its dependencies", {
 
+
     # TEST PURPOSE: If `metabodecon` or `speaq` is installed via
     # `install.packages()`, the dependencies `impute` and `MassSpecWavelet`
     # may not be installed. In this case, the missing dependencies should be
@@ -87,7 +88,14 @@ test_that("align can install its dependencies", {
     # dependencies of metabodecon, might not be loaded automatically when
     # metabodecon is loaded. Therefore, we need to load them as well to ensure
     # they are available for the test.
-    speaq_deps <- tools::package_dependencies("speaq")[[1]]
+    repos_old <- getOption("repos")
+    defer(options(repos = repos_old))
+    options(repos = c(
+        RUniverse = "https://bioc.r-universe.dev",
+        CRAN = "https://cloud.r-project.org"
+    ))
+    ip <- utils::installed.packages()
+    speaq_deps <- tools::package_dependencies("speaq", db = ip)[[1]]
     speaq_deps <- setdiff(speaq_deps, c("impute", "MassSpecWavelet"))
     sapply(speaq_deps, requireNamespace, quietly = TRUE)
 
