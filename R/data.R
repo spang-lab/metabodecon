@@ -57,7 +57,7 @@ download_example_datasets <- function(dst_dir = NULL,
     # var     cached_xds = C:/Users/max/.local/share/R/metabodecon/example_datasets
     # return  dst_zip    = C:/Users/max/Downloads/example_datasets.zip
     # return  dst_xds    = C:/Users/max/Downloads/example_datasets
-    cached_zip <- cache_example_datasets(persistent, extract, overwrite, silent)
+    cached_zip <- cache_example_datasets(persistent, extract, silent)
     cached_xds <- file.path(dirname(cached_zip), "example_datasets")
     if (is.null(dst_dir)) {
         return(if (extract) cached_xds else cached_zip)
@@ -335,12 +335,10 @@ xds <- list(
 #'
 #' @description
 #' If file `"example_datasets.zip"` does not yet exist at [datadir()], it is
-#' downloaded.
-#'
-#' If the zip exists but has a wrong size, it can be overwritten based on the
-#' `overwrite` parameter. If `extract` is TRUE and either folder
-#' `"example_datasets"` does not yet exist at [datadir()] or `overwrite` is
-#' TRUE, the zip file is extracted. The path to the zip file is returned.
+#' downloaded. If the zip exists but is outdated or corrupt, it gets overwritten
+#' automatically. If `extract` is TRUE, the zip file is extracted, replacing an
+#' existing `"example_datasets"` directory. The path to the zip file is
+#' returned.
 #'
 #' @param persistent
 #' If TRUE, the datasets are cached permanently.
@@ -350,64 +348,53 @@ xds <- list(
 #'
 #' @param extract If TRUE, the datasets are extracted after being cached.
 #'
-#' @param overwrite
-#' First effect: If TRUE and the cached file exists but has a wrong size, the
-#' file is overwritten. If FALSE, an error is thrown in this case. Important: if
-#' the zip exists and has the correct size, overwrite has no effect, i.e. the
-#' file will not be downloaded again. If you really want to force a re-download,
-#' delete the zip file manually before calling this function.
-#'
-#' Second effect (only relevant if `extract` is TRUE): If TRUE, the datasets are
-#' extracted even if the corresponding folder already exists. If FALSE, files
-#' are not extracted again.
-#'
 #' @return The path to the cached datasets.
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' \donttest{
-#' cache_example_datasets(persistent = FALSE, extract = FALSE, overwrite = FALSE)
+#' cache_example_datasets(persistent = FALSE, extract = FALSE)
 #' }
 cache_example_datasets <- function(persistent = NULL,
                                    extract = FALSE,
-                                   overwrite = FALSE,
                                    silent = FALSE) {
 
     pzip <- zip_persistent()
     pzip_exists <- file.exists(pzip)
-    pzip_is_missing <- !pzip_exists
-    pzip_has_correct_size <- isTRUE(file.size(pzip) == xds$zip_size) # Implies existence
-    pzip_has_wrong_size <- !pzip_has_correct_size
+    pzip_ok <- isTRUE(file.size(pzip) == xds$zip_size) # Implies existence
+    pzip_nok <- !pzip_ok
 
     tzip <- zip_temp()
-    tzip_has_correct_size <- isTRUE(file.size(tzip) == xds$zip_size)
-    tzip_has_wrong_size <- !tzip_has_correct_size
+    tzip_ok <- isTRUE(file.size(tzip) == xds$zip_size)
+    tzip_nok <- !tzip_ok
 
-    persistent <- if (isTRUE(persistent) || (is.null(persistent) && pzip_has_correct_size)) TRUE else FALSE
+    use_pzip <- isTRUE(persistent) || (is.null(persistent) && pzip_exists)
+    use_tzip <- !use_pzip
 
-    if (isTRUE(persistent)) {
-        if (pzip_is_missing || (pzip_has_wrong_size && overwrite)) {
-            download_example_datasets_zip(pzip, copyfrom = tzip, silent = silent)
-        }
-        if (pzip_exists && pzip_has_wrong_size && !overwrite) {
-            msg <- "Path %s exists already, but has size %d instead of %d. Set `overwrite = TRUE` to overwrite."
-            stop(sprintf(msg, pzip, file.size(pzip), xds$zip_size))
-        }
-    } else {
-        if (tzip_has_wrong_size) {
-            download_example_datasets_zip(tzip, copyfrom = pzip, silent = silent)
-            # No need to ask for permission here because we only write to the temp dir
-        }
+    dst <- if (use_pzip) pzip else tzip
+    cf <- if (use_pzip && tzip_ok) tzip else if (use_tzip && pzip_ok) pzip else NULL
+
+    if (use_tzip && tzip_nok && pzip_exists && pzip_nok) {
+        fmt <- paste0("\n",
+            "Found outdated or corrupt persistent cache file at:\n%s\n",
+            "To update/repair, use 'download_example_datasets(persistent = TRUE)'\n",
+            "To remove, use 'unlink(\"%s\", recursive = TRUE)'\n"
+        )
+        msg <- sprintf(fmt, pzip, pzip)
+        warning(msg, immediate. = TRUE, call. = FALSE)
     }
 
-    zip <- normalizePath(if (persistent) pzip else tzip, "/", mustWork = FALSE)
-    dstdir <- file.path(dirname(zip), "example_datasets")
+    if ((use_tzip && tzip_nok) || (use_pzip && pzip_nok)) {
+        download_example_datasets_zip(dst, copyfrom = cf, silent = silent)
+    }
+
+    dstdir <- file.path(dirname(dst), "example_datasets")
     if (extract) {
-        if (dir.exists(dstdir) && overwrite) unlink(dstdir, recursive = TRUE)
-        if (!dir.exists(dstdir)) extract_example_datasets(zip)
+        if (dir.exists(dstdir)) unlink(dstdir, recursive = TRUE)
+        if (!dir.exists(dstdir)) extract_example_datasets(dst)
     }
-    zip
+    dst
 }
 
 #' @noRd

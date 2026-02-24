@@ -46,13 +46,6 @@ Relevant parts from the original paper are:
 
 Based on these instructions we're gonna implement the following helper functions:
 
-- `download_aki_data()`
-
-   For downloading and preparing the AKI example dataset from the Metabolights
-   database (MTBLS24) if not already available locally. The dataset will be
-   downloaded to a persistent location in R's user cache directory, similar to
-   how `download_example_datasets()` works for metabodecon's internal example datasets.
-
 - `bin_spectra(spectra, ignore_region = c(6.5, 4.5))`
 
    For creating a matrix of binned features from a list of spectra, with
@@ -100,10 +93,13 @@ The final classification pipeline will then be implemented as follows:
 ```{r pipeline, echo=TRUE}
 benchmark_aki_classification <- function() {
 
-    path <- download_aki_data()
+   xds_dir <- download_example_datasets()
+   path <- file.path(xds_dir, "bruker", "aki")
 
     spectra <- read_spectra(path)
     meta <- read_metadata(path)
+
+    X <- bin_spectra(spectra)
     y <- meta$HasAKI
     n <- nrow(meta)
     k <- 5
@@ -152,12 +148,13 @@ way, before showing the final results at the end of the vignette.
 ### Downloading the Data
 
 The first thing we need to do is to download the data, if not already available
-locally. This is done by the `download_aki_data()` function, which will download
-the data to a persistent location in R's user data directory. After that we will
-use metabodecon's `tree()` function to visualize the directory structure of the
-downloaded data.
+locally. This is done via `download_example_datasets()`. The AKI dataset is
+then available in the `bruker/aki` subdirectory of the downloaded data. After
+that we will use metabodecon's `tree()` function to visualize the directory
+structure of the downloaded data.
 
 ```
-aki_dir <- metabodecon::download_aki_data()
+xds_dir <- metabodecon::download_example_datasets()
+aki_dir <- file.path(xds_dir, "bruker", "aki")
 metabodecon::tree(aki_dir)
 ```

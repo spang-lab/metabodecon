@@ -1,7 +1,26 @@
 # metabodecon 1.6.3-branch:paper
 
-* Added option to show true/false/missed peaks in `draw_spectrum()`
-* Added internal functions `classify_aki_patients()`, `update_aki_dataset()` and `zip_aki_dataset()`
+* Added the AKI example dataset to `misc/example_datasets` and documented it
+  in the dataset docs and vignettes.
+* Added development helpers for AKI data acquisition and preparation, including
+  FTP helpers and `update_aki()` support functions.
+* Improved example-dataset cache handling:
+  - `cache_example_datasets()` now repairs outdated/corrupt cache zips
+    automatically.
+  - If `persistent = FALSE` and a persistent cache exists but is outdated,
+    a warning explains how to repair (`download_example_datasets(persistent =
+    TRUE)`) or remove it.
+  - Path handling in tests/utilities was normalized for cross-platform
+    robustness.
+* Added and refined paper-focused internals and vignettes:
+  - new internal helpers in `R/paper_aki.R` and `R/paper_prarpx.R`
+  - `R/paper.R` split/renamed to `R/paper_nmr.R`
+  - AKI analysis vignette moved from TODO/WIP flow into `vignettes/`.
+* Improved plotting and utilities:
+  - `draw_spectrum()` can display true/false/missed peaks
+  - `tree()` received argument checks and minor utility cleanups.
+* Improved test and CI stability by silencing noisy tests, preventing
+  interactive mirror prompts, hardening install tests, and fixing lint issues.
 
 # metabodecon 1.6.3
 
