@@ -2,6 +2,8 @@ library(testthat)
 
 test_that("find_peaks works", {
 
+    withr::local_output_sink(nullfile())
+
     # Inputs (Second Derivative (d) and Peak Center Indices (pd))
     x <- c(1,   2,   3,  4,   5,   6 ,  7,   8,   9,  10,  11,  12,  13)
     y <- c(100, 100, 98, 92, 84,  77,  72,  68,  63,  56,  50,  42,  33)
