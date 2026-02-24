@@ -1031,7 +1031,15 @@ tree <- function(path,
         }
     }
 
-    n_show <- min(num_entries, max(0L, as.integer(max.entries)))
+    if (!is.numeric(max.entries) || length(max.entries) != 1 || is.na(max.entries)) {
+        stop("max.entries must be a single non-missing numeric value.")
+    }
+    if (is.infinite(max.entries)) {
+        n_show <- num_entries
+    } else {
+        n_show <- min(num_entries, max(0, floor(max.entries)))
+    }
+    n_show <- as.integer(n_show)
     shown_entries <- if (n_show > 0) all_entries[seq_len(n_show)] else character(0)
     truncated <- num_entries > n_show
 
