@@ -11,7 +11,13 @@ sap_01_shifted <- simulate_spectrum(
     noise = sap_01$meta$simpar$noise
 )
 spectra <- as_spectra(list(sap_01, sap_01_shifted))
-decons <- deconvolute(spectra, smopts=c(1,3), delta=3, sfr=c(3.2,-3.2), verbose = FALSE)
+decons <- deconvolute(
+    spectra,
+    smopts = c(1, 3),
+    delta = 3,
+    sfr = c(3.2, -3.2),
+    verbose = FALSE
+)
 
 test_that("align works", {
 

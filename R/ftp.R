@@ -189,9 +189,9 @@ ftp_list_info <- function(url) {
         return(data.frame(entry = character(0), is_dir = logical(0), stringsAsFactors = FALSE))
     }
 
-    has_href <- grepl('href="', txt)
+    has_href <- grepl("href=\"", txt)
     if (any(has_href)) {
-        href <- sub('.*href="([^"]+)".*', '\\1', txt[has_href])
+        href <- sub(".*href=\"([^\"]+)\".*", "\\1", txt[has_href])
         href <- unique(href)
         href <- href[!href %in% c("../", "./", "/")]
         is_dir <- grepl("/$", href)

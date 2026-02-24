@@ -19,6 +19,11 @@ Authors@R: c(
            role = c("aut", "cph"),
            email = "wolfram.gronwald@klinik.uni-regensburg.de")
     )
+Author: Tobias Schmidt [aut, cre, cph],
+    Martina Haeckl [aut, cph],
+    Yanren Linda Hu [ctb],
+    Wolfram Gronwald [aut, cph]
+Maintainer: Tobias Schmidt <tobias.schmidt331@gmail.com>
 Description: A framework for deconvolution, alignment and postprocessing
     of 1-dimensional (1d) nuclear magnetic resonance (NMR) spectra, resulting in
     a data matrix of aligned signal integrals. The deconvolution part uses the

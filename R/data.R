@@ -553,7 +553,7 @@ make_sap <- function() {
 #' @author 2024-2025 Tobias Schmidt: initial version.
 update_sap <- function() {
     path <- file.path(pkg_file("example_datasets/bruker"), "sap")
-    logf("Updating %s." , path)
+    logf("Updating %s.", path)
     if (!get_yn_input("Continue?")) return(invisible())
     sap <- make_sap()
     save_spectra(sap, path, force = TRUE)
@@ -606,7 +606,7 @@ make_sim <- function(nworkers = 1) {
 #' @author 2024-2025 Tobias Schmidt: initial version.
 update_sim <- function(nworkers = 1) {
     path <- file.path(pkg_file("example_datasets/bruker"), "sim")
-    logf("Overwrite is TRUE. Updating %s." , path)
+    logf("Overwrite is TRUE. Updating %s.", path)
     if (!get_yn_input("Continue?")) return(invisible())
     sim <- make_sim(nworkers = nworkers)
     save_spectra(sim, path, force = TRUE)

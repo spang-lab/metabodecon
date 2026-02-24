@@ -513,7 +513,10 @@ str2 <- function(...) {
 
 #' @noRd
 #' @title Collapse a vector into a string
-#' @description Collapses a vector into a single string, with elements separated by a specified separator. Essentially a shorthand for `paste(x, collapse = sep)`.
+#' @description
+#' Collapses a vector into a single string, with elements separated by a
+#' specified separator. Essentially a shorthand for
+#' `paste(x, collapse = sep)`.
 #' @param x A vector to collapse.
 #' @param sep A string to use as the separator between elements. Default is ", ".
 #' @return A single string with elements of x separated by sep.

@@ -103,7 +103,7 @@
 #'
 #' x4 <- evalwith(Sys.sleep(0.02))
 #' str(x4)
-evalwith <- function(expr, # nolint: cyclocomp_linter.
+evalwith <- function(expr,
                      testdir = NULL,
                      answers = NULL,
                      output = NULL,
@@ -152,7 +152,11 @@ evalwith <- function(expr, # nolint: cyclocomp_linter.
     }
     msgvec <- vector("character")
     if (!is.null(message)) {
-        msgcon <- if (message == "captured") textConnection("msgvec", "wr", local = TRUE) else file(message, open = "wt")
+        msgcon <- if (message == "captured") {
+            textConnection("msgvec", "wr", local = TRUE)
+        } else {
+            file(message, open = "wt")
+        }
         sink(msgcon, type = "message")
         on.exit(close(msgcon), add = TRUE, after = FALSE)
         on.exit(sink(NULL, type = "message"), add = TRUE, after = FALSE)
@@ -401,7 +405,10 @@ expect_file_size <- function(testdir, size_exp) {
     file_has_correct_size <- size_obs > size_exp * 0.9 & size_obs < size_exp * 1.1
     lapply(seq_along(size_exp), function(i) {
         if (!isTRUE(file_has_correct_size[i])) {
-            message(sprintf("Size of %s is %s which is not between %s and %s", paths[i], size_obs[i], size_exp[i] * 0.9, size_exp[i] * 1.1))
+            message(sprintf(
+                "Size of %s is %s which is not between %s and %s",
+                paths[i], size_obs[i], size_exp[i] * 0.9, size_exp[i] * 1.1
+            ))
         }
     })
     testthat::expect_true(all(file_has_correct_size))
@@ -502,7 +509,11 @@ calc_prarp <- function(x, truepar = NULL, ...) {
     prarp <- peak_ratio * area_ratio
     prarpx <- peak_ratio_x * area_ratio
 
-    named(prarpx, prarp, peak_ratio_x, peak_ratio, np_true, np_found, np_correct, np_wrong, area_ratio, area_spectrum, area_residuals)
+    named(
+        prarpx, prarp, peak_ratio_x, peak_ratio,
+        np_true, np_found, np_correct, np_wrong,
+        area_ratio, area_spectrum, area_residuals
+    )
 }
 
 #' @noRd

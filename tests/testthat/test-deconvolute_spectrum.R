@@ -1,17 +1,17 @@
 # Inputs #####
 defaults <- list(
-    x=sap[[1]],
-    nfit=3, smopts=c(1,3), delta=3, sfr=c(3.2,-3.2), wshw=0,
-    ask=FALSE, force=FALSE, verbose=FALSE, bwc=0,
-    use_rust=FALSE, nw=1, igr=list(), rtyp="idecon"
+    x = sap[[1]],
+    nfit = 3, smopts = c(1, 3), delta = 3, sfr = c(3.2, -3.2), wshw = 0,
+    ask = FALSE, force = FALSE, verbose = FALSE, bwc = 0,
+    use_rust = FALSE, nw = 1, igr = list(), rtyp = "idecon"
 )
 args <- list(
     idecon_bwc0 = set(defaults),
-    idecon_bwc1 = set(defaults, bwc=1),
-    idecon_bwc2 = set(defaults, bwc=2),
-    idecon_rust = set(defaults, bwc=2, use_rust=TRUE),
-    rdecon_bwc2 = set(defaults, bwc=2, rtyp="rdecon"),
-    rdecon_rust = set(defaults, bwc=2, rtyp="rdecon", use_rust=TRUE)
+    idecon_bwc1 = set(defaults, bwc = 1),
+    idecon_bwc2 = set(defaults, bwc = 2),
+    idecon_rust = set(defaults, bwc = 2, use_rust = TRUE),
+    rdecon_bwc2 = set(defaults, bwc = 2, rtyp = "rdecon"),
+    rdecon_rust = set(defaults, bwc = 2, rtyp = "rdecon", use_rust = TRUE)
 )
 mdrb_available <- check_mdrb()
 

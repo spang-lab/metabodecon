@@ -4,9 +4,17 @@ cacheenv <- environment()
 
 #' @noRd
 #' @title Plot typical NMR Challenges
-#' @param s Scaling Factor for the created figure. By making the figure `s` times bigger than the textwidth you can make the font, lines, etc. `s` times smaller, thinner, etc. because it will get scaled down when included in the LaTeX document.
-#' @param w Figure width. Should be the textwidth of the Latex document in inches.
-#' @param h Figure height. Should be the textheight of the LaTeX document in inches minus some space for the fiure caption. Example: if the textheight is 9.5 inches, h = 8 could be a good choice.
+#' @param s
+#' Scaling Factor for the created figure. By making the figure `s` times bigger
+#' than the textwidth you can make the font, lines, etc. `s` times smaller,
+#' thinner, etc. because it will get scaled down when included in the LaTeX
+#' document.
+#' @param w
+#' Figure width. Should be the textwidth of the Latex document in inches.
+#' @param h
+#' Figure height. Should be the textheight of the LaTeX document in inches minus
+#' some space for the fiure caption. Example: if the textheight is 9.5 inches, h
+#' = 8 could be a good choice.
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #' @examples
 #' spectra <- sim[1:3]
@@ -106,10 +114,6 @@ plot_2_raw_fids <- function() {
     # with_fig(fig = c(0.50, 1.00, ndc[3] + 2 * sub_height, ndc[3] + 3 * sub_height), plot_2_raw_fid(1))
     # with_fig(fig = c(0.50, 1.00, ndc[3] + 1 * sub_height, ndc[3] + 2 * sub_height), plot_2_raw_fid(2))
     # with_fig(fig = c(0.50, 1.00, ndc[3] + 0 * sub_height, ndc[3] + 1 * sub_height), plot_2_raw_fid(3))
-    ndc <- npc_to_ndc()
-    fig_width  <- diff(ndc[1:2])
-    fig_height <- diff(ndc[3:4])
-    sub_height <- fig_height / 3
     with_fig(fig = npc_to_ndc(c(0, 1, 0/3, 1/3)), plot_2_raw_fid(1))
     with_fig(fig = npc_to_ndc(c(0, 1, 1/3, 2/3)), plot_2_raw_fid(2))
     with_fig(fig = npc_to_ndc(c(0, 1, 2/3, 3/3)), plot_2_raw_fid(3))
@@ -146,8 +150,8 @@ plot_3_preprocessing <- function(cex = par("cex"),
     plot_empty(main = "Preprocessing")
     marbox()
     ndc <- npc_to_ndc()
-    x1 <- ndc[1]; x2 <- ndc[2]
-    y1 <- ndc[3]; y2 <- ndc[4]
+    x1 <- ndc[1]
+    y1 <- ndc[3]
     W <- diff(ndc[1:2]); w <- W / 100
     H <- diff(ndc[3:4]); h <- H / 100
     local_par(mar = c(0, 0, 0, 0))
@@ -168,7 +172,7 @@ plot_3_preprocessing <- function(cex = par("cex"),
     mtext("Zero-Filling",       3, (cl + 2) * lex, cex = cex)
     mtext("Fourier Transform",  3, (cl + 1) * lex, cex = cex)
     mtext("Phase Correction",   3, (cl + 0) * lex, cex = cex)
-    mtext("Baseline Correction",3, (cl - 1) * lex, cex = cex)
+    mtext("Baseline Correction", 3, (cl - 1) * lex, cex = cex)
     mtext("Referencing",        3, (cl - 2) * lex, cex = cex)
 }
 
@@ -200,10 +204,6 @@ plot_4_raw_spectra <- function(spectra) {
     local_par(mar = c(2, 2, 2, 1))
     plot_empty(main = "Raw Data in Frequency Domain")
     marbox()
-    ndc <- npc_to_ndc()
-    fig_width  <- diff(ndc[1:2])
-    fig_height <- diff(ndc[3:4])
-    sub_height <- fig_height / 3
     box()
     with_fig(fig = npc_to_ndc(c(0, 1, 0/3, 1/3)), plot_4_raw_spectrum(spectra[[1]]))
     with_fig(fig = npc_to_ndc(c(0, 1, 1/3, 2/3)), plot_4_raw_spectrum(spectra[[2]]))
@@ -227,10 +227,6 @@ plot_5_deconvolutions <- function(decons) {
     local_par(mar = c(2, 2, 2, 1))
     plot_empty(main = "Deconvolution")
     marbox()
-    ndc <- npc_to_ndc()
-    fig_width  <- diff(ndc[1:2])
-    fig_height <- diff(ndc[3:4])
-    sub_height <- fig_height / 3
     box()
     with_fig(fig = npc_to_ndc(c(0, 1, 0/3, 1/3)), plot_5_deconvolution(decons[[1]]))
     with_fig(fig = npc_to_ndc(c(0, 1, 1/3, 2/3)), plot_5_deconvolution(decons[[2]]))
@@ -254,10 +250,6 @@ plot_6_deconvoluted_spectra <- function(decons) {
     local_par(mar = c(2, 2, 2, 1))
     plot_empty(main = "Deconvoluted Signal Integrals")
     marbox()
-    ndc <- npc_to_ndc()
-    fig_width  <- diff(ndc[1:2])
-    fig_height <- diff(ndc[3:4])
-    sub_height <- fig_height / 3
     box()
     with_fig(fig = npc_to_ndc(c(0, 1, 0/3, 1/3)), plot_6_deconvoluted_spectrum(decons[[1]]))
     with_fig(fig = npc_to_ndc(c(0, 1, 1/3, 2/3)), plot_6_deconvoluted_spectrum(decons[[2]]))
@@ -283,10 +275,6 @@ plot_7_alignments <- function(aligns) {
     local_par(mar = c(2, 2, 2, 1))
     plot_empty(main = "Alignment")
     marbox()
-    ndc <- npc_to_ndc()
-    fig_width  <- diff(ndc[1:2])
-    fig_height <- diff(ndc[3:4])
-    sub_height <- fig_height / 3
     box()
     with_fig(fig = npc_to_ndc(c(0, 1, 0/3, 1/3)), plot_7_alignment(aligns[[1]]))
     with_fig(fig = npc_to_ndc(c(0, 1, 1/3, 2/3)), plot_7_alignment(aligns[[2]]))
@@ -312,10 +300,6 @@ plot_8_aligned_spectra <- function(aligns) {
     local_par(mar = c(2, 2, 2, 1))
     plot_empty(main = "Aligned Signal Integrals")
     marbox()
-    ndc <- npc_to_ndc()
-    fig_width  <- diff(ndc[1:2])
-    fig_height <- diff(ndc[3:4])
-    sub_height <- fig_height / 3
     box()
     with_fig(fig = npc_to_ndc(c(0, 1, 0/3, 1/3)), plot_8_aligned_spectrum(aligns[[1]]))
     with_fig(fig = npc_to_ndc(c(0, 1, 1/3, 2/3)), plot_8_aligned_spectrum(aligns[[2]]))
@@ -345,10 +329,6 @@ plot_9_annotations <- function(aligns) {
     local_par(mar = c(2, 2, 2, 1))
     plot_empty(main = "Identification")
     marbox()
-    ndc <- npc_to_ndc()
-    fig_width  <- diff(ndc[1:2])
-    fig_height <- diff(ndc[3:4])
-    sub_height <- fig_height / 3
     box()
     with_fig(fig = npc_to_ndc(c(0, 1, 0/3, 1/3)), plot_9_annotation(aligns[[1]]))
     with_fig(fig = npc_to_ndc(c(0, 1, 1/3, 2/3)), plot_9_annotation(aligns[[2]]))
@@ -378,8 +358,6 @@ plot_9_annotation <- function(align) {
     args$al_lines$col <- NA
     do.call(draw_spectrum, args)
     draw_spectrum(align)
-    coords_text <- align$lcpar$x0_al
-    segments
 
     with_par(list(mar = c(0, 0, 0, 0)), box())
 }
@@ -390,10 +368,6 @@ plot_10_annotated_spectra <- function(aligns) {
     local_par(mar = c(2, 2, 2, 1))
     plot_empty(main = "Metabolite Concentrations")
     marbox()
-    ndc <- npc_to_ndc()
-    fig_width  <- diff(ndc[1:2])
-    fig_height <- diff(ndc[3:4])
-    sub_height <- fig_height / 3
     box()
     with_fig(fig = npc_to_ndc(c(0, 1, 0/3, 1/3)), plot_8_aligned_spectrum(aligns[[1]]))
     with_fig(fig = npc_to_ndc(c(0, 1, 1/3, 2/3)), plot_8_aligned_spectrum(aligns[[2]]))
@@ -417,9 +391,7 @@ draw_vial <- function(x1 = 10, y1 = 10, h = 20, w = NULL) {
     y <- seq(y1, y2, length.out = 37)
     cross_width <- x[9] - x[5]
     cross_width_inch <- grconvertW(cross_width, "user", to = "inches")
-    cross_height_inch <- cross_width_inch
     cross_height <- grconvertH(cross_width_inch, "inches", to = "user")
-    cross_thickness <- cross_width / 6
     vial_height <- y[29] - y[5]
     if (2 * cross_height > vial_height) stop("Sticker height > vial height. Increase height/width ratio of vial.")
     sticker_bottom <- y[17] - cross_height
@@ -512,13 +484,13 @@ get_ndc <- function() {
     usr <- par("usr")  # returns c(x1, x2, y1, y2)
     xndc <- grconvertX(usr[1:2], from = "user", to = "ndc")
     yndc <- grconvertY(usr[3:4], from = "user", to = "ndc")
-    ndc <- c(x1 = xndc[1], x2 = xndc[2], y1 = yndc[1], y2 = yndc[2])
+    c(x1 = xndc[1], x2 = xndc[2], y1 = yndc[1], y2 = yndc[2])
 }
 
 #' @noRd
 #' @author 2024-2025 Tobias Schmidt: initial version.
 marbox <- function() {
-    withr::with_par(list(mar = c(0,0,0,0)), box())
+    withr::with_par(list(mar = c(0, 0, 0, 0)), box())
 }
 
 #' @noRd
@@ -582,7 +554,7 @@ mkdat_sim2 <- function() {
     nA <- 4
     nB <- 4
     n <- nA + nB
-    sim2_data <- data.frame(
+    data.frame(
         classes    = c(rep("A", nA), rep("B", nB)),
         water      = rnorm(n, 8, 0.2),
         ethanol    = rnorm(n, 2, 0.1),

@@ -937,14 +937,30 @@ dohCluster_withMaxShift <- function(X,
 get_decon_params <- function(data_path, warn = TRUE, check = TRUE) {
     dd <- data_path
     if (is.list(dd)) {
-        dd <- if (is_decon_list(dd)) dd else if (is_decon_obj(dd)) list(dd) else stop("data_path must be a list of deconvoluted spectra.")
+        dd <- if (is_decon_list(dd)) {
+            dd
+        } else if (is_decon_obj(dd)) {
+            list(dd)
+        } else {
+            stop("data_path must be a list of deconvoluted spectra.")
+        }
         w <- lapply(dd, function(d) d$x_0)
         lambda <- lapply(dd, function(d) d$lambda)
         A <- lapply(dd, function(d) d$A)
         spectrum_superposition <- lapply(dd, function(d) d$spectrum_superposition)
         params <- named(w, lambda, A, spectrum_superposition)
     } else {
-        if (!file.exists(dd)) stop(dd, " does not exist.") else if (warn) warning("You have provided a path to `gen_feat_mat()`. Since metabodecon v1.2 it is recommended to provide the output of `generate_lorentz_curves()` directly to speed up computations. For details see section 'Details' after calling `help('gen_feat_mat')`.")
+        if (!file.exists(dd)) {
+            stop(dd, " does not exist.")
+        } else if (warn) {
+            warning(
+                "You have provided a path to `gen_feat_mat()`. Since",
+                "metabodecon v1.2 it is recommended to provide the output of",
+                "`generate_lorentz_curves()` directly to speed up",
+                "computations. For details see section 'Details' after",
+                "calling `help('gen_feat_mat')`."
+            )
+        }
         params <- read_decon_params(dd)
     }
     if (check) check_decon_params(params)
@@ -960,7 +976,9 @@ read_decon_params <- function(data_path) {
     spc_nam <- sub(" approximated_spectrum.txt", "", basename(spc_txt))
     if (length(par_txt) != length(spc_txt)) stop("Number of parameter files and spectrum files differs.")
     if (length(par_txt) == 0) stop("No parameter files found in the given directory.")
-    mapply(par_nam, spc_nam, FUN = function(p, s) if (p != s) warning(sprintf("Mismatched file names: %s and %s\n", p, s)) )
+    mapply(par_nam, spc_nam, FUN = function(p, s) {
+        if (p != s) warning(sprintf("Mismatched file names: %s and %s\n", p, s))
+    })
     par_lst <- lapply(par_txt, function(file) {
         data <- as.matrix(data.table::fread(file, header = FALSE))
         rownames(data) <- data[, 1]

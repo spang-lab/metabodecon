@@ -411,7 +411,7 @@ deconvolute_spectrum2 <- function(x,
         wsrm <- rm_water_signal2(x$cs, x$si, wshw)
         nvrm <- rm_negative_signals2(wsrm)
         sm <- smooth_signals2(nvrm, smopts[1], smopts[2])
-        peak <- find_peaks2(sm)
+        find_peaks2(sm)
         # CONTINUE HERE
         ispec <- filter_peaks(ispec, sfr, delta, force, bwc)
         ispec <- fit_lorentz_curves(ispec, nfit, bwc)
@@ -659,7 +659,6 @@ smooth_signals <- function(spec, reps = 2, k = 5, verbose = TRUE) {
 #' Dropped support for bwc == 0.
 smooth_signals2 <- function(y, reps = 2, k = 5) {
     if (k %% 2 == 0) stop("k must be odd")
-    Z <- vector("list", length = reps)
     n <- length(y)
     for (i in seq_len(reps)) {
         filter <- rep(1 / k, k)
@@ -720,7 +719,7 @@ find_peaks2 <- function(y) {
         j <- center[i]
         l <- peak$left[i]  <- get_left_border(j, d)
         r <- peak$right[i] <- get_right_border(j, d, n)
-        s <- peak$score[i] <- get_peak_score(j, l, r, a)
+        peak$score[i] <- get_peak_score(j, l, r, a)
     }
     logf("Detected %d peaks", length(center))
     peak
@@ -1012,7 +1011,6 @@ enrich_wshw <- function(wshw, x) {
 #' @author 2025 Tobias Schmidt: initial version.
 enrich_wshw2 <- function(wshw, cs) {
     n <- length(cs)
-    ppm_max <- max(cs)
     ppm_nstep <- diff(range(cs)) / n
     hwidth_ppm <- wshw
     hwidth_dp <- hwidth_ppm / ppm_nstep
@@ -1479,7 +1477,24 @@ calc_w <- function(wr, wc, wl, yr, yc, yl, wrc, wrl, wcl, yrc, yrl, ycl, xr) {
 #' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
 #' MetaboDecon1D.
 calc_lambda <- function(wr, wc, wl, yr, yc, yl, wrc, wrl, wcl, yrc, yrl, ycl, xr) {
-    lambda <- -((sqrt(abs((-wc^4 * yc^2 * yrl^2 - wr^4 * yr^2 * ycl^2 - wl^4 * yrc^2 * yl^2 + 4 * wc * wl^3 * yc * ((-yr) + yc) * yl^2 + 4 * wc^3 * wl * yc^2 * yl * ((-yr) + yl) + 4 * wr^3 * yr^2 * ycl * (wc * yc - wl * yl) + 4 * wr * yr * (wc^3 * yc^2 * yrl - wc * wl^2 * yc * (yr + yc - 2 * yl) * yl + wl^3 * yrc * yl^2 - wc^2 * wl * yc * yl * (yr - 2 * yc + yl)) + 2 * wc^2 * wl^2 * yc * yl * (yr^2 - 3 * yc * yl + yr * (yc + yl)) + 2 * wr^2 * yr * (-2 * wc * wl * yc * yl * (-2 * yr + yc + yl) + wl^2 * yl * (yr * (yc - 3 * yl) + yc * (yc + yl)) + wc^2 * yc * (yr * (-3 * yc + yl) + yl * (yc + yl)))))))) / (2 * sqrt((wr * yr * ycl + wl * yrc * yl + wc * yc * ((-yr) + yl))^2))
+    num <- -wc^4 * yc^2 * yrl^2 - wr^4 * yr^2 * ycl^2 - wl^4 * yrc^2 * yl^2
+    num <- num + 4 * wc * wl^3 * yc * ((-yr) + yc) * yl^2
+    num <- num + 4 * wc^3 * wl * yc^2 * yl * ((-yr) + yl)
+    num <- num + 4 * wr^3 * yr^2 * ycl * (wc * yc - wl * yl)
+    num <- num + 4 * wr * yr * (
+        wc^3 * yc^2 * yrl
+        - wc * wl^2 * yc * (yr + yc - 2 * yl) * yl
+        + wl^3 * yrc * yl^2
+        - wc^2 * wl * yc * yl * (yr - 2 * yc + yl)
+    )
+    num <- num + 2 * wc^2 * wl^2 * yc * yl * (yr^2 - 3 * yc * yl + yr * (yc + yl))
+    num <- num + 2 * wr^2 * yr * (
+        -2 * wc * wl * yc * yl * (-2 * yr + yc + yl)
+        + wl^2 * yl * (yr * (yc - 3 * yl) + yc * (yc + yl))
+        + wc^2 * yc * (yr * (-3 * yc + yl) + yl * (yc + yl))
+    )
+    den <- 2 * sqrt((wr * yr * ycl + wl * yrc * yl + wc * yc * ((-yr) + yl))^2)
+    lambda <- -(sqrt(abs(num)) / den)
     lambda[is.nan(lambda)] <- 0
     lambda
 }
@@ -1491,7 +1506,13 @@ calc_lambda <- function(wr, wc, wl, yr, yc, yl, wrc, wrl, wcl, yrc, yrl, ycl, xr
 #' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
 #' MetaboDecon1D.
 calc_A <- function(wr, wc, wl, yr, yc, yl, wrc, wrl, wcl, yrc, yrl, ycl, lambda, w, xr) {
-    A <- (-4 * wrc * wrl * wcl * yr * yc * yl * (wr * yr * ycl + wl * yl * yrc + wc * yc * (-yrl)) * lambda) / (wrc^4 * yr^2 * yc^2 - 2 * wrc^2 * yr * yc * (wrl^2 * yr + wcl^2 * yc) * yl + (wrl^2 * yr - wcl^2 * yc)^2 * yl^2)
+    num <- -4 * wrc * wrl * wcl * yr * yc * yl
+    num <- num * (wr * yr * ycl + wl * yl * yrc + wc * yc * (-yrl))
+    num <- num * lambda
+    den <- wrc^4 * yr^2 * yc^2
+    den <- den - 2 * wrc^2 * yr * yc * (wrl^2 * yr + wcl^2 * yc) * yl
+    den <- den + (wrl^2 * yr - wcl^2 * yc)^2 * yl^2
+    A <- num / den
     A[is.nan(A)] <- 0
     A
 }
@@ -1647,7 +1668,11 @@ store_as_rds <- function(decons, make_rds, data_path) {
             yes <- get_yn_input(sprintf("Save results as '%s'?", rdspath))
             if (yes) saveRDS(decons, rdspath)
         } else {
-            logf("Skipping RDS save: confirmation required but not in interactive mode. For details see `help('generate_lorentz_curves')`.")
+            logf(
+                "Skipping RDS save: confirmation required but not in",
+                "interactive mode. For details see",
+                "`help('generate_lorentz_curves')`."
+            )
         }
     }
 }

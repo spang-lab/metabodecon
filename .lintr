@@ -1,16 +1,23 @@
 linters: linters_with_defaults(
     brace_linter = NULL,
     infix_spaces_linter = NULL,
-    line_length_linter(9999),
-    object_length_linter(9999),
+    line_length_linter = line_length_linter(120),
+    object_length_linter = object_length_linter(60),
     commented_code_linter = NULL,
     object_name_linter = NULL,
     indentation_linter = NULL,
-    cyclocomp_linter = NULL,
     spaces_inside_linter = NULL,
     semicolon_linter = NULL
   )
 exclusions: list(
+    "vignettes/TODO/AKI_Classification.Rmd",
+    "vignettes/TODO/AKI_Original.Rmd",
+    "vignettes/TODO/Alignment_Details.md",
+    "vignettes/TODO/Deconvolution_Details.md",
+    "vignettes/TODO/NMR_Basics.md",
+    "vignettes/TODO/PRARPX_vs_MSE.Rmd",
+    "vignettes/TODO/Purpose.md",
+    "vignettes/TODO/Urine_analysis.md",
     "R/MetaboDecon1D.R",
     "R/depr.R"
   )

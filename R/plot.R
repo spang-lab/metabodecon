@@ -58,7 +58,7 @@ plot_spectra <- function(obj,
     cs_min <- min(sapply(css, min))
     cs_max <- max(sapply(css, max))
     line_colors <- rainbow(length(objs))
-    legend_text <- paste("Spectrum", 1:length(objs))
+    legend_text <- paste("Spectrum", seq_along(objs))
     local_par(mar = mar)
     plot(
         x = NA,
@@ -304,8 +304,8 @@ plot_spectrum <- function(x,
     fig1 <- do.call(draw_spectrum, args$sub1)
     fig2 <- do.call(draw_spectrum, args$sub2)
     fig3 <- do.call(draw_spectrum, args$sub3)
-    figC <- draw_con_lines(fig1 %||% fig2, fig3, con_lines)
-    figF <- draw_box(frame)
+    draw_con_lines(fig1 %||% fig2, fig3, con_lines)
+    draw_box(frame)
 
     invisible(NULL)
 }
@@ -315,7 +315,8 @@ plot_spectrum <- function(x,
 #' @description
 #' Draws a single spectrum.  Internally  used  by  [plot_spectrum()],  which  is
 #' usually  the  recommended  way  to  plot  spectra.  For  usage  examples  see
-#' [test/testthat/test-draw_spectrum.R](https://github.com/spang-lab/metabodecon/blob/main/tests/testthat/test-draw_spectrum.R).
+#' [test/testthat/test-draw_spectrum.R](
+#' https://github.com/spang-lab/metabodecon/blob/main/tests/testthat/test-draw_spectrum.R).
 #'
 #' `r lifecycle::badge("experimental")`
 #'
@@ -553,12 +554,12 @@ draw_spectrum <- function(
     }
 
     # Get indices of important points relative to all data points (611us)
-    idp <- idp_all <- seq_along(cs_all) # Data points
+    idp_all <- seq_along(cs_all) # Data points
     icp <- icp_all <- obj$peak$center # Center points (NS)
     ibp <- ibp_all <- unique(sort(c(obj$peak$left, obj$peak$right))) # Border points (NS)
-    ipp <- ipp_all <- sort(c(icp_all, ibp_all)) # Peak points (NS)
+    ipp_all <- sort(c(icp_all, ibp_all)) # Peak points (NS)
     inp <- inp_all <- setdiff(idp_all, ipp_all) # Nonpeak points (NS)
-    ifp <- ifp_all <- which(cs_all >= min(foc_rgn) & cs_all <= max(foc_rgn)) # Focus points
+    ifp_all <- which(cs_all >= min(foc_rgn) & cs_all <= max(foc_rgn)) # Focus points
 
     # Get estimated lorentz parameters across all data points (8us)
     lcpar <- obj$lcpar %||% empty_df(c("x0", "A", "lambda")) # (NS)
@@ -602,19 +603,17 @@ draw_spectrum <- function(
     if (foc_only) {
         # Get indices of important points relative to the vector of focus points (198us)
         offset <- min(ifp_all) - 1
-        idp <- idp_foc <- ifp_all - offset # Data points
-        icp <- icp_foc <- intersect(icp_all, ifp_all) - offset # Center points (NS)
-        ibp <- ibp_foc <- intersect(ibp_all, ifp_all) - offset # Border points (NS)
-        ipp <- ipp_foc <- intersect(ipp_all, ifp_all) - offset # Peak points (NS)
-        inp <- inp_foc <- intersect(inp_all, ifp_all) - offset # Nonpeak points (NS)
+        icp <- intersect(icp_all, ifp_all) - offset # Center points (NS)
+        ibp <- intersect(ibp_all, ifp_all) - offset # Border points (NS)
+        inp <- intersect(inp_all, ifp_all) - offset # Nonpeak points (NS)
 
         # Get xy values over the focus region (18us)
-        cs <- cs_foc <- cs_all[ifp_all]
-        si <- si_foc <- si_all[ifp_all]
-        sm <- sm_foc <- sm_all[ifp_all]
-        d2 <- d2_foc <- d2_all[ifp_all]
-        sup <- sup_foc <- sup_all[ifp_all]
-        supal <- supal_foc <- supal_all[ifp_all]
+        cs <- cs_all[ifp_all]
+        si <- si_all[ifp_all]
+        sm <- sm_all[ifp_all]
+        d2 <- d2_all[ifp_all]
+        sup <- sup_all[ifp_all]
+        supal <- supal_all[ifp_all]
 
         # Filter out lorentzians not affecting focus region (239us)
         y_tresh <- 0.001 * diff(range(si))
@@ -623,7 +622,7 @@ draw_spectrum <- function(
             y_foc_end   <- lorentz(x = max(foc_rgn), lcpar = lcpar)
             high_in_foc <- y_foc_start > y_tresh | y_foc_end > y_tresh
             x0_in_foc   <- lcpar$x0 > min(foc_rgn) & lcpar$x0 < max(foc_rgn)
-            affects_foc <- high_in_foc | x0_in_foc
+            high_in_foc | x0_in_foc
         }
         lcpar <- lcpar[affects_foc_rgn(lcpar), ]
         trpar <- trpar[affects_foc_rgn(trpar), ]
@@ -632,7 +631,7 @@ draw_spectrum <- function(
     # Define a seperate dataframe `alpar` holding the parameters of the aligned
     # lorentzians. If no aligned lorentzians are present, set alpar to an empty
     # dataframe.
-    alpar <- if (is.null(lcpar$x0_al)) lcpar[0,] else lcpar
+    alpar <- if (is.null(lcpar$x0_al)) lcpar[0, ] else lcpar
     alpar$x0 <- lcpar$x0_al
     alpar$x0_al <- NULL
 
@@ -707,7 +706,7 @@ draw_spectrum <- function(
 #' @title Setup a development environment for `plot_spectrum`
 #' @author 2024-2025 Tobias Schmidt: initial version.
 mkenv_plot_spectrum <- function() {
-    args <- stub(
+    stub(
         func = plot_spectrum,
         x = deconvolute(metabodecon::sim[[1]], sfr = c(3.55, 3.35)),
         ... = NULL,
@@ -720,7 +719,7 @@ mkenv_plot_spectrum <- function() {
 mkenv_draw_spectrum <- function() {
     decons <- deconvolute(metabodecon::sim[1:4], sfr = c(3.55, 3.35))
     aligns <- align(decons, maxShift = 100, maxCombine = 0)
-    args <- stub(
+    stub(
         func = draw_spectrum,
         obj = aligns[[2]],
         envir = .GlobalEnv
@@ -909,7 +908,6 @@ test_grafical_units <- function() {
         label <- sprintf("0.25 - 0.75 %s == %s %s", unit, xur, "user")
         text(x = 0.5, y = y, labels = label, pos = 3)
     }
-    fig1 <- par("fig")
     with_fig(
         fig = c(0, 1, 0, 1),
         expr = {
@@ -939,7 +937,7 @@ plot_sfr <- function(cs, si, sfr) {
         type = "l",
         xlab = "Chemical Shift [ppm]",
         ylab = "Signal Intensity [au]",
-        xlim = xlim <- c(max(cs), min(cs)),
+        xlim = c(max(cs), min(cs)),
         xaxs = "i",
     )
     txt <- "Signal Free Region"
@@ -1265,7 +1263,7 @@ draw_verts <- function(x, h, args = list()) {
     if (isFALSE(pop(args, "show"))
         || length(x) == 0
         || length(x) != length(h)) return()
-    height <- pop(args, "height", default = "full")
+    pop(args, "height", default = "full")
     args$x0 <- x
     args$x1 <- x
     args$y0 <- rep(par("usr")[3], length(x))
@@ -1409,7 +1407,9 @@ get_foc_rgn <- function(obj, foc_frac = NULL) {
 #' @noRd
 #' @author 2024-2025 Tobias Schmidt: initial version.
 get_sub_fig_args <- function(obj, foc_frac, foc_rgn, sub1, sub2, sub3, dot_args) {
-    if ((n <- length(dot_args)) != (k <- length(names(dot_args)))) {
+    n <- length(dot_args)
+    k <- length(names(dot_args))
+    if (n != k) {
         if (n == 1) dot_args <- dot_args[[1]]
         else stop("... must contain tag=value pairs or a single list of such pairs")
     }
@@ -1696,14 +1696,12 @@ local_fig <- function(fig = NULL, add = TRUE, envir = parent.frame()) {
 #' stopifnot(isTRUE(x) && isFALSE(y))
 mf_filled_by_row <- function() {
     mfg <- par("mfg")
-    row <- mfg[1]
-    col <- mfg[2]
     nrows <- mfg[3]
     ncols <- mfg[4]
     if (nrows == 1 || ncols == 1) {
         # In this case it doesn't matter, as the figure spots in the grid will
         # be filled top-to-bottom / left-to-right in both cases.
-        return(TRUE)
+        TRUE
     } else {
         # We have at least two rows AND two cols. So what we can do is to set
         # c(1, 1) as next figure, and then advance one frame. If we end up in
@@ -1722,6 +1720,6 @@ mf_filled_by_row <- function() {
         plot_empty() # Draw into c(1, 1)
         plot_empty() # Draw into c(1, 2) or c(2, 1)
         mfg2 <- par("mfg") # Query current position
-        return(if (mfg2[1] == 1) TRUE else FALSE)
+        if (mfg2[1] == 1) TRUE else FALSE
     }
 }

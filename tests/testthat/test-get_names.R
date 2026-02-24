@@ -24,4 +24,3 @@ test_that("get_names() works", {
     expect_equal(get_names(xx), c("a", "spectrum_2"))
 
 })
-

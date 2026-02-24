@@ -3,8 +3,8 @@ testthat::skip_on_ci()
 
 test_plot_sfr <- function() {
     plot_sfr(
-        cs = sim[[1]]$cs,
-        si = sim[[1]]$si,
+        cs = metabodecon::sim[[1]]$cs,
+        si = metabodecon::sim[[1]]$si,
         sfr = c(3.55, 3.35)
     )
 }
