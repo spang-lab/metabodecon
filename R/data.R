@@ -441,7 +441,7 @@ download_example_datasets_zip <- function(path,
                                           url = xds$url,
                                           zip_size = xds$zip_size) {
     mkdirs(dirname(path))
-    path <- normalizePath(path, "/", mustWork = TRUE)
+    path <- normalizePath(path, "/", mustWork = FALSE)
     if (!is.null(copyfrom) && file.exists(copyfrom) && file.size(copyfrom) == zip_size) {
         if (!silent) message(sprintf("Copying cached archive %s to %s", copyfrom, path))
         file.copy(copyfrom, path, overwrite = TRUE)
