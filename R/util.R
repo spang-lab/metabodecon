@@ -990,11 +990,17 @@ du <- function(obj, pname = "", level = 0, max_level = 1, max_len = 50, unit = "
 #' @param max.level The maximum depth of directories to list.
 #'
 #' @param max.entries Maximum number of children to print per directory.
-#' If a directory has more entries than this limit, only the first
-#' `max.entries` children are shown followed by `...`.
+#' If a directory has more entries than this limit, the first
+#' `ceiling(max.entries / 2)` and last `floor(max.entries / 2)` children are
+#' shown, with `... [N]` in between, where `N` is the number of omitted
+#' children.
 #'
-#' @param show.counts Logical. If `TRUE`, prints the number of files (not
-#' subdirectories) in brackets after each directory name. Disabled by default.
+#' @param show.counts Logical. If `TRUE`, prints the number of direct children
+#' (files + subdirectories) in brackets after each directory name. Disabled by
+#' default.
+#'
+#' @param files.first Logical. If `TRUE`, files are listed before
+#' subdirectories. If `FALSE` (default), subdirectories are listed first.
 #'
 #' @param level Internal parameter used for recursion, indicating the current
 #' level of depth.
@@ -1014,6 +1020,7 @@ tree <- function(path,
                  max.level = 2,
                  max.entries = Inf,
                  show.counts = FALSE,
+                 files.first = FALSE,
                  level = 0,
                  prefix = "") {
 
@@ -1022,13 +1029,15 @@ tree <- function(path,
     entries <- list.files(path, full.names = TRUE)
     dirs <- entries[isdir <- file.info(entries)$isdir]
     files <- entries[!isdir]
-    all_entries <- sort(c(dirs, files))
+    dirs <- sort(dirs)
+    files <- sort(files)
+    all_entries <- if (isTRUE(files.first)) c(files, dirs) else c(dirs, files)
     num_entries <- length(all_entries)
 
     if (level == 0) {
         if (isTRUE(show.counts)) {
-            root_n_files <- count_files_in_dir(path)
-            cat(path, " [", root_n_files, "]", "\n", sep = "")
+            root_n_entries <- count_entries_in_dir(path)
+            cat(path, " [", root_n_entries, "]", "\n", sep = "")
         } else {
             cat(path, "\n", sep = "")
         }
@@ -1043,18 +1052,32 @@ tree <- function(path,
         n_show <- min(num_entries, max(0, floor(max.entries)))
     }
     n_show <- as.integer(n_show)
-    shown_entries <- if (n_show > 0) all_entries[seq_len(n_show)] else character(0)
     truncated <- num_entries > n_show
+    n_top <- if (truncated) ceiling(n_show / 2) else n_show
+    n_bottom <- if (truncated) floor(n_show / 2) else 0L
+    shown_top <- if (n_top > 0) all_entries[seq_len(n_top)] else character(0)
+    shown_bottom <- if (n_bottom > 0) tail(all_entries, n_bottom) else character(0)
 
-    for (i in seq_along(shown_entries)) {
-        entry <- shown_entries[i]
-        is_last <- (!truncated) && (i == length(shown_entries))
+    printed_entries <- if (truncated) {
+        c(shown_top, "...", shown_bottom)
+    } else {
+        shown_top
+    }
+    for (i in seq_along(printed_entries)) {
+        entry <- printed_entries[i]
+        is_ellipsis <- identical(entry, "...")
+        is_last <- i == length(printed_entries)
         prefix2 <- if (is_last) "\u2514\u2500\u2500 " else "\u251C\u2500\u2500 "
+        if (is_ellipsis) {
+            n_omitted <- num_entries - n_show
+            cat(prefix, prefix2, "... [", n_omitted, "]", "\n", sep = "")
+            next
+        }
         entry_is_dir <- isTRUE(file.info(entry)$isdir)
         if (entry_is_dir) {
             if (isTRUE(show.counts)) {
-                n_files <- count_files_in_dir(entry)
-                cat(prefix, prefix2, basename(entry), "/", " [", n_files, "]", "\n", sep = "")
+                n_entries <- count_entries_in_dir(entry)
+                cat(prefix, prefix2, basename(entry), "/", " [", n_entries, "]", "\n", sep = "")
             } else {
                 cat(prefix, prefix2, basename(entry), "/", "\n", sep = "")
             }
@@ -1068,27 +1091,37 @@ tree <- function(path,
                 max.level = max.level,
                 max.entries = max.entries,
                 show.counts = show.counts,
+                files.first = files.first,
                 level = level + 1,
                 prefix = new_prefix
             )
         }
     }
 
-    if (truncated) {
-        prefix2 <- "\u2514\u2500\u2500 "
-        cat(prefix, prefix2, "...", "\n", sep = "")
-    }
-
     invisible(NULL)
 }
 
+#' @export
+#' @rdname tree
+tree_preview <- function(path,
+                         max.level = 1,
+                         max.entries = 9,
+                         show.counts = TRUE,
+                         files.first = TRUE) {
+    tree(
+        path = path,
+        max.level = max.level,
+        max.entries = max.entries,
+        show.counts = show.counts,
+        files.first = files.first
+    )
+}
+
 #' @noRd
-#' @description Count direct child files in a directory (excluding subdirectories).
-count_files_in_dir <- function(dir) {
+#' @description Count direct children (files and subdirectories) in a directory.
+count_entries_in_dir <- function(dir) {
     entries <- list.files(dir, full.names = TRUE)
-    if (!length(entries)) return(0L)
-    is_dir <- file.info(entries)$isdir
-    as.integer(sum(!is_dir, na.rm = TRUE))
+    as.integer(length(entries))
 }
 
 #' @noRd

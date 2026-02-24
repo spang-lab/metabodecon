@@ -2,6 +2,7 @@
 % Please edit documentation in R/util.R
 \name{tree}
 \alias{tree}
+\alias{tree_preview}
 \title{Print the Structure of a Directory Tree}
 \usage{
 tree(
@@ -9,8 +10,17 @@ tree(
   max.level = 2,
   max.entries = Inf,
   show.counts = FALSE,
+  files.first = FALSE,
   level = 0,
   prefix = ""
+)
+
+tree_preview(
+  path,
+  max.level = 1,
+  max.entries = 5,
+  show.counts = TRUE,
+  files.first = TRUE
 )
 }
 \arguments{
@@ -20,11 +30,17 @@ structure.}
 \item{max.level}{The maximum depth of directories to list.}
 
 \item{max.entries}{Maximum number of children to print per directory.
-If a directory has more entries than this limit, only the first
-\code{max.entries} children are shown followed by \code{...}.}
+If a directory has more entries than this limit, the first
+\code{ceiling(max.entries / 2)} and last \code{floor(max.entries / 2)}
+children are shown, with \code{... [N]} in between, where \code{N} is the
+number of omitted children.}
 
-\item{show.counts}{Logical. If \code{TRUE}, prints the number of files (not
-subdirectories) in brackets after each directory name. Disabled by default.}
+\item{show.counts}{Logical. If \code{TRUE}, prints the number of direct
+children (files + subdirectories) in brackets after each directory name.
+Disabled by default.}
+
+\item{files.first}{Logical. If \code{TRUE}, files are listed before
+subdirectories. If \code{FALSE} (default), subdirectories are listed first.}
 
 \item{level}{Internal parameter used for recursion, indicating the current
 level of depth.}

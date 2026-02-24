@@ -188,6 +188,371 @@ print.rdecons <- function(x, ...) {
 #' @export
 `[.rdecons` <- `[.collection`
 
+# Concat (Private) #####
+
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
+concat_collection_args <- function(args,
+                                   recursive,
+                                   is_elem,
+                                   is_coll,
+                                   coll_class,
+                                   default_names,
+                                   update_n_files = FALSE,
+                                   err_msg = NULL) {
+    assert(is_bool(recursive, 1))
+    out <- list()
+    for (arg in args) {
+        if (is.null(arg)) next
+        if (is_elem(arg)) {
+            out <- c(out, list(arg))
+        } else if (is_coll(arg)) {
+            out <- c(out, unclass(arg))
+        } else if (is.list(arg) && all(sapply(arg, is_elem))) {
+            out <- c(out, arg)
+        } else {
+            stop(err_msg, call. = FALSE)
+        }
+    }
+    class(out) <- coll_class
+    out <- set_names(out, get_names(out, default = default_names))
+    if (isTRUE(update_n_files)) {
+        n <- length(out)
+        for (i in seq_len(n)) out[[i]]$number_of_files <- n
+    }
+    out
+}
+
+#' @export
+c.spectrum <- function(..., recursive = FALSE) {
+    concat_collection_args(
+        args = list(...),
+        recursive = recursive,
+        is_elem = is_spectrum,
+        is_coll = is_spectra,
+        coll_class = "spectra",
+        default_names = "spectrum_%d",
+        err_msg = "All arguments to c.spectrum must be spectrum or spectra."
+    )
+}
+
+#' @export
+c.spectra <- function(..., recursive = FALSE) {
+    concat_collection_args(
+        args = list(...),
+        recursive = recursive,
+        is_elem = is_spectrum,
+        is_coll = is_spectra,
+        coll_class = "spectra",
+        default_names = "spectrum_%d",
+        err_msg = "All arguments to c.spectra must be spectrum or spectra."
+    )
+}
+
+#' @export
+c.decon1 <- function(..., recursive = FALSE) {
+    concat_collection_args(
+        args = list(...),
+        recursive = recursive,
+        is_elem = is_decon1,
+        is_coll = is_decons1,
+        coll_class = "decons1",
+        default_names = "decon1_%d",
+        update_n_files = TRUE,
+        err_msg = "All arguments to c.decon1 must be decon1 or decons1."
+    )
+}
+
+#' @export
+c.decons1 <- function(..., recursive = FALSE) {
+    c.decon1(..., recursive = recursive)
+}
+
+#' @export
+c.decon2 <- function(..., recursive = FALSE) {
+    concat_collection_args(
+        args = list(...),
+        recursive = recursive,
+        is_elem = is_decon2,
+        is_coll = is_decons2,
+        coll_class = "decons2",
+        default_names = "decon2_%d",
+        err_msg = "All arguments to c.decon2 must be decon2 or decons2."
+    )
+}
+
+#' @export
+c.decons2 <- function(..., recursive = FALSE) {
+    c.decon2(..., recursive = recursive)
+}
+
+#' @export
+c.align <- function(..., recursive = FALSE) {
+    concat_collection_args(
+        args = list(...),
+        recursive = recursive,
+        is_elem = is_align,
+        is_coll = is_aligns,
+        coll_class = "aligns",
+        default_names = "align_%d",
+        err_msg = "All arguments to c.align must be align or aligns."
+    )
+}
+
+#' @export
+c.aligns <- function(..., recursive = FALSE) {
+    c.align(..., recursive = recursive)
+}
+
+#' @export
+c.ispec <- function(..., recursive = FALSE) {
+    concat_collection_args(
+        args = list(...),
+        recursive = recursive,
+        is_elem = is_ispec,
+        is_coll = is_ispecs,
+        coll_class = "ispecs",
+        default_names = "ispec_%d",
+        err_msg = "All arguments to c.ispec must be ispec or ispecs."
+    )
+}
+
+#' @export
+c.ispecs <- function(..., recursive = FALSE) {
+    c.ispec(..., recursive = recursive)
+}
+
+#' @export
+c.idecon <- function(..., recursive = FALSE) {
+    concat_collection_args(
+        args = list(...),
+        recursive = recursive,
+        is_elem = is_idecon,
+        is_coll = is_idecons,
+        coll_class = "idecons",
+        default_names = "idecon_%d",
+        err_msg = "All arguments to c.idecon must be idecon or idecons."
+    )
+}
+
+#' @export
+c.idecons <- function(..., recursive = FALSE) {
+    c.idecon(..., recursive = recursive)
+}
+
+#' @export
+c.rdecon <- function(..., recursive = FALSE) {
+    concat_collection_args(
+        args = list(...),
+        recursive = recursive,
+        is_elem = is_rdecon,
+        is_coll = is_rdecons,
+        coll_class = "rdecons",
+        default_names = "rdecon_%d",
+        err_msg = "All arguments to c.rdecon must be rdecon or rdecons."
+    )
+}
+
+#' @export
+c.rdecons <- function(..., recursive = FALSE) {
+    c.rdecon(..., recursive = recursive)
+}
+
+# Format (Public) #####
+
+#' @export
+format.spectrum <- function(x, ...) {
+    fmt <- "spectrum object (%d dp, %.1f to %.1f ppm)"
+    sprintf(fmt, length(x$cs), max(x$cs), min(x$cs))
+}
+
+#' @export
+format.decon1 <- function(x, ...) {
+    ppm <- x$x_values_ppm
+    fmt <- "decon1 object (%d dp, %.1f to %.1f ppm, %d peaks)"
+    sprintf(fmt, length(ppm), max(ppm), min(ppm), length(x$A))
+}
+
+#' @export
+format.decon2 <- function(x, ...) {
+    fmt <- "decon2 object (%d dp, %.1f to %.1f ppm, %d peaks)"
+    sprintf(fmt, length(x$cs), max(x$cs), min(x$cs), length(x$lcpar$A))
+}
+
+#' @export
+format.align <- function(x, ...) {
+    fmt <- "align object (%d dp, %.1f to %.1f ppm, %d peaks)"
+    sprintf(fmt, length(x$cs), max(x$cs), min(x$cs), length(x$lcpar$A))
+}
+
+#' @export
+format.spectra <- function(x, ...) {
+    sprintf("spectra object with %d spectrum elements", length(x))
+}
+
+#' @export
+format.decons1 <- function(x, ...) {
+    sprintf("decons1 object with %d decon1 elements", length(x))
+}
+
+#' @export
+format.decons2 <- function(x, ...) {
+    sprintf("decons2 object with %d decon2 elements", length(x))
+}
+
+#' @export
+format.aligns <- function(x, ...) {
+    sprintf("aligns object with %d align elements", length(x))
+}
+
+#' @export
+format.ispec <- function(x, ...) {
+    sprintf("ispec object (%d dp, %.1f to %.1f ppm)", length(x$ppm), max(x$ppm), min(x$ppm))
+}
+
+#' @export
+format.idecon <- function(x, ...) {
+    sprintf("idecon object (%d dp, %.1f to %.1f ppm, %d peaks)",
+        length(x$ppm), max(x$ppm), min(x$ppm), length(x$lcr$A))
+}
+
+#' @export
+format.rdecon <- function(x, ...) {
+    "rdecon object"
+}
+
+#' @export
+format.ispecs <- function(x, ...) {
+    sprintf("ispecs object with %d ispec elements", length(x))
+}
+
+#' @export
+format.idecons <- function(x, ...) {
+    sprintf("idecons object with %d idecon elements", length(x))
+}
+
+#' @export
+format.rdecons <- function(x, ...) {
+    sprintf("rdecons object with %d rdecon elements", length(x))
+}
+
+# Summary (Public) #####
+
+#' @export
+summary.spectrum <- function(object, ...) {
+    x <- object
+    list(
+        name = get_name(x, NA_character_),
+        n_dp = length(x$cs),
+        ppm_min = min(x$cs),
+        ppm_max = max(x$cs),
+        si_min = min(x$si),
+        si_max = max(x$si)
+    )
+}
+
+#' @export
+summary.decon1 <- function(object, ...) {
+    x <- object
+    list(
+        name = x$filename %||% NA_character_,
+        n_dp = length(x$x_values_ppm),
+        ppm_min = min(x$x_values_ppm),
+        ppm_max = max(x$x_values_ppm),
+        n_peaks = length(x$A),
+        mse_normed = x$mse_normed
+    )
+}
+
+#' @export
+summary.decon2 <- function(object, ...) {
+    x <- object
+    list(
+        name = x$meta$name %||% NA_character_,
+        n_dp = length(x$cs),
+        ppm_min = min(x$cs),
+        ppm_max = max(x$cs),
+        n_peaks = length(x$lcpar$A),
+        mse_norm = x$mse$norm
+    )
+}
+
+#' @export
+summary.align <- function(object, ...) {
+    summary.decon2(object, ...)
+}
+
+#' @noRd
+summary_collection <- function(x, summary_fun) {
+    rows <- lapply(x, function(elem) as.data.frame(summary_fun(elem)))
+    out <- do.call(rbind, rows)
+    rownames(out) <- get_names(x)
+    out
+}
+
+#' @export
+summary.spectra <- function(object, ...) {
+    summary_collection(object, summary.spectrum)
+}
+
+#' @export
+summary.decons1 <- function(object, ...) {
+    summary_collection(object, summary.decon1)
+}
+
+#' @export
+summary.decons2 <- function(object, ...) {
+    summary_collection(object, summary.decon2)
+}
+
+#' @export
+summary.aligns <- function(object, ...) {
+    summary_collection(object, summary.align)
+}
+
+#' @export
+summary.ispec <- function(object, ...) {
+    x <- object
+    list(
+        name = get_name(x, NA_character_),
+        n_dp = length(x$ppm),
+        ppm_min = min(x$ppm),
+        ppm_max = max(x$ppm)
+    )
+}
+
+#' @export
+summary.idecon <- function(object, ...) {
+    x <- object
+    list(
+        name = get_name(x, NA_character_),
+        n_dp = length(x$ppm),
+        ppm_min = min(x$ppm),
+        ppm_max = max(x$ppm),
+        n_peaks = length(x$lcr$A)
+    )
+}
+
+#' @export
+summary.rdecon <- function(object, ...) {
+    list(name = get_name(object, NA_character_))
+}
+
+#' @export
+summary.ispecs <- function(object, ...) {
+    summary_collection(object, summary.ispec)
+}
+
+#' @export
+summary.idecons <- function(object, ...) {
+    summary_collection(object, summary.idecon)
+}
+
+#' @export
+summary.rdecons <- function(object, ...) {
+    summary_collection(object, summary.rdecon)
+}
+
 # Checks (Public) #####
 
 #' @export

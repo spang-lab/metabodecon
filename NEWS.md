@@ -18,7 +18,21 @@
   - AKI analysis vignette moved from TODO/WIP flow into `vignettes/`.
 * Improved plotting and utilities:
   - `draw_spectrum()` can display true/false/missed peaks
-  - `tree()` received argument checks and minor utility cleanups.
+  - `tree()` received argument checks and utility cleanups.
+  - Added `tree_preview()` as a compact alias for common top-level inspection.
+  - Improved `tree()` output options:
+    - direct-child counts (`files + dirs`) via `show.counts`
+    - optional file-first ordering via `files.first`
+    - omitted-entry counts shown as `... [N]`
+    - for truncated output (`max.entries`), show top/bottom entries with
+      ellipsis in the middle.
+* Expanded S3 method coverage for metabodecon classes:
+  - Added `c()` methods for public and private class families
+    (single-object + collection classes).
+  - Added `format()` and `summary()` methods for public and private class
+    families.
+  - Added dedicated method tests and consolidated S3 tests into
+    `test-class_methods.R`.
 * Improved test and CI stability by silencing noisy tests, preventing
   interactive mirror prompts, hardening install tests, and fixing lint issues.
 

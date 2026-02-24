@@ -9,7 +9,15 @@ vignette: >
 ---
 
 ```{r set-defaults, echo=FALSE, results=FALSE, message=FALSE}
-source("defaults.R")
+knitr::opts_chunk$set(
+  fig.dim = c(5, 5),
+  fig.show = "hold",
+  out.height = "auto",
+  eval = FALSE,
+  echo = FALSE,
+  results = FALSE,
+  message = FALSE
+)
 ```
 
 This vignette illustrates the relationship between PRARPX and MSE for a

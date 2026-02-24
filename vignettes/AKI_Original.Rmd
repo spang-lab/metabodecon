@@ -1,6 +1,9 @@
 ---
 title: "AKI Original (Paper-Style Reproduction)"
-output: rmarkdown::html_vignette
+output:
+  rmarkdown::html_vignette: default
+  pdf_document:
+    latex_engine: xelatex
 css: styles.css
 vignette: >
   %\VignetteIndexEntry{AKI Original (Paper-Style Reproduction)}
@@ -9,7 +12,6 @@ vignette: >
 ---
 
 ```{r set-defaults, echo=FALSE, results=FALSE, message=FALSE}
-source("defaults.R")
 knitr::opts_chunk$set(fig.dim = c(7, 5), out.width = "50%", eval = TRUE)
 ```
 
@@ -23,24 +25,23 @@ reproduce the reported performance of 76% accuracy and 83% AUC.
 
 Relevant parts from the original paper are:
 
-> The region from 9.5 to 0.5 ppm of the 1D spectra was evenly split into
-> bins of 0.01. After exclusion of the solvent area and the area
-> containing the broad urea signal from 6.5 to 4.5 ppm, 701 bins remained
-> for each 1D spectrum.
->
-> All spectra were normalized prior to analysis by Quantile Normalization
-> (Bolstad et al. 2003; Kohl et al. 2012) to achieve equal distributions
-> of feature intensities across spectra.
->
-> Classification of spectra was performed using a SVM provided in the
-> R-library e1071 (http://cran.r-project.org/ web/packages/e1071) within a
-> nested cross-validation approach.
->
-> For this contribution a SVM with a radial basis function kernel was used
-> within a leave-five-out cross-validation.
->
-> The internal parameters of the SVM were calibrated within an inner
-> cross-validation loop employing a grid search procedure.
+- The region from 9.5 to 0.5 ppm of the 1D spectra was evenly split into bins of
+  0.01. After exclusion of the solvent area and the area containing the broad
+  urea signal from 6.5 to 4.5 ppm, 701 bins remained for each 1D spectrum.
+
+- All spectra were normalized prior to analysis by Quantile Normalization
+  (Bolstad et al. 2003; Kohl et al. 2012) to achieve equal distributions of
+  feature intensities across spectra.
+
+- Classification of spectra was performed using a SVM provided in the R-library
+  e1071 (http://cran.r-project.org/ web/packages/e1071) within a nested
+  cross-validation approach.
+
+- For this contribution a SVM with a radial basis function kernel was used
+  within a leave-five-out cross-validation.
+
+- The internal parameters of the SVM were calibrated within an inner
+  cross-validation loop employing a grid search procedure.
 
 ## Helper Functions
 
@@ -90,11 +91,11 @@ Based on these instructions we're gonna implement the following helper functions
 
 The final classification pipeline will then be implemented as follows:
 
-```{r pipeline, echo=TRUE}
+```{r pipeline}
 benchmark_aki_classification <- function() {
 
-   xds_dir <- download_example_datasets()
-   path <- file.path(xds_dir, "bruker", "aki")
+    xds_dir <- download_example_datasets()
+    path <- file.path(xds_dir, "bruker", "aki")
 
     spectra <- read_spectra(path)
     meta <- read_metadata(path)
@@ -109,9 +110,9 @@ benchmark_aki_classification <- function() {
 
     results <- lapply(seq_len(k), function(i) {
         X_train <- X[train_ids[[i]], ]
+        X_test  <- X[test_ids[[i]], ]
         y_train <- y[train_ids[[i]]]
-        X_test <- X[test_ids[[i]], ]
-        y_test <- y[test_ids[[i]]]
+        y_test  <- y[test_ids[[i]]]
 
         param_grid <- find_best_params(X_train, y_train)
         idx_best <- which.max(param_grid$auc)
@@ -148,13 +149,37 @@ way, before showing the final results at the end of the vignette.
 ### Downloading the Data
 
 The first thing we need to do is to download the data, if not already available
-locally. This is done via `download_example_datasets()`. The AKI dataset is
-then available in the `bruker/aki` subdirectory of the downloaded data. After
-that we will use metabodecon's `tree()` function to visualize the directory
+locally. This is done via `download_example_datasets()`. The AKI dataset is then
+available in the `bruker/aki` subdirectory of the downloaded data. After that we
+will use metabodecon's `tree_preview()` function to visualize the directory
 structure of the downloaded data.
 
-```
+```{r download}
 xds_dir <- metabodecon::download_example_datasets()
 aki_dir <- file.path(xds_dir, "bruker", "aki")
-metabodecon::tree(aki_dir)
+metabodecon::tree_preview(aki_dir)
+```
+
+### Reading Spectra and Metadata
+
+Now that we have the data, we can read the spectra and metadata using
+`read_spectra()` and `read_csv()`, respectively. The spectra will be as object
+of class `spectra`, while the metadata will be stored in a data frame. For more
+details about the spectra class, see article
+[Metabdecon-Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
+To better understand the dataset, we will first use a combination of `print()`
+and `summary()` to get an overview of the spectra and metadata objects. Then we
+will use `plot_spectrum()` on a small, randomly selected subset of spectra to
+visualize the raw data.
+
+```{r read}
+spectra <- metabodecon::read_spectra(aki_dir)
+print(object.size(spectra), units = "Mb")
+print(head(spectra, 4))
+
+meta <- read.csv(file.path(aki_dir, "s_MTBLS24.txt"), sep = "\t")
+meta <- meta[, c("Sample.Name", "Factor.Value.Acute.Kidney.Injury.")]
+colnames(meta) <- c("SampleID", "Type")
+head(meta, 4)
+tail(meta, 4)
 ```
