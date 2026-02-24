@@ -374,15 +374,13 @@ cache_example_datasets <- function(persistent = NULL,
                                    overwrite = FALSE,
                                    silent = FALSE) {
 
-    pdir <- datadir_persistent()
-    pzip <- norm_path(file.path(pdir, "example_datasets.zip"))
+    pzip <- zip_persistent()
     pzip_exists <- file.exists(pzip)
     pzip_is_missing <- !pzip_exists
     pzip_has_correct_size <- isTRUE(file.size(pzip) == xds$zip_size) # Implies existence
     pzip_has_wrong_size <- !pzip_has_correct_size
 
-    tdir <- datadir_temp()
-    tzip <- file.path(tdir, "example_datasets.zip")
+    tzip <- zip_temp()
     tzip_has_correct_size <- isTRUE(file.size(tzip) == xds$zip_size)
     tzip_has_wrong_size <- !tzip_has_correct_size
 
@@ -403,7 +401,7 @@ cache_example_datasets <- function(persistent = NULL,
         }
     }
 
-    zip <- if (persistent) pzip else tzip
+    zip <- normalizePath(if (persistent) pzip else tzip, "/", mustWork = FALSE)
     dstdir <- file.path(dirname(zip), "example_datasets")
     if (extract) {
         if (dir.exists(dstdir) && overwrite) unlink(dstdir, recursive = TRUE)
@@ -443,6 +441,7 @@ download_example_datasets_zip <- function(path,
                                           url = xds$url,
                                           zip_size = xds$zip_size) {
     mkdirs(dirname(path))
+    path <- normalizePath(path, "/", mustWork = TRUE)
     if (!is.null(copyfrom) && file.exists(copyfrom) && file.size(copyfrom) == zip_size) {
         if (!silent) message(sprintf("Copying cached archive %s to %s", copyfrom, path))
         file.copy(copyfrom, path, overwrite = TRUE)
