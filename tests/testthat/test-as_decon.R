@@ -17,10 +17,10 @@ library(testthat)
 # Inputs #####
 trySilent <- function(expr) try(expr, silent = TRUE)
 idecon <- trySilent(deconvolute_spectrum(
-    x=sap$sap_01, sfr=c(3.2,-3.2), smopts=c(2, 3),
+    x=sap$sap_01, sfr=c(3.2,-3.2), smopts=c(2, 3), verbose=FALSE
 ))
 rdecon <- trySilent(deconvolute_spectrum(
-    x=sap$sap_01, sfr=c(3.2, -3.2), smopts=c(2, 3), rtyp="rdecon", use_rust=TRUE
+    x=sap$sap_01, sfr=c(3.2, -3.2), smopts=c(2, 3), rtyp="rdecon", use_rust=TRUE, verbose=FALSE
 ))
 decon2i <- try(as_decon2(idecon), silent = TRUE) # (1)
 decon1i <- try(as_decon1(idecon), silent = TRUE) # (1)
