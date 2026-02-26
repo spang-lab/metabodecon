@@ -20,6 +20,20 @@
   `ggplot2::ggplot()`. Exceptions are functions from R's standard library like
   `sum()`, `mean()`, etc.
 
+## Pseudocode mode for vignettes
+
+- Definition: "pseudocode mode" means code examples are written primarily for
+  readability and teaching, while still running under normal/ideal conditions.
+- Scope: Use pseudocode mode for all newly added or modified code in
+  `vignettes/*.Rmd`.
+- Keep code compact and direct: prefer fewer lines, fewer helper variables, and
+  simple control flow.
+- Prefer clear intent over defensive robustness in vignettes. Avoid extra
+  safeguards that distract from the main idea unless they are essential to
+  understand the method.
+- Keep naming short when context is obvious (e.g. `X`, `y`, `te`, `Xtr`,
+  `Xte`).
+
 ## Project Structure
 
 - `_pkgdown.yml`: Configuration file for the pkgdown website.

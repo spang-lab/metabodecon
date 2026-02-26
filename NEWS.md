@@ -1,5 +1,33 @@
 # metabodecon 1.6.3-branch:paper
 
+* Since last commit:
+  - Added internal AKI modeling modules `R/paper_aki_orig.R` and `R/mdm.R`
+    with helpers for binning, normalization (quantile/PQN/creatinine/sum/
+    median/none), nested CV benchmarking, caching, and plotting.
+  - Added internal `mdm` S3 methods and documentation
+    (`fit_mdm()`, `predict.mdm()`, `print.mdm()`, `coef.mdm()`,
+    `plot.mdm()`, `summary.mdm()`, `print.summary.mdm()`).
+  - Added tests for the new AKI/model internals in
+    `tests/testthat/test-paper_aki_orig.R` and
+    `tests/testthat/test-mdm.R`.
+  - Improved `.onLoad()` runtime behavior in `R/util.R`:
+    assertions stay dev-focused, optional assertion override via
+    `options(metabodecon.assert=...)`, and development cache setup via
+    `options(metabodecon.aki_cache=...)`.
+  - Improved collection summaries in `R/class.R` by suppressing duplicate
+    row names (`summary_*()` now uses default numbered rows when a `name`
+    column is present).
+  - Added AKI paper vignette as article
+    (`vignettes/articles/AKI_Original.Rmd`) and included it in `_pkgdown.yml`.
+  - Updated `Get_Started.Rmd` for PDF rendering support and robustness
+    (xelatex/header setup and valid figure output sizing for LaTeX).
+  - Refined generated docs for `tree_preview()` default `max.entries = 9`
+    (`man/tree.Rd`).
+  - Updated vignette housekeeping:
+    moved TODO drafts from `.Rmd` to `.md`, ignored TODO/article sources in
+    `.Rbuildignore`, and removed `vignettes/AKI_Original.Rmd` from the package
+    vignette root in favor of `vignettes/articles/`.
+
 * Added the AKI example dataset to `misc/example_datasets` and documented it
   in the dataset docs and vignettes.
 * Added development helpers for AKI data acquisition and preparation, including

@@ -49,3 +49,5 @@
 ^vignettes/MetaboDecon1D\.Rmd$
 ^vignettes/MetaboDecon1D$
 ^vignettes/TODO$
+^vignettes/TODO/.*\.Rmd$
+^vignettes/articles/AKI_Original\.Rmd$

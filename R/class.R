@@ -486,7 +486,9 @@ summary.align <- function(object, ...) {
 summary_collection <- function(x, summary_fun) {
     rows <- lapply(x, function(elem) as.data.frame(summary_fun(elem)))
     out <- do.call(rbind, rows)
-    rownames(out) <- get_names(x)
+    rownames(out) <- NULL
+    # We set rownames to NULL, because we have a 'name' column anyways, so it's
+    # more helpful to see the row numbers than the row names twice.
     out
 }
 

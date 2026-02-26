@@ -1322,8 +1322,23 @@ assert <- stopifnot
 #' @author 2024-2025 Tobias Schmidt: initial version.
 .onLoad <- function(libname, pkgname) {
     pkgenv <- topenv()
+
+    # Only enable assertions during development, as they are quite runtime heavy
+    # and we want to catch problems early.
     if (!loaded_via_devtools()) pkgenv$assert <- function(...) {}
+
+    # Allow enabling assertions even when loaded via library by setting the
+    # option `metabodecon.assert` to `stopifnot` before loading the package.
     if (!is.null(x <- .Options$metabodecon.assert)) pkgenv$assert <- x
+
+    # Create a folder 'cache' inside the persistent data directory if we are on
+    # a development machine. This allows us to keep cache data across R sessions
+    # during development, which can speed up development iterations a lot.
+    if (loaded_via_devtools()) {
+        cache_dir <- file.path(datadir_persistent(), "cache")
+        dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)
+        options(metabodecon.aki_cache = cache_dir)
+    }
 }
 
 #' @noRd

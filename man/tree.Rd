@@ -18,7 +18,7 @@ tree(
 tree_preview(
   path,
   max.level = 1,
-  max.entries = 5,
+  max.entries = 9,
   show.counts = TRUE,
   files.first = TRUE
 )
@@ -31,13 +31,13 @@ structure.}
 
 \item{max.entries}{Maximum number of children to print per directory.
 If a directory has more entries than this limit, the first
-\code{ceiling(max.entries / 2)} and last \code{floor(max.entries / 2)}
-children are shown, with \code{... [N]} in between, where \code{N} is the
-number of omitted children.}
+\code{ceiling(max.entries / 2)} and last \code{floor(max.entries / 2)} children are
+shown, with \code{... [N]} in between, where \code{N} is the number of omitted
+children.}
 
-\item{show.counts}{Logical. If \code{TRUE}, prints the number of direct
-children (files + subdirectories) in brackets after each directory name.
-Disabled by default.}
+\item{show.counts}{Logical. If \code{TRUE}, prints the number of direct children
+(files + subdirectories) in brackets after each directory name. Disabled by
+default.}
 
 \item{files.first}{Logical. If \code{TRUE}, files are listed before
 subdirectories. If \code{FALSE} (default), subdirectories are listed first.}

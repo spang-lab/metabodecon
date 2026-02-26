@@ -21,7 +21,7 @@ knitr::opts_chunk$set(
 knitr::opts_chunk$set(
   fig.dim = c(7, 5),
   out.width = "49%",
-  eval = TRUE
+  eval = FALSE
 )
 ```
 

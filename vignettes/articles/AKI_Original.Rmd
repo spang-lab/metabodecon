@@ -1,0 +1,535 @@
+---
+title: "AKI Original (Paper-Style Reproduction)"
+output:
+  rmarkdown::html_document: default
+  pdf_document:
+    latex_engine: xelatex
+header-includes:
+  - \usepackage{fontspec}
+  - \usepackage{etoolbox}
+  - \usepackage{fvextra}
+  - \usepackage{needspace}
+  # - \setmonofont{Menlo}
+  - \definecolor{shadecolor}{RGB}{232,232,232}
+  - \fvset{breaklines=true,breakanywhere=true}
+  - \BeforeBeginEnvironment{Shaded}{\Needspace{10\baselineskip}}
+  - \BeforeBeginEnvironment{Shaded}{\vspace{0.5em}}
+  - \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines=true,breakanywhere=true,commandchars=\\\{\}}
+  - \RecustomVerbatimEnvironment{verbatim}{Verbatim}{breaklines=true,breakanywhere=true}
+css: ../styles.css
+---
+
+```{r set-defaults, echo=FALSE, results=FALSE, message=FALSE}
+knitr::opts_chunk$set(
+  fig.dim = c(10, 8),
+  out.width = "80%",
+  eval = TRUE,
+  echo = TRUE,
+  results = "markup",
+  message = FALSE
+)
+```
+
+```{r load-r-helpers, echo=FALSE}
+run_full <- TRUE
+```
+
+## The Analysis Goal
+
+This vignette follows the procedure described in Zacharias et al. (2012) to
+classify AKI vs non-AKI patients based on 24h urine NMR spectra. The goal is to
+reproduce the reported performance of 76% accuracy and 83% AUC.
+
+## The Original Analysis Procedure
+
+Relevant parts from the original paper are:
+
+*The region from 9.5 to 0.5 ppm of the 1D spectra was evenly split into bins of
+0.01. After exclusion of the solvent area and the area containing the broad
+urea signal from 6.5 to 4.5 ppm, 701 bins remained for each 1D spectrum.*
+
+*All spectra were normalized prior to analysis by Quantile Normalization
+(Bolstad et al. 2003; Kohl et al. 2012) to achieve equal distributions of
+feature intensities across spectra.*
+
+*Classification of spectra was performed using a SVM provided in the R-library
+e1071 (http://cran.r-project.org/ web/packages/e1071) within a nested
+cross-validation approach.*
+
+*For this contribution a SVM with a radial basis function kernel was used
+within a leave-five-out cross-validation.*
+
+*The internal parameters of the SVM were calibrated within an inner
+cross-validation loop employing a grid search procedure.*
+
+## Helper Functions
+
+Based on these instructions we're gonna implement the following helper functions:
+
+`bin_spectra(spectra, regions, binwidth)`\
+For creating a matrix of binned features from a list of spectra. Binning will be
+done by splitting the given `regions` into bins of width `binwidth` and summing
+the intensities of all data points that fall into each bin. The resulting binned
+features will be stored in a matrix, where rows correspond to spectra and
+columns correspond to bins.
+
+`get_quantile_reference(X)`\
+For computing the reference distribution for quantile normalization from a
+feature matrix `X`.
+
+`quantile_normalize(X, ref)`\
+For applying quantile normalization to a feature matrix `X` using a reference
+distribution `ref`.
+
+`train_model(spectra, cls, cost, gamma, nfeat, normalize)`\
+For training a radial SVM classifier with margin regularization strength
+`cost`, RBF kernel width `gamma` and `nfeat` number of features. Features are
+obtained by binning the given input spectra using `bin_spectra()` and
+selecting the top `nfeat` based on t-scores from a Welch t-test, comparing the
+two classes in `cls`. If `normalize` is TRUE, quantile normalization is
+applied to the binned features before feature selection and SVM training. The
+feature-selection based on t-scores is described in 'Gronwald et al., 2011'.
+The returned object will contain the trained SVM model, the
+quantile-normalisation reference distribution and the indices of the selected
+features.
+
+`find_best_params(X, y, costs, gammas, nfeats, normalize, k)`\
+For training multiple SVMs across a grid using k-fold cross-validation to
+select the best parameters. In this vignette we use `costs = (1:10) / 10`,
+`gammas = 2^(-12:-5)` and `nfeats = 2:3`. We limit the number of features to
+such a narrow range, because the original paper states, that the average
+optimum is 2.4 across validation folds with a standard deviation of 0.5. This
+means, that only values of 2 and 3 can have been observed (e.g. 2,2,2,3,3) or
+the SD would have been higher. Since the goal of this article is not to rerun
+the whole analysis workflow, but to reproduce the reported results as closely
+as possible, there is no need to search a wider range of feature counts.
+
+## The Final Classification Pipeline
+
+The final classification pipeline will then be implemented as follows:
+
+```{r pipeline-cv-cleaned}
+benchmark_aki_classification_cv_cleaned <- function() {
+  # Read spectra and metadata
+  path <- metabodecon::download_example_datasets()
+  aki_path <- file.path(path, "bruker", "aki")
+  spectra <- metabodecon::read_spectra(aki_path)
+  meta <- read.csv(file.path(aki_path, "s_MTBLS24.txt"), sep = "\t")
+  y_bin <- as.integer(
+    meta$Factor.Value.Acute.Kidney.Injury. == "Acute Kidney Injury"
+  )
+  y <- factor(y_bin, levels = c(0, 1), labels = c("Control", "AKI"))
+
+  # Bin spectra and prepare y vector for classification
+  X <- metabodecon:::bin_spectra(spectra)
+
+  # Run classification across 5 folds and collect results
+  test_ids <- metabodecon:::get_test_ids(
+    nfolds = 5,
+    nsamples = nrow(meta),
+    y = y_bin
+  )
+  res <- lapply(test_ids, benchmark_aki_classification_holdout, X, y_bin)
+
+  # Format results as 5 x 5 table
+  results <- do.call(rbind, res)
+  colnames(results) <- c("cost", "gamma", "nfeat", "auc", "acc")
+  rownames(results) <- paste0("Fold", 1:5)
+
+  # Add means and standard deviations across folds as additional rows
+  means <- colMeans(results)
+  sds <- apply(results, 2, sd)
+  rbind(results, Mean = means, SD = sds)
+  results
+}
+```
+
+where `benchmark_aki_classification_holdout()` is defined as follows:
+
+```{r pipeline-holdout}
+benchmark_aki_classification_holdout <- function(te, X, y_bin) {
+  tr <- setdiff(seq_len(nrow(X)), te)
+  costs <- (1:10) / 10
+  gammas <- 2^(-12:-5)
+  nfeats <- 2:3
+  p <- metabodecon:::find_best_params_cached(
+    X[tr, ], y_bin[tr], costs, gammas, nfeats, TRUE, 5
+  )
+  svm <- metabodecon:::train_model(
+    X[tr, ], y_bin[tr], p$cost, p$gamma, p$nfeat
+  )
+  yhat <- metabodecon:::predict_svm(svm, X[te, , drop = FALSE])
+  auc <- metabodecon:::auc(y_bin[te], yhat$prob)
+  acc <- mean(y_bin[te] == yhat$cls)
+  c(p$cost, p$gamma, p$nfeat, auc, acc)
+}
+```
+
+## Step by Step Execution
+
+To make the analysis as transparent as possible, we will now execute the above
+pipeline step by step, visualizing intermediate results and outputs along the
+way, before showing the final results at the end of the vignette.
+
+### Downloading the Data
+
+The first thing we need to do is to download the data, if not already available
+locally. This is done via `download_example_datasets()`. The AKI dataset is then
+available in the `bruker/aki` subdirectory of the downloaded data. After that we
+will use metabodecon's `tree_preview()` function to visualize the directory
+structure of the downloaded data.
+
+```{r download, eval=run_full}
+xds_dir <- metabodecon::download_example_datasets()
+aki_dir <- file.path(xds_dir, "bruker", "aki")
+metabodecon::tree_preview(aki_dir)
+```
+
+### Reading Spectra and Metadata
+
+Now that we have the data, we can read the spectra and metadata using
+`read_spectra()` and `read_csv()`, respectively. The spectra will be stored as
+object of class `spectra`, while the metadata will be stored in a data frame.
+For more details about the spectra class, see article
+[Metabdecon-Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
+To better understand the dataset, we will first use a combination of `print()`
+and `summary()` to get an overview of the spectra and metadata objects. Then we
+will use `plot_spectrum()` on a small, randomly selected subset of spectra to
+visualize the raw data.
+
+```{r read, eval=run_full, fig.width=10, fig.height=8}
+#| fig.cap: |
+#|   <strong>Figure 1.</strong> Four representative AKI spectra
+#|   (indices 25, 50, 75, 100) in the region from 4.5 to 1.5 ppm.
+#|   The plot title of each panel shows the sample ID and class label.
+spectra <- metabodecon::read_spectra(aki_dir)
+print(object.size(spectra), units = "Mb")
+summary(head(spectra, 4))
+
+meta <- read.csv(file.path(aki_dir, "s_MTBLS24.txt"), sep = "\t")
+meta <- meta[, c("Sample.Name", "Factor.Value.Acute.Kidney.Injury.")]
+meta <- setNames(meta, c("SampleID", "Type"))
+N <- nrow(meta)
+meta[c(1:4, (N - 3):N), ]
+
+sel <- c(25, 50, 75, 100) # two normal and two AKI spectra
+plots <- withr::with_par(list(mfrow = c(2, 2)), lapply(sel, function(i) {
+  main <- paste0(meta$SampleID[i], " (", meta$Type[i], ")")
+  metabodecon::plot_spectrum(
+    spectra[[i]],
+    foc_rgn = c(4.5, 1.5),
+    sub1 = list(main = main)
+  )
+}))
+```
+
+### Binning the data
+
+We now create the feature matrix by binning. Each row corresponds to one
+spectrum and each column corresponds to one bin. Following the paper, we use the
+range from 9.5 to 0.5 ppm and exclude the broad urea/water region from 6.5 to
+4.5 ppm.
+
+```{r binning, eval=run_full}
+regs <- rbind(c(9.5, 6.5), c(4.5, 0.5))
+X <- metabodecon:::bin_spectra(spectra, regions = regs, binwidth = 0.01)
+y_bin <- as.integer(meta$Type == "Acute Kidney Injury")
+y <- factor(y_bin, levels = c(0, 1), labels = c("Control", "AKI"))
+
+dim(X)
+table(y)
+```
+
+### Quantile Normalization
+
+Quantile normalization forces each sample to have the same empirical
+distribution. We compute a reference distribution from all samples and map each
+sample to it.
+
+```{r qn, eval=run_full}
+#| fig.cap: |
+#|   <strong>Figure 2.</strong> Sorted intensity profiles before
+#|   (left) and after (right) quantile normalization for five
+#|   selected spectra. After normalization, the empirical
+#|   distributions are aligned across samples.
+ref_qn <- metabodecon:::get_quantile_reference(X)
+X_qn <- metabodecon:::quantile_normalize(X, ref_qn)
+
+idx <- c(1, 25, 50, 75, 100)
+withr::with_par(list(mfrow = c(1, 2)), {
+  matplot(
+    t(apply(X[idx, ], 1, sort)),
+    type = "l",
+    lty = 1,
+    xlab = "rank",
+    ylab = "intensity",
+    main = "before quantile norm"
+  )
+  matplot(
+    t(apply(X_qn[idx, ], 1, sort)),
+    type = "l",
+    lty = 1,
+    xlab = "rank",
+    ylab = "intensity",
+    main = "after quantile norm"
+  )
+})
+```
+
+### PQN Normalization
+
+Another common normalization method is Probabilistic Quotient Normalization
+(PQN), which is based on the idea of normalizing each spectrum by a reference
+spectrum that represents the typical sample in the dataset. The reference
+spectrum is usually computed as the median spectrum across all samples. PQN is
+particularly useful when there are large variations in the overall intensity of
+the spectra, which is often the case in metabolomics data. At the end of this
+section you can see a comparison of the results obtained with quantile
+normalization and PQN.
+
+```{r pqn, eval=run_full}
+#| fig.cap: |
+#|   <strong>Figure 3.</strong> Comparison of sorted intensity
+#|   profiles after quantile normalization (left) and after PQN
+#|   normalization (right) for the same five spectra.
+ref_pqn <- metabodecon:::get_pqn_reference(X)
+X_pqn <- metabodecon:::pqn_normalize(X, ref_pqn)
+
+withr::with_par(list(mfrow = c(1, 2)), {
+  matplot(
+    t(apply(X_qn[idx, ], 1, sort)),
+    type = "l",
+    lty = 1,
+    xlab = "rank",
+    ylab = "intensity",
+    main = "quantile norm"
+  )
+  matplot(
+    t(apply(X_pqn[idx, ], 1, sort)),
+    type = "l",
+    lty = 1,
+    xlab = "rank",
+    ylab = "intensity",
+    main = "PQN"
+  )
+})
+```
+
+### Making Cross Validation Folds
+
+We use nested 5x5 CV. Outer folds are used for unbiased performance estimation.
+Inside each outer training split, we build inner folds for parameter tuning.
+
+```{r folds, eval=run_full}
+#| fig.cap: |
+#|   <strong>Figure 4.</strong> Nested cross-validation split
+#|   structure. The first panel shows the outer 5-fold split.
+#|   The second panel shows inner validation folds for outer fold 1.
+n <- nrow(X)
+outer_te <- metabodecon:::get_test_ids(
+  nfolds = 5,
+  nsamples = n,
+  seed = 1,
+  y = y_bin
+)
+metabodecon:::plot_folds(outer_te, nsamples = n, main = "Outer 5-fold split")
+
+te1 <- outer_te[[1]]
+tr1 <- setdiff(seq_len(n), te1)
+inner_rel <- metabodecon:::get_test_ids(
+  nfolds = 5,
+  nsamples = length(tr1),
+  seed = 1,
+  y = y_bin[tr1]
+)
+inner_te <- lapply(inner_rel, function(i) tr1[i])
+metabodecon:::plot_folds(
+  test_ids = list(te1),
+  nsamples = n,
+  val_ids = inner_te,
+  main = "Inner folds inside outer fold 1"
+)
+```
+
+### Hyperparameter Tuning
+
+First, we train one model for fold 1.1 and inspect its predictions.
+
+```{r tune-one, eval=run_full}
+#| fig.cap: |
+#|   <strong>Figure 5.</strong> Predicted AKI probabilities on one
+#|   inner validation fold (fold 1.1). Points are colored by true
+#|   class and the dashed line marks the 0.5 decision threshold.
+ok <- sapply(inner_te, function(v) {
+  tr <- setdiff(tr1, v)
+  length(unique(y_bin[tr])) == 2 && length(unique(y_bin[v])) == 2
+})
+if (!any(ok)) stop("No inner split with both classes found.")
+val11 <- inner_te[[which(ok)[1]]]
+tr11 <- setdiff(tr1, val11)
+
+fit11 <- metabodecon:::train_model(X[tr11, , drop = FALSE], y_bin[tr11],
+  cost = 0.5, gamma = 2^-10, nfeat = 3,
+  normalize = TRUE
+)
+pred11 <- metabodecon:::predict_svm(fit11, X[val11, , drop = FALSE])
+auc11 <- metabodecon:::auc(y_bin[val11], pred11$prob)
+acc11 <- mean(y_bin[val11] == pred11$cls)
+
+c(auc = auc11, acc = acc11)
+metabodecon:::plot_prob_scatter(pred11$prob, y_bin[val11], "Fold 1.1 predictions")
+```
+
+Now we evaluate the full grid for fold 1.1 and then average AUCs across all
+inner folds of outer fold 1.
+
+```{r tune-grid, eval=run_full}
+#| fig.cap: |
+#|   <strong>Figure 6.</strong> Mean inner-fold AUC surfaces for
+#|   hyperparameter tuning at nfeat = 2 (left) and nfeat = 3
+#|   (right), across cost and gamma.
+costs <- (1:10) / 10
+gammas <- 2^(-12:-5)
+nfeats <- 2:3
+
+G11 <- metabodecon:::score_grid_cached(
+  X,
+  y_bin,
+  tr11,
+  val11,
+  costs,
+  gammas,
+  nfeats,
+  TRUE
+)
+
+valid_inner <- inner_te[ok]
+G1 <- metabodecon:::score_grid_cached(
+  X, y_bin, setdiff(tr1, valid_inner[[1]]), valid_inner[[1]],
+  costs, gammas, nfeats, TRUE
+)
+for (i in 2:length(valid_inner)) {
+  vai <- valid_inner[[i]]
+  tri <- setdiff(tr1, vai)
+  Gi <- metabodecon:::score_grid_cached(
+    X,
+    y_bin,
+    tri,
+    vai,
+    costs,
+    gammas,
+    nfeats,
+    TRUE
+  )
+  G1$auc <- G1$auc + Gi$auc
+}
+G1$auc <- G1$auc / length(valid_inner)
+
+best1 <- G1[which.max(G1$auc), ]
+best1
+
+zlim <- range(G1$auc, na.rm = TRUE)
+withr::with_par(list(mfrow = c(1, 2)), {
+  metabodecon:::plot_auc_grid(G1, nfeat = 2, zlim = zlim, main = "mean inner AUC (nfeat=2)")
+  metabodecon:::plot_auc_grid(G1, nfeat = 3, zlim = zlim, main = "mean inner AUC (nfeat=3)")
+})
+```
+
+In this vignette we follow the standard strategy: compute one AUC per inner
+validation fold and average these AUCs across folds to select parameters.
+
+### Performance Evaluation
+
+Finally, we repeat the procedure for all outer folds, collect fold-wise metrics,
+and pool all outer-fold predictions for one global AUC/accuracy estimate.
+
+```{r outer-cv, eval=run_full}
+#| fig.cap: |
+#|   <strong>Figure 7.</strong> Pooled outer-fold AKI probabilities
+#|   from nested CV. Each point is one sample; color encodes class.
+#|   The dashed line indicates the 0.5 classification threshold.
+eval_outer_fold <- function(te, Xm, y_bin) {
+  tr <- setdiff(seq_len(nrow(Xm)), te)
+  p <- metabodecon:::find_best_params_cached(
+    Xm[tr, , drop = FALSE], y_bin[tr], costs, gammas, nfeats, TRUE, 5
+  )
+  fit <- metabodecon:::train_model(
+    Xm[tr, , drop = FALSE], y_bin[tr],
+    p$cost, p$gamma, p$nfeat, TRUE
+  )
+  pred <- metabodecon:::predict_svm(fit, Xm[te, , drop = FALSE])
+  list(
+    ids = te,
+    prob = pred$prob,
+    cls = pred$cls,
+    perf = c(
+      cost = p$cost, gamma = p$gamma, nfeat = p$nfeat,
+      auc = metabodecon:::auc(y_bin[te], pred$prob),
+      acc = mean(y_bin[te] == pred$cls)
+    )
+  )
+}
+
+outer_res <- lapply(outer_te, eval_outer_fold, Xm = X, y_bin = y_bin)
+
+perf <- do.call(rbind, lapply(outer_res, function(x) x$perf))
+rownames(perf) <- paste0("Fold", seq_len(nrow(perf)))
+perf <- rbind(perf, Mean = colMeans(perf), SD = apply(perf, 2, sd))
+print(round(perf, 4))
+
+prob_all <- rep(NA_real_, n)
+for (i in seq_along(outer_res)) {
+  prob_all[outer_res[[i]]$ids] <- outer_res[[i]]$prob
+}
+
+auc_all <- metabodecon:::auc(y_bin, prob_all)
+acc_all <- mean((prob_all >= 0.5) == y_bin)
+c(global_auc = auc_all, global_acc = acc_all)
+
+metabodecon:::plot_prob_scatter(prob_all, y_bin, "Outer-fold pooled predictions")
+```
+
+The resulting values can now be compared to the reported 83% AUC and 76%
+accuracy from the original paper.
+
+## Extending the original results
+
+We now rerun the full nested CV benchmark for two model types (`svm`,
+`lasso`) and six normalization choices (`quantile`, `pqn`, `creatinine`,
+`sum`, `median`, `none`).
+
+The benchmarking helper supports the normalization timepoint through
+`norm_time`:
+
+- `norm_time = "cv"`: normalize correctly inside each training split.
+- `norm_time = "global"`: normalize once before CV, then use `none` inside CV.
+
+The table reports mean outer-fold AUC ± SD for both settings.
+
+```{r extending-results, eval=run_full}
+models <- c("svm", "lasso")
+norms <- c("quantile", "pqn", "creatinine", "sum", "median", "none")
+costs <- (1:10) / 10
+gammas <- 2^(-12:-5)
+nfeats <- 2:3
+
+ext <- metabodecon:::benchmark_extension_table(
+  X = X,
+  y = y_bin,
+  models = models,
+  norms = norms,
+  k = 5,
+  costs = costs,
+  gammas = gammas,
+  nfeats = nfeats
+)
+
+tab <- data.frame(
+  Method = paste(ext$model, ext$normalisation, sep = " + "),
+  `AUC mean ± SD (CV-wise norm)` = ext$auc_cv_norm,
+  `AUC mean ± SD (global pre-norm)` = ext$auc_global_norm,
+  check.names = FALSE
+)
+
+print(tab, row.names = FALSE)
+```

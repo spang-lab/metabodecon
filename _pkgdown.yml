@@ -5,6 +5,7 @@ articles:
   - title: Articles
     navbar: ~
     contents:
+      - articles/AKI_Original
       - Get_Started
       - FAQ
       - MetaboDecon1D
