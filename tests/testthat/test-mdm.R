@@ -2,7 +2,7 @@ testthat::test_that("fit_mdm supports svm", {
   testthat::skip_if_not_installed("e1071")
   set.seed(1)
   X <- matrix(rnorm(30 * 20), nrow = 30)
-  y <- rep(0:1, each = 15)
+  y <- factor(rep(c("Control", "AKI"), each = 15))
 
   m <- fit_mdm(X, y, model = "svm", normalisation = "quantile", nfeat = 5)
 
@@ -21,7 +21,7 @@ testthat::test_that("fit_mdm supports lasso", {
   testthat::skip_if_not_installed("glmnet")
   set.seed(1)
   X <- matrix(rnorm(40 * 25), nrow = 40)
-  y <- rep(0:1, each = 20)
+  y <- factor(rep(c("Control", "AKI"), each = 20))
 
   m <- fit_mdm(X, y, model = "lasso", normalisation = "median")
 
@@ -37,7 +37,7 @@ testthat::test_that("mdm methods run", {
   testthat::skip_if_not_installed("e1071")
   set.seed(2)
   X <- matrix(rnorm(20 * 10), nrow = 20)
-  y <- rep(0:1, each = 10)
+  y <- factor(rep(c("Control", "AKI"), each = 10))
   m <- fit_mdm(X, y, model = "svm", normalisation = "sum", nfeat = 3)
 
   testthat::expect_invisible(print(m))
@@ -51,7 +51,7 @@ testthat::test_that("extension benchmark returns expected columns", {
   testthat::skip_if_not_installed("e1071")
   set.seed(3)
   X <- matrix(rnorm(30 * 15), nrow = 30)
-  y <- rep(0:1, each = 15)
+  y <- factor(rep(c("Control", "AKI"), each = 15))
 
   tab <- benchmark_extension_table(
     X,
@@ -74,7 +74,7 @@ testthat::test_that("extension benchmark uses cache", {
 
   set.seed(4)
   X <- matrix(rnorm(30 * 15), nrow = 30)
-  y <- rep(0:1, each = 15)
+  y <- factor(rep(c("Control", "AKI"), each = 15))
   cache <- paper_aki_get_cache_dir()
 
   key <- paper_aki_cache_key(
@@ -120,4 +120,13 @@ testthat::test_that("extension benchmark uses cache", {
   testthat::expect_true(n1 >= n0)
   testthat::expect_equal(n2, n1)
   testthat::expect_equal(t2, t1)
+})
+
+testthat::test_that("fit_mdm rejects non-binary labels", {
+  X <- matrix(rnorm(30), nrow = 10)
+  y <- factor(c("A", "B", "C", "A", "B", "C", "A", "B", "C", "A"))
+  testthat::expect_error(
+    fit_mdm(X, y, model = "svm", normalisation = "none", nfeat = 2),
+    "exactly 2"
+  )
 })

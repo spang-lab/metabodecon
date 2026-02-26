@@ -49,6 +49,8 @@ Imports:
     toscutil (>= 2.8.0),
     withr
 Suggests:
+    circlize,
+    ComplexHeatmap,
     covr,
     devtools,
     diffobj,

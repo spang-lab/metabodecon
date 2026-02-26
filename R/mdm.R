@@ -31,6 +31,10 @@ NULL
 
 # API #####
 
+mdm_as_binary01 <- function(y, arg_name = "y") {
+    as_binary01(y, arg_name)
+}
+
 #' @title Fit metabodecon model
 #' @description Fits an `mdm` object using SVM or lasso with selected normalization.
 #' @param X Numeric feature matrix with samples in rows.
@@ -65,7 +69,7 @@ fit_mdm <- function(X,
                     nfolds_lasso = 5) {
     model <- match.arg(model)
     normalisation <- match.arg(normalisation)
-    y <- as.integer(y)
+    y <- mdm_as_binary01(y)
     if (length(unique(y)) < 2) stop("training set must contain both classes")
 
     norm <- mdm_fit_normalizer(X, normalisation, cre_idx)
@@ -158,6 +162,7 @@ mdm_score_grid <- function(X,
                            nfeats = 2:3) {
     model <- match.arg(model)
     normalisation <- match.arg(normalisation)
+    y <- mdm_as_binary01(y)
     if (length(unique(y[tr])) < 2 || length(unique(y[te])) < 2) {
         return(data.frame(
             cost = NA, gamma = NA, nfeat = NA,
@@ -230,6 +235,7 @@ mdm_find_best_params <- function(X,
                                  nfeats = 2:3) {
     model <- match.arg(model)
     normalisation <- match.arg(normalisation)
+    y <- mdm_as_binary01(y)
 
     te_ids <- get_test_ids(nfolds = k, nsamples = nrow(X), y = y)
 
@@ -302,6 +308,7 @@ benchmark_cv_mdm <- function(X,
     model <- match.arg(model)
     normalisation <- match.arg(normalisation)
     norm_time <- match.arg(norm_time)
+    y <- mdm_as_binary01(y)
 
     key <- paper_aki_cache_key(
         "benchmark_cv_mdm",
@@ -452,7 +459,7 @@ benchmark_extension_table <- function(X,
 #' mdm_auc(y, s)
 #' @noRd
 mdm_auc <- function(y, score) {
-    y <- as.integer(y)
+    y <- mdm_as_binary01(y)
     pos <- y == 1
     n1 <- sum(pos)
     n0 <- sum(!pos)
@@ -476,6 +483,7 @@ mdm_auc <- function(y, score) {
 #' mdm_select_top_features(X, y, nfeat = 3)
 #' @noRd
 mdm_select_top_features <- function(X, y, nfeat) {
+    y <- mdm_as_binary01(y)
     i1 <- which(y == 1)
     i0 <- which(y == 0)
     m1 <- colMeans(X[i1, , drop = FALSE])
@@ -659,6 +667,7 @@ mdm_fmt_mean_sd <- function(x, y, d = 3) {
 #' mdm_data_signature(X, y)
 #' @noRd
 mdm_data_signature <- function(X, y) {
+    y <- mdm_as_binary01(y)
     payload <- list(X = X, y = y)
     txt <- serialize(payload, connection = NULL, ascii = TRUE, version = 2)
     paper_aki_cache_hash(rawToChar(txt))

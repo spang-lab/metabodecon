@@ -1,39 +1,30 @@
-testthat::test_that("optimize_settings aligns with find_best_params", {
-    testthat::skip_if_not(metabodecon::check_mdrb())
-    spec <- metabodecon::sim[[1]]
-    sfr <- stats::quantile(spec$cs, c(0.9, 0.1))
+testthat::test_that("find_best_params returns best row for binary factors", {
+    testthat::skip_if_not_installed("e1071")
 
-    best <- find_best_params(
-        spec,
-        sfr = sfr,
-        smopts = c(2, 5),
-        delta = 6.4,
-        nfit = 3,
-        verbose = FALSE
-    )
-    mse_grid <- mdrb_mse_for_params(
-        spec,
-        sfr = sfr,
-        smopts = best$smopts,
-        delta = best$delta,
-        nfit = best$nfit
+    set.seed(1)
+    X <- matrix(rnorm(24 * 12), nrow = 24)
+    y <- factor(rep(c("Control", "AKI"), each = 12),
+      levels = c("Control", "AKI"))
+
+    out <- find_best_params(
+        X,
+        y,
+        costs = c(0.2, 0.5),
+        gammas = 2^c(-11, -10),
+        nfeats = 2:3,
+        normalize = TRUE,
+        k = 3
     )
 
-    dec <- mdrb::Deconvoluter$new()
-    ref <- mdrb::Spectrum$new(spec$cs, spec$si, sfr)
-    mse_opt <- dec$optimize_settings(ref)
-    sm <- dec$smoothing_settings()
-    sel <- dec$selection_settings()
-    fit <- dec$fitting_settings()
-    mse_opt2 <- mdrb_mse_for_params(
-        spec,
-        sfr = sfr,
-        smopts = c(sm$iterations, sm$window_size),
-        delta = sel$threshold,
-        nfit = fit$iterations
-    )
+    testthat::expect_true(is.list(out))
+    testthat::expect_named(out, c("cost", "gamma", "nfeat", "grid"))
+    testthat::expect_true(is.data.frame(out$grid))
+    testthat::expect_true(all(c("cost", "gamma", "nfeat", "auc") %in%
+      names(out$grid)))
 
-    testthat::expect_true(is.finite(mse_opt))
-    testthat::expect_true(is.finite(mse_grid))
-    testthat::expect_lte(mse_opt2, mse_grid + abs(mse_grid) * 0.05 + 1e-6)
+    idx <- which.max(out$grid$auc)
+    best <- out$grid[idx, ]
+    testthat::expect_equal(out$cost, best$cost)
+    testthat::expect_equal(out$gamma, best$gamma)
+    testthat::expect_equal(out$nfeat, best$nfeat)
 })

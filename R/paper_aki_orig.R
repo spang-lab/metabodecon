@@ -1,6 +1,6 @@
 #' @title AKI original helper module
 #' @description Helper functions for AKI vignette preprocessing, modeling,
-#' caching, fold generation, plotting, and lightweight parallel utilities.
+#' caching, fold generation, and plotting.
 #'
 #' - bin_spectra: Bin spectra into fixed ppm bins and return feature matrix.
 #' - get_quantile_reference: Build quantile normalization reference profile.
@@ -23,52 +23,186 @@
 #' - paper_aki_cache_file: Resolve cache file path for a key.
 #' - paper_aki_cache_get: Read cached R object from disk when available.
 #' - paper_aki_cache_set: Save R object to disk cache as RDS.
-#' - paper_aki_cache_size: Report total size of cached RDS files.
-#' - paper_aki_cache_clear: Remove cached RDS files and return delete count.
-#' - paper_aki_ncores: Compute worker count from available CPU cores.
-#' - paper_aki_grid_apply: Apply function over grid with optional multicore.
-#' - paper_aki_should_run_full_vignette: Decide if expensive vignette chunks run.
 #' - get_test_ids: Create (stratified) fold test indices.
 #' - plot_folds: Visualize outer or inner fold structure.
 #' - plot_auc_grid: Plot AUC landscape across cost and gamma.
 #' - plot_prob_scatter: Plot predicted probabilities against sample index.
+#' - plot_spectra_panel: Plot a small panel of selected spectra.
 #' @noRd
 NULL
 
 # Helpers #####
 
+#' @title Coerce binary labels to 0/1
+#' @description
+#' Validates binary labels and maps them to integer 0/1 codes.
+#' If `y` is a factor, arbitrary two levels are supported. The first level maps
+#' to 0 and the second level maps to 1.
+#' @param y Label vector.
+#' @return Integer vector with values 0/1.
+#' @examples
+#' as_binary01(factor(c("Control", "AKI", "Control")))
+#' @noRd
+as_binary01 <- function(y) {
+    arg_name <- "y"
+    if (is.factor(y)) {
+        if (nlevels(y) != 2) {
+            stop(sprintf("%s must have exactly 2 levels.", arg_name))
+        }
+        out <- as.integer(y) - 1L
+        if (anyNA(out)) {
+            stop(sprintf("%s must not contain NA.", arg_name))
+        }
+        return(out)
+    }
+
+    vals <- y[!is.na(y)]
+    if (length(vals) == 0) {
+        stop(sprintf("%s must contain non-missing values.", arg_name))
+    }
+
+    levs <- sort(unique(vals))
+    if (length(levs) != 2) {
+        stop(sprintf("%s must have exactly 2 classes.", arg_name))
+    }
+
+    if (is.logical(y)) {
+        out <- as.integer(y)
+        if (anyNA(out)) {
+            stop(sprintf("%s must not contain NA.", arg_name))
+        }
+        return(out)
+    }
+
+    if ((is.integer(y) || is.numeric(y)) && all(levs == c(0, 1))) {
+        out <- as.integer(y)
+        if (anyNA(out)) {
+            stop(sprintf("%s must not contain NA.", arg_name))
+        }
+        return(out)
+    }
+
+    fac <- factor(y)
+    if (nlevels(fac) != 2) {
+        stop(sprintf("%s must have exactly 2 classes.", arg_name))
+    }
+    out <- as.integer(fac) - 1L
+    if (anyNA(out)) {
+        stop(sprintf("%s must not contain NA.", arg_name))
+    }
+    out
+}
+
+#' @noRd
 #' @title Bin spectra into features
+#'
 #' @description Converts a list of spectra into a binned feature matrix.
+#'
 #' @param spectra List-like spectra object with `cs` and `si` vectors.
 #' @param regions Two-column matrix with ppm regions to include.
 #' @param binwidth Bin width in ppm.
+#'
+#' @details
+#' The implementation uses one outer loop over spectra and computes all bin
+#' sums within a spectrum by vectorized endpoint arithmetic.
+#'
+#' Nomenclature used in the code:
+#'
+#' - Region endpoints are named `reg_hi` and `reg_lo` and are initialized
+#'   as `reg_hi = regions[, 1]` and `reg_lo = regions[, 2]`. If `regions[, 1]`
+#'   is not greater than `regions[, 2]` for any row, an error is raised.
+#'
+#' - Bin endpoints are named `lo` and `hi` and built from the region endpoints.
+#'
+#' Algorithm (for each spectrum):
+#'
+#' 1. Sort points by chemical shift (`cs`) ascending and align intensities (`si`).
+#' 2. Build bin intervals `(lo, hi]` from region bounds and `binwidth`.
+#' 3. Compute cumulative sums `cum <- cumsum(si)`.
+#' 4. For all bins at once, locate endpoints with `findInterval()`:
+#'    - `i_hi`: number of points with `cs <= hi`
+#'    - `i_lo`: number of points with `cs <= lo`
+#' 5. Bin sums from cumulative differences:
+#'    `bin_sum = S(i_hi) - S(i_lo)` with `S(k) = 0` for `k = 0` and
+#'    `S(k) = cum[k]` for `k > 0`, which equals
+#'    `sum(si[cs <= hi & cs > lo])`.
+#'
 #' @return Numeric matrix with samples in rows and bins in columns.
+#'
 #' @examples
-#' sp <- list(
-#'   list(cs = seq(9.5, 0.5, length.out = 100), si = rnorm(100)),
-#'   list(cs = seq(9.5, 0.5, length.out = 100), si = rnorm(100))
-#' )
-#' X <- bin_spectra(sp)
-#' dim(X)
-#' @noRd
+#'
+#' ## Toy Example
+#' cs1 <- c(10, 9, 8, 7, 6, 5, 4, 3, 2, 1)
+#' si1 <- c( 0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+#' si2 <- c( 2, 4, 1, 3, 5, 2, 6, 1, 4, 2)
+#' ##                        ##
+#' ##                  ##    ##
+#' ##         ##       ##    ##    ##
+#' ##         ##    ## ##    ##    ##
+#' ##      ## ##    ## ## ## ##    ## ##
+#' ##      ## ## ## ## ## ## ## ## ## ##
+#' ##        |-----|-----|  |-----|
+#' ##          4+1   3+5      6+1
+#' spec1 <- structure(class = "spectrum", .Data = list(cs = cs1, si = si1))
+#' spec2 <- structure(class = "spectrum", .Data = list(cs = cs1, si = si2))
+#' spectra <- as_spectra(list(spec1, spec2))
+#' regions <- rbind(c(9.5, 5.5), c(4.5, 2.5))
+#' binwidth <- 2
+#' bin_spectra(spectra, regions, binwidth)
+#' ##            8.5 6.5 3.5
+#' ## spectrum_1   3   7   13
+#' ## spectrum_2   5   8   7
+#'
+#' ## Real Example
+#' spectra <- sim
+#' regions <- rbind(c(3.50, 3.45), c(3.35, 3.30))
+#' binwidth <- 0.01
+#' bin_spectra(sim, regions, binwidth = 0.01)
 bin_spectra <- function(spectra,
                         regions = rbind(c(9.5, 6.5), c(4.5, 0.5)),
                         binwidth = 0.01) {
-    edges <- unlist(lapply(seq_len(nrow(regions)), function(i) {
-        seq(regions[i, 1], regions[i, 2], by = -binwidth)
-    }))
-    nb <- length(edges) - 1
-    cen <- (edges[-1] + edges[-length(edges)]) / 2
+
+    # Region matrix convention: column 1 = region high, column 2 = region low.
+    # Therefore every row must satisfy region high > region low.
+    reg_hi <- regions[, 1]
+    reg_lo <- regions[, 2]
+    stopifnot(all(reg_hi > reg_lo))
+    intwidths <- reg_hi - reg_lo
+    nbins <- intwidths / binwidth
+    stopifnot(all(is_int(nbins)))
+
+    # Build global sorted edges from all regions.
+    edges <- apply(regions, 1, function(x) seq(x[2], x[1], by = binwidth), simplify = FALSE)
+    hi <- sort(unlist(lapply(edges, tail, -1)), decreasing = TRUE)
+    lo <- hi - binwidth
+    cen <- (lo + hi) / 2
+
+    # Initialize output matrix
+    nb <- length(cen)
     X <- matrix(0, nrow = length(spectra), ncol = nb)
+
+    # Compute bin sums for each spectrum by vectorized endpoint arithmetic.
     for (i in seq_along(spectra)) {
+
+        # Sort points by chemical shift in ascending order, as required by
+        # findInterval().
         cs <- spectra[[i]]$cs
         si <- spectra[[i]]$si
-        for (j in seq_len(nb)) {
-            hi <- edges[j]
-            lo <- edges[j + 1]
-            X[i, j] <- sum(si[cs <= hi & cs > lo])
-        }
+        ord <- order(cs)
+        cs <- cs[ord]
+        si <- si[ord]
+
+        # Locate bin endpoints and compute sums by cumulative differences.
+        cum <- cumsum(si)
+        idx_hi <- findInterval(hi, cs)
+        idx_lo <- findInterval(lo, cs)
+        sum_hi <- ifelse(idx_hi > 0L, cum[idx_hi], 0)
+        sum_lo <- ifelse(idx_lo > 0L, cum[idx_lo], 0)
+        X[i, ] <- sum_hi - sum_lo
     }
+
+    colnames(X) <- cen
+    rownames(X) <- get_names(spectra)
     attr(X, "bin_centers") <- cen
     X
 }
@@ -142,7 +276,7 @@ pqn_normalize <- function(X, ref) {
 #' auc(c(0, 0, 1, 1), c(0.1, 0.2, 0.8, 0.9))
 #' @noRd
 auc <- function(y, score) {
-    y <- as.integer(y)
+    y <- as_binary01(y)
     pos <- y == 1
     n1 <- sum(pos)
     n0 <- sum(!pos)
@@ -166,6 +300,7 @@ auc <- function(y, score) {
 #' select_top_features(X, y, 3)
 #' @noRd
 select_top_features <- function(X, y, nfeat) {
+    y <- as_binary01(y)
     i1 <- which(y == 1)
     i0 <- which(y == 0)
     m1 <- colMeans(X[i1, , drop = FALSE])
@@ -198,7 +333,7 @@ get_test_ids <- function(nfolds = 5, nsamples, seed = 1, y = NULL) {
         return(lapply(grp, sort))
     }
 
-    y <- as.integer(y)
+    y <- as_binary01(y)
     levs <- sort(unique(y))
     out <- vector("list", nfolds)
     for (k in seq_len(nfolds)) out[[k]] <- integer(0)
@@ -243,6 +378,7 @@ train_svm <- function(X,
     if (!requireNamespace("e1071", quietly = TRUE)) {
         stop("Package 'e1071' is required.")
     }
+    y <- as_binary01(y)
     if (length(unique(y)) < 2) stop("training set must contain both classes")
     ref <- NULL
     Xn <- X
@@ -333,7 +469,7 @@ predict_svm <- function(model, X) {
         decision.values = TRUE
     )
     score <- as.numeric(attr(pred, "decision.values"))
-    y0 <- as.integer(model$y_train)
+    y0 <- as_binary01(model$y_train)
     m1 <- mean(score[y0 == 1], na.rm = TRUE)
     m0 <- mean(score[y0 == 0], na.rm = TRUE)
     if (is.finite(m1) && is.finite(m0) && m1 < m0) score <- -score
@@ -370,6 +506,7 @@ score_grid <- function(X,
                        gammas,
                        nfeats,
                        normalize = TRUE) {
+    y <- as_binary01(y)
     G <- expand.grid(cost = costs, gamma = gammas, nfeat = nfeats)
     G$auc <- NA_real_
     G$acc <- NA_real_
@@ -555,58 +692,6 @@ paper_aki_cache_set <- function(cache_dir, key, value) {
     value
 }
 
-#' @title Compute cache size
-#' @description Sums bytes of cached `.rds` files and returns a compact summary.
-#' @param cache_dir Cache directory path.
-#' @return List with `bytes`, `files`, and `human`.
-#' @examples
-#' d <- paper_aki_cache_new(tempfile("aki-cache-"))
-#' paper_aki_cache_size(d)
-#' @noRd
-paper_aki_cache_size <- function(cache_dir = paper_aki_get_cache_dir()) {
-    files <- list.files(cache_dir,
-        pattern = "\\.rds$",
-        full.names = TRUE,
-        ignore.case = TRUE
-    )
-    if (length(files) == 0) {
-        return(list(bytes = 0, files = 0L, human = "0 B"))
-    }
-    sz <- sum(file.info(files)$size, na.rm = TRUE)
-    units <- c("B", "KB", "MB", "GB", "TB")
-    idx <- 1L
-    val <- as.numeric(sz)
-    while (val >= 1024 && idx < length(units)) {
-        val <- val / 1024
-        idx <- idx + 1L
-    }
-    list(
-        bytes = as.numeric(sz),
-        files = length(files),
-        human = sprintf("%.2f %s", val, units[idx])
-    )
-}
-
-#' @title Clear disk cache
-#' @description Deletes cached `.rds` files and returns number of removed files.
-#' @param cache_dir Cache directory path.
-#' @return Integer count of deleted files.
-#' @examples
-#' d <- paper_aki_cache_new(tempfile("aki-cache-"))
-#' paper_aki_cache_clear(d)
-#' @noRd
-paper_aki_cache_clear <- function(cache_dir = paper_aki_get_cache_dir()) {
-    files <- list.files(cache_dir,
-        pattern = "\\.rds$",
-        full.names = TRUE,
-        ignore.case = TRUE
-    )
-    if (length(files) == 0) {
-        return(0L)
-    }
-    as.integer(sum(file.remove(files)))
-}
-
 #' @title Cached score_grid
 #' @description Runs `score_grid` and stores/retrieves results from disk cache.
 #' @param X Numeric feature matrix.
@@ -683,59 +768,249 @@ find_best_params_cached <- function(X,
     paper_aki_cache_set(cache, key, out)
 }
 
-# Runtime #####
-
-#' @title Detect number of worker cores
-#' @description Returns core count scaled by `frac` and bounded below by one.
-#' @param frac Fraction of detected logical cores.
-#' @return Integer worker count.
-#' @examples
-#' paper_aki_ncores(0.5)
-#' @noRd
-paper_aki_ncores <- function(frac = 0.5) {
-    n <- parallel::detectCores(logical = TRUE)
-    max(1L, floor(n * frac))
-}
-
-#' @title Apply function over grid
-#' @description Evaluates a function for each row of a grid, optionally multicore.
-#' @param grid Data frame of parameter settings.
-#' @param fun Function taking `(row_df, i)`.
-#' @param ncores Number of cores.
-#' @return List of results with `ncores` attribute.
-#' @examples
-#' g <- expand.grid(a = 1:2, b = 3:4)
-#' paper_aki_grid_apply(g, function(x, i) c(i = i, s = x$a + x$b), ncores = 1)
-#' @noRd
-paper_aki_grid_apply <- function(grid,
-                                 fun,
-                                 ncores = paper_aki_ncores(0.5)) {
-    stopifnot(is.function(fun))
-    idx <- seq_len(nrow(grid))
-    run_one <- function(i) fun(grid[i, , drop = FALSE], i)
-    if (.Platform$OS.type == "unix" && ncores > 1) {
-        out <- parallel::mclapply(idx, run_one, mc.cores = ncores)
-    } else {
-        out <- lapply(idx, run_one)
-    }
-    attr(out, "ncores") <- ncores
-    out
-}
-
-#' @title Decide full vignette execution
-#' @description Returns TRUE on GitHub Actions or when explicit local option/env is set.
-#' @return Logical scalar.
-#' @examples
-#' paper_aki_should_run_full_vignette()
-#' @noRd
-paper_aki_should_run_full_vignette <- function() {
-    is_github <- identical(Sys.getenv("GITHUB_ACTIONS"), "true")
-    opt <- isTRUE(getOption("metabodecon.full_vignette", FALSE))
-    env <- identical(Sys.getenv("METABODECON_FULL_VIGNETTE"), "true")
-    is_github || opt || env
-}
-
 # Plots #####
+
+#' @noRd
+#' @title Plot selected spectra panel
+#' @description Draws selected spectra in a multi-panel layout.
+#' @param spectra Spectra object.
+#' @param ids Integer indices to plot.
+#' @param meta Optional data frame with `SampleID` and `Type` columns.
+#' @param foc_rgn Numeric length-2 vector for focus region in ppm.
+#' @param mfrow Integer length-2 panel layout.
+#' @return Invisibly returns plotted indices.
+#' @examples
+#' # See AKI vignette for a full example.
+plot_spectra_panel <- function(spectra,
+                               ids = c(30, 90),
+                               meta = NULL,
+                               foc_rgn = c(4.5, 1.5),
+                               mfrow = NULL) {
+    spectra <- spectra[ids]
+
+    if (is.null(mfrow)) {
+        n <- length(spectra)
+        s <- sqrt(n)
+        lo <- floor(s)
+        hi <- ceiling(s)
+
+        if (lo * lo >= n) {
+            mfrow <- c(lo, lo)
+        } else if (lo * hi >= n) {
+            mfrow <- c(lo, hi)
+        } else if (hi * hi >= n) {
+            mfrow <- c(hi, hi)
+        } else {
+            stop("could not derive mfrow from n; possible rounding issue")
+        }
+    }
+
+    withr::with_par(list(
+        mfrow = mfrow,
+        font.main = 1,
+        cex.main = par("cex")
+    ), {
+        for (j in seq_along(spectra)) {
+            i <- ids[j]
+            main <- NULL
+            if (!is.null(meta)) {
+                main <- paste0(meta$SampleID[i], " (", meta$Type[i], ")")
+            }
+            plot_spectrum(
+                spectra[[j]],
+                foc_rgn = foc_rgn,
+                sub1 = list(main = main, bt_axis = TRUE)
+            )
+        }
+    })
+
+    invisible(ids)
+}
+
+
+#' @noRd
+#' @title Draw base heatmap
+#' @description Draws a base heatmap with robust colors.
+#' @param M Numeric matrix with samples in rows and bins in columns.
+#' @param y Unused. Kept for API compatibility.
+#' @param title Optional plot title. Set `NULL` to hide title.
+#' @param x_axis X-axis title.
+#' @param mar Plot margins in the order bottom, left, top, right.
+#' @param mai Plot margins in inches as bottom, left, top, right.
+draw_complex_heatmap <- function(M,
+                                 y = NULL,
+                                 title = NULL,
+                                 x_axis = "ppm",
+                                 mar = c(5, 4, 0, 0),
+                                 mai = NULL) {
+    M <- as.matrix(M)
+    nr <- nrow(M)
+    nc <- ncol(M)
+    if (nr == 0 || nc == 0) {
+        plot.new()
+        return(invisible(NULL))
+    }
+
+    vals <- as.numeric(M)
+    vals <- vals[is.finite(vals)]
+    if (length(vals) == 0) {
+        plot.new()
+        return(invisible(NULL))
+    }
+    q <- as.numeric(stats::quantile(
+        vals,
+        probs = c(0.01, 0.10, 0.50, 0.75, 0.90, 0.99),
+        na.rm = TRUE,
+        type = 8
+    ))
+    lo <- q[1]
+    hi <- q[length(q)]
+    M_plot <- pmin(pmax(M, lo), hi)
+
+    br <- as.numeric(stats::quantile(
+        vals,
+        probs = seq(0, 1, length.out = 257),
+        na.rm = TRUE,
+        type = 8
+    ))
+    if (length(unique(br)) < 2) {
+        br <- seq(lo - 0.5, hi + 0.5, length.out = 257)
+    }
+
+    z <- matrix(as.integer(cut(
+        M_plot,
+        breaks = br,
+        include.lowest = TRUE,
+        labels = FALSE
+    )), nrow = nr, ncol = nc)
+    z[!is.finite(z)] <- 1L
+
+    ppm <- attr(M, "bin_centers")
+    if (is.null(ppm) || length(ppm) != nc) {
+        ppm <- suppressWarnings(as.numeric(colnames(M)))
+    }
+    if (length(ppm) != nc || anyNA(ppm)) {
+        ppm <- seq_len(nc)
+    }
+    n_ticks <- min(8L, nc)
+    x_at <- unique(round(seq(1, nc, length.out = n_ticks)))
+    x_labs <- format(ppm[x_at], digits = 3)
+
+    pal <- grDevices::colorRampPalette(c(
+        "#08306b", "#2171b5", "#6baed6",
+        "#fee090", "#fdae61", "#d73027"
+    ))(256)
+
+    popts <- list(mar = mar)
+    if (!is.null(mai)) {
+        popts$mai <- mai
+    }
+
+    withr::with_par(popts, {
+        image(
+            x = seq_len(nc),
+            y = seq_len(nr),
+            z = t(z[rev(seq_len(nr)), , drop = FALSE]),
+            col = pal,
+            zlim = c(1, length(pal)),
+            xaxs = "i",
+            yaxs = "i",
+            axes = FALSE,
+            xlab = "",
+            ylab = "",
+            main = title
+        )
+        axis(1, at = x_at, labels = x_labs, las = 1, cex.axis = 0.8)
+        title(xlab = x_axis)
+        box()
+    })
+
+    invisible(NULL)
+}
+
+#' @noRd
+#' @title Plot sample-wise boxplots for full intensities
+#' @description
+#' Draws one boxplot per sample using the full intensity range.
+#' @param M Numeric matrix with samples in rows and bins in columns.
+#' @param y Optional class labels with values "Control" and "AKI".
+#' @param tick_every Show every k-th sample index on y-axis.
+#' @param y_axis X-axis label for the boxplot values.
+#' @param mar Plot margins in the order bottom, left, top, right.
+#' @param mai Plot margins in inches as bottom, left, top, right.
+plot_sample_boxplots <- function(M,
+                                 y = NULL,
+                                 tick_every = 20,
+                                 y_axis = "Intensity",
+                                 mar = c(5, 4, 0, 0),
+                                 mai = NULL) {
+    M <- as.matrix(M)
+    n <- nrow(M)
+    at <- seq(1, n, by = tick_every)
+    if (tail(at, 1) != n) at <- c(at, n)
+
+    x_full <- split(as.vector(M), row(M))
+
+    cols <- rep("#bdbdbd", n)
+    if (!is.null(y) && length(y) == n) {
+        cols[y == "Control"] <- "#33a02c"
+        cols[y == "AKI"] <- "#ff7f00"
+    }
+
+    popts <- list(mar = mar)
+    if (!is.null(mai)) {
+        popts$mai <- mai
+    }
+
+    withr::with_par(popts, {
+        pos <- rev(seq_len(n))
+        boxplot(
+            x_full,
+            at = pos,
+            horizontal = TRUE,
+            outline = FALSE,
+            yaxt = "n",
+            col = cols,
+            border = "#4d4d4d",
+            xlab = y_axis,
+            ylab = "",
+            main = "",
+            ylim = c(0.5, n + 0.5),
+            yaxs = "i"
+        )
+        axis(2, at = n - at + 1, labels = at, las = 1, cex.axis = 0.7)
+    })
+
+    invisible(NULL)
+}
+
+#' @noRd
+#' @title Visualize feature matrix in a 1x2 panel
+#' @description
+#' Draws sample-wise boxplots and a heatmap of raw feature intensities.
+#' @param X Numeric matrix with samples in rows and bins in columns.
+#' @param y Optional class labels with values "Control" and "AKI".
+#' @return Invisible list with `raw` matrix.
+visualize_feature_matrix <- function(X,
+                                     y = NULL) {
+    X <- as.matrix(X)
+    withr::local_par(list(mfrow = c(1, 2)))
+    plot_sample_boxplots(
+        X,
+        y = y,
+        tick_every = 10,
+        y_axis = "Intensity",
+        mar = c(5, 4, 0, 0)
+    )
+    draw_complex_heatmap(
+        X,
+        title = "raw",
+        x_axis = "ppm",
+        mar = c(5, 4, 0, 0)
+    )
+
+    invisible(list(raw = X))
+}
 
 #' @title Plot fold structure
 #' @description Plots outer folds or outer+inner validation split layout.

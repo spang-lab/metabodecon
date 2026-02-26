@@ -80,6 +80,44 @@ width <- function(x) {
     diff(range(x))
 }
 
+#' @export
+#' @title Show head and tail rows of a matrix-like object
+#'
+#' @description
+#' Returns the first and last `n` rows of a matrix or data frame. If the input
+#' has fewer than `2*n` rows, overlapping rows are returned only once.
+#'
+#' @param x
+#' A matrix or data frame.
+#'
+#' @param n
+#' Number of rows to take from the top and bottom.
+#'
+#' @return
+#' A subset of `x` containing head and tail rows.
+#'
+#' @author 2024-2026 Tobias Schmidt: initial version.
+#'
+#' @examples
+#' x <- matrix(seq_len(30), nrow = 10)
+#' headtail(x, n = 2)
+headtail <- function(x, n = 6) {
+    ok <- is.matrix(x) || is.data.frame(x)
+    if (!ok) stop("x must be a matrix or data frame.")
+    if (!is_int(n) || length(n) != 1 || n < 0) {
+        stop("n must be a single non-negative integer.")
+    }
+
+    nr <- nrow(x)
+    if (nr == 0) return(x)
+
+    n_show <- min(as.integer(n), nr)
+    i_top <- seq_len(n_show)
+    i_bot <- seq.int(from = nr - n_show + 1, to = nr)
+    i <- unique(c(i_top, i_bot))
+    x[i, , drop = FALSE]
+}
+
 # Convert between Units (Private) #############################################
 
 #' @noRd

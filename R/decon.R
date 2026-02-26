@@ -75,6 +75,7 @@ deconvolute <- function(x,
     nfit=3,    smopts=c(2, 5), delta=6.4,    sfr=NULL,   wshw=0,
     ask=FALSE, force=FALSE,    verbose=TRUE, nworkers=1, use_rust=FALSE
 ) {
+
     # Check inputs
     stopifnot(
         is_spectrum_or_spectra(x),    is_int_or_null(nfit, 1),

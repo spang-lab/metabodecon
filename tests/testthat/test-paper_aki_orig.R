@@ -1,5 +1,5 @@
 test_that("get_test_ids creates stratified folds", {
-    y <- rep(c(0, 1), each = 30)
+    y <- factor(rep(c("Control", "AKI"), each = 30))
     ids <- get_test_ids(nfolds = 3, nsamples = length(y), seed = 1, y = y)
 
     expect_equal(length(ids), 3)
@@ -8,9 +8,33 @@ test_that("get_test_ids creates stratified folds", {
 
     for (i in seq_along(ids)) {
         yi <- y[ids[[i]]]
-        expect_true(any(yi == 0))
-        expect_true(any(yi == 1))
+        expect_true(any(yi == "Control"))
+        expect_true(any(yi == "AKI"))
     }
+})
+
+test_that("binary label coercion supports arbitrary factor levels", {
+    y <- factor(c("Control", "AKI", "Control", "AKI"),
+      levels = c("Control", "AKI"))
+    expect_equal(as_binary01(y), c(0L, 1L, 0L, 1L))
+})
+
+test_that("binary label coercion rejects non-binary factors", {
+    y <- factor(c("A", "B", "C"))
+    expect_error(as_binary01(y), "exactly 2")
+})
+
+test_that("bin_spectra bins toy integer example correctly", {
+    sp <- list(list(
+        cs = c(10, 9, 8, 7, 6, 5, 4, 3, 2, 1),
+        si = c(2, 4, 1, 3, 5, 2, 6, 1, 4, 2)
+    ))
+    reg <- matrix(c(10, 0), ncol = 2)
+
+    x <- bin_spectra(sp, regions = reg, binwidth = 2)
+    expect_equal(dim(x), c(1L, 5L))
+    expect_equal(as.numeric(x[1, ]), c(6, 4, 7, 7, 6))
+    expect_equal(attr(x, "bin_centers"), c(9, 7, 5, 3, 1))
 })
 
 test_that("paper_aki cache helpers store and retrieve values", {
@@ -60,7 +84,7 @@ test_that("train_model caches repeated fits", {
 
     cache <- paper_aki_get_cache_dir()
     X <- matrix(rnorm(80), nrow = 20)
-    y <- rep(0:1, each = 10)
+    y <- factor(rep(c("Control", "AKI"), each = 10))
     payload <- list(X = X, y = y)
     txt <- serialize(payload, connection = NULL, ascii = TRUE, version = 2)
     sig <- paper_aki_cache_hash(rawToChar(txt))
