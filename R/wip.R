@@ -1,5 +1,98 @@
 
+#
+# WORK IN PROGRESS FUNCTIONS
+#
+# DO NOT USE UNLESS YOU VERIFIED THE FUNCTION CODE
+#
+
 # API #####
+
+deconvolute_aki_spectra <- function(spectra) {
+  sfr <- aki_default_sfr(spectra[[1]], NULL)
+  best <- find_best_params(spectra[[1]], sfr)
+
+  decons <- metabodecon::deconvolute(spectra,
+    sfr = sfr,
+    smopts = best$smopts,
+    delta = best$delta,
+    nfit = best$nfit,
+    ask = FALSE,
+    verbose = verbose,
+    use_rust = TRUE
+  )
+  decons <- metabodecon::as_decons2(decons)
+
+  decon_mse <- vapply(decons, function(x) mean((x$si - x$sit$sup)^2), numeric(1))
+
+  if (method == "metabodecon") {
+    aligns <- metabodecon::align(decons, maxShift = 50, maxCombine = 5, install_deps = install_deps, verbose = verbose)
+    align_mse <- vapply(aligns, function(x) mean((x$si - x$sit$supal)^2), numeric(1))
+    align_specs <- aligns
+    align_mat <- t(metabodecon::get_si_mat(aligns))
+  } else if (method == "speaq") {
+    decons1 <- metabodecon::as_decons1(decons)
+    feat <- metabodecon::gen_feat_mat(decons1)
+    shifted <- metabodecon::speaq_align(
+      feat,
+      maxShift = 50,
+      spectrum_data = decons1,
+      show = FALSE,
+      verbose = verbose
+    )
+    comb <- metabodecon::combine_peaks(shifted, range = 5)
+    align_mat <- comb$long
+    align_specs <- structure(
+      lapply(seq_len(nrow(align_mat)), function(i) as_plot_spectrum(spectra[[i]], align_mat[i, ])),
+      class = "spectra"
+    )
+    align_mse <- vapply(seq_along(spectra), function(i) {
+      y <- stats::approx(align_specs[[i]]$cs, align_specs[[i]]$si, xout = spectra[[i]]$cs, rule = 2)$y
+      mean((spectra[[i]]$si - y)^2)
+    }, numeric(1))
+  } else {
+    bins <- metabodecon:::aki_bin_matrix(spectra, bin_width = 0.01, bin_range = NULL, bin_edges = NULL)
+    align_mat <- bins$mat
+    align_specs <- structure(
+      lapply(seq_len(nrow(align_mat)), function(i) as_plot_spectrum(spectra[[i]], align_mat[i, ])),
+      class = "spectra"
+    )
+    align_mse <- vapply(seq_along(spectra), function(i) {
+      y <- stats::approx(align_specs[[i]]$cs, align_specs[[i]]$si, xout = spectra[[i]]$cs, rule = 2)$y
+      mean((spectra[[i]]$si - y)^2)
+    }, numeric(1))
+  }
+
+  list(
+    spectra = spectra,
+    decon_specs = decons,
+    align_specs = align_specs,
+    decon_mse = decon_mse,
+    align_mse = align_mse,
+    align_mat = align_mat
+  )
+}
+
+find_best_params <- function(spectrum, sfr) {
+    check_mdrb(stop_on_fail = TRUE)
+    grid <- expand.grid(
+        sm_iter = c(1, 2, 3),
+        sm_win = c(3, 5, 7, 9),
+        delta = 1:10,
+        nfit = c(3, 5, 10)
+    )
+    npar <- nrow(grid)
+    mdrb_spec <- mdrb::Spectrum$new(spectrum$cs, spectrum$si, sfr)
+    for (i in seq_len(nrow(grid))) {
+        logf("Grid %d/%d", i, npar)
+        row <- grid[i, ]
+        dec <- mdrb::Deconvoluter$new()
+        dec$set_moving_average_smoother(row$sm_iter, row$sm_win)
+        dec$set_noise_score_selector(row$delta)
+        dec$set_analytical_fitter(row$nfit)
+        res <- dec$deconvolute_spectrum(mdrb_spec)
+        grid[i, "mse"] <- res$mse()
+    }
+}
 
 run_aki_benchmark_rest <- function() {
     tscores <- compute_t_scores(X_qn, y)
