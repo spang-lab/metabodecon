@@ -816,6 +816,10 @@ is_list_of_nums <- function(x, nl = NULL, nv = NULL) {
 
 # Misc (Private) ##############################################################
 
+rbindlist <- function(x) {
+    do.call(rbind, x)
+}
+
 #' @noRd
 #' @author 2024-2025 Tobias Schmidt: initial version.
 called_from_globalenv <- function() {

@@ -1,0 +1,16 @@
+
+1. Fang am Besten mit meinem Code und Buckettabelle an und schau, ob Du die
+   Daten reproduzieren kannst. Dafür würde ich die lineare SVM ohne Optimierung
+   nehmen, da sie sehr schnell ist.
+
+2. Vergleiche Deine und meine Klassen Label
+
+3. Schau ob die Reihenfolge der Spektren in Deiner Datenmatrix von 1 an
+   aufsteigend ist und keine Dreher drin sind.
+
+4. Überprüfe Deine Normalisierung ich hatte erst auf Creatinine normalisiert,
+   hierfür hatte ich die Region von 4.078-4.048 ppm genommen (ich hatte gestern die
+   Region nochmal neu optimiert) und danach noch eine PQN Normalisierung
+   durchgeführt, wobei die zusätzliche PQN Normalisierung bei mir kaum einen
+   Unterschied macht (Creatinine und PQN Normalisierung sollten auch beide
+   annähernd zum gleichen Ergebnis führen).

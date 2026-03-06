@@ -1,5 +1,5 @@
 ---
-title: "AKI Original (Paper-Style Reproduction)"
+title: "AKI Original"
 output:
   html_document:
     fig_caption: true
@@ -31,13 +31,15 @@ h1.title {
 
 ```{r set-defaults, echo=FALSE, results=FALSE, message=FALSE}
 knitr::opts_chunk$set(
-  out.width = "100%",
-  fig.width = 10,
-  fig.height = 4,
-  eval = TRUE,
-  echo = TRUE,
-  results = "markup",
-  message = FALSE
+    out.width = "100%",
+    fig.width = 10,
+    fig.height = 4,
+    cache = FALSE,
+    cache.lazy = FALSE,
+    eval = TRUE,
+    echo = TRUE,
+    results = "markup",
+    message = FALSE
 )
 ```
 
@@ -73,107 +75,14 @@ within a leave-five-out cross-validation.*
 *The internal parameters of the SVM were calibrated within an inner
 cross-validation loop employing a grid search procedure.*
 
-## Helper Functions
-
-Based on these instructions we're gonna implement the following helper functions:
-
-`bin_spectra(spectra, regions, binwidth)`\
-For creating a matrix of binned features from a list of spectra. Binning will be
-done by splitting the given `regions` into bins of width `binwidth` and summing
-the intensities of all data points that fall into each bin. The resulting binned
-features will be stored in a matrix, where rows correspond to spectra and
-columns correspond to bins.
-
-`get_quantile_reference(X)`\
-For computing the reference distribution for quantile normalization from a
-feature matrix `X`.
-
-`quantile_normalize(X, ref)`\
-For applying quantile normalization to a feature matrix `X` using a reference
-distribution `ref`.
-
-`train_model(spectra, cls, cost, gamma, nfeat, normalize)`\
-For training a radial SVM classifier with margin regularization strength
-`cost`, RBF kernel width `gamma` and `nfeat` number of features. Features are
-obtained by binning the given input spectra using `bin_spectra()` and
-selecting the top `nfeat` based on t-scores from a Welch t-test, comparing the
-two classes in `cls`. If `normalize` is TRUE, quantile normalization is
-applied to the binned features before feature selection and SVM training. The
-feature-selection based on t-scores is described in 'Gronwald et al., 2011'.
-The returned object will contain the trained SVM model, the
-quantile-normalisation reference distribution and the indices of the selected
-features.
-
-`find_best_params(X, y, costs, gammas, nfeats, normalize, k)`\
-For training multiple SVMs across a grid using k-fold cross-validation to
-select the best parameters. In this vignette we use `costs = (1:10) / 10`,
-`gammas = 2^(-12:-5)` and `nfeats = 2:3`. We limit the number of features to
-such a narrow range, because the original paper states, that the average
-optimum is 2.4 across validation folds with a standard deviation of 0.5. This
-means, that only values of 2 and 3 can have been observed (e.g. 2,2,2,3,3) or
-the SD would have been higher. Since the goal of this article is not to rerun
-the whole analysis workflow, but to reproduce the reported results as closely
-as possible, there is no need to search a wider range of feature counts.
-
-## The Final Classification Pipeline
-
-The final classification pipeline will then be implemented as follows:
-
-```{r pipeline-cv-cleaned}
-benchmark_aki_classification_cv_cleaned <- function() {
-  # Read spectra and metadata
-  path <- metabodecon::download_example_datasets()
-  aki_path <- file.path(path, "bruker", "aki")
-  spectra <- metabodecon::read_spectra(aki_path)
-  meta <- read.csv(file.path(aki_path, "s_MTBLS24.txt"), sep = "\t")
-
-  # Bin spectra and prepare y vector for classification
-  X <- bin_spectra(spectra)
-  typ <- meta$Factor.Value.Acute.Kidney.Injury. == "Acute Kidney Injury"
-  y <- factor(typ, levels = c(0, 1), labels = c("Control", "AKI"))
-
-  # Run classification across 5 folds and collect results
-  test_ids <- get_test_ids(nfolds = 5, nsamples = nrow(meta), y = y)
-  res <- lapply(test_ids, benchmark_aki_classification_holdout, X, y)
-
-  # Format results as 5 x 5 table
-  results <- do.call(rbind, res)
-  colnames(results) <- c("cost", "gamma", "nfeat", "auc", "acc")
-  rownames(results) <- paste0("Fold", 1:5)
-
-  # Add means and standard deviations across folds as additional rows
-  means <- colMeans(results)
-  sds <- apply(results, 2, sd)
-  rbind(results, Mean = means, SD = sds)
-  results
-}
-```
-
-where `benchmark_aki_classification_holdout()` is defined as follows:
-
-```{r pipeline-holdout}
-benchmark_aki_classification_holdout <- function(te, X, y) {
-  tr <- setdiff(seq_len(nrow(X)), te)
-  costs <- (1:10) / 10
-  gammas <- 2^(-12:-5)
-  nfeats <- 2:3
-  p <- find_best_params_cached(X[tr, ], y[tr], costs, gammas, nfeats, TRUE, 5)
-  svm <- train_model(X[tr, ], y[tr], p$cost, p$gamma, p$nfeat)
-  yhat <- predict_svm(svm, X[te, , drop = FALSE])
-  cls <- factor(yhat$cls, levels = c(0, 1), labels = levels(y))
-  auc <- auc(y[te], yhat$prob)
-  acc <- mean(y[te] == cls)
-  c(p$cost, p$gamma, p$nfeat, auc, acc)
-}
-```
-
 ## Step by Step Execution
 
-To make the analysis as transparent as possible, we will now execute the above
-pipeline step by step, visualizing intermediate results and outputs along the
-way, before showing the final results at the end of the vignette.
+To make the analysis as transparent as possible, we will execute the above
+pipeline step by step over the course of this vignette, visualizing intermediate
+results and outputs along the way, before showing the final results at the end
+of the vignette.
 
-### Downloading the Data
+## Downloading the Data
 
 The first thing we need to do is to download the data, if not already available
 locally. This is done via `download_example_datasets()`. The AKI dataset is then
@@ -187,7 +96,7 @@ aki_path <- file.path(path, "bruker", "aki")
 metabodecon::tree_preview(aki_path)
 ```
 
-### Reading Spectra and Metadata
+## Reading Spectra and Metadata
 
 Now that we have the data, we can read the spectra and metadata using
 `read_spectra()` and `read_csv()`, respectively. The spectra will be stored as
@@ -203,6 +112,7 @@ visualize the raw data.
 meta <- read.csv(file.path(aki_path, "s_MTBLS24.txt"), sep = "\t")
 meta <- meta[, c("Sample.Name", "Factor.Value.Acute.Kidney.Injury.")]
 meta <- setNames(meta, c("SampleID", "Type"))
+meta$Type <- ifelse(meta$Type == "Acute Kidney Injury", "AKI", "Control")
 headtail(meta, 3)
 ```
 
@@ -218,7 +128,97 @@ summary(head(spectra, 4))
 plot_spectra_panel(spectra, meta = meta)
 ```
 
-### Binning the data
+## Ordering Spectra and Metadata
+
+Before we can bring spectra and metadata into the same order, we need to check
+whether the sample IDs are the same in spectra and metadata.
+
+```{r check-sample-ids}
+s <- names(spectra) # spectra names
+m <- meta$SampleID # metadata names
+diffdf <- data.frame(sort(s), sort(m), equ = (sort(s) == sort(m)))
+print(diffdf[!diffdf$equ, ])
+```
+
+<!--
+               sort.s.             sort.m.   equ
+17 AKI_8_24_105_110816 AKI_8_24_105_110812 FALSE
+18 AKI_8_24_106_110816 AKI_8_24_106_110812 FALSE
+19 AKI_8_24_107_110816 AKI_8_24_107_110812 FALSE
+20 AKI_8_24_108_110816 AKI_8_24_108_110812 FALSE
+21 AKI_8_24_109_110816 AKI_8_24_109_110812 FALSE
+23 AKI_8_24_110_110816 AKI_8_24_110_110812 FALSE
+-->
+
+It seems as if the spectra names have a different date (110816) than the
+metadata names (110812), so let's compare the distribution of dates in both
+datasets:
+
+```{r compare-sample-dates}
+sd <- sapply(strsplit(s, "_"), `[`, 5)
+md <- sapply(strsplit(m, "_"), `[`, 5)
+table(sd)
+table(md)
+```
+
+The 110816 appears only in the spectra names, while the other dates (110722,
+110729 and 110812) appears in both, spectra data and metadata. Therefore, I'm
+guessing that the the 110816 in the spectra names is wrong. However, because
+renaming and re-uploading the spectra files is much more work than just patching
+the metadata names, we will for now just patch the metadata names.
+
+```{r patch-names}
+meta$SampleID[meta$SampleID == "AKI_8_24_105_110812"] <- "AKI_8_24_105_110816"
+meta$SampleID[meta$SampleID == "AKI_8_24_106_110812"] <- "AKI_8_24_106_110816"
+meta$SampleID[meta$SampleID == "AKI_8_24_107_110812"] <- "AKI_8_24_107_110816"
+meta$SampleID[meta$SampleID == "AKI_8_24_108_110812"] <- "AKI_8_24_108_110816"
+meta$SampleID[meta$SampleID == "AKI_8_24_109_110812"] <- "AKI_8_24_109_110816"
+meta$SampleID[meta$SampleID == "AKI_8_24_110_110812"] <- "AKI_8_24_110_110816"
+```
+
+Now let's see if we can finally map them:
+
+```{r map-spectra-meta}
+s <- names(spectra) # spectra names
+m <- meta$SampleID # metadata names
+all.equal(sort(s), sort(m))
+```
+
+Ok, we can map every meta row to a spectrum, so let's do that. There are many ways to do that, e.g.:
+
+- Sort metadata in the same order as spectra
+- Sort spectra in the same order as metadata
+- Sort both of the by sample ID
+- Sort both of them by sample number
+
+For now, because it's easiest, I will sort metadata in the same way as spectra.
+
+```{r read-meta-mbl}
+rownames(meta) <- meta$SampleID
+meta <- meta[names(spectra), ]
+```
+
+## Creatinine Normalization
+
+According to the Masterthesis, accompanying the original paper, all spectra were
+normalized by dividing through the creatinine signal at 3.05 ppm. The exact
+quote from the Masterthesis is: 'The spectra were scaled to the reference region
+of creatinine, 3.053 ppm - 3.011 ppm'. We can do this, by iterating over each spectrum object,
+finding the datapoints in that region, summing up the intensities in that region to get the creatinine peak intensity,
+and then dividing all intensities in the spectrum by that value.
+
+```{r creatinine-normalization}
+cr <- c(3.011, 3.053) # creatinine region
+spectra_normed <- spectra # copy spectra to new object for normalization
+for (i in seq_along(spectra)) {
+    s <- spectra[[i]]
+    idx <- which(s$cs >= cr[1] & s$cs <= cr[2])
+    ci <- sum(s$si[idx]) # creatinine intensity
+    spectra_normed[[i]]$si <- s$si / ci
+}
+```
+
+## Binning the data
 
 We now create the feature matrix by binning. Each row corresponds to one
 spectrum and each column corresponds to one bin. Following the paper, we use the
@@ -228,314 +228,150 @@ values by 1e6 (one million) to get them into a nice, readable range.
 
 ```{r binning}
 regions <- rbind(c(9.5, 6.5), c(4.5, 0.5))
-X <- bin_spectra(spectra, regions = regions, binwidth = 0.01) / 1e6
+X <- bin_spectra(spectra_normed, regions = regions, binwidth = 0.01)
+which(!rownames(X) %in% meta$SampleID)
+
 rownames(X) <- meta$SampleID
-typ <- meta$Type == "Acute Kidney Injury"
-y <- factor(typ, levels = c(0, 1), labels = c("Control", "AKI"))
+y <- factor(meta$Type, levels = c("Control", "AKI"))
 fmt <- "Features: %d\nSamples: %d (%d AKI, %d Control)\n"
 msg <- sprintf(fmt, ncol(X), nrow(X), sum(y == "AKI"), sum(y == "Control"))
 cat(msg)
 ```
 
-```{r binning-heatmap-grid}
-#| fig.cap: |
-#|   Binning result as a 1x2 panel generated by one helper call.
-#|   Left: raw sample-wise boxplots. Right: raw-intensity heatmap.
-visualize_feature_matrix(X, y)
-```
-
-### Quantile Normalization
+## Quantile Normalization
 
 Quantile normalization forces each sample to have the same empirical
 distribution. We compute a reference distribution from all samples and map each
 sample to it.
 
-```{r qn}
+```{r qn-heatmap-complex, out.width = "50%"}
+#| fig.cap: |
+#|   Quantile-normalized data: left sample summaries on a symlog2 x-scale,
+#|   right heatmap over ppm bins.
 ref_qn <- get_quantile_reference(X)
 X_qn <- quantile_normalize(X, ref_qn)
 rownames(X_qn) <- rownames(X)
+draw_complex_heatmap(X, title = "Creatine Normed", x_axis = "ppm", mar = c(5, 1, 2, 1))
+draw_complex_heatmap(X_qn, title = "Creatine+Quantile Normed", x_axis = "ppm", mar = c(5, 1, 2, 1))
 ```
 
-```{r qn-heatmap-complex, fig.width=9, fig.height=5, out.width = "49%"}
-#| fig.cap: |
-#|   Quantile-normalized data: left full-range sample boxplots,
-#|   right ComplexHeatmap.
-Xh_qn <- X_qn
-yh_qn <- y
-plot_sample_boxplots(
-  Xh_qn,
-  y = yh_qn,
-  y_axis = "Intensity",
-  mar = c(5, 4, 0, 0),
-  mai = c(0.9, 0.7, 0, 0)
-)
-draw_complex_heatmap(
-  Xh_qn,
-  y = yh_qn,
-  title = NULL,
-  x_axis = "ppm",
-  mar = c(5, 4, 0, 0),
-  mai = c(0.9, 0.7, 0, 0)
-)
-```
+## Making Cross Validation Folds
 
-### PQN Normalization
+We use nested 21x20 CV. Outer folds are used for unbiased performance
+estimation. Inside each outer training split, we build inner folds for
+parameter tuning.
 
-Another common normalization method is Probabilistic Quotient Normalization
-(PQN), which is based on the idea of normalizing each spectrum by a reference
-spectrum that represents the typical sample in the dataset. The reference
-spectrum is usually computed as the median spectrum across all samples. PQN is
-particularly useful when there are large variations in the overall intensity of
-the spectra, which is often the case in metabolomics data. At the end of this
-section you can see a comparison of the results obtained with quantile
-normalization and PQN.
-
-```{r pqn}
-ref_pqn <- get_pqn_reference(X)
-X_pqn <- pqn_normalize(X, ref_pqn)
-rownames(X_pqn) <- rownames(X)
-```
-
-```{r pqn-heatmap-complex, fig.width=9, fig.height=5, out.width = "49%"}
-#| fig.cap: |
-#|   PQN-normalized data: left full-range sample boxplots,
-#|   right ComplexHeatmap.
-Xh_pqn <- X_pqn
-yh_pqn <- y
-plot_sample_boxplots(
-  Xh_pqn,
-  y = yh_pqn,
-  y_axis = "Intensity",
-  mar = c(5, 4, 0, 0),
-  mai = c(0.9, 0.7, 0, 0)
-)
-draw_complex_heatmap(
-  Xh_pqn,
-  y = yh_pqn,
-  title = NULL,
-  x_axis = "ppm",
-  mar = c(5, 4, 0, 0),
-  mai = c(0.9, 0.7, 0, 0)
-)
-```
-
-### Making Cross Validation Folds
-
-We use nested 5x5 CV. Outer folds are used for unbiased performance estimation.
-Inside each outer training split, we build inner folds for parameter tuning.
-
-```{r folds, eval=FALSE}
+```{r folds, fig.height = 4, fig.width = 12}
 #| fig.cap: |
 #|   Nested cross-validation split
-#|   structure. The first panel shows the outer 5-fold split.
+#|   structure. The first panel shows the outer 21-fold split.
 #|   The second panel shows inner validation folds for outer fold 1.
 n <- nrow(X)
-test_ids <- get_test_ids(
-  nfolds = 5,
-  nsamples = n,
-  seed = 1,
-  y = y
-)
-plot_folds(test_ids, nsamples = n, main = "Outer 5-fold split")
-
-te1 <- test_ids[[1]]
-tr1 <- setdiff(seq_len(n), te1)
-inner_rel <- get_test_ids(
-  nfolds = 5,
-  nsamples = length(tr1),
-  seed = 1,
-  y = y[tr1]
-)
-inner_te <- lapply(inner_rel, function(i) tr1[i])
-plot_folds(list(te1), n, val_ids = inner_te, main = "Inner folds inside outer fold 1")
+ids <- seq_len(n)
+te <- get_test_ids(ids, nfolds = 21, seed = 1, y = y)
+tr <- lapply(te, function(x) setdiff(seq_len(n), x))
 ```
 
-### Hyperparameter Tuning
+## Lasso Performance Estimation
 
-First, we train one model for fold 1.1 and inspect its predictions.
-
-```{r tune-one, eval=FALSE}
-#| fig.cap: |
-#|   Predicted AKI probabilities on one
-#|   inner validation fold (fold 1.1). Points are colored by true
-#|   class and the dashed line marks the 0.5 decision threshold.
-ok <- sapply(inner_te, function(v) {
-  tr <- setdiff(tr1, v)
-  length(unique(y[tr])) == 2 && length(unique(y[v])) == 2
-})
-if (!any(ok)) stop("No inner split with both classes found.")
-val11 <- inner_te[[which(ok)[1]]]
-tr11 <- setdiff(tr1, val11)
-
-fit11 <- train_model(X[tr11, , drop = FALSE], y[tr11],
-  cost = 0.5, gamma = 2^-10, nfeat = 3,
-  normalize = TRUE
-)
-pred11 <- predict_svm(fit11, X[val11, , drop = FALSE])
-cls11 <- factor(pred11$cls, levels = c(0, 1), labels = levels(y))
-auc11 <- auc(y[val11], pred11$prob)
-acc11 <- mean(y[val11] == cls11)
-
-c(auc = auc11, acc = acc11)
-plot_prob_scatter(pred11$prob, as_binary01(y[val11]), "Fold 1.1 predictions")
-```
-
-Now we evaluate the full grid for fold 1.1 and then average AUCs across all
-inner folds of outer fold 1.
-
-```{r tune-grid, eval=FALSE}
-#| fig.cap: |
-#|   Mean inner-fold AUC surfaces for
-#|   hyperparameter tuning at nfeat = 2 (left) and nfeat = 3
-#|   (right), across cost and gamma.
-costs <- (1:10) / 10
-gammas <- 2^(-12:-5)
-nfeats <- 2:3
-
-G11 <- score_grid_cached(
-  X,
-  y,
-  tr11,
-  val11,
-  costs,
-  gammas,
-  nfeats,
-  TRUE
-)
-
-valid_inner <- inner_te[ok]
-G1 <- score_grid_cached(
-  X, y, setdiff(tr1, valid_inner[[1]]), valid_inner[[1]],
-  costs, gammas, nfeats, TRUE
-)
-for (i in 2:length(valid_inner)) {
-  vai <- valid_inner[[i]]
-  tri <- setdiff(tr1, vai)
-  Gi <- score_grid_cached(
-    X,
-    y,
-    tri,
-    vai,
-    costs,
-    gammas,
-    nfeats,
-    TRUE
-  )
-  G1$auc <- G1$auc + Gi$auc
-}
-G1$auc <- G1$auc / length(valid_inner)
-
-best1 <- G1[which.max(G1$auc), ]
-best1
-
-zlim <- range(G1$auc, na.rm = TRUE)
-withr::with_par(list(mfrow = c(1, 2)), {
-  plot_auc_grid(G1, nfeat = 2, zlim = zlim, main = "mean inner AUC (nfeat=2)")
-  plot_auc_grid(G1, nfeat = 3, zlim = zlim, main = "mean inner AUC (nfeat=3)")
-})
-```
-
-In this vignette we follow the standard strategy: compute one AUC per inner
-validation fold and average these AUCs across folds to select parameters.
-
-
-### Performance Evaluation
-
-Finally, we repeat the procedure for all outer folds, collect fold-wise metrics,
-and pool all outer-fold predictions for one global AUC/accuracy estimate.
-
-```{r outer-cv, eval=FALSE}
-#| fig.cap: |
-#|   Pooled outer-fold AKI probabilities
-#|   from nested CV. Each point is one sample; color encodes class.
-#|   The dashed line indicates the 0.5 classification threshold.
-eval_outer_fold <- function(te, Xm, y) {
-  tr <- setdiff(seq_len(nrow(Xm)), te)
-  p <- find_best_params_cached(
-    Xm[tr, , drop = FALSE], y[tr], costs, gammas, nfeats, TRUE, 5
-  )
-  svm <- train_model(
-    Xm[tr, , drop = FALSE], y[tr],
-    p$cost, p$gamma, p$nfeat, TRUE
-  )
-  yhat <- predict_svm(svm, Xm[te, , drop = FALSE])
-  cls <- factor(yhat$cls, levels = c(0, 1), labels = levels(y))
-  list(
-    ids = te,
-    prob = yhat$prob,
-    cls = yhat$cls,
-    perf = c(
-      cost = p$cost, gamma = p$gamma, nfeat = p$nfeat,
-      auc = auc(y[te], yhat$prob),
-      acc = mean(y[te] == cls)
+```{r performance-estimation-glmnet, fig.height = 3}
+# Train models with hypterparameters selected from inner CV
+set.seed(1)
+cvobjs <- lapply(seq_along(te), function(i) {
+    glmnet::cv.glmnet(
+        x = X_qn[tr[[i]], ],
+        y = y[tr[[i]]],
+        alpha = 1,
+        nfolds = 5,
+        family = "binomial"
     )
-  )
-}
+})
 
-res <- lapply(test_ids, eval_outer_fold, Xm = X, y = y)
+# Collect predictions on test sets
+Y <- lapply(seq_along(te), function(i) {
+    sid <- rownames(X_qn)[te[[i]]]
+    true <- y[te[[i]]]
+    prob <- predict(cvobjs[[i]], X_qn[te[[i]], ], s = "lambda.min", type = "response")[, 1]
+    pred <- predict(cvobjs[[i]], X_qn[te[[i]], ], s = "lambda.min", type = "class")[, 1]
+    pred <- factor(pred, levels = levels(y))
+    data.frame(sid, true, prob, pred)
+})
+Y <- rbindlist(Y)
+Y <- Y[order(Y$true, Y$prob), ]
+Y$SampleNr <- as.integer(sapply(strsplit(Y$sid, "_"), `[`, 4))
 
-perf <- do.call(rbind, lapply(res, function(x) x$perf))
-rownames(perf) <- paste0("Fold", seq_len(nrow(perf)))
-perf <- rbind(perf, Mean = colMeans(perf), SD = apply(perf, 2, sd))
-print(round(perf, 4))
-
-prob_all <- rep(NA_real_, n)
-for (i in seq_along(res)) {
-  prob_all[res[[i]]$ids] <- res[[i]]$prob
-}
-
-auc_all <- auc(y, prob_all)
-cls_all <- factor(as.integer(prob_all >= 0.5),
-  levels = c(0, 1),
-  labels = levels(y)
+# Plot sid vs. Probabilities. Color by class. Annotate x-ticks with sid. Add horizontal line at 0.5.
+plot_empty(
+    xlim = c(1, nrow(Y)), ylim = c(0, 1),
+    axes = TRUE, ylab = "Predicted probability",
+    xlab = "Row Nr in Data.frame",
+    main = "Lasso CV Predictions"
 )
-acc_all <- mean(cls_all == y)
-c(global_auc = auc_all, global_acc = acc_all)
+text(seq_along(Y$prob), Y$prob, labels = Y$SampleNr, col = as.integer(Y$true))
 
-plot_prob_scatter(prob_all, as_binary01(y), "Outer-fold pooled predictions")
+# Show accuracy and AUC
+accuracy <- mean(Y$true == Y$pred)
+auc <- pROC::auc(Y$true, Y$prob)
+fmt <- "Accuracy: %.2f%%\nAUC: %.3f\n"
+table(Y$true, Y$pred)
+cat(sprintf(fmt, accuracy * 100, auc))
+```
+
+## Global T-tests
+
+```{r global-t-tests}
+tscores <- compute_t_scores(X_qn, y)
+pvals <- 2 * pt(-abs(tscores), df = nrow(X_qn) - 2)
+withr::with_par(
+    new = list(mfrow = c(1, 2)),
+    code = {
+        hist(tscores, breaks = 100, main = "T-scores for AKI vs Control", xlab = "T-score")
+        hist(pvals, breaks = 100, main = "P-values for AKI vs Control", xlab = "P-value")
+    }
+)
+df <- data.frame(feature = colnames(X_qn), tscore = tscores, pval = pvals)
+df <- df[order(df$pval), ]
+head(df, 20)
+top2_fixed <- df$feature[1:2]
+```
+
+### SVM Performance Evaluation
+
+```{r svm-hyperparams}
+set.seed(1)
+te <- get_test_ids(seq_len(nrow(X_qn)), nfolds = 5, seed = 1, y = y)
+Y <- estimate_svm_performance(
+    X = X_qn,
+    y = y,
+    test_ids = te,
+    costs = 2^(0:5),
+    gammas = 2^(-8:-3),
+    nfeats = 2:3,
+    inner_nfolds = 5,
+    ncores = 5,
+    verbose = FALSE
+)
+Yord <- Y[order(Y$true, Y$prob), ]
+plot_empty(
+    xlim = c(1, nrow(Yord)), ylim = c(0, 1),
+    axes = TRUE, ylab = "Predicted score",
+    xlab = "Row Nr in Data.frame",
+    main = "Lasso CV Predictions"
+)
+text(
+    x = seq_along(Yord$prob),
+    y = Yord$prob,
+    labels = as.character(Yord$sample),
+    col = as.integer(Yord$true == "AKI") + 1
+)
+
+# Show accuracy and AUC
+accuracy <- mean(Y$true == Y$pred)
+auc <- pROC::auc(Y$true, Y$prob)
+fmt <- "Accuracy: %.2f%%\nAUC: %.3f\n"
+table(Y$true, Y$pred)
+cat(sprintf(fmt, accuracy * 100, auc))
 ```
 
 The resulting values can now be compared to the reported 83% AUC and 76%
 accuracy from the original paper.
-
-## Extending the original results
-
-We now rerun the full nested CV benchmark for two model types (`svm`,
-`lasso`) and six normalization choices (`quantile`, `pqn`, `creatinine`,
-`sum`, `median`, `none`).
-
-The benchmarking helper supports the normalization timepoint through
-`norm_time`:
-
-- `norm_time = "cv"`: normalize correctly inside each training split.
-- `norm_time = "global"`: normalize once before CV, then use `none` inside CV.
-
-The table reports mean outer-fold AUC ± SD for both settings.
-
-```{r extending-results, eval=FALSE}
-models <- c("svm", "lasso")
-norms <- c("quantile", "pqn", "creatinine", "sum", "median", "none")
-costs <- (1:10) / 10
-gammas <- 2^(-12:-5)
-nfeats <- 2:3
-
-ext <- benchmark_extension_table(
-  X = X,
-  y = y,
-  models = models,
-  norms = norms,
-  k = 5,
-  costs = costs,
-  gammas = gammas,
-  nfeats = nfeats
-)
-
-tab <- data.frame(
-  Method = paste(ext$model, ext$normalisation, sep = " + "),
-  `AUC mean ± SD (CV-wise norm)` = ext$auc_cv_norm,
-  `AUC mean ± SD (global pre-norm)` = ext$auc_global_norm,
-  check.names = FALSE
-)
-
-print(tab, row.names = FALSE)
-```

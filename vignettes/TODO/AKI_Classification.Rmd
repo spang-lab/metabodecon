@@ -304,10 +304,8 @@ deconvolution view we use the same deconvolution step before speaq alignment.
 
 ```{r decon-speaq-before-after, echo=TRUE}
 idx <- pick_rep_indices(train_speaq$decon_mse)
-plot_rep_grid(train_speaq$raw_specs, train_speaq$decon_mse, idx,
-  title_prefix = "Speaq pipeline before deconvolution")
-plot_rep_grid(train_speaq$decon_specs, train_speaq$decon_mse, idx,
-  title_prefix = "Speaq pipeline after deconvolution")
+plot_rep_grid(train_speaq$raw_specs, train_speaq$decon_mse, idx, title_prefix = "Speaq pipeline before deconvolution")
+plot_rep_grid(train_speaq$decon_specs, train_speaq$decon_mse, idx, title_prefix = "Speaq pipeline after deconvolution")
 summary(train_speaq$decon_mse)
 ```
 

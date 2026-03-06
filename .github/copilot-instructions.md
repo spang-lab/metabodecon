@@ -33,6 +33,10 @@
   understand the method.
 - Keep naming short when context is obvious (e.g. `X`, `y`, `te`, `Xtr`,
   `Xte`).
+- Prefer single-line function calls in vignettes. Avoid multiline calls unless
+  required for readability of `*apply()` loops or unavoidable long literals.
+- Avoid defensive checks and fallback branches in vignette chunks. In pseudocode
+  mode, prefer short, direct, didactic code that assumes normal conditions.
 
 ## Project Structure
 

@@ -237,7 +237,7 @@ mdm_find_best_params <- function(X,
     normalisation <- match.arg(normalisation)
     y <- mdm_as_binary01(y)
 
-    te_ids <- get_test_ids(nfolds = k, nsamples = nrow(X), y = y)
+    te_ids <- get_test_ids(seq_len(nrow(X)), nfolds = k, y = y)
 
     if (model == "lasso") {
         A <- sapply(te_ids, function(te) {
@@ -335,7 +335,7 @@ benchmark_cv_mdm <- function(X,
         norm_cv <- "none"
     }
 
-    te_ids <- get_test_ids(nfolds = k, nsamples = nrow(X_use), y = y)
+    te_ids <- get_test_ids(seq_len(nrow(X_use)), nfolds = k, y = y)
     rows <- lapply(te_ids, function(te) {
         tr <- setdiff(seq_len(nrow(X_use)), te)
         p <- mdm_find_best_params(

@@ -79,10 +79,15 @@ align <- function(x, maxShift = 50, maxCombine = 5, verbose = TRUE, install_deps
     # Check and convert inputs
     xx <- as_decons2(x)
     stopifnot(length(xx) > 1)
-    for (i in 2:length(xx)) {
-        if (!is_equal(xx[[i-1]]$cs, xx[[i]]$cs)) {
-            stop("Chemical shifts must be equal across all spectra.")
-        }
+    ndps <- sapply(xx, function(xi) length(xi$cs))
+    if (length(unique(ndps)) != 1) {
+        fmt <- paste(
+            "All spectra must have the same number of data points",
+            "but spectrum 1 has %d",
+            "and spectrum %d has %d."
+        )
+        msg <- sprintf(fmt, ndps[1], i, ndps[i])
+        stop(msg, call. = FALSE)
     }
 
     # Do initial alignment using speaq. Parameter `acceptLostPeak` must be FALSE

@@ -19,5 +19,7 @@ exclusions: list(
     "vignettes/TODO/Purpose.md",
     "vignettes/TODO/Urine_analysis.md",
     "R/MetaboDecon1D.R",
-    "R/depr.R"
+    "R/depr.R",
+    "inst/akiwg/fkt_crossVal_SVM_AKI_urine_wg.R",
+    "inst/akiwg/svm_radial_kernel_JH.R"
   )
