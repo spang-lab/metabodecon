@@ -41,6 +41,7 @@ run_aki_benchmark <- function(  seed = 1,
     n <- length(spectra)
     folds <- seq_len(kout)
     test <- get_test_ids(kout, n, seed)
+    train <- lapply(test, function(x) setdiff(seq_len(n), x))
 
     # Prepare y labels for CV
     y <- factor(meta$type, levels = c("Control", "AKI"))
@@ -58,7 +59,6 @@ run_aki_benchmark <- function(  seed = 1,
     } else {
         stop("Invalid feature extraction method.")
     }
-    train <- lapply(test, function(x) setdiff(seq_len(n), x))
     Xtrain <- lapply(train, function(tr) X[tr, , drop = FALSE])
     Xtest <- lapply(test, function(te) X[te, , drop = FALSE])
 
