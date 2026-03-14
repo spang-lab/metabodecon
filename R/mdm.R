@@ -31,13 +31,9 @@ NULL
 
 # API #####
 
-mdm_as_binary01 <- function(y, arg_name = "y") {
-    as_binary01(y, arg_name)
-}
-
 #' @title Fit metabodecon model
 #' @description Fits an `mdm` object using SVM or lasso with selected normalization.
-#' @param X Numeric feature matrix with samples in rows.
+#' @param spectra
 #' @param y Binary labels (0/1).
 #' @param model Model type, either `"svm"` or `"lasso"`.
 #' @param normalisation Normalization method name.
@@ -55,25 +51,14 @@ mdm_as_binary01 <- function(y, arg_name = "y") {
 #'   m <- fit_mdm(X, y, model = "svm", normalisation = "none", nfeat = 3)
 #'   print(m)
 #' }
-fit_mdm <- function(X,
-                    y,
-                    model = c("svm", "lasso"),
-                    normalisation = c(
-                        "quantile", "pqn", "creatinine",
-                        "sum", "median", "none"
-                    ),
-                    cost = 0.5,
-                    gamma = 2^-10,
-                    nfeat = 3,
-                    cre_idx = NULL,
-                    nfolds_lasso = 5) {
-    model <- match.arg(model)
-    normalisation <- match.arg(normalisation)
-    y <- mdm_as_binary01(y)
-    if (length(unique(y)) < 2) stop("training set must contain both classes")
+fit_mdm <- function(spectra = metabodecon::sim,
+                    y = 1:16 %% 2,
+                    fxfun = "",
+                    fxargs,
+                    modtype,
+                    kfold) {
 
-    norm <- mdm_fit_normalizer(X, normalisation, cre_idx)
-    Xn <- mdm_apply_normalizer(X, norm)
+
 
     meta <- list(model = model)
     if (model == "svm") {
@@ -447,6 +432,10 @@ benchmark_extension_table <- function(X,
 }
 
 # Helpers #####
+
+mdm_as_binary01 <- function(y, arg_name = "y") {
+    as_binary01(y, arg_name)
+}
 
 #' @title Compute rank-based AUC
 #' @description Computes area under the ROC curve using rank statistics.

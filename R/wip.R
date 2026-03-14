@@ -72,28 +72,6 @@ deconvolute_aki_spectra <- function(spectra) {
   )
 }
 
-find_best_params <- function(spectrum, sfr) {
-    check_mdrb(stop_on_fail = TRUE)
-    grid <- expand.grid(
-        sm_iter = c(1, 2, 3),
-        sm_win = c(3, 5, 7, 9),
-        delta = 1:10,
-        nfit = c(3, 5, 10)
-    )
-    npar <- nrow(grid)
-    mdrb_spec <- mdrb::Spectrum$new(spectrum$cs, spectrum$si, sfr)
-    for (i in seq_len(nrow(grid))) {
-        logf("Grid %d/%d", i, npar)
-        row <- grid[i, ]
-        dec <- mdrb::Deconvoluter$new()
-        dec$set_moving_average_smoother(row$sm_iter, row$sm_win)
-        dec$set_noise_score_selector(row$delta)
-        dec$set_analytical_fitter(row$nfit)
-        res <- dec$deconvolute_spectrum(mdrb_spec)
-        grid[i, "mse"] <- res$mse()
-    }
-}
-
 run_aki_benchmark_rest <- function() {
     tscores <- compute_t_scores(X_qn, y)
     pvals <- 2 * pt(-abs(tscores), df = nrow(X_qn) - 2)
@@ -1718,8 +1696,6 @@ aki_default_sfr <- function(spectrum, sfr) {
     if (!is.null(sfr)) return(sfr)
     stats::quantile(spectrum$cs, c(0.9, 0.1))
 }
-
-
 
 aki_train_test_split <- function(y, ratio, seed) {
     set.seed(seed)

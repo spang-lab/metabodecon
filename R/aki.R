@@ -20,9 +20,9 @@
 #' Invisibly returns a data frame with pooled predictions and true labels.
 #'
 run_aki_benchmark <- function(  seed = 1,
-                                kout = 5,
-                                kin = 5,
-                                fx = "bin", # "deconvolute", "speaq"
+                                kout = 3,
+                                kin = 3,
+                                fx = "deconvolute", # "deconvolute", "speaq"
                                 mt = "lasso", # "svm"
                                 norm = "none" # "quantile", "pqn"
                                 ) {
@@ -274,4 +274,39 @@ summarize_performance <- function(Y) {
     fmt <- "Accuracy: %.2f%%\nAUC: %.3f\n"
     table(Y$true, Y$pred)
     cat(sprintf(fmt, accuracy * 100, auc))
+}
+
+# End-to-end Deconvolution Training #####
+
+#' @description
+#' Fits Lasso models over a grid of lambda and decpar values,
+#' with decpar is a string encoding all 'deconvolution parameters'
+#' passed on to `decconvolute()`.
+#'
+#' @return Returns a matrix with LASSO
+grid_train_cv_lasso <- function() {
+    aki <- read_aki_data()
+    spectra_normed <- creatinine_normalize(aki$spectra)
+    outdir <- file.path(datadir(), "grid_train_cv_lasso")
+    grid_deconvolute(spectra_normed, outdir)
+}
+
+read_aki_data <- function() {
+    # Read in data
+    xds_path <- metabodecon::download_example_datasets()
+    aki_path <- file.path(xds_path, "bruker", "aki")
+    meta <- read_aki_metadata(aki_path)
+    spectra <- metabodecon::read_spectra(aki_path)
+    stopifnot(all.equal(names(spectra), meta$sid))
+    list(spectra = spectra, meta = meta)
+}
+
+build_param_grid <- function() {
+    npmin <- c(seq(200, 1900, 100), seq(200, 1800, 200))
+    npmax <- c(seq(300, 2000, 100), seq(400, 2000, 200))
+    dg1 <- expand.grid(smit = c(2, 3), smws = c(3, 5, 7), delta = 2:8, nfit = 5, npmin = 0, npmax = 0)
+    dg2 <- data.frame(smit = 0, smws = 0, delta = 0, nfit = 0, npmin = npmin, npmax = npmax)
+    dg <- as.data.frame(rbind(dg1, dg2)) # deconvolution grid
+    ag <- expand.grid(maxshift = 2^(2:6), maxCombine = 2^(2:6)) # alignment grid
+    g <- merge(dg, ag, by = NULL)
 }

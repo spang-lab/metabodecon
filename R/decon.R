@@ -73,7 +73,8 @@
 #' decons <- deconvolute(spectra, sfr = c(3.55, 3.35))
 deconvolute <- function(x,
     nfit=3,    smopts=c(2, 5), delta=6.4,    sfr=NULL,   wshw=0,
-    ask=FALSE, force=FALSE,    verbose=TRUE, nworkers=1, use_rust=FALSE
+    ask=FALSE, force=FALSE,    verbose=TRUE, nworkers=1, use_rust=FALSE,
+    npmax=0
 ) {
 
     # Check inputs
@@ -83,7 +84,7 @@ deconvolute <- function(x,
         is_num_or_null(sfr, 2),       is_num_or_null(wshw, 1),
         is_bool(ask, 1),              is_bool(force, 1),
         is_bool(verbose, 1),          is_int(nworkers, 1),
-        is_bool_or_null(use_rust, 1)
+        is_bool_or_null(use_rust, 1),
     )
 
     # Set suitable defaults
@@ -95,118 +96,12 @@ deconvolute <- function(x,
     decons2 <- deconvolute_spectra(x,
         nfit, smopts, delta, sfr, wshw,
         ask, force, verbose, bwc=2,
-        use_rust, nw=nworkers, igr=list(), rtyp="decon2"
+        use_rust, nw=nworkers, igr=list(), rtyp="decon2",
+        npmax=npmax
     )
 
     # Convert and return
     if (length(decons2) == 1) decons2[[1]] else decons2
-}
-
-#' @noRd
-#'
-#' @title Deconvolute one spectrum on a parameter grid
-#'
-#' @description
-#' Runs [deconvolute()] for all combinations of parameter values on a single
-#' spectrum.
-#'
-#' @inheritParams deconvolute
-#'
-#' @param x A single `spectrum` object.
-#' @param nfit Integer vector or list of integer scalars.
-#' @param smopts Integer vector of length 2 or list of such vectors.
-#' @param delta Numeric vector or list of numeric scalars.
-#' @param sfr Numeric vector of length 2 or list of such vectors.
-#' @param wshw Numeric vector or list of numeric scalars.
-#'
-#' @return
-#' A list of `decon2` objects with attribute `grid` containing the parameter
-#' grid used for deconvolution.
-grid_deconvolute <- function(x,
-    nfit=3,    smopts=c(2, 5), delta=6.4,    sfr=NULL,   wshw=0,
-    ask=FALSE, force=FALSE,    verbose=TRUE, nworkers=1, use_rust=FALSE
-) {
-    assert(
-        is_spectrum(x),         is_bool(ask, 1),     is_bool(force, 1),
-        is_bool(verbose, 1),    is_int(nworkers, 1),
-        is_bool_or_null(use_rust, 1)
-    )
-
-    sfr <- sfr %||% stats::quantile(x$cs, c(0.9, 0.1))
-
-    nfit_vals <- if (is.list(nfit)) {
-        unlist(nfit, use.names = FALSE)
-    } else {
-        nfit
-    }
-    if (length(nfit_vals) == 0 ||
-        !all(vapply(as.list(nfit_vals), is_int, logical(1), 1))) {
-        stop("nfit should be int(1) or list of int(1).")
-    }
-
-    smopts_list <- if (is_int(smopts, 2)) list(smopts) else smopts
-    if (!is.list(smopts_list) ||
-        length(smopts_list) == 0 ||
-        !all(vapply(smopts_list, is_int, logical(1), 2))) {
-        stop("smopts should be int(2) or list of int(2).")
-    }
-
-    delta_vals <- if (is.list(delta)) {
-        unlist(delta, use.names = FALSE)
-    } else {
-        delta
-    }
-    if (length(delta_vals) == 0 ||
-        !all(vapply(as.list(delta_vals), is_num, logical(1), 1))) {
-        stop("delta should be num(1) or list of num(1).")
-    }
-
-    sfr_list <- if (is_num(sfr, 2)) list(sfr) else sfr
-    if (!is.list(sfr_list) || length(sfr_list) == 0 ||
-        !all(vapply(sfr_list, is_num, logical(1), 2))) {
-        stop("sfr should be num(2) or list of num(2).")
-    }
-
-    wshw_vals <- if (is.list(wshw)) {
-        unlist(wshw, use.names = FALSE)
-    } else {
-        wshw
-    }
-    if (length(wshw_vals) == 0 ||
-        !all(vapply(as.list(wshw_vals), is_num, logical(1), 1))) {
-        stop("wshw should be num(1) or list of num(1).")
-    }
-
-    grid <- expand.grid(
-        nfit = nfit_vals,
-        smopts = I(smopts_list),
-        delta = delta_vals,
-        sfr = I(sfr_list),
-        wshw = wshw_vals,
-        stringsAsFactors = FALSE
-    )
-
-    res <- vector("list", nrow(grid))
-    for (i in seq_len(nrow(grid))) {
-        if (isTRUE(verbose)) logf("Grid %d/%d", i, nrow(grid))
-        row <- grid[i, ]
-        res[[i]] <- deconvolute(
-            x,
-            nfit = row$nfit,
-            smopts = row$smopts[[1]],
-            delta = row$delta,
-            sfr = row$sfr[[1]],
-            wshw = row$wshw,
-            ask = ask,
-            force = force,
-            verbose = verbose,
-            nworkers = nworkers,
-            use_rust = use_rust
-        )
-    }
-
-    attr(res, "grid") <- grid
-    res
 }
 
 # Internal main functions #####
@@ -225,7 +120,7 @@ deconvolute_spectra <- function(x,
     nfit=3,        smopts=c(2, 5),    delta=6.4,      sfr=c(3.55, 3.35),
     wshw=0,        ask=FALSE,         force=FALSE,    verbose=TRUE,
     bwc=2,         use_rust=FALSE,    nw=1,           igr=list(),
-    rtyp="idecon"
+    rtyp="idecon", npmax=0,           cachedir=NULL
 ) {
 
     # Check inputs
@@ -256,6 +151,7 @@ deconvolute_spectra <- function(x,
     wshw_list <- get_wshw(spectra, wshw, ask, adjno)
     smopts_list <- get_smopts(spectra, smopts)
     igr_list <- list(list())
+    npmax_list <- get_npmaxs(spectra, npmax)
 
     # Deconvolute spectra
     logf("Starting deconvolution of %s using %s", ns_str, nw_apply_str)
@@ -264,7 +160,8 @@ deconvolute_spectra <- function(x,
         spectra,
         nfit, smopts_list, delta, sfr_list, wshw_list,
         ask, force, verbose, bwc,
-        use_rust, nw_deconv, igr_list, rtyp
+        use_rust, nw_deconv, igr_list, rtyp,
+        npmax, cachedir
     )
     decons <- as_collection(decon_list, rtyp)
     duration <- format(round(Sys.time() - starttime, 3))
@@ -274,6 +171,9 @@ deconvolute_spectra <- function(x,
     decons
 }
 
+#' @noRd
+#' @inheritParams deconvolute_spectra
+#' @author 2024-2025 Tobias Schmidt: initial version.
 #' @examples
 #' x <- sap[[1]];
 #' nfit <- 3; smopts <- c(1,3); delta <- 3; sfr <- c(3.2,-3.2); wshw <- 0;
@@ -286,16 +186,26 @@ deconvolute_spectra <- function(x,
 #' )
 #'
 #' x <- read_spectrum(metabodecon_file("urine_1"))
-#' nfit <- 3; smopts <- c(2,5); delta <- 6.4; sfr <- c(3.55,3.35); wshw <- 0;
-#' ask <- FALSE; force <- FALSE; verbose <- FALSE; bwc <- 2;
-#' use_rust <- FALSE; nw <- 1; igr <- list(); rtyp <- "idecon"
-#' @noRd
-#' @inheritParams deconvolute_spectra
-#' @author 2024-2025 Tobias Schmidt: initial version.
+#' nfit <- 3; smopts <- c(2,5); delta <- 6;
+#' sfr <- quantile(x$cs, c(0.9, 0.1)); wshw <- 0;
+#' ask <- FALSE; force <- FALSE; verbose <- TRUE; bwc <- 2;
+#' use_rust <- TRUE; nw <- 1; igr <- list(); rtyp <- "decon2"
+#' npmax=1000; cachedir=tmpdir("deconvolute_spectrum")
+#' decon1 <- deconvolute_spectrum(
+#'      x, nfit, smopts, delta, sfr, wshw,
+#'      ask, force, verbose, bwc, use_rust, nw, igr, rtyp,
+#'      npmax, cachedir
+#' )
+#' decon2 <- deconvolute_spectrum(
+#'      x, nfit, smopts, delta, sfr, wshw,
+#'      ask, force, verbose, bwc, use_rust, nw, igr, rtyp,
+#'      npmax, cachedir
+#' )
 deconvolute_spectrum <- function(x,
     nfit=3, smopts=c(2, 5), delta=6.4, sfr=c(3.55, 3.35), wshw=0,
     ask=FALSE, force=FALSE, verbose=TRUE, bwc=2,
-    use_rust=FALSE, nw=1, igr=list(), rtyp="idecon"
+    use_rust=FALSE, nw=1, igr=list(), rtyp="idecon",
+    npmax=0, cachedir=NULL
 ) {
     # Check inputs
     assert(
@@ -307,11 +217,48 @@ deconvolute_spectrum <- function(x,
         is_char(rtyp, 1, "(decon[0-2]|idecon|rdecon)")
     )
 
+    # Return early if result exists in cache
+    if (is_str(cachedir) && dir.exists(cachedir)) {
+        args <- list(x, nfit, smopts, delta, sfr, wshw, ask, force, bwc, use_rust, igr, rtyp, npmax)
+        key <- digest::digest(args, algo = "xxhash64", serializeVersion = 3)
+        cachefile <- file.path(cachedir, get_name(x), paste0(key, ".rds"))
+        if (file.exists(cachefile)) {
+            if (verbose) logf("Cache hit. Returning %s", cachefile)
+            return(readRDS(cachefile))
+        }
+    }
+
     # Init locals
     if (isFALSE(verbose)) local_options(toscutil.logf.file = nullfile())
     name <- get_name(x)
     suffix <- if (use_rust) " using Rust backend" else ""
     args <- get_args(deconvolute_spectrum, ignore = "x")
+
+    # If 'npmax' is positive: ignore 'nfit', 'smopts' and 'delta' and instead
+    # perform a grid search to find the params that produce the smallest area
+    # ratio (residual-area/spectra-area) with a maximum of 'npmax' peaks.
+    if (is_num(npmax) && npmax >= 1) {
+        fmt <- "Starting grid deconvolution of %s spectra using %s backend"
+        logf(fmt, name, if (use_rust) "Rust" else "R")
+        grid <- grid_deconvolute_spectrum(x, sfr=sfr, verbose=FALSE, nw=1, use_rust=use_rust, cachedir=cachedir)
+        grid <- grid[grid$np < npmax, ]
+        if (nrow(grid) == 0) {
+            fmt <- paste(
+                "No parameter combination found with np < %d.",
+                "Using combination with smallest np = %d instead."
+            )
+            msg <- sprintf(fmt, npmax, min(grid$np))
+            warning(msg)
+            best <- grid[grid$np == min(grid$np), , drop=FALSE]
+        } else {
+            best <- grid[grid$ar == min(grid$ar), , drop=FALSE]
+        }
+        nfit <- best$nfit[1]
+        smopts <- c(best$smit[1], best$smws[1])
+        delta <- best$delta[1]
+        fmt <- "Finished grid search. Best params: nfit=%d, smopts=c(%d, %d), delta=%.2f"
+        logf(fmt, nfit, smopts[1], smopts[2], delta)
+    }
 
     # Deconvolute
     logf("Starting deconvolution of %s%s", name, suffix)
@@ -329,7 +276,6 @@ deconvolute_spectrum <- function(x,
         }
         decon <- new_rdecon(x, args, mdrb_spectrum, mdrb_deconvr, mdrb_decon)
     } else {
-        # Sys.setenv(RAYON_NUM_THREADS=nw) # Must be set before R is started
         ispec <- as_ispec(x)
         ispec <- set(ispec, args=args)
         ispec <- rm_water_signal(ispec, wshw, bwc)
@@ -347,6 +293,15 @@ deconvolute_spectrum <- function(x,
     )
     decon <- convert(decon)
     logf("Finished deconvolution of %s", name)
+
+    # Store decon object on disk (if cachedir was provided), so subsequent calls
+    # can read the object and skip re-calculation.
+    if (is_str(cachedir) && dir.exists(cachedir)) {
+        logf("Caching result object at %s", cachefile)
+        dir.create(dirname(cachefile), showWarnings = FALSE, recursive = TRUE)
+        saveRDS(decon, cachefile)
+    }
+
     decon
 }
 
@@ -428,6 +383,79 @@ deconvolute_spectrum2 <- function(x,
     decon
 }
 
+#' @noRd
+#'
+#' @title Deconvolute one or more spectra using a grid of parameters
+#'
+#' @description
+#' Calls [deconvolute()] over a pre-defined grid of deconvolution parameters.
+#' Resulting `decon2` objects are stored as RDS files on disk in folder cachedir.
+#'
+#' @inheritParams deconvolute
+#'
+#' @return
+#' The path to the folder containing the RDS files.
+#'
+#' @examples
+#'
+#' x <- read_spectrum(metabodecon_file("urine_1"))
+#' cachedir <- tmpdir("deconvolute_spectrum")
+#' sfr <- NULL; verbose <- TRUE; nw <- 1
+#'
+#' a <- Sys.time()
+#' use_rust <- FALSE
+#' gridR <- grid_deconvolute_spectrum(x, sfr, verbose, nw, use_rust, cachedir)
+#' runtimeR <- Sys.time() - a
+#'
+#' b <- Sys.time()
+#' use_rust <- TRUE
+#' gridRust <- grid_deconvolute_spectrum(x, sfr, verbose, nw, use_rust, cachedir)
+#' runtimeRust <- Sys.time() - b
+#'
+grid_deconvolute_spectrum <- function(
+    x,
+    sfr=NULL,
+    verbose=TRUE,
+    nw=1,
+    use_rust=FALSE,
+    cachedir=tmpdir("deconvolute_spectrum") # shared with 'deconvolute_spectrum'
+) {
+
+    assert(
+        is_spectrum(x), is_num_or_null(sfr, 2), is_bool(verbose, 1),
+        is_int(nw, 1), is_bool(use_rust, 1), is_str_or_null(cachedir)
+    )
+    if (!verbose) local_options(toscutil.logf.file = nullfile())
+
+    sfr <- sfr %||% quantile(x$cs %||% x[[1]]$cs, c(0.9, 0.1))
+    grid <- expand.grid(smit = c(2, 3), smws = c(3, 5, 7), delta = 2:8, nfit = 5)
+    default_args <- as.list(formals(deconvolute_spectrum))
+    call_args <- list(
+        x = x, sfr = sfr, verbose = verbose, nw = nw,
+        use_rust = use_rust, cachedir = cachedir, rtyp="decon2",
+        npmax = 0
+    )
+    args <- modifyList(default_args, call_args)
+
+    if (is_str(cachedir)) dir.create(cachedir, showWarnings = FALSE, recursive = TRUE)
+
+    fmt <- "Starting grid deconvolution of %s spectra using %s backend"
+    logf(fmt, get_name(x), if (use_rust) "Rust" else "R")
+    for (i in seq_len(nrow(grid))) {
+        logf("Grid search iteration %d/%d", i, nrow(grid))
+        row <- grid[i, ]
+        args$nfit <- row[["nfit"]]
+        args$smopts <- c(row[["smit"]], row[["smws"]])
+        args$delta <- row[["delta"]]
+        d <- do.call(deconvolute_spectrum, args)
+        grid[i, "ar"] <- sum(abs(d$sit$sup - d$si)) / sum(d$si)
+        grid[i, "np"] <- nrow(d$lcpar)
+    }
+    logf("Finished grid deconvolution")
+
+    grid
+}
+
 # Helpers for deconvolute_spectra #####
 
 #' @noRd
@@ -488,7 +516,7 @@ get_wshw <- function(x, wshw, ask, adjno) {
 #' @title Get Smoothing Options
 #'
 #' @description
-#' Convert one or more SMOPTS vectors to list of vectors of the correct length.
+#' Convert one or more SMOPTS vectors to a list of vectors of the correct length.
 #'
 #' @param x
 #' Any metabodecon collection object.
@@ -505,6 +533,29 @@ get_smopts <- function(x, smopts) {
     else stop("smopts should be a [list of] int(2)")
     names(smopts) <- names(x)
     smopts
+}
+
+#' @noRd
+#' @title Get Maximum Number of Peaks
+#'
+#' @description
+#' Convert one or more NPMAX values to a list of vectors of the correct length.
+#'
+#' @param x
+#' Any metabodecon collection object.
+#'
+#' @param npmax
+#' Maximum number of peaks. Can be a numeric vector of length 1 or a list of
+#' such vectors. If a list is provided, it must have the same length as `x`.
+#'
+#' @author 2024-2025 Tobias Schmidt: initial version.
+get_npmaxs <- function(x, npmax) {
+    n <- length(x)
+    if (is_int(npmax, 1)) npmax <- rep(list(npmax), n)
+    else if (is_list_of_nums(npmax, n, 1)) {}
+    else stop("npmax should be a [list of] int(1)")
+    names(npmax) <- names(x)
+    npmax
 }
 
 # Helpers for deconvolute_spectrum #####
@@ -698,7 +749,6 @@ smooth_signals2 <- function(y, reps = 2, k = 5) {
 find_peaks <- function(spec) {
     spec$d <- calc_second_derivative(spec$y_smooth)
     spec$peak <- find_peaks2(spec$y_smooth)
-    logf("Detected %d peaks", nrow(spec$peak))
     spec
 }
 
