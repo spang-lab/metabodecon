@@ -62,6 +62,32 @@ test_that("align works", {
     expect_equal(supal, lorentz_sup(cs, x0_al, A, lambda))
 })
 
+test_that("align gives same result for 1 vs multiple workers", {
+
+    skip_if_speaq_deps_missing()
+
+    sap_01_shifted_2 <- simulate_spectrum(
+        name = "sap_01_shifted_2",
+        cs = sap_01$meta$simpar$cs,
+        x0 = sap_01$meta$simpar$x0 + 0.15,
+        A = sap_01$meta$simpar$A,
+        lambda = sap_01$meta$simpar$lambda,
+        noise = sap_01$meta$simpar$noise
+    )
+    spectra3 <- as_spectra(list(sap_01, sap_01_shifted, sap_01_shifted_2))
+    decons3 <- deconvolute(
+        spectra3,
+        smopts = c(1, 3),
+        delta = 3,
+        sfr = c(3.2, -3.2),
+        verbose = FALSE
+    )
+
+    al1 <- align(decons3, verbose = FALSE, nworkers = 1)
+    al2 <- align(decons3, verbose = FALSE, nworkers = 2)
+    expect_equal(al2, al1)
+})
+
 skip_if_slow_tests_disabled()
 
 test_that("align can install its dependencies", {

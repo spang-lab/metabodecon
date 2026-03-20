@@ -64,7 +64,7 @@
 #'
 #' @examples
 #' ## Deconvolute a single spectrum
-#' spectrum <- sim[1]
+#' spectrum <- sim[[1]]
 #' decon <- deconvolute(spectrum)
 #'
 #' ## Read multiple spectra from disk and deconvolute at once
@@ -74,7 +74,7 @@
 deconvolute <- function(x,
     nfit=3,    smopts=c(2, 5), delta=6.4,    sfr=NULL,   wshw=0,
     ask=FALSE, force=FALSE,    verbose=TRUE, nworkers=1, use_rust=FALSE,
-    npmax=0
+    npmax=0,   cachedir=NULL,  igrs=list()
 ) {
 
     # Check inputs
@@ -84,7 +84,8 @@ deconvolute <- function(x,
         is_num_or_null(sfr, 2),       is_num_or_null(wshw, 1),
         is_bool(ask, 1),              is_bool(force, 1),
         is_bool(verbose, 1),          is_int(nworkers, 1),
-        is_bool_or_null(use_rust, 1),
+        is_bool_or_null(use_rust, 1), is_int(npmax, 1),
+        is_str_or_null(cachedir),     is_list_of_nums(igrs, nv=2)
     )
 
     # Set suitable defaults
@@ -97,7 +98,7 @@ deconvolute <- function(x,
         nfit, smopts, delta, sfr, wshw,
         ask, force, verbose, bwc=2,
         use_rust, nw=nworkers, igr=list(), rtyp="decon2",
-        npmax=npmax
+        npmax=npmax, cachedir=cachedir
     )
 
     # Convert and return
@@ -132,7 +133,9 @@ deconvolute_spectra <- function(x,
         is_num(sfr, 2)  || is_list_of_nums(sfr, length(x), 2),
         is_num(wshw, 1) || is_list_of_nums(wshw, length(x), 1),
         if (rtyp == "rdecon") isTRUE(use_rust) else is_bool(use_rust),
-        is_char(rtyp, 1, "(decon[0-2]|idecon|rdecon)")
+        is_int(nw, 1), is.list(igr),
+        is_char(rtyp, 1, "(decon[0-2]|idecon|rdecon)"),
+        is_int(npmax, 1), is_str_or_null(cachedir)
     )
 
     # Configure logging
@@ -142,16 +145,16 @@ deconvolute_spectra <- function(x,
     spectra <- as_spectra(x)
     ns <- length(spectra)
     nc2 <- ceiling(detectCores() / 2)
-    nw_apply <- if (use_rust) 1 else if (nw == "auto") min(nc2, ns) else nw
+    nw_apply <- if (nw == "auto") min(nc2, ns) else nw
     nw_apply_str <- if (nw_apply == 1) "1 worker" else sprintf("%d workers", nw_apply)
-    nw_deconv <- if (!use_rust) 1 else if (nw == "auto") min(nc2, ns) else nw
+    nw_deconv <- 1
     ns_str <- if (ns == 1) "1 spectrum" else sprintf("%d spectra", ns)
     adjno <- get_adjno(spectra, ask)
     sfr_list <- get_sfr(spectra, sfr, ask, adjno)
     wshw_list <- get_wshw(spectra, wshw, ask, adjno)
     smopts_list <- get_smopts(spectra, smopts)
     igr_list <- list(list())
-    npmax_list <- get_npmaxs(spectra, npmax)
+    cachedir <- cachedir %||% rep(list(NULL), length(spectra))
 
     # Deconvolute spectra
     logf("Starting deconvolution of %s using %s", ns_str, nw_apply_str)
@@ -214,16 +217,17 @@ deconvolute_spectrum <- function(x,
         is_num(sfr, 2),   is_num(wshw, 1),       is_bool(force, 1),
         is_num(bwc, 1),   is_bool(use_rust, 1),  is_int(nw, 1),
         is_list_of_nums(igr, nv=2),
-        is_char(rtyp, 1, "(decon[0-2]|idecon|rdecon)")
+        is_char(rtyp, 1, "(decon[0-2]|idecon|rdecon)"),
+        is_int(npmax, 1), is_str_or_null(cachedir)
     )
 
     # Return early if result exists in cache
-    if (is_str(cachedir) && dir.exists(cachedir)) {
+    if (is_str(cachedir)) {
         args <- list(x, nfit, smopts, delta, sfr, wshw, ask, force, bwc, use_rust, igr, rtyp, npmax)
         key <- digest::digest(args, algo = "xxhash64", serializeVersion = 3)
         cachefile <- file.path(cachedir, get_name(x), paste0(key, ".rds"))
         if (file.exists(cachefile)) {
-            if (verbose) logf("Cache hit. Returning %s", cachefile)
+            if (verbose) logf("Cache hit: %s", cachefile)
             return(readRDS(cachefile))
         }
     }
@@ -232,26 +236,27 @@ deconvolute_spectrum <- function(x,
     if (isFALSE(verbose)) local_options(toscutil.logf.file = nullfile())
     name <- get_name(x)
     suffix <- if (use_rust) " using Rust backend" else ""
-    args <- get_args(deconvolute_spectrum, ignore = "x")
 
     # If 'npmax' is positive: ignore 'nfit', 'smopts' and 'delta' and instead
     # perform a grid search to find the params that produce the smallest area
     # ratio (residual-area/spectra-area) with a maximum of 'npmax' peaks.
     if (is_num(npmax) && npmax >= 1) {
-        fmt <- "Starting grid deconvolution of %s spectra using %s backend"
+        fmt <- "Starting grid deconvolution of %s using %s backend"
         logf(fmt, name, if (use_rust) "Rust" else "R")
-        grid <- grid_deconvolute_spectrum(x, sfr=sfr, verbose=FALSE, nw=1, use_rust=use_rust, cachedir=cachedir)
-        grid <- grid[grid$np < npmax, ]
-        if (nrow(grid) == 0) {
+        grid <- grid_deconvolute_spectrum(
+            x=x, sfr=sfr, verbose=verbose, nw=1, use_rust=use_rust, cachedir=cachedir
+        )
+        sub <- grid[grid$np < npmax, ]
+        if (nrow(sub) == 0) {
             fmt <- paste(
                 "No parameter combination found with np < %d.",
-                "Using combination with smallest np = %d instead."
+                "Using combination with smallest np (%d) instead."
             )
             msg <- sprintf(fmt, npmax, min(grid$np))
-            warning(msg)
+            logf(msg)
             best <- grid[grid$np == min(grid$np), , drop=FALSE]
         } else {
-            best <- grid[grid$ar == min(grid$ar), , drop=FALSE]
+            best <- sub[sub$ar == min(sub$ar), , drop=FALSE]
         }
         nfit <- best$nfit[1]
         smopts <- c(best$smit[1], best$smws[1])
@@ -259,6 +264,7 @@ deconvolute_spectrum <- function(x,
         fmt <- "Finished grid search. Best params: nfit=%d, smopts=c(%d, %d), delta=%.2f"
         logf(fmt, nfit, smopts[1], smopts[2], delta)
     }
+    args <- get_args(deconvolute_spectrum, ignore = "x")
 
     # Deconvolute
     logf("Starting deconvolution of %s%s", name, suffix)
@@ -296,7 +302,7 @@ deconvolute_spectrum <- function(x,
 
     # Store decon object on disk (if cachedir was provided), so subsequent calls
     # can read the object and skip re-calculation.
-    if (is_str(cachedir) && dir.exists(cachedir)) {
+    if (is_str(cachedir)) {
         logf("Caching result object at %s", cachefile)
         dir.create(dirname(cachefile), showWarnings = FALSE, recursive = TRUE)
         saveRDS(decon, cachefile)
@@ -533,29 +539,6 @@ get_smopts <- function(x, smopts) {
     else stop("smopts should be a [list of] int(2)")
     names(smopts) <- names(x)
     smopts
-}
-
-#' @noRd
-#' @title Get Maximum Number of Peaks
-#'
-#' @description
-#' Convert one or more NPMAX values to a list of vectors of the correct length.
-#'
-#' @param x
-#' Any metabodecon collection object.
-#'
-#' @param npmax
-#' Maximum number of peaks. Can be a numeric vector of length 1 or a list of
-#' such vectors. If a list is provided, it must have the same length as `x`.
-#'
-#' @author 2024-2025 Tobias Schmidt: initial version.
-get_npmaxs <- function(x, npmax) {
-    n <- length(x)
-    if (is_int(npmax, 1)) npmax <- rep(list(npmax), n)
-    else if (is_list_of_nums(npmax, n, 1)) {}
-    else stop("npmax should be a [list of] int(1)")
-    names(npmax) <- names(x)
-    npmax
 }
 
 # Helpers for deconvolute_spectrum #####

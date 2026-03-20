@@ -58,8 +58,6 @@ fit_mdm <- function(spectra = metabodecon::sim,
                     modtype,
                     kfold) {
 
-
-
     meta <- list(model = model)
     if (model == "svm") {
         if (!requireNamespace("e1071", quietly = TRUE)) {

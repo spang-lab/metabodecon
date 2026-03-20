@@ -58,23 +58,14 @@
 #'     decons <- deconvolute(sim[1:2], sfr = c(3.55, 3.35))
 #'     aligned <- align(decons)
 #' }
-align <- function(x, maxShift = 50, maxCombine = 5, verbose = TRUE, install_deps = NULL) {
+align <- function(x,
+                  maxShift = 50,
+                  maxCombine = 5,
+                  verbose = TRUE,
+                  install_deps = NULL,
+                  nworkers = 1) {
 
-    # Check for required packages
-    pkgvec <- c("MassSpecWavelet", "impute")
-    if (isTRUE(install_deps)) bioc_install(pkgvec, ask = FALSE, verbose = verbose)
-    if (is.null(install_deps)) bioc_install(pkgvec, ask = TRUE, verbose = verbose)
-    is_installed <- sapply(pkgvec, requireNamespace, quietly = TRUE)
-    if (any(!is_installed)) {
-        pkgvec_missing <- pkgvec[!is_installed]
-        pkgstr_missing <- paste(pkgvec_missing, collapse = ", ")
-        msg <- paste(
-            "The following required packages are missing: %s.",
-            "Please install them manually from Bioconductor or R-Universe",
-            "or try again with `install_deps = TRUE`"
-        )
-        stop(sprintf(msg, pkgstr_missing))
-    }
+    if (isFALSE(verbose)) local_options(toscutil.logf.file = nullfile())
 
     # Check and convert inputs
     xx <- as_decons2(x)
@@ -90,20 +81,72 @@ align <- function(x, maxShift = 50, maxCombine = 5, verbose = TRUE, install_deps
         stop(msg, call. = FALSE)
     }
 
+    # Check for required packages
+    pkgvec <- c("MassSpecWavelet", "impute")
+    if (isTRUE(install_deps)) bioc_install(pkgvec, ask = FALSE, verbose = FALSE)
+    if (is.null(install_deps)) bioc_install(pkgvec, ask = TRUE, verbose = FALSE)
+    is_installed <- sapply(pkgvec, requireNamespace, quietly = TRUE)
+    if (any(!is_installed)) {
+        pkgvec_missing <- pkgvec[!is_installed]
+        pkgstr_missing <- paste(pkgvec_missing, collapse = ", ")
+        msg <- paste(
+            "The following required packages are missing: %s.",
+            "Please install them manually from Bioconductor or R-Universe",
+            "or try again with `install_deps = TRUE`"
+        )
+        stop(sprintf(msg, pkgstr_missing))
+    }
+
+    # Start alignment
+    logf("Starting alignment of %d deconvoluted spectra", length(xx))
+    starttime <- Sys.time()
+
     # Do initial alignment using speaq. Parameter `acceptLostPeak` must be FALSE
     # so we can backtrack which peak has shifted to which position. The result
     # object contains element `new_peakList` which contains the "peak center
     # indices after alignment" (pciaa). The indices are given as continuous
     # numbers. E.g. a value of 1044.28 means that the aligned peak center is
     # between the datapoint 1044 and 1045.
-    obj <- dohCluster(
-        X <- get_sup_mat(xx),
-        peakList <- lapply(xx, get_peak_indices),
-        refInd = speaq::findRef(peakList)$refInd,
-        maxShift = maxShift,
-        acceptLostPeak = FALSE,
-        verbose = verbose
-    )
+    logf("Performing speaq alignment with maxShift = %d", maxShift)
+    X <- get_sup_mat(xx)
+    peakList <- lapply(xx, get_peak_indices)
+    refInd <- speaq::findRef(peakList)$refInd
+    if (nworkers == 1) {
+        obj <- dohCluster(
+            X = X, peakList = peakList, refInd = refInd, maxShift = maxShift,
+            acceptLostPeak = FALSE, verbose = verbose
+        )
+    } else {
+        # Split seq_len(now(X)) `nworkers` submatrices, where refInd is always the first row.
+        # Example: if nworkers == 3, nrow(X) == 10 and refInd == 4, the submatrices would be:
+        # X[c(4,1,2,3), ], X[c(4,5,6,7), ], X[c(4,8,9,10), ]
+        # Then we can call dohCluster() in parallel on each submatrix with
+        # refInd == 1 and then combine the results. For parallel execution we use mclapply,
+        # as is done in `deconvolute_spectra()`.
+        idx <- setdiff(seq_len(nrow(X)), refInd)
+        k <- min(nworkers, length(idx))
+        grp <- cut(seq_along(idx), breaks = k, labels = FALSE)
+        chunks <- lapply(split(idx, grp), function(ids) c(refInd, ids))
+        XX <- lapply(chunks, function(rows) X[rows, , drop = FALSE])
+        peakLists <- lapply(chunks, function(rows) peakList[rows])
+        nw_apply <- min(nworkers, length(chunks))
+        objs <- mcmapply(
+            nw_apply, dohCluster, XX, peakLists,
+            refInd = 1, maxShift = maxShift,
+            acceptLostPeak = FALSE, verbose = verbose
+        )
+        Y <- X
+        new_peakList <- peakList
+        for (j in seq_along(chunks)) {
+            rows <- chunks[[j]]
+            rows_no_ref <- rows[rows != refInd]
+            if (length(rows_no_ref) == 0) next
+            Y[rows_no_ref, ] <- objs[[j]]$Y[-1, , drop = FALSE]
+            new_peakList[rows_no_ref] <- objs[[j]]$new_peakList[-1]
+        }
+        obj <- list(Y = Y, new_peakList = new_peakList)
+    }
+    if (verbose) cat("\n") # speaq misses its final newline, so we add it here
     pciaa <- obj$new_peakList
 
     # Discretize the continous peak center indices from above by rounding. Then
@@ -125,8 +168,25 @@ align <- function(x, maxShift = 50, maxCombine = 5, verbose = TRUE, install_deps
     # B |... |   0 |  40 | ... |   0 |   0 |  40 |     | ... |  60 |
     # C |... |  70 |   0 | ... |   0 |   0 |  80 |     | ... |  90 |
     #
-    smat <- matrix(nrow = nrow(X), ncol = ncol(X))
-    for (i in seq_len(nrow(X))) smat[i, round(pciaa[[i]])] <- xx[[i]]$lcpar$A
+    logf("Discretizing peak center indices")
+    smat <- matrix(0, nrow = nrow(X), ncol = ncol(X))
+    for (i in seq_len(nrow(X))) {
+        d <- round(pciaa[[i]])
+        A <- xx[[i]]$lcpar$A
+        if (length(d) == 0) stop(sprintf("No peaks found in spectrum %d", i))
+        dups <- which(duplicated(d))
+        while (length(dups) > 0) {
+            fmt <- paste(
+                "%d peak center indicies led to duplicate positions.",
+                "Original positions: %s"
+            )
+            origstr <- paste(pciaa[[i]][dups], collapse = ", ")
+            logf(fmt, length(dups), origstr)
+            d[dups] <- d[dups] + 1
+            dups <- which(duplicated(d))
+        }
+        smat[i, d] <- A
+    }
 
     # Combine signals ACROSS spectra. Example: the matrix from above would
     # become:
@@ -137,13 +197,15 @@ align <- function(x, maxShift = 50, maxCombine = 5, verbose = TRUE, install_deps
     # B |... |   0 |  40 | ... |   0 |   0 |  40 |     | ... |  60 |
     # C |... |   0 |  70 | ... |   0 |   0 |  80 |     | ... |  90 |
     #
-    cmat <- combine_peaks(smat, maxCombine)$long
+    logf("Combining peaks across spectra with maxCombine = %d", maxCombine)
+    cmat <- if (maxCombine >= 1) combine_peaks(smat, maxCombine)$long else smat
 
     # Create `align` objects from the `decon2` objects:
     # 1. Store the new peak centers in their respective slot `$lcpar$x0_al`
     # 2. Calculate new signal intensities as superposition of lorentz curves,
     #    (using the updated peak centers) and store them in `$sit$supal`.
     # 3. Store the new signal intensities as integrals in `$sit$al`.
+    logf("Creating aligns object")
     cs <- xx[[1]]$cs
     n <- length(cs)
     for (i in seq_along(xx)) {
@@ -162,10 +224,15 @@ align <- function(x, maxShift = 50, maxCombine = 5, verbose = TRUE, install_deps
         al[pciac] <- lcpar$A * pi       # SIs as integrals of aligned lorentzians
         xx[[i]]$lcpar$x0_al <- x0_al
         xx[[i]]$sit$al <- al
-        xx[[i]]$sit$supal <- lorentz_sup(cs, x0_al, lcpar$A, lcpar$lambda)
+        # xx[[i]]$sit$supal <- lorentz_sup(cs, x0_al, lcpar$A, lcpar$lambda)
         class(xx[[i]]) <- "align"
     }
     aligns <- structure(xx, class = "aligns")
+
+    duration <- format(round(Sys.time() - starttime, 3))
+    logf("Finished alignment in %s", duration)
+
+
     aligns
 }
 
@@ -545,8 +612,8 @@ speaq_align <- function(feat = gen_feat_mat(spectrum_data),
 #'
 #' @author
 #'
-#' 2021-2024 Wolfram Gronwald: initial version.\cr 2024-2025 Tobias Schmidt:
-#' refactored initial version.
+#' 2021-2024 Wolfram Gronwald: initial version.\cr
+#' 2024-2025 Tobias Schmidt: refactored initial version.
 #'
 #' @examples
 #' deps <- c("MassSpecWavelet", "impute")
@@ -567,23 +634,38 @@ combine_peaks <- function(shifted_mat,
                           spectrum_data = NULL,
                           data_path = NULL) {
     M <- replace(shifted_mat, is.na(shifted_mat), 0)
-    U <- M != 0 # Unequal zero matrix. U[i,j] is TRUE if M[i,j] is nonzero, else FALSE.
-    uu <- colSums(U) # Unequal zero vector. u[j] gives the amount of nonzero elements in M[,j].
+    # U[i,j] is TRUE if M[i,j] is nonzero, else FALSE.
+    U <- M != 0
+    # uu[j] gives the number of nonzero elements in M[,j].
+    uu <- colSums(U)
+    nc <- ncol(M)
     for (i in (nrow(M) - 1):lower_bound) {
         for (j in which(uu == i)) {
             if (uu[j] == 0) next
-            nn <- c((j - range):(j - 1), (j + 1):(j + range)) # Neighbors of j.
-            cc <- combine_scores(U, uu, j, nn)
-            while (!all(cc == 0)) {
+            from <- max(1, j - range)
+            to <- min(nc, j + range)
+            nn <- seq(from, to)
+            nn <- nn[nn != j]
+            if (length(nn) == 0) next
+            mj <- M[, j]
+            uj <- U[, j]
+            repeat {
+                nn <- nn[uu[nn] > 0]
+                if (length(nn) == 0) break
+                cc <- combine_scores(U, uu, j, nn, uj = uj)
+                if (max(cc) == 0) break
                 n <- nn[which.max(cc)]
-                M[, j] <- M[, j] + M[, n]
-                U[, j] <- U[, j] | U[, n]
+                mj <- mj + M[, n]
+                uj <- uj | U[, n]
                 uu[j] <- uu[j] + uu[n]
                 M[, n] <- 0
                 U[, n] <- FALSE
                 uu[n] <- 0
-                cc <- combine_scores(U, uu, j, nn)
+                nn <- nn[nn != n]
+                if (length(nn) == 0) break
             }
+            M[, j] <- mj
+            U[, j] <- uj
         }
     }
     if (!is.null(spectrum_data)) colnames(M) <- spectrum_data[[1]]$x_values_ppm
@@ -745,12 +827,16 @@ dohCluster <- function(X,
 #' cc[2] == 0  # M[, 3] and M[, 1] are not combinable
 #' cc[3] == 0  # M[, 4] and M[, 1] are not combinable
 #' cc[4] == 1  # M[, 5] and M[, 1] are combinable and M[, 5] has one nonzero element
-combine_scores <- function(U, uu, j, nn) {
-    sapply(seq_along(nn), function(k) {
-        n <- nn[k] # Index of neighboring column
-        combinable <- sum(U[, n] & U[, j]) == 0
-        if (combinable) uu[n] else 0
-    })
+combine_scores <- function(U, uu, j, nn, uj = NULL) {
+    nn <- nn[nn >= 1 & nn <= ncol(U)]
+    if (length(nn) == 0) return(numeric(0))
+    if (is.null(uj)) uj <- U[, j]
+
+    # A neighbor is combinable if it has no shared nonzero row with column j.
+    overlaps <- .colSums(U[, nn, drop = FALSE] & uj, nrow(U), length(nn))
+    cc <- uu[nn]
+    cc[overlaps > 0] <- 0
+    unname(cc)
 }
 
 #' @noRd
