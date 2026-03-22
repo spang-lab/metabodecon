@@ -1148,7 +1148,7 @@ as_decon2.rdecon <- function(x, ...) {
     meta <- x$spectrum$meta
     args <- x$args
     sup <- x$mdrb_decon$superposition_vec(cs)
-    lcpar <- as.data.frame(x$mdrb_decon$lorentzians())
+    lcpar <- as.data.frame(x$mdrb_decon$lorentzians())[, c("x0", "A", "lambda")]
     wsrm <- si # Rust backend doesn't remove the water signal
     nvrm <- si # Rust backend doesn't remove negative values
     spec <- list(y_pos = nvrm)

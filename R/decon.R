@@ -1569,7 +1569,7 @@ calc_A <- function(wr, wc, wl, yr, yc, yl, wrc, wrl, wcl, yrc, yrl, ycl, lambda,
 #' @return Numeric vector of y values.
 #'
 #' @details
-#' 1. The argument names as based on the names used by Koh et al. (2009).
+#' 1. The argument names are based on the names used by Koh et al. (2009).
 #' 2. In Wikipedia, Lorentz Curves are described in article
 #' [Cauchy_distribution]. The formula below sentence "In physics, a
 #' three-parameter Lorentzian function is often used" (section
@@ -1602,7 +1602,8 @@ lorentz <- function(x, x0, A, lambda, lcpar = NULL) {
 }
 
 #' @noRd
-#' @author 2024-2025 Tobias Schmidt: initial version.
+#' @author
+#' 2024-2026 Tobias Schmidt: initial versions (v1, v2, v3).
 lorentz_sup <- function(x, x0, A, lambda, lcpar = NULL) {
     if (!is.null(lcpar)) {
         nams <- names(lcpar)
@@ -1612,9 +1613,178 @@ lorentz_sup <- function(x, x0, A, lambda, lcpar = NULL) {
         if ("x0" %in% nams) x0 <- lcpar[["x0"]]
         if ("w" %in% nams) x0 <- lcpar[["w"]]
     }
-    sapply(x, function(xi) {
-        sum(abs(A * (lambda / (lambda^2 + (xi - x0)^2))))
-    })
+    v <- getOption("metabodecon.lorentz_sup_version", NULL)
+    if (is.null(v)) {
+        cfun <- get_lorentz_sup_c()
+        v <- if (is.function(cfun)) 3 else 2
+    }
+    if (v == 1) {
+        sapply(x, function(xi) {
+            sum(abs(A * (lambda / (lambda^2 + (xi - x0)^2))))
+        })
+    } else if (v == 2) {
+        Al <- abs(A * lambda)
+        l2 <- lambda^2
+        result <- numeric(length(x))
+        for (j in seq_along(x0)) {
+            result <- result + Al[j] / (l2[j] + (x - x0[j])^2)
+        }
+        result
+    } else if (v == 3) {
+        cfun <- get_lorentz_sup_c()
+        cfun(x, x0, A, lambda)
+    } else {
+        stop("Invalid lorentz_sup_version: ", v)
+    }
+}
+
+#' @noRd
+#' @description
+#' Returns the compiled C implementation of lorentz_sup, or FALSE if compilation
+#' is not possible. On first call, attempts to compile via [inline::cfunction()]
+#' and caches the result (function or FALSE) in
+#' `options("metabodecon.lorentz_sup_c")` so subsequent calls are instant.
+#' @author 2026 Tobias Schmidt: initial version.
+get_lorentz_sup_c <- function() {
+    cfun <- getOption("metabodecon.lorentz_sup_c")
+    if (!is.null(cfun)) return(cfun)
+    cfun <- tryCatch(
+        compile_lorentz_sup_c(),
+        error = function(e) FALSE
+    )
+    options(metabodecon.lorentz_sup_c = cfun)
+    cfun
+}
+
+#' @noRd
+#' @description
+#' Compiles the C implementation of lorentz_sup via inline::cfunction.
+#' Throws an error if 'inline' is not installed or compilation fails.
+#' @author 2026 Tobias Schmidt: initial version.
+compile_lorentz_sup_c <- function() {
+    if (!requireNamespace("inline", quietly = TRUE)) {
+        stop("Package 'inline' required for C version")
+    }
+    inline::cfunction(
+        sig = c(
+            x = "numeric", x0 = "numeric",
+            A = "numeric", lambda = "numeric"
+        ),
+        body = '
+            int nx = Rf_length(x), np = Rf_length(x0);
+            double *px  = REAL(x),  *px0 = REAL(x0);
+            double *pA  = REAL(A),  *plam = REAL(lambda);
+            SEXP res = Rf_protect(Rf_allocVector(REALSXP, nx));
+            double *pr = REAL(res);
+            memset(pr, 0, nx * sizeof(double));
+            double *Al = (double *)R_alloc(np, sizeof(double));
+            double *l2 = (double *)R_alloc(np, sizeof(double));
+            for (int j = 0; j < np; j++) {
+                Al[j] = fabs(pA[j] * plam[j]);
+                l2[j] = plam[j] * plam[j];
+            }
+            for (int i = 0; i < nx; i++) {
+                double s = 0.0, xi = px[i];
+                for (int j = 0; j < np; j++) {
+                    double d = xi - px0[j];
+                    s += Al[j] / (l2[j] + d * d);
+                }
+                pr[i] = s;
+            }
+            Rf_unprotect(1);
+            return res;
+        ',
+        includes = '#include <math.h>\n#include <string.h>'
+    )
+}
+
+#' @noRd
+benchmark_lorentz_sup <- function() {
+
+    x <- read_spectrum(metabodecon_file("urine_1"))
+    rt <- function(expr) system.time(expr)[["elapsed"]]
+    opts <- options()
+    on.exit(options(opts))
+
+    logf("Get compile time for C version")
+    options(metabodecon.lorentz_sup_c = NULL)
+    tc <- rt(cfun <- get_lorentz_sup_c())
+
+    logf("Version NULL: auto-select (C if available, else R v2)")
+    options(metabodecon.lorentz_sup_version = NULL)
+    td0 <- rt(d0 <- deconvolute(x, verbose = FALSE, use_rust = FALSE))
+    cs <- d0$cs
+    lcpar <- d0$lcpar
+    ts0 <- rt(s0 <- lorentz_sup(cs, lcpar = lcpar))
+
+    logf("Version 1: loop over data points")
+    options(metabodecon.lorentz_sup_version = 1)
+    td1 <- rt(d1 <- deconvolute(x, verbose = FALSE, use_rust = FALSE))
+    ts1 <- rt(s1 <- lorentz_sup(cs, lcpar = lcpar))
+
+    logf("Version 2: loop over peaks")
+    options(metabodecon.lorentz_sup_version = 2)
+    td2 <- rt(d2 <- deconvolute(x, verbose = FALSE, use_rust = FALSE))
+    ts2 <- rt(s2 <- lorentz_sup(cs, lcpar = lcpar))
+
+    logf("Version 3: loop in C")
+    options(metabodecon.lorentz_sup_version = 3)
+    td3 <- rt(d3 <- deconvolute(x, verbose = FALSE, use_rust = FALSE))
+    ts3 <- rt(s3 <- lorentz_sup(cs, lcpar = lcpar))
+
+    logf("Version 1 + Rust backend")
+    options(metabodecon.lorentz_sup_version = 1)
+    tdr1 <- rt(dr1 <- deconvolute(x, verbose = FALSE, use_rust = TRUE))
+    tdr1b <- rt(dr1b <- deconvolute(x, verbose = FALSE, use_rust = TRUE))
+    tdr1c <- rt(dr1c <- deconvolute(x, verbose = FALSE, use_rust = TRUE))
+
+    logf("Version 2 + Rust backend")
+    options(metabodecon.lorentz_sup_version = 2)
+    tdr2 <- rt(dr2 <- deconvolute(x, verbose = FALSE, use_rust = TRUE))
+
+    logf("Version 3 + Rust backend")
+    options(metabodecon.lorentz_sup_version = 3)
+    tdr3 <- rt(dr3 <- deconvolute(x, verbose = FALSE, use_rust = TRUE))
+
+    # Print results
+    logf("")
+    logf("Urine1: %d datapoints, %d peaks",
+        length(cs), length(lcpar$A))
+    logf("")
+    logf("Correctness checks:")
+    logf("  all.equal(d1, d0):  %s", isTRUE(all.equal(d1, d0)))
+    logf("  all.equal(d2, d0):  %s", isTRUE(all.equal(d2, d0)))
+    logf("  all.equal(d3, d0):  %s", isTRUE(all.equal(d3, d0)))
+    logf("")
+    logf("  all.equal(dr1, d0):  %s", isTRUE(all.equal(dr1, d0)))
+    logf("  all.equal(dr2, d0):  %s", isTRUE(all.equal(dr2, d0)))
+    logf("  all.equal(dr3, d0):  %s", isTRUE(all.equal(dr3, d0)))
+    logf("")
+    logf("  all.equal(dr2, dr1):  %s", isTRUE(all.equal(dr2, dr1)))
+    logf("  all.equal(dr3, dr1):  %s", isTRUE(all.equal(dr3, dr1)))
+    logf("")
+    logf("  all.equal(s1, s0):  %s", isTRUE(all.equal(s1, s0)))
+    logf("  all.equal(s2, s0):  %s", isTRUE(all.equal(s2, s0)))
+    logf("  all.equal(s3, s0):  %s", isTRUE(all.equal(s3, s0)))
+    logf("")
+    logf("lorentz_sup timings:")
+    logf("  v0 (auto):       %7.3f s  (%.1fx)", ts0, ts1 / ts0)
+    logf("  v1 (dp-loop):    %7.3f s", ts1)
+    logf("  v2 (pk-loop):    %7.3f s  (%.1fx)", ts2, ts1 / ts2)
+    logf("  v3 (C-loop):     %7.3f s  (%.1fx)", ts3, ts1 / ts3)
+    logf("  compile time v3: %7.3f s", tc)
+    logf("")
+    logf("deconvolute timings (R backend):")
+    logf("  v0 (auto):       %7.3f s  (%.1fx)", td0, td1 / td0)
+    logf("  v1 (dp-loop):    %7.3f s", td1)
+    logf("  v2 (pk-loop):    %7.3f s  (%.1fx)", td2, td1 / td2)
+    logf("  v3 (C-loop):     %7.3f s  (%.1fx)", td3, td1 / td3)
+    logf("")
+    logf("deconvolute timings (Rust backend):")
+    logf("  v1 (dp-loop):    %7.3f s  (%.1fx)", tdr1, td1 / tdr1)
+    logf("  v2 (pk-loop):    %7.3f s  (%.1fx)", tdr2, td1 / tdr2)
+    logf("  v3 (C-loop):     %7.3f s  (%.1fx)", tdr3, td1 / tdr3)
+    logf("")
 }
 
 #' @noRd

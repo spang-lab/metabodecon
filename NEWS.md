@@ -1,5 +1,18 @@
 # metabodecon 1.6.3-branch:paper
 
+* Optimized `lorentz_sup()` with three switchable implementations:
+  - v1: original `sapply` loop over data points (baseline).
+  - v2: vectorized R loop over peaks with pre-computed `abs(A * lambda)`
+    and `lambda^2` (~10x faster than v1).
+  - v3: runtime-compiled C version via `inline::cfunction()` (~50x faster
+    than v1). Compiled once per session, cached in
+    `options("metabodecon.lorentz_sup_c")`.
+  - Default (`options(metabodecon.lorentz_sup_version = NULL)`): auto-selects
+    v3 if `inline` and a C compiler are available, otherwise falls back to v2.
+  - Version can be forced via `options(metabodecon.lorentz_sup_version = 1|2|3)`.
+  - Added `benchmark_lorentz_sup()` to compare all versions with R and Rust
+    backends.
+
 * Since last commit:
   - Added internal AKI modeling modules `R/paper_aki_orig.R` and `R/mdm.R`
     with helpers for binning, normalization (quantile/PQN/creatinine/sum/
