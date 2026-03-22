@@ -391,8 +391,12 @@ cache_example_datasets <- function(persistent = NULL,
 
     dstdir <- file.path(dirname(dst), "example_datasets")
     if (extract) {
-        if (dir.exists(dstdir)) unlink(dstdir, recursive = TRUE)
-        if (!dir.exists(dstdir)) extract_example_datasets(dst)
+        files <- dir(dstdir, recursive=TRUE, full.names=TRUE) # 0.6s on r4
+        size <- sum(file.info(files)$size) # 0.3s on r4
+        if (size != xds$dir_size) { # captures missing and outdated dstdir
+            unlink(dstdir, recursive = TRUE) # 1s on r4
+            system.time(extract_example_datasets(dst)) # 6.9s on r4
+        }
     }
     dst
 }
