@@ -598,7 +598,36 @@ get_logv <- function(verbose) {
 
 #' @noRd
 #' @author 2024-2025 Tobias Schmidt: initial version.
+human_readable_difftime <- function(x) {
+    sec <- as.numeric(x, units = "secs")
+    out <- character(length(sec))
+    for (i in seq_along(sec)) {
+        s <- sec[i]
+        if (is.na(s)) {
+            out[i] <- NA_character_
+            next
+        }
+        sign <- if (s < 0) "-" else ""
+        s <- abs(s)
+        if (s >= 3600) {
+            h <- floor(s / 3600)
+            m <- floor((s %% 3600) / 60)
+            out[i] <- sprintf("%s%dh %dmin", sign, h, m)
+        } else if (s >= 60) {
+            m <- floor(s / 60)
+            ss <- floor(s %% 60)
+            out[i] <- sprintf("%s%dmin %ds", sign, m, ss)
+        } else {
+            out[i] <- sprintf("%s%.2fs", sign, s)
+        }
+    }
+    out
+}
+
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 human_readable <- function(x, unit, fmt = "%.1f") {
+    if (inherits(x, "difftime")) return(human_readable_difftime(x))
     m <- max(abs(x))
     # styler: off
     if      (m >= 1e+9) { prefix <- "G"; x <- x / 1e+9 }

@@ -4,26 +4,51 @@
 \alias{get_si_mat}
 \title{Extract Matrix of aligned Signal Intensities}
 \usage{
-get_si_mat(x)
+get_si_mat(x, snap = 0, ref = NULL, drop_zero = FALSE)
 }
 \arguments{
 \item{x}{An object of type \code{aligns}.}
+
+\item{snap}{Controls peak snapping. \code{FALSE} or \code{0} (default): off.
+\code{TRUE} or \code{1}: snap within one half-width. Any positive
+number scales the radius, e.g. \code{snap = 2} allows two
+half-widths. See 'Details'.}
+
+\item{ref}{A single \code{align} or \code{decon2} object whose peaks define
+the rows of the output matrix. If \code{NULL} (default), the
+reference is auto-detected from \code{x} via
+\code{speaq::findRef()}. Ignored when \code{snap = 0}.}
+
+\item{drop_zero}{If \code{TRUE}, rows where all values are zero are removed.}
 }
 \value{
-A matrix of aligned signal intensities.
+A numeric matrix with chemical shifts as rownames and
+spectrum names as colnames.
 }
 \description{
-Takes an object of type \code{aligns}, i.e., a list of deconvoluted and aligned
-spectra, extracts the vector of aligned signal integrals for each spectrum
-and returns them as a matrix with datapoints in rows and spectra in columns.
+Extracts a peak-area matrix from aligned spectra. Rows are
+chemical-shift positions, columns are spectra. With
+\code{snap = FALSE} the raw aligned integral vectors are returned.
+With \code{snap = TRUE} peaks are snapped to the peaks of a
+reference spectrum, reducing the row count to the number
+of reference peaks.
+}
+\details{
+When \code{snap > 0}, each peak in every spectrum is mapped to
+the nearest reference peak. A peak is kept only if the
+distance is at most \code{snap * lambda_ref / dp} data points,
+where \code{lambda_ref} is the half-width of the corresponding
+reference peak and \code{dp} is the chemical-shift step size.
+Areas of peaks that map to the same reference peak are
+summed.
 }
 \examples{
 if (interactive()) {
-    # Example requires an interactive R session, because in case of missing
-    # dependencies the user will be asked for confirmation to install them.
     decons <- deconvolute(sim[1:2], sfr = c(3.55, 3.35))
-    aligns <- align(decons)
-    si_mat <- get_si_mat(aligns) # 2048 x 2 matrix (2048 datapoints, 2 spectra)
+    aligns <- align(decons, maxCombine = 0)
+    si_mat_0 <- get_si_mat(aligns)                  # raw
+    si_mat_1 <- get_si_mat(aligns, snap = 1)         # 1x hw
+    si_mat_2 <- get_si_mat(aligns, snap = 2)         # 2x hw
 }
 }
 \author{

@@ -27,8 +27,10 @@
 #' [speaq_align()].
 #'
 #' @param maxCombine
-#' Amount of adjacent columns which may be combined for improving the alignment.
-#' Passed as argument `range` to [combine_peaks()].
+#' Amount of adjacent columns which may be combined for improving
+#' the alignment during speaq's CluPA step. We recommend setting
+#' this to 0 and instead relying on the peak snapping implemented
+#' in [get_si_mat()].
 #'
 #' @param verbose
 #' Whether to print additional information during the alignment process.
@@ -98,7 +100,8 @@ align <- function(x,
     }
 
     # Start alignment
-    logf("Starting alignment of %d deconvoluted spectra", length(xx))
+    nworkers_str <- if (nworkers == 1) "1 worker" else sprintf("%d workers", nworkers)
+    logf("Starting alignment of %d deconvoluted spectra with %s", length(xx), nworkers_str)
     starttime <- Sys.time()
 
     # Do initial alignment using speaq. Parameter `acceptLostPeak` must be FALSE
@@ -242,29 +245,93 @@ align <- function(x,
 #' @title Extract Matrix of aligned Signal Intensities
 #'
 #' @description
-#' Takes an object of type `aligns`, i.e., a list of deconvoluted and aligned
-#' spectra, extracts the vector of aligned signal integrals for each spectrum
-#' and returns them as a matrix with datapoints in rows and spectra in columns.
+#' Extracts a peak-area matrix from aligned spectra. Rows are
+#' chemical-shift positions, columns are spectra. With
+#' `snap = FALSE` the raw aligned integral vectors are returned.
+#' With `snap = TRUE` peaks are snapped to the peaks of a
+#' reference spectrum, reducing the row count to the number
+#' of reference peaks.
 #'
 #' @param x
 #' An object of type `aligns`.
 #'
+#' @param snap
+#' Controls peak snapping. `FALSE` or `0` (default): off.
+#' `TRUE` or `1`: snap within one half-width. Any positive
+#' number scales the radius, e.g. `snap = 2` allows two
+#' half-widths. See 'Details'.
+#'
+#' @param ref
+#' A single `align` or `decon2` object whose peaks define
+#' the rows of the output matrix. If `NULL` (default), the
+#' reference is auto-detected from `x` via
+#' `speaq::findRef()`. Ignored when `snap = 0`.
+#'
+#' @param drop_zero
+#' If `TRUE`, rows where all values are zero are removed.
+#'
+#' @details
+#' When `snap > 0`, each peak in every spectrum is mapped to
+#' the nearest reference peak. A peak is kept only if the
+#' distance is at most `snap * lambda_ref / dp` data points,
+#' where `lambda_ref` is the half-width of the corresponding
+#' reference peak and `dp` is the chemical-shift step size.
+#' Areas of peaks that map to the same reference peak are
+#' summed.
+#'
 #' @return
-#' A matrix of aligned signal intensities.
+#' A numeric matrix with chemical shifts as rownames and
+#' spectrum names as colnames.
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' if (interactive()) {
-#'     # Example requires an interactive R session, because in case of missing
-#'     # dependencies the user will be asked for confirmation to install them.
 #'     decons <- deconvolute(sim[1:2], sfr = c(3.55, 3.35))
-#'     aligns <- align(decons)
-#'     si_mat <- get_si_mat(aligns) # 2048 x 2 matrix (2048 datapoints, 2 spectra)
+#'     aligns <- align(decons, maxCombine = 0)
+#'     si_mat_0 <- get_si_mat(aligns)                  # raw
+#'     si_mat_1 <- get_si_mat(aligns, snap = 1)        # 1x hw
+#'     si_mat_2 <- get_si_mat(aligns, snap = 2)        # 2x hw
 #' }
-get_si_mat <- function(x) {
+get_si_mat <- function(x, snap = 0, ref = NULL,
+                       drop_zero = FALSE) {
     stopifnot(is_aligns(x))
-    sapply(x, function(xi) xi$sit$al)
+    cs <- x[[1]]$cs
+    if (snap == 0) {
+        mat <- sapply(x, function(xi) xi$sit$al)
+        rownames(mat) <- cs
+    } else {
+        if (is.null(ref)) {
+            pl <- lapply(x, get_peak_indices)
+            idx <- speaq::findRef(pl)$refInd
+            ref <- x[[idx]]
+        }
+        ref_x0 <- if (is_align(ref)) ref$lcpar$x0_al else ref$lcpar$x0
+        ref_cs <- ref_x0
+        ref_idx <- match(ref_cs, cs)
+        dp <- abs(cs[2] - cs[1])
+        thresh <- snap * ref$lcpar$lambda / dp
+        nr <- length(ref_idx)
+        ns <- length(x)
+        mat <- matrix(0, nrow = nr, ncol = ns)
+        for (s in seq_len(ns)) {
+            peak_idx <- match(x[[s]]$lcpar$x0_al, cs)
+            A <- x[[s]]$lcpar$A
+            for (p in seq_along(peak_idx)) {
+                dists <- abs(peak_idx[p] - ref_idx)
+                best <- which.min(dists)
+                if (dists[best] <= thresh[best]) {
+                    mat[best, s] <- mat[best, s] + A[p] * pi
+                }
+            }
+        }
+        rownames(mat) <- ref_cs
+    }
+    colnames(mat) <- get_names(x)
+    if (drop_zero) {
+        mat <- mat[rowSums(mat != 0) > 0, , drop = FALSE]
+    }
+    mat
 }
 
 # Exported Helpers (Deprecated) #####

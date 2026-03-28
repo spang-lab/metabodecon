@@ -15,7 +15,10 @@ deconvolute(
   force = FALSE,
   verbose = TRUE,
   nworkers = 1,
-  use_rust = FALSE
+  use_rust = FALSE,
+  npmax = 0,
+  igrs = list(),
+  cachedir = NULL
 )
 }
 \arguments{
@@ -60,6 +63,15 @@ Requires the \href{https://github.com/spang-lab/mdrb}{mdrb} package. If TRUE and
 mdrb is missing, an error is thrown. If FALSE, the R implementation is used.
 If NULL, the Rust backend is used if available, otherwise the R implementation
 is used.}
+
+\item{npmax}{Integer. Maximum number of peaks to keep after filtering. If
+\code{0} (default), all peaks passing the score threshold are kept.}
+
+\item{igrs}{List of numeric vectors of length 2. Each element defines a
+ppm range to ignore during deconvolution.}
+
+\item{cachedir}{Character string or \code{NULL}. Path to a directory for
+caching deconvolution results. If \code{NULL} (default), no caching is used.}
 }
 \value{
 A 'decon2' object as described in \href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{Metabodecon Classes}.

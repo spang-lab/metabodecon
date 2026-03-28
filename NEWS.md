@@ -1,5 +1,23 @@
 # metabodecon 1.6.3-branch:paper
 
+* `get_si_mat()` gained `snap`, `ref`, and `drop_zero` parameters for
+  reference-based peak snapping. With `snap > 0`, each peak is mapped to
+  the nearest reference peak within `snap` half-widths; areas that map to
+  the same reference peak are summed. The `ref` parameter accepts an
+  `align` or `decon2` object (auto-detected from `x` when `NULL`).
+* `deconvolute()` gained `npmax`, `igrs`, and `cachedir` parameters for
+  limiting the number of peaks, ignoring ppm ranges, and caching results
+  to disk via `cachem::cache_disk`.
+* `cv_fit_mdm()` rewritten with a `snap` grid
+  (`c(0.5, 1, 1.5, 2, 2.5, 3)`) and `npmax` grid for cross-validated
+  hyperparameter tuning. Added `estimate_mdm_performance()` draft.
+* Updated Rd files for `get_si_mat`, `align`, and `deconvolute` to match
+  new signatures.
+* Fixed a bug where `deconvolute_spectra()` passed `NULL` (length 0) as
+  `cachedir` to `mapply`, causing a names-attribute error.
+
+# metabodecon 1.6.3-branch:paper (pre 1.6.3.9003)
+
 * Optimized `lorentz_sup()` with three switchable implementations:
   - v1: original `sapply` loop over data points (baseline).
   - v2: vectorized R loop over peaks with pre-computed `abs(A * lambda)`

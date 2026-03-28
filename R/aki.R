@@ -1,6 +1,226 @@
 
 # API #####
 
+#' @export
+#' @title Deconvolute, Align and Classify Spectra in Cross-Validation
+#' @description
+#' Performs deconvolution+alignment over a grid of parameters and calculates the
+#' corresponding cv.glmnet-lasso-lambda.min performance. The
+#' deconvolution+alignment parameters that enable the best cv glmnet
+#' performances are considered optimal and are used for fitting the final model
+#' with the corresponding optimal lambda value.
+#'
+#' @param spectra List-like spectra object with `cs` and `si` vectors.
+#' @param y Factor vector with class labels for each spectrum.
+#' @param sfr Signal free region. See [deconvolute()] for details.
+#' @param nworkers Number of workers for parallel grid deconvolution.
+#' @param verbose Logical. Whether to print log messages.
+#' @param use_rust Logical. Whether to use the Rust backend.
+#' @param nfolds Number of folds for inner cv.glmnet. Default 10.
+#' @param cachedir Directory for caching grid search results. If `NULL`
+#' (default), a temporary session-scoped directory is used. Pass a custom
+#' path to share the cache across parallel calls.
+#'
+#' @return
+#' A list (class `mdm`) with the following elements:
+#' - `model`: The fitted `cv.glmnet` model object.
+#' - `pgrid`: Data frame of parameter combinations and their cv.glmnet
+#'   performances (columns: `npmax`, `maxShift`, `snap`,
+#'   `cvm`).
+#' - `best`: Named list of the best parameter combination.
+#'
+#' @examples
+#' \dontrun{
+#'      aki <- read_aki_data()
+#'      spectra <- aki$spectra
+#'      y <- factor(aki$meta$type, levels = c("Control", "AKI"))
+#'      mdm <- cv_fit_mdm(spectra, y, sfr = c(11, -2), nworkers = 53)
+#' }
+cv_fit_mdm <- function(spectra, y, sfr, nworkers,
+                       verbose = TRUE, use_rust = TRUE,
+                       nfolds = 10, cachedir = NULL) {
+
+    cd <- cachedir %||% cachedir("grid_deconvolute_spectrum", FALSE)
+
+    # Pre-warm the grid cache so that all subsequent deconvolute() calls
+    # with npmax >= 1 can reuse the cached per-spectrum grid results.
+    logf("Starting cache initialization")
+    gridlist <- grid_deconvolute_spectra(
+        x=spectra, sfr=sfr, verbose=verbose, nw=nworkers,
+        use_rust=use_rust, cachedir=cd
+    )
+    logf("Finished cache initialization")
+
+    # Build parameter grid from observed peak counts
+    logf("Building parameter grid")
+    np <- unname(unlist(lapply(gridlist, function(g) g$np)))
+    np_hi <- ceiling(max(np) / 100) * 100
+    np_lo <- ceiling(min(np[np != 0]) / 100) * 100
+    npmax_seq <- seq(np_lo, np_hi, by = 100)
+    maxShift_seq <- seq(25, 250, by = 25)
+    snap_seq <- c(0.5, 1, 1.5, 2, 2.5, 3)
+    P <- expand.grid(
+        npmax = npmax_seq,
+        maxShift = maxShift_seq,
+        snap = snap_seq
+    )
+    P$cvm <- NA_real_
+
+    logf("Starting deconvolution + alignment + classification grid")
+    row <- 1
+    for (i in seq_along(npmax_seq)) {
+        logf("npmax=%d", npmax_seq[i])
+        decons <- deconvolute(
+            x = spectra, sfr = sfr, verbose = verbose,
+            use_rust = use_rust, npmax = npmax_seq[i],
+            nworkers = nworkers, cachedir = cd
+        )
+        for (j in seq_along(maxShift_seq)) {
+            logf("  maxShift=%d", maxShift_seq[j])
+            als <- align(
+                decons,
+                maxShift = maxShift_seq[j],
+                maxCombine = 0,
+                verbose = verbose,
+                nworkers = nworkers
+            )
+            for (k in seq_along(snap_seq)) {
+                X <- t(get_si_mat(als, snap = snap_seq[k]))
+                nf <- min(nfolds, nrow(X))
+                cvm <- glmnet::cv.glmnet(
+                    x = X, y = y,
+                    family = "binomial", alpha = 1, nfolds = nf
+                )
+                P$cvm[row] <- cvm$cvm[cvm$lambda == cvm$lambda.min]
+                row <- row + 1
+            }
+        }
+    }
+
+    # Select best parameters and fit final model
+    logf("Selecting best parameters")
+    best_idx <- which.min(P$cvm)
+    best <- as.list(P[best_idx, ])
+    logf("Best: npmax=%d, maxShift=%d, snap=%.1f, cvm=%.4f",
+        best$npmax, best$maxShift, best$snap, best$cvm)
+
+    decons <- deconvolute(
+        x = spectra, sfr = sfr, verbose = verbose,
+        use_rust = use_rust, npmax = best$npmax,
+        nworkers = nworkers, cachedir = cd
+    )
+    als <- align(
+        decons,
+        maxShift = best$maxShift,
+        maxCombine = 0,
+        verbose = verbose,
+        nworkers = nworkers
+    )
+    X <- t(get_si_mat(als, snap = best$snap))
+    nf <- min(nfolds, nrow(X))
+    model <- glmnet::cv.glmnet(
+        x = X, y = y,
+        family = "binomial", alpha = 1, nfolds = nf
+    )
+
+    logf("Finished cv_fit_mdm")
+    structure(
+        list(model = model, pgrid = P, best = best),
+        class = "mdm"
+    )
+}
+
+#' @export
+#' @title Estimate MDM Performance via Nested Cross-Validation
+#' @description
+#' Splits the data into `kout` outer folds. For each fold, calls
+#' [cv_fit_mdm()] on the training subset to select the best preprocessing
+#' parameters and fit a model, then evaluates on the held-out test fold.
+#' Grid search results are shared across all folds via a temporary cache
+#' directory.
+#'
+#' @inheritParams cv_fit_mdm
+#' @param kout Number of outer folds. Default 10.
+#' @param seed Random seed for fold assignment.
+#'
+#' @return A data frame with columns `fold`, `true`, `prob`, `pred`.
+#'
+#' @examples
+#' \dontrun{
+#'      aki <- read_aki_data()
+#'      spectra <- aki$spectra
+#'      y <- factor(aki$meta$type, levels = c("Control", "AKI"))
+#'      perf <- estimate_mdm_performance(spectra, y, sfr = c(11, -2),
+#'          nworkers = 53, kout = 10, seed = 1)
+#'      mean(perf$true == perf$pred)
+#' }
+estimate_mdm_performance <- function(spectra, y, sfr, nworkers,
+                                     verbose = TRUE, use_rust = TRUE,
+                                     nfolds = 10, kout = 10, seed = 1) {
+
+    # Shared temp cache for all folds
+    cd <- tempfile("grid_cache_")
+
+    # Pre-warm cache once for all spectra
+    logf("Pre-warming grid cache for %d spectra", length(spectra))
+    grid_deconvolute_spectra(
+        x = spectra, sfr = sfr, verbose = verbose,
+        nw = nworkers, use_rust = use_rust, cachedir = cd
+    )
+
+    # Assign folds
+    set.seed(seed)
+    n <- length(spectra)
+    foldid <- sample(rep(seq_len(kout), length.out = n))
+
+    # Run outer CV
+    results <- vector("list", kout)
+    for (f in seq_len(kout)) {
+        logf("Outer fold %d/%d", f, kout)
+        tr <- which(foldid != f)
+        te <- which(foldid == f)
+
+        mdm <- cv_fit_mdm(
+            spectra = spectra[tr], y = y[tr], sfr = sfr,
+            nworkers = nworkers, verbose = verbose,
+            use_rust = use_rust, nfolds = nfolds, cachedir = cd
+        )
+
+        # Deconvolute + align all spectra with best params
+        all_decons <- deconvolute(
+            x = spectra, sfr = sfr, verbose = verbose,
+            use_rust = use_rust, npmax = mdm$best$npmax,
+            nworkers = nworkers, cachedir = cd
+        )
+        all_als <- align(
+            all_decons,
+            maxShift = mdm$best$maxShift,
+            maxCombine = 0,
+            verbose = verbose,
+            nworkers = nworkers
+        )
+        Xall <- t(get_si_mat(all_als, snap = mdm$best$snap))
+        Xte <- Xall[te, , drop = FALSE]
+
+        prob <- as.numeric(stats::predict(
+            mdm$model, newx = Xte,
+            s = "lambda.min", type = "response"
+        ))
+        pred <- factor(
+            ifelse(prob > 0.5, levels(y)[2], levels(y)[1]),
+            levels = levels(y)
+        )
+        results[[f]] <- data.frame(
+            fold = f, true = y[te], prob = prob, pred = pred
+        )
+    }
+
+    Y <- do.call(rbind, results)
+    acc <- mean(Y$true == Y$pred)
+    logf("Nested CV accuracy: %.2f%%", acc * 100)
+    Y
+}
+
 #' @noRd
 #' @title Run AKI benchmark
 #'
@@ -29,9 +249,6 @@
 #' @param maxShift Maximum shift allowed in alignment.
 #' @param maxCombine Maximum number of peaks to combine in alignment.
 #' @param verbose Whether to print verbose output during deconvolution and alignment.
-#' @param cachedir
-#' Optional directory to use for caching deconvolution results.
-#' If NULL, caching is disabled.
 #'
 #' @return
 #' Invisibly returns a data frame with pooled predictions and true labels.
@@ -51,7 +268,6 @@ run_aki_benchmark <- function(  aki = read_aki_data(),
                                 maxShift = 50,
                                 maxCombine = 5,
                                 verbose = TRUE,
-                                cachedir = NULL,
                                 nworkers = 1,
                                 use_rust = TRUE,
                                 sfr = NULL,
@@ -79,7 +295,7 @@ run_aki_benchmark <- function(  aki = read_aki_data(),
         decons <- deconvolute(
             spectra, nfit=nfit, smopts=c(smit, smws), delta=delta,
             sfr=sfr, wshw=wshw, ask=FALSE, force=FALSE, verbose=verbose,
-            nworkers=nworkers, use_rust=use_rust, npmax=npmax, cachedir=cachedir
+            nworkers=nworkers, use_rust=use_rust, npmax=npmax
         )
         aligns <- align(
             decons, maxShift=maxShift, maxCombine=maxCombine, verbose=verbose,
@@ -122,7 +338,6 @@ try_aki_benchmark <- function(  aki = read_aki_data(),
                                 maxShift = 50,
                                 maxCombine = 5,
                                 verbose = TRUE,
-                                cachedir = NULL,
                                 nworkers = 1,
                                 use_rust = TRUE,
                                 sfr = NULL,
@@ -137,7 +352,7 @@ try_aki_benchmark <- function(  aki = read_aki_data(),
         expr = {
             run_aki_benchmark(
                 aki, seed, kout, kin, fx, mt, norm, nfit, smit, smws, delta,
-                npmax, maxShift, maxCombine, verbose, cachedir, nworkers, use_rust,
+                npmax, maxShift, maxCombine, verbose, nworkers, use_rust,
                 sfr, wshw
             )
         },
@@ -189,20 +404,16 @@ try_aki_benchmark <- function(  aki = read_aki_data(),
 #'
 run_aki_benchmarks_invalid <- function() {
 
-    # Prepare input data and cache directory
+    # Prepare input data
     aki <- read_aki_data()
-    cache_basedir <- tools::R_user_dir("metabodecon", "cache")
-    cachedir <- file.path(cache_basedir, "deconvolute_spectrum")
 
     # Run one benchmark with npmax = 1000. This will trigger a grid search to
-    # find the best deconvolution parameters producing less than 1000 peaks and,
-    # as a side effect, populate the cache with deconvolution results for all
-    # parameter combinations in the grid. This means subsequent benchmark calls
-    # with different parameters will finish much faster.
+    # find the best deconvolution parameters producing less than 1000 peaks.
+    # Grid search results are cached automatically.
     perfMC <- run_aki_benchmark(
         aki=aki, seed=1, kout=10, kin=10, fx="deconvolute", mt="lasso",
         norm="none", nfit=3, smit=2, smws=5, delta=6.4, npmax=1000,
-        maxShift=50, maxCombine=, verbose=TRUE, cachedir=cachedir,
+        maxShift=50, maxCombine=, verbose=TRUE,
         nworkers=53
     )
 
@@ -216,7 +427,7 @@ run_aki_benchmarks_invalid <- function() {
         aki=list(aki), seed=seq_len(n_base), kout=10, kin=10, fx="deconvolute",
         mt="lasso", norm="none", nfit=3, smit=2, smws=5,
         delta=6.4, npmax=0, maxShift=50, maxCombine=5,
-        verbose=TRUE, cachedir=cachedir, nworkers=1,
+        verbose=TRUE, nworkers=1,
         use_rust=TRUE
     )
     duration <- format(Sys.time() - start, units = "secs")
@@ -235,7 +446,7 @@ run_aki_benchmarks_invalid <- function() {
         aki=list(aki), seed=seq_len(n_base), kout=10, kin=10, fx="deconvolute",
         mt="lasso", norm="none", nfit=3, smit=3, smws=9,
         delta=6.4, npmax=0, maxShift=200, maxCombine=100,
-        verbose=TRUE, cachedir=cachedir, nworkers=1,
+        verbose=TRUE, nworkers=1,
         use_rust=FALSE
     )
     duration <- format(Sys.time() - start, units = "secs")
@@ -259,7 +470,7 @@ run_aki_benchmarks_invalid <- function() {
         decons <- try(deconvolute(
             aki$spectra, nfit=nfit[i], smopts=c(smit[i], smws[i]), delta=delta[i],
             sfr=NULL, wshw=0, ask=FALSE, force=FALSE, verbose=FALSE,
-            nworkers=53, use_rust=TRUE, npmax=npmax[i], cachedir=NULL
+            nworkers=53, use_rust=TRUE, npmax=npmax[i]
         ))
         if (inherits(decons, "try-error")) next
         peaks <- sapply(decons, function(d) nrow(d$peak))
@@ -287,7 +498,7 @@ run_aki_benchmarks_invalid <- function() {
         aki=list(aki), seed=1, kout=10, kin=10, fx="deconvolute",
         mt="lasso", norm="none", nfit=nfit, smit=smit, smws=smws,
         delta=delta, npmax=npmax, maxShift=maxShift, maxCombine=maxCombine,
-        verbose=FALSE, cachedir=cachedir, nworkers=1
+        verbose=FALSE, nworkers=1
     )
     acc <- sapply(gridperfs, function(x) x$acc)
     auc <- sapply(gridperfs, function(x) x$auc)
@@ -312,7 +523,7 @@ run_aki_benchmarks_invalid <- function() {
         aki=list(aki), seed=seq_len(n_base), kout=10, kin=10, fx="deconvolute",
         mt="lasso", norm="none", nfit=5, smit=3, smws=3,
         delta=3, npmax=0, maxShift=128, maxCombine=256,
-        verbose=TRUE, cachedir=cachedir
+        verbose=TRUE
     )
     duration <- format(Sys.time() - start, units = "secs")
     logf("Finished %d benchmarks in %s seconds", n_base, duration)
@@ -331,7 +542,7 @@ run_aki_benchmarks_invalid <- function() {
         aki=list(aki), seed=seq_len(n_base), kout=10, kin=10, fx="deconvolute",
         mt="lasso", norm="none", nfit=5, smit=0, smws=0,
         delta=0, npmax=1000, maxShift=64, maxCombine=16,
-        verbose=TRUE, cachedir=cachedir
+        verbose=TRUE
     )
     duration <- format(Sys.time() - start, units = "secs")
     logf("Finished %d benchmarks in %s seconds", n_base, duration)
@@ -344,8 +555,6 @@ run_aki_benchmarks_invalid <- function() {
 plot_deconvolution_metrics <- function() {
     aki <- read_aki_data()
     spectra <- aki$spectra
-    cache_basedir <- tools::R_user_dir("metabodecon", "cache")
-    cachedir <- file.path(cache_basedir, "deconvolute_spectrum")
     G <- expand.grid(delta=2:8, smit=c(2,3), smws=c(3,5,7))
     rownames(G) <- sprintf("smit%d_smws%d_delta%d", G$smit, G$smws, G$delta)
     smopts_list <- lapply(seq_len(nrow(G)), function(i) c(G$smit[i], G$smws[i]))
@@ -355,7 +564,7 @@ plot_deconvolution_metrics <- function() {
         nrow(G), deconvolute, x=spectra_list, smopts=smopts_list, delta=delta_list,
         MoreArgs = list(
             nfit=5, sfr=NULL, wshw=0, ask=FALSE, force=FALSE, verbose=TRUE,
-            nworkers=1, use_rust=TRUE, npmax=0, cachedir=NULL
+            nworkers=1, use_rust=TRUE, npmax=0
         )
     )
     decons_list_bak <- decons_list
@@ -402,8 +611,6 @@ plot_deconvolution_metrics <- function() {
 plot_deconvolution_metrics_R <- function() {
     aki <- read_aki_data()
     spectra <- aki$spectra
-    cache_basedir <- tools::R_user_dir("metabodecon", "cache")
-    cachedir <- file.path(cache_basedir, "deconvolute_spectrum")
     G <- expand.grid(delta=2:8, smit=c(2,3), smws=c(3,5,7))
     rownames(G) <- sprintf("smit%d_smws%d_delta%d", G$smit, G$smws, G$delta)
     smopts_list <- lapply(seq_len(nrow(G)), function(i) c(G$smit[i], G$smws[i]))
@@ -413,7 +620,7 @@ plot_deconvolution_metrics_R <- function() {
         nrow(G), deconvolute, x=spectra_list, smopts=smopts_list, delta=delta_list,
         MoreArgs = list(
             nfit=5, sfr=NULL, wshw=0, ask=FALSE, force=FALSE, verbose=TRUE,
-            nworkers=1, use_rust=FALSE, npmax=0, cachedir=NULL
+            nworkers=1, use_rust=FALSE, npmax=0
         )
     )
     NP <- as.data.frame(matrix(NA, nrow(G), length(spectra)))

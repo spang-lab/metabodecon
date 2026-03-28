@@ -4,7 +4,7 @@
 \alias{align}
 \title{Align Spectra}
 \usage{
-align(x, maxShift = 50, maxCombine = 5, verbose = TRUE, install_deps = NULL)
+align(x, maxShift = 50, maxCombine = 5, verbose = TRUE, install_deps = NULL, nworkers = 1)
 }
 \arguments{
 \item{x}{An object of  type  \code{decons1}  or  \code{decons2}  as  described  in  \href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{Metabodecon Classes}.   To
@@ -34,6 +34,8 @@ confirmation. If \code{install_deps=NULL} (default), the user will  be  asked  f
 confirmation  before  installing  missing   dependencies.   If   asking   for
 confirmation is not possible or \code{install_deps=FALSE}, the function will raise
 an error if the packages are not installed.}
+
+\item{nworkers}{Number of workers to use for parallel processing.}
 }
 \value{
 An object of type \code{align} as described in \href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{Metabodecon Classes}.
