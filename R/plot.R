@@ -34,7 +34,7 @@
 #' A plot of the deconvoluted spectra.
 #'
 #' @seealso
-#' [plot_spectrum()] for a much more sophisticated plotting routine
+#' [metabodecon::plot_spectrum()] for a much more sophisticated plotting routine
 #' suitable for plotting a single spectrum.
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
@@ -124,7 +124,7 @@ plot_spectra <- function(obj,
 #' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
 #'
 #' @param ...
-#' Additional arguments passed to [draw_spectrum()] for **every** sub figure.
+#' Additional arguments passed to [metabodecon::draw_spectrum()] for **every** sub figure.
 #' See 'Details'.
 #'
 #' @param obj
@@ -142,7 +142,7 @@ plot_spectra <- function(obj,
 #' of the full spectrum width. Only used if `foc_rgn` is set to NULL.
 #'
 #' @param sub1,sub2,sub3
-#' List of arguments passed to [draw_spectrum()] when drawing sub figure
+#' List of arguments passed to [metabodecon::draw_spectrum()] when drawing sub figure
 #' 1-3. See 'Details'.
 #'
 #' @param mar
@@ -165,18 +165,18 @@ plot_spectra <- function(obj,
 #'
 #' @details
 #' This function first initializes a new plotting canvas.  After  that  it  calls
-#' [draw_spectrum()] multiple times to draw the following sub figures  onto  the
+#' [metabodecon::draw_spectrum()] multiple times to draw the following sub figures  onto  the
 #' plotting canvas:
 #'
 #' 1. The signal intensities in the focus region
 #' 2. The second derivative in the focus region
 #' 3. The signal intensities over all datapoints
 #'
-#' The  argument  lists  for  the  individual  calls  to  [draw_spectrum()]  are
-#' determined at runtime and depend on the arguments passed to [plot_spectrum()]
+#' The  argument  lists  for  the  individual  calls  to  [metabodecon::draw_spectrum()]  are
+#' determined at runtime and depend on the arguments passed to [metabodecon::plot_spectrum()]
 #' as well as the currently active graphics device. To customize the  appearance
 #' of the  individual  sub  plots,  you  can  overwrite  each  value  passed  to
-#' [draw_spectrum()] by providing  a  corresponding  named  element  in  `sub1`,
+#' [metabodecon::draw_spectrum()] by providing  a  corresponding  named  element  in  `sub1`,
 #' `sub2` or `sub3`.
 #'
 #' A sketch of the resulting figure is shown below.
@@ -313,7 +313,7 @@ plot_spectrum <- function(x,
 #' @export
 #' @title Draw Spectrum
 #' @description
-#' Draws a single spectrum.  Internally  used  by  [plot_spectrum()],  which  is
+#' Draws a single spectrum.  Internally  used  by  [metabodecon::plot_spectrum()],  which  is
 #' usually  the  recommended  way  to  plot  spectra.  For  usage  examples  see
 #' [test/testthat/test-draw_spectrum.R](
 #' https://github.com/spang-lab/metabodecon/blob/main/tests/testthat/test-draw_spectrum.R).
@@ -1648,7 +1648,7 @@ set_fig <- function(fig = NULL, add = TRUE) {
 
 #' @noRd
 #' @title Plot into specific figure region
-#' @description For Details see [set_fig()].
+#' @description For Details see [metabodecon::set_fig()].
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #' @examples
 #' plot_dummy <- function() {

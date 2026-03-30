@@ -56,6 +56,10 @@
 #' combination with the smallest residual area ratio and fewer than `npmax`
 #' peaks is selected. Grid search results are cached to disk; see `cachedir`.
 #'
+#' @param igrs Ignore regions. List of length-2 numeric vectors specifying the
+#' start and endpoints of the chemical shift regions to ignore during
+#' deconvolution. Currently not used.
+#'
 #' @param cachedir Directory for caching grid search results when `npmax >= 1`.
 #' If `NULL` (default), a temporary session-scoped directory is used. Pass a
 #' custom path to share the cache across parallel calls or R sessions.
@@ -120,7 +124,7 @@ deconvolute <- function(x,
 #' @noRd
 #' @inheritParams deconvolute
 #' @param bwc Whether to produce results backwards compatible with
-#' [MetaboDecon1D()]. If `bwc == 0`, bug fixes introduced after version 0.2.2 of
+#' [metabodecon::MetaboDecon1D()]. If `bwc == 0`, bug fixes introduced after version 0.2.2 of
 #' Metabodecon are not used. If `bwc == 1`, new features introduced after
 #' version 0.2.2 of Metabodecon (e.g. faster algorithms) are not used. If `bwc
 #' == 2`, all bug fixes and features introduced after version 0.2.2 are used.
@@ -552,7 +556,7 @@ get_sfr <- function(x, sfr, ask, adjno) {
 }
 
 #' @noRd
-#' @description Same as [get_sfr()], but for WSHW.
+#' @description Same as [metabodecon::get_sfr()], but for WSHW.
 #' @author 2024-2025 Tobias Schmidt: initial version.
 get_wshw <- function(x, wshw, ask, adjno) {
     n <- length(x)
@@ -1017,7 +1021,7 @@ confirm_wshw <- function(x, wshw) {
 #' incorrect. However, to maintain backwards compatibility with the old
 #' MetaboDecon1D function, the behaviour is not changed in this function.
 #' Instead, to only work with the correct ppm values, set `bwc = 2` in
-#' [filter_peaks()]. For details see `CHECK-2: signal free region calculation`
+#' [metabodecon::filter_peaks()]. For details see `CHECK-2: signal free region calculation`
 #' in `TODOS.md`. (Update 2025-09-14: TODOS are no longer tracked in a separate
 #' file, but outside of the repository. To retrieve the last actively maintained
 #' version of `TODOS.md`, checkout commit 8b1f61b, i.e., v1.5.0.)
@@ -1035,7 +1039,7 @@ enrich_sfr <- function(sfr, x) {
 
 #' @noRd
 #' @description
-#' Same as [enrich_sfr()], but only requires the chemical shift vector instead
+#' Same as [metabodecon::enrich_sfr()], but only requires the chemical shift vector instead
 #' of the full `spectrum` or `idecon` object. That's easier to test and
 #' maintain.
 #' @author 2025 Tobias Schmidt: initial version.
@@ -1061,7 +1065,7 @@ enrich_sfr2 <- function(sfr, cs) {
 #' incorrect. However, to maintain backwards compatibility with the old
 #' MetaboDecon1D function, the behaviour is not changed in this function.
 #' Instead, to only work with the correct ppm values, set `bwc = 2` in
-#' [rm_water_signal()]. For details see `CHECK-3: water signal calculation` in
+#' [metabodecon::rm_water_signal()]. For details see `CHECK-3: water signal calculation` in
 #' `TODOS.md`. (Update 2025-09-14: TODOS are no longer tracked in a separate
 #' file, but outside of the repository. To retrieve the last actively maintained
 #' version of `TODOS.md`, checkout commit 8b1f61b, i.e., v1.5.0.)
@@ -1086,7 +1090,7 @@ enrich_wshw <- function(wshw, x) {
 
 #' @noRd
 #' @description
-#' Same as [enrich_wshw()], but only requires the chemical shift vector instead
+#' Same as [metabodecon::enrich_wshw()], but only requires the chemical shift vector instead
 #' of the full `spectrum` or `idecon` object. That's easier to test and
 #' maintain.
 #' @author 2025 Tobias Schmidt: initial version.

@@ -7,7 +7,7 @@ test_result <- test_that("draw_spectrum works", {
         title = "draw_spectrum",
         fig = test_draw_spectrum,
         writer = function(plot, file, title = "") {
-            with_svg(file, plot(), width = 14, height = 14)
+            withr::with_svg(file, plot(), width = 14, height = 14)
         }
     )
 })

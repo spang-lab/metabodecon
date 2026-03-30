@@ -2,51 +2,63 @@
 % Please edit documentation in R/mdm.R
 \name{fit_mdm}
 \alias{fit_mdm}
-\title{Fit metabodecon model}
+\title{Fit a Metabodecon Model}
 \usage{
 fit_mdm(
-  X,
+  spectra,
   y,
-  model = c("svm", "lasso"),
-  normalisation = c("quantile", "pqn", "creatinine", "sum", "median", "none"),
-  cost = 0.5,
-  gamma = 2^-10,
-  nfeat = 3,
-  cre_idx = NULL,
-  nfolds_lasso = 5
+  sfr,
+  nworkers = 4,
+  verbose = TRUE,
+  use_rust = TRUE,
+  nfolds = 10,
+  cadir = cachedir("grid_deconvolute_spectrum", FALSE),
+  npmax = 1000,
+  maxShift = 100,
+  maxSnap = 1,
+  lambda = "lambda.1se"
 )
 }
 \arguments{
-\item{X}{Numeric feature matrix with samples in rows.}
+\item{spectra}{List-like spectra object with \code{cs} and \code{si} vectors.}
 
-\item{y}{Binary labels (0/1).}
+\item{y}{Factor vector with class labels for each spectrum.}
 
-\item{model}{Model type, either \code{"svm"} or \code{"lasso"}.}
+\item{sfr}{Signal free region. See \code{\link[=deconvolute]{deconvolute()}} for details.}
 
-\item{normalisation}{Normalization method name.}
+\item{nworkers}{Number of workers for parallel processing.}
 
-\item{cost}{SVM cost parameter.}
+\item{verbose}{Logical. Whether to print log messages.}
 
-\item{gamma}{SVM gamma parameter.}
+\item{use_rust}{Logical. Whether to use the Rust backend.}
 
-\item{nfeat}{Number of selected features for SVM.}
+\item{nfolds}{Number of folds for \code{cv.glmnet}. Default 10.}
 
-\item{cre_idx}{Optional index for creatinine normalization.}
+\item{cadir}{Directory for caching grid search results.}
 
-\item{nfolds_lasso}{Number of folds for \code{glmnet::cv.glmnet}.}
+\item{npmax}{Maximum number of peaks. See \code{\link[=deconvolute]{deconvolute()}} for details.}
+
+\item{maxShift}{Maximum alignment shift. See \code{\link[=align]{align()}} for details.}
+
+\item{maxSnap}{Maximum snap distance for feature matrix construction.}
+
+\item{lambda}{Lambda selection strategy (\code{"lambda.1se"} or \code{"lambda.min"}).}
 }
 \value{
-Object of class \code{mdm}.
+A list with class \code{mdm} and the following elements:
+\itemize{
+\item \code{model}: The fitted \code{cv.glmnet} model object.
+\item \code{normalisation}: Normalization method used (currently always "none").
+\item \code{ref}: Reference metadata for normalization (currently always \code{NULL}).
+\item \code{meta}: List of metadata about the fitting process and parameters.
+}
 }
 \description{
-Fits an \code{mdm} object using SVM or lasso with selected normalization.
+Deconvolutes and aligns spectra, then fits a lasso model via
+\code{cv.glmnet}.
 }
 \examples{
-if (requireNamespace("e1071", quietly = TRUE)) {
-  set.seed(1)
-  X <- matrix(rnorm(80), nrow = 20)
-  y <- rep(0:1, each = 10)
-  m <- fit_mdm(X, y, model = "svm", normalisation = "none", nfeat = 3)
-  print(m)
+\dontrun{
+    m <- fit_mdm(spectra, y, sfr = c(11, -2))
 }
 }

@@ -18,11 +18,8 @@ Coefficient object for lasso, otherwise \code{NULL}.
 Returns lasso coefficients for \code{mdm} objects fitted with lasso.
 }
 \examples{
-if (requireNamespace("glmnet", quietly = TRUE)) {
-  set.seed(1)
-  X <- matrix(rnorm(100), nrow = 20)
-  y <- rep(0:1, each = 10)
-  m <- fit_mdm(X, y, model = "lasso", normalisation = "none")
+\dontrun{
+  m <- cv_mdm(spectra, y, sfr = c(11, -2))
   coef(m)
 }
 }

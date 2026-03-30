@@ -64,14 +64,19 @@ mdrb is missing, an error is thrown. If FALSE, the R implementation is used.
 If NULL, the Rust backend is used if available, otherwise the R implementation
 is used.}
 
-\item{npmax}{Integer. Maximum number of peaks to keep after filtering. If
-\code{0} (default), all peaks passing the score threshold are kept.}
+\item{npmax}{Integer. Maximum number of peaks allowed in the result. If
+\code{npmax >= 1}, the \code{nfit}, \code{smopts} and \code{delta} arguments are ignored and a
+grid search over predefined parameter combinations is performed instead. The
+combination with the smallest residual area ratio and fewer than \code{npmax}
+peaks is selected. Grid search results are cached to disk; see \code{cachedir}.}
 
-\item{igrs}{List of numeric vectors of length 2. Each element defines a
-ppm range to ignore during deconvolution.}
+\item{igrs}{Ignore regions. List of length-2 numeric vectors specifying the
+start and endpoints of the chemical shift regions to ignore during
+deconvolution. Currently not used.}
 
-\item{cachedir}{Character string or \code{NULL}. Path to a directory for
-caching deconvolution results. If \code{NULL} (default), no caching is used.}
+\item{cachedir}{Directory for caching grid search results when \code{npmax >= 1}.
+If \code{NULL} (default), a temporary session-scoped directory is used. Pass a
+custom path to share the cache across parallel calls or R sessions.}
 }
 \value{
 A 'decon2' object as described in \href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{Metabodecon Classes}.
@@ -88,7 +93,7 @@ optimally approximate the measured spectrum.
 }
 \examples{
 ## Deconvolute a single spectrum
-spectrum <- sim[1]
+spectrum <- sim[[1]]
 decon <- deconvolute(spectrum)
 
 ## Read multiple spectra from disk and deconvolute at once

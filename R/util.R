@@ -1355,21 +1355,21 @@ document <- function() {
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @details
-#' In  the  package  source  code,  this  function  is  defined  as  a  copy  of
-#' [stopifnot()]. However, during package loading, it is replaced with an  empty
-#' function unless the package is loaded via [devtools::load_all()]. The  actual
+#' In the package source code, this function is defined as a copy of
+#' [stopifnot()]. However, during package loading, it is replaced with an empty
+#' function unless the package is loaded via [devtools::load_all()]. The actual
 #' replacement is implemented in [.onLoad()].
 #'
-#' The idea is  that  exported  functions  should  use  plain  [stopifnot()]  to
-#' validate their  inputs,  whereas  private  functions  should  use  [assert()]
-#' instead. This approach  allows  us  to  use  rigorous  type  checking  during
-#' development without impacting performance in production.
+#' The idea is that exported functions should use plain [stopifnot()] to
+#' validate their inputs, whereas private functions should use
+#' [metabodecon::assert()] instead. This approach allows us to use rigorous type
+#' checking during development without impacting performance in production.
 #'
-#' If we need to keep assertions enabled in production, we can  set  the  option
+#' If we need to keep assertions enabled in production, we can set the option
 #' `metabodecon.assert` to `stopifnot` before loading the package.
 #'
-#' If we want to disable assertions during development, e.g.  to  get  realistic
-#' runtime  estimates,  we  can   set   the   option   `metabodecon.assert`   to
+#' If we want to disable assertions during development, e.g. to get realistic
+#' runtime estimates, we can set the option `metabodecon.assert` to
 #' `function(...) {}` before calling `devtools::load_all()`.
 #'
 #' Example:

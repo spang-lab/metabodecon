@@ -18,11 +18,10 @@ Invisibly returns \code{x}.
 Prints a compact model summary for \code{mdm} objects.
 }
 \examples{
-if (requireNamespace("e1071", quietly = TRUE)) {
-  set.seed(1)
-  X <- matrix(rnorm(80), nrow = 20)
-  y <- rep(0:1, each = 10)
-  m <- fit_mdm(X, y, model = "svm", normalisation = "none")
-  print(m)
-}
+m <- structure(
+  list(model = NULL, normalisation = "none", ref = NULL,
+       meta = list(model = "lasso")),
+  class = "mdm"
+)
+print(m)
 }

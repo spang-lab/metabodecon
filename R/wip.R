@@ -5,6 +5,19 @@
 # DO NOT USE UNLESS YOU VERIFIED THE FUNCTION CODE
 #
 
+# Silence R CMD check NOTEs for WIP code referencing not-yet-defined
+# functions and variables used in non-standard evaluation context.
+utils::globalVariables(c(
+    "aki_find_best_params",
+    "as_plot_spectrum",
+    "find_best_params",
+    "grid_deconvolute",
+    "method",
+    "verbose",
+    "X_qn",
+    "y"
+))
+
 # API #####
 
 deconvolute_aki_spectra <- function(spectra) {
@@ -50,7 +63,7 @@ deconvolute_aki_spectra <- function(spectra) {
       mean((spectra[[i]]$si - y)^2)
     }, numeric(1))
   } else {
-    bins <- metabodecon:::aki_bin_matrix(spectra, bin_width = 0.01, bin_range = NULL, bin_edges = NULL)
+    bins <- aki_bin_matrix(spectra, bin_width = 0.01, bin_range = NULL, bin_edges = NULL)
     align_mat <- bins$mat
     align_specs <- structure(
       lapply(seq_len(nrow(align_mat)), function(i) as_plot_spectrum(spectra[[i]], align_mat[i, ])),

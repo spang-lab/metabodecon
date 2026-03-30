@@ -19,10 +19,10 @@
 #'
 #' @param persistent
 #' Logical. If TRUE, the downloaded datasets will be cached at
-#' [datadir_persistent()] to speed up future calls to
+#' [metabodecon::datadir_persistent()] to speed up future calls to
 #' `download_example_datasets()`. If FALSE, the datasets will be cached at
-#' [datadir_temp()]. If NULL, the function will check both paths for the cached
-#' datasets but will return [datadir_temp()] if the cached file does not yet
+#' [metabodecon::datadir_temp()]. If NULL, the function will check both paths for the cached
+#' datasets but will return [metabodecon::datadir_temp()] if the cached file does not yet
 #' exist.
 #'
 #' @param overwrite
@@ -36,7 +36,7 @@
 #' The path to the downloaded (and possibly extracted) datasets.
 #'
 #' @seealso
-#' [datadir()]
+#' [metabodecon::datadir()]
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
@@ -113,7 +113,7 @@ metabodecon_file <- function(name = "sim_01") {
 #' @title Return path to metabodecon's data directory
 #'
 #' @description Returns the path to the directory where
-#' [download_example_datasets()] stores metabodecon's example data sets or any
+#' [metabodecon::download_example_datasets()] stores metabodecon's example data sets or any
 #' file within that directory. By default this directory is a subdirectory of
 #' R's temporary session directory. If `persistent` is set to `TRUE`, the
 #' directory equals the data directory returned by [tools::R_user_dir()]
@@ -148,9 +148,9 @@ metabodecon_file <- function(name = "sim_01") {
 #' ).
 #'
 #' @seealso
-#' [download_example_datasets()],
-#' [datadir_persistent()],
-#' [datadir_temp()]
+#' [metabodecon::download_example_datasets()],
+#' [metabodecon::datadir_persistent()],
+#' [metabodecon::datadir_temp()]
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
@@ -191,7 +191,7 @@ datadir <- function(file = NULL, warn = TRUE, persistent = NULL) {
 #'
 #' @return Path to the persistent data directory.
 #'
-#' @seealso [datadir()], [datadir_temp()]
+#' @seealso [metabodecon::datadir()], [metabodecon::datadir_temp()]
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
@@ -208,12 +208,12 @@ datadir_persistent <- function() {
 #'
 #' @description Returns the path to the temporary data directory where
 #' metabodecon's data sets are stored. This directory equals subdirectory 'data'
-#' of metabodecons temporary session directory [tmpdir()] plus additional path
+#' of metabodecons temporary session directory [metabodecon::tmpdir()] plus additional path
 #' normalization.
 #'
 #' @return Returns the path to the temporary data directory.
 #'
-#' @seealso [tmpdir()], [datadir()], [datadir_persistent()]
+#' @seealso [metabodecon::tmpdir()], [metabodecon::datadir()], [metabodecon::datadir_persistent()]
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
@@ -241,8 +241,8 @@ datadir_temp <- function() {
 #' Returns the path to the temporary session directory.
 #'
 #' @seealso
-#' [datadir_temp()]
-#' [datadir_persistent()]
+#' [metabodecon::datadir_temp()]
+#' [metabodecon::datadir_persistent()]
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
@@ -265,7 +265,7 @@ tmpdir <- function(subdir = NULL, create = FALSE) {
 #' Returns the path to the directory storing the example files shipped with
 #' metabodecon.
 #'
-#' Deprecated since metabodecon v1.2.0. Please use [datadir()] instead. See
+#' Deprecated since metabodecon v1.2.0. Please use [metabodecon::datadir()] instead. See
 #' examples below for usage.
 #'
 #' `r lifecycle::badge("deprecated")`
@@ -273,11 +273,11 @@ tmpdir <- function(subdir = NULL, create = FALSE) {
 #' @param dataset_name Either `""`, `"test"`, `"blood"`, `"urine"` or `"aki"`.
 #'
 #' @param warn Whether to print a warning message when the example folders do
-#' not yet exist, i.e. [download_example_datasets()] has not been called yet.
+#' not yet exist, i.e. [metabodecon::download_example_datasets()] has not been called yet.
 #'
 #' @return Path to the directory storing the example files.
 #'
-#' @seealso [download_example_datasets()]
+#' @seealso [metabodecon::download_example_datasets()]
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
@@ -334,7 +334,7 @@ xds <- list(
 #' @title Cache Example Datasets
 #'
 #' @description
-#' If file `"example_datasets.zip"` does not yet exist at [datadir()], it is
+#' If file `"example_datasets.zip"` does not yet exist at [metabodecon::datadir()], it is
 #' downloaded. If the zip exists but is outdated or corrupt, it gets overwritten
 #' automatically. If `extract` is TRUE, the zip file is extracted, replacing an
 #' existing `"example_datasets"` directory. The path to the zip file is
@@ -626,7 +626,7 @@ update_sim <- function(nworkers = 1) {
 #'
 #' @return
 #' A `decons2` object containing the deconvolution results. For details
-#' see [deconvolute()].
+#' see [metabodecon::deconvolute()].
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
@@ -778,7 +778,7 @@ update_aki <- function() {
 #' any function in the package.
 #'
 #' The `aki` subdirectory contains raw spectra files downloaded from the
-#' MetaboLights database and can be recreated by calling [update_aki()].
+#' MetaboLights database and can be recreated by calling [metabodecon::update_aki()].
 #'
 #' @return The path to the updated `example_datasets.zip` file.
 #'

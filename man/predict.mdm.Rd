@@ -30,11 +30,8 @@ Numeric vector of probabilities, classes, or link scores.
 Predicts probabilities, classes, or link scores from an \code{mdm} object.
 }
 \examples{
-if (requireNamespace("e1071", quietly = TRUE)) {
-  set.seed(1)
-  X <- matrix(rnorm(80), nrow = 20)
-  y <- rep(0:1, each = 10)
-  m <- fit_mdm(X, y, model = "svm", normalisation = "none")
+\dontrun{
+  m <- cv_mdm(spectra, y, sfr = c(11, -2))
   predict(m, X, type = "prob")
 }
 }

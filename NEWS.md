@@ -8,7 +8,7 @@
 * `deconvolute()` gained `npmax`, `igrs`, and `cachedir` parameters for
   limiting the number of peaks, ignoring ppm ranges, and caching results
   to disk via `cachem::cache_disk`.
-* `cv_fit_mdm()` rewritten with a `snap` grid
+* `cv_mdm()` rewritten with a `snap` grid
   (`c(0.5, 1, 1.5, 2, 2.5, 3)`) and `npmax` grid for cross-validated
   hyperparameter tuning. Added `estimate_mdm_performance()` draft.
 * Updated Rd files for `get_si_mat`, `align`, and `deconvolute` to match
@@ -21,8 +21,8 @@
 * Optimized `lorentz_sup()` with three switchable implementations:
   - v1: original `sapply` loop over data points (baseline).
   - v2: vectorized R loop over peaks with pre-computed `abs(A * lambda)`
-    and `lambda^2` (~10x faster than v1).
-  - v3: runtime-compiled C version via `inline::cfunction()` (~50x faster
+    and `lambda^2` (~3x faster than v1).
+  - v3: runtime-compiled C version via `inline::cfunction()` (~10x faster
     than v1). Compiled once per session, cached in
     `options("metabodecon.lorentz_sup_c")`.
   - Default (`options(metabodecon.lorentz_sup_version = NULL)`): auto-selects

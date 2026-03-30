@@ -1,226 +1,6 @@
 
 # API #####
 
-#' @export
-#' @title Deconvolute, Align and Classify Spectra in Cross-Validation
-#' @description
-#' Performs deconvolution+alignment over a grid of parameters and calculates the
-#' corresponding cv.glmnet-lasso-lambda.min performance. The
-#' deconvolution+alignment parameters that enable the best cv glmnet
-#' performances are considered optimal and are used for fitting the final model
-#' with the corresponding optimal lambda value.
-#'
-#' @param spectra List-like spectra object with `cs` and `si` vectors.
-#' @param y Factor vector with class labels for each spectrum.
-#' @param sfr Signal free region. See [deconvolute()] for details.
-#' @param nworkers Number of workers for parallel grid deconvolution.
-#' @param verbose Logical. Whether to print log messages.
-#' @param use_rust Logical. Whether to use the Rust backend.
-#' @param nfolds Number of folds for inner cv.glmnet. Default 10.
-#' @param cachedir Directory for caching grid search results. If `NULL`
-#' (default), a temporary session-scoped directory is used. Pass a custom
-#' path to share the cache across parallel calls.
-#'
-#' @return
-#' A list (class `mdm`) with the following elements:
-#' - `model`: The fitted `cv.glmnet` model object.
-#' - `pgrid`: Data frame of parameter combinations and their cv.glmnet
-#'   performances (columns: `npmax`, `maxShift`, `snap`,
-#'   `cvm`).
-#' - `best`: Named list of the best parameter combination.
-#'
-#' @examples
-#' \dontrun{
-#'      aki <- read_aki_data()
-#'      spectra <- aki$spectra
-#'      y <- factor(aki$meta$type, levels = c("Control", "AKI"))
-#'      mdm <- cv_fit_mdm(spectra, y, sfr = c(11, -2), nworkers = 53)
-#' }
-cv_fit_mdm <- function(spectra, y, sfr, nworkers,
-                       verbose = TRUE, use_rust = TRUE,
-                       nfolds = 10, cachedir = NULL) {
-
-    cd <- cachedir %||% cachedir("grid_deconvolute_spectrum", FALSE)
-
-    # Pre-warm the grid cache so that all subsequent deconvolute() calls
-    # with npmax >= 1 can reuse the cached per-spectrum grid results.
-    logf("Starting cache initialization")
-    gridlist <- grid_deconvolute_spectra(
-        x=spectra, sfr=sfr, verbose=verbose, nw=nworkers,
-        use_rust=use_rust, cachedir=cd
-    )
-    logf("Finished cache initialization")
-
-    # Build parameter grid from observed peak counts
-    logf("Building parameter grid")
-    np <- unname(unlist(lapply(gridlist, function(g) g$np)))
-    np_hi <- ceiling(max(np) / 100) * 100
-    np_lo <- ceiling(min(np[np != 0]) / 100) * 100
-    npmax_seq <- seq(np_lo, np_hi, by = 100)
-    maxShift_seq <- seq(25, 250, by = 25)
-    snap_seq <- c(0.5, 1, 1.5, 2, 2.5, 3)
-    P <- expand.grid(
-        npmax = npmax_seq,
-        maxShift = maxShift_seq,
-        snap = snap_seq
-    )
-    P$cvm <- NA_real_
-
-    logf("Starting deconvolution + alignment + classification grid")
-    row <- 1
-    for (i in seq_along(npmax_seq)) {
-        logf("npmax=%d", npmax_seq[i])
-        decons <- deconvolute(
-            x = spectra, sfr = sfr, verbose = verbose,
-            use_rust = use_rust, npmax = npmax_seq[i],
-            nworkers = nworkers, cachedir = cd
-        )
-        for (j in seq_along(maxShift_seq)) {
-            logf("  maxShift=%d", maxShift_seq[j])
-            als <- align(
-                decons,
-                maxShift = maxShift_seq[j],
-                maxCombine = 0,
-                verbose = verbose,
-                nworkers = nworkers
-            )
-            for (k in seq_along(snap_seq)) {
-                X <- t(get_si_mat(als, snap = snap_seq[k]))
-                nf <- min(nfolds, nrow(X))
-                cvm <- glmnet::cv.glmnet(
-                    x = X, y = y,
-                    family = "binomial", alpha = 1, nfolds = nf
-                )
-                P$cvm[row] <- cvm$cvm[cvm$lambda == cvm$lambda.min]
-                row <- row + 1
-            }
-        }
-    }
-
-    # Select best parameters and fit final model
-    logf("Selecting best parameters")
-    best_idx <- which.min(P$cvm)
-    best <- as.list(P[best_idx, ])
-    logf("Best: npmax=%d, maxShift=%d, snap=%.1f, cvm=%.4f",
-        best$npmax, best$maxShift, best$snap, best$cvm)
-
-    decons <- deconvolute(
-        x = spectra, sfr = sfr, verbose = verbose,
-        use_rust = use_rust, npmax = best$npmax,
-        nworkers = nworkers, cachedir = cd
-    )
-    als <- align(
-        decons,
-        maxShift = best$maxShift,
-        maxCombine = 0,
-        verbose = verbose,
-        nworkers = nworkers
-    )
-    X <- t(get_si_mat(als, snap = best$snap))
-    nf <- min(nfolds, nrow(X))
-    model <- glmnet::cv.glmnet(
-        x = X, y = y,
-        family = "binomial", alpha = 1, nfolds = nf
-    )
-
-    logf("Finished cv_fit_mdm")
-    structure(
-        list(model = model, pgrid = P, best = best),
-        class = "mdm"
-    )
-}
-
-#' @export
-#' @title Estimate MDM Performance via Nested Cross-Validation
-#' @description
-#' Splits the data into `kout` outer folds. For each fold, calls
-#' [cv_fit_mdm()] on the training subset to select the best preprocessing
-#' parameters and fit a model, then evaluates on the held-out test fold.
-#' Grid search results are shared across all folds via a temporary cache
-#' directory.
-#'
-#' @inheritParams cv_fit_mdm
-#' @param kout Number of outer folds. Default 10.
-#' @param seed Random seed for fold assignment.
-#'
-#' @return A data frame with columns `fold`, `true`, `prob`, `pred`.
-#'
-#' @examples
-#' \dontrun{
-#'      aki <- read_aki_data()
-#'      spectra <- aki$spectra
-#'      y <- factor(aki$meta$type, levels = c("Control", "AKI"))
-#'      perf <- estimate_mdm_performance(spectra, y, sfr = c(11, -2),
-#'          nworkers = 53, kout = 10, seed = 1)
-#'      mean(perf$true == perf$pred)
-#' }
-estimate_mdm_performance <- function(spectra, y, sfr, nworkers,
-                                     verbose = TRUE, use_rust = TRUE,
-                                     nfolds = 10, kout = 10, seed = 1) {
-
-    # Shared temp cache for all folds
-    cd <- tempfile("grid_cache_")
-
-    # Pre-warm cache once for all spectra
-    logf("Pre-warming grid cache for %d spectra", length(spectra))
-    grid_deconvolute_spectra(
-        x = spectra, sfr = sfr, verbose = verbose,
-        nw = nworkers, use_rust = use_rust, cachedir = cd
-    )
-
-    # Assign folds
-    set.seed(seed)
-    n <- length(spectra)
-    foldid <- sample(rep(seq_len(kout), length.out = n))
-
-    # Run outer CV
-    results <- vector("list", kout)
-    for (f in seq_len(kout)) {
-        logf("Outer fold %d/%d", f, kout)
-        tr <- which(foldid != f)
-        te <- which(foldid == f)
-
-        mdm <- cv_fit_mdm(
-            spectra = spectra[tr], y = y[tr], sfr = sfr,
-            nworkers = nworkers, verbose = verbose,
-            use_rust = use_rust, nfolds = nfolds, cachedir = cd
-        )
-
-        # Deconvolute + align all spectra with best params
-        all_decons <- deconvolute(
-            x = spectra, sfr = sfr, verbose = verbose,
-            use_rust = use_rust, npmax = mdm$best$npmax,
-            nworkers = nworkers, cachedir = cd
-        )
-        all_als <- align(
-            all_decons,
-            maxShift = mdm$best$maxShift,
-            maxCombine = 0,
-            verbose = verbose,
-            nworkers = nworkers
-        )
-        Xall <- t(get_si_mat(all_als, snap = mdm$best$snap))
-        Xte <- Xall[te, , drop = FALSE]
-
-        prob <- as.numeric(stats::predict(
-            mdm$model, newx = Xte,
-            s = "lambda.min", type = "response"
-        ))
-        pred <- factor(
-            ifelse(prob > 0.5, levels(y)[2], levels(y)[1]),
-            levels = levels(y)
-        )
-        results[[f]] <- data.frame(
-            fold = f, true = y[te], prob = prob, pred = pred
-        )
-    }
-
-    Y <- do.call(rbind, results)
-    acc <- mean(Y$true == Y$pred)
-    logf("Nested CV accuracy: %.2f%%", acc * 100)
-    Y
-}
-
 #' @noRd
 #' @title Run AKI benchmark
 #'
@@ -391,7 +171,7 @@ try_aki_benchmark <- function(  aki = read_aki_data(),
 #'
 #' The correct way to do this, would be to do the deconvolution and alignment as
 #' part of the inner CV loop, and then only apply the best parameter combination
-#' to the outer test fold. This will be implemented in [cv_fit_mdm()].
+#' to the outer test fold. This will be implemented in [metabodecon::cv_mdm()].
 #'
 #' However, because this will multiply runtime by kout*kin and also requires
 #' additional implementation effort, we will first run this invalid version to
@@ -670,8 +450,7 @@ plot_deconvolution_metrics_R <- function() {
 
 map <- function(FUN, ..., MoreArgs = NULL) {
     FUN <- match.fun(FUN)
-    dots <- list(...)
-    .Internal(mapply(FUN, dots, MoreArgs))
+    mapply(FUN, ..., MoreArgs = MoreArgs, SIMPLIFY = FALSE)
 }
 
 read_aki_metadata <- function(aki_path) {
@@ -888,11 +667,11 @@ plot_gridperf_tree <- function(
 
 # End-to-end Deconvolution Training #####
 
+#' @noRd
 #' @description
 #' Fits Lasso models over a grid of lambda and decpar values,
 #' with decpar is a string encoding all 'deconvolution parameters'
 #' passed on to `decconvolute()`.
-#'
 #' @return Returns a matrix with LASSO
 grid_train_cv_lasso <- function() {
     aki <- read_aki_data()

@@ -3,14 +3,10 @@
 #' benchmark evaluation in the AKI reproduction workflow.
 #'
 #' + API functions:
-#'   - fit_mdm: Fit an mdm object with svm or lasso and selected normalization.
-#'   - mdm_score_grid: Score one train/test split for a hyperparameter setting grid.
-#'   - mdm_find_best_params: Select best hyperparameters by inner CV AUC.
-#'   - benchmark_cv_mdm: Run nested CV benchmark with cv-wise or global normalization timing.
-#'   - benchmark_extension_table: Build summary table over model and normalization combinations.
-#' + Helper functions:
-#'   - mdm_auc: Compute AUC from binary labels and numeric scores using rank sums.
-#'   - mdm_select_top_features: Rank features by Welch-like t-score and return top indices.
+#'   - fit_mdm: Fit an mdm (metabodecon model) with given parameters
+#'   - cv_mdm: Fit an mdm with internal cv-based parameter selection
+#'   - benchmark_cv_mdm: Use outer cv to estimate performance of cv_mdm
+#' + Normalisation helpers:
 #'   - mdm_get_quantile_reference: Build quantile-normalization reference from sample-wise sorted values.
 #'   - mdm_quantile_normalize: Apply quantile normalization to each sample row with a shared reference.
 #'   - mdm_get_pqn_reference: Build PQN reference as median profile across samples.
@@ -18,7 +14,13 @@
 #'   - mdm_get_creatinine_ref: Resolve creatinine reference bin index from metadata or fallback.
 #'   - mdm_fit_normalizer: Fit normalization metadata used during training and prediction.
 #'   - mdm_apply_normalizer: Apply selected normalization to a feature matrix.
+#' + Classification helpers:
+#'   - mdm_auc: Compute AUC from binary labels and numeric scores using rank sums.
+#'   - mdm_select_top_features: Rank features by Welch-like t-score and return top indices.
+#' + Utility helpers:
+#'   - mdm_as_binary01: Convert factor/integer labels to 0/1.
 #'   - mdm_fmt_mean_sd: Format mean ± sd strings for result tables.
+#'   - mdm_data_signature: Compute stable hash for matrix/label pairs.
 #' + S3 methods:
 #'   - predict.mdm: Predict probabilities, classes, or linear scores for mdm objects.
 #'   - print.mdm: Print compact mdm summary.
@@ -31,457 +33,295 @@ NULL
 
 # API #####
 
-#' @title Fit metabodecon model
-#' @description Fits an `mdm` object using SVM or lasso with selected normalization.
-#' @param spectra
-#' @param y Binary labels (0/1).
-#' @param model Model type, either `"svm"` or `"lasso"`.
-#' @param normalisation Normalization method name.
-#' @param cost SVM cost parameter.
-#' @param gamma SVM gamma parameter.
-#' @param nfeat Number of selected features for SVM.
-#' @param cre_idx Optional index for creatinine normalization.
-#' @param nfolds_lasso Number of folds for `glmnet::cv.glmnet`.
-#' @return Object of class `mdm`.
+#' @export
+#'
+#' @title Fit a Metabodecon Model
+#'
+#' @description Deconvolutes and aligns spectra, then fits a lasso model via
+#' `cv.glmnet`.
+#'
+#' @param spectra List-like spectra object with `cs` and `si` vectors.
+#' @param y Factor vector with class labels for each spectrum.
+#' @param sfr Signal free region. See [metabodecon::deconvolute()] for details.
+#' @param nworkers Number of workers for parallel processing.
+#' @param verbose Logical. Whether to print log messages.
+#' @param use_rust Logical. Whether to use the Rust backend.
+#' @param nfolds Number of folds for `cv.glmnet`. Default 10.
+#' @param cadir Directory for caching grid search results.
+#' @param npmax Maximum number of peaks. See [metabodecon::deconvolute()] for details.
+#' @param maxShift Maximum alignment shift. See [metabodecon::align()] for details.
+#' @param maxSnap Maximum snap distance for feature matrix construction.
+#' @param lambda Lambda selection strategy (`"lambda.1se"` or `"lambda.min"`).
+#'
+#' @return A list with class `mdm` and the following elements:
+#' - `model`: The fitted `cv.glmnet` model object.
+#' - `normalisation`: Normalization method used (currently always "none").
+#' - `ref`: Reference metadata for normalization (currently always `NULL`).
+#' - `meta`: List of metadata about the fitting process and parameters.
+#'
 #' @examples
-#' if (requireNamespace("e1071", quietly = TRUE)) {
-#'   set.seed(1)
-#'   X <- matrix(rnorm(80), nrow = 20)
-#'   y <- rep(0:1, each = 10)
-#'   m <- fit_mdm(X, y, model = "svm", normalisation = "none", nfeat = 3)
-#'   print(m)
+#' \dontrun{
+#'     m <- fit_mdm(spectra, y, sfr = c(11, -2))
 #' }
-fit_mdm <- function(spectra = metabodecon::sim,
-                    y = 1:16 %% 2,
-                    fxfun = "",
-                    fxargs,
-                    modtype,
-                    kfold) {
-
-    meta <- list(model = model)
-    if (model == "svm") {
-        if (!requireNamespace("e1071", quietly = TRUE)) {
-            stop("Package 'e1071' is required for svm")
-        }
-        idx <- mdm_select_top_features(Xn, y, nfeat)
-        fit <- e1071::svm(
-            x = Xn[, idx, drop = FALSE],
-            y = factor(y, levels = c(0, 1)),
-            type = "C-classification",
-            kernel = "radial",
-            cost = cost,
-            gamma = gamma,
-            probability = FALSE
-        )
-        pred <- predict(fit, Xn[, idx, drop = FALSE], decision.values = TRUE)
-        score <- as.numeric(attr(pred, "decision.values"))
-        m1 <- mean(score[y == 1], na.rm = TRUE)
-        m0 <- mean(score[y == 0], na.rm = TRUE)
-        flip <- is.finite(m1) && is.finite(m0) && m1 < m0
-        meta$idx <- idx
-        meta$flip <- flip
-        meta$cost <- cost
-        meta$gamma <- gamma
-        meta$nfeat <- nfeat
-        obj <- fit
-    } else {
-        if (!requireNamespace("glmnet", quietly = TRUE)) {
-            stop("Package 'glmnet' is required for lasso")
-        }
-        fit <- glmnet::cv.glmnet(
-            x = Xn,
-            y = y,
-            family = "binomial",
-            alpha = 1,
-            nfolds = min(nfolds_lasso, nrow(Xn))
-        )
-        obj <- fit
-    }
-
-    structure(
-        list(
-            model = obj,
-            normalisation = normalisation,
-            ref = norm$ref,
-            meta = meta
-        ),
-        class = "mdm"
+fit_mdm <- function(
+    spectra,
+    y,
+    sfr,
+    nworkers = 4,
+    verbose = TRUE,
+    use_rust = TRUE,
+    nfolds = 10,
+    cadir = cachedir("grid_deconvolute_spectrum", FALSE),
+    npmax = 1000,
+    maxShift = 100,
+    maxSnap = 1,
+    lambda = "lambda.1se"
+) {
+    logf("Deconvoluting spectra (npmax=%d)", npmax)
+    decons <- deconvolute(
+        x = spectra, sfr = sfr, verbose = verbose,
+        use_rust = use_rust, npmax = npmax,
+        nworkers = nworkers, cachedir = cadir
     )
-}
-
-#' @title Score hyperparameter grid
-#' @description Evaluates one train/test split for SVM or lasso.
-#' @param X Numeric feature matrix.
-#' @param y Binary labels.
-#' @param tr Integer indices for training rows.
-#' @param te Integer indices for test rows.
-#' @param model Model type.
-#' @param normalisation Normalization method name.
-#' @param costs SVM cost values.
-#' @param gammas SVM gamma values.
-#' @param nfeats SVM feature-count candidates.
-#' @return Data frame with columns `cost`, `gamma`, `nfeat`, `auc`, `acc`.
-#' @examples
-#' if (requireNamespace("e1071", quietly = TRUE)) {
-#'   set.seed(1)
-#'   X <- matrix(rnorm(100), nrow = 20)
-#'   y <- rep(0:1, each = 10)
-#'   tr <- 1:14
-#'   te <- 15:20
-#'   mdm_score_grid(X, y, tr, te, model = "svm", normalisation = "none")
-#' }
-#' @noRd
-mdm_score_grid <- function(X,
-                           y,
-                           tr,
-                           te,
-                           model = c("svm", "lasso"),
-                           normalisation = c(
-                               "quantile", "pqn", "creatinine",
-                               "sum", "median", "none"
-                           ),
-                           costs = c(0.2, 0.5, 0.8),
-                           gammas = 2^c(-11, -10, -9),
-                           nfeats = 2:3) {
-    model <- match.arg(model)
-    normalisation <- match.arg(normalisation)
-    y <- mdm_as_binary01(y)
-    if (length(unique(y[tr])) < 2 || length(unique(y[te])) < 2) {
-        return(data.frame(
-            cost = NA, gamma = NA, nfeat = NA,
-            auc = NA_real_, acc = NA_real_
-        ))
-    }
-
-    if (model == "lasso") {
-        m <- fit_mdm(X[tr, , drop = FALSE], y[tr], model, normalisation)
-        p <- predict(m, X[te, , drop = FALSE], type = "prob")
-        c <- predict(m, X[te, , drop = FALSE], type = "class")
-        return(data.frame(
-            cost = NA, gamma = NA, nfeat = NA,
-            auc = mdm_auc(y[te], p),
-            acc = mean(y[te] == c)
-        ))
-    }
-
-    G <- expand.grid(cost = costs, gamma = gammas, nfeat = nfeats)
-    G$auc <- NA_real_
-    G$acc <- NA_real_
-    for (i in seq_len(nrow(G))) {
-        m <- fit_mdm(
-            X[tr, , drop = FALSE],
-            y[tr],
-            model = "svm",
-            normalisation = normalisation,
-            cost = G$cost[i],
-            gamma = G$gamma[i],
-            nfeat = G$nfeat[i]
+    logf("Aligning spectra (maxShift=%d)", maxShift)
+    als <- align(
+        decons,
+        maxShift = maxShift,
+        maxCombine = 0,
+        verbose = verbose,
+        nworkers = nworkers
+    )
+    X <- t(get_si_mat(als, maxSnap = maxSnap))
+    nf <- min(nfolds, nrow(X))
+    logf("Fitting cv.glmnet (nfolds=%d, lambda=%s)", nf, lambda)
+    model <- glmnet::cv.glmnet(
+        x = X, y = y,
+        family = "binomial", alpha = 1, nfolds = nf
+    )
+    logf("Finished fit_mdm")
+    structure(list(
+        model = model,
+        normalisation = "none",
+        ref = NULL,
+        meta = list(
+            model = "lasso",
+            lambda = lambda,
+            npmax = npmax,
+            maxShift = maxShift,
+            maxSnap = maxSnap
         )
-        p <- predict(m, X[te, , drop = FALSE], type = "prob")
-        c <- predict(m, X[te, , drop = FALSE], type = "class")
-        G$auc[i] <- mdm_auc(y[te], p)
-        G$acc[i] <- mean(y[te] == c)
-    }
-    G
+    ), class = "mdm")
 }
 
-#' @title Select best parameters by CV
-#' @description Runs inner CV and chooses SVM parameters with maximal mean AUC.
-#' @param X Numeric feature matrix.
-#' @param y Binary labels.
-#' @param model Model type.
-#' @param normalisation Normalization method name.
-#' @param k Number of folds.
-#' @param costs SVM cost values.
-#' @param gammas SVM gamma values.
-#' @param nfeats SVM feature-count values.
-#' @return List with chosen parameters and scored grid.
+#' @export
+#' @title Deconvolute, Align and Classify Spectra in Cross-Validation
+#' @description
+#' Performs deconvolution+alignment over a grid of parameters and calculates the
+#' corresponding cv.glmnet-lasso-lambda.min performance. The
+#' deconvolution+alignment parameters that enable the best cv glmnet
+#' performances are considered optimal and are used for fitting the final model
+#' with the corresponding optimal lambda value.
+#'
+#' @param spectra List-like spectra object with `cs` and `si` vectors.
+#' @param y Factor vector with class labels for each spectrum.
+#' @param sfr Signal free region. See [metabodecon::deconvolute()] for details.
+#' @param nworkers Number of workers for parallel grid deconvolution.
+#' @param verbose Logical. Whether to print log messages.
+#' @param use_rust Logical. Whether to use the Rust backend.
+#' @param nfolds Number of folds for inner cv.glmnet. Default 10.
+#' @param cadir Directory for caching grid search results. If `NULL`
+#' (default), a temporary session-scoped directory is used. Pass a custom
+#' path to share the cache across parallel calls.
+#'
+#' @return
+#' A list (class `mdm`) with the following elements:
+#' - `model`: The fitted `cv.glmnet` model object.
+#' - `pgrid`: Data frame of parameter combinations and their cv.glmnet
+#'   performances (columns: `npmax`, `maxShift`, `maxSnap`,
+#'   `cvm`).
+#' - `best`: Named list of the best parameter combination.
+#'
 #' @examples
-#' if (requireNamespace("e1071", quietly = TRUE)) {
-#'   set.seed(1)
-#'   X <- matrix(rnorm(120), nrow = 24)
-#'   y <- rep(0:1, each = 12)
-#'   mdm_find_best_params(X, y, model = "svm", normalisation = "none", k = 3)
+#' \dontrun{
+#'      aki <- read_aki_data()
+#'      spectra <- aki$spectra
+#'      y <- factor(aki$meta$type, levels = c("Control", "AKI"))
+#'      mdm <- cv_mdm(spectra, y, sfr = c(11, -2))
 #' }
-#' @noRd
-mdm_find_best_params <- function(X,
-                                 y,
-                                 model = c("svm", "lasso"),
-                                 normalisation = c(
-                                     "quantile", "pqn",
-                                     "creatinine", "sum",
-                                     "median", "none"
-                                 ),
-                                 k = 3,
-                                 costs = c(0.2, 0.5, 0.8),
-                                 gammas = 2^c(-11, -10, -9),
-                                 nfeats = 2:3) {
-    model <- match.arg(model)
-    normalisation <- match.arg(normalisation)
-    y <- mdm_as_binary01(y)
+cv_mdm <- function(
+    spectra,
+    y,
+    sfr,
+    nworkers = 4,
+    verbose = TRUE,
+    use_rust = TRUE,
+    nfolds = 10,
+    cadir = cachedir("grid_deconvolute_spectrum", FALSE)
+) {
 
-    te_ids <- get_test_ids(seq_len(nrow(X)), nfolds = k, y = y)
+    # Pre-warm the grid cache so that all subsequent deconvolute() calls
+    # with npmax >= 1 can reuse the cached per-spectrum grid results.
+    logf("Starting cache initialization")
+    gridlist <- grid_deconvolute_spectra(
+        x=spectra, sfr=sfr, verbose=verbose, nw=nworkers,
+        use_rust=use_rust, cachedir=cadir
+    )
+    logf("Finished cache initialization")
 
-    if (model == "lasso") {
-        A <- sapply(te_ids, function(te) {
-            tr <- setdiff(seq_len(nrow(X)), te)
-            Gi <- mdm_score_grid(X, y, tr, te, model, normalisation)
-            Gi$auc
-        })
-        return(list(
-            cost = NA, gamma = NA, nfeat = NA,
-            grid = data.frame(
-                cost = NA, gamma = NA, nfeat = NA,
-                auc = mean(A, na.rm = TRUE),
-                acc = NA_real_
+    # Build parameter grid from observed peak counts
+    logf("Building parameter grid")
+    np <- unname(unlist(lapply(gridlist, function(g) g$np)))
+    np_hi <- ceiling(max(np) / 100) * 100
+    np_lo <- ceiling(min(np[np != 0]) / 100) * 100
+    npmaxs <- seq(np_lo, np_hi, by = 100)
+    maxShifts <- seq(25, 250, by = 25)
+    maxSnaps <- c(0.5, 1, 1.5, 2, 2.5, 3)
+    P <- expand.grid(
+        npmax = npmaxs, maxShift = maxShifts, maxSnap = maxSnaps
+    )
+    P$cvm <- NA_real_
+
+    logf("Starting deconvolution + alignment + classification grid")
+    row <- 1
+    for (i in seq_along(npmaxs)) {
+        logf("npmax=%d", npmaxs[i])
+        decons <- deconvolute(
+            x=spectra, sfr=sfr, verbose=verbose,
+            use_rust=use_rust, npmax=npmaxs[i],
+            nworkers=nworkers, cachedir=cadir
+        )
+        for (j in seq_along(maxShifts)) {
+            logf("  maxShift=%d", maxShifts[j])
+            als <- align(
+                decons, maxShift=maxShifts[j], maxCombine=0,
+                verbose=verbose, nworkers=nworkers
             )
-        ))
-    }
-
-    G <- expand.grid(cost = costs, gamma = gammas, nfeat = nfeats)
-    A <- matrix(NA_real_, nrow = nrow(G), ncol = length(te_ids))
-    for (i in seq_along(te_ids)) {
-        te <- te_ids[[i]]
-        tr <- setdiff(seq_len(nrow(X)), te)
-        Gi <- mdm_score_grid(
-            X, y, tr, te, model, normalisation,
-            costs, gammas, nfeats
-        )
-        A[, i] <- Gi$auc
-    }
-    G$auc <- rowMeans(A, na.rm = TRUE)
-    G$auc[!is.finite(G$auc)] <- -Inf
-    b <- G[which.max(G$auc), ]
-    list(cost = b$cost, gamma = b$gamma, nfeat = b$nfeat, grid = G)
-}
-
-#' @title Benchmark nested CV for mdm
-#' @description Evaluates one model/normalization setup under nested CV.
-#' @param X Numeric feature matrix.
-#' @param y Binary labels.
-#' @param model Model type.
-#' @param normalisation Normalization method.
-#' @param k Number of outer and inner folds.
-#' @param norm_time Either `"cv"` or `"global"`.
-#' @param costs SVM cost values.
-#' @param gammas SVM gamma values.
-#' @param nfeats SVM feature-count values.
-#' @return List with fold metrics and summary statistics.
-#' @examples
-#' if (requireNamespace("e1071", quietly = TRUE)) {
-#'   set.seed(1)
-#'   X <- matrix(rnorm(120), nrow = 24)
-#'   y <- rep(0:1, each = 12)
-#'   benchmark_cv_mdm(X, y, model = "svm", normalisation = "none", k = 3)
-#' }
-#' @noRd
-benchmark_cv_mdm <- function(X,
-                             y,
-                             model = c("svm", "lasso"),
-                             normalisation = c(
-                                 "quantile", "pqn",
-                                 "creatinine", "sum",
-                                 "median", "none"
-                             ),
-                             k = 3,
-                             norm_time = c("cv", "global"),
-                             costs = c(0.2, 0.5, 0.8),
-                             gammas = 2^c(-11, -10, -9),
-                             nfeats = 2:3) {
-    model <- match.arg(model)
-    normalisation <- match.arg(normalisation)
-    norm_time <- match.arg(norm_time)
-    y <- mdm_as_binary01(y)
-
-    key <- paper_aki_cache_key(
-        "benchmark_cv_mdm",
-        mdm_data_signature(X, y),
-        model,
-        normalisation,
-        k,
-        norm_time,
-        costs,
-        gammas,
-        nfeats
-    )
-    cache <- paper_aki_get_cache_dir()
-    hit <- paper_aki_cache_get(cache, key)
-    if (!is.null(hit)) {
-        return(hit)
-    }
-
-    X_use <- X
-    norm_cv <- normalisation
-    if (norm_time == "global" && normalisation != "none") {
-        nobj <- mdm_fit_normalizer(X, normalisation)
-        X_use <- mdm_apply_normalizer(X, nobj)
-        norm_cv <- "none"
-    }
-
-    te_ids <- get_test_ids(seq_len(nrow(X_use)), nfolds = k, y = y)
-    rows <- lapply(te_ids, function(te) {
-        tr <- setdiff(seq_len(nrow(X_use)), te)
-        p <- mdm_find_best_params(
-            X_use[tr, , drop = FALSE], y[tr],
-            model, norm_cv, k,
-            costs, gammas, nfeats
-        )
-        cost <- if (is.null(p$cost) || is.na(p$cost)) 0.5 else p$cost
-        gamma <- if (is.null(p$gamma) || is.na(p$gamma)) 2^-10 else p$gamma
-        nfeat <- if (is.null(p$nfeat) || is.na(p$nfeat)) 3 else p$nfeat
-        m <- fit_mdm(X_use[tr, , drop = FALSE], y[tr],
-            model = model,
-            normalisation = norm_cv,
-            cost = cost,
-            gamma = gamma,
-            nfeat = nfeat
-        )
-        prob <- predict(m, X_use[te, , drop = FALSE], type = "prob")
-        cls <- predict(m, X_use[te, , drop = FALSE], type = "class")
-        c(
-            auc = mdm_auc(y[te], prob),
-            acc = mean(y[te] == cls)
-        )
-    })
-
-    M <- do.call(rbind, rows)
-    out <- data.frame(
-        mean_auc = mean(M[, "auc"], na.rm = TRUE),
-        sd_auc = stats::sd(M[, "auc"], na.rm = TRUE),
-        mean_acc = mean(M[, "acc"], na.rm = TRUE),
-        sd_acc = stats::sd(M[, "acc"], na.rm = TRUE)
-    )
-    paper_aki_cache_set(cache, key, list(folds = M, summary = out))
-}
-
-#' @title Build extension benchmark table
-#' @description Compares model and normalization pairs for CV-wise vs global normalization.
-#' @param X Numeric feature matrix.
-#' @param y Binary labels.
-#' @param models Character vector of model names.
-#' @param norms Character vector of normalization names.
-#' @param k Number of folds.
-#' @param costs SVM cost values.
-#' @param gammas SVM gamma values.
-#' @param nfeats SVM feature-count values.
-#' @return Data frame with formatted AUC summaries.
-#' @examples
-#' if (requireNamespace("e1071", quietly = TRUE)) {
-#'   set.seed(1)
-#'   X <- matrix(rnorm(120), nrow = 24)
-#'   y <- rep(0:1, each = 12)
-#'   benchmark_extension_table(X, y, models = "svm", norms = c("none", "sum"))
-#' }
-#' @noRd
-benchmark_extension_table <- function(X,
-                                      y,
-                                      models = c("svm", "lasso"),
-                                      norms = c(
-                                          "quantile", "pqn",
-                                          "creatinine", "sum",
-                                          "median", "none"
-                                      ),
-                                      k = 3,
-                                      costs = c(0.2, 0.5, 0.8),
-                                      gammas = 2^c(-11, -10, -9),
-                                      nfeats = 2:3) {
-    key <- paper_aki_cache_key(
-        "benchmark_extension_table",
-        mdm_data_signature(X, y),
-        models,
-        norms,
-        k,
-        costs,
-        gammas,
-        nfeats
-    )
-    cache <- paper_aki_get_cache_dir()
-    hit <- paper_aki_cache_get(cache, key)
-    if (!is.null(hit)) {
-        return(hit)
-    }
-
-    out <- lapply(models, function(mdl) {
-        lapply(norms, function(nrm) {
-            cv <- benchmark_cv_mdm(
-                X, y, mdl, nrm, k, "cv",
-                costs, gammas, nfeats
-            )
-            gl <- benchmark_cv_mdm(
-                X, y, mdl, nrm, k, "global",
-                costs, gammas, nfeats
-            )
-            data.frame(
-                model = mdl,
-                normalisation = nrm,
-                auc_cv_norm = mdm_fmt_mean_sd(
-                    cv$summary$mean_auc,
-                    cv$summary$sd_auc
-                ),
-                auc_global_norm = mdm_fmt_mean_sd(
-                    gl$summary$mean_auc,
-                    gl$summary$sd_auc
+            for (k in seq_along(maxSnaps)) {
+                X <- t(get_si_mat(als, maxSnap=maxSnaps[k]))
+                cvm <- glmnet::cv.glmnet(
+                    x=X, y=y, family="binomial",
+                    alpha=1, nfolds=nfolds
                 )
-            )
-        })
-    })
-    tab <- do.call(rbind, unlist(out, recursive = FALSE))
-    paper_aki_cache_set(cache, key, tab)
-}
-
-# Helpers #####
-
-mdm_as_binary01 <- function(y, arg_name = "y") {
-    as_binary01(y, arg_name)
-}
-
-#' @title Compute rank-based AUC
-#' @description Computes area under the ROC curve using rank statistics.
-#' @param y Binary labels coded as 0/1 or coercible to integer.
-#' @param score Numeric prediction scores.
-#' @return Numeric scalar AUC or `NA_real_` if one class is missing.
-#' @examples
-#' y <- c(0, 0, 1, 1)
-#' s <- c(0.1, 0.3, 0.6, 0.8)
-#' mdm_auc(y, s)
-#' @noRd
-mdm_auc <- function(y, score) {
-    y <- mdm_as_binary01(y)
-    pos <- y == 1
-    n1 <- sum(pos)
-    n0 <- sum(!pos)
-    if (n1 == 0 || n0 == 0) {
-        return(NA_real_)
+                P$cvm[row] <- cvm$cvm[cvm$lambda == cvm$lambda.min]
+                row <- row + 1
+            }
+        }
     }
-    r <- rank(score)
-    (sum(r[pos]) - n1 * (n1 + 1) / 2) / (n1 * n0)
+
+    # Select best parameters and fit final model
+    logf("Selecting best parameters")
+    best_idx <- which.min(P$cvm)
+    best <- as.list(P[best_idx, ])
+    logf("Best: npmax=%d, maxShift=%d, maxSnap=%.1f, cvm=%.4f",
+        best$npmax, best$maxShift, best$maxSnap, best$cvm)
+
+    mdm <- fit_mdm(
+        spectra = spectra, y = y, sfr = sfr,
+        nworkers = nworkers, verbose = verbose,
+        use_rust = use_rust, nfolds = nfolds,
+        cadir = cadir, npmax = best$npmax,
+        maxShift = best$maxShift, maxSnap = best$maxSnap
+    )
+    mdm$pgrid <- P
+    mdm$best <- best
+    logf("Finished cv_mdm")
+    mdm
 }
 
-#' @title Select top t-score features
-#' @description Ranks columns by absolute two-class t-like score.
-#' @param X Numeric matrix with samples in rows and features in columns.
-#' @param y Binary labels coded as 0/1.
-#' @param nfeat Number of top features to return.
-#' @return Integer vector of selected feature indices.
+#' @export
+#' @title Estimate MDM Performance via Nested Cross-Validation
+#' @description
+#' Splits the data into `kout` outer folds. For each fold, calls
+#' [metabodecon::cv_mdm()] on the training subset to select the best preprocessing
+#' parameters and fit a model, then evaluates on the held-out test fold.
+#' Grid search results are shared across all folds via a temporary cache
+#' directory.
+#'
+#' @inheritParams cv_mdm
+#' @param kout Number of outer folds. Default 10.
+#' @param seed Random seed for fold assignment.
+#'
+#' @return A data frame with columns `fold`, `true`, `prob`, `pred`.
+#'
 #' @examples
-#' set.seed(1)
-#' X <- matrix(rnorm(40), nrow = 8)
-#' y <- rep(0:1, each = 4)
-#' mdm_select_top_features(X, y, nfeat = 3)
-#' @noRd
-mdm_select_top_features <- function(X, y, nfeat) {
-    y <- mdm_as_binary01(y)
-    i1 <- which(y == 1)
-    i0 <- which(y == 0)
-    m1 <- colMeans(X[i1, , drop = FALSE])
-    m0 <- colMeans(X[i0, , drop = FALSE])
-    v1 <- apply(X[i1, , drop = FALSE], 2, var)
-    v0 <- apply(X[i0, , drop = FALSE], 2, var)
-    s <- sqrt(v1 / length(i1) + v0 / length(i0))
-    t <- abs((m1 - m0) / s)
-    t[!is.finite(t)] <- 0
-    order(t, decreasing = TRUE)[seq_len(min(nfeat, ncol(X)))]
+#' \dontrun{
+#'      aki <- read_aki_data()
+#'      spectra <- aki$spectra
+#'      y <- factor(aki$meta$type, levels = c("Control", "AKI"))
+#'      perf <- estimate_mdm_performance(spectra, y, sfr = c(11, -2),
+#'          nworkers = 53, kout = 10, seed = 1)
+#'      mean(perf$true == perf$pred)
+#' }
+benchmark_cv_mdm <- function(
+    spectra, y, sfr, nworkers,
+    verbose = TRUE, use_rust = TRUE,
+    nfolds = 10, kout = 10, seed = 1
+) {
+
+    # Shared temp cache for all folds
+    cd <- tempfile("grid_cache_")
+
+    # Pre-warm cache once for all spectra
+    logf("Pre-warming grid cache for %d spectra", length(spectra))
+    grid_deconvolute_spectra(
+        x = spectra, sfr = sfr, verbose = verbose,
+        nw = nworkers, use_rust = use_rust, cachedir = cd
+    )
+
+    # Assign folds
+    set.seed(seed)
+    n <- length(spectra)
+    foldid <- sample(rep(seq_len(kout), length.out = n))
+
+    # Run outer CV
+    results <- vector("list", kout)
+    for (f in seq_len(kout)) {
+        logf("Outer fold %d/%d", f, kout)
+        tr <- which(foldid != f)
+        te <- which(foldid == f)
+
+        mdm <- cv_mdm(
+            spectra = spectra[tr], y = y[tr], sfr = sfr,
+            nworkers = nworkers, verbose = verbose,
+            use_rust = use_rust, nfolds = nfolds, cadir = cd
+        )
+
+        # Deconvolute + align all spectra with best params
+        all_decons <- deconvolute(
+            x = spectra, sfr = sfr, verbose = verbose,
+            use_rust = use_rust, npmax = mdm$best$npmax,
+            nworkers = nworkers, cachedir = cd
+        )
+        all_als <- align(
+            all_decons,
+            maxShift = mdm$best$maxShift,
+            maxCombine = 0,
+            verbose = verbose,
+            nworkers = nworkers
+        )
+        Xall <- t(get_si_mat(all_als, maxSnap = mdm$best$maxSnap))
+        Xte <- Xall[te, , drop = FALSE]
+
+        prob <- as.numeric(stats::predict(
+            mdm$model, newx = Xte,
+            s = "lambda.min", type = "response"
+        ))
+        pred <- factor(
+            ifelse(prob > 0.5, levels(y)[2], levels(y)[1]),
+            levels = levels(y)
+        )
+        results[[f]] <- data.frame(
+            fold = f, true = y[te], prob = prob, pred = pred
+        )
+    }
+
+    Y <- do.call(rbind, results)
+    acc <- mean(Y$true == Y$pred)
+    logf("Nested CV accuracy: %.2f%%", acc * 100)
+    Y
 }
+
+# Normalisation helpers #####
 
 #' @title Build quantile reference
 #' @description Computes the mean sorted profile across rows.
@@ -630,6 +470,62 @@ mdm_apply_normalizer <- function(X, normalizer) {
     stop("Unsupported normalisation method: ", m)
 }
 
+# Classification helpers #####
+
+#' @title Compute rank-based AUC
+#' @description Computes area under the ROC curve using rank statistics.
+#' @param y Binary labels coded as 0/1 or coercible to integer.
+#' @param score Numeric prediction scores.
+#' @return Numeric scalar AUC or `NA_real_` if one class is missing.
+#' @examples
+#' y <- c(0, 0, 1, 1)
+#' s <- c(0.1, 0.3, 0.6, 0.8)
+#' mdm_auc(y, s)
+#' @noRd
+mdm_auc <- function(y, score) {
+    y <- mdm_as_binary01(y)
+    pos <- y == 1
+    n1 <- sum(pos)
+    n0 <- sum(!pos)
+    if (n1 == 0 || n0 == 0) {
+        return(NA_real_)
+    }
+    r <- rank(score)
+    (sum(r[pos]) - n1 * (n1 + 1) / 2) / (n1 * n0)
+}
+
+#' @title Select top t-score features
+#' @description Ranks columns by absolute two-class t-like score.
+#' @param X Numeric matrix with samples in rows and features in columns.
+#' @param y Binary labels coded as 0/1.
+#' @param nfeat Number of top features to return.
+#' @return Integer vector of selected feature indices.
+#' @examples
+#' set.seed(1)
+#' X <- matrix(rnorm(40), nrow = 8)
+#' y <- rep(0:1, each = 4)
+#' mdm_select_top_features(X, y, nfeat = 3)
+#' @noRd
+mdm_select_top_features <- function(X, y, nfeat) {
+    y <- mdm_as_binary01(y)
+    i1 <- which(y == 1)
+    i0 <- which(y == 0)
+    m1 <- colMeans(X[i1, , drop = FALSE])
+    m0 <- colMeans(X[i0, , drop = FALSE])
+    v1 <- apply(X[i1, , drop = FALSE], 2, var)
+    v0 <- apply(X[i0, , drop = FALSE], 2, var)
+    s <- sqrt(v1 / length(i1) + v0 / length(i0))
+    t <- abs((m1 - m0) / s)
+    t[!is.finite(t)] <- 0
+    order(t, decreasing = TRUE)[seq_len(min(nfeat, ncol(X)))]
+}
+
+# Utility helpers #####
+
+mdm_as_binary01 <- function(y) {
+    as_binary01(y)
+}
+
 #' @title Format mean and standard deviation
 #' @description Creates compact strings of the form mean ± sd.
 #' @param x Mean value.
@@ -640,7 +536,7 @@ mdm_apply_normalizer <- function(X, normalizer) {
 #' mdm_fmt_mean_sd(0.8123, 0.0345, d = 3)
 #' @noRd
 mdm_fmt_mean_sd <- function(x, y, d = 3) {
-    sprintf(paste0("%.", d, "f ± %.", d, "f"), x, y)
+    sprintf(paste0("%.", d, "f \u00b1 %.", d, "f"), x, y)
 }
 
 #' @title Compute mdm data signature
@@ -671,11 +567,8 @@ mdm_data_signature <- function(X, y) {
 #' @param ... Additional arguments, currently unused.
 #' @return Numeric vector of probabilities, classes, or link scores.
 #' @examples
-#' if (requireNamespace("e1071", quietly = TRUE)) {
-#'   set.seed(1)
-#'   X <- matrix(rnorm(80), nrow = 20)
-#'   y <- rep(0:1, each = 10)
-#'   m <- fit_mdm(X, y, model = "svm", normalisation = "none")
+#' \dontrun{
+#'   m <- cv_mdm(spectra, y, sfr = c(11, -2))
 #'   predict(m, X, type = "prob")
 #' }
 predict.mdm <- function(object,
@@ -724,13 +617,12 @@ predict.mdm <- function(object,
 #' @param ... Additional arguments, currently unused.
 #' @return Invisibly returns `x`.
 #' @examples
-#' if (requireNamespace("e1071", quietly = TRUE)) {
-#'   set.seed(1)
-#'   X <- matrix(rnorm(80), nrow = 20)
-#'   y <- rep(0:1, each = 10)
-#'   m <- fit_mdm(X, y, model = "svm", normalisation = "none")
-#'   print(m)
-#' }
+#' m <- structure(
+#'   list(model = NULL, normalisation = "none", ref = NULL,
+#'        meta = list(model = "lasso")),
+#'   class = "mdm"
+#' )
+#' print(m)
 print.mdm <- function(x, ...) {
     cat("metabodecon model (mdm)\n")
     cat("  model:         ", x$meta$model, "\n", sep = "")
@@ -749,11 +641,8 @@ print.mdm <- function(x, ...) {
 #' @param ... Additional arguments passed to `stats::coef`.
 #' @return Coefficient object for lasso, otherwise `NULL`.
 #' @examples
-#' if (requireNamespace("glmnet", quietly = TRUE)) {
-#'   set.seed(1)
-#'   X <- matrix(rnorm(100), nrow = 20)
-#'   y <- rep(0:1, each = 10)
-#'   m <- fit_mdm(X, y, model = "lasso", normalisation = "none")
+#' \dontrun{
+#'   m <- cv_mdm(spectra, y, sfr = c(11, -2))
 #'   coef(m)
 #' }
 coef.mdm <- function(object, ...) {
@@ -769,11 +658,8 @@ coef.mdm <- function(object, ...) {
 #' @param ... Additional plotting arguments.
 #' @return Invisibly returns `NULL`.
 #' @examples
-#' if (requireNamespace("e1071", quietly = TRUE)) {
-#'   set.seed(1)
-#'   X <- matrix(rnorm(80), nrow = 20)
-#'   y <- rep(0:1, each = 10)
-#'   m <- fit_mdm(X, y, model = "svm", normalisation = "none")
+#' \dontrun{
+#'   m <- cv_mdm(spectra, y, sfr = c(11, -2))
 #'   plot(m)
 #' }
 plot.mdm <- function(x, ...) {
@@ -795,13 +681,12 @@ plot.mdm <- function(x, ...) {
 #' @param ... Additional arguments, currently unused.
 #' @return Object of class `summary.mdm`.
 #' @examples
-#' if (requireNamespace("e1071", quietly = TRUE)) {
-#'   set.seed(1)
-#'   X <- matrix(rnorm(80), nrow = 20)
-#'   y <- rep(0:1, each = 10)
-#'   m <- fit_mdm(X, y, model = "svm", normalisation = "none")
-#'   summary(m)
-#' }
+#' m <- structure(
+#'   list(model = NULL, normalisation = "none", ref = NULL,
+#'        meta = list(model = "svm")),
+#'   class = "mdm"
+#' )
+#' summary(m)
 summary.mdm <- function(object, ...) {
     out <- list(
         model = object$meta$model,

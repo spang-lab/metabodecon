@@ -94,6 +94,6 @@ if (all(deps_installed)) {
 }
 }
 \author{
-2021-2024 Wolfram Gronwald: initial version.\cr 2024-2025 Tobias Schmidt:
-refactored initial version.
+2021-2024 Wolfram Gronwald: initial version.\cr
+2024-2025 Tobias Schmidt: refactored initial version.
 }

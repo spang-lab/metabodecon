@@ -9,13 +9,14 @@
 #' algorithm from the 'speaq' package, described  in  Beirnaert  et  al.  (2018)
 #' <doi:10.1371/journal.pcbi.1006018>     and     Vu     et      al.      (2011)
 #' <doi:10.1186/1471-2105-12-405> plus the additional peak combination described
-#' in [combine_peaks()].
+#' in [metabodecon::combine_peaks()].
 #'
 #' @param x
 #' An object of  type  `decons1`  or  `decons2`  as  described  in  [Metabodecon
 #' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).   To
-#' align `decons0` objects (as returned by the now deprecated  [MetaboDecon1D]),
-#' you can use [as_decons2()] to convert it to a `decons2` object first.
+#' align `decons0` objects (as returned by the now deprecated
+#' [metabodecon::MetaboDecon1D]), you can use [metabodecon::as_decons2()] to
+#' convert it to a `decons2` object first.
 #'
 #' @param maxShift
 #' Maximum number of points along the "ppm-axis" a value can  be  moved  by  the
@@ -24,16 +25,19 @@
 #' optimized  depending  on  the  type  of  analyzed  spectra  and  the  digital
 #' resolution. For urine which is more prone to chemical shift  variations  this
 #' value most probably has to be increased. Passed  as  argument  `maxShift`  to
-#' [speaq_align()].
+#' [metabodecon::speaq_align()].
 #'
 #' @param maxCombine
 #' Amount of adjacent columns which may be combined for improving
 #' the alignment during speaq's CluPA step. We recommend setting
 #' this to 0 and instead relying on the peak snapping implemented
-#' in [get_si_mat()].
+#' in [metabodecon::get_si_mat()].
 #'
 #' @param verbose
 #' Whether to print additional information during the alignment process.
+#'
+#' @param nworkers
+#' Number of parallel workers for the alignment. Default is 1 (no parallelism).
 #'
 #' @param install_deps
 #' Alignment  relies  on  the  'speaq'  package,  which  itself  relies  on  the
@@ -227,7 +231,7 @@ align <- function(x,
         al[pciac] <- lcpar$A * pi       # SIs as integrals of aligned lorentzians
         xx[[i]]$lcpar$x0_al <- x0_al
         xx[[i]]$sit$al <- al
-        # xx[[i]]$sit$supal <- lorentz_sup(cs, x0_al, lcpar$A, lcpar$lambda)
+        xx[[i]]$sit$supal <- lorentz_sup(cs, x0_al, lcpar$A, lcpar$lambda)
         class(xx[[i]]) <- "align"
     }
     aligns <- structure(xx, class = "aligns")
@@ -247,33 +251,33 @@ align <- function(x,
 #' @description
 #' Extracts a peak-area matrix from aligned spectra. Rows are
 #' chemical-shift positions, columns are spectra. With
-#' `snap = FALSE` the raw aligned integral vectors are returned.
-#' With `snap = TRUE` peaks are snapped to the peaks of a
+#' `maxSnap = FALSE` the raw aligned integral vectors are returned.
+#' With `maxSnap = TRUE` peaks are snapped to the peaks of a
 #' reference spectrum, reducing the row count to the number
 #' of reference peaks.
 #'
 #' @param x
 #' An object of type `aligns`.
 #'
-#' @param snap
+#' @param maxSnap
 #' Controls peak snapping. `FALSE` or `0` (default): off.
 #' `TRUE` or `1`: snap within one half-width. Any positive
-#' number scales the radius, e.g. `snap = 2` allows two
+#' number scales the radius, e.g. `maxSnap = 2` allows two
 #' half-widths. See 'Details'.
 #'
 #' @param ref
 #' A single `align` or `decon2` object whose peaks define
 #' the rows of the output matrix. If `NULL` (default), the
 #' reference is auto-detected from `x` via
-#' `speaq::findRef()`. Ignored when `snap = 0`.
+#' `speaq::findRef()`. Ignored when `maxSnap = 0`.
 #'
 #' @param drop_zero
 #' If `TRUE`, rows where all values are zero are removed.
 #'
 #' @details
-#' When `snap > 0`, each peak in every spectrum is mapped to
+#' When `maxSnap > 0`, each peak in every spectrum is mapped to
 #' the nearest reference peak. A peak is kept only if the
-#' distance is at most `snap * lambda_ref / dp` data points,
+#' distance is at most `maxSnap * lambda_ref / dp` data points,
 #' where `lambda_ref` is the half-width of the corresponding
 #' reference peak and `dp` is the chemical-shift step size.
 #' Areas of peaks that map to the same reference peak are
@@ -290,14 +294,14 @@ align <- function(x,
 #'     decons <- deconvolute(sim[1:2], sfr = c(3.55, 3.35))
 #'     aligns <- align(decons, maxCombine = 0)
 #'     si_mat_0 <- get_si_mat(aligns)                  # raw
-#'     si_mat_1 <- get_si_mat(aligns, snap = 1)        # 1x hw
-#'     si_mat_2 <- get_si_mat(aligns, snap = 2)        # 2x hw
+#'     si_mat_1 <- get_si_mat(aligns, maxSnap = 1)     # 1x hw
+#'     si_mat_2 <- get_si_mat(aligns, maxSnap = 2)     # 2x hw
 #' }
-get_si_mat <- function(x, snap = 0, ref = NULL,
+get_si_mat <- function(x, maxSnap = 0, ref = NULL,
                        drop_zero = FALSE) {
     stopifnot(is_aligns(x))
     cs <- x[[1]]$cs
-    if (snap == 0) {
+    if (maxSnap == 0) {
         mat <- sapply(x, function(xi) xi$sit$al)
         rownames(mat) <- cs
     } else {
@@ -310,7 +314,7 @@ get_si_mat <- function(x, snap = 0, ref = NULL,
         ref_cs <- ref_x0
         ref_idx <- match(ref_cs, cs)
         dp <- abs(cs[2] - cs[1])
-        thresh <- snap * ref$lcpar$lambda / dp
+        thresh <- maxSnap * ref$lcpar$lambda / dp
         nr <- length(ref_idx)
         ns <- length(x)
         mat <- matrix(0, nrow = nr, ncol = ns)
@@ -351,7 +355,7 @@ get_si_mat <- function(x, snap = 0, ref = NULL,
 #' `r lifecycle::badge("deprecated")`
 #'
 #' @param spectrum_data
-#' A list of deconvoluted spectra as returned by [generate_lorentz_curves()].
+#' A list of deconvoluted spectra as returned by [metabodecon::generate_lorentz_curves()].
 #'
 #' @param full_range
 #' If TRUE, the full range of the spectra is returned. If FALSE, only the range
@@ -401,7 +405,7 @@ get_ppm_range <- function(spectrum_data, full_range = FALSE) {
 #' @description
 #' Helper function of `align()`. Should not be called directly by the user.
 #'
-#' Generates a list of elements required by [speaq_align()].
+#' Generates a list of elements required by [metabodecon::speaq_align()].
 #' See 'Value' for a detailed description of the list elements.
 #'
 #' Direct usage of this function has been deprecated with metabodecon version
@@ -613,7 +617,7 @@ speaq_align <- function(feat = gen_feat_mat(spectrum_data),
 #'
 #' Helper function of `align()`. Should not be called directly by the user.
 #'
-#' Even after calling [speaq_align()], the alignment of individual signals is
+#' Even after calling [metabodecon::speaq_align()], the alignment of individual signals is
 #' not always perfect, as 'speaq' performs a segment-wise alignment i.e. groups
 #' of signals are aligned. For further improvements, partly filled neighboring
 #' columns are merged. See 'Details' for an illustrative example.
@@ -766,9 +770,9 @@ combine_peaks <- function(shifted_mat,
 #' `r lifecycle::badge("deprecated")`
 #'
 #' @param X Dataframe of signal intensities from all spectra as returned by
-#' [gen_feat_mat()].
+#' [metabodecon::gen_feat_mat()].
 #'
-#' @param peakList List of peak indices as returned [gen_feat_mat()].
+#' @param peakList List of peak indices as returned [metabodecon::gen_feat_mat()].
 #'
 #' @param refInd Number of the reference spectrum i.e. the spectrum to which all
 #' signals will be aligned to.
@@ -1069,13 +1073,13 @@ dohCluster_withMaxShift <- function(X,
 #' @noRd
 #'
 #' @description
-#' Helper function of [gen_feat_mat()] to extract the deconvolution parameters
+#' Helper function of [metabodecon::gen_feat_mat()] to extract the deconvolution parameters
 #' from `data_path`, where `data_path` can be a `decon1` or `decons1` object or
 #' a folder containing a `"parameters.txt"` and `"approximated_spectrum.txt"`
 #' file, as created when calling `MetaboDecon1D()` before version 1.2.
 #'
 #' @param data_path
-#' A list of deconvoluted spectra as returned by [generate_lorentz_curves()] or
+#' A list of deconvoluted spectra as returned by [metabodecon::generate_lorentz_curves()] or
 #' a path to a folder containing ".* parameters.txt" and ".*
 #' approximated_spectrum.txt" files.
 #'
@@ -1236,13 +1240,14 @@ get_sup_mat <- function(decons2) {
 #'
 #' | req | ask  | ia   | action                                     |
 #' | --- | ---- | ---- | ------------------------------------------ |
-#' | F   | [TF] | [TF] | Return                                     |
+#' | F   | TF   | TF   | Return                                     |
 #' | T   | T    | T    | Ask user and install or return accordingly |
 #' | T   | T    | F    | Stop with error                            |
-#' | T   | F    | [TF] | Install                                    |
+#' | T   | F    | TF   | Install                                    |
 #'
-#' req = Installation required (because requested packages are not yet installed
-#' on the system)
+#' - req = Is installation required?
+#' - ask = Is `ask` argument TRUE?
+#' - ia = Interactive session?
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'

@@ -7,7 +7,7 @@
 
 install_deps <- function() {
     install.packages("e1071")
-    library(e1071)
+    requireNamespace("e1071", quietly = TRUE)
     if (!requireNamespace("BiocManager", quietly = TRUE)) {
         install.packages("BiocManager")
     }
@@ -15,7 +15,7 @@ install_deps <- function() {
     BiocManager::install()
     # now install multtest for multiple testing adjustments
     BiocManager::install("multtest")
-    library(multtest)
+    requireNamespace("multtest", quietly = TRUE)
 
     # remove all old data
     rm(list = ls())

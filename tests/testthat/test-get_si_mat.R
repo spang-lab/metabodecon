@@ -32,7 +32,7 @@ test_that("get_si_mat drop_zero removes all-zero rows", {
     expect_equal(compact, full[rowSums(full != 0) > 0, , drop = FALSE])
 })
 
-test_that("get_si_mat with snap returns reduced matrix", {
+test_that("get_si_mat with maxSnap returns reduced matrix", {
 
     withr::local_output_sink(nullfile())
 
@@ -44,8 +44,8 @@ test_that("get_si_mat with snap returns reduced matrix", {
     al <- align(decons, maxCombine = 0, verbose = FALSE)
 
     mat_raw <- get_si_mat(al)
-    mat_1hw <- get_si_mat(al, snap = 1)
-    mat_2hw <- get_si_mat(al, snap = 2)
+    mat_1hw <- get_si_mat(al, maxSnap = 1)
+    mat_2hw <- get_si_mat(al, maxSnap = 2)
 
     # Snapped matrices should have fewer rows (one per ref peak)
     expect_lt(nrow(mat_1hw), nrow(mat_raw))

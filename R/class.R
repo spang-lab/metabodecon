@@ -706,7 +706,7 @@ is_rdecons <- function(x) inherits(x, "rdecons")
 #'
 #' @param spectrum,spectra
 #' The `spectrum`/`spectra` object corresponding to `x` as returned by
-#' [read_spectrum()] / [read_spectra]. Only required if `x` is a decon0 object.
+#' [metabodecon::read_spectrum()] / [metabodecon::read_spectra]. Only required if `x` is a decon0 object.
 #'
 #' @param sfr,sfrs
 #' `sfr` should be a vector specifying the borders of the signal free region.

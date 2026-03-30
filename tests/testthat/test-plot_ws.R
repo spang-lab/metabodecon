@@ -14,7 +14,7 @@ test_result <- test_that("plot_ws works", {
         title = "plot_ws",
         fig = test_plot_ws,
         writer = function(plot, file, title = "") {
-            with_svg(file, plot())
+            withr::with_svg(file, plot())
         }
     )
 })

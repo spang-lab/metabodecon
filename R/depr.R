@@ -10,7 +10,7 @@
 #' jcamp-dx format.
 #'
 #' This function has been deprecated with metabodecon version v1.2.0 and will be
-#' removed with version 2.0.0. Please use [deconvolute()] instead.
+#' removed with version 2.0.0. Please use [metabodecon::deconvolute()] instead.
 #'
 #' `r lifecycle::badge("deprecated")`
 #'
@@ -69,10 +69,10 @@
 #' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
 #'
 #' @seealso
-#' [calculate_lorentz_curves()],
-#' [plot_triplets()],
-#' [plot_lorentz_curves_save_as_png()],
-#' [plot_spectrum_superposition_save_as_png()]
+#' [metabodecon::calculate_lorentz_curves()],
+#' [metabodecon::plot_triplets()],
+#' [metabodecon::plot_lorentz_curves_save_as_png()],
+#' [metabodecon::plot_spectrum_superposition_save_as_png()]
 #'
 #' @references
 #' Haeckl, M.; Tauber, P.; Schweda, F.; Zacharias, H.U.; Altenbuchinger, M.;
@@ -543,7 +543,7 @@ MetaboDecon1D <- function(filepath,
 #' @title Calculate lorentz curves for each analyzed spectrum
 #'
 #' @description
-#' Helper function of [plot_lorentz_curves_save_as_png()].
+#' Helper function of [metabodecon::plot_lorentz_curves_save_as_png()].
 #' Should not be called directly by the user.
 #'
 #' Calculates the lorentz curves of each investigated spectrum.
@@ -554,7 +554,8 @@ MetaboDecon1D <- function(filepath,
 #' `r lifecycle::badge("deprecated")`
 #'
 #' @param deconv_result
-#' A list as returned by [generate_lorentz_curves()] or [MetaboDecon1D].
+#' A list as returned by [metabodecon::generate_lorentz_curves()] or
+#' [metabodecon::MetaboDecon1D()].
 #'
 #' @param number_of_files Number of spectra to analyze
 #'
@@ -565,10 +566,10 @@ MetaboDecon1D <- function(filepath,
 #' list of such matrices is returned.
 #'
 #' @seealso
-#' [MetaboDecon1D()],
-#' [plot_triplets()],
-#' [plot_lorentz_curves_save_as_png()],
-#' [plot_spectrum_superposition_save_as_png()]
+#' [metabodecon::MetaboDecon1D()],
+#' [metabodecon::plot_triplets()],
+#' [metabodecon::plot_lorentz_curves_save_as_png()],
+#' [metabodecon::plot_spectrum_superposition_save_as_png()]
 #'
 #' @author
 #' 2020-2021 Martina Haeckl: initial version.\cr
@@ -682,9 +683,9 @@ calculate_lorentz_curves <- function(deconv_result, number_of_files = NA) {
 
 #' @export
 #' @title Plot peak triplets for variable range
-#' @description Plots the peak triplets for each peak detected by [MetaboDecon1D()] and stores the plots as png at `outdir`.
+#' @description Plots the peak triplets for each peak detected by [metabodecon::MetaboDecon1D()] and stores the plots as png at `outdir`.
 #'
-#' Superseded by [plot_spectrum()] since metabodecon v1.2.0. Will be replaced with v2.
+#' Superseded by [metabodecon::plot_spectrum()] since metabodecon v1.2.0. Will be replaced with v2.
 #'
 #' `r lifecycle::badge("deprecated")`
 #'
@@ -709,8 +710,8 @@ calculate_lorentz_curves <- function(deconv_result, number_of_files = NA) {
 #' @return No return value, called for side effect of plotting.
 #'
 #' @seealso
-#' [MetaboDecon1D()], [calculate_lorentz_curves()], [plot_lorentz_curves_save_as_png()],
-#' [plot_spectrum_superposition_save_as_png()]
+#' [metabodecon::MetaboDecon1D()], [metabodecon::calculate_lorentz_curves()], [metabodecon::plot_lorentz_curves_save_as_png()],
+#' [metabodecon::plot_spectrum_superposition_save_as_png()]
 #'
 #' @author
 #' 2020-2021 Martina Haeckl: initial version.\cr
@@ -856,7 +857,7 @@ plot_triplets <- function(deconv_result, x_range = c(), y_range = c(), out_dir =
 #' Plots the original spectrum and all generated Lorentz curves and save the
 #' result as png under the filepath.
 #'
-#' Superseded by [plot_spectrum()] since metabodecon v1.2.0. Will be replaced
+#' Superseded by [metabodecon::plot_spectrum()] since metabodecon v1.2.0. Will be replaced
 #' with metabodecon v2.
 #'
 #' `r lifecycle::badge("deprecated")`
@@ -884,7 +885,7 @@ plot_triplets <- function(deconv_result, x_range = c(), y_range = c(), out_dir =
 #' NULL, called for side effects.
 #'
 #' @seealso
-#' [MetaboDecon1D()], [plot_triplets()], [plot_spectrum_superposition_save_as_png()]
+#' [metabodecon::MetaboDecon1D()], [metabodecon::plot_triplets()], [metabodecon::plot_spectrum_superposition_save_as_png()]
 #'
 #' @author
 #' 2020-2021 Martina Haeckl: initial version.\cr
@@ -1042,7 +1043,7 @@ plot_lorentz_curves_save_as_png <- function(deconv_result, x_range = c(), y_rang
 #' Plots the original spectrum and the superposition of all generated Lorentz
 #' curves and saves the result as png under the specified filepath.
 #'
-#' Superseded by [plot_spectrum()] since metabodecon v1.2.0. Will be replaced with v2.
+#' Superseded by [metabodecon::plot_spectrum()] since metabodecon v1.2.0. Will be replaced with v2.
 #'
 #' `r lifecycle::badge("deprecated")`
 #'
@@ -1070,10 +1071,10 @@ plot_lorentz_curves_save_as_png <- function(deconv_result, x_range = c(), y_rang
 #' @return NULL, called for side effects.
 #'
 #' @seealso
-#' [MetaboDecon1D()],
-#' [calculate_lorentz_curves()],
-#' [plot_triplets()],
-#' [plot_lorentz_curves_save_as_png()]
+#' [metabodecon::MetaboDecon1D()],
+#' [metabodecon::calculate_lorentz_curves()],
+#' [metabodecon::plot_triplets()],
+#' [metabodecon::plot_lorentz_curves_save_as_png()]
 #'
 #' @examples
 #' sim <- metabodecon_file("bruker/sim_subset")
@@ -2346,7 +2347,7 @@ deconvolution <- function(filepath,
 #' as Lorentz Curve.
 #'
 #' This function has been deprecated with metabodecon version v1.4.3 and will be
-#' removed with version 2.0.0. Please use [deconvolute()] instead.
+#' removed with version 2.0.0. Please use [metabodecon::deconvolute()] instead.
 #'
 #' `r lifecycle::badge("deprecated")`
 #'
@@ -2371,12 +2372,12 @@ deconvolution <- function(filepath,
 #' Lorentz curves. These Lorentz curves are then iteratively adjusted to
 #' optimally approximate the measured spectrum.
 #'
-#' [generate_lorentz_curves_sim()] is identical to [generate_lorentz_curves()]
+#' [metabodecon::generate_lorentz_curves_sim()] is identical to [metabodecon::generate_lorentz_curves()]
 #' except for the defaults, which are optimized for deconvoluting the 'sim'
 #' dataset, shipped with 'metabodecon'. The 'sim' dataset is a simulated
 #' dataset, which is much smaller than a real NMR spectra and lacks a water
 #' signal. This makes it ideal for use in examples. However, the default values
-#' for `sfr`, `wshw`, and `delta` in the "normal" [generate_lorentz_curves()]
+#' for `sfr`, `wshw`, and `delta` in the "normal" [metabodecon::generate_lorentz_curves()]
 #' function are not optimal for this dataset. To avoid having to define the
 #' optimal parameters repeatedly in examples, this function is provided to
 #' deconvolute the "Sim" dataset with suitable parameters.
@@ -2508,8 +2509,8 @@ plot_si_mat <- function(X = generate_lorentz_curves_sim("bruker/sim"),
 }
 
 #' @noRd
-#' @title Plots a spectrum simulated with [get_sim_params()]
-#' @param simspec A simulated spectrum as returned by [get_sim_params()].
+#' @title Plots a spectrum simulated with [metabodecon::get_sim_params()]
+#' @param simspec A simulated spectrum as returned by [metabodecon::get_sim_params()].
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #' @examples
 #' simspec <- get_sim_params()
