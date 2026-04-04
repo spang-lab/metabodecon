@@ -25,11 +25,17 @@ find_ref <- function(peakList) {
     n <- length(peakList)
     sumDis <- double(n)
     for (r in seq_len(n)) {
+        rp <- sort(peakList[[r]])
         for (t in seq_len(n)) {
             if (r == t) next
-            for (pk in peakList[[t]]) {
-                sumDis[r] <- sumDis[r] + min(abs(pk - peakList[[r]]))
-            }
+            tp <- peakList[[t]]
+            # For each target peak, find nearest ref peak
+            # using binary search on the sorted ref peaks.
+            idx <- findInterval(tp, rp)
+            lo <- pmax(idx, 1L)
+            hi <- pmin(idx + 1L, length(rp))
+            d <- pmin(abs(tp - rp[lo]), abs(tp - rp[hi]))
+            sumDis[r] <- sumDis[r] + sum(d)
         }
     }
     ord <- order(sumDis)
@@ -63,20 +69,16 @@ fft_shift <- function(refSpec, tarSpec, maxShift) {
     vals <- Re(stats::fft(R, inverse = TRUE)) / N
     if (maxShift == 0 || maxShift > M) maxShift <- M
     if (anyNA(vals)) return(list(corValue = -1, stepAdj = 0L))
-    maxi <- -1
-    maxpos <- 1L
     nv <- length(vals)
-    for (i in seq_len(maxShift)) {
-        if (vals[i] > maxi) {
-            maxi <- vals[i]
-            maxpos <- i
-        }
-        j <- nv - i + 1L
-        if (vals[j] > maxi) {
-            maxi <- vals[j]
-            maxpos <- j
-        }
-    }
+    # Interleave forward/backward indices to preserve the same
+    # tie-breaking order as the original speaq loop:
+    # lag 0, -1, 1, -2, 2, -3, ...
+    fwd <- seq_len(maxShift)
+    bwd <- seq.int(nv, nv - maxShift + 1L)
+    idx <- as.vector(rbind(fwd, bwd))
+    best <- which.max(vals[idx])
+    maxpos <- idx[best]
+    maxi <- vals[maxpos]
     if (maxi < 0.1) return(list(corValue = maxi, stepAdj = 0L))
     lag <- if (maxpos > nv / 2) maxpos - nv - 1L else maxpos - 1L
     list(corValue = maxi, stepAdj = lag)
@@ -196,64 +198,49 @@ hclust_align <- function(refSpec, tarSpec, peakList, peakLabel,
         }
     }
 
-    # Need >= 3 peaks total (ref + target) for clustering
+    # Need >= 3 peaks total (ref + target) for splitting
     if (length(peakList) < 3L) {
         return(list(tarSpec = tarSpec, peakList = peakList))
     }
 
-    # Hierarchical clustering to split into 2 segments
-    hc <- stats::hclust(stats::dist(peakList), method = "average")
-    cl <- stats::cutree(hc, h = hc$height[length(hc$height) - 1L])
-    if (length(unique(cl)) < 2L) {
+    # Split peaks into 2 groups at the largest gap. This is
+    # equivalent to hclust + cutree at the top split, but
+    # O(p log p) instead of O(p^2).
+    ord <- order(peakList)
+    sp <- peakList[ord]
+    gaps <- diff(sp)
+    if (max(gaps) == 0L) {
         return(list(tarSpec = tarSpec, peakList = peakList))
     }
+    split_at <- which.max(gaps)
+    left_set <- ord[seq_len(split_at)]
+    right_set <- ord[seq.int(split_at + 1L, length(ord))]
 
-    id1 <- which(cl == 1L)
-    sub1 <- peakList[id1]
-    lab1 <- peakLabel[id1]
-    id2 <- which(cl == 2L)
-    sub2 <- peakList[id2]
-    lab2 <- peakLabel[id2]
+    sub1 <- peakList[left_set]
+    lab1 <- peakLabel[left_set]
+    id1 <- left_set
+    sub2 <- peakList[right_set]
+    lab2 <- peakLabel[right_set]
+    id2 <- right_set
 
-    max1 <- max(sub1)
-    min2 <- min(sub2)
+    max1 <- sp[split_at]
+    min2 <- sp[split_at + 1L]
 
-    if (max1 < min2) {
-        # Cluster 1 is left, cluster 2 is right
-        endP1 <- max1 + which.min(tarSpec[(max1 + 1L):(min2 - 1L)])
-        if (is.na(endP1) || endP1 > length(tarSpec)) endP1 <- max1
-        startP2 <- endP1 + 1L
-        if (length(unique(lab1)) > 1L) {
-            res <- hclust_align(refSpec, tarSpec, sub1, lab1,
-                startP, endP1, maxShift)
-            tarSpec <- res$tarSpec
-            peakList[id1] <- pad_peaks(res$peakList, length(id1))
-        }
-        if (length(unique(lab2)) > 1L) {
-            res <- hclust_align(refSpec, tarSpec, sub2, lab2,
-                startP2, endP, maxShift)
-            tarSpec <- res$tarSpec
-            peakList[id2] <- pad_peaks(res$peakList, length(id2))
-        }
-    } else {
-        # Cluster 2 is left, cluster 1 is right
-        max2 <- max(sub2)
-        min1 <- min(sub1)
-        endP2 <- max2 + which.min(tarSpec[(max2 + 1L):(min1 - 1L)])
-        if (is.na(endP2) || endP2 > length(tarSpec)) endP2 <- max2
-        startP1 <- endP2 + 1L
-        if (length(unique(lab2)) > 1L) {
-            res <- hclust_align(refSpec, tarSpec, sub2, lab2,
-                startP, endP2, maxShift)
-            tarSpec <- res$tarSpec
-            peakList[id2] <- pad_peaks(res$peakList, length(id2))
-        }
-        if (length(unique(lab1)) > 1L) {
-            res <- hclust_align(refSpec, tarSpec, sub1, lab1,
-                startP1, endP, maxShift)
-            tarSpec <- res$tarSpec
-            peakList[id1] <- pad_peaks(res$peakList, length(id1))
-        }
+    # max1 < min2 is guaranteed by the gap-based split
+    endP1 <- max1 + which.min(tarSpec[(max1 + 1L):(min2 - 1L)])
+    if (is.na(endP1) || endP1 > length(tarSpec)) endP1 <- max1
+    startP2 <- endP1 + 1L
+    if (length(unique(lab1)) > 1L) {
+        res <- hclust_align(refSpec, tarSpec, sub1, lab1,
+            startP, endP1, maxShift)
+        tarSpec <- res$tarSpec
+        peakList[id1] <- pad_peaks(res$peakList, length(id1))
+    }
+    if (length(unique(lab2)) > 1L) {
+        res <- hclust_align(refSpec, tarSpec, sub2, lab2,
+            startP2, endP, maxShift)
+        tarSpec <- res$tarSpec
+        peakList[id2] <- pad_peaks(res$peakList, length(id2))
     }
 
     list(tarSpec = tarSpec, peakList = peakList)

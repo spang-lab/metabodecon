@@ -864,11 +864,10 @@ dohCluster <- function(X,
         if (tarInd != refInd) {
             logf("Aligning spectrum %d/%d", tarInd, nspec)
             targetSpec <- Y[tarInd, ]
+            n_ref <- length(peakList[[refInd]])
+            n_tar <- length(peakList[[tarInd]])
             myPeakList <- c(peakList[[refInd]], peakList[[tarInd]])
-            myPeakLabel <- double(length(myPeakList))
-            for (i in seq_along(peakList[[refInd]])) {
-                myPeakLabel[i] <- 1
-            }
+            myPeakLabel <- c(rep(1, n_ref), rep(0, n_tar))
             startP <- 1
             endP <- length(targetSpec)
             res <- if (use_speaq) {
@@ -888,10 +887,8 @@ dohCluster <- function(X,
                 )
             }
             Y[tarInd, ] <- res$tarSpec
-            n_orig <- length(myPeakList)
-            n_ref <- length(peakList[[refInd]])
             n_res <- length(res$peakList)
-            n_end <- if (n_orig > n_res) n_res else n_orig
+            n_end <- min(n_ref + n_tar, n_res)
             peakListNew[[tarInd]] <- res$peakList[
                 (n_ref + 1):n_end
             ]
