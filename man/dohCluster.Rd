@@ -9,8 +9,8 @@ dohCluster(
   peakList,
   refInd = 0,
   maxShift = 100,
-  acceptLostPeak = TRUE,
-  verbose = TRUE
+  verbose = TRUE,
+  use_speaq = FALSE
 )
 }
 \arguments{
@@ -23,9 +23,6 @@ dohCluster(
 signals will be aligned to.}
 
 \item{maxShift}{Maximum number of points a value can be moved.}
-
-\item{acceptLostPeak}{Whether to allow the the alignment algorithm to ignore
-peaks that cannot easily be aligned with the reference spectrum.}
 
 \item{verbose}{Whether to print additional information during the alignment
 process.}
@@ -63,7 +60,6 @@ if (all(deps_installed)) {
         peakList = feat$peakList,
         refInd = refObj$refInd,
         maxShift = 100,
-        acceptLostPeak = TRUE,
         verbose = TRUE
     )
     str(hclObj, 1)

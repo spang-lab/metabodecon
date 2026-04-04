@@ -603,7 +603,7 @@ mdm_data_signature <- function(X, y) {
 
 mdm_get_ref <- function(x) {
     pl <- lapply(x, get_peak_indices)
-    idx <- speaq::findRef(pl)$refInd
+    idx <- find_ref(pl)$refInd
     x[[idx]]
 }
 

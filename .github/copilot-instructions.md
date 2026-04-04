@@ -1,5 +1,10 @@
 # Copilot Instructions for MetaboDecon
 
+## Workspace Conventions
+
+- Use `./tmp` for temporary files (it is gitignored and Rbuildignored).
+  Never write temp files outside the project directory.
+
 ## Coding Guidelines
 
 - All roxygen comments should start with a tag, in particular title and

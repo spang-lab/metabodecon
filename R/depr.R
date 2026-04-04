@@ -2654,7 +2654,7 @@ speaq_align_original <- function(feat = gen_feat_mat(spectrum_data),
                                  si_size_real_spectrum = length(spectrum_data[[1]]$y_values)) {
 
     # Find reference spectrum, i.e the spectrum to which all others will be aligned to
-    resFindRef <- speaq::findRef(feat$peakList)
+    resFindRef <- find_ref(feat$peakList)
     refInd <- resFindRef$refInd
 
     # Use overwritten CluPA function for multiple spectra
@@ -2663,7 +2663,6 @@ speaq_align_original <- function(feat = gen_feat_mat(spectrum_data),
         peakList = feat$peakList,
         refInd = refInd,
         maxShift = maxShift,
-        acceptLostPeak = FALSE,
         verbose = TRUE
     )
     # > str(data_result_aligned, 2)

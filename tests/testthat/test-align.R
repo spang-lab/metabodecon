@@ -88,6 +88,15 @@ test_that("align gives same result for 1 vs multiple workers", {
     expect_equal(al2, al1)
 })
 
+test_that("built-in backend matches speaq backend", {
+
+    skip_if_speaq_deps_missing()
+
+    al_builtin <- align(decons, verbose = FALSE, use_speaq = FALSE)
+    al_speaq <- align(decons, verbose = FALSE, use_speaq = TRUE)
+    expect_equal(al_builtin, al_speaq)
+})
+
 skip_if_slow_tests_disabled()
 
 test_that("align can install its dependencies", {

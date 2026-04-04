@@ -29,9 +29,11 @@
 #'
 #' @param maxCombine
 #' Amount of adjacent columns which may be combined for improving
-#' the alignment during speaq's CluPA step. We recommend setting
-#' this to 0 and instead relying on the peak snapping implemented
-#' in [metabodecon::get_si_mat()].
+#' the alignment during the CluPA step. We recommend setting this
+#' to 0 and instead relying on the peak snapping implemented  in
+#' [metabodecon::get_si_mat()]. Since version 1.7.0  the  default
+#' is 0. Non-zero values are deprecated and support  will  be
+#' removed in a future version.
 #'
 #' @param verbose
 #' Whether to print additional information during the alignment process.
@@ -46,8 +48,16 @@
 #' (default), the reference is chosen automatically via
 #' `speaq::findRef()`.
 #'
+#' @param use_speaq
+#' If `FALSE` (default), alignment uses metabodecon's  own  built-in
+#' implementation.   If  `TRUE`,  the  external  'speaq'  package  is
+#' used  instead.   The  'speaq'  backend  is  no  longer  recommended
+#' since  version  1.7.0  and  will  be  removed  in  a  future  version.
+#' When `use_speaq = TRUE`, the packages 'speaq', 'MassSpecWavelet'
+#' and 'impute' must be installed (see `install_deps`).
+#'
 #' @param install_deps
-#' Alignment  relies  on  the  'speaq'  package,  which  itself  relies  on  the
+#' Only used when `use_speaq = TRUE`.  'speaq' relies on the
 #' 'MassSpecWavelet' and 'impute' packages. Both, 'MassSpecWavelet' and 'impute'
 #' are   not   available    on    CRAN,    but    can    be    installed    from
 #' [Bioconductor](https://www.bioconductor.org/)                              or
@@ -73,8 +83,9 @@
 #' }
 align <- function(x,
                   maxShift = 50,
-                  maxCombine = 5,
+                  maxCombine = 0,
                   verbose = TRUE,
+                  use_speaq = FALSE,
                   install_deps = NULL,
                   nworkers = 1,
                   ref = NULL) {
@@ -104,20 +115,23 @@ align <- function(x,
         stop(msg, call. = FALSE)
     }
 
-    # Check for required packages
-    pkgvec <- c("MassSpecWavelet", "impute")
-    if (isTRUE(install_deps)) bioc_install(pkgvec, ask = FALSE, verbose = FALSE)
-    if (is.null(install_deps)) bioc_install(pkgvec, ask = TRUE, verbose = FALSE)
-    is_installed <- sapply(pkgvec, requireNamespace, quietly = TRUE)
-    if (any(!is_installed)) {
-        pkgvec_missing <- pkgvec[!is_installed]
-        pkgstr_missing <- paste(pkgvec_missing, collapse = ", ")
-        msg <- paste(
-            "The following required packages are missing: %s.",
-            "Please install them manually from Bioconductor or R-Universe",
-            "or try again with `install_deps = TRUE`"
-        )
-        stop(sprintf(msg, pkgstr_missing))
+    # Check for required packages (only needed for speaq backend)
+    if (use_speaq) {
+        pkgvec <- c("MassSpecWavelet", "impute")
+        if (isTRUE(install_deps)) bioc_install(pkgvec, ask = FALSE, verbose = FALSE)
+        if (is.null(install_deps)) bioc_install(pkgvec, ask = TRUE, verbose = FALSE)
+        is_installed <- sapply(pkgvec, requireNamespace, quietly = TRUE)
+        if (any(!is_installed)) {
+            pkgvec_missing <- pkgvec[!is_installed]
+            pkgstr_missing <- paste(pkgvec_missing, collapse = ", ")
+            msg <- paste(
+                "The following required packages are missing: %s.",
+                "Please install them manually from Bioconductor",
+                "or R-Universe or try again with",
+                "`install_deps = TRUE`"
+            )
+            stop(sprintf(msg, pkgstr_missing))
+        }
     }
 
     # Start alignment
@@ -125,20 +139,22 @@ align <- function(x,
     logf("Starting alignment of %d deconvoluted spectra with %s", length(xx), nworkers_str)
     starttime <- Sys.time()
 
-    # Do initial alignment using speaq. Parameter `acceptLostPeak` must be FALSE
-    # so we can backtrack which peak has shifted to which position. The result
+    # Do initial alignment. The result
     # object contains element `new_peakList` which contains the "peak center
     # indices after alignment" (pciaa). The indices are given as continuous
     # numbers. E.g. a value of 1044.28 means that the aligned peak center is
     # between the datapoint 1044 and 1045.
-    logf("Performing speaq alignment with maxShift = %d", maxShift)
+    backend <- if (use_speaq) "speaq" else "built-in"
+    logf("Performing %s alignment with maxShift = %d", backend, maxShift)
     X <- get_sup_mat(xx)
     peakList <- lapply(xx, get_peak_indices)
-    refInd <- if (has_ext_ref) 1L else speaq::findRef(peakList)$refInd
+    find_ref_fn <- if (use_speaq) speaq::findRef else find_ref
+    refInd <- if (has_ext_ref) 1L else find_ref_fn(peakList)$refInd
     if (nworkers == 1) {
         obj <- dohCluster(
-            X = X, peakList = peakList, refInd = refInd, maxShift = maxShift,
-            acceptLostPeak = FALSE, verbose = verbose
+            X = X, peakList = peakList, refInd = refInd,
+            maxShift = maxShift, verbose = verbose,
+            use_speaq = use_speaq
         )
     } else {
         # Split seq_len(now(X)) `nworkers` submatrices, where refInd is always the first row.
@@ -157,7 +173,7 @@ align <- function(x,
         objs <- mcmapply(
             nw_apply, dohCluster, XX, peakLists,
             refInd = 1, maxShift = maxShift,
-            acceptLostPeak = FALSE, verbose = verbose
+            verbose = verbose, use_speaq = use_speaq
         )
         Y <- X
         new_peakList <- peakList
@@ -170,7 +186,6 @@ align <- function(x,
         }
         obj <- list(Y = Y, new_peakList = new_peakList)
     }
-    if (verbose) cat("\n") # speaq misses its final newline, so we add it here
     pciaa <- obj$new_peakList
 
     # Discretize the continous peak center indices from above by rounding. Then
@@ -331,7 +346,7 @@ get_si_mat <- function(x, maxSnap = 0, ref = NULL,
     } else {
         if (is.null(ref)) {
             pl <- lapply(x, get_peak_indices)
-            idx <- speaq::findRef(pl)$refInd
+            idx <- find_ref(pl)$refInd
             ref <- x[[idx]]
         }
         ref_x0 <- if (is_align(ref)) ref$lcpar$x0_al else ref$lcpar$x0
@@ -611,13 +626,12 @@ speaq_align <- function(feat = gen_feat_mat(spectrum_data),
                         verbose = TRUE,
                         show = FALSE,
                         mfrow = c(2, 1)) {
-    acceptLostPeak <- FALSE # Must be FALSE so we can assign A and lambda to the respective peaks
     Y <- feat$data_matrix
     nsp <- nrow(Y) # Number of spectra
     ndp <- ncol(Y) # Number of data points
     upci_list <- feat$peakList # Unaligned peak center indices
-    idx_ref <- speaq::findRef(upci_list)$refInd # Reference spectrum
-    clust_obj <- dohCluster(Y, upci_list, idx_ref, maxShift, acceptLostPeak, verbose) # list(Y, new_peakList)
+    idx_ref <- find_ref(upci_list)$refInd # Reference spectrum
+    clust_obj <- dohCluster(Y, upci_list, idx_ref, maxShift, verbose)
     apci_list <- clust_obj$new_peakList # Aligned peak center indices
     ppm <- spectrum_data[[1]]$x_values_ppm
     M <- matrix(nrow = nsp, ncol = ndp, dimnames = list(NULL, ppm))
@@ -803,9 +817,6 @@ combine_peaks <- function(shifted_mat,
 #'
 #' @param maxShift Maximum number of points a value can be moved.
 #'
-#' @param acceptLostPeak Whether to allow the the alignment algorithm to ignore
-#' peaks that cannot easily be aligned with the reference spectrum.
-#'
 #' @param verbose Whether to print additional information during the alignment
 #' process.
 #'
@@ -832,7 +843,6 @@ combine_peaks <- function(shifted_mat,
 #'         peakList = feat$peakList,
 #'         refInd = refObj$refInd,
 #'         maxShift = 100,
-#'         acceptLostPeak = TRUE,
 #'         verbose = TRUE
 #'     )
 #'     str(hclObj, 1)
@@ -841,26 +851,55 @@ dohCluster <- function(X,
                        peakList,
                        refInd = 0,
                        maxShift = 100,
-                       acceptLostPeak = TRUE,
-                       verbose = TRUE) {
-    res <- if (is.null(maxShift)) {
-        if (verbose) {
-            cat("\n --------------------------------")
-            cat("\n maxShift=NULL, thus dohCluster will automatically detect the optimal value of maxShift.")
-            cat("\n --------------------------------\n")
+                       verbose = TRUE,
+                       use_speaq = FALSE) {
+    if (isFALSE(verbose)) local_options(toscutil.logf.file = nullfile())
+    Y <- X
+    peakListNew <- peakList
+    startTime <- proc.time()
+    nspec <- nrow(X)
+    logf("Running dohCluster with maxShift = %d on %d spectra", maxShift, nspec)
+    refSpec <- Y[refInd, ]
+    for (tarInd in seq_len(nspec)) {
+        if (tarInd != refInd) {
+            logf("Aligning spectrum %d/%d", tarInd, nspec)
+            targetSpec <- Y[tarInd, ]
+            myPeakList <- c(peakList[[refInd]], peakList[[tarInd]])
+            myPeakLabel <- double(length(myPeakList))
+            for (i in seq_along(peakList[[refInd]])) {
+                myPeakLabel[i] <- 1
+            }
+            startP <- 1
+            endP <- length(targetSpec)
+            res <- if (use_speaq) {
+                speaq::hClustAlign(
+                    refSpec, targetSpec,
+                    myPeakList, myPeakLabel,
+                    startP, endP,
+                    maxShift = maxShift,
+                    acceptLostPeak = FALSE
+                )
+            } else {
+                hclust_align(
+                    refSpec, targetSpec,
+                    myPeakList, myPeakLabel,
+                    startP, endP,
+                    maxShift = maxShift
+                )
+            }
+            Y[tarInd, ] <- res$tarSpec
+            n_orig <- length(myPeakList)
+            n_ref <- length(peakList[[refInd]])
+            n_res <- length(res$peakList)
+            n_end <- if (n_orig > n_res) n_res else n_orig
+            peakListNew[[tarInd]] <- res$peakList[
+                (n_ref + 1):n_end
+            ]
         }
-        dohCluster_withoutMaxShift(X, peakList, refInd, acceptLostPeak, verbose)
-    } else {
-        if (verbose) {
-            cat("\n --------------------------------")
-            cat("\n dohCluster will run with maxShift=", maxShift)
-            cat("\n If you want dohCluster to detect the optimal maxShift automatically,")
-            cat("\n use dohCluster(..., maxShift = NULL, ...)")
-            cat("\n --------------------------------\n")
-        }
-        dohCluster_withMaxShift(X, peakList, refInd, maxShift, acceptLostPeak, verbose)
     }
-    return(res)
+    elapsed <- (proc.time() - startTime)[3]
+    logf("Finished dohCluster in %.1f s", elapsed)
+    list("Y" = Y, "new_peakList" = peakListNew)
 }
 
 # Private Helpers #####
@@ -934,165 +973,7 @@ combine_scores <- function(U, uu, j, nn, uj = NULL) {
     unname(cc)
 }
 
-#' @noRd
-#' @author
-#' 2021-2024 Wolfram Gronwald: initial version.\cr
-#' 2024-2025 Tobias Schmidt: refactored initial version.
-dohCluster_withoutMaxShift <- function(X,
-                                       peakList,
-                                       refInd = 0,
-                                       acceptLostPeak = TRUE,
-                                       verbose = TRUE) {
-    if (verbose) {
-        startTime <- proc.time()
-    }
-    maxShift_ladder <- 2^(c(1:trunc(log2(ncol(X) / 2))))
-    bestCor <- -1
-    corVec <- NULL
-    bestY <- NULL
-    bestMaxShift <- 0
-    for (maxShift_val in maxShift_ladder) {
-        if (verbose) {
-            cat("\n maxShift=", maxShift_val)
-        }
-        Y <- X
-        peakListNew <- peakList
-        refSpec <- Y[refInd, ]
-        for (tarInd in seq_len(nrow(X))) {
-            if (tarInd != refInd) {
-                targetSpec <- Y[tarInd, ]
-                myPeakList <- c(peakList[[refInd]], peakList[[tarInd]])
-                myPeakLabel <- c(
-                    rep(1, length(peakList[[refInd]])),
-                    rep(0, length(peakList[[tarInd]]))
-                )
-                startP <- 1
-                endP <- length(targetSpec)
-                res <- speaq::hClustAlign(
-                    refSpec,
-                    targetSpec,
-                    myPeakList,
-                    myPeakLabel,
-                    startP,
-                    endP,
-                    maxShift = maxShift_val,
-                    acceptLostPeak = acceptLostPeak
-                )
-                Y[tarInd, ] <- res$tarSpec
-                if (length(myPeakList) > length(res$peakList)) {
-                    peakListNew[[tarInd]] <- res$peakList[(length(peakList[[refInd]]) +
-                        1):length(res$peakList)]
-                } else {
-                    peakListNew[[tarInd]] <- res$peakList[(length(peakList[[refInd]]) +
-                        1):length(myPeakList)]
-                }
-            }
-        }
-        Z <- stats::cor(t(Y))
-        newCor <- stats::median(Z[lower.tri(Z)])
-        corVec <- c(corVec, newCor)
-        if (verbose) {
-            cat(
-                "\n Median Pearson correlation coefficent:",
-                newCor, ", the best result:", bestCor
-            )
-        }
-        if (newCor > bestCor) {
-            bestCor <- newCor
-            bestY <- Y
-            bestMaxShift <- maxShift_val
-        }
-    }
-    if (verbose) {
-        cat(
-            "\nOptimal maxShift=", bestMaxShift, "with median Pearson correlation of aligned spectra=",
-            bestCor
-        )
-        plot(log2(maxShift_ladder), corVec,
-            type = "b",
-            xlab = "log2(maxShift)", ylab = "Median Pearson correlation coefficent",
-            main = paste("Optimal maxShift=", bestMaxShift,
-                " (red star) \n with median Pearson correlation coefficent of ",
-                round(bestCor, 6),
-                sep = ""
-            )
-        )
-        graphics::points(log2(bestMaxShift), bestCor, col = "red", pch = 8, cex = 2)
-    }
-    if (verbose) {
-        endTime <- proc.time()
-        cat("\n Alignment time: ", (endTime[3] - startTime[3]) / 60, " minutes")
-    }
-    # Added by me at 31.08.21
-    return_list <- list("Y" = bestY, "new_peakList" = peakListNew)
-    return(return_list)
-}
 
-#' @noRd
-#' @author
-#' 2021-2024 Wolfram Gronwald: initial version.\cr
-#' 2024-2025 Tobias Schmidt: refactored initial version.
-dohCluster_withMaxShift <- function(X,
-                                    peakList,
-                                    refInd = 0,
-                                    maxShift = 100,
-                                    acceptLostPeak = TRUE,
-                                    verbose = TRUE) {
-    Y <- X
-    peakListNew <- peakList
-    if (verbose) {
-        startTime <- proc.time()
-    }
-    refSpec <- Y[refInd, ]
-    for (tarInd in seq_len(nrow(X))) {
-        if (tarInd != refInd) {
-            if (verbose) {
-                cat("\n aligning spectrum ", tarInd)
-            }
-            targetSpec <- Y[tarInd, ]
-            myPeakList <- c(peakList[[refInd]], peakList[[tarInd]])
-            myPeakLabel <- double(length(myPeakList))
-            for (i in seq_along(peakList[[refInd]])) myPeakLabel[i] <- 1
-            startP <- 1
-            endP <- length(targetSpec)
-            res <- speaq::hClustAlign(
-                refSpec,
-                targetSpec,
-                myPeakList,
-                myPeakLabel,
-                startP,
-                endP,
-                maxShift = maxShift,
-                acceptLostPeak = acceptLostPeak
-            )
-            Y[tarInd, ] <- res$tarSpec
-            if (length(myPeakList) > length(res$peakList)) {
-                peakListNew[[tarInd]] <- res$peakList[(length(peakList[[refInd]]) +
-                    1):length(res$peakList)]
-            } else {
-                peakListNew[[tarInd]] <- res$peakList[(length(peakList[[refInd]]) +
-                    1):length(myPeakList)]
-            }
-        }
-    }
-    if (verbose) {
-        Z <- stats::cor(t(Y))
-        newCor <- stats::median(Z[lower.tri(Z)])
-        cat(
-            "\n Median pearson correlation of aligned spectra:",
-            newCor
-        )
-        endTime <- proc.time()
-        cat(
-            "\n Alignment time: ", (endTime[3] - startTime[3]) / 60,
-            " minutes"
-        )
-    }
-
-    # Added modifications:
-    return_list <- list("Y" = Y, "new_peakList" = peakListNew)
-    return(return_list)
-}
 
 #' @noRd
 #'

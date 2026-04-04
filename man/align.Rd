@@ -7,8 +7,9 @@
 align(
   x,
   maxShift = 50,
-  maxCombine = 5,
+  maxCombine = 0,
   verbose = TRUE,
+  use_speaq = FALSE,
   install_deps = NULL,
   nworkers = 1,
   ref = NULL
@@ -29,13 +30,22 @@ value most probably has to be increased. Passed  as  argument  \code{maxShift}  
 \code{\link[=speaq_align]{speaq_align()}}.}
 
 \item{maxCombine}{Amount of adjacent columns which may be combined for improving
-the alignment during speaq's CluPA step. We recommend setting
-this to 0 and instead relying on the peak snapping implemented
-in \code{\link[=get_si_mat]{get_si_mat()}}.}
+the alignment during the CluPA step. We recommend setting this
+to 0 and instead relying on the peak snapping implemented  in
+\code{\link[=get_si_mat]{get_si_mat()}}. Since version 1.7.0  the  default
+is 0. Non-zero values are deprecated and support  will  be
+removed in a future version.}
 
 \item{verbose}{Whether to print additional information during the alignment process.}
 
-\item{install_deps}{Alignment  relies  on  the  'speaq'  package,  which  itself  relies  on  the
+\item{use_speaq}{If \code{FALSE} (default), alignment uses metabodecon's  own  built-in
+implementation.   If  \code{TRUE},  the  external  'speaq'  package  is
+used  instead.   The  'speaq'  backend  is  no  longer  recommended
+since  version  1.7.0  and  will  be  removed  in  a  future  version.
+When \code{use_speaq = TRUE}, the packages 'speaq', 'MassSpecWavelet'
+and 'impute' must be installed (see \code{install_deps}).}
+
+\item{install_deps}{Only used when \code{use_speaq = TRUE}.  'speaq' relies on the
 'MassSpecWavelet' and 'impute' packages. Both, 'MassSpecWavelet' and 'impute'
 are   not   available    on    CRAN,    but    can    be    installed    from
 \href{https://www.bioconductor.org/}{Bioconductor}                              or
