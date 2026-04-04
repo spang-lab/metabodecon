@@ -39,6 +39,13 @@
 #' @param nworkers
 #' Number of parallel workers for the alignment. Default is 1 (no parallelism).
 #'
+#' @param ref
+#' Optional reference spectrum of type `align` or `decon2`. When supplied,
+#' all spectra in `x` are aligned towards this reference. The reference is
+#' prepended to `x` internally and removed from the result. If `NULL`
+#' (default), the reference is chosen automatically via
+#' `speaq::findRef()`.
+#'
 #' @param install_deps
 #' Alignment  relies  on  the  'speaq'  package,  which  itself  relies  on  the
 #' 'MassSpecWavelet' and 'impute' packages. Both, 'MassSpecWavelet' and 'impute'
@@ -69,9 +76,19 @@ align <- function(x,
                   maxCombine = 5,
                   verbose = TRUE,
                   install_deps = NULL,
-                  nworkers = 1) {
+                  nworkers = 1,
+                  ref = NULL) {
 
     if (isFALSE(verbose)) local_options(toscutil.logf.file = nullfile())
+
+    # If an external reference is supplied, prepend it to the
+    # input so speaq aligns everything towards it.
+    has_ext_ref <- !is.null(ref)
+    if (has_ext_ref) {
+        ref_d2 <- ref
+        if (is_align(ref_d2)) class(ref_d2) <- "decon2"
+        x <- c(ref_d2, x)
+    }
 
     # Check and convert inputs
     xx <- as_decons2(x)
@@ -117,7 +134,7 @@ align <- function(x,
     logf("Performing speaq alignment with maxShift = %d", maxShift)
     X <- get_sup_mat(xx)
     peakList <- lapply(xx, get_peak_indices)
-    refInd <- speaq::findRef(peakList)$refInd
+    refInd <- if (has_ext_ref) 1L else speaq::findRef(peakList)$refInd
     if (nworkers == 1) {
         obj <- dohCluster(
             X = X, peakList = peakList, refInd = refInd, maxShift = maxShift,
@@ -235,6 +252,13 @@ align <- function(x,
         class(xx[[i]]) <- "align"
     }
     aligns <- structure(xx, class = "aligns")
+
+    # If an external reference was prepended, strip it from
+    # the result so the caller only gets the aligned input.
+    if (has_ext_ref) {
+        aligns <- aligns[-1]
+        class(aligns) <- "aligns"
+    }
 
     duration <- format(round(Sys.time() - starttime, 3))
     logf("Finished alignment in %s", duration)

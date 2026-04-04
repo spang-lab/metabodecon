@@ -495,6 +495,25 @@ cachedir <- function(subdir = NULL, persistent = NULL) {
     mkdirs(ncd)
 }
 
+#' @export
+#'
+#' @title Get Default Cache Directory for Deconvolution
+#'
+#' @description
+#' Returns the temporary session-scoped cache directory used by deconvolution
+#' functions such as [metabodecon::deconvolute()] and
+#' [metabodecon::grid_deconvolute_spectrum()].
+#'
+#' @return Path to the shared temporary cache directory for deconvolution.
+#'
+#' @author 2026 Tobias Schmidt: initial version.
+#'
+#' @examples
+#' decon_cachedir()
+decon_cachedir <- function() {
+    cachedir("deconvs", persistent = FALSE)
+}
+
 # Sap (Public) #####
 
 #' @name sap

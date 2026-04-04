@@ -8,11 +8,11 @@ cv_mdm(
   spectra,
   y,
   sfr,
-  nworkers = 4,
+  nworkers = 1,
   verbose = TRUE,
   use_rust = TRUE,
   nfolds = 10,
-  cadir = cachedir("grid_deconvolute_spectrum", FALSE)
+  cadir = decon_cachedir()
 )
 }
 \arguments{
@@ -30,18 +30,23 @@ cv_mdm(
 
 \item{nfolds}{Number of folds for inner cv.glmnet. Default 10.}
 
-\item{cadir}{Directory for caching grid search results. If \code{NULL}
-(default), a temporary session-scoped directory is used. Pass a custom
-path to share the cache across parallel calls.}
+\item{cadir}{Directory for caching deconvolution grid search results.
+Defaults to \code{\link[=decon_cachedir]{decon_cachedir()}}. If \code{NULL}, caching is disabled.
+Pass a custom path to use a different cache directory.}
 }
 \value{
-A list (class \code{mdm}) with the following elements:
+A list with classes \code{cv} and \code{mdm} containing:
 \itemize{
-\item \code{model}: The fitted \code{cv.glmnet} model object.
+\item \code{model}: The \code{cv.glmnet} model fitted with the best parameters.
+\item \code{ref}: Reference \code{align} object for snapping future test samples.
 \item \code{pgrid}: Data frame of parameter combinations and their cv.glmnet
 performances (columns: \code{npmax}, \code{maxShift}, \code{maxSnap},
-\code{cvm}).
-\item \code{best}: Named list of the best parameter combination.
+\code{cvm_min}, \code{cvsd_min}, \code{cvm_1se}, \code{cvsd_1se}).
+\item \code{args}: List of all function arguments except \code{spectra}, with
+\code{spectra_names} (from \code{get_names(spectra)}) in place of the
+full spectra object.
+\item \code{normalisation}: Normalization method (currently \code{"none"}).
+\item \code{args}: List of deconvolution/alignment/model parameters.
 }
 }
 \description{

@@ -18,7 +18,7 @@ deconvolute(
   use_rust = FALSE,
   npmax = 0,
   igrs = list(),
-  cachedir = NULL
+  cadir = decon_cachedir()
 )
 }
 \arguments{
@@ -68,15 +68,17 @@ is used.}
 \code{npmax >= 1}, the \code{nfit}, \code{smopts} and \code{delta} arguments are ignored and a
 grid search over predefined parameter combinations is performed instead. The
 combination with the smallest residual area ratio and fewer than \code{npmax}
-peaks is selected. Grid search results are cached to disk; see \code{cachedir}.}
+peaks is selected. Grid search results are cached to disk by default; see
+\code{cadir}.}
 
 \item{igrs}{Ignore regions. List of length-2 numeric vectors specifying the
 start and endpoints of the chemical shift regions to ignore during
 deconvolution. Currently not used.}
 
-\item{cachedir}{Directory for caching grid search results when \code{npmax >= 1}.
-If \code{NULL} (default), a temporary session-scoped directory is used. Pass a
-custom path to share the cache across parallel calls or R sessions.}
+\item{cadir}{Directory for caching grid search results and deconvolution
+results for \code{npmax >= 1}. Defaults to \code{\link[=decon_cachedir]{decon_cachedir()}}. If
+\code{NULL}, caching is disabled. Pass a custom path to use a different cache
+directory.}
 }
 \value{
 A 'decon2' object as described in \href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{Metabodecon Classes}.

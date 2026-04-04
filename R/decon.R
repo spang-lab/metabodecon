@@ -54,15 +54,17 @@
 #' `npmax >= 1`, the `nfit`, `smopts` and `delta` arguments are ignored and a
 #' grid search over predefined parameter combinations is performed instead. The
 #' combination with the smallest residual area ratio and fewer than `npmax`
-#' peaks is selected. Grid search results are cached to disk; see `cachedir`.
+#' peaks is selected. Grid search results are cached to disk by default; see
+#' `cadir`.
 #'
 #' @param igrs Ignore regions. List of length-2 numeric vectors specifying the
 #' start and endpoints of the chemical shift regions to ignore during
 #' deconvolution. Currently not used.
 #'
-#' @param cachedir Directory for caching grid search results when `npmax >= 1`.
-#' If `NULL` (default), a temporary session-scoped directory is used. Pass a
-#' custom path to share the cache across parallel calls or R sessions.
+#' @param cadir Directory for caching grid search results and deconvolution
+#' results for `npmax >= 1`. Defaults to [metabodecon::decon_cachedir()]. If
+#' `NULL`, caching is disabled. Pass a custom path to use a different cache
+#' directory.
 #'
 #' @return A 'decon2' object as described in [Metabodecon
 #' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
@@ -88,7 +90,7 @@
 deconvolute <- function(x,
     nfit=3,    smopts=c(2, 5), delta=6.4,    sfr=NULL,      wshw=0,
     ask=FALSE, force=FALSE,    verbose=TRUE, nworkers=1,    use_rust=FALSE,
-    npmax=0,   igrs=list(),    cachedir=NULL
+    npmax=0,   igrs=list(),    cadir=decon_cachedir()
 ) {
 
     # Check inputs
@@ -99,7 +101,7 @@ deconvolute <- function(x,
         is_bool(ask, 1),              is_bool(force, 1),
         is_bool(verbose, 1),          is_int(nworkers, 1),
         is_bool_or_null(use_rust, 1), is_int(npmax, 1),
-        is_list_of_nums(igrs, nv=2),  is_str_or_null(cachedir)
+        is_list_of_nums(igrs, nv=2),  is_str_or_null(cadir)
     )
 
     # Set suitable defaults
@@ -112,7 +114,7 @@ deconvolute <- function(x,
         nfit, smopts, delta, sfr, wshw,
         ask, force, verbose, bwc=2,
         use_rust, nw=nworkers, igr=list(), rtyp="decon2",
-        npmax=npmax, cachedir=cachedir
+        npmax=npmax, cadir=cadir
     )
 
     # Convert and return
@@ -135,7 +137,7 @@ deconvolute_spectra <- function(x,
     nfit=3,        smopts=c(2, 5),    delta=6.4,      sfr=c(3.55, 3.35),
     wshw=0,        ask=FALSE,         force=FALSE,    verbose=TRUE,
     bwc=2,         use_rust=FALSE,    nw=1,           igr=list(),
-    rtyp="idecon", npmax=0,           cachedir=NULL
+    rtyp="idecon", npmax=0,           cadir=decon_cachedir()
 ) {
 
     # Check inputs
@@ -149,7 +151,7 @@ deconvolute_spectra <- function(x,
         if (rtyp == "rdecon") isTRUE(use_rust) else is_bool(use_rust),
         is_int(nw, 1), is.list(igr),
         is_char(rtyp, 1, "(decon[0-2]|idecon|rdecon)"),
-        is_int(npmax, 1), is_str_or_null(cachedir)
+        is_int(npmax, 1), is_str_or_null(cadir)
     )
 
     # Configure logging
@@ -168,7 +170,7 @@ deconvolute_spectra <- function(x,
     wshw_list <- get_wshw(spectra, wshw, ask, adjno)
     smopts_list <- get_smopts(spectra, smopts)
     igr_list <- list(list())
-    if (is.null(cachedir)) cachedir <- rep(list(NULL), ns)
+    cadir_list <- list(cadir)
 
     # Deconvolute spectra
     logf("Starting deconvolution of %s using %s", ns_str, nw_apply_str)
@@ -178,7 +180,7 @@ deconvolute_spectra <- function(x,
         nfit, smopts_list, delta, sfr_list, wshw_list,
         ask, force, verbose, bwc,
         use_rust, nw_deconv, igr_list, rtyp,
-        npmax, cachedir
+        npmax, cadir_list
     )
     decons <- as_collection(decon_list, rtyp)
     duration <- format(round(Sys.time() - starttime, 3))
@@ -217,7 +219,7 @@ deconvolute_spectrum <- function(x,
     nfit=3, smopts=c(2, 5), delta=6.4, sfr=c(3.55, 3.35), wshw=0,
     ask=FALSE, force=FALSE, verbose=TRUE, bwc=2,
     use_rust=FALSE, nw=1, igr=list(), rtyp="idecon",
-    npmax=0, cachedir=NULL
+    npmax=0, cadir=decon_cachedir()
 ) {
 
     # Check inputs
@@ -228,7 +230,7 @@ deconvolute_spectrum <- function(x,
         is_num(bwc, 1),   is_bool(use_rust, 1),  is_int(nw, 1),
         is_list_of_nums(igr, nv=2),
         is_char(rtyp, 1, "(decon[0-2]|idecon|rdecon)"),
-        is_int(npmax, 1), is_str_or_null(cachedir)
+        is_int(npmax, 1), is_str_or_null(cadir)
     )
 
     # Init locals
@@ -236,45 +238,44 @@ deconvolute_spectrum <- function(x,
     name <- get_name(x)
     suffix <- if (use_rust) " using Rust backend" else ""
 
-    # If 'npmax' is positive: ignore 'nfit', 'smopts' and 'delta' and instead
-    # perform a grid search to find the params that produce the smallest area
-    # ratio (residual-area/spectra-area) with a maximum of 'npmax' peaks.
-    #
-    # Note: The Rust backend sometimes produces zero peak results if SFR and
-    # Delta are too small. We ignore these results and select only from the
-    # remaining (reasoanble) results. If all results have zero peaks, we
-    # raise an error.
-    if (is_num(npmax) && npmax >= 1) {
+    # Stop early if deconvolution is cached
+    if (npmax >= 1) {
+        cache <- disk_cache(cadir)
+        args <- list("ds", x, sfr, wshw, force, bwc, use_rust, npmax, rtyp)
+        cachehash <- rlang::hash(args)
+        if (cache$exists(cachehash)) {
+            logf("Cache hit for %s (npmax=%d)", name, npmax)
+            return(cache$get(cachehash))
+        }
+    }
+
+    # Perform grid search (to replace given nfit, smopts and delta)
+    if (npmax >= 1) {
         fmt <- "Starting grid deconvolution of %s using %s backend"
         logf(fmt, name, if (use_rust) "Rust" else "R")
-        cd <- cachedir %||% cachedir("grid_deconvolute_spectrum", FALSE)
-        grid <- grid_deconvolute_spectrum(
-            x=x, sfr=sfr, verbose=verbose, use_rust=use_rust,
-            cachedir=cd
-        )
-        grid <- grid[grid$np > 0, ]
-        if (nrow(grid) == 0) stop("All parameter combinations produced zero peaks.")
-        sub <- grid[grid$np < npmax, ]
+        G <- grid_deconvolute_spectrum(x, sfr, verbose, use_rust, cadir)
+        G <- G[G$np > 0, ]
+        # The Rust backend sometimes produces zero peaks if SFR and Delta are
+        # too small. We ignore these and select only from the valid results.
+        if (nrow(G) == 0) stop("All parameter sets produced zero peaks.")
+        sub <- G[G$np < npmax, ]
         if (nrow(sub) == 0) {
-            fmt <- paste(
-                "No parameter combination found with np < %d.",
-                "Using combination with smallest np (%d) instead."
-            )
-            logf(sprintf(fmt, npmax, min(grid$np)))
-            best <- grid[grid$np == min(grid$np), , drop=FALSE]
+            ln1 <- "No parameter set found with np < %d."
+            ln2 <- "Using set with smallest np (%d) instead."
+            logf(paste(ln1, ln2), npmax, min(G$np))
+            best <- G[G$np == min(G$np), , drop=FALSE]
         } else {
             best <- sub[sub$ar == min(sub$ar), , drop=FALSE]
         }
         nfit <- best$nfit[1]
         smopts <- c(best$smit[1], best$smws[1])
         delta <- best$delta[1]
-        fmt <- "Finished grid search. Best params: nfit=%d, smopts=c(%d, %d), delta=%.2f"
+        fmt <- "Done. Best params: nfit=%d, smopts=c(%d, %d), delta=%.2f"
         logf(fmt, nfit, smopts[1], smopts[2], delta)
     }
     args <- get_args(deconvolute_spectrum, ignore = "x")
 
-
-    # Deconvolute
+    # Deconvolute with given/optimal parameters
     logf("Starting deconvolution of %s%s", name, suffix)
     if (use_rust) {
         mdrb_spectrum <- mdrb::Spectrum$new(x$cs, x$si, sfr)
@@ -300,12 +301,15 @@ deconvolute_spectrum <- function(x,
         ispec <- fit_lorentz_curves(ispec, nfit, bwc)
         decon <- as_idecon(ispec)
     }
+
+    # Format, cache and return
     logf("Formatting return object as %s", rtyp)
     convert <- switch(rtyp,
         "decon0"=as_decon0, "decon1"=as_decon1, "decon2"=as_decon2,
         "idecon"=as_idecon, "rdecon"=as_rdecon
     )
     decon <- convert(decon)
+    if (npmax >= 1) cache$set(cachehash, decon)
     logf("Finished deconvolution of %s", name)
     decon
 }
@@ -394,7 +398,7 @@ grid_deconvolute_spectra <- function(
     verbose=TRUE,
     nw=1,
     use_rust=FALSE,
-    cachedir = cachedir("grid_deconvolute_spectrum", FALSE) # (1)
+    cadir = decon_cachedir() # (1)
     # (1) We share the cache between `grid_deconvolute_spectra()` and
     # `grid_deconvolute_spectrum()`, so we can easily check whether the grid
     # search for an individual spectrum has already been performed. That means
@@ -408,30 +412,29 @@ grid_deconvolute_spectra <- function(
         is_bool(verbose, 1),
         is_int(nw, 1),
         is_bool(use_rust),
-        is_str_or_null(cachedir)
+        is_str_or_null(cadir)
     )
     if (isFALSE(verbose)) local_options(toscutil.logf.file = nullfile())
 
-    logf("Checking for cached results")
-    cache <- cachem::cache_disk(cachedir)
-    hashes <- lapply(x, function(s) rlang::hash(list(s, sfr, use_rust)))
-    seen <- sapply(hashes, cache$exists)
-
-    logf("Reading %d/%d results from cache", sum(seen), length(x))
+    cache <- disk_cache(cadir)
+    hashes <- lapply(x, function(s) rlang::hash(list("gds", s, sfr, use_rust)))
     gridlist <- vector("list", length(x))
+    logf("Checking for cached results")
+    seen <- sapply(hashes, cache$exists)
+    logf("Reading %d/%d results from cache", sum(seen), length(x))
     gridlist[seen] <- lapply(hashes[seen], function(h) cache$get(h))
-    if (sum(seen) == length(x)) return(gridlist)
+    if (sum(seen) == length(x)) return(invisible(gridlist))
 
     logf("Running grid deconvolution for remaining %d spectra", sum(!seen))
     u <- x[!seen] # u == unseen spectra
     nw <- min(nw, length(u))
     gridlist[!seen] <- mcmapply(nw, grid_deconvolute_spectrum,
         x=u, sfr=list(sfr), verbose=verbose, use_rust=use_rust,
-        cachedir=cachedir
+        cadir=list(cadir)
     )
     # Note: grid_deconvolute_spectrum() caches its own result, so we
     # don't need to write to the cache here.
-    gridlist
+    invisible(gridlist)
 }
 
 #' @noRd
@@ -449,16 +452,16 @@ grid_deconvolute_spectra <- function(
 #' @examples
 #'
 #' x <- read_spectrum(metabodecon_file("urine_1"))
-#' cd <- cachedir("grid_deconvolute_spectrum")
+#' cd <- decon_cachedir()
 #'
 #' a <- Sys.time()
 #' use_rust <- FALSE
-#' gridR <- grid_deconvolute_spectrum(x, use_rust=use_rust, cachedir=cd)
+#' gridR <- grid_deconvolute_spectrum(x, use_rust=use_rust, cadir=cd)
 #' runtimeR <- Sys.time() - a
 #'
 #' b <- Sys.time()
 #' use_rust <- TRUE
-#' gridRust <- grid_deconvolute_spectrum(x, use_rust=use_rust, cachedir=cd)
+#' gridRust <- grid_deconvolute_spectrum(x, use_rust=use_rust, cadir=cd)
 #' runtimeRust <- Sys.time() - b
 #'
 grid_deconvolute_spectrum <- function(
@@ -466,12 +469,12 @@ grid_deconvolute_spectrum <- function(
     sfr=NULL,
     verbose=TRUE,
     use_rust=FALSE,
-    cachedir=cachedir("grid_deconvolute_spectrum", FALSE)
+    cadir=decon_cachedir()
 ) {
 
     assert(
         is_spectrum(x), is_num_or_null(sfr, 2), is_bool(verbose, 1),
-        is_bool(use_rust, 1), is_str_or_null(cachedir)
+        is_bool(use_rust, 1), is_str_or_null(cadir)
     )
     if (!verbose) local_options(toscutil.logf.file = nullfile())
 
@@ -480,11 +483,11 @@ grid_deconvolute_spectrum <- function(
     sfr <- sfr %||% quantile(x$cs %||% x[[1]]$cs, c(0.9, 0.1))
 
     # Read from cache if available
-    cacheobj <- cachem::cache_disk(cachedir)
-    hash <- rlang::hash(list(x, sfr, use_rust))
-    if (cacheobj$exists(hash)) {
+    hash <- rlang::hash(list("gds", x, sfr, use_rust))
+    cache <- disk_cache(cadir)
+    if (cache$exists(hash)) {
         logf("Cache hit for %s", get_name(x))
-        return(cacheobj$get(hash))
+        return(cache$get(hash))
     }
     backend <- if (use_rust) "Rust" else "R"
     specname <- get_name(x)
@@ -509,7 +512,7 @@ grid_deconvolute_spectrum <- function(
         grid[i, "np"] <- nrow(d$lcpar)
     }
     logf("Finished grid deconvolution of %s", specname)
-    cacheobj$set(hash, grid)
+    cache$set(hash, grid)
     grid
 }
 

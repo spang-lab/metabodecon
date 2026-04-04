@@ -10,7 +10,8 @@ align(
   maxCombine = 5,
   verbose = TRUE,
   install_deps = NULL,
-  nworkers = 1
+  nworkers = 1,
+  ref = NULL
 )
 }
 \arguments{
@@ -46,6 +47,12 @@ confirmation is not possible or \code{install_deps=FALSE}, the function will rai
 an error if the packages are not installed.}
 
 \item{nworkers}{Number of parallel workers for the alignment. Default is 1 (no parallelism).}
+
+\item{ref}{Optional reference spectrum of type \code{align} or \code{decon2}. When supplied,
+all spectra in \code{x} are aligned towards this reference. The reference is
+prepended to \code{x} internally and removed from the result. If \code{NULL}
+(default), the reference is chosen automatically via
+\code{speaq::findRef()}.}
 }
 \value{
 An object of type \code{align} as described in \href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{Metabodecon Classes}.

@@ -10,7 +10,7 @@
   to disk via `cachem::cache_disk`.
 * `cv_mdm()` rewritten with a `snap` grid
   (`c(0.5, 1, 1.5, 2, 2.5, 3)`) and `npmax` grid for cross-validated
-  hyperparameter tuning. Added `estimate_mdm_performance()` draft.
+  hyperparameter tuning. Added `benchmark_mdm()` draft.
 * Updated Rd files for `get_si_mat`, `align`, and `deconvolute` to match
   new signatures.
 * Fixed a bug where `deconvolute_spectra()` passed `NULL` (length 0) as
@@ -36,7 +36,7 @@
     with helpers for binning, normalization (quantile/PQN/creatinine/sum/
     median/none), nested CV benchmarking, caching, and plotting.
   - Added internal `mdm` S3 methods and documentation
-    (`fit_mdm()`, `predict.mdm()`, `print.mdm()`, `coef.mdm()`,
+    (`mdm()`, `predict.mdm()`, `print.mdm()`, `coef.mdm()`,
     `plot.mdm()`, `summary.mdm()`, `print.summary.mdm()`).
   - Added tests for the new AKI/model internals in
     `tests/testthat/test-paper_aki_orig.R` and

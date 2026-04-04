@@ -1,14 +1,14 @@
-# Tests for the planned fit_mdm(X, y, model, normalisation, ...) API.
-# Currently skipped because fit_mdm has a different signature.
+# Tests for the planned mdm(X, y, model, normalisation, ...) API.
+# Currently skipped because mdm has a different signature.
 
-testthat::test_that("fit_mdm supports svm", {
-  testthat::skip("fit_mdm(X, y, model=...) API not yet implemented")
+testthat::test_that("mdm supports svm", {
+  testthat::skip("mdm(X, y, model=...) API not yet implemented")
   testthat::skip_if_not_installed("e1071")
   set.seed(1)
   X <- matrix(rnorm(30 * 20), nrow = 30)
   y <- factor(rep(c("Control", "AKI"), each = 15))
 
-  m <- fit_mdm(X, y, model = "svm", normalisation = "quantile", nfeat = 5)
+  m <- mdm(X, y, model = "svm", normalisation = "quantile", nfeat = 5)
 
   testthat::expect_s3_class(m, "mdm")
   testthat::expect_true(is.list(m))
@@ -21,14 +21,14 @@ testthat::test_that("fit_mdm supports svm", {
   testthat::expect_true(all(c %in% c(0L, 1L)))
 })
 
-testthat::test_that("fit_mdm supports lasso", {
-  testthat::skip("fit_mdm(X, y, model=...) API not yet implemented")
+testthat::test_that("mdm supports lasso", {
+  testthat::skip("mdm(X, y, model=...) API not yet implemented")
   testthat::skip_if_not_installed("glmnet")
   set.seed(1)
   X <- matrix(rnorm(40 * 25), nrow = 40)
   y <- factor(rep(c("Control", "AKI"), each = 20))
 
-  m <- fit_mdm(X, y, model = "lasso", normalisation = "median")
+  m <- mdm(X, y, model = "lasso", normalisation = "median")
 
   testthat::expect_s3_class(m, "mdm")
   p <- predict(m, X, type = "prob")
@@ -39,11 +39,11 @@ testthat::test_that("fit_mdm supports lasso", {
 })
 
 testthat::test_that("mdm methods run", {
-  testthat::skip("fit_mdm(X, y, model=...) API not yet implemented")
+  testthat::skip("mdm(X, y, model=...) API not yet implemented")
   testthat::skip_if_not_installed("e1071")
   X <- matrix(rnorm(20 * 10), nrow = 20)
   y <- factor(rep(c("Control", "AKI"), each = 10))
-  m <- fit_mdm(X, y, model = "svm", normalisation = "sum", nfeat = 3)
+  m <- mdm(X, y, model = "svm", normalisation = "sum", nfeat = 3)
 
   testthat::expect_invisible(print(m))
   s <- summary(m)
@@ -127,12 +127,12 @@ testthat::test_that("extension benchmark uses cache", {
   testthat::expect_equal(t2, t1)
 })
 
-testthat::test_that("fit_mdm rejects non-binary labels", {
-  testthat::skip("fit_mdm(X, y, model=...) API not yet implemented")
+testthat::test_that("mdm rejects non-binary labels", {
+  testthat::skip("mdm(X, y, model=...) API not yet implemented")
   X <- matrix(rnorm(30), nrow = 10)
   y <- factor(c("A", "B", "C", "A", "B", "C", "A", "B", "C", "A"))
   testthat::expect_error(
-    fit_mdm(X, y, model = "svm", normalisation = "none", nfeat = 2),
+    mdm(X, y, model = "svm", normalisation = "none", nfeat = 2),
     "exactly 2"
   )
 })

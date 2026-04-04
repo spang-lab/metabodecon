@@ -259,6 +259,39 @@ clear <- function(dir) {
 }
 
 #' @noRd
+#' @description
+#' Return a no-op cache object with the same methods we use from
+#' `cachem::cache_disk()`.
+#' @author 2026 Tobias Schmidt: initial version.
+null_cache <- function() {
+    cache <- new.env(parent = emptyenv())
+    cache$exists <- function(key) FALSE
+    cache$get <- function(key) NULL
+    cache$set <- function(key, value) invisible(NULL)
+    cache
+}
+
+#' @noRd
+#' @description
+#' Return a disk cache unless `path` is `NULL`, in which case a no-op cache is
+#' returned. The disk cache is configured without size, age, or entry-count
+#' limits, and with an effectively disabled pruning throttle.
+#' @author 2026 Tobias Schmidt: initial version.
+disk_cache <- function(path) {
+    if (is.null(path)) {
+        null_cache()
+    } else {
+        cachem::cache_disk(
+            dir = path,
+            max_size = Inf,
+            max_age = Inf,
+            max_n = Inf,
+            prune_rate = .Machine$integer.max
+        )
+    }
+}
+
+#' @noRd
 #' @author 2024-2025 Tobias Schmidt: initial version.
 norm_path <- function(path, winslash = "/", mustWork = FALSE) {
     normalizePath(path, winslash = winslash, mustWork = mustWork)
@@ -591,9 +624,97 @@ logf <- function(fmt,
 }
 
 #' @noRd
-#' @author 2024-2025 Tobias Schmidt: initial version.
-get_logv <- function(verbose) {
-    if (verbose) logf else function(...) NULL
+#' @title Log formatted messages if verbosity is high enough
+#' @description
+#' Logs `fmt` via `logf()` if `verbosity >= 1` (`logv`) or `>= 2` (`logvv`).
+#' The `verbosity` argument defaults to `caller_verbosity()`, so it is
+#' automatically inherited from the calling environment when not supplied.
+#' @param fmt A format string (character) or any object to print and log.
+#' @param ... Values passed to `sprintf()` when `fmt` is character.
+#' @param verbosity
+#' Numeric verbosity level. Defaults to `caller_verbosity()`, which looks up
+#' `verbosity` in the calling environment.
+#' @return
+#' The timestamp (POSIXct) of the log entry (like `logf()` does).
+logv <- function(fmt, ..., verbosity = caller_verbosity()) {
+    if (verbosity >= 1) logf(fmt, ...) else invisible(Sys.time())
+}
+
+#' @noRd
+#' @title Inherit verbosity from the calling environment
+#'
+#' @description
+#' Looks first for `verbose` and then for `verbosity` in the caller's
+#' environment, walking the lexical parent chain via
+#' `mget(..., inherits = TRUE)`. Intended to be used as a default argument:
+#' `f <- function(verbosity = caller_verbosity()) { ... }`. This makes
+#' `verbosity` behave like an inherited parameter — the caller's value flows
+#' down automatically without having to be passed explicitly at every call
+#' site.
+#'
+#' @details
+#' **How the frame arithmetic works**
+#'
+#' The canonical use pattern is `f <- function(verbosity = caller_verbosity())`.
+#' In R, default arguments are evaluated lazily inside the function's own
+#' frame. So when `f` is called without `verbosity`, the promise
+#' `caller_verbosity()` is forced inside `f`'s frame. At that point:
+#'
+#' - `parent.frame(1)` inside `caller_verbosity` is `f`'s frame.
+#' - `parent.frame(2)` is `f`'s caller — exactly the environment from which
+#'   `verbose` or `verbosity` should be inherited.
+#'
+#' The lookup then walks lexical parents via `inherits = TRUE`, so it also
+#' resolves `verbose` or `verbosity` bound in enclosing closures (e.g.
+#' anonymous functions passed to `lapply`).
+#'
+#' **Why implicit inheritance is acceptable here**
+#'
+#' As a general principle, relying on implicit parameter inheritance — where
+#' a value is silently picked up from the calling scope rather than passed
+#' explicitly — is a bad practice. It makes the call graph opaque: a reader
+#' cannot see what value a function receives just by reading the call site,
+#' which complicates both understanding and debugging.
+#'
+#' For `verbosity`, however, both of these concerns are greatly weakened:
+#'
+#' - *It does not affect correctness.* `verbosity` only controls how much
+#'   is printed; it has no effect on computed results. A wrong value causes
+#'   too much or too little output, never a wrong answer.
+#' - *Explicit passing adds pervasive clutter.* `verbosity` must be threaded
+#'   through every single function in the call chain. In a deep pipeline this
+#'   means adding a `verbosity` argument and a `verbosity = verbosity`
+#'   call-site token to dozens of functions, none of which add any
+#'   informational value to the code as documentation.
+#'
+#' The combination — negligible risk from implicit inheritance, high
+#' readability cost from explicit passing — makes `caller_verbosity()` an
+#' acceptable exception to the general rule.
+#'
+#' @param default
+#' Numeric value returned when neither `verbose` nor `verbosity` is found in
+#' the calling environment or any of its lexical parents. Defaults to `1`.
+#'
+#' @return
+#' A single numeric value: the resolved `verbose`/`verbosity` value, or
+#' `default` if neither is found.
+#'
+#' @examples
+#' d <- function(verbosity = caller_verbosity()) {
+#'     logv("d: running")         # prints when verbosity >= 1
+#'     logvv("d: verbose detail") # prints when verbosity >= 2
+#' }
+#' b <- function(verbosity = caller_verbosity()) d()
+#' a <- function(verbosity = 1) b()
+#'
+#' a(verbosity = 0) # Expected: nothing printed
+#' a(verbosity = 1) # Expected: "d: running" printed
+#' a(verbosity = 2) # Expected: both lines printed
+caller_verbosity <- function(default = 1) {
+    env <- parent.frame(2) # skip caller_verbosity; land in the caller's caller
+    mget("verbose", envir=env, inherits=TRUE, ifnotfound=list(NULL))[[1]] %||%
+        mget("verbosity", envir=env, inherits=TRUE, ifnotfound=list(NULL))[[1]] %||%
+        default
 }
 
 #' @noRd
@@ -1287,12 +1408,38 @@ transp <- function(col = "violet", alpha = 0.08) {
 #' @description
 #' Multi core version of mapply with automatic logging of worker output.
 #' For `nw == 1` normal `mapply` is used.
-#' @author 2024-2025 Tobias Schmidt: initial version.
-mcmapply <- function(nw, FUN, ..., loadpkg = TRUE, log = TRUE) {
-    if (nw == 1) return(mapply(FUN, ..., SIMPLIFY = FALSE))
+#' @author 2024-2026 Tobias Schmidt: initial version.
+mcmapply <- function(
+    nw, FUN, ...,
+    MoreArgs = NULL, RECYCLE = TRUE, SIMPLIFY = FALSE,
+    USE.NAMES = TRUE, .scheduling = c("static", "dynamic"),
+    loadpkg = TRUE, log = TRUE
+) {
+    if (nw == 1) {
+        mapply(
+            FUN, ...,
+            MoreArgs = MoreArgs, SIMPLIFY = SIMPLIFY,
+            USE.NAMES = USE.NAMES
+        )
+    } else {
+        .scheduling <- match.arg(.scheduling)
+        cl <- get_worker_pool(nw, loadpkg = loadpkg, log = log)
+        on.exit(stopCluster(cl), add = TRUE, after = FALSE)
+        clusterMap(
+            cl, FUN, ...,
+            MoreArgs = MoreArgs, RECYCLE = RECYCLE, SIMPLIFY = SIMPLIFY,
+            USE.NAMES = USE.NAMES, .scheduling = .scheduling
+        )
+    }
+}
+
+#' @noRd
+#' @description
+#' Create a worker pool with package loading and per-worker logging.
+#' @author 2026 Tobias Schmidt: initial version.
+get_worker_pool <- function(nw, loadpkg = TRUE, log = TRUE) {
     logf("Creating pool of worker processes")
     cl <- makeCluster(nw)
-    on.exit(stopCluster(cl), add = TRUE)
     if (loadpkg) {
         expr <- parse(text = 'attach(asNamespace("metabodecon"))')
         clusterCall(cl, eval, expr)
@@ -1303,7 +1450,7 @@ mcmapply <- function(nw, FUN, ..., loadpkg = TRUE, log = TRUE) {
         sapply(logfiles, logf)
         clusterApply(cl, logfiles, sink, append = TRUE, type = "output")
     }
-    clusterMap(cl, FUN, ..., SIMPLIFY = FALSE)
+    cl
 }
 
 #' @noRd
@@ -1344,6 +1491,29 @@ document <- function() {
     diff <- Sys.time() - x
     logf("Elapsed: %s", format(diff))
 }
+
+#' @noRd
+#' @author 2026 Tobias Schmidt: initial version.
+style <- function() {
+    stopifnot(loaded_via_devtools())
+    style_func <- function(...) {
+        transformers <- styler::tidyverse_style(indent_by = 4, ...)
+        unindent_fun_dec <- transformers$indention$unindent_fun_dec
+        formals(unindent_fun_dec)$indent_by <- 4L
+        transformers$indention$unindent_fun_dec <- unindent_fun_dec
+        transformers$space$set_no_space_around_eq_sub <- function(pd) {
+            is_eq_sub <- pd$token == "EQ_SUB"
+            is_before_eq_sub <- c(is_eq_sub[-1], FALSE)
+            pd$spaces[is_eq_sub | is_before_eq_sub] <- 0L
+            pd
+        }
+        transformers
+    }
+    styler::style_pkg(style = style_func)
+    instfiles <- fdfind("inst", "\\.R$", full.names = TRUE, recursive = TRUE)
+    styler::style_file(instfiles, style = style_func)
+}
+
 
 # On Load (Private) #####
 

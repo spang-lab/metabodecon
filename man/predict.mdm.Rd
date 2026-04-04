@@ -9,17 +9,20 @@
   newdata,
   type = c("prob", "class", "link"),
   s = "lambda.min",
+  nworkers = 1,
   ...
 )
 }
 \arguments{
 \item{object}{Fitted \code{mdm} object.}
 
-\item{newdata}{Numeric feature matrix.}
+\item{newdata}{Spectra object or numeric feature matrix.}
 
 \item{type}{Prediction type, one of \code{"prob"}, \code{"class"}, \code{"link"}.}
 
 \item{s}{Regularization value for lasso predictions.}
+
+\item{nworkers}{Number of workers used when \code{newdata} is a spectra object.}
 
 \item{...}{Additional arguments, currently unused.}
 }
@@ -27,11 +30,15 @@
 Numeric vector of probabilities, classes, or link scores.
 }
 \description{
-Predicts probabilities, classes, or link scores from an \code{mdm} object.
+Predicts probabilities, classes, or link scores from an \code{mdm}
+object. When \code{newdata} is a spectra object, the spectra are deconvoluted,
+aligned and snapped to the reference stored in the model before prediction.
+When \code{newdata} is a numeric matrix, it is used directly as the feature
+matrix.
 }
 \examples{
 \dontrun{
   m <- cv_mdm(spectra, y, sfr = c(11, -2))
-  predict(m, X, type = "prob")
+  predict(m, test_spectra, type = "prob")
 }
 }
