@@ -8,10 +8,12 @@ cv_mdm(
   spectra,
   y,
   sfr,
+  use_rust = TRUE,
+  npmax = NULL,
+  maxShift = seq(50, 250, 50),
+  maxSnap = seq(0.5, 2, 0.5),
   nworkers = 1,
   verbose = TRUE,
-  use_rust = TRUE,
-  nfolds = 10,
   cadir = decon_cachedir()
 )
 }
@@ -22,45 +24,38 @@ cv_mdm(
 
 \item{sfr}{Signal free region. See \code{\link[=deconvolute]{deconvolute()}} for details.}
 
+\item{use_rust}{Logical. Whether to use the Rust backend.}
+
 \item{nworkers}{Number of workers for parallel grid deconvolution.}
 
 \item{verbose}{Logical. Whether to print log messages.}
 
-\item{use_rust}{Logical. Whether to use the Rust backend.}
-
-\item{nfolds}{Number of folds for inner cv.glmnet. Default 10.}
-
 \item{cadir}{Directory for caching deconvolution grid search results.
 Defaults to \code{\link[=decon_cachedir]{decon_cachedir()}}. If \code{NULL}, caching is disabled.
 Pass a custom path to use a different cache directory.}
+
+\item{nfolds}{Number of folds for inner cv.glmnet. Default 10.}
 }
 \value{
-A list with classes \code{cv} and \code{mdm} containing:
-\itemize{
-\item \code{model}: The \code{cv.glmnet} model fitted with the best parameters.
-\item \code{ref}: Reference \code{align} object for snapping future test samples.
-\item \code{pgrid}: Data frame of parameter combinations and their cv.glmnet
-performances (columns: \code{npmax}, \code{maxShift}, \code{maxSnap},
-\code{cvm_min}, \code{cvsd_min}, \code{cvm_1se}, \code{cvsd_1se}).
-\item \code{args}: List of all function arguments except \code{spectra}, with
-\code{spectra_names} (from \code{get_names(spectra)}) in place of the
-full spectra object.
-\item \code{normalisation}: Normalization method (currently \code{"none"}).
-\item \code{args}: List of deconvolution/alignment/model parameters.
-}
+A object of class \code{mdm} as returned by \code{\link[=fit_mdm]{fit_mdm()}}, with two
+additional elements \code{pgrid} and \code{ibest}, containing the performance grid and
+index of the best parameter combination.
 }
 \description{
-Performs deconvolution+alignment over a grid of parameters and calculates the
-corresponding cv.glmnet-lasso-lambda.min performance. The
-deconvolution+alignment parameters that enable the best cv glmnet
-performances are considered optimal and are used for fitting the final model
-with the corresponding optimal lambda value.
+Performs deconvolution, alignment and peak-snapping over a grid of parameters
+and calls \code{\link[glmnet:cv.glmnet]{glmnet::cv.glmnet()}} on each corresponding matrix. Calculates the
+corresponding \code{cv.glmnet} performances. The deconvolution, alignment and
+snapping parameters that enable the best performances are considered optimal
+and are used for fitting the final model with the corresponding optimal
+lambda value.
 }
 \examples{
 \dontrun{
      aki <- read_aki_data()
      spectra <- aki$spectra
-     y <- factor(aki$meta$type, levels = c("Control", "AKI"))
-     mdm <- cv_mdm(spectra, y, sfr = c(11, -2))
+     y <- factor(aki$meta$type, levels=c("Control", "AKI"))
+     nworkers <- ceiling(parallel::detectCores() / 2)
+     stub(cv_mdm, spectra=spectra, y=y, sfr=c(11, -2), nworkers=nworkers)
+     mdm <- cv_mdm(spectra, y, sfr=c(11, -2))
 }
 }

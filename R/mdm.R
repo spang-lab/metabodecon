@@ -5,8 +5,9 @@
 #'
 #' @title Fit a Metabodecon Model
 #'
-#' @description Deconvolutes and aligns spectra, then fits a lasso model via
-#' `cv.glmnet`.
+#' @description
+#' Performorms deconvolution, alignment and peak snapping for input spectea,
+#' then fits a lasso model via [glmnet::cv.glmnet].
 #'
 #' @param spectra List-like spectra object with `cs` and `si` vectors.
 #' @param y Factor vector with class labels for each spectrum.
@@ -26,74 +27,84 @@
 #' @return A list with class `mdm` and the following elements:
 #' - `model`: The fitted `cv.glmnet` model object.
 #' - `ref`: Reference `align` object used for snapping peaks.
-#' - `normalisation`: Normalization method used (currently always "none").
-#' - `meta`: List of deconvolution/alignment/model parameters.
+#' - `args`: List of deconvolution/alignment/model parameters.
 #'
 #' @examples
 #' \dontrun{
-#'     m <- mdm(spectra, y, sfr = c(11, -2))
+#'     m <- fit_mdm(spectra, y, sfr = c(11, -2))
 #' }
-mdm <- function(
-
-    # Mandatory inputs
-    spectra,
-    y,
-    sfr,
-
-    # Parallelization and caching
-    nworkers = 4,
-    verbose = TRUE,
-    cadir = decon_cachedir(),
-
-    # Hyperparameters that change the resulting mdm model
-    use_rust = TRUE,
-    npmax = 1000,
-    maxShift = 100,
-    maxSnap = 1,
-    nfolds = 10,
-    lambda = "lambda.1se"
-
+fit_mdm <- function(
+    spectra, y, sfr,
+    use_rust = TRUE, npmax = 1000, maxShift = 100, maxSnap = 1,
+    nworkers = 1, verbose = TRUE, nfolds = 10,
+    cadir = decon_cachedir()
 ) {
 
-    logf("Deconvoluting spectra (npmax=%d)", npmax)
-    decons <- deconvolute(
-        x=spectra, sfr=sfr, verbose=verbose, use_rust=use_rust,
-        npmax=npmax, nworkers=nworkers, cadir=cadir
-    )
+    # When spectra carries an "mdm_hash" attribute (set by cv_mdm1),
+    # reuse cached deconvolution/alignment results from a previous
+    # fit_mdm call with the same spectra but different grid params.
+    h <- attr(spectra, "mdm_hash")
+    ca <- getOption("metabodecon.fit_mdm.cache")
+    hit <- !is.null(h) && !is.null(ca) && identical(ca$hash, h)
 
-    logf("Aligning spectra (maxShift=%d)", maxShift)
-    aligns <- align(
-        x=decons, maxShift=maxShift, maxCombine=0,
-        verbose=verbose, nworkers=nworkers
-    )
+    if (hit && identical(ca$npmax, npmax)) {
+        logv("Reusing cached deconvolution (npmax=%d)", npmax)
+        decons <- ca$decons
+    } else {
+        logf("Deconvoluting spectra with npmax=%d", npmax)
+        decons <- deconvolute(
+            x=spectra, sfr=sfr, verbose=verbose, use_rust=use_rust,
+            npmax=npmax, nworkers=nworkers, cadir=cadir
+        )
+    }
 
-    logv("Constructing feature matrix (maxSnap=%.1f)", maxSnap)
-    ref <- mdm_get_ref(aligns)
-    X <- t(get_si_mat(aligns, maxSnap=maxSnap, ref=ref))
+    if (hit && identical(ca$npmax, npmax) && identical(ca$maxShift, maxShift)) {
+        logv("Reusing cached alignment (maxShift=%d)", maxShift)
+        aligns <- ca$aligns
+    } else {
+        logf("Aligning spectra with maxShift=%d", maxShift)
+        aligns <- align(
+            x=decons, maxShift=maxShift, maxCombine=0,
+            verbose=verbose, nworkers=nworkers
+        )
+    }
 
-    logf("Fitting cv.glmnet (nfolds=%d, lambda=%s)", nfolds, lambda)
-    model <- glmnet::cv.glmnet(
-        x=X, y=y, family="binomial", alpha=1, nfolds=nfolds
-    )
-
-    logf("Constructing and returning mdm object")
-    args <- list(
-        snames=get_names(spectra), y=y, sfr=sfr, npmax=npmax,
-        maxShift=maxShift, maxSnap=maxSnap, use_rust=use_rust,
-        model="lasso", lambda=lambda, nfolds=nfolds
-    )
-    structure(list(model=model, ref=ref, norm="none", args=args), class="mdm")
-
+    if (!is.null(h)) {
+        options(metabodecon.fit_mdm.cache = list(
+            hash=h, npmax=npmax, maxShift=maxShift,
+            decons=decons, aligns=aligns
+        ))
+    }
+    X <- {
+        logv("Constructing feature matrix with maxSnap=%.1f", maxSnap)
+        ref <- mdm_get_ref(aligns)
+        t(get_si_mat(aligns, maxSnap=maxSnap, ref=ref))
+    }
+    model <- {
+        logf("Fitting cv.glmnet")
+        glmnet::cv.glmnet(x=X, y=y, family="binomial", alpha=1, nfolds=nfolds)
+    }
+    mdm <- {
+        logf("Constructing and returning mdm object")
+        meta <- list(
+            model="lasso", snames=get_names(spectra), y=y,
+            sfr=sfr, use_rust=use_rust, npmax=npmax,
+            maxShift=maxShift, maxSnap=maxSnap,
+        )
+        structure(list(model=model, ref=ref, meta=meta), class="mdm")
+    }
+    mdm
 }
 
 #' @export
 #' @title Deconvolute, Align and Classify Spectra in Cross-Validation
 #' @description
-#' Performs deconvolution+alignment over a grid of parameters and calculates the
-#' corresponding cv.glmnet-lasso-lambda.min performance. The
-#' deconvolution+alignment parameters that enable the best cv glmnet
-#' performances are considered optimal and are used for fitting the final model
-#' with the corresponding optimal lambda value.
+#' Performs deconvolution, alignment and peak-snapping over a grid of parameters
+#' and calls [glmnet::cv.glmnet()] on each corresponding matrix. Calculates the
+#' corresponding `cv.glmnet` performances. The deconvolution, alignment and
+#' snapping parameters that enable the best performances are considered optimal
+#' and are used for fitting the final model with the corresponding optimal
+#' lambda value.
 #'
 #' @param spectra List-like spectra object with `cs` and `si` vectors.
 #' @param y Factor vector with class labels for each spectrum.
@@ -107,33 +118,23 @@ mdm <- function(
 #' Pass a custom path to use a different cache directory.
 #'
 #' @return
-#' A list with classes `cv` and `mdm` containing:
-#' - `model`: The `cv.glmnet` model fitted with the best parameters.
-#' - `ref`: Reference `align` object for snapping future test samples.
-#' - `pgrid`: Data frame of parameter combinations and their cv.glmnet
-#'   performances (columns: `npmax`, `maxShift`, `maxSnap`,
-#'   `cvm_min`, `cvsd_min`, `cvm_1se`, `cvsd_1se`).
-#' - `args`: List of all function arguments except `spectra`, with
-#'   `spectra_names` (from `get_names(spectra)`) in place of the
-#'   full spectra object.
-#' - `normalisation`: Normalization method (currently `"none"`).
-#' - `args`: List of deconvolution/alignment/model parameters.
+#' A object of class `mdm` as returned by [metabodecon::fit_mdm()], with two
+#' additional elements `pgrid` and `ibest`, containing the performance grid and
+#' index of the best parameter combination.
 #'
 #' @examples
 #' \dontrun{
 #'      aki <- read_aki_data()
 #'      spectra <- aki$spectra
-#'      y <- factor(aki$meta$type, levels = c("Control", "AKI"))
-#'      mdm <- cv_mdm(spectra, y, sfr = c(11, -2))
+#'      y <- factor(aki$meta$type, levels=c("Control", "AKI"))
+#'      nworkers <- ceiling(parallel::detectCores() / 2)
+#'      stub(cv_mdm, spectra=spectra, y=y, sfr=c(11, -2), nworkers=nworkers)
+#'      mdm <- cv_mdm(spectra, y, sfr=c(11, -2))
 #' }
 cv_mdm <- function(
-    spectra,
-    y,
-    sfr,
-    nworkers = 1,
-    verbose = TRUE,
-    use_rust = TRUE,
-    nfolds = 10,
+    spectra, y, sfr, use_rust = TRUE,
+    npmax = NULL, maxShift = seq(50, 250, 50), maxSnap = seq(0.5, 2.0, 0.5),
+    nworkers = 1, verbose = TRUE, nfolds = 10,
     cadir = decon_cachedir()
 ) {
 
@@ -142,103 +143,77 @@ cv_mdm <- function(
         x=spectra, sfr=sfr, verbose=verbose, nw=nworkers,
         use_rust=use_rust, cadir=cadir
     )
+    npmax <- mdm_get_npmaxs(gridlist)
+    nw <- min(nworkers, length(npmax))
+
+    attr(spectra, "mdm_hash") <- rlang::hash(spectra)
+
+    logv("Starting grid search over npmax, maxShift, maxSnap and lambda")
+    npmaxs_list <- split(npmax, cut2(npmax, nw))
+    pgrids <- mcmapply(
+        nw = nw, FUN = cv_mdm1, npmax = npmaxs_list,
+        MoreArgs = list(
+            spectra=spectra, y=y, sfr=sfr, use_rust=use_rust,
+            maxShift=maxShift, maxSnap=maxSnap,
+            nfolds=nfolds, verbose=verbose, cadir=cadir
+        )
+    )
+    pgrid <- rbindlist(pgrids)
+    ibest <- which.min(pgrid$cvm)
+    best <- as.list(pgrid[ibest, ])
+    fmt <- "Best: npmax=%d, maxShift=%d, maxSnap=%.1f, cvm=%.4f"
+    logv(fmt, best$npmax, best$maxShift, best$maxSnap, best$cvm)
+
+    logv("Fitting final model with best parameters")
+    mdm <- fit_mdm(
+        spectra=spectra, y=y, sfr=sfr, use_rust=use_rust,
+        npmax=best$npmax, maxShift=best$maxShift, maxSnap=best$maxSnap,
+        nworkers=nw, verbose=verbose, nfolds=nfolds, cadir=cadir
+    )
+    mdm$pgrid <- pgrid
+    mdm
+}
+
+#' @noRd
+#' @description
+#' Strict single-core helper for [metabodecon::cv_mdm()].
+#' Assumes pre-initialized deconvolution cache.
+cv_mdm1 <- function(
+    spectra, y, sfr, use_rust = TRUE,
+    npmax = 1000, maxShift = seq(50, 250, 50), maxSnap = seq(0.5, 2.0, 0.5),
+    nfolds = 10, verbose = TRUE, cadir = decon_cachedir()
+) {
 
     logv("Building parameter grid")
     P <- expand.grid(
-        npmax=mdm_get_npmaxs(gridlist),
-        maxShift=c(50, 100, 150, 200, 250),
-        maxSnap=c(0.5, 1, 1.5, 2),
-        cvm=NA_real_,
-        cvsd=NA_real_,
-        KEEP.OUT.ATTRS = TRUE,
-        stringsAsFactors = TRUE
+        npmax = npmax, maxShift = maxShift, maxSnap = maxSnap,
+        lambda = c("lambda.1se", "lambda.min"), cvm = NA_real_,
+        cvsd = NA_real_, KEEP.OUT.ATTRS = FALSE,
+        stringsAsFactors = FALSE
     )
     P <- P[order(P$npmax, P$maxShift, P$maxSnap), ]
-    P <- `rownames<-`(P, NULL)
+    rownames(P) <- NULL
     np <- nrow(P)
 
-    logv("Starting grid search to find optimal npmax, maxShift and maxSnap")
-    pl <- list(npmax=-1, maxShift=-1, maxSnap=-1) # params of last iteration
+    on.exit(options(metabodecon.fit_mdm.cache = NULL), add = TRUE)
 
-    # for (i in seq_len(nrow(P))) {
-
-    #     pc <- as.list(P[i, ]) # params of current iteration
-    #     fmt <- "[%d/%d]: npmax=%d, maxShift=%d, maxSnap=%.1f"
-    #     logv(fmt, i, np, pc$npmax, pc$maxShift, pc$maxSnap)
-
-    #     # Deconvolute (only necessary every 20th iteration, because for every
-    #     # deconvolution we try 5 different maxShift and 4 different maxSnap
-    #     # values, for whichh the deconvolution doesn't change).
-    #     if (pc$npmax != pl$npmax) {
-    #         decons <- deconvolute(
-    #             x=spectra, sfr=sfr, verbose=FALSE, use_rust=use_rust, npmax=P$npmax[i],
-    #             nworkers=nworkers, cadir=cadir
-    #         )
-    #     }
-
-    #     # Align and get reference (only necessary every 5th iteration, because
-    #     # for every alignment we try 4 different maxSnap values, for which the
-    #     # alignment doesn't change).
-    #     if (pc$npmax != pl$npmax || pc$maxShift != pl$maxShift) {
-    #         aligns <- align(
-    #             decons, maxShift=P$maxShift[i], maxCombine=0,
-    #             verbose=FALSE, nworkers=nworkers
-    #         )
-    #         ref <- mdm_get_ref(aligns)
-    #     }
-
-    #     # Construct feature matrix and fit cv.glmnet for current parameters
-    #     X <- t(get_si_mat(aligns, maxSnap=P$maxSnap[i], ref=ref))
-    #     m <- glmnet::cv.glmnet(x=X, y=y, family="binomial", alpha=1, nfolds=nfolds)
-    #     idx_min <- which(m$lambda == m$lambda.min)
-    #     idx_1se <- which(m$lambda == m$lambda.1se)
-    #     P$cvm_min[i] <- m$cvm[idx_min]
-    #     P$cvsd_min[i] <- m$cvsd[idx_min]
-    #     P$cvm_1se[i] <- m$cvm[idx_1se]
-    #     P$cvsd_1se[i] <- m$cvsd[idx_1se]
-    #     pl <- pc
-    # }
-
-
-    logv("Starting grid search to find optimal npmax, maxShift and maxSnap")
-    row <- 1
-    for (i in seq_along(P$npmax)) {
-        logv("npmax=%d", P$npmax[i])
-        decons <- deconvolute(x=spectra, sfr=sfr, verbose=FALSE, use_rust=use_rust, npmax=P$npmax[i], nworkers=nworkers, cadir=cadir)
-        for (j in seq_along(P$maxShift)) {
-            logv("maxShift=%d", P$maxShift[j])
-            aligns <- align(decons, maxShift=P$maxShift[j], maxCombine=0, verbose=FALSE, nworkers=nworkers)
-            ref <- mdm_get_ref(aligns)
-            for (k in seq_along(P$maxSnap)) {
-                logv("maxSnap=%.1f", P$maxSnap[k])
-                X <- t(get_si_mat(aligns, maxSnap=P$maxSnap[k], ref=ref))
-                m <- glmnet::cv.glmnet(x=X, y=y, family="binomial", alpha=1, nfolds=nfolds)
-                idx_min <- which(m$lambda == m$lambda.min)
-                idx_1se <- which(m$lambda == m$lambda.1se)
-                P$cvm_min[row] <- m$cvm[idx_min]
-                P$cvsd_min[row] <- m$cvsd[idx_min]
-                P$cvm_1se[row] <- m$cvm[idx_1se]
-                P$cvsd_1se[row] <- m$cvsd[idx_1se]
-                row <- row + 1
-            }
-        }
+    logv("Starting grid search (%d combinations)", np)
+    for (i in seq_len(np)) {
+        pc <- as.list(P[i, ])
+        fmt <- "[%d/%d]: npmax=%d, maxShift=%d, maxSnap=%.1f"
+        logv(fmt, i, np, pc$npmax, pc$maxShift, pc$maxSnap)
+        mdm <- fit_mdm(
+            spectra=spectra, y=y, sfr=sfr, use_rust=use_rust,
+            npmax=pc$npmax, maxShift=pc$maxShift,
+            maxSnap=pc$maxSnap, nworkers=1, verbose=FALSE,
+            nfolds=nfolds, cadir=cadir
+        )
+        m <- mdm$model
+        idx <- which(m$lambda == m[[pc$lambda]])
+        P$cvm[i] <- m$cvm[idx]
+        P$cvsd[i] <- m$cvsd[idx]
     }
-    ibest <- which.min(P$cvm_min)
-    best <- as.list(P[ibest, ])
-    fmt <- "Best: npmax=%d, maxShift=%d, maxSnap=%.1f, cvm=%.4f"
-    logv(fmt, best$npmax, best$maxShift, best$maxSnap, best$cvm_min)
-
-    logf("Fitting final model with best parameters")
-    fit <- mdm(
-        spectra=spectra, y=y, sfr=sfr, nworkers=nworkers, verbose=verbose,
-        use_rust=use_rust, nfolds=nfolds, cadir=cadir, npmax=best$npmax,
-        maxShift=best$maxShift, maxSnap=best$maxSnap
-    )
-    # fit: ([model=model, ref=ref, norm="none", args=args], class="mdm")
-    fit$pgrid <- P
-    fit$ibest <- ibest
-    class(fit) <- c("cv", class(fit))
-    fit
+    P
 }
 
 #' @export
@@ -320,25 +295,40 @@ benchmark_mdm <- function(
     list(models = models, predictions = Y)
 }
 
+benchmark_aki <- function() {
+    aki <- read_aki_data()
+    spectra <- aki$spectra
+    y <- factor(aki$meta$type, levels = c("Control", "AKI"))
+    sfr <- c(11, -2)
+    logv("Starting cache initialization")
+    gridlist <- grid_deconvolute_spectra(
+        x=spectra, sfr=sfr, verbose=TRUE, nw=6, use_rust=TRUE
+    )
+    bm <- benchmark_mdm(spectra=spectra, y=y, sfr=sfr, nwo = 1)
+    bm
+}
+
 # Benchhmark helpers #####
 
 #' @noRd
 #' @title Fit cv_mdm models on outer folds
+#'
 #' @description
-#' Internal worker helper for [benchmark_mdm()]. Given a vector of outer-fold
-#' indices and a shared context object, it fits [cv_mdm()] on the corresponding
-#' training subsets and returns the per-fold results as a list.
+#' Internal worker helper for [metabodecon::benchmark_mdm()]. Given a vector of
+#' outer-fold indices and a shared context object, it fits
+#' [metabodecon::cv_mdm()] on the corresponding training subsets and
+#' returns the per-fold results as a list.
 #'
 #' @details
-#' This helper is designed only for use with [mcmapply()] inside
-#' [benchmark_mdm()]. Each worker receives one chunk of fold ids together with
-#' one shared context object and processes the chunk locally via [base::lapply()].
-#' This keeps the context explicit while still serializing `spectra` only once
-#' per worker.
+#' This helper is designed only for use with [metabodecon::mcmapply()] inside
+#' [metabodecon::benchmark_mdm()]. Each worker receives one chunk of fold ids
+#' together with one shared context object and processes the chunk locally via
+#' [base::lapply()]. This keeps the context explicit while still serializing
+#' `spectra` only once per worker.
 #'
 #' @param fids Integer vector of outer-fold indices.
 #' @param ctx Worker context.
-#' @return List of objects returned by [cv_mdm()], one per fold in `fids`.
+#'
 cv_mdm_on_folds <- function(fids, ctx) {
     lapply(fids, function(i) {
         te <- ctx$te_list[[i]]
@@ -582,23 +572,6 @@ mdm_as_binary01 <- function(y) {
 #' @noRd
 mdm_fmt_mean_sd <- function(x, y, d = 3) {
     sprintf(paste0("%.", d, "f \u00b1 %.", d, "f"), x, y)
-}
-
-#' @title Compute mdm data signature
-#' @description Creates a stable short signature for matrix/label pairs.
-#' @param X Numeric feature matrix.
-#' @param y Binary labels.
-#' @return Character hash string.
-#' @examples
-#' X <- matrix(rnorm(20), nrow = 5)
-#' y <- rep(0:1, length.out = 5)
-#' mdm_data_signature(X, y)
-#' @noRd
-mdm_data_signature <- function(X, y) {
-    y <- mdm_as_binary01(y)
-    payload <- list(X = X, y = y)
-    txt <- serialize(payload, connection = NULL, ascii = TRUE, version = 2)
-    paper_aki_cache_hash(rawToChar(txt))
 }
 
 mdm_get_ref <- function(x) {

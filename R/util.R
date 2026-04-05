@@ -966,6 +966,14 @@ is_list_of_nums <- function(x, nl = NULL, nv = NULL) {
 
 # Misc (Private) ##############################################################
 
+cut2 <- function(x, breaks) {
+    if (breaks == 1) {
+        rep(1L, length(x))
+    } else {
+        cut(x, breaks, labels = FALSE)
+    }
+}
+
 rbindlist <- function(x) {
     do.call(rbind, x)
 }
