@@ -92,9 +92,56 @@ test_that("built-in backend matches speaq backend", {
 
     skip_if_speaq_deps_missing()
 
-    al_builtin <- align(decons, verbose = FALSE, use_speaq = FALSE)
-    al_speaq <- align(decons, verbose = FALSE, use_speaq = TRUE)
+    al_builtin <- align(decons, verbose = FALSE, method = 2)
+    al_speaq <- align(decons, verbose = FALSE, method = 1)
     expect_equal(al_builtin, al_speaq)
+})
+
+test_that("fast peak backend aligns simple shifts", {
+
+    al_fast <- align(decons, verbose = FALSE, method = 3)
+
+    x0 <- al_fast$sap_01_shifted$lcpar$x0
+    x0_al <- al_fast$sap_01_shifted$lcpar$x0_al
+    shifts <- x0 - x0_al
+    expect_true(all(shifts > 0.2 & shifts < 0.4))
+
+    cs <- al_fast$sap_01_shifted$cs
+    dp <- seq_along(cs)
+    pc <- match(x0_al, cs)
+    non_pc <- setdiff(dp, pc)
+    A <- al_fast$sap_01_shifted$lcpar$A
+    al <- al_fast$sap_01_shifted$sit$al
+    expect_equal(al[pc], A * pi)
+    expect_equal(al[non_pc], rep(0, length(non_pc)))
+
+    supal <- al_fast$sap_01_shifted$sit$supal
+    lambda <- al_fast$sap_01_shifted$lcpar$lambda
+    expect_equal(supal, lorentz_sup(cs, x0_al, A, lambda))
+})
+
+test_that("fast peak backend gives same result for 1 vs multiple workers", {
+
+    sap_01_shifted_2 <- simulate_spectrum(
+        name = "sap_01_shifted_2",
+        cs = sap_01$meta$simpar$cs,
+        x0 = sap_01$meta$simpar$x0 + 0.15,
+        A = sap_01$meta$simpar$A,
+        lambda = sap_01$meta$simpar$lambda,
+        noise = sap_01$meta$simpar$noise
+    )
+    spectra3 <- as_spectra(list(sap_01, sap_01_shifted, sap_01_shifted_2))
+    decons3 <- deconvolute(
+        spectra3,
+        smopts = c(1, 3),
+        delta = 3,
+        sfr = c(3.2, -3.2),
+        verbose = FALSE
+    )
+
+    al1 <- align(decons3, verbose = FALSE, method = 3, nworkers = 1)
+    al2 <- align(decons3, verbose = FALSE, method = 3, nworkers = 2)
+    expect_equal(al2, al1)
 })
 
 skip_if_slow_tests_disabled()

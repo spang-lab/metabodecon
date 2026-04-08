@@ -601,7 +601,6 @@ save_spectrum <- function(x,
         is_bool(verbose)
     )
     temp <- tmpdir(subdir = TRUE)
-    logv <- get_logv(verbose)
     logv("Saving bruker files to %s", temp)
 
     # Prepare processing parameters to write to procs file

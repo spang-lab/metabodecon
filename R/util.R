@@ -640,6 +640,10 @@ logv <- function(fmt, ..., verbosity = caller_verbosity()) {
     if (verbosity >= 1) logf(fmt, ...) else invisible(Sys.time())
 }
 
+logvv <- function(fmt, ..., verbosity = caller_verbosity()) {
+    if (verbosity >= 2) logf(fmt, ...) else invisible(Sys.time())
+}
+
 #' @noRd
 #' @title Inherit verbosity from the calling environment
 #'
@@ -1414,6 +1418,13 @@ transp <- function(col = "violet", alpha = 0.08) {
 
 #' @noRd
 #' @description
+#' Returns half the available CPU cores (rounded up).
+half_cores <- function(nmax = Inf) {
+    min(ceiling(parallel::detectCores() / 2), nmax)
+}
+
+#' @noRd
+#' @description
 #' Multi core version of mapply with automatic logging of worker output.
 #' For `nw == 1` normal `mapply` is used.
 #' @author 2024-2026 Tobias Schmidt: initial version.
@@ -1518,8 +1529,6 @@ style <- function() {
         transformers
     }
     styler::style_pkg(style = style_func)
-    instfiles <- fdfind("inst", "\\.R$", full.names = TRUE, recursive = TRUE)
-    styler::style_file(instfiles, style = style_func)
 }
 
 

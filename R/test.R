@@ -378,6 +378,35 @@ skip_if_speaq_deps_missing <- function() {
 }
 
 #' @noRd
+#' @author 2026 Tobias Schmidt: initial version.
+normalize_svg_ids <- function(path) {
+    txt <- readLines(path, warn = FALSE)
+    txt <- sub(
+        '^<g id="surface[0-9]+">$',
+        '<g id="surface1">',
+        txt
+    )
+    writeLines(txt, path, useBytes = TRUE)
+}
+
+#' @noRd
+#' @author 2026 Tobias Schmidt: initial version.
+make_stable_svg_writer <- function(...) {
+    svg_args <- list(...)
+
+    function(plot, file, title = "") {
+        plot_fun <- plot
+        args <- c(list(
+            quote(withr::with_svg),
+            new = file,
+            code = quote(plot_fun())
+        ), svg_args)
+        eval(as.call(args))
+        normalize_svg_ids(file)
+    }
+}
+
+#' @noRd
 #' @title Check files sizes
 #'
 #' @description

@@ -6,8 +6,9 @@ test_result <- test_that("draw_spectrum works", {
     tmp <- vdiffr::expect_doppelganger(
         title = "draw_spectrum",
         fig = test_draw_spectrum,
-        writer = function(plot, file, title = "") {
-            withr::with_svg(file, plot(), width = 14, height = 14)
-        }
+        writer = metabodecon:::make_stable_svg_writer(
+            width = 14,
+            height = 14
+        )
     )
 })

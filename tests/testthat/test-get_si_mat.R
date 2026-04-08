@@ -44,12 +44,65 @@ test_that("get_si_mat with maxSnap returns reduced matrix", {
     al <- align(decons, maxCombine = 0, verbose = FALSE)
 
     mat_raw <- get_si_mat(al)
-    mat_1hw <- get_si_mat(al, maxSnap = 1)
-    mat_2hw <- get_si_mat(al, maxSnap = 2)
+    mat_20dp <- get_si_mat(al, maxSnap = 20)
+    mat_40dp <- get_si_mat(al, maxSnap = 40)
 
     # Snapped matrices should have fewer rows (one per ref peak)
-    expect_lt(nrow(mat_1hw), nrow(mat_raw))
-    expect_lt(nrow(mat_2hw), nrow(mat_raw))
-    expect_equal(ncol(mat_1hw), ncol(mat_raw))
-    expect_equal(ncol(mat_2hw), ncol(mat_raw))
+    expect_lt(nrow(mat_20dp), nrow(mat_raw))
+    expect_lt(nrow(mat_40dp), nrow(mat_raw))
+    expect_equal(ncol(mat_20dp), ncol(mat_raw))
+    expect_equal(ncol(mat_40dp), ncol(mat_raw))
+})
+
+make_aligns_for_get_si_mat_test <- function(cs, peaks_list, areas_list) {
+    objs <- lapply(seq_along(peaks_list), function(i) {
+        x0 <- cs[peaks_list[[i]]]
+        al <- numeric(length(cs))
+        al[peaks_list[[i]]] <- areas_list[[i]] * pi
+        structure(list(
+            cs = cs,
+            lcpar = list(x0 = x0, x0_al = x0, A = areas_list[[i]]),
+            sit = list(al = al),
+            meta = list(name = sprintf("spec_%d", i))
+        ), class = "align")
+    })
+    structure(objs, class = "aligns")
+}
+
+test_that("get_si_mat with maxSnap sums areas within snapped intervals", {
+    cs <- 10:1
+    aligns <- make_aligns_for_get_si_mat_test(
+        cs = cs,
+        peaks_list = list(c(2, 5, 8), c(1, 3, 4, 6, 8, 10), c(2, 5, 7)),
+        areas_list = list(c(10, 20, 30), c(1, 2, 3, 4, 5, 6), c(7, 8, 9))
+    )
+
+    mat <- get_si_mat(aligns, maxSnap = 1, ref = aligns[[1]])
+
+    expected <- cbind(
+        c(10, 20, 30),
+        c(1 + 2, 3 + 4, 5),
+        c(7, 8, 9)
+    ) * pi
+    rownames(expected) <- cs[c(2, 5, 8)]
+    colnames(expected) <- c("spec_1", "spec_2", "spec_3")
+
+    expect_equal(mat, expected)
+})
+
+test_that("get_si_mat with maxSnap assigns midpoint ties to the left", {
+    cs <- 6:1
+    aligns <- make_aligns_for_get_si_mat_test(
+        cs = cs,
+        peaks_list = list(c(2, 4), c(3)),
+        areas_list = list(c(10, 20), c(5))
+    )
+
+    mat <- get_si_mat(aligns, maxSnap = 1, ref = aligns[[1]])
+
+    expected <- cbind(c(10, 20), c(5, 0)) * pi
+    rownames(expected) <- cs[c(2, 4)]
+    colnames(expected) <- c("spec_1", "spec_2")
+
+    expect_equal(mat, expected)
 })

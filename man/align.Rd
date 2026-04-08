@@ -42,7 +42,9 @@ removed in a future version.}
 \item{method}{Alignment backend. \code{1}: use the original implementation from the 'speaq'
 package. \code{2} (default): use metabodecon's built-in reimplementation of the
 CluPA algorithm. \code{3}: use metabodecon's peak-based pairwise alignment, which
-works directly on the deconvoluted peak parameters (\code{x0}, \code{lambda}, \code{A}).}
+works directly on the deconvoluted peak parameters (\code{x0}, \code{lambda}, \code{A}).
+\strong{Method 3 is experimental and must not be used in production. It is very
+likely to change in non-backwards-compatible ways over the next few weeks.}}
 
 \item{install_deps}{Only used when \code{method = 1}. 'speaq' relies on the
 'MassSpecWavelet' and 'impute' packages. Both, 'MassSpecWavelet' and 'impute'

@@ -408,12 +408,13 @@ grid_deconvolute_spectra <- function(
 
     assert(
         is_spectra(x),
-        is_num(sfr, 2)  || is_list_of_nums(sfr, length(x), 2),
+        is_num_or_null(sfr, 2)  || is_list_of_nums(sfr, length(x), 2),
         is_bool(verbose, 1),
         is_int(nw, 1),
         is_bool(use_rust),
         is_str_or_null(cadir)
     )
+    sfr <- sfr %||% quantile(x[[1]]$cs, c(0.9, 0.1))
     if (isFALSE(verbose)) local_options(toscutil.logf.file = nullfile())
 
     cache <- disk_cache(cadir)
@@ -493,7 +494,12 @@ grid_deconvolute_spectrum <- function(
     specname <- get_name(x)
 
     logf("Grid deconvoluting %s using %s", specname, backend)
-    grid <- expand.grid(smit = c(2, 3), smws = c(3, 5, 7, 9), delta = 2:8, nfit = c(3, 4, 5))
+    grid <- expand.grid(
+        smit = c(2, 3),
+        smws = c(3, 5, 7, 9),
+        delta = 2:8,
+        nfit = c(3, 4, 5)
+    )
     default_args <- as.list(formals(deconvolute_spectrum))
     call_args <- list(
         x = x, sfr = sfr, verbose = FALSE,

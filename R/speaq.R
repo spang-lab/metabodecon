@@ -134,9 +134,9 @@ do_shift <- function(seg, step) {
 #' @param refSpec Numeric vector (full reference spectrum).
 #' @param tarSpec Numeric vector (full target spectrum).
 #' @param peakList Integer vector of peak positions (ref then
-#'   target, interleaved via labels).
+#' target, interleaved via labels).
 #' @param peakLabel Integer vector, 1 for ref peaks, 0 for
-#'   target peaks.
+#' target peaks.
 #' @param startP Start index of the segment to align.
 #' @param endP End index of the segment to align.
 #' @param maxShift Maximum shift per recursion level.
@@ -203,18 +203,15 @@ hclust_align <- function(refSpec, tarSpec, peakList, peakLabel,
         return(list(tarSpec = tarSpec, peakList = peakList))
     }
 
-    # Split peaks into 2 groups at the largest gap. This is
-    # equivalent to hclust + cutree at the top split, but
-    # O(p log p) instead of O(p^2).
-    ord <- order(peakList)
-    sp <- peakList[ord]
-    gaps <- diff(sp)
-    if (max(gaps) == 0L) {
+    # Split peaks into 2 groups using average-linkage
+    # hierarchical clustering, matching speaq::hClustAlign.
+    hc <- stats::hclust(stats::dist(peakList), method = "average")
+    cl <- stats::cutree(hc, h = hc$height[length(hc$height) - 1])
+    if (length(unique(cl)) < 2L) {
         return(list(tarSpec = tarSpec, peakList = peakList))
     }
-    split_at <- which.max(gaps)
-    left_set <- ord[seq_len(split_at)]
-    right_set <- ord[seq.int(split_at + 1L, length(ord))]
+    left_set <- which(cl == 1)
+    right_set <- which(cl == 2)
 
     sub1 <- peakList[left_set]
     lab1 <- peakLabel[left_set]
@@ -223,13 +220,35 @@ hclust_align <- function(refSpec, tarSpec, peakList, peakLabel,
     lab2 <- peakLabel[right_set]
     id2 <- right_set
 
-    max1 <- sp[split_at]
-    min2 <- sp[split_at + 1L]
+    max1 <- max(sub1)
+    min2 <- min(sub2)
 
-    # max1 < min2 is guaranteed by the gap-based split
-    endP1 <- max1 + which.min(tarSpec[(max1 + 1L):(min2 - 1L)])
-    if (is.na(endP1) || endP1 > length(tarSpec)) endP1 <- max1
-    startP2 <- endP1 + 1L
+    # speaq handles both orderings (cluster 1 left or right)
+    if (max1 < min2) {
+        endP1 <- max1 +
+            which.min(tarSpec[(max1 + 1L):(min2 - 1L)])
+        if (is.na(endP1) || endP1 > length(tarSpec)) {
+            endP1 <- max1
+        }
+        startP2 <- endP1 + 1L
+    } else {
+        # Cluster 1 is right, cluster 2 is left — swap
+        tmp_set <- left_set; left_set <- right_set
+        right_set <- tmp_set
+        sub1 <- peakList[left_set]
+        lab1 <- peakLabel[left_set]
+        id1 <- left_set
+        sub2 <- peakList[right_set]
+        lab2 <- peakLabel[right_set]
+        id2 <- right_set
+        max1 <- max(sub1); min2 <- min(sub2)
+        endP1 <- max1 +
+            which.min(tarSpec[(max1 + 1L):(min2 - 1L)])
+        if (is.na(endP1) || endP1 > length(tarSpec)) {
+            endP1 <- max1
+        }
+        startP2 <- endP1 + 1L
+    }
     if (length(unique(lab1)) > 1L) {
         res <- hclust_align(refSpec, tarSpec, sub1, lab1,
             startP, endP1, maxShift)

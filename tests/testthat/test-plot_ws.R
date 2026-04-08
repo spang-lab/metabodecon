@@ -13,8 +13,6 @@ test_result <- test_that("plot_ws works", {
     tmp <- vdiffr::expect_doppelganger(
         title = "plot_ws",
         fig = test_plot_ws,
-        writer = function(plot, file, title = "") {
-            withr::with_svg(file, plot())
-        }
+        writer = metabodecon:::make_stable_svg_writer()
     )
 })

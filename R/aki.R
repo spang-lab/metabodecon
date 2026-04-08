@@ -171,7 +171,7 @@ try_aki_benchmark <- function(  aki = read_aki_data(),
 #'
 #' The correct way to do this, would be to do the deconvolution and alignment as
 #' part of the inner CV loop, and then only apply the best parameter combination
-#' to the outer test fold. This will be implemented in [metabodecon::cv_mdm()].
+#' to the outer test fold. This will be implemented in [metabodecon::fit_mdm_grid_grid()].
 #'
 #' However, because this will multiply runtime by kout*kin and also requires
 #' additional implementation effort, we will first run this invalid version to
@@ -193,13 +193,13 @@ run_aki_benchmarks_invalid <- function() {
     perfMC <- run_aki_benchmark(
         aki=aki, seed=1, kout=10, kin=10, fx="deconvolute", mt="lasso",
         norm="none", nfit=3, smit=2, smws=5, delta=6.4, npmax=1000,
-        maxShift=50, maxCombine=, verbose=TRUE,
+        maxShift=50, maxCombine=16, verbose=TRUE,
         nworkers=53
     )
 
     # Estimate variance of performances for base model with Rust Backend
     n_base <- 50
-    nw <- min(ceiling(parallel::detectCores() / 2), n_base)
+    nw <- min(half_cores(), n_base)
     aki_list <- list(aki)
     start <- Sys.time()
     logf("Running %d benchmarks with default params", n_base)
@@ -218,7 +218,7 @@ run_aki_benchmarks_invalid <- function() {
 
     # Repeat for R backend (use less repeats because of runtime)
     n_base <- 20
-    nw <- min(ceiling(parallel::detectCores() / 2), n_base)
+    nw <- min(half_cores(), n_base)
     aki_list <- list(aki)
     start <- Sys.time()
     logf("Running %d benchmarks with default params", n_base)
@@ -271,7 +271,7 @@ run_aki_benchmarks_invalid <- function() {
     A <- expand.grid(maxShift=2^(4:8), maxCombine=2^(4:8))
     P <- merge(NZ, A, by = NULL)
     g <- nrow(P)
-    nw <- min(ceiling(parallel::detectCores() * 0.5), g)
+    nw <- min(half_cores(), g)
     smit <- P$smit; smws <- P$smws; delta <- P$delta; nfit <- P$nfit;
     npmax <- P$npmax; maxShift <- P$maxShift; maxCombine <- P$maxCombine
     gridperfs <- mcmapply(10, try_aki_benchmark,
@@ -295,7 +295,7 @@ run_aki_benchmarks_invalid <- function() {
 
     # Estimate variance of performances of best "simple" model
     n_base <- 20
-    nw <- min(ceiling(parallel::detectCores() / 2), n_base)
+    nw <- min(half_cores(), n_base)
     aki_list <- list(aki)
     start <- Sys.time()
     logf("Running %d benchmarks with default params", n_base)
@@ -314,7 +314,7 @@ run_aki_benchmarks_invalid <- function() {
 
     # Estimate variance of performances of best "complex" model
     n_base <- 20
-    nw <- min(ceiling(parallel::detectCores() / 2), n_base)
+    nw <- min(half_cores(), n_base)
     aki_list <- list(aki)
     start <- Sys.time()
     logf("Running %d benchmarks with default params", n_base)

@@ -15,8 +15,22 @@
 #' @param ...
 #' Additional arguments passed to the conversion function.
 #'
+#' @param foc_rgn
+#' Numeric vector of length 2 specifying the focus region in ppm
+#' (e.g. `c(3.55, 3.35)`). If NULL (default), the full spectrum is shown.
+#'
+#' @param what
+#' Which signal to plot: `"supal"` (aligned superposition, default with
+#' fallback to `"sup"` then `"si"`), `"sup"` (superposition) or `"si"` (raw).
+#'
 #' @param sfy
 #' Scaling factor for the y-axis.
+#'
+#' @param cols
+#' Character vector of colors, one per spectrum. Defaults to `rainbow(n)`.
+#'
+#' @param names
+#' Character vector of legend labels. Defaults to spectrum names.
 #'
 #' @param xlab
 #' Label for the x-axis.
@@ -44,69 +58,55 @@
 #' plot_spectra(obj)
 plot_spectra <- function(obj,
                          ...,
+                         foc_rgn = NULL,
+                         what = c("si", "sup", "supal"),
                          sfy = 1e6,
+                         cols = NULL,
+                         names = NULL,
                          xlab = "Chemical Shift [ppm]",
                          ylab = paste("Signal Intensity [au] /", sfy),
                          mar = c(4.1, 4.1, 1.1, 0.1),
                          lgd = TRUE) {
+    what <- match.arg(what)
     objs <- as_v12_collection(obj, ...)
-    sis <- lapply(objs, function(x) (x$sit$supal %||% x$sit$sup %||% x$si) / sfy)
-    x0s <- lapply(objs, function(x) x$lcpar$x0)
+    n <- length(objs)
     css <- lapply(objs, function(x) x$cs)
+    sis <- lapply(objs, function(x) {
+        y <- switch(what,
+            supal = x$sit$supal %||% x$sit$sup %||% x$si,
+            sup   = x$sit$sup %||% x$si,
+            si    = x$si
+        )
+        y / sfy
+    })
+
+    # Subset to focus region
+    if (!is.null(foc_rgn)) {
+        lo <- min(foc_rgn); hi <- max(foc_rgn)
+        for (i in seq_len(n)) {
+            keep <- css[[i]] >= lo & css[[i]] <= hi
+            css[[i]] <- css[[i]][keep]
+            sis[[i]] <- sis[[i]][keep]
+        }
+    }
+
+    cs_min <- min(vapply(css, min, 0))
+    cs_max <- max(vapply(css, max, 0))
     si_min <- 0
-    si_max <- max(sapply(sis, max))
-    cs_min <- min(sapply(css, min))
-    cs_max <- max(sapply(css, max))
-    line_colors <- rainbow(length(objs))
-    legend_text <- paste("Spectrum", seq_along(objs))
+    si_max <- max(vapply(sis, max, 0))
+    cols <- cols %||% rainbow(n)
+    names <- names %||% get_names(objs)
+
     local_par(mar = mar)
-    plot(
-        x = NA,
-        type = "n",
-        xlab = xlab,
-        ylab = ylab,
-        xlim = c(cs_max, cs_min),
-        ylim = c(si_min, si_max)
-    )
-    for (i in seq_along(objs)) {
-        lines(x = css[[i]], y = sis[[i]], col = line_colors[[i]])
+    plot(NA, type = "n", xlab = xlab, ylab = ylab,
+        xlim = c(cs_max, cs_min), ylim = c(si_min, si_max))
+    for (i in seq_len(n)) {
+        lines(x = css[[i]], y = sis[[i]], col = cols[i])
     }
-    if (is_decons2(objs)) {
-        x0_min <- min(sapply(x0s, min))
-        x0_max <- max(sapply(x0s, max))
-        x0_width <- x0_max - x0_min
-        x0_quart <- x0_width / 4
-        abline(
-            v = c(x0_min, x0_max),
-            lty = 2
-        )
-        arrows(
-            x0 = c(x0_min + x0_quart, x0_max - x0_quart),
-            x1 = c(x0_min, x0_max),
-            y0 = si_max * 0.8,
-            y1 = si_max * 0.8,
-            length = 0.2,
-            lty = 2,
-            col = "black"
-        )
-        text(
-            x = mean(c(x0_min, x0_max)),
-            y = 0.8 * si_max,
-            labels = "ppm range"
-        )
-        mtext(
-            text = round(c(x0_min, x0_max), 4),
-            side = 3,
-            line = 0,
-            at = c(x0_min, x0_max)
-        )
+    if (isTRUE(lgd)) {
+        legend("topright", legend = names, col = cols, lty = 1)
     }
-    if (lgd) legend(
-        x = "topright",
-        legend = legend_text,
-        col = line_colors,
-        lty = 1
-    )
+    invisible(NULL)
 }
 
 #' @export

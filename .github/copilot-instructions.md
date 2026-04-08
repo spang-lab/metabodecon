@@ -4,6 +4,8 @@
 
 - Use `./tmp` for temporary files (it is gitignored and Rbuildignored).
   Never write temp files outside the project directory.
+- If code changes must be tested with multiple workers, remind the user to
+  reinstall the package before they run those tests.
 
 ## Coding Guidelines
 
@@ -12,6 +14,9 @@
 - Character limit is 80. Prefer short variable names like `x` and `y` to achieve
   that. If it's not clear from the function docs what a variable means, use a
   comment to describe it upon first use.
+- Fill lines up to ~80 chars to minimize vertical space. Prefer single-line
+  calls over multi-line when they fit. Going slightly over 80 (up to ~90) is
+  tolerable if it avoids splitting a call across 3 lines.
 - Prefer the use of helper variables instead of function nesting to reduce line
   length and improve readability. E.g. `x <- f(a); y <- g(x)` instead of `y <-
   g(f(a))`. Function nesting is ok if everything still fits in 80 chars and the

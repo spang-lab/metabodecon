@@ -154,6 +154,12 @@ columns \code{seed}, \code{fold}, \code{true}, \code{link}, \code{prob}, \code{p
 }
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+
+\strong{WARNING: These functions are experimental and must not be used in
+production. Their API is very likely to change in non-backwards-compatible
+ways over the next few weeks.}
+
 Utilities for fitting, tuning and benchmarking 'metabodecon models' (mdm).
 
 A mdm is a essentially a glmnet lasso model, fitted on a feature matrix X,
@@ -225,6 +231,7 @@ The total amount of processes spawned is \code{nwo * nwi.}
      y <- factor(aki$meta$type, levels = c("Control", "AKI"))
      names(y) <- rownames(aki$meta)
      sfr <- c(11, -2)
+     cadir <- cachedir("deconvs", persistent = TRUE)
 
      # -~-~-~ Legacy -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
      # Best "simple" model from aki.R (0.797 [0.75 - 0.83])
@@ -232,47 +239,69 @@ The total amount of processes spawned is \code{nwo * nwi.}
          spectra, y, sfr=NULL,
          nfit=5, smit=3, smws=3, delta=3, npmax=0,
          maxShift=128, maxCombine=256, maxSnap=0,
-         nworkers=half_cores()
+         nworkers=half_cores(), cadir=cadir
      )
+     # Per-seed acc: [77.36\%, 82.08\%]
+     # Per-seed AUC: [0.7884, 0.8656]
+     # Pooled acc: 79.34\% +- 1.75\%
+     # Pooled AUC: 0.8235 +- 0.0244
 
      # Best "complex" model from aki.R (0.784, [0.74 - 0.82])
      mdm <- fit_mdm(
          spectra, y, sfr = NULL,
          nfit=5, smit=0, smws=0, delta=0, npmax=1000,
          maxShift=64, maxCombine=16, maxSnap=0,
-         nworkers=half_cores()
+         nworkers=half_cores(), cadir=cadir
      )
+     # Pooled acc: 74.81\% +- 2.56\%
+     # Pooled AUC: 0.7764 +- 0.023
 
      # -~-~-~ New Configs -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
-     # Like best simple legacy but with nfit=10 (total trash)
+     # Best "simple" model from grid search over "static2" grid
      mdm <- fit_mdm(
          spectra, y, sfr=NULL,
-         nfit=10, smit=3, smws=3, delta=3, npmax=0,
-         maxShift=128, maxCombine=256, maxSnap=0,
-         nworkers=half_cores()
+         nfit=7, smit=2, smws=3, delta=6, npmax=0,
+         maxShift=100, maxCombine=0, maxSnap=30,
+         nworkers=half_cores(), cadir=cadir
      )
-
-     mdm <- fit_mdm(
-         spectra, y, sfr=NULL,
-         nfit=5, smit=3, smws=3, delta=3, npmax=0,
-         maxShift=128, maxCombine=256, maxSnap=128,
-         nworkers=half_cores()
-     )
+     #
 
      # -~-~-~ Grid Search and Benchmarking -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
-     grid <- grid_deconvolute_spectra(spectra, use_rust=TRUE, sfr=NULL)
-     mdm_grid <- fit_mdm_grid(
+
+     mdm_grid_stat1 <- fit_mdm_grid(
+         spectra, y, pgrid=get_pgrid("static1"),
+         nworkers=half_cores(), use_rust=TRUE, cadir=cadir
+     )
+     saveRDS(mdm_grid_stat1, "tmp/mdm_grid_stat1.rds")
+
+
+     mdm_grid_stat2 <- fit_mdm_grid(
          spectra, y, pgrid=get_pgrid("static2"),
-         nworkers=half_cores(), use_rust=TRUE
+         nworkers=half_cores(), use_rust=TRUE, cadir=cadir
+     )
+     saveRDS(mdm_grid_stat2, "tmp/mdm_grid_stat2.rds")
+     #
+     # Best static2: Acc=0.82, auc=0.89
+     # smit=2, smws=3, delta=6, nfit=7, maxShift=100, maxCombine=0, maxSnap=30
+
+
+     mdm_grid_stat3 <- fit_mdm_grid(
+         spectra, y, pgrid=get_pgrid("static3"),
+         nworkers=half_cores(), use_rust=TRUE, cadir=cadir
+     )
+     saveRDS(mdm_grid_stat3, "tmp/mdm_grid_stat3.rds")
+     #
+     # Best static2:
+     #
+
+
+     mdm_grid_dyn2 <- fit_mdm_grid(
+         spectra, y, pgrid=get_pgrid("dynamic2"),
+         nworkers=half_cores(), use_rust=TRUE, cadir=cadir
      )
 
-     mdm_grid <- fit_mdm_grid(
-         spectra, y, pgrid=get_pgrid("dynamic2"),
-         nworkers=half_cores(), use_rust=TRUE
-     ) # 77.36 max for (npmax=1000, maxSnap=40)
-
      # -~-~-~ Full Benchmark -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
-     bm <- benchmark_mdm(spectra, y, sfr)
+     bm <- benchmark_mdm(spectra, y, sfr, cadir=cadir)
 
      # -~-~-~ Interactive Development -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
      stub(fit_mdm, spectra=spectra, y=y, sfr=sfr)

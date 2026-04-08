@@ -1,4 +1,4 @@
-# metabodecon 1.6.3-branch:paper
+# metabodecon 1.6.3-branch:paper (1.6.3.9004)
 
 * `get_si_mat()` gained `snap`, `ref`, and `drop_zero` parameters for
   reference-based peak snapping. With `snap > 0`, each peak is mapped to
@@ -8,15 +8,61 @@
 * `deconvolute()` gained `npmax`, `igrs`, and `cachedir` parameters for
   limiting the number of peaks, ignoring ppm ranges, and caching results
   to disk via `cachem::cache_disk`.
-* `cv_mdm()` rewritten with a `snap` grid
+* `fit_mdm_grid_grid()` rewritten with a `snap` grid
   (`c(0.5, 1, 1.5, 2, 2.5, 3)`) and `npmax` grid for cross-validated
   hyperparameter tuning. Added `benchmark_mdm()` draft.
 * Updated Rd files for `get_si_mat`, `align`, and `deconvolute` to match
   new signatures.
 * Fixed a bug where `deconvolute_spectra()` passed `NULL` (length 0) as
   `cachedir` to `mapply`, causing a names-attribute error.
+* `align()` gained a `method` parameter (replaces `use_speaq`): `1` = speaq
+  backend, `2` = built-in CluPA reimplementation (default), `3` = new
+  peak-based pairwise alignment (`align_fast`) that works directly on
+  deconvoluted peak parameters (`x0`, `lambda`, `A`). Method 3 supports
+  parallel workers via `nworkers`.
+* `align()` gained a `full` parameter. When `FALSE`, the aligned Lorentz-curve
+  superposition is not reconstructed, saving time and memory during grid
+  searches where the superposition is not needed.
+* `plot_spectra()` gained `foc_rgn`, `what`, `cols`, and `names` parameters
+  for focus-region zooming, signal selection (`"si"`, `"sup"`, `"supal"`),
+  custom colors, and legend labels.
+* `get_si_mat()` `maxSnap` now operates in datapoints instead of half-widths.
+  Added exact unit tests for snapping logic including midpoint tie-breaking.
+* Added new `mdlm` module (`R/mdlm.R`) with `fit_mdlm()`, `cv_mdlm()`,
+  `benchmark_mdlm()`, `mdlm_grid()`, and full S3 methods (`print`, `summary`,
+  `coef`, `predict`, `plot`). This is a cleaner reimplementation of the
+  mdm fitting/tuning/benchmarking pipeline with explicit deconvolution
+  parameters (`nfit`/`smit`/`smws`/`delta`) instead of only `npmax`.
+* Rewrote `mdm` module (`R/mdm.R`): `fit_mdm()` now accepts explicit
+  deconvolution parameters (`nfit`, `smit`, `smws`, `delta`) alongside
+  `npmax`, uses key-based RAM caching, repeated CV performance estimation
+  (`nfp` parameter), and input validation (`check` parameter). Added
+  `fit_mdm_grid()` for preprocessing grid search and `get_pgrid()` for
+  predefined grids. Replaced `verbose` with integer `verbosity`.
+  Removed `cv_mdm()`, `benchmark_mdm.Rd`, and `fit_mdm.Rd` man pages that
+  no longer match the new API.
+* Fixed `hclust_align()` in `R/speaq.R`: replaced gap-based peak splitting
+  with proper average-linkage hierarchical clustering via `hclust()`/
+  `cutree()`, matching the original speaq `hClustAlign` behavior. Handles
+  both cluster orderings (left/right swap).
+* `decon_cachedir()` now uses a persistent (not session-scoped) cache
+  directory and creates it if missing.
+* `grid_deconvolute_spectra()` now accepts `sfr = NULL` (auto-derived from
+  the spectrum's chemical shift range).
+* Added `half_cores()` utility; replaced inline `ceiling(detectCores() / 2)`
+  calls in `R/aki.R`.
+* `get_worker_pool()` now sets `OMP_NUM_THREADS`, `OPENBLAS_NUM_THREADS`, and
+  `MKL_NUM_THREADS` to 1 on worker processes to prevent nested threading.
+* `style()` now checks that the `styler` package is installed before running
+  and uses `list.files()` instead of removed `fdfind()`.
+* Added `normalize_svg_ids()` and `make_stable_svg_writer()` test helpers
+  in `R/test.R` for reproducible SVG snapshot tests across environments.
+* Plotting snapshot tests (`test-draw_spectrum.R`, `test-plot_sfr.R`,
+  `test-plot_spectrum.R`, `test-plot_ws.R`) now use `make_stable_svg_writer()`
+  and updated reference SVGs. Removed stale `draw-spectrum.new.svg`.
+* Added `styler` to `Suggests` in DESCRIPTION.
 
-# metabodecon 1.6.3-branch:paper (pre 1.6.3.9003)
+# metabodecon 1.6.3-branch:paper (1.6.3.9003)
 
 * Optimized `lorentz_sup()` with three switchable implementations:
   - v1: original `sapply` loop over data points (baseline).
