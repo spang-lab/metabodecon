@@ -11,8 +11,8 @@ Path to the shared temporary cache directory for deconvolution.
 }
 \description{
 Returns the temporary session-scoped cache directory used by deconvolution
-functions such as \code{\link[=deconvolute]{deconvolute()}} and
-\code{\link[=grid_deconvolute_spectrum]{grid_deconvolute_spectrum()}}.
+functions such as \code{\link[=deconvolute]{deconvolute()}} and the internal
+\code{grid_deconvolute_spectrum()} helper.
 }
 \examples{
 decon_cachedir()

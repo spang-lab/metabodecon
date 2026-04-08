@@ -7,7 +7,11 @@
 plot_spectra(
   obj,
   ...,
+  foc_rgn = NULL,
+  what = c("si", "sup", "supal"),
   sfy = 1e+06,
+  cols = NULL,
+  names = NULL,
   xlab = "Chemical Shift [ppm]",
   ylab = paste("Signal Intensity [au] /", sfy),
   mar = c(4.1, 4.1, 1.1, 0.1),
@@ -20,7 +24,17 @@ plot_spectra(
 
 \item{...}{Additional arguments passed to the conversion function.}
 
+\item{foc_rgn}{Numeric vector of length 2 specifying the focus region in ppm
+(e.g. \code{c(3.55, 3.35)}). If NULL (default), the full spectrum is shown.}
+
+\item{what}{Which signal to plot: \code{"supal"} (aligned superposition, default with
+fallback to \code{"sup"} then \code{"si"}), \code{"sup"} (superposition) or \code{"si"} (raw).}
+
 \item{sfy}{Scaling factor for the y-axis.}
+
+\item{cols}{Character vector of colors, one per spectrum. Defaults to \code{rainbow(n)}.}
+
+\item{names}{Character vector of legend labels. Defaults to spectrum names.}
 
 \item{xlab}{Label for the x-axis.}
 

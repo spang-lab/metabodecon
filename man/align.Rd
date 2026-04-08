@@ -9,10 +9,11 @@ align(
   maxShift = 50,
   maxCombine = 0,
   verbose = TRUE,
-  use_speaq = FALSE,
+  method = 2,
   install_deps = NULL,
   nworkers = 1,
-  ref = NULL
+  ref = NULL,
+  full = TRUE
 )
 }
 \arguments{
@@ -38,14 +39,12 @@ removed in a future version.}
 
 \item{verbose}{Whether to print additional information during the alignment process.}
 
-\item{use_speaq}{If \code{FALSE} (default), alignment uses metabodecon's  own  built-in
-implementation.   If  \code{TRUE},  the  external  'speaq'  package  is
-used  instead.   The  'speaq'  backend  is  no  longer  recommended
-since  version  1.7.0  and  will  be  removed  in  a  future  version.
-When \code{use_speaq = TRUE}, the packages 'speaq', 'MassSpecWavelet'
-and 'impute' must be installed (see \code{install_deps}).}
+\item{method}{Alignment backend. \code{1}: use the original implementation from the 'speaq'
+package. \code{2} (default): use metabodecon's built-in reimplementation of the
+CluPA algorithm. \code{3}: use metabodecon's peak-based pairwise alignment, which
+works directly on the deconvoluted peak parameters (\code{x0}, \code{lambda}, \code{A}).}
 
-\item{install_deps}{Only used when \code{use_speaq = TRUE}.  'speaq' relies on the
+\item{install_deps}{Only used when \code{method = 1}. 'speaq' relies on the
 'MassSpecWavelet' and 'impute' packages. Both, 'MassSpecWavelet' and 'impute'
 are   not   available    on    CRAN,    but    can    be    installed    from
 \href{https://www.bioconductor.org/}{Bioconductor}                              or
@@ -63,6 +62,12 @@ all spectra in \code{x} are aligned towards this reference. The reference is
 prepended to \code{x} internally and removed from the result. If \code{NULL}
 (default), the reference is chosen automatically via
 \code{speaq::findRef()}.}
+
+\item{full}{If \code{TRUE} (default), store the full aligned Lorentz-curve superposition in
+each returned spectrum. If \code{FALSE}, skip that reconstruction step to save
+time and memory. Skipping reconstruction of the superposition means
+the plotting routines will not work as expected, so only use \code{full=FALSE}
+if you are sure you don't need the superposition.}
 }
 \value{
 An object of type \code{align} as described in \href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{Metabodecon Classes}.

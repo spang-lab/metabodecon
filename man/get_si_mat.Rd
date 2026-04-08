@@ -9,10 +9,11 @@ get_si_mat(x, maxSnap = 0, ref = NULL, drop_zero = FALSE)
 \arguments{
 \item{x}{An object of type \code{aligns}.}
 
-\item{maxSnap}{Controls peak snapping. \code{FALSE} or \code{0} (default): off.
-\code{TRUE} or \code{1}: snap within one half-width. Any positive
-number scales the radius, e.g. \code{maxSnap = 2} allows two
-half-widths. See 'Details'.}
+\item{maxSnap}{Controls peak snapping in datapoints. \code{FALSE} or \code{0}
+(default): off. Any positive number gives the maximum
+distance to the nearest reference peak, e.g.
+\code{maxSnap = 20} allows a distance of at most 20 datapoints.
+See 'Details'.}
 
 \item{ref}{A single \code{align} or \code{decon2} object whose peaks define
 the rows of the output matrix. If \code{NULL} (default), the
@@ -36,19 +37,52 @@ of reference peaks.
 \details{
 When \code{maxSnap > 0}, each peak in every spectrum is mapped to
 the nearest reference peak. A peak is kept only if the
-distance is at most \code{maxSnap * lambda_ref / dp} data points,
-where \code{lambda_ref} is the half-width of the corresponding
-reference peak and \code{dp} is the chemical-shift step size.
-Areas of peaks that map to the same reference peak are
-summed.
+distance is at most \code{maxSnap} datapoints. Areas of peaks that
+map to the same reference peak are summed.
+
+Example with ref peaks at indices 5, 9, 20 and
+\code{maxSnap = 4}:
+
+\if{html}{\out{<div class="sourceCode txt">}}\preformatted{Step 1 – Build intervals [ref ± maxSnap]:
+
+  ref:     5              9                    20
+           |              |                     |
+  int:  [1 ····· 9]   [5 ···· 13]        [16 ···· 24]
+            overlap!
+
+Step 2 – Shrink overlapping neighbours to midpoint.
+         Refs 1 & 2 overlap → mid = floor((5+9)/2) = 7.
+         Refs 2 & 3 don't  → keep maxSnap boundary.
+
+  ref:     5         9                         20
+           |         |                          |
+  int:  [1 ··· 7] [8 ·· 13]   gap        [16 ···· 24]
+
+Step 3 – Assign peaks to nearest ref; keep if ≤ maxSnap:
+
+  | Peak | Nearest | Dist | ≤ 4? | Action |
+  |------|---------|------|------|--------|
+  |    3 | ref 1   |    2 | yes  | keep   |
+  |    6 | ref 1   |    1 | yes  | keep   |
+  |    8 | ref 2   |    1 | yes  | keep   |
+  |   11 | ref 2   |    2 | yes  | keep   |
+  |   15 | ref 3   |    5 | no   | DROP   |
+  |   21 | ref 3   |    1 | yes  | keep   |
+
+Step 4 – Sum areas (A × pi) per reference peak:
+
+  ref 1 ← A(3) + A(6)    (peaks at 3, 6)
+  ref 2 ← A(8) + A(11)   (peaks at 8, 11)
+  ref 3 ← A(21)          (peak 15 dropped)
+}\if{html}{\out{</div>}}
 }
 \examples{
 if (interactive()) {
     decons <- deconvolute(sim[1:2], sfr = c(3.55, 3.35))
     aligns <- align(decons, maxCombine = 0)
     si_mat_0 <- get_si_mat(aligns)                  # raw
-    si_mat_1 <- get_si_mat(aligns, maxSnap = 1)     # 1x hw
-    si_mat_2 <- get_si_mat(aligns, maxSnap = 2)     # 2x hw
+    si_mat_1 <- get_si_mat(aligns, maxSnap = 20)    # 20 dp
+    si_mat_2 <- get_si_mat(aligns, maxSnap = 40)    # 40 dp
 }
 }
 \author{

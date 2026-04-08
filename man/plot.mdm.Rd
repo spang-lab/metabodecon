@@ -15,11 +15,11 @@
 Invisibly returns \code{NULL}.
 }
 \description{
-Plots lasso path for lasso models or support-vector count for SVM.
+Plots the lasso path for an \code{mdm} object.
 }
 \examples{
 \dontrun{
-  m <- cv_mdm(spectra, y, sfr = c(11, -2))
+  m <- fit_mdm_grid(spectra, y, sfr = c(11, -2))
   plot(m)
 }
 }

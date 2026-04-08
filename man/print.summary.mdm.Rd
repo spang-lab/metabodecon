@@ -18,8 +18,9 @@ Invisibly returns \code{x}.
 Prints formatted output for objects of class \code{summary.mdm}.
 }
 \examples{
-s <- structure(list(model = "svm", normalisation = "none", ref_len = 0),
-  class = "summary.mdm"
-)
+s <- structure(list(npmax = 1000, nfit = 3, smit = 2,
+  smws = 5, delta = 6.4, maxShift = 100, maxCombine = 0,
+  maxSnap = 20, n_peaks = 0L, grid_rows = 0L),
+  class = "summary.mdm")
 print(s)
 }

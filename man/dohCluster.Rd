@@ -4,14 +4,7 @@
 \alias{dohCluster}
 \title{Cluster Based Peak Alignment}
 \usage{
-dohCluster(
-  X,
-  peakList,
-  refInd = 0,
-  maxShift = 100,
-  verbose = TRUE,
-  use_speaq = FALSE
-)
+dohCluster(X, peakList, refInd = 0, maxShift = 100, verbose = TRUE, method = 2)
 }
 \arguments{
 \item{X}{Dataframe of signal intensities from all spectra as returned by
@@ -26,6 +19,9 @@ signals will be aligned to.}
 
 \item{verbose}{Whether to print additional information during the alignment
 process.}
+
+\item{method}{Alignment backend. \code{1} uses \code{speaq::hClustAlign()}, \code{2}
+(default) uses metabodecon's built-in implementation.}
 }
 \value{
 A list containing two data frames \code{Y} and \code{new_peakList}. The first one

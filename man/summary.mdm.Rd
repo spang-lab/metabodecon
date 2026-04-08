@@ -19,8 +19,13 @@ Builds a compact summary list for mdm objects.
 }
 \examples{
 m <- structure(
-  list(model = NULL, normalisation = "none", ref = NULL,
-       meta = list(model = "svm")),
+  list(
+    model = NULL,
+    ref = NULL,
+    meta = list(npmax = 1000, nfit = 3, smit = 2, smws = 5,
+                delta = 6.4, maxShift = 100, maxCombine = 0,
+                maxSnap = 20)
+  ),
   class = "mdm"
 )
 summary(m)

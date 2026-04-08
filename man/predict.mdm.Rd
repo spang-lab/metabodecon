@@ -7,9 +7,10 @@
 \method{predict}{mdm}(
   object,
   newdata,
-  type = c("prob", "class", "link"),
+  type = c("all", "prob", "class", "link"),
   s = "lambda.min",
   nworkers = 1,
+  verbosity = 1,
   ...
 )
 }
@@ -18,27 +19,31 @@
 
 \item{newdata}{Spectra object or numeric feature matrix.}
 
-\item{type}{Prediction type, one of \code{"prob"}, \code{"class"}, \code{"link"}.}
+\item{type}{Prediction type, one of \code{"all"}, \code{"prob"}, \code{"class"},
+\code{"link"}.}
 
 \item{s}{Regularization value for lasso predictions.}
 
 \item{nworkers}{Number of workers used when \code{newdata} is a spectra object.}
 
+\item{verbosity}{Integer verbosity level.}
+
 \item{...}{Additional arguments, currently unused.}
 }
 \value{
-Numeric vector of probabilities, classes, or link scores.
+Numeric vector of probabilities, classes, or link scores. For
+\code{type = "all"}, a data frame with columns \code{link}, \code{prob}, and \code{class}.
 }
 \description{
-Predicts probabilities, classes, or link scores from an \code{mdm}
-object. When \code{newdata} is a spectra object, the spectra are deconvoluted,
-aligned and snapped to the reference stored in the model before prediction.
-When \code{newdata} is a numeric matrix, it is used directly as the feature
-matrix.
+Predicts probabilities, classes, link scores, or all three from
+an \code{mdm} object. When \code{newdata} is a spectra object, the spectra are
+deconvoluted, aligned and snapped to the reference stored in the model
+before prediction. When \code{newdata} is a numeric matrix, it is used directly
+as the feature matrix.
 }
 \examples{
 \dontrun{
-  m <- cv_mdm(spectra, y, sfr = c(11, -2))
+  m <- fit_mdm_grid(spectra, y, sfr = c(11, -2))
   predict(m, test_spectra, type = "prob")
 }
 }

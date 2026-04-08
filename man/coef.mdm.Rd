@@ -19,7 +19,7 @@ Returns lasso coefficients for \code{mdm} objects fitted with lasso.
 }
 \examples{
 \dontrun{
-  m <- cv_mdm(spectra, y, sfr = c(11, -2))
+  m <- fit_mdm_grid(spectra, y, sfr = c(11, -2))
   coef(m)
 }
 }
