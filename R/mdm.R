@@ -145,7 +145,10 @@
 #' @examples
 #' \dontrun{
 #'
+#'
+#'
 #'      # -~-~-~ Inputs -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+#'
 #'      aki <- read_aki_data()
 #'      spectra <- aki$spectra
 #'      attr(spectra, "hash") <- rlang::hash(spectra)
@@ -154,7 +157,10 @@
 #'      sfr <- c(11, -2)
 #'      cadir <- cachedir("deconvs", persistent = TRUE)
 #'
-#'      # -~-~-~ Legacy -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+#'
+#'
+#'      # -~-~-~-~-~-~-~-~-~ Single -~-~-~-~-~-~-~-~-~
+#'
 #'      # Best "simple" model from aki.R (0.797 [0.75 - 0.83])
 #'      mdm <- fit_mdm(
 #'          spectra, y, sfr=NULL,
@@ -174,25 +180,18 @@
 #'          maxShift=64, maxCombine=16, maxSnap=0,
 #'          nworkers=half_cores(), cadir=cadir
 #'      )
+#'      # Pooled acc: 74.81% +- 2.56%
+#'      # Pooled AUC: 0.7764 +- 0.023
 #'
-#'      # -~-~-~ New Configs -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
-#'      # Best "simple" model from grid search over "static2" grid
-#'      mdm <- fit_mdm(
-#'          spectra, y, sfr=NULL,
-#'          nfit=7, smit=2, smws=3, delta=6, npmax=0,
-#'          maxShift=100, maxCombine=0, maxSnap=30,
-#'          nworkers=half_cores(), cadir=cadir
-#'      )
-#'      #
 #'
-#'      # -~-~-~ Grid Search and Benchmarking -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+#'
+#'      # -~-~-~-~-~-~-~-~-~ Search -~-~-~-~-~-~-~-~-~
 #'
 #'      mdm_grid_stat1 <- fit_mdm_grid(
 #'          spectra, y, pgrid=get_pgrid("static1"),
 #'          nworkers=half_cores(), use_rust=TRUE, cadir=cadir
 #'      )
 #'      saveRDS(mdm_grid_stat1, "tmp/mdm_grid_stat1.rds")
-#       # Best static1:
 #'
 #'
 #'      mdm_grid_stat2 <- fit_mdm_grid(
@@ -200,8 +199,19 @@
 #'          nworkers=half_cores(), use_rust=TRUE, cadir=cadir
 #'      )
 #'      saveRDS(mdm_grid_stat2, "tmp/mdm_grid_stat2.rds")
-#'      # Best static2: Acc=0.82, auc=0.89
-#'      # smit=2, smws=3, delta=6, nfit=7, maxShift=100, maxCombine=0, maxSnap=30
+#'      #
+#'      # Best static2: acc=0.82, auc=0.89
+#'      # smit=2, smws=3, delta=6, nfit=7, npmax=0, maxShift=100, maxCombine=0, maxSnap=30
+#'
+#'
+#'      mdm_grid_stat3 <- fit_mdm_grid(
+#'          spectra, y, pgrid=get_pgrid("static3"),
+#'          nworkers=half_cores(), use_rust=TRUE, cadir=cadir
+#'      )
+#'      saveRDS(mdm_grid_stat3, "tmp/mdm_grid_stat3.rds")
+#'      #
+#'      # Best static3: acc=79.34% auc=0.8589
+#'      # smit=2, smws=7, delta=8, nfit=10, npmax=0, maxShift=100, maxCombine=0, maxSnap=30
 #'
 #'
 #'      mdm_grid_dyn2 <- fit_mdm_grid(
@@ -539,6 +549,19 @@ get_pgrid <- function(
             KEEP.OUT.ATTRS = FALSE,
             stringsAsFactors = FALSE
         )
+    } else if (conf == "static3") {
+        P <- expand.grid(
+            smit = c(2),
+            smws = c(3, 5, 7, 9),
+            delta = 4:8,
+            nfit = c(10),
+            npmax = 0,
+            maxShift = seq(50, 250, 50),
+            maxCombine = 0,
+            maxSnap = seq(10, 50, 10),
+            KEEP.OUT.ATTRS = FALSE,
+            stringsAsFactors = FALSE
+        )
     } else if (conf == "dynamic2") {
         P <- expand.grid(
             nfit = 0,
@@ -825,21 +848,21 @@ check_mdm_args <- function(
 #'
 #' S3 methods for objects of class `mdm` and `summary.mdm`.
 #'
-#' [predict.mdm()] predicts probabilities, classes, link scores, or all
+#' `predict.mdm()` predicts probabilities, classes, link scores, or all
 #' three from an `mdm` object. When `newdata` is a spectra object, the
 #' spectra are deconvoluted, aligned and snapped to the reference stored in
 #' the model before prediction. When `newdata` is a numeric matrix, it is
 #' used directly as the feature matrix.
 #'
-#' [print.mdm()] prints a compact model summary.
+#' `print.mdm()` prints a compact model summary.
 #'
-#' [coef.mdm()] returns lasso coefficients.
+#' `coef.mdm()` returns lasso coefficients.
 #'
-#' [plot.mdm()] plots the lasso path.
+#' `plot.mdm()` plots the lasso path.
 #'
-#' [summary.mdm()] builds a compact summary list.
+#' `summary.mdm()` builds a compact summary list.
 #'
-#' [print.summary.mdm()] prints formatted output for `summary.mdm` objects.
+#' `print.summary.mdm()` prints formatted output for `summary.mdm` objects.
 #'
 #' @param object,x
 #' A fitted `mdm` object (for `predict`, `coef`, `summary`, `print` and `plot`)

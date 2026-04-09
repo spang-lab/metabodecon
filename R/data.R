@@ -501,8 +501,8 @@ cachedir <- function(subdir = NULL, persistent = NULL) {
 #'
 #' @description
 #' Returns the temporary session-scoped cache directory used by deconvolution
-#' functions such as [metabodecon::deconvolute()] and
-#' [metabodecon::grid_deconvolute_spectrum()].
+#' functions such as [metabodecon::deconvolute()] and the internal
+#' `grid_deconvolute_spectrum()` helper.
 #'
 #' @return Path to the shared temporary cache directory for deconvolution.
 #'
@@ -511,7 +511,9 @@ cachedir <- function(subdir = NULL, persistent = NULL) {
 #' @examples
 #' decon_cachedir()
 decon_cachedir <- function() {
-    cachedir("deconvs", persistent = FALSE)
+    x <- cachedir("deconvs", persistent = FALSE)
+    if (!dir.exists(x)) dir.create(x, recursive = TRUE)
+    x
 }
 
 # Sap (Public) #####

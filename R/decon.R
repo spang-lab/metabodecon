@@ -59,7 +59,8 @@
 #'
 #' @param igrs Ignore regions. List of length-2 numeric vectors specifying the
 #' start and endpoints of the chemical shift regions to ignore during
-#' deconvolution. Currently not used.
+#' deconvolution. Peaks whose centers fall inside any ignore region are
+#' excluded from fitting.
 #'
 #' @param cadir Directory for caching grid search results and deconvolution
 #' results for `npmax >= 1`. Defaults to [metabodecon::decon_cachedir()]. If
@@ -113,7 +114,7 @@ deconvolute <- function(x,
     decons2 <- deconvolute_spectra(x,
         nfit, smopts, delta, sfr, wshw,
         ask, force, verbose, bwc=2,
-        use_rust, nw=nworkers, igr=list(), rtyp="decon2",
+        use_rust, nw=nworkers, igr=igrs, rtyp="decon2",
         npmax=npmax, cadir=cadir
     )
 
@@ -169,7 +170,7 @@ deconvolute_spectra <- function(x,
     sfr_list <- get_sfr(spectra, sfr, ask, adjno)
     wshw_list <- get_wshw(spectra, wshw, ask, adjno)
     smopts_list <- get_smopts(spectra, smopts)
-    igr_list <- list(list())
+    igr_list <- list(igr)
     cadir_list <- list(cadir)
 
     # Deconvolute spectra
@@ -283,6 +284,7 @@ deconvolute_spectrum <- function(x,
         mdrb_deconvr$set_moving_average_smoother(smopts[1], smopts[2])
         mdrb_deconvr$set_noise_score_selector(delta)
         mdrb_deconvr$set_analytical_fitter(nfit)
+        for (r in igr) mdrb_deconvr$add_ignore_region(r[1], r[2])
         mdrb_decon <- if (nw > 1) {
             mdrb_deconvr$set_threads(nw)
             mdrb_deconvr$par_deconvolute_spectrum(mdrb_spectrum)
@@ -297,7 +299,7 @@ deconvolute_spectrum <- function(x,
         ispec <- rm_negative_signals(ispec)
         ispec <- smooth_signals(ispec, smopts[1], smopts[2], bwc)
         ispec <- find_peaks(ispec)
-        ispec <- filter_peaks(ispec, sfr, delta, force, bwc)
+        ispec <- filter_peaks(ispec, sfr, delta, force, bwc, igr)
         ispec <- fit_lorentz_curves(ispec, nfit, bwc)
         decon <- as_idecon(ispec)
     }
@@ -337,19 +339,27 @@ deconvolute_spectrum <- function(x,
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 deconvolute_spectrum2 <- function(x,
-    nfit=3, smopts=c(2, 5), delta=6.4, sfr=c(3.55, 3.35), wshw=0,
+    nfit=3, smopts=c(2, 5), delta=6.4, sfr=NULL, wshw=0,
     ask=FALSE, force=FALSE, verbose=TRUE, bwc=2,
-    use_rust=FALSE, nw=1, igr=list(), rtyp="idecon"
+    use_rust=FALSE, nw=1, igr=NULL, rtyp="decon2",
+    abs_neg=TRUE
 ) {
     # Check inputs
+    sfr <- sfr %||% quantile(x$cs, c(0.9, 0.1))
     assert(
         is_spectrum(x),
         is_int(nfit, 1),  is_int(smopts, 2),     is_num(delta, 1),
         is_num(sfr, 2),   is_num(wshw, 1),       is_bool(force, 1),
         is_num(bwc, 1),   is_bool(use_rust, 1),  is_int(nw, 1),
-        is_list_of_nums(igr, nv=2),
-        is_char(rtyp, 1, "(decon[0-2]|idecon|rdecon)")
+        is.null(igr) || is_list_of_nums(igr, nv=2),
+        is_char(rtyp, 1, "(decon[0-2]|idecon|rdecon)"),
+        is_bool(abs_neg, 1)
     )
+    # NULL igr = remove SFR peaks (Rust does this natively via
+    # signal_boundaries; for R we add SFR as ignore regions).
+    # list() = keep SFR peaks (old R behavior).
+    rm_sfr <- is.null(igr)
+    if (is.null(igr)) igr <- list()
 
     # Init locals
     if (isFALSE(verbose)) local_options(toscutil.logf.file = nullfile())
@@ -365,6 +375,7 @@ deconvolute_spectrum2 <- function(x,
         mdrb_deconvr$set_moving_average_smoother(smopts[1], smopts[2])
         mdrb_deconvr$set_noise_score_selector(delta)
         mdrb_deconvr$set_analytical_fitter(nfit)
+        for (r in igr) mdrb_deconvr$add_ignore_region(r[1], r[2])
         mdrb_decon <- if (nw > 1) {
             mdrb_deconvr$set_threads(nw)
             mdrb_deconvr$par_deconvolute_spectrum(mdrb_spectrum)
@@ -373,14 +384,35 @@ deconvolute_spectrum2 <- function(x,
         }
         decon <- new_rdecon(x, args, mdrb_spectrum, mdrb_deconvr, mdrb_decon)
     } else {
-        wsrm <- rm_water_signal2(x$cs, x$si, wshw)
-        nvrm <- rm_negative_signals2(wsrm)
+        cs <- x$cs; si <- x$si
+        r_igr <- igr
+        if (rm_sfr) {
+            sfr_igr <- list(c(Inf, max(sfr)), c(min(sfr), -Inf))
+            r_igr <- c(sfr_igr, r_igr)
+        }
+        wsrm <- rm_water_signal2(cs, si, wshw)
+        nvrm <- if (abs_neg) rm_negative_signals2(wsrm) else wsrm
         sm <- smooth_signals2(nvrm, smopts[1], smopts[2])
-        find_peaks2(sm)
-        # CONTINUE HERE
-        ispec <- filter_peaks(ispec, sfr, delta, force, bwc)
-        ispec <- fit_lorentz_curves(ispec, nfit, bwc)
-        decon <- as_idecon(ispec)
+        peaks <- find_peaks2(sm)
+        peaks <- filter_peaks2(peaks, cs, sfr, delta, force, r_igr)
+        lcpar <- fit_lorentz_curves2(cs, si, peaks, nfit)
+        sup <- lorentz_sup(cs, lcpar = lcpar)
+        sit <- data.frame(
+            wsrm = wsrm * 1e6,
+            nvrm = nvrm * 1e6,
+            sm = sm * 1e6,
+            sup = sup
+        )
+        mse_list <- list(
+            raw = mse(si, sup, normed = FALSE),
+            norm = mse(si, sup, normed = TRUE),
+            sm = mse(sit$sm, sup, normed = FALSE),
+            smnorm = mse(sit$sm, sup, normed = TRUE)
+        )
+        decon <- list(cs = cs, si = si, meta = x$meta, args = args,
+            sit = sit, peak = peaks[, c("left", "center", "right")],
+            lcpar = lcpar, mse = mse_list)
+        class(decon) <- "decon2"
     }
     logf("Formatting return object as %s", rtyp)
     convert <- switch(rtyp,
@@ -803,30 +835,6 @@ find_peaks <- function(spec) {
 find_peaks2 <- function(y) {
     logf("Starting peak selection")
     d <- calc_second_derivative(y)
-    a <- abs(d)
-    n <- length(d)
-    dl <- c(NA, d[-n]) # dl[i] == d[i-1]
-    dr <- c(d[-1], NA) # dr[i] == d[i+1]
-    center <- which(d < 0 & d <= dl & d < dr)
-    peak <- data.frame(left = NA, center = center, right = NA, score = NA)
-    for (i in seq_along(center)) {
-        j <- center[i]
-        l <- peak$left[i]  <- get_left_border(j, d)
-        r <- peak$right[i] <- get_right_border(j, d, n)
-        peak$score[i] <- get_peak_score(j, l, r, a)
-    }
-    logf("Detected %d peaks", length(center))
-    peak
-}
-
-#' @noRd
-#' @author
-#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
-#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
-#' MetaboDecon1D.
-find_peaks2 <- function(y) {
-    logf("Starting peak selection")
-    d <- calc_second_derivative(y)
     pc <- get_peak_centers_fast(d)
     rb <- get_right_borders_fast(d, pc)
     lb <- get_left_borders_fast(d, pc)
@@ -834,6 +842,155 @@ find_peaks2 <- function(y) {
     P <- data.frame(left = lb, center = pc, right = rb, score = sc)
     logf("Detected %d peaks", length(pc))
     P
+}
+
+#' @noRd
+#' @title Filter Peaks with Low Scores
+#' @description
+#' Modular replacement for [filter_peaks()]. Takes atomic vectors instead of
+#' the monolithic `ispec` list. Peaks whose center ppm falls outside `sfr` are
+#' used to estimate noise; signal-region peaks with scores below
+#' `mean + delta * sd` are removed. Peaks inside any `igr` region are also
+#' removed.
+#' @param peaks Data frame with columns `left`, `center`, `right`, `score`.
+#' @param cs Chemical shifts (ppm), same length as the spectrum.
+#' @param sfr Length-2 numeric: signal-free region boundaries in ppm.
+#' @param delta Filtering threshold in standard deviations.
+#' @param force If TRUE, proceed even if no SFR peaks are found.
+#' @param igr List of length-2 numeric vectors (ignore regions in ppm).
+#' @return Filtered data frame (rows with `high == TRUE` only).
+#' @author 2026 Tobias Schmidt: initial version.
+filter_peaks2 <- function(peaks, cs, sfr, delta = 6.4, force = FALSE,
+                          igr = list()) {
+    logf("Removing peaks with low scores")
+    ppm_ct <- cs[peaks$center]
+    in_sfr <- ppm_ct >= max(sfr) | ppm_ct <= min(sfr)
+    # Compute noise statistics from SFR peaks before any removal
+    if (sum(in_sfr) > 1) {
+        mu <- mean(peaks$score[in_sfr])
+        sigma <- sd(peaks$score[in_sfr])
+    } else {
+        if (!force) stop(
+            "Not enough signals found in signal free region. ",
+            "Please double check deconvolution parameters."
+        )
+        mu <- 0; sigma <- 0
+    }
+    high <- peaks$score > mu + delta * sigma
+    if (length(igr) > 0) {
+        in_igr <- vapply(ppm_ct, function(c) {
+            any(vapply(igr, function(r) {
+                c >= min(r) & c <= max(r)
+            }, logical(1)))
+        }, logical(1))
+        high <- high & !in_igr
+    }
+    out <- peaks[high, ]
+    logf("Removed %d peaks", nrow(peaks) - nrow(out))
+    out
+}
+
+#' @noRd
+#' @title Fit Lorentz Curves (v2)
+#' @description
+#' Modular replacement for [fit_lorentz_curves()]. Works directly in ppm and
+#' uses the same algorithm as the Rust backend: 3-point peak stencil with
+#' iterative refinement. Returns a data frame with columns `x0`, `A`,
+#' `lambda`.
+#' @param cs Chemical shifts in ppm.
+#' @param si Signal intensities (raw, unsmoothed).
+#' @param peaks Data frame with columns `left`, `center`, `right` (indices).
+#' @param nfit Number of refinement iterations.
+#' @return Data frame with columns `x0` (ppm), `A`, `lambda` (ppm).
+#' @author 2026 Tobias Schmidt: initial version.
+fit_lorentz_curves2 <- function(cs, si, peaks, nfit = 3) {
+    logf("Fitting Lorentz curves (%d iterations)", nfit)
+    il <- peaks$left; ic <- peaks$center; ir <- peaks$right
+    np <- length(ic)
+
+    # Build 3-point stencils (x1=left, x2=center, x3=right)
+    x1 <- cs[il]; x2 <- cs[ic]; x3 <- cs[ir]
+    y1 <- si[il]; y2 <- si[ic]; y3 <- si[ir]
+
+    # Mirror shoulders (match Rust PeakStencil::mirror_shoulder)
+    mirror <- function(x1, x2, x3, y1, y2, y3) {
+        inc <- y1 <= y2 & y2 <= y3  # ascending
+        dec <- y1 >= y2 & y2 >= y3  # descending
+        x3[inc] <- 2 * x2[inc] - x1[inc]
+        y3[inc] <- y1[inc]
+        x1[dec] <- 2 * x2[dec] - x3[dec]
+        y1[dec] <- y3[dec]
+        list(x1 = x1, x3 = x3, y1 = y1, y3 = y3)
+    }
+    m <- mirror(x1, x2, x3, y1, y2, y3)
+    x1 <- m$x1; x3 <- m$x3; y1 <- m$y1; y3 <- m$y3
+
+    # Solve 3-equation system (match Rust FitterAnalytical)
+    solve_params <- function(x1, x2, x3, y1, y2, y3) {
+        # maximum_position (x0)
+        num <- x1^2 * y1 * (y2 - y3) + x2^2 * y2 * (y3 - y1) +
+            x3^2 * y3 * (y1 - y2)
+        den <- 2 * ((x1 - x2) * y1 * y2 + (x2 - x3) * y2 * y3 +
+            (x3 - x1) * y3 * y1)
+        maxp <- num / den
+        maxp[!is.finite(maxp)] <- 0
+        # half_width2 (hw2 = lambda^2)
+        left <- (y1 * (x1 - maxp)^2 - y2 * (x2 - maxp)^2) / (y2 - y1)
+        right <- (y2 * (x2 - maxp)^2 - y3 * (x3 - maxp)^2) / (y3 - y2)
+        hw2 <- pmax((left + right) / 2, .Machine$double.eps)
+        hw2[!is.finite(hw2)] <- .Machine$double.eps
+        # scale_factor_half_width (sfhw = A * lambda)
+        sfhw <- y2 * (hw2 + (x2 - maxp)^2)
+        sfhw[!is.finite(sfhw)] <- 0
+        list(sfhw = sfhw, hw2 = hw2, maxp = maxp)
+    }
+    p <- solve_params(x1, x2, x3, y1, y2, y3)
+
+    # Build reduced spectrum (3 points per peak, flattened, ORIGINAL values)
+    rs_x <- as.numeric(rbind(cs[il], cs[ic], cs[ir]))
+    rs_y <- as.numeric(rbind(si[il], si[ic], si[ir]))
+
+    # Iterative refinement
+    for (iter in seq_len(nfit)) {
+        # Superposition at each reduced spectrum point
+        sup <- lorentz_sup_raw(rs_x, p$sfhw, p$hw2, p$maxp)
+        # Ratio: original / superposition
+        ratio <- rs_y / sup
+        ratio[!is.finite(ratio)] <- 1
+        # Update stencil intensities
+        rm <- matrix(ratio, nrow = 3)
+        y1 <- y1 * rm[1, ]; y2 <- y2 * rm[2, ]; y3 <- y3 * rm[3, ]
+        # Re-mirror shoulders
+        m <- mirror(x1, x2, x3, y1, y2, y3)
+        x1 <- m$x1; x3 <- m$x3; y1 <- m$y1; y3 <- m$y3
+        # Re-solve
+        p <- solve_params(x1, x2, x3, y1, y2, y3)
+    }
+
+    # Filter degenerate peaks (match Rust CHECK_PRECISION = 1e6 * eps)
+    eps <- 1e6 * .Machine$double.eps
+    ok <- p$sfhw > eps & p$hw2 > eps
+    sfhw <- p$sfhw[ok]; hw2 <- p$hw2[ok]; maxp <- p$maxp[ok]
+
+    # Convert (sfhw, hw2, maxp) → (x0, A, lambda) for decon2 format
+    lambda <- sqrt(hw2)
+    A <- sfhw / lambda
+    data.frame(x0 = maxp, A = A, lambda = lambda)
+}
+
+#' @noRd
+#' @title Superposition using (sfhw, hw2, maxp) parameterization
+#' @description
+#' Computes the superposition of Lorentzians at positions `x` using the
+#' transformed parameters (sfhw, hw2, maxp) as used during fitting. This
+#' avoids unnecessary sqrt/division during iteration.
+#' @return Numeric vector of superposition values.
+lorentz_sup_raw <- function(x, sfhw, hw2, maxp) {
+    result <- numeric(length(x))
+    for (j in seq_along(maxp)) {
+        result <- result + sfhw[j] / (hw2[j] + (x - maxp[j])^2)
+    }
+    result
 }
 
 #' @noRd
@@ -856,6 +1013,10 @@ find_peaks2 <- function(y) {
 #' @param force If no peaks are found in the SFR, the function stops with an
 #' error message by default. If `force` is TRUE, the function instead proceeds
 #' without filtering any peaks, potentially increasing runtime.
+#'
+#' @param igr List of length-2 numeric vectors specifying chemical shift
+#' regions to ignore. Peaks whose centers fall inside any ignore region are
+#' excluded.
 #'
 #' @return
 #' Returns the modified `spec` list with the `peak` component updated to
@@ -885,7 +1046,8 @@ find_peaks2 <- function(y) {
 #' sfr <- list(left_sdp = 2.8, right_sdp = 1.2)
 #' rm3 <- filtered_ispec <- filter_peaks(ispec, sfr)
 #' rm2 <- filtered_ispec <- filter_peaks(ispec, sfr, delta = 1)
-filter_peaks <- function(ispec, sfr, delta = 6.4, force = FALSE, bwc = 1) {
+filter_peaks <- function(ispec, sfr, delta = 6.4, force = FALSE, bwc = 1,
+                         igr = list()) {
     assert(is_ispec(ispec))
     logf("Removing peaks with low scores")
     sdp <- ispec$sdp
@@ -923,6 +1085,15 @@ filter_peaks <- function(ispec, sfr, delta = 6.4, force = FALSE, bwc = 1) {
         sigma <- 0
     }
     ispec$peak$high <- pok & (psc > mu + delta * sigma)
+    if (length(igr) > 0) {
+        cp <- if (bwc < 1) sdp[pct] else ppm[pct]
+        in_igr <- vapply(cp, function(c) {
+            any(vapply(igr, function(r) {
+                c >= min(r) & c <= max(r)
+            }, logical(1)))
+        }, logical(1))
+        ispec$peak$high <- ispec$peak$high & !in_igr
+    }
     ispec$peak$region <- "norm"
     ispec$peak$region[in_left_sfr] <- "sfrl"
     ispec$peak$region[in_right_sfr] <- "sfrr"

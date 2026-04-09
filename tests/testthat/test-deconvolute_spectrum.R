@@ -74,6 +74,30 @@ bwc <- test_that(
     expect_equal(decon0_deconvolute, decon0_MetaboDecon1D)
 })
 
+igr <- test_that(
+    "Peaks in ignore regions are excluded", {
+    # sap[[1]] has 3 peaks at ppm ~2.8, ~0.1, ~-2.2 (with bwc=2, delta=3)
+    igr <- list(c(-0.5, 0.5))
+    d_r <- deconvolute_spectrum(
+        sap[[1]], nfit = 3, smopts = c(1, 3), delta = 3, sfr = c(3.2, -3.2),
+        wshw = 0, ask = FALSE, force = FALSE, verbose = FALSE, bwc = 2,
+        use_rust = FALSE, igr = igr, rtyp = "idecon"
+    )
+    n_no_igr <- sum(obj$idecon_bwc2$peak$high)
+    n_with_igr <- sum(d_r$peak$high)
+    expect_equal(n_no_igr, 4)
+    expect_equal(n_with_igr, 3)
+    if (mdrb_available) {
+        d_rust <- deconvolute_spectrum(
+            sap[[1]], nfit = 3, smopts = c(1, 3), delta = 3,
+            sfr = c(3.2, -3.2), wshw = 0, ask = FALSE, force = FALSE,
+            verbose = FALSE, bwc = 2, use_rust = TRUE, igr = igr,
+            rtyp = "idecon"
+        )
+        expect_equal(sum(d_rust$peak$high), 3)
+    }
+})
+
 # Rust Checks #####
 
 skip_on_cran()
