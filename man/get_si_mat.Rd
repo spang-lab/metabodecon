@@ -4,23 +4,29 @@
 \alias{get_si_mat}
 \title{Extract Matrix of aligned Signal Intensities}
 \usage{
-get_si_mat(x, maxSnap = 0, ref = NULL, drop_zero = FALSE)
+get_si_mat(x, ref = NULL, drop_zero = FALSE, maxCombine = 0, combineMethod = 2)
 }
 \arguments{
 \item{x}{An object of type \code{aligns}.}
 
-\item{maxSnap}{Controls peak snapping in datapoints. \code{FALSE} or \code{0}
-(default): off. Any positive number gives the maximum
-distance to the nearest reference peak, e.g.
-\code{maxSnap = 20} allows a distance of at most 20 datapoints.
-See 'Details'.}
-
 \item{ref}{A single \code{align} or \code{decon2} object whose peaks define
 the rows of the output matrix. If \code{NULL} (default), the
 reference is auto-detected from \code{x} via
-\code{speaq::findRef()}. Ignored when \code{maxSnap = 0}.}
+\code{\link[=find_ref]{find_ref()}}. Used by \code{combineMethod = 2}
+only.}
 
 \item{drop_zero}{If \code{TRUE}, rows where all values are zero are removed.}
+
+\item{maxCombine}{Controls peak combining in datapoints. \code{0} (default): off.
+Any positive number enables peak combining. For
+\code{combineMethod = 1} this is the \code{range} parameter of
+\code{\link[=combine_peaks]{combine_peaks()}}. For \code{combineMethod = 2}
+this is the maximum distance to the nearest reference peak.
+See 'Details'.}
+
+\item{combineMethod}{Peak-combining backend. \code{1}: merge adjacent columns via
+\code{\link[=combine_peaks]{combine_peaks()}}. \code{2} (default):
+nearest-neighbour snapping to reference peaks.}
 }
 \value{
 A numeric matrix with chemical shifts as rownames and
@@ -28,22 +34,26 @@ spectrum names as colnames.
 }
 \description{
 Extracts a peak-area matrix from aligned spectra. Rows are
-chemical-shift positions, columns are spectra. With
-\code{maxSnap = FALSE} the raw aligned integral vectors are returned.
-With \code{maxSnap = TRUE} peaks are snapped to the peaks of a
-reference spectrum, reducing the row count to the number
-of reference peaks.
+chemical-shift positions, columns are spectra. When
+\code{maxCombine = 0} the raw aligned integral vectors are returned.
+When \code{maxCombine > 0}, peaks are combined using one of two
+methods controlled by \code{combineMethod}.
 }
 \details{
-When \code{maxSnap > 0}, each peak in every spectrum is mapped to
-the nearest reference peak. A peak is kept only if the
-distance is at most \code{maxSnap} datapoints. Areas of peaks that
-map to the same reference peak are summed.
+\strong{Method 1} (\code{combineMethod = 1}) passes the transposed
+integral matrix to \code{\link[=combine_peaks]{combine_peaks()}} with
+\code{range = maxCombine}. Partly-filled neighbouring columns are
+merged when they share no common non-zero row.
 
-Example with ref peaks at indices 5, 9, 20 and
-\code{maxSnap = 4}:
+\strong{Method 2} (\code{combineMethod = 2}) maps every peak to the
+nearest reference peak and keeps it only if the distance is
+at most \code{maxCombine} datapoints. Areas of peaks that map to
+the same reference peak are summed.
 
-\if{html}{\out{<div class="sourceCode txt">}}\preformatted{Step 1 – Build intervals [ref ± maxSnap]:
+Example for method 2 with ref peaks at indices 5, 9, 20 and
+\code{maxCombine = 4}:
+
+\if{html}{\out{<div class="sourceCode txt">}}\preformatted{Step 1 – Build intervals [ref ± maxCombine]:
 
   ref:     5              9                    20
            |              |                     |
@@ -52,13 +62,13 @@ Example with ref peaks at indices 5, 9, 20 and
 
 Step 2 – Shrink overlapping neighbours to midpoint.
          Refs 1 & 2 overlap → mid = floor((5+9)/2) = 7.
-         Refs 2 & 3 don't  → keep maxSnap boundary.
+         Refs 2 & 3 don't  → keep maxCombine boundary.
 
   ref:     5         9                         20
            |         |                          |
   int:  [1 ··· 7] [8 ·· 13]   gap        [16 ···· 24]
 
-Step 3 – Assign peaks to nearest ref; keep if ≤ maxSnap:
+Step 3 – Assign peaks to nearest ref; keep if ≤ maxCombine:
 
   | Peak | Nearest | Dist | ≤ 4? | Action |
   |------|---------|------|------|--------|
@@ -80,9 +90,9 @@ Step 4 – Sum areas (A × pi) per reference peak:
 if (interactive()) {
     decons <- deconvolute(sim[1:2], sfr = c(3.55, 3.35))
     aligns <- align(decons, maxCombine = 0)
-    si_mat_0 <- get_si_mat(aligns)                  # raw
-    si_mat_1 <- get_si_mat(aligns, maxSnap = 20)    # 20 dp
-    si_mat_2 <- get_si_mat(aligns, maxSnap = 40)    # 40 dp
+    si_mat_0 <- get_si_mat(aligns)
+    si_mat_1 <- get_si_mat(aligns, maxCombine = 20)
+    si_mat_2 <- get_si_mat(aligns, maxCombine = 20, combineMethod = 1)
 }
 }
 \author{

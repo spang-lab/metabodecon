@@ -864,6 +864,26 @@ is_bool_or_null <- function(x, n = NULL) {
 
 #' @noRd
 #' @author 2024-2025 Tobias Schmidt: initial version.
+is_use_rust <- function(x) {
+    is.null(x) || isTRUE(x) || isFALSE(x) ||
+        (is.numeric(x) && length(x) == 1 && x %in% c(0, 0.5, 1))
+}
+
+#' @noRd
+#' @description Normalize `use_rust` to numeric: 0 (old R), 0.5 (new R), 1
+#' (Rust). Accepts TRUE/FALSE/NULL/0/0.5/1. NULL auto-detects Rust backend.
+#' @author 2024-2025 Tobias Schmidt: initial version.
+normalize_use_rust <- function(use_rust) {
+    if (is.null(use_rust)) {
+        if (check_mdrb()) return(1) else return(0)
+    }
+    if (isTRUE(use_rust))  return(1)
+    if (isFALSE(use_rust)) return(0)
+    use_rust # already 0, 0.5, or 1
+}
+
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 is_str_or_null <- function(x) {
     is.null(x) || is_str(x)
 }

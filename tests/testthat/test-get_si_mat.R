@@ -32,7 +32,7 @@ test_that("get_si_mat drop_zero removes all-zero rows", {
     expect_equal(compact, full[rowSums(full != 0) > 0, , drop = FALSE])
 })
 
-test_that("get_si_mat with maxSnap returns reduced matrix", {
+test_that("get_si_mat with maxCombine returns reduced matrix", {
 
     withr::local_output_sink(nullfile())
 
@@ -44,8 +44,8 @@ test_that("get_si_mat with maxSnap returns reduced matrix", {
     al <- align(decons, maxCombine = 0, verbose = FALSE)
 
     mat_raw <- get_si_mat(al)
-    mat_20dp <- get_si_mat(al, maxSnap = 20)
-    mat_40dp <- get_si_mat(al, maxSnap = 40)
+    mat_20dp <- get_si_mat(al, maxCombine = 20)
+    mat_40dp <- get_si_mat(al, maxCombine = 40)
 
     # Snapped matrices should have fewer rows (one per ref peak)
     expect_lt(nrow(mat_20dp), nrow(mat_raw))
@@ -69,7 +69,7 @@ make_aligns_for_get_si_mat_test <- function(cs, peaks_list, areas_list) {
     structure(objs, class = "aligns")
 }
 
-test_that("get_si_mat with maxSnap sums areas within snapped intervals", {
+test_that("get_si_mat with maxCombine sums areas within snapped intervals", {
     cs <- 10:1
     aligns <- make_aligns_for_get_si_mat_test(
         cs = cs,
@@ -77,7 +77,7 @@ test_that("get_si_mat with maxSnap sums areas within snapped intervals", {
         areas_list = list(c(10, 20, 30), c(1, 2, 3, 4, 5, 6), c(7, 8, 9))
     )
 
-    mat <- get_si_mat(aligns, maxSnap = 1, ref = aligns[[1]])
+    mat <- get_si_mat(aligns, maxCombine = 1, ref = aligns[[1]])
 
     expected <- cbind(
         c(10, 20, 30),
@@ -90,7 +90,7 @@ test_that("get_si_mat with maxSnap sums areas within snapped intervals", {
     expect_equal(mat, expected)
 })
 
-test_that("get_si_mat with maxSnap assigns midpoint ties to the left", {
+test_that("get_si_mat with maxCombine assigns midpoint ties to the left", {
     cs <- 6:1
     aligns <- make_aligns_for_get_si_mat_test(
         cs = cs,
@@ -98,7 +98,7 @@ test_that("get_si_mat with maxSnap assigns midpoint ties to the left", {
         areas_list = list(c(10, 20), c(5))
     )
 
-    mat <- get_si_mat(aligns, maxSnap = 1, ref = aligns[[1]])
+    mat <- get_si_mat(aligns, maxCombine = 1, ref = aligns[[1]])
 
     expected <- cbind(c(10, 20), c(5, 0)) * pi
     rownames(expected) <- cs[c(2, 4)]

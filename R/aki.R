@@ -171,7 +171,7 @@ try_aki_benchmark <- function(  aki = read_aki_data(),
 #'
 #' The correct way to do this, would be to do the deconvolution and alignment as
 #' part of the inner CV loop, and then only apply the best parameter combination
-#' to the outer test fold. This will be implemented in [metabodecon::fit_mdm_grid_grid()].
+#' to the outer test fold. This will be implemented in [metabodecon::cv_mdm_grid()].
 #'
 #' However, because this will multiply runtime by kout*kin and also requires
 #' additional implementation effort, we will first run this invalid version to

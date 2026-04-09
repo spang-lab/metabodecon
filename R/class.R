@@ -1406,7 +1406,7 @@ get_name <- function(x, default = "") {
     (if (is.list(x)) x$meta$name %||% x$name) %||% default
 }
 
-#' @noRd
+#' @export
 #' @title Returns the names of a metabodecon collection object.
 #' @param x A metabodecon collection object.
 #' @param default Default names if no names are found. Passed on to `get_default_names`.

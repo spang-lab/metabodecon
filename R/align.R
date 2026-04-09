@@ -314,42 +314,53 @@ align <- function(x,
 #'
 #' @description
 #' Extracts a peak-area matrix from aligned spectra. Rows are
-#' chemical-shift positions, columns are spectra. With
-#' `maxSnap = FALSE` the raw aligned integral vectors are returned.
-#' With `maxSnap = TRUE` peaks are snapped to the peaks of a
-#' reference spectrum, reducing the row count to the number
-#' of reference peaks.
+#' chemical-shift positions, columns are spectra. When
+#' `maxCombine = 0` the raw aligned integral vectors are returned.
+#' When `maxCombine > 0`, peaks are combined using one of two
+#' methods controlled by `combineMethod`.
 #'
 #' @param x
 #' An object of type `aligns`.
 #'
-#' @param maxSnap
-#' Controls peak snapping in datapoints. `FALSE` or `0`
-#' (default): off. Any positive number gives the maximum
-#' distance to the nearest reference peak, e.g.
-#' `maxSnap = 20` allows a distance of at most 20 datapoints.
+#' @param maxCombine
+#' Controls peak combining in datapoints. `0` (default): off.
+#' Any positive number enables peak combining. For
+#' `combineMethod = 1` this is the `range` parameter of
+#' [metabodecon::combine_peaks()]. For `combineMethod = 2`
+#' this is the maximum distance to the nearest reference peak.
 #' See 'Details'.
+#'
+#' @param combineMethod
+#' Peak-combining backend. `1`: merge adjacent columns via
+#' [metabodecon::combine_peaks()]. `2` (default):
+#' nearest-neighbour snapping to reference peaks.
 #'
 #' @param ref
 #' A single `align` or `decon2` object whose peaks define
 #' the rows of the output matrix. If `NULL` (default), the
 #' reference is auto-detected from `x` via
-#' `speaq::findRef()`. Ignored when `maxSnap = 0`.
+#' [metabodecon::find_ref()]. Used by `combineMethod = 2`
+#' only.
 #'
 #' @param drop_zero
 #' If `TRUE`, rows where all values are zero are removed.
 #'
 #' @details
-#' When `maxSnap > 0`, each peak in every spectrum is mapped to
-#' the nearest reference peak. A peak is kept only if the
-#' distance is at most `maxSnap` datapoints. Areas of peaks that
-#' map to the same reference peak are summed.
+#' **Method 1** (`combineMethod = 1`) passes the transposed
+#' integral matrix to [metabodecon::combine_peaks()] with
+#' `range = maxCombine`. Partly-filled neighbouring columns are
+#' merged when they share no common non-zero row.
 #'
-#' Example with ref peaks at indices 5, 9, 20 and
-#' `maxSnap = 4`:
+#' **Method 2** (`combineMethod = 2`) maps every peak to the
+#' nearest reference peak and keeps it only if the distance is
+#' at most `maxCombine` datapoints. Areas of peaks that map to
+#' the same reference peak are summed.
+#'
+#' Example for method 2 with ref peaks at indices 5, 9, 20 and
+#' `maxCombine = 4`:
 #'
 #' ```txt
-#' Step 1 – Build intervals [ref ± maxSnap]:
+#' Step 1 – Build intervals [ref ± maxCombine]:
 #'
 #'   ref:     5              9                    20
 #'            |              |                     |
@@ -358,13 +369,13 @@ align <- function(x,
 #'
 #' Step 2 – Shrink overlapping neighbours to midpoint.
 #'          Refs 1 & 2 overlap → mid = floor((5+9)/2) = 7.
-#'          Refs 2 & 3 don't  → keep maxSnap boundary.
+#'          Refs 2 & 3 don't  → keep maxCombine boundary.
 #'
 #'   ref:     5         9                         20
 #'            |         |                          |
 #'   int:  [1 ··· 7] [8 ·· 13]   gap        [16 ···· 24]
 #'
-#' Step 3 – Assign peaks to nearest ref; keep if ≤ maxSnap:
+#' Step 3 – Assign peaks to nearest ref; keep if ≤ maxCombine:
 #'
 #'   | Peak | Nearest | Dist | ≤ 4? | Action |
 #'   |------|---------|------|------|--------|
@@ -392,20 +403,30 @@ align <- function(x,
 #' if (interactive()) {
 #'     decons <- deconvolute(sim[1:2], sfr = c(3.55, 3.35))
 #'     aligns <- align(decons, maxCombine = 0)
-#'     si_mat_0 <- get_si_mat(aligns)                  # raw
-#'     si_mat_1 <- get_si_mat(aligns, maxSnap = 20)    # 20 dp
-#'     si_mat_2 <- get_si_mat(aligns, maxSnap = 40)    # 40 dp
+#'     si_mat_0 <- get_si_mat(aligns)
+#'     si_mat_1 <- get_si_mat(aligns, maxCombine = 20)
+#'     si_mat_2 <- get_si_mat(aligns, maxCombine = 20, combineMethod = 1)
 #' }
-get_si_mat <- function(x, ref = NULL, drop_zero = FALSE, maxSnap = 0) {
+get_si_mat <- function(x, ref = NULL, drop_zero = FALSE,
+                       maxCombine = 0, combineMethod = 2) {
     stopifnot(is_aligns(x))
     cs <- x[[1]]$cs
-    if (maxSnap == 0) {
+    if (maxCombine == 0) {
         mat <- sapply(x, function(xi) xi$sit$al)
         rownames(mat) <- cs
         if (drop_zero) {
             mat <- mat[rowSums(mat != 0) > 0, , drop = FALSE]
         }
-    } else {
+    } else if (combineMethod == 1) {
+        mat <- sapply(x, function(xi) xi$sit$al)
+        rownames(mat) <- cs
+        tmat <- t(mat)
+        cmat <- combine_peaks(tmat, range = maxCombine)$long
+        mat <- t(cmat)
+        if (drop_zero) {
+            mat <- mat[rowSums(mat != 0) > 0, , drop = FALSE]
+        }
+    } else if (combineMethod == 2) {
         if (is.null(ref)) {
             pl <- lapply(x, get_peak_indices)
             idx <- find_ref(pl)$refInd
@@ -434,12 +455,14 @@ get_si_mat <- function(x, ref = NULL, drop_zero = FALSE, maxSnap = 0) {
             } else {
                 findInterval(peak_idx - 0.5, mids) + 1L
             }
-            keep <- abs(peak_idx - ref_idx[grp]) <= maxSnap
+            keep <- abs(peak_idx - ref_idx[grp]) <= maxCombine
             if (!any(keep)) next
             sums <- rowsum(matrix(A[keep] * pi, ncol = 1), grp[keep], reorder = FALSE)
             mat[as.integer(rownames(sums)), s] <- sums[, 1]
         }
         rownames(mat) <- ref_cs
+    } else {
+        stop("`combineMethod` must be 1 or 2.", call. = FALSE)
     }
     colnames(mat) <- get_names(x)
     mat

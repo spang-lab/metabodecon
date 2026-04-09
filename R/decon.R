@@ -44,11 +44,13 @@
 #'
 #' @param wshw Half-width of the water artifact in ppm.  See 'Details'.
 #'
-#' @param use_rust Logical. Whether to use the Rust backend for deconvolution.
-#' Requires the [mdrb](https://github.com/spang-lab/mdrb) package. If TRUE and
-#' mdrb is missing, an error is thrown. If FALSE, the R implementation is used.
-#' If NULL, the Rust backend is used if available, otherwise the R implementation
-#' is used.
+#' @param use_rust Controls the deconvolution backend. Accepts `FALSE` / `0`
+#' (legacy R implementation, default), `TRUE` / `1` (Rust backend via
+#' [mdrb](https://github.com/spang-lab/mdrb)), `0.5` (experimental new R
+#' implementation that produces results identical to the Rust backend; planned
+#' to become the new default in a future release), or `NULL` (auto-detect:
+#' uses Rust if available, otherwise legacy R). When set to `TRUE` / `1` and
+#' mdrb is not installed, an error is thrown.
 #'
 #' @param npmax Integer. Maximum number of peaks allowed in the result. If
 #' `npmax >= 1`, the `nfit`, `smopts` and `delta` arguments are ignored and a
@@ -101,14 +103,14 @@ deconvolute <- function(x,
         is_num_or_null(sfr, 2),       is_num_or_null(wshw, 1),
         is_bool(ask, 1),              is_bool(force, 1),
         is_bool(verbose, 1),          is_int(nworkers, 1),
-        is_bool_or_null(use_rust, 1), is_int(npmax, 1),
+        is_use_rust(use_rust),        is_int(npmax, 1),
         is_list_of_nums(igrs, nv=2),  is_str_or_null(cadir)
     )
 
     # Set suitable defaults
     sfr <- sfr %||% quantile(x$cs %||% x[[1]]$cs, c(0.9, 0.1))
-    if (isTRUE(use_rust)) check_mdrb(stop_on_fail = TRUE)
-    if (is.null(use_rust)) use_rust <- check_mdrb()
+    use_rust <- normalize_use_rust(use_rust)
+    if (use_rust == 1) check_mdrb(stop_on_fail = TRUE)
 
     # Perform deconvolution
     decons2 <- deconvolute_spectra(x,
@@ -149,7 +151,7 @@ deconvolute_spectra <- function(x,
         is_num(bwc, 1),
         is_num(sfr, 2)  || is_list_of_nums(sfr, length(x), 2),
         is_num(wshw, 1) || is_list_of_nums(wshw, length(x), 1),
-        if (rtyp == "rdecon") isTRUE(use_rust) else is_bool(use_rust),
+        if (rtyp == "rdecon") use_rust == 1 else is_use_rust(use_rust),
         is_int(nw, 1), is.list(igr),
         is_char(rtyp, 1, "(decon[0-2]|idecon|rdecon)"),
         is_int(npmax, 1), is_str_or_null(cadir)
@@ -219,25 +221,27 @@ deconvolute_spectra <- function(x,
 deconvolute_spectrum <- function(x,
     nfit=3, smopts=c(2, 5), delta=6.4, sfr=c(3.55, 3.35), wshw=0,
     ask=FALSE, force=FALSE, verbose=TRUE, bwc=2,
-    use_rust=FALSE, nw=1, igr=list(), rtyp="idecon",
+    use_rust=0, nw=1, igr=list(), rtyp="idecon",
     npmax=0, cadir=decon_cachedir()
 ) {
 
     # Check inputs
     assert(
         is_spectrum(x),
-        is_int(nfit, 1),  is_int(smopts, 2),     is_num(delta, 1),
-        is_num(sfr, 2),   is_num(wshw, 1),       is_bool(force, 1),
-        is_num(bwc, 1),   is_bool(use_rust, 1),  is_int(nw, 1),
+        is_int(nfit, 1),  is_int(smopts, 2),      is_num(delta, 1),
+        is_num(sfr, 2),   is_num(wshw, 1),        is_bool(force, 1),
+        is_num(bwc, 1),   is_use_rust(use_rust),  is_int(nw, 1),
         is_list_of_nums(igr, nv=2),
         is_char(rtyp, 1, "(decon[0-2]|idecon|rdecon)"),
         is_int(npmax, 1), is_str_or_null(cadir)
     )
+    use_rust <- normalize_use_rust(use_rust)
 
     # Init locals
     if (isFALSE(verbose)) local_options(toscutil.logf.file = nullfile())
     name <- get_name(x)
-    suffix <- if (use_rust) " using Rust backend" else ""
+    backend <- c("R (legacy)", "R (experimental)", "Rust")[use_rust * 2 + 1]
+    suffix <- sprintf(" using %s backend", backend)
 
     # Stop early if deconvolution is cached
     if (npmax >= 1) {
@@ -253,7 +257,7 @@ deconvolute_spectrum <- function(x,
     # Perform grid search (to replace given nfit, smopts and delta)
     if (npmax >= 1) {
         fmt <- "Starting grid deconvolution of %s using %s backend"
-        logf(fmt, name, if (use_rust) "Rust" else "R")
+        logf(fmt, name, backend)
         G <- grid_deconvolute_spectrum(x, sfr, verbose, use_rust, cadir)
         G <- G[G$np > 0, ]
         # The Rust backend sometimes produces zero peaks if SFR and Delta are
@@ -278,30 +282,12 @@ deconvolute_spectrum <- function(x,
 
     # Deconvolute with given/optimal parameters
     logf("Starting deconvolution of %s%s", name, suffix)
-    if (use_rust) {
-        mdrb_spectrum <- mdrb::Spectrum$new(x$cs, x$si, sfr)
-        mdrb_deconvr <- mdrb::Deconvoluter$new()
-        mdrb_deconvr$set_moving_average_smoother(smopts[1], smopts[2])
-        mdrb_deconvr$set_noise_score_selector(delta)
-        mdrb_deconvr$set_analytical_fitter(nfit)
-        for (r in igr) mdrb_deconvr$add_ignore_region(r[1], r[2])
-        mdrb_decon <- if (nw > 1) {
-            mdrb_deconvr$set_threads(nw)
-            mdrb_deconvr$par_deconvolute_spectrum(mdrb_spectrum)
-        } else {
-            mdrb_deconvr$deconvolute_spectrum(mdrb_spectrum)
-        }
-        decon <- new_rdecon(x, args, mdrb_spectrum, mdrb_deconvr, mdrb_decon)
+    decon <- if (use_rust == 1) {
+        deconvolute_rust(x, sfr, smopts, delta, nfit, igr, nw, args)
+    } else if (use_rust == 0.5) {
+        deconvolute_r_new(x, sfr, smopts, delta, nfit, wshw, force, igr, args)
     } else {
-        ispec <- as_ispec(x)
-        ispec <- set(ispec, args=args)
-        ispec <- rm_water_signal(ispec, wshw, bwc)
-        ispec <- rm_negative_signals(ispec)
-        ispec <- smooth_signals(ispec, smopts[1], smopts[2], bwc)
-        ispec <- find_peaks(ispec)
-        ispec <- filter_peaks(ispec, sfr, delta, force, bwc, igr)
-        ispec <- fit_lorentz_curves(ispec, nfit, bwc)
-        decon <- as_idecon(ispec)
+        deconvolute_r_old(x, sfr, smopts, delta, nfit, wshw, force, bwc, igr, args)
     }
 
     # Format, cache and return
@@ -317,110 +303,67 @@ deconvolute_spectrum <- function(x,
 }
 
 #' @noRd
-#' @description
-#' WORK IN PROGRESS.
-#'
-#' Planned replacement for `deconvolute_spectrum()`. Should directly produce a
-#' decon2 object, so we can remove the `ispec` and `idecon` classes.
-#'
-#' @inheritParams deconvolute_spectra
-#'
-#' @examples
-#'
-#' x <- sap[[1]];
-#' nfit <- 3; smopts <- c(1,3); delta <- 3; sfr <- c(3.2,-3.2); wshw <- 0;
-#' ask <- FALSE; force <- FALSE; verbose <- FALSE; bwc <- 2;
-#' use_rust <- FALSE; nw <- 1; igr <- list(); rtyp <- "idecon"
-#'
-#' x <- read_spectrum(metabodecon_file("urine_1"))
-#' nfit <- 3; smopts <- c(2,5); delta <- 6.4; sfr <- c(3.55,3.35); wshw <- 0;
-#' ask <- FALSE; force <- FALSE; verbose <- FALSE; bwc <- 2;
-#' use_rust <- FALSE; nw <- 1; igr <- list(); rtyp <- "idecon"
-#'
-#' @author 2024-2025 Tobias Schmidt: initial version.
-deconvolute_spectrum2 <- function(x,
-    nfit=3, smopts=c(2, 5), delta=6.4, sfr=NULL, wshw=0,
-    ask=FALSE, force=FALSE, verbose=TRUE, bwc=2,
-    use_rust=FALSE, nw=1, igr=NULL, rtyp="decon2",
-    abs_neg=TRUE
+deconvolute_rust <- function(
+    x, sfr, smopts, delta, nfit, igr, nw, args
 ) {
-    # Check inputs
-    sfr <- sfr %||% quantile(x$cs, c(0.9, 0.1))
-    assert(
-        is_spectrum(x),
-        is_int(nfit, 1),  is_int(smopts, 2),     is_num(delta, 1),
-        is_num(sfr, 2),   is_num(wshw, 1),       is_bool(force, 1),
-        is_num(bwc, 1),   is_bool(use_rust, 1),  is_int(nw, 1),
-        is.null(igr) || is_list_of_nums(igr, nv=2),
-        is_char(rtyp, 1, "(decon[0-2]|idecon|rdecon)"),
-        is_bool(abs_neg, 1)
-    )
-    # NULL igr = remove SFR peaks (Rust does this natively via
-    # signal_boundaries; for R we add SFR as ignore regions).
-    # list() = keep SFR peaks (old R behavior).
-    rm_sfr <- is.null(igr)
-    if (is.null(igr)) igr <- list()
-
-    # Init locals
-    if (isFALSE(verbose)) local_options(toscutil.logf.file = nullfile())
-    name <- get_name(x)
-    suffix <- if (use_rust) " using Rust backend" else ""
-    args <- get_args(deconvolute_spectrum, ignore = "x")
-
-    # Deconvolute
-    logf("Starting deconvolution of %s%s", name, suffix)
-    if (use_rust) {
-        mdrb_spectrum <- mdrb::Spectrum$new(x$cs, x$si, sfr)
-        mdrb_deconvr <- mdrb::Deconvoluter$new()
-        mdrb_deconvr$set_moving_average_smoother(smopts[1], smopts[2])
-        mdrb_deconvr$set_noise_score_selector(delta)
-        mdrb_deconvr$set_analytical_fitter(nfit)
-        for (r in igr) mdrb_deconvr$add_ignore_region(r[1], r[2])
-        mdrb_decon <- if (nw > 1) {
-            mdrb_deconvr$set_threads(nw)
-            mdrb_deconvr$par_deconvolute_spectrum(mdrb_spectrum)
-        } else {
-            mdrb_deconvr$deconvolute_spectrum(mdrb_spectrum)
-        }
-        decon <- new_rdecon(x, args, mdrb_spectrum, mdrb_deconvr, mdrb_decon)
+    mdrb_spectrum <- mdrb::Spectrum$new(x$cs, x$si, sfr)
+    mdrb_deconvr <- mdrb::Deconvoluter$new()
+    mdrb_deconvr$set_moving_average_smoother(smopts[1], smopts[2])
+    mdrb_deconvr$set_noise_score_selector(delta)
+    mdrb_deconvr$set_analytical_fitter(nfit)
+    for (r in igr) mdrb_deconvr$add_ignore_region(r[1], r[2])
+    mdrb_decon <- if (nw > 1) {
+        mdrb_deconvr$set_threads(nw)
+        mdrb_deconvr$par_deconvolute_spectrum(mdrb_spectrum)
     } else {
-        cs <- x$cs; si <- x$si
-        r_igr <- igr
-        if (rm_sfr) {
-            sfr_igr <- list(c(Inf, max(sfr)), c(min(sfr), -Inf))
-            r_igr <- c(sfr_igr, r_igr)
-        }
-        wsrm <- rm_water_signal2(cs, si, wshw)
-        nvrm <- if (abs_neg) rm_negative_signals2(wsrm) else wsrm
-        sm <- smooth_signals2(nvrm, smopts[1], smopts[2])
-        peaks <- find_peaks2(sm)
-        peaks <- filter_peaks2(peaks, cs, sfr, delta, force, r_igr)
-        lcpar <- fit_lorentz_curves2(cs, si, peaks, nfit)
-        sup <- lorentz_sup(cs, lcpar = lcpar)
-        sit <- data.frame(
-            wsrm = wsrm * 1e6,
-            nvrm = nvrm * 1e6,
-            sm = sm * 1e6,
-            sup = sup
-        )
-        mse_list <- list(
-            raw = mse(si, sup, normed = FALSE),
-            norm = mse(si, sup, normed = TRUE),
-            sm = mse(sit$sm, sup, normed = FALSE),
-            smnorm = mse(sit$sm, sup, normed = TRUE)
-        )
-        decon <- list(cs = cs, si = si, meta = x$meta, args = args,
-            sit = sit, peak = peaks[, c("left", "center", "right")],
-            lcpar = lcpar, mse = mse_list)
-        class(decon) <- "decon2"
+        mdrb_deconvr$deconvolute_spectrum(mdrb_spectrum)
     }
-    logf("Formatting return object as %s", rtyp)
-    convert <- switch(rtyp,
-        "decon0"=as_decon0, "decon1"=as_decon1, "decon2"=as_decon2,
-        "idecon"=as_idecon, "rdecon"=as_rdecon
+    new_rdecon(x, args, mdrb_spectrum, mdrb_deconvr, mdrb_decon)
+}
+
+#' @noRd
+deconvolute_r_old <- function(
+    x, sfr, smopts, delta, nfit, wshw, force, bwc, igr, args
+) {
+    ispec <- as_ispec(x)
+    ispec <- set(ispec, args=args)
+    ispec <- rm_water_signal(ispec, wshw, bwc)
+    ispec <- rm_negative_signals(ispec)
+    ispec <- smooth_signals(ispec, smopts[1], smopts[2], bwc)
+    ispec <- find_peaks(ispec)
+    ispec <- filter_peaks(ispec, sfr, delta, force, bwc, igr)
+    ispec <- fit_lorentz_curves(ispec, nfit, bwc)
+    as_idecon(ispec)
+}
+
+#' @noRd
+deconvolute_r_new <- function(
+    x, sfr, smopts, delta, nfit, wshw, force, igr, args
+) {
+    cs <- x$cs; si <- x$si
+    sfr_igr <- list(c(Inf, max(sfr)), c(min(sfr), -Inf))
+    r_igr <- c(sfr_igr, igr)
+    wsrm <- rm_water_signal2(cs, si, wshw)
+    nvrm <- rm_negative_signals2(wsrm)
+    sm <- smooth_signals2(nvrm, smopts[1], smopts[2])
+    peaks <- find_peaks2(sm)
+    peaks <- filter_peaks2(peaks, cs, sfr, delta, force, r_igr)
+    lcpar <- fit_lorentz_curves2(cs, si, peaks, nfit)
+    sup <- lorentz_sup(cs, lcpar = lcpar)
+    sit <- data.frame(
+        wsrm = wsrm * 1e6, nvrm = nvrm * 1e6,
+        sm = sm * 1e6, sup = sup
     )
-    decon <- convert(decon)
-    logf("Finished deconvolution of %s", name)
+    mse_list <- list(
+        raw = mse(si, sup, normed = FALSE),
+        norm = mse(si, sup, normed = TRUE),
+        sm = mse(sit$sm, sup, normed = FALSE),
+        smnorm = mse(sit$sm, sup, normed = TRUE)
+    )
+    decon <- list(cs = cs, si = si, meta = x$meta, args = args,
+        sit = sit, peak = peaks[, c("left", "center", "right")],
+        lcpar = lcpar, mse = mse_list)
+    class(decon) <- "decon2"
     decon
 }
 
@@ -443,7 +386,7 @@ grid_deconvolute_spectra <- function(
         is_num_or_null(sfr, 2)  || is_list_of_nums(sfr, length(x), 2),
         is_bool(verbose, 1),
         is_int(nw, 1),
-        is_bool(use_rust),
+        is_use_rust(use_rust),
         is_str_or_null(cadir)
     )
     sfr <- sfr %||% quantile(x[[1]]$cs, c(0.9, 0.1))
@@ -507,7 +450,7 @@ grid_deconvolute_spectrum <- function(
 
     assert(
         is_spectrum(x), is_num_or_null(sfr, 2), is_bool(verbose, 1),
-        is_bool(use_rust, 1), is_str_or_null(cadir)
+        is_use_rust(use_rust), is_str_or_null(cadir)
     )
     if (!verbose) local_options(toscutil.logf.file = nullfile())
 
@@ -522,7 +465,7 @@ grid_deconvolute_spectrum <- function(
         logf("Cache hit for %s", get_name(x))
         return(cache$get(hash))
     }
-    backend <- if (use_rust) "Rust" else "R"
+    backend <- c("R (legacy)", "R (experimental)", "Rust")[use_rust * 2 + 1]
     specname <- get_name(x)
 
     logf("Grid deconvoluting %s using %s", specname, backend)
@@ -847,11 +790,10 @@ find_peaks2 <- function(y) {
 #' @noRd
 #' @title Filter Peaks with Low Scores
 #' @description
-#' Modular replacement for [filter_peaks()]. Takes atomic vectors instead of
-#' the monolithic `ispec` list. Peaks whose center ppm falls outside `sfr` are
-#' used to estimate noise; signal-region peaks with scores below
-#' `mean + delta * sd` are removed. Peaks inside any `igr` region are also
-#' removed.
+#' Modular replacement for [metabodecon::filter_peaks()]. Takes atomic vectors
+#' instead of the monolithic `ispec` list. Peaks whose center ppm falls outside
+#' `sfr` are used to estimate noise; signal-region peaks with scores below `mean
+#' + delta * sd` are removed. Peaks inside any `igr` region are also removed.
 #' @param peaks Data frame with columns `left`, `center`, `right`, `score`.
 #' @param cs Chemical shifts (ppm), same length as the spectrum.
 #' @param sfr Length-2 numeric: signal-free region boundaries in ppm.
@@ -893,9 +835,9 @@ filter_peaks2 <- function(peaks, cs, sfr, delta = 6.4, force = FALSE,
 #' @noRd
 #' @title Fit Lorentz Curves (v2)
 #' @description
-#' Modular replacement for [fit_lorentz_curves()]. Works directly in ppm and
-#' uses the same algorithm as the Rust backend: 3-point peak stencil with
-#' iterative refinement. Returns a data frame with columns `x0`, `A`,
+#' Modular replacement for [metabodecon::fit_lorentz_curves()]. Works directly
+#' in ppm and uses the same algorithm as the Rust backend: 3-point peak stencil
+#' with iterative refinement. Returns a data frame with columns `x0`, `A`,
 #' `lambda`.
 #' @param cs Chemical shifts in ppm.
 #' @param si Signal intensities (raw, unsmoothed).
@@ -928,10 +870,8 @@ fit_lorentz_curves2 <- function(cs, si, peaks, nfit = 3) {
     # Solve 3-equation system (match Rust FitterAnalytical)
     solve_params <- function(x1, x2, x3, y1, y2, y3) {
         # maximum_position (x0)
-        num <- x1^2 * y1 * (y2 - y3) + x2^2 * y2 * (y3 - y1) +
-            x3^2 * y3 * (y1 - y2)
-        den <- 2 * ((x1 - x2) * y1 * y2 + (x2 - x3) * y2 * y3 +
-            (x3 - x1) * y3 * y1)
+        num <- x1^2 * y1 * (y2 - y3) + x2^2 * y2 * (y3 - y1) + x3^2 * y3 * (y1 - y2)
+        den <- 2 * ((x1 - x2) * y1 * y2 + (x2 - x3) * y2 * y3 + (x3 - x1) * y3 * y1)
         maxp <- num / den
         maxp[!is.finite(maxp)] <- 0
         # half_width2 (hw2 = lambda^2)
@@ -1046,8 +986,9 @@ lorentz_sup_raw <- function(x, sfhw, hw2, maxp) {
 #' sfr <- list(left_sdp = 2.8, right_sdp = 1.2)
 #' rm3 <- filtered_ispec <- filter_peaks(ispec, sfr)
 #' rm2 <- filtered_ispec <- filter_peaks(ispec, sfr, delta = 1)
-filter_peaks <- function(ispec, sfr, delta = 6.4, force = FALSE, bwc = 1,
-                         igr = list()) {
+filter_peaks <- function(
+    ispec, sfr, delta = 6.4, force = FALSE, bwc = 1, igr = list()
+) {
     assert(is_ispec(ispec))
     logf("Removing peaks with low scores")
     sdp <- ispec$sdp

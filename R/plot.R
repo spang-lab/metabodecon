@@ -42,7 +42,10 @@
 #' A numeric vector of length 4, which specifies the margins of the plot.
 #'
 #' @param lgd
-#' Logical. If TRUE, a legend is drawn.
+#' Logical or list. If TRUE, a legend is drawn at "topright" with
+#' `cex = 0.8`. If a list, its elements are passed to [legend()] to
+#' override position, size, etc. Set `show = FALSE` inside the list
+#' (or pass `lgd = FALSE`) to hide.
 #'
 #' @return
 #' A plot of the deconvoluted spectra.
@@ -66,7 +69,7 @@ plot_spectra <- function(obj,
                          xlab = "Chemical Shift [ppm]",
                          ylab = paste("Signal Intensity [au] /", sfy),
                          mar = c(4.1, 4.1, 1.1, 0.1),
-                         lgd = TRUE) {
+                         lgd = list()) {
     what <- match.arg(what)
     objs <- as_v12_collection(obj, ...)
     n <- length(objs)
@@ -103,8 +106,10 @@ plot_spectra <- function(obj,
     for (i in seq_len(n)) {
         lines(x = css[[i]], y = sis[[i]], col = cols[i])
     }
-    if (isTRUE(lgd)) {
-        legend("topright", legend = names, col = cols, lty = 1)
+    lgd <- combine(list(show = TRUE, x = "topright", cex = 0.8), lgd)
+    if (isTRUE(lgd$show)) {
+        lgd$show <- NULL
+        do.call(legend, c(list(legend = names, col = cols, lty = 1), lgd))
     }
     invisible(NULL)
 }
@@ -626,6 +631,9 @@ draw_spectrum <- function(
         }
         lcpar <- lcpar[affects_foc_rgn(lcpar), ]
         trpar <- trpar[affects_foc_rgn(trpar), ]
+        if (nrow(lcpar) > 50 && !isFALSE(al_arrows$show)) {
+            al_arrows$show <- FALSE
+        }
     }
 
     # Define a seperate dataframe `alpar` holding the parameters of the aligned
@@ -1385,8 +1393,17 @@ get_foc_frac <- function(obj, foc_rgn = NULL) {
     )
     if (is.null(foc_rgn)) {
         n <- length(obj$cs)
-        width <- min(256 / n, 0.5)
-        center <- if (n <= 2048) 0.5 else 0.75
+        width <- min(512 / n, 0.5)
+        if (n <= 2048) {
+            center <- 0.5
+        } else {
+            si <- obj$si
+            bw <- max(1L, as.integer(512))
+            css <- cumsum(si)
+            bsum <- css[seq(bw, n)] - c(0, css[seq_len(n - bw)])
+            center <- (which.max(bsum) + bw / 2) / n
+            center <- max(width, min(1 - width, center))
+        }
         c(center - width, center + width)
     } else {
         convert_pos(foc_rgn, range(obj$cs), c(0, 1))
@@ -1451,7 +1468,6 @@ get_sub_fig_args <- function(obj, foc_frac, foc_rgn, sub1, sub2, sub3, dot_args)
         mar = mars[[i]]
     ))
     # Subfig 1
-    def_args[[1]]$bt_axis  <- list(show = FALSE)
     def_args[[1]]$bt_text  <- if (sub2$show || sub3$show) list(show = FALSE)
     # Subfig 2
     def_args[[2]]$bt_text  <- if (sub3$show) list(show = FALSE)
@@ -1473,16 +1489,18 @@ get_sub_fig_args <- function(obj, foc_frac, foc_rgn, sub1, sub2, sub3, dot_args)
 #' @author 2024-2025 Tobias Schmidt: initial version.
 get_draw_spectrum_defaults <- function(show_d2 = FALSE,
                                        foc_only = TRUE,
-                                       aligned = FALSE) {
+                                       aligned = FALSE,
+                                       max_si = Inf) {
     assert(
         is_bool(show_d2),
         is_bool(foc_only),
-        is_bool(aligned)
+        is_bool(aligned),
+        is_num(max_si, 1)
     )
     show_si <- !show_d2 && !aligned
     show_al <- !show_d2 && aligned
     ylab <- if (show_d2) "Second Derivative" else "Signal Intensity [au]"
-    sf   <- if (show_d2) 1 else 1e6
+    sf   <- if (show_d2) 1 else if (max_si < 1) 1 else 1e6
     lgdx <- if (show_d2) "bottomright" else "topright"
     list(
         # Legend

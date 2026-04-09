@@ -87,8 +87,8 @@ m <- structure(
     model = NULL,
     ref = NULL,
     meta = list(npmax = 1000, nfit = 3, smit = 2, smws = 5,
-                delta = 6.4, maxShift = 100, maxCombine = 0,
-                maxSnap = 20)
+                delta = 6.4, maxShift = 100, maxCombine = 50,
+                combineMethod = 2)
   ),
   class = "mdm"
 )
@@ -96,7 +96,7 @@ print(m)
 summary(m)
 
 \dontrun{
-  m <- fit_mdm_grid(spectra, y, sfr = c(11, -2))
+  m <- cv_mdm(spectra, y, sfr = c(11, -2))
   predict(m, test_spectra, type = "prob")
   coef(m)
   plot(m)

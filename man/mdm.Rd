@@ -3,7 +3,7 @@
 \name{mdm}
 \alias{mdm}
 \alias{fit_mdm}
-\alias{fit_mdm_grid}
+\alias{cv_mdm}
 \alias{benchmark_mdm}
 \alias{get_pgrid}
 \title{Metabodecon Models}
@@ -24,13 +24,12 @@ fit_mdm(
   smws = 5,
   delta = 6.4,
   maxShift = 200,
-  maxCombine = 0,
-  maxSnap = 50,
-  nfolds = 10,
-  nfp = 10
+  maxCombine = 50,
+  combineMethod = 2,
+  nfolds = 10
 )
 
-fit_mdm_grid(
+cv_mdm(
   spectra,
   y,
   sfr = NULL,
@@ -40,11 +39,11 @@ fit_mdm_grid(
   seed = 1,
   cadir = decon_cachedir(),
   check = TRUE,
+  combineMethod = 2,
   pgrid = get_pgrid("dynamic2"),
   ignore = NULL,
   warm_cache = TRUE,
-  nfolds = 10,
-  nfp = 10
+  nfolds = 10
 )
 
 benchmark_mdm(
@@ -57,10 +56,10 @@ benchmark_mdm(
   cadir = decon_cachedir(),
   nwo = 1,
   nwi = half_cores(),
+  combineMethod = 2,
   pgrid = get_pgrid(),
   nfo = 5,
-  nfl = 10,
-  nfp = 10
+  nfl = 10
 )
 
 get_pgrid(conf = "dynamic2")
@@ -75,13 +74,13 @@ get_pgrid(conf = "dynamic2")
 \item{use_rust}{Logical. Whether to use the Rust backend.}
 
 \item{nworkers}{Number of workers used by \code{\link[=fit_mdm]{fit_mdm()}} and
-\code{\link[=fit_mdm_grid]{fit_mdm_grid()}} for deconvolution and alignment.}
+\code{\link[=cv_mdm]{cv_mdm()}} for deconvolution and alignment.}
 
 \item{verbosity}{Integer. Verbosity level; each nested call
 decrements by 1. Messages print when \code{verbosity >= 1}.}
 
 \item{seed}{Random seed used for fold assignment in \code{\link[=benchmark_mdm]{benchmark_mdm()}} and
-for inner cross-validation splits in \code{\link[=fit_mdm_grid]{fit_mdm_grid()}} and
+for inner cross-validation splits in \code{\link[=cv_mdm]{cv_mdm()}} and
 \code{\link[=fit_mdm]{fit_mdm()}}.}
 
 \item{cadir}{Directory used to cache deconvolution results across grid points and
@@ -103,15 +102,16 @@ ignored. Set to 0 to use explicit deconvolution parameters instead.}
 
 \item{maxShift}{Maximum alignment shift.}
 
-\item{maxCombine}{Maximum number of peaks to combine during alignment.}
+\item{maxCombine}{Maximum peak-combining distance in datapoints, passed to
+\code{\link[=get_si_mat]{get_si_mat()}}. Interpretation depends on \code{combineMethod}.}
 
-\item{maxSnap}{Maximum snap distance in datapoints for feature-matrix construction.}
+\item{combineMethod}{Peak-combining backend passed to
+\code{\link[=get_si_mat]{get_si_mat()}}. \code{1}: column merging via
+\code{\link[=combine_peaks]{combine_peaks()}}. \code{2} (default): nearest-neighbour
+snapping to reference peaks.}
 
 \item{nfolds}{Number of folds for the \code{cv.glmnet()} call in \code{\link[=fit_mdm]{fit_mdm()}}
-and \code{\link[=fit_mdm_grid]{fit_mdm_grid()}}. Default 10.}
-
-\item{nfp}{Number of folds used for repeated cross-validated performance estimation
-inside \code{\link[=fit_mdm]{fit_mdm()}}. Default 10.}
+and \code{\link[=cv_mdm]{cv_mdm()}}. Default 10.}
 
 \item{pgrid}{Data frame of preprocessing parameter combinations as returned
 by \code{\link[=get_pgrid]{get_pgrid()}}.}
@@ -126,7 +126,7 @@ starting the grid search.}
 \code{spectra} and \code{y}.}
 
 \item{nwi}{Number of workers used inside each outer fold for
-\code{\link[=fit_mdm_grid]{fit_mdm_grid()}} and \code{\link[=predict.mdm]{predict.mdm()}}.}
+\code{\link[=cv_mdm]{cv_mdm()}} and \code{\link[=predict.mdm]{predict.mdm()}}.}
 
 \item{nfo}{Number of outer folds in \code{\link[=benchmark_mdm]{benchmark_mdm()}}.}
 
@@ -139,11 +139,10 @@ configuration.}
 }
 \value{
 \code{\link[=fit_mdm]{fit_mdm()}} returns an object of class \code{mdm} with elements
-\code{model}, \code{ref}, \code{meta}, \code{perf} (list with \code{by_seed} and \code{pooled}
-data frames reporting accuracy and AUC) and \code{preds} (data frame with
-columns \code{seed}, \code{fold}, \code{true}, \code{link}, \code{prob}, \code{pred}).
+\code{model} (a \code{\link[glmnet:cv.glmnet]{glmnet::cv.glmnet()}} object), \code{ref} (the reference alignment
+spectrum) and \code{meta} (list of preprocessing parameters).
 
-\code{\link[=fit_mdm_grid]{fit_mdm_grid()}} returns an \code{mdm} object with an additional element
+\code{\link[=cv_mdm]{cv_mdm()}} returns an \code{mdm} object with an additional element
 \code{pgrid} containing the performance grid.
 
 \code{\link[=benchmark_mdm]{benchmark_mdm()}} returns a list with elements:
@@ -166,33 +165,35 @@ A mdm is a essentially a glmnet lasso model, fitted on a feature matrix X,
 obtained by deconvoluting and aligning spectra and snapping their peaks to a
 shared reference spectrum. Lambda is chosen via cross-validation on X.
 Deconvolution parameters (\code{npmax} or \code{nfit}/\code{smit}/\code{smws}/\code{delta}),
-alignment parameters (\code{maxShift}, \code{maxCombine}) and the snapping parameter
-(\code{maxSnap}) are tunable hyperparameters.
+alignment parameter \code{maxShift}, and peak-combining parameters
+(\code{maxCombine}, \code{combineMethod}) are tunable hyperparameters.
 
 When \code{npmax > 0}, deconvolution runs an internal grid search over smoothing
 and fitting parameters and keeps at most \code{npmax} peaks. The explicit
 \code{nfit}/\code{smit}/\code{smws}/\code{delta} values are ignored in that case. When
 \code{npmax == 0}, the explicit parameters are used directly.
 
-\code{\link[=fit_mdm]{fit_mdm()}} deconvolutes spectra, aligns detected peaks, snaps
-them to a shared reference and fits one lasso model via
-\code{\link[glmnet:cv.glmnet]{glmnet::cv.glmnet()}}. Its reported cross-validation error covers only the
-model-fitting step on the already constructed feature matrix, so it is
-slightly over-optimistic. Use \code{\link[=benchmark_mdm]{benchmark_mdm()}} to get a
-realistic performance estimate via nested cross-validation.
+\code{\link[=fit_mdm]{fit_mdm()}} deconvolutes spectra, aligns detected peaks,
+combines them via \code{\link[=get_si_mat]{get_si_mat()}} and fits one lasso model via
+\code{\link[glmnet:cv.glmnet]{glmnet::cv.glmnet()}}. Lambda is selected internally by cross-validation
+but no performance metrics are reported. Use \code{\link[=cv_mdm]{cv_mdm()}} to
+tune preprocessing parameters and \code{\link[=benchmark_mdm]{benchmark_mdm()}} for
+unbiased performance estimates.
 
-\code{\link[=fit_mdm_grid]{fit_mdm_grid()}} calls \code{\link[=fit_mdm]{fit_mdm()}} over a grid of
-preprocessing parameter combinations and returns the model with the best
-estimated performance.
+\code{\link[=cv_mdm]{cv_mdm()}} evaluates a grid of preprocessing parameter
+combinations. For each grid row it builds a feature matrix, runs
+\code{\link[glmnet:cv.glmnet]{glmnet::cv.glmnet()}} with a fixed fold assignment, and records the
+held-out accuracy and AUC at \code{lambda.min}. Returns the model with the best
+AUC and the full performance grid.
 
-\code{\link[=benchmark_mdm]{benchmark_mdm()}} wraps \code{\link[=fit_mdm_grid]{fit_mdm_grid()}} in an
+\code{\link[=benchmark_mdm]{benchmark_mdm()}} wraps \code{\link[=cv_mdm]{cv_mdm()}} in an
 outer cross-validation loop to estimate end-to-end predictive performance.
 It returns the per-fold models and held-out predictions.
 }
 \details{
 \subsection{Disk caching across processes}{
 
-\code{\link[=fit_mdm_grid]{fit_mdm_grid()}} and \code{\link[=benchmark_mdm]{benchmark_mdm()}} can share
+\code{\link[=cv_mdm]{cv_mdm()}} and \code{\link[=benchmark_mdm]{benchmark_mdm()}} can share
 deconvolution results through directory \code{cadir}. This on-disk cache lets
 parallel workers reuse expensive preprocessing results while keeping RAM use
 manageable. Disk caching can be disabled by setting \code{cadir = NULL}, but this will increase runtime drastically (from a few minutes/hours
@@ -203,7 +204,7 @@ to several days).
 
 \code{\link[=fit_mdm]{fit_mdm()}} caches the most recent deconvolution and alignment
 results in RAM when the input \code{spectra} carries a \code{"hash"} attribute. This
-avoids redundant preprocessing when \code{\link[=fit_mdm_grid]{fit_mdm_grid()}} evaluates
+avoids redundant preprocessing when \code{\link[=cv_mdm]{cv_mdm()}} evaluates
 several settings on the same spectra.
 }
 
@@ -224,7 +225,10 @@ The total amount of processes spawned is \code{nwo * nwi.}
 \examples{
 \dontrun{
 
+
+
      # -~-~-~ Inputs -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+
      aki <- read_aki_data()
      spectra <- aki$spectra
      attr(spectra, "hash") <- rlang::hash(spectra)
@@ -233,69 +237,57 @@ The total amount of processes spawned is \code{nwo * nwi.}
      sfr <- c(11, -2)
      cadir <- cachedir("deconvs", persistent = TRUE)
 
-     # -~-~-~ Legacy -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+
+
+     # -~-~-~-~-~-~-~-~-~ Single -~-~-~-~-~-~-~-~-~
+
      # Best "simple" model from aki.R (0.797 [0.75 - 0.83])
      mdm <- fit_mdm(
          spectra, y, sfr=NULL,
          nfit=5, smit=3, smws=3, delta=3, npmax=0,
-         maxShift=128, maxCombine=256, maxSnap=0,
+         maxShift=128, maxCombine=256, combineMethod=1,
          nworkers=half_cores(), cadir=cadir
      )
-     # Per-seed acc: [77.36\%, 82.08\%]
-     # Per-seed AUC: [0.7884, 0.8656]
-     # Pooled acc: 79.34\% +- 1.75\%
-     # Pooled AUC: 0.8235 +- 0.0244
 
-     # Best "complex" model from aki.R (0.784, [0.74 - 0.82])
      mdm <- fit_mdm(
          spectra, y, sfr = NULL,
          nfit=5, smit=0, smws=0, delta=0, npmax=1000,
-         maxShift=64, maxCombine=16, maxSnap=0,
+         maxShift=64, maxCombine=16, combineMethod=1,
          nworkers=half_cores(), cadir=cadir
      )
-     # Pooled acc: 74.81\% +- 2.56\%
-     # Pooled AUC: 0.7764 +- 0.023
 
-     # -~-~-~ New Configs -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
-     # Best "simple" model from grid search over "static2" grid
-     mdm <- fit_mdm(
-         spectra, y, sfr=NULL,
-         nfit=7, smit=2, smws=3, delta=6, npmax=0,
-         maxShift=100, maxCombine=0, maxSnap=30,
-         nworkers=half_cores(), cadir=cadir
-     )
-     #
 
-     # -~-~-~ Grid Search and Benchmarking -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
 
-     mdm_grid_stat1 <- fit_mdm_grid(
+     # -~-~-~-~-~-~-~-~-~ Search -~-~-~-~-~-~-~-~-~
+
+     mdm_grid_stat1 <- cv_mdm(
          spectra, y, pgrid=get_pgrid("static1"),
          nworkers=half_cores(), use_rust=TRUE, cadir=cadir
      )
      saveRDS(mdm_grid_stat1, "tmp/mdm_grid_stat1.rds")
 
 
-     mdm_grid_stat2 <- fit_mdm_grid(
+     mdm_grid_stat2 <- cv_mdm(
          spectra, y, pgrid=get_pgrid("static2"),
          nworkers=half_cores(), use_rust=TRUE, cadir=cadir
      )
      saveRDS(mdm_grid_stat2, "tmp/mdm_grid_stat2.rds")
      #
-     # Best static2: Acc=0.82, auc=0.89
-     # smit=2, smws=3, delta=6, nfit=7, maxShift=100, maxCombine=0, maxSnap=30
+     # Best static2: acc=0.82, auc=0.89
+     # smit=2, smws=3, delta=6, nfit=7, npmax=0, maxShift=100, maxCombine=30
 
 
-     mdm_grid_stat3 <- fit_mdm_grid(
+     mdm_grid_stat3 <- cv_mdm(
          spectra, y, pgrid=get_pgrid("static3"),
          nworkers=half_cores(), use_rust=TRUE, cadir=cadir
      )
      saveRDS(mdm_grid_stat3, "tmp/mdm_grid_stat3.rds")
      #
-     # Best static2:
-     #
+     # Best static3: acc=79.34\% auc=0.8589
+     # smit=2, smws=7, delta=8, nfit=10, npmax=0, maxShift=100, maxCombine=30
 
 
-     mdm_grid_dyn2 <- fit_mdm_grid(
+     mdm_grid_dyn2 <- cv_mdm(
          spectra, y, pgrid=get_pgrid("dynamic2"),
          nworkers=half_cores(), use_rust=TRUE, cadir=cadir
      )
@@ -305,7 +297,7 @@ The total amount of processes spawned is \code{nwo * nwi.}
 
      # -~-~-~ Interactive Development -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
      stub(fit_mdm, spectra=spectra, y=y, sfr=sfr)
-     stub(fit_mdm_grid, spectra=spectra, y=y, sfr=sfr)
+     stub(cv_mdm, spectra=spectra, y=y, sfr=sfr)
      stub(benchmark_mdm, spectra=spectra, y=y, sfr=sfr)
 }
 

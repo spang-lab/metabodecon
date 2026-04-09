@@ -5,8 +5,8 @@ articles:
   - title: Articles
     navbar: ~
     contents:
-      - articles/AKI_Original
       - Get_Started
+      - MDM
       - FAQ
       - MetaboDecon1D
       - Datasets
@@ -23,6 +23,9 @@ reference:
   - plot_spectra
   - draw_spectrum
   - deconvolute
+  - decon_cachedir
+  - mdm
+  - mdm_methods
 - title: Alignment
   desc: Functions to align multiple spectra.
   contents:
@@ -52,6 +55,8 @@ reference:
   - convert_pos
   - convert_width
   - evalwith
+  - get_names
+  - headtail
   - install_mdrb
   - is_metabodecon_class
   - make_spectrum

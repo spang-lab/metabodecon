@@ -1,145 +1,36 @@
-# metabodecon 1.6.3-branch:paper (1.6.3.9004)
+# metabodecon 1.7.0
 
-* `get_si_mat()` gained `snap`, `ref`, and `drop_zero` parameters for
-  reference-based peak snapping. With `snap > 0`, each peak is mapped to
-  the nearest reference peak within `snap` half-widths; areas that map to
-  the same reference peak are summed. The `ref` parameter accepts an
-  `align` or `decon2` object (auto-detected from `x` when `NULL`).
-* `deconvolute()` gained `npmax`, `igrs`, and `cachedir` parameters for
-  limiting the number of peaks, ignoring ppm ranges, and caching results
-  to disk via `cachem::cache_disk`.
-* `fit_mdm_grid_grid()` rewritten with a `snap` grid
-  (`c(0.5, 1, 1.5, 2, 2.5, 3)`) and `npmax` grid for cross-validated
-  hyperparameter tuning. Added `benchmark_mdm()` draft.
-* Updated Rd files for `get_si_mat`, `align`, and `deconvolute` to match
-  new signatures.
-* Fixed a bug where `deconvolute_spectra()` passed `NULL` (length 0) as
-  `cachedir` to `mapply`, causing a names-attribute error.
-* `align()` gained a `method` parameter (replaces `use_speaq`): `1` = speaq
-  backend, `2` = built-in CluPA reimplementation (default), `3` = new
-  peak-based pairwise alignment (`align_fast`) that works directly on
-  deconvoluted peak parameters (`x0`, `lambda`, `A`). Method 3 supports
-  parallel workers via `nworkers`.
-* `align()` gained a `full` parameter. When `FALSE`, the aligned Lorentz-curve
-  superposition is not reconstructed, saving time and memory during grid
-  searches where the superposition is not needed.
-* `plot_spectra()` gained `foc_rgn`, `what`, `cols`, and `names` parameters
-  for focus-region zooming, signal selection (`"si"`, `"sup"`, `"supal"`),
-  custom colors, and legend labels.
-* `get_si_mat()` `maxSnap` now operates in datapoints instead of half-widths.
-  Added exact unit tests for snapping logic including midpoint tie-breaking.
-* Added new `mdlm` module (`R/mdlm.R`) with `fit_mdlm()`, `cv_mdlm()`,
-  `benchmark_mdlm()`, `mdlm_grid()`, and full S3 methods (`print`, `summary`,
-  `coef`, `predict`, `plot`). This is a cleaner reimplementation of the
-  mdm fitting/tuning/benchmarking pipeline with explicit deconvolution
-  parameters (`nfit`/`smit`/`smws`/`delta`) instead of only `npmax`.
-* Rewrote `mdm` module (`R/mdm.R`): `fit_mdm()` now accepts explicit
-  deconvolution parameters (`nfit`, `smit`, `smws`, `delta`) alongside
-  `npmax`, uses key-based RAM caching, repeated CV performance estimation
-  (`nfp` parameter), and input validation (`check` parameter). Added
-  `fit_mdm_grid()` for preprocessing grid search and `get_pgrid()` for
-  predefined grids. Replaced `verbose` with integer `verbosity`.
-  Removed `cv_mdm()`, `benchmark_mdm.Rd`, and `fit_mdm.Rd` man pages that
-  no longer match the new API.
-* Fixed `hclust_align()` in `R/speaq.R`: replaced gap-based peak splitting
-  with proper average-linkage hierarchical clustering via `hclust()`/
-  `cutree()`, matching the original speaq `hClustAlign` behavior. Handles
-  both cluster orderings (left/right swap).
-* `decon_cachedir()` now uses a persistent (not session-scoped) cache
-  directory and creates it if missing.
-* `grid_deconvolute_spectra()` now accepts `sfr = NULL` (auto-derived from
-  the spectrum's chemical shift range).
-* Added `half_cores()` utility; replaced inline `ceiling(detectCores() / 2)`
-  calls in `R/aki.R`.
-* `get_worker_pool()` now sets `OMP_NUM_THREADS`, `OPENBLAS_NUM_THREADS`, and
-  `MKL_NUM_THREADS` to 1 on worker processes to prevent nested threading.
-* `style()` now checks that the `styler` package is installed before running
-  and uses `list.files()` instead of removed `fdfind()`.
-* Added `normalize_svg_ids()` and `make_stable_svg_writer()` test helpers
-  in `R/test.R` for reproducible SVG snapshot tests across environments.
-* Plotting snapshot tests (`test-draw_spectrum.R`, `test-plot_sfr.R`,
-  `test-plot_spectrum.R`, `test-plot_ws.R`) now use `make_stable_svg_writer()`
-  and updated reference SVGs. Removed stale `draw-spectrum.new.svg`.
-* Added `styler` to `Suggests` in DESCRIPTION.
-
-# metabodecon 1.6.3-branch:paper (1.6.3.9003)
-
-* Optimized `lorentz_sup()` with three switchable implementations:
-  - v1: original `sapply` loop over data points (baseline).
-  - v2: vectorized R loop over peaks with pre-computed `abs(A * lambda)`
-    and `lambda^2` (~3x faster than v1).
-  - v3: runtime-compiled C version via `inline::cfunction()` (~10x faster
-    than v1). Compiled once per session, cached in
-    `options("metabodecon.lorentz_sup_c")`.
-  - Default (`options(metabodecon.lorentz_sup_version = NULL)`): auto-selects
-    v3 if `inline` and a C compiler are available, otherwise falls back to v2.
-  - Version can be forced via `options(metabodecon.lorentz_sup_version = 1|2|3)`.
-  - Added `benchmark_lorentz_sup()` to compare all versions with R and Rust
-    backends.
-
-* Since last commit:
-  - Added internal AKI modeling modules `R/paper_aki_orig.R` and `R/mdm.R`
-    with helpers for binning, normalization (quantile/PQN/creatinine/sum/
-    median/none), nested CV benchmarking, caching, and plotting.
-  - Added internal `mdm` S3 methods and documentation
-    (`mdm()`, `predict.mdm()`, `print.mdm()`, `coef.mdm()`,
-    `plot.mdm()`, `summary.mdm()`, `print.summary.mdm()`).
-  - Added tests for the new AKI/model internals in
-    `tests/testthat/test-paper_aki_orig.R` and
-    `tests/testthat/test-mdm.R`.
-  - Improved `.onLoad()` runtime behavior in `R/util.R`:
-    assertions stay dev-focused, optional assertion override via
-    `options(metabodecon.assert=...)`, and development cache setup via
-    `options(metabodecon.aki_cache=...)`.
-  - Improved collection summaries in `R/class.R` by suppressing duplicate
-    row names (`summary_*()` now uses default numbered rows when a `name`
-    column is present).
-  - Added AKI paper vignette as article
-    (`vignettes/articles/AKI_Original.Rmd`) and included it in `_pkgdown.yml`.
-  - Updated `Get_Started.Rmd` for PDF rendering support and robustness
-    (xelatex/header setup and valid figure output sizing for LaTeX).
-  - Refined generated docs for `tree_preview()` default `max.entries = 9`
-    (`man/tree.Rd`).
-  - Updated vignette housekeeping:
-    moved TODO drafts from `.Rmd` to `.md`, ignored TODO/article sources in
-    `.Rbuildignore`, and removed `vignettes/AKI_Original.Rmd` from the package
-    vignette root in favor of `vignettes/articles/`.
-
-* Added the AKI example dataset to `misc/example_datasets` and documented it
-  in the dataset docs and vignettes.
-* Added development helpers for AKI data acquisition and preparation, including
-  FTP helpers and `update_aki()` support functions.
-* Improved example-dataset cache handling:
-  - `cache_example_datasets()` now repairs outdated/corrupt cache zips
-    automatically.
-  - If `persistent = FALSE` and a persistent cache exists but is outdated,
-    a warning explains how to repair (`download_example_datasets(persistent =
-    TRUE)`) or remove it.
-  - Path handling in tests/utilities was normalized for cross-platform
-    robustness.
-* Added and refined paper-focused internals and vignettes:
-  - new internal helpers in `R/paper_aki.R` and `R/paper_prarpx.R`
-  - `R/paper.R` split/renamed to `R/paper_nmr.R`
-  - AKI analysis vignette moved from TODO/WIP flow into `vignettes/`.
-* Improved plotting and utilities:
-  - `draw_spectrum()` can display true/false/missed peaks
-  - `tree()` received argument checks and utility cleanups.
-  - Added `tree_preview()` as a compact alias for common top-level inspection.
-  - Improved `tree()` output options:
-    - direct-child counts (`files + dirs`) via `show.counts`
-    - optional file-first ordering via `files.first`
-    - omitted-entry counts shown as `... [N]`
-    - for truncated output (`max.entries`), show top/bottom entries with
-      ellipsis in the middle.
-* Expanded S3 method coverage for metabodecon classes:
-  - Added `c()` methods for public and private class families
-    (single-object + collection classes).
-  - Added `format()` and `summary()` methods for public and private class
-    families.
-  - Added dedicated method tests and consolidated S3 tests into
-    `test-class_methods.R`.
-* Improved test and CI stability by silencing noisy tests, preventing
-  interactive mirror prompts, hardening install tests, and fixing lint issues.
+* `deconvolute()` gained `npmax`, `igrs`, and `cachedir` parameters for limiting
+  the number of peaks, ignoring ppm ranges, and caching results to disk.
+* `deconvolute()` `use_rust` now accepts `0.5` to select an experimental new R
+  backend that produces results identical to the Rust backend.
+* `align()` gained a `method` parameter: `1` = speaq, `2` = built-in CluPA
+  reimplementation (default), `3` = peak-based pairwise alignment directly on
+  deconvoluted peak parameters (experimental).
+* `align()` gained a `full` parameter. When `FALSE`, the aligned superposition
+  is not reconstructed, saving time during grid searches.
+* `get_si_mat()` gained `maxCombine`, `combineMethod`, `ref`, and `drop_zero`
+  parameters for peak combining and reference-based snapping.
+* `plot_spectra()` gained `foc_rgn`, `what`, `cols`, and `names` parameters for
+  focus-region zooming, signal selection, custom colors, and legend labels.
+* `draw_spectrum()` can now display true/false/missed peaks.
+* `tree()` gained `show.counts`, `files.first`, and `max.entries` parameters.
+  Added `tree_preview()` as a compact alias.
+* Added `fit_mdm()` for fitting lasso models on deconvoluted NMR spectra with
+  explicit deconvolution parameters (`nfit`/`smit`/`smws`/`delta`) alongside
+  `npmax`.
+* Added `cv_mdm()` for cross-validated preprocessing grid search (replaces the
+  former `fit_mdm_grid()`).
+* Added `benchmark_mdm()` for nested-CV performance estimation.
+* Added `get_pgrid()` for predefined preprocessing parameter grids.
+* Added S3 methods for `mdm` objects: `predict`, `print`, `coef`, `plot`,
+  `summary`.
+* Added `c()`, `format()`, and `summary()` methods for all public and private
+  class families.
+* Optimized `lorentz_sup()`: auto-selects a compiled C backend (~10x faster)
+  when available, otherwise uses a vectorized R backend (~3x faster).
+  Controllable via `options(metabodecon.lorentz_sup_version)`.
+* Added AKI example dataset.
 
 # metabodecon 1.6.3
 

@@ -148,7 +148,6 @@ skip_if_slow_tests_disabled()
 
 test_that("align can install its dependencies", {
 
-
     # TEST PURPOSE: If `metabodecon` or `speaq` is installed via
     # `install.packages()`, the dependencies `impute` and `MassSpecWavelet`
     # may not be installed. In this case, the missing dependencies should be

@@ -99,7 +99,7 @@ test_that("cv_mdlm and benchmark_mdlm work on simx", {
         smws = 5,
         delta = 4,
         maxShift = 50,
-        maxSnap = 20
+        maxCombine = 20
     )
 
     cv <- cv_mdlm(
