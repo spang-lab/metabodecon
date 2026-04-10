@@ -117,13 +117,13 @@ and fitting parameters and keeps at most <code>npmax</code> peaks. The explicit
 <code>npmax == 0</code>, the explicit parameters are used directly.</p>
 <p><code>fit_mdm()</code> deconvolutes spectra, aligns detected peaks,
 combines them via <code><a href="get_si_mat.html">get_si_mat()</a></code> and fits one lasso model via
-<code><a href="https://rdrr.io/pkg/glmnet/man/cv.glmnet.html" class="external-link">glmnet::cv.glmnet()</a></code>. Lambda is selected internally by cross-validation
+<code><a href="https://glmnet.stanford.edu/reference/cv.glmnet.html" class="external-link">glmnet::cv.glmnet()</a></code>. Lambda is selected internally by cross-validation
 but no performance metrics are reported. Use <code>cv_mdm()</code> to
 tune preprocessing parameters and <code>benchmark_mdm()</code> for
 unbiased performance estimates.</p>
 <p><code>cv_mdm()</code> evaluates a grid of preprocessing parameter
 combinations. For each grid row it builds a feature matrix, runs
-<code><a href="https://rdrr.io/pkg/glmnet/man/cv.glmnet.html" class="external-link">glmnet::cv.glmnet()</a></code> with a fixed fold assignment, and records the
+<code><a href="https://glmnet.stanford.edu/reference/cv.glmnet.html" class="external-link">glmnet::cv.glmnet()</a></code> with a fixed fold assignment, and records the
 held-out accuracy and AUC at <code>lambda.min</code>. Returns the model with the best
 AUC and the full performance grid.</p>
 <p><code>benchmark_mdm()</code> wraps <code>cv_mdm()</code> in an
@@ -321,7 +321,7 @@ configuration.</p></dd>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p><code>fit_mdm()</code> returns an object of class <code>mdm</code> with elements
-<code>model</code> (a <code><a href="https://rdrr.io/pkg/glmnet/man/cv.glmnet.html" class="external-link">glmnet::cv.glmnet()</a></code> object), <code>ref</code> (the reference alignment
+<code>model</code> (a <code><a href="https://glmnet.stanford.edu/reference/cv.glmnet.html" class="external-link">glmnet::cv.glmnet()</a></code> object), <code>ref</code> (the reference alignment
 spectrum) and <code>meta</code> (list of preprocessing parameters).</p>
 <p><code>cv_mdm()</code> returns an <code>mdm</code> object with an additional element
 <code>pgrid</code> containing the performance grid.</p>

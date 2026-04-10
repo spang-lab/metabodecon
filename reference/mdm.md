@@ -26,14 +26,14 @@ When `npmax == 0`, the explicit parameters are used directly.
 via
 [`get_si_mat()`](https://spang-lab.github.io/metabodecon/reference/get_si_mat.md)
 and fits one lasso model via
-[`glmnet::cv.glmnet()`](https://rdrr.io/pkg/glmnet/man/cv.glmnet.html).
+[`glmnet::cv.glmnet()`](https://glmnet.stanford.edu/reference/cv.glmnet.html).
 Lambda is selected internally by cross-validation but no performance
 metrics are reported. Use `cv_mdm()` to tune preprocessing parameters
 and `benchmark_mdm()` for unbiased performance estimates.
 
 `cv_mdm()` evaluates a grid of preprocessing parameter combinations. For
 each grid row it builds a feature matrix, runs
-[`glmnet::cv.glmnet()`](https://rdrr.io/pkg/glmnet/man/cv.glmnet.html)
+[`glmnet::cv.glmnet()`](https://glmnet.stanford.edu/reference/cv.glmnet.html)
 with a fixed fold assignment, and records the held-out accuracy and AUC
 at `lambda.min`. Returns the model with the best AUC and the full
 performance grid.
@@ -233,7 +233,7 @@ get_pgrid(conf = "dynamic2")
 ## Value
 
 `fit_mdm()` returns an object of class `mdm` with elements `model` (a
-[`glmnet::cv.glmnet()`](https://rdrr.io/pkg/glmnet/man/cv.glmnet.html)
+[`glmnet::cv.glmnet()`](https://glmnet.stanford.edu/reference/cv.glmnet.html)
 object), `ref` (the reference alignment spectrum) and `meta` (list of
 preprocessing parameters).
 

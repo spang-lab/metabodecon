@@ -66,17 +66,17 @@ Source:
 ``` r
 # Get temporary datadir and persistent datadir
 datadir(persistent = FALSE, warn = FALSE)
-#> [1] "/tmp/RtmpZMz2EC/metabodecon/data"
+#> [1] "/tmp/RtmpoVTN85/metabodecon/data"
 datadir(persistent = TRUE,  warn = FALSE)
 #> [1] "/home/runner/.local/share/R/metabodecon"
 
 # Get persistent datadir if existing else temp datadir. Set `warn = TRUE`
 # to raise a warning if none of the directories exist yet.
 datadir(warn = FALSE)
-#> [1] "/tmp/RtmpZMz2EC/metabodecon/data"
+#> [1] "/tmp/RtmpoVTN85/metabodecon/data"
 if (interactive()) datadir()
 
 # Get PERSISTENT_DATADIR/bruker if existing else TEMP_DATADIR/bruker
 datadir(file = "bruker/urine", warn = FALSE)
-#> [1] "/tmp/RtmpZMz2EC/metabodecon/data/bruker/urine"
+#> [1] "/tmp/RtmpoVTN85/metabodecon/data/bruker/urine"
 ```

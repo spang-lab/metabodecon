@@ -75,40 +75,40 @@ is_spectrum(s1, check_contents = TRUE) # TRUE
 #> [1] TRUE
 
 dd <- deconvolute(ss, sfr = c(3.55, 3.35))
-#> 2026-04-10 05:50:38.59 Starting deconvolution of 2 spectra using 1 worker
-#> 2026-04-10 05:50:38.59 Starting deconvolution of sim_01 using R (legacy) backend
-#> 2026-04-10 05:50:38.59 Removing water signal
-#> 2026-04-10 05:50:38.59 Removing negative signals
-#> 2026-04-10 05:50:38.59 Smoothing signals
-#> 2026-04-10 05:50:38.60 Starting peak selection
-#> 2026-04-10 05:50:38.60 Detected 314 peaks
-#> 2026-04-10 05:50:38.60 Removing peaks with low scores
-#> 2026-04-10 05:50:38.60 Removed 287 peaks
-#> 2026-04-10 05:50:38.60 Initializing Lorentz curves
-#> 2026-04-10 05:50:38.60 MSE at peak tiplet positions: 4.0838805770844048836921
-#> 2026-04-10 05:50:38.60 Refining Lorentz Curves
-#> 2026-04-10 05:50:38.60 MSE at peak tiplet positions: 0.1609359876216345797140
-#> 2026-04-10 05:50:38.60 MSE at peak tiplet positions: 0.0228015051613790313556
-#> 2026-04-10 05:50:38.61 MSE at peak tiplet positions: 0.0071638016610617799920
-#> 2026-04-10 05:50:38.61 Formatting return object as decon2
-#> 2026-04-10 05:50:38.61 Finished deconvolution of sim_01
-#> 2026-04-10 05:50:38.61 Starting deconvolution of sim_02 using R (legacy) backend
-#> 2026-04-10 05:50:38.61 Removing water signal
-#> 2026-04-10 05:50:38.61 Removing negative signals
-#> 2026-04-10 05:50:38.61 Smoothing signals
-#> 2026-04-10 05:50:38.62 Starting peak selection
-#> 2026-04-10 05:50:38.62 Detected 316 peaks
-#> 2026-04-10 05:50:38.62 Removing peaks with low scores
-#> 2026-04-10 05:50:38.62 Removed 286 peaks
-#> 2026-04-10 05:50:38.62 Initializing Lorentz curves
-#> 2026-04-10 05:50:38.62 MSE at peak tiplet positions: 3.8338943428876719465848
-#> 2026-04-10 05:50:38.62 Refining Lorentz Curves
-#> 2026-04-10 05:50:38.62 MSE at peak tiplet positions: 0.1289481941626757499630
-#> 2026-04-10 05:50:38.62 MSE at peak tiplet positions: 0.0135651899090413786964
-#> 2026-04-10 05:50:38.62 MSE at peak tiplet positions: 0.0025556755331531087749
-#> 2026-04-10 05:50:38.62 Formatting return object as decon2
-#> 2026-04-10 05:50:38.63 Finished deconvolution of sim_02
-#> 2026-04-10 05:50:38.63 Finished deconvolution of 2 spectra in 0.033 secs
+#> 2026-04-10 05:59:08.52 Starting deconvolution of 2 spectra using 1 worker
+#> 2026-04-10 05:59:08.52 Starting deconvolution of sim_01 using R (legacy) backend
+#> 2026-04-10 05:59:08.52 Removing water signal
+#> 2026-04-10 05:59:08.52 Removing negative signals
+#> 2026-04-10 05:59:08.52 Smoothing signals
+#> 2026-04-10 05:59:08.52 Starting peak selection
+#> 2026-04-10 05:59:08.52 Detected 314 peaks
+#> 2026-04-10 05:59:08.52 Removing peaks with low scores
+#> 2026-04-10 05:59:08.52 Removed 287 peaks
+#> 2026-04-10 05:59:08.52 Initializing Lorentz curves
+#> 2026-04-10 05:59:08.52 MSE at peak tiplet positions: 4.0838805770844048836921
+#> 2026-04-10 05:59:08.53 Refining Lorentz Curves
+#> 2026-04-10 05:59:08.53 MSE at peak tiplet positions: 0.1609359876216345797140
+#> 2026-04-10 05:59:08.53 MSE at peak tiplet positions: 0.0228015051613790313556
+#> 2026-04-10 05:59:08.53 MSE at peak tiplet positions: 0.0071638016610617799920
+#> 2026-04-10 05:59:08.53 Formatting return object as decon2
+#> 2026-04-10 05:59:08.53 Finished deconvolution of sim_01
+#> 2026-04-10 05:59:08.53 Starting deconvolution of sim_02 using R (legacy) backend
+#> 2026-04-10 05:59:08.53 Removing water signal
+#> 2026-04-10 05:59:08.53 Removing negative signals
+#> 2026-04-10 05:59:08.53 Smoothing signals
+#> 2026-04-10 05:59:08.54 Starting peak selection
+#> 2026-04-10 05:59:08.54 Detected 316 peaks
+#> 2026-04-10 05:59:08.54 Removing peaks with low scores
+#> 2026-04-10 05:59:08.54 Removed 286 peaks
+#> 2026-04-10 05:59:08.54 Initializing Lorentz curves
+#> 2026-04-10 05:59:08.54 MSE at peak tiplet positions: 3.8338943428876719465848
+#> 2026-04-10 05:59:08.54 Refining Lorentz Curves
+#> 2026-04-10 05:59:08.54 MSE at peak tiplet positions: 0.1289481941626757499630
+#> 2026-04-10 05:59:08.55 MSE at peak tiplet positions: 0.0135651899090413786964
+#> 2026-04-10 05:59:08.55 MSE at peak tiplet positions: 0.0025556755331531087749
+#> 2026-04-10 05:59:08.55 Formatting return object as decon2
+#> 2026-04-10 05:59:08.55 Finished deconvolution of sim_02
+#> 2026-04-10 05:59:08.55 Finished deconvolution of 2 spectra in 0.035 secs
 d1 <- dd[[1]]
 is_decons0(dd) # FALSE
 #> [1] FALSE
