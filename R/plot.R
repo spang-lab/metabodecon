@@ -73,6 +73,7 @@ plot_spectra <- function(obj,
     what <- match.arg(what)
     objs <- as_v12_collection(obj, ...)
     n <- length(objs)
+    n <- length(objs)
     css <- lapply(objs, function(x) x$cs)
     sis <- lapply(objs, function(x) {
         y <- switch(what,
@@ -700,6 +701,7 @@ draw_spectrum <- function(
         lgd, si_line, sm_line, lc_lines, sp_line, d2_line,
         cent_pts, tp_pts, fp_pts, miss_pts, bord_pts, norm_pts,
         lc_verts, tp_verts,
+        al_line, al_lines, al_arrows,
         ze_hline
     )
     list(
@@ -1092,12 +1094,15 @@ plot_dummy <- function(text = "Dummy Text") {
 draw_legend <- function(args, si_line, sm_line, lc_lines, sp_line, d2_line,
                         cent_pts, tp_pts, fp_pts, miss_pts, bord_pts, norm_pts,
                         lc_verts, tp_verts,
+                        al_line, al_lines, al_arrows,
                         ze_hline) {
     if (isFALSE(pop(args, "show"))) return()
     lins <- list("Raw Signal" = si_line,
                  "Smoothed Signal" = sm_line,
                  "Single Lorentzian" = lc_lines,
                  "Sum of Lorentzians" = sp_line,
+                 "Aligned Signal" = al_line,
+                 "Aligned Lorentzian" = al_lines,
                  "Second Derivative" = d2_line)
     pnts <- list("Center Point" = cent_pts,
                  "True Positive" = tp_pts,
@@ -1107,13 +1112,15 @@ draw_legend <- function(args, si_line, sm_line, lc_lines, sp_line, d2_line,
                  "NonPeak Point" = norm_pts)
     vrts <- list("Estimated Center" = lc_verts,
                  "True Center" = tp_verts)
+    arws <- list("Alignment Shift" = al_arrows)
     hlns <- list("Zero Line" = ze_hline)
     is_visible <- function(x) isTRUE(x$show)
     lins <- lins[sapply(lins, is_visible)]
     pnts <- pnts[sapply(pnts, is_visible)]
     vrts <- vrts[sapply(vrts, is_visible)]
+    arws <- arws[sapply(arws, is_visible)]
     hlns <- hlns[sapply(hlns, is_visible)]
-    objs <- c(lins, pnts, vrts, hlns)
+    objs <- c(lins, pnts, vrts, arws, hlns)
     if (length(objs) == 0) return()
     args$legend <- names(objs)
     args$col <- sapply(objs, function(obj) obj$col %||% "black")
@@ -1121,15 +1128,22 @@ draw_legend <- function(args, si_line, sm_line, lc_lines, sp_line, d2_line,
         unlist(sapply(lins, function(obj) obj$lty %||% 1)),
         unlist(rep(NA, length(pnts))),
         unlist(rep(NA, length(vrts))),
+        unlist(sapply(arws, function(obj) obj$lty %||% 1)),
         unlist(sapply(hlns, function(obj) obj$lty %||% 1))
     )
     args$pch <- c(
         unlist(rep(NA, length(lins))),
         unlist(sapply(pnts, function(obj) obj$pch %||% 1)),
         unlist(rep(124, length(vrts))),
+        unlist(rep(NA, length(arws))),
         unlist(rep(NA, length(hlns)))
     )
     args$x <- args$x %||% "topright"
+    local_par(xpd = NA)
+    tw <- try(max(strwidth(args$legend, cex = args$cex %||% 1)) * 1.1, silent = TRUE)
+    if (is.null(args$text.width) && is.numeric(tw) && length(tw) == 1 && tw > 0) {
+        args$text.width <- tw
+    }
     do.call(legend, args)
 }
 
@@ -1216,6 +1230,8 @@ draw_mtext <- function(side = 1, args = list()) {
     if (is.null(args$text)) return()
     if (is.null(args$cex)) args$cex <- par("cex")
     if (is.null(args$line)) args$line <- c(2, 3, 0, 0)[side]
+    xpd <- pop(args, "xpd")
+    if (!is.null(xpd)) local_par(xpd = xpd)
     args$side <- side
     do.call(mtext, args)
 }
@@ -1393,17 +1409,8 @@ get_foc_frac <- function(obj, foc_rgn = NULL) {
     )
     if (is.null(foc_rgn)) {
         n <- length(obj$cs)
-        width <- min(512 / n, 0.5)
-        if (n <= 2048) {
-            center <- 0.5
-        } else {
-            si <- obj$si
-            bw <- max(1L, as.integer(512))
-            css <- cumsum(si)
-            bsum <- css[seq(bw, n)] - c(0, css[seq_len(n - bw)])
-            center <- (which.max(bsum) + bw / 2) / n
-            center <- max(width, min(1 - width, center))
-        }
+        width <- min(256 / n, 0.5)
+        center <- if (n <= 2048) 0.5 else 0.75
         c(center - width, center + width)
     } else {
         convert_pos(foc_rgn, range(obj$cs), c(0, 1))
@@ -1449,7 +1456,7 @@ get_sub_fig_args <- function(obj, foc_frac, foc_rgn, sub1, sub2, sub3, dot_args)
         "123" = list(c(0.00, 1.00, 0.50, 1.00), c(0.00, 1.00, 0.30, 0.50), c(0.00, 1.00, 0.00, 0.20)),
         stop("Invalid layout")
     )
-    mars <- switch(layout,          # b  l  t  r
+    mars <- switch(layout,          # b  l    t  r
         "1_3" = list(c(1, 4, 2, 2), c(0, 0, 0, 0), c(0, 0, 1, 0)),
         "_23" = list(c(0, 0, 0, 0), c(1, 2, 2, 2), c(0, 0, 1, 0)),
         "123" = list(c(0, 4, 2, 2), c(1, 4, 0, 2), c(0, 0, 1, 0)),
@@ -1489,30 +1496,28 @@ get_sub_fig_args <- function(obj, foc_frac, foc_rgn, sub1, sub2, sub3, dot_args)
 #' @author 2024-2025 Tobias Schmidt: initial version.
 get_draw_spectrum_defaults <- function(show_d2 = FALSE,
                                        foc_only = TRUE,
-                                       aligned = FALSE,
-                                       max_si = Inf) {
+                                       aligned = FALSE) {
     assert(
         is_bool(show_d2),
         is_bool(foc_only),
-        is_bool(aligned),
-        is_num(max_si, 1)
+        is_bool(aligned)
     )
     show_si <- !show_d2 && !aligned
     show_al <- !show_d2 && aligned
     ylab <- if (show_d2) "Second Derivative" else "Signal Intensity [au]"
-    sf   <- if (show_d2) 1 else if (max_si < 1) 1 else 1e6
+    sf   <- if (show_d2) 1 else 1e6
     lgdx <- if (show_d2) "bottomright" else "topright"
     list(
         # Legend
-        lgd       = list(show = TRUE, x = lgdx, bg = "white"),
+        lgd       = list(show = TRUE, x = lgdx, bg = transp("white", 0.7)),
         # Spectrum Lines
-        si_line   = list(show = show_si, col = "black"),
+        si_line   = list(show = show_si || show_al, col = "black"),
         sm_line   = list(show = show_si, col = "blue"),
         d2_line   = list(show = show_d2),
         # Deconvolution Lines
         sp_line   = list(show = show_si, col = "red"),
-        lc_lines  = list(show = (show_si || show_al) && foc_only, col = "darkgrey", fill = "grey95"),
-        lc_verts  = list(show = show_al, col = "darkgrey"),
+        lc_lines  = list(show = show_si && foc_only, col = "darkgrey", fill = "grey95"),
+        lc_verts  = list(show = FALSE, col = "darkgrey"),
         lc_rects  = list(show = FALSE, col = transp("darkgrey"), border = NA),
         # True Parameter Lines
         tp_lines  = list(show = FALSE, col = "darkgreen"),
@@ -1520,9 +1525,9 @@ get_draw_spectrum_defaults <- function(show_d2 = FALSE,
         tp_rects  = list(show = FALSE, col = transp("darkgreen", 0.12), border = NA),
         # Alignment Lines
         al_line   = list(show = show_al, col = "purple"),
-        al_lines  = list(show = show_al && foc_only, col = "thistle4", fill = transp("thistle1", 0.5)),
-        al_verts  = list(show = show_al, col = "thistle4"),
-        al_arrows = list(show = show_al, col = "darkgrey", lty = 2),
+        al_lines  = list(show = FALSE, col = "thistle4", fill = transp("thistle1", 0.5)),
+        al_verts  = list(show = FALSE, col = "thistle4"),
+        al_arrows = list(show = FALSE, col = "darkgrey", lty = 2),
         # Zero Line
         ze_hline  = list(show = show_d2, col = "black", lty = 3),
         # Points
