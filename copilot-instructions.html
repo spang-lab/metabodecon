@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">metabodecon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.6.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.7.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -19,6 +19,7 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="articles/Get_Started.html">Get Started</a></li>
+    <li><a class="dropdown-item" href="articles/MDM.html">Metabodecon Models</a></li>
     <li><a class="dropdown-item" href="articles/FAQ.html">FAQ</a></li>
     <li><a class="dropdown-item" href="articles/MetaboDecon1D.html">MetaboDecon1D</a></li>
     <li><a class="dropdown-item" href="articles/Datasets.html">Datasets</a></li>
@@ -38,18 +39,35 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="logo.svg" class="logo" alt=""><h1>Copilot Instructions for MetaboDecon</h1>
-      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/v1.6.3/.github/copilot-instructions.md" class="external-link"><code>.github/copilot-instructions.md</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/main/.github/copilot-instructions.md" class="external-link"><code>.github/copilot-instructions.md</code></a></small>
     </div>
 
 <div id="copilot-instructions-for-metabodecon" class="section level1">
 
 <div class="section level2">
+<h2 id="workspace-conventions">Workspace Conventions<a class="anchor" aria-label="anchor" href="#workspace-conventions"></a></h2>
+<ul><li>Use <code>./tmp</code> for temporary files (it is gitignored and Rbuildignored). Never write temp files outside the project directory.</li>
+<li>If code changes must be tested with multiple workers, remind the user to reinstall the package before they run those tests.</li>
+</ul></div>
+<div class="section level2">
 <h2 id="coding-guidelines">Coding Guidelines<a class="anchor" aria-label="anchor" href="#coding-guidelines"></a></h2>
 <ul><li>All roxygen comments should start with a tag, in particular title and description should be formatted as <code>#' @title ...</code> and <code>#' @description ...</code>.</li>
 <li>Character limit is 80. Prefer short variable names like <code>x</code> and <code>y</code> to achieve that. If it’s not clear from the function docs what a variable means, use a comment to describe it upon first use.</li>
+<li>Fill lines up to ~80 chars to minimize vertical space. Prefer single-line calls over multi-line when they fit. Going slightly over 80 (up to ~90) is tolerable if it avoids splitting a call across 3 lines.</li>
 <li>Prefer the use of helper variables instead of function nesting to reduce line length and improve readability. E.g. <code>x &lt;- f(a); y &lt;- g(x)</code> instead of <code>y &lt;-   g(f(a))</code>. Function nesting is ok if everything still fits in 80 chars and the function names are short and readable.</li>
+<li>Avoid defining functions inside other functions, except for temporary callbacks passed directly to <code><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply()</a></code>, <code><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply()</a></code>, <code><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply()</a></code>, etc. Prefer top-level private helper functions instead to keep function bodies short and easy to scan.</li>
 <li>Do not use pipe operators <code>%&gt;%</code> or <code>|&gt;</code>.</li>
 <li>Always use fully qualified names for functions from other packages, e.g. <code><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot2::ggplot()</a></code>. Exceptions are functions from R’s standard library like <code><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum()</a></code>, <code><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean()</a></code>, etc.</li>
+</ul></div>
+<div class="section level2">
+<h2 id="pseudocode-mode-for-vignettes">Pseudocode mode for vignettes<a class="anchor" aria-label="anchor" href="#pseudocode-mode-for-vignettes"></a></h2>
+<ul><li>Definition: “pseudocode mode” means code examples are written primarily for readability and teaching, while still running under normal/ideal conditions.</li>
+<li>Scope: Use pseudocode mode for all newly added or modified code in <code>vignettes/*.Rmd</code>.</li>
+<li>Keep code compact and direct: prefer fewer lines, fewer helper variables, and simple control flow.</li>
+<li>Prefer clear intent over defensive robustness in vignettes. Avoid extra safeguards that distract from the main idea unless they are essential to understand the method.</li>
+<li>Keep naming short when context is obvious (e.g. <code>X</code>, <code>y</code>, <code>te</code>, <code>Xtr</code>, <code>Xte</code>).</li>
+<li>Prefer single-line function calls in vignettes. Avoid multiline calls unless required for readability of <code>*apply()</code> loops or unavoidable long literals.</li>
+<li>Avoid defensive checks and fallback branches in vignette chunks. In pseudocode mode, prefer short, direct, didactic code that assumes normal conditions.</li>
 </ul></div>
 <div class="section level2">
 <h2 id="project-structure">Project Structure<a class="anchor" aria-label="anchor" href="#project-structure"></a></h2>
@@ -420,7 +438,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer></div>

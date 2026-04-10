@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metabodecon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.6.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.7.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -19,6 +19,7 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/Get_Started.html">Get Started</a></li>
+    <li><a class="dropdown-item" href="../articles/MDM.html">Metabodecon Models</a></li>
     <li><a class="dropdown-item" href="../articles/FAQ.html">FAQ</a></li>
     <li><a class="dropdown-item" href="../articles/MetaboDecon1D.html">MetaboDecon1D</a></li>
     <li><a class="dropdown-item" href="../articles/Datasets.html">Datasets</a></li>
@@ -38,15 +39,42 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.svg" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/spang-lab/metabodecon/blob/v1.6.3/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/spang-lab/metabodecon/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="1.7.0" id="metabodecon-170">metabodecon 1.7.0<a class="anchor" aria-label="anchor" href="#metabodecon-170"></a></h2>
+<ul><li>
+<code><a href="../reference/deconvolute.html">deconvolute()</a></code> gained <code>npmax</code>, <code>igrs</code>, and <code>cachedir</code> parameters for limiting the number of peaks, ignoring ppm ranges, and caching results to disk.</li>
+<li>
+<code><a href="../reference/deconvolute.html">deconvolute()</a></code> <code>use_rust</code> now accepts <code>0.5</code> to select an experimental new R backend that produces results identical to the Rust backend.</li>
+<li>
+<code><a href="../reference/align.html">align()</a></code> gained a <code>method</code> parameter: <code>1</code> = speaq, <code>2</code> = built-in CluPA reimplementation (default), <code>3</code> = peak-based pairwise alignment directly on deconvoluted peak parameters (experimental).</li>
+<li>
+<code><a href="../reference/align.html">align()</a></code> gained a <code>full</code> parameter. When <code>FALSE</code>, the aligned superposition is not reconstructed, saving time during grid searches.</li>
+<li>
+<code><a href="../reference/get_si_mat.html">get_si_mat()</a></code> gained <code>maxCombine</code>, <code>combineMethod</code>, <code>ref</code>, and <code>drop_zero</code> parameters for peak combining and reference-based snapping.</li>
+<li>
+<code><a href="../reference/plot_spectra.html">plot_spectra()</a></code> gained <code>foc_rgn</code>, <code>what</code>, <code>cols</code>, and <code>names</code> parameters for focus-region zooming, signal selection, custom colors, and legend labels.</li>
+<li>
+<code><a href="../reference/draw_spectrum.html">draw_spectrum()</a></code> can now display true/false/missed peaks.</li>
+<li>
+<code><a href="../reference/tree.html">tree()</a></code> gained <code>show.counts</code>, <code>files.first</code>, and <code>max.entries</code> parameters. Added <code><a href="../reference/tree.html">tree_preview()</a></code> as a compact alias.</li>
+<li>Added <code><a href="../reference/mdm.html">fit_mdm()</a></code> for fitting lasso models on deconvoluted NMR spectra with explicit deconvolution parameters (<code>nfit</code>/<code>smit</code>/<code>smws</code>/<code>delta</code>) alongside <code>npmax</code>.</li>
+<li>Added <code><a href="../reference/mdm.html">cv_mdm()</a></code> for cross-validated preprocessing grid search (replaces the former <code>fit_mdm_grid()</code>).</li>
+<li>Added <code><a href="../reference/mdm.html">benchmark_mdm()</a></code> for nested-CV performance estimation.</li>
+<li>Added <code><a href="../reference/mdm.html">get_pgrid()</a></code> for predefined preprocessing parameter grids.</li>
+<li>Added S3 methods for <code>mdm</code> objects: <code>predict</code>, <code>print</code>, <code>coef</code>, <code>plot</code>, <code>summary</code>.</li>
+<li>Added <code><a href="https://rdrr.io/r/base/c.html" class="external-link">c()</a></code>, <code><a href="https://rdrr.io/r/base/format.html" class="external-link">format()</a></code>, and <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> methods for all public and private class families.</li>
+<li>Optimized <code>lorentz_sup()</code>: auto-selects a compiled C backend (~10x faster) when available, otherwise uses a vectorized R backend (~3x faster). Controllable via <code>options(metabodecon.lorentz_sup_version)</code>.</li>
+<li>Added AKI example dataset.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.6.3" id="metabodecon-163">metabodecon 1.6.3<a class="anchor" aria-label="anchor" href="#metabodecon-163"></a></h2>
 <ul><li>Improved exception for r-universe machine in <code>test-install_mdrb.R</code>.</li>
 </ul></div>
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="1.6.2" id="metabodecon-162">metabodecon 1.6.2<a class="anchor" aria-label="anchor" href="#metabodecon-162"></a></h2>
+<h2 class="pkg-version" data-toc-text="1.6.2" id="metabodecon-162">metabodecon 1.6.2<a class="anchor" aria-label="anchor" href="#metabodecon-162"></a></h2><p class="text-muted">CRAN release: 2025-09-17</p>
 <ul><li>Added an exception to <code>test-install_mdrb.R</code> so the test also works on r-universe machines.</li>
 </ul></div>
     <div class="section level2">
@@ -299,7 +327,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer></div>

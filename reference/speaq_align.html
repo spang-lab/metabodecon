@@ -33,7 +33,7 @@ Direct usage of this function has been deprecated with metabodecon version
 
     <a class="navbar-brand me-2" href="../index.html">metabodecon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.6.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.7.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -45,6 +45,7 @@ Direct usage of this function has been deprecated with metabodecon version
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/Get_Started.html">Get Started</a></li>
+    <li><a class="dropdown-item" href="../articles/MDM.html">Metabodecon Models</a></li>
     <li><a class="dropdown-item" href="../articles/FAQ.html">FAQ</a></li>
     <li><a class="dropdown-item" href="../articles/MetaboDecon1D.html">MetaboDecon1D</a></li>
     <li><a class="dropdown-item" href="../articles/Datasets.html">Datasets</a></li>
@@ -64,7 +65,7 @@ Direct usage of this function has been deprecated with metabodecon version
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.svg" class="logo" alt=""><h1>Align Signals using 'speaq'</h1>
-      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/v1.6.3/R/align.R" class="external-link"><code>R/align.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/main/R/align.R" class="external-link"><code>R/align.R</code></a></small>
       <div class="d-none name"><code>speaq_align.Rd</code></div>
     </div>
 
@@ -172,16 +173,9 @@ names of the matrix are the ppm values of the original spectra.</p>
 <span class="r-in"><span>    <span class="va">M</span> <span class="op">&lt;-</span> <span class="fu">speaq_align</span><span class="op">(</span><span class="va">feat</span>, <span class="va">maxShift</span>, <span class="va">spectrum_data</span>, show <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span>    <span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">M</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  --------------------------------</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  dohCluster will run with maxShift= 200</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  If you want dohCluster to detect the optimal maxShift automatically,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  use dohCluster(..., maxShift = NULL, ...)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  --------------------------------</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  aligning spectrum  1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Median pearson correlation of aligned spectra: 0.9977223</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Alignment time:  2e-04  minutes</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2026-04-10 01:12:22.56 Running dohCluster with maxShift = 200 on 2 spectra</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2026-04-10 01:12:22.56 Aligning spectrum 1/2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2026-04-10 01:12:22.57 Finished dohCluster in 0.0 s</span>
 <span class="r-plt img"><img src="speaq_align-1.png" alt="" width="700" height="433"></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  num [1:2, 1:2048] NA NA NA NA NA NA NA NA NA NA ...</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  - attr(*, "dimnames")=List of 2</span>
@@ -198,7 +192,7 @@ names of the matrix are the ppm values of the original spectra.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer></div>

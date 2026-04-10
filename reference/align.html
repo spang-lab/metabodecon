@@ -15,7 +15,7 @@ in combine_peaks()."><meta property="og:image" content="https://spang-lab.github
 
     <a class="navbar-brand me-2" href="../index.html">metabodecon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.6.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.7.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -27,6 +27,7 @@ in combine_peaks()."><meta property="og:image" content="https://spang-lab.github
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/Get_Started.html">Get Started</a></li>
+    <li><a class="dropdown-item" href="../articles/MDM.html">Metabodecon Models</a></li>
     <li><a class="dropdown-item" href="../articles/FAQ.html">FAQ</a></li>
     <li><a class="dropdown-item" href="../articles/MetaboDecon1D.html">MetaboDecon1D</a></li>
     <li><a class="dropdown-item" href="../articles/Datasets.html">Datasets</a></li>
@@ -46,7 +47,7 @@ in combine_peaks()."><meta property="og:image" content="https://spang-lab.github
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.svg" class="logo" alt=""><h1>Align Spectra</h1>
-      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/v1.6.3/R/align.R" class="external-link"><code>R/align.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/main/R/align.R" class="external-link"><code>R/align.R</code></a></small>
       <div class="d-none name"><code>align.Rd</code></div>
     </div>
 
@@ -60,7 +61,17 @@ in <code><a href="combine_peaks.html">combine_peaks()</a></code>.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">align</span><span class="op">(</span><span class="va">x</span>, maxShift <span class="op">=</span> <span class="fl">50</span>, maxCombine <span class="op">=</span> <span class="fl">5</span>, verbose <span class="op">=</span> <span class="cn">TRUE</span>, install_deps <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">align</span><span class="op">(</span></span>
+<span>  <span class="va">x</span>,</span>
+<span>  maxShift <span class="op">=</span> <span class="fl">50</span>,</span>
+<span>  maxCombine <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  method <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  install_deps <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  nworkers <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  ref <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  full <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -69,8 +80,9 @@ in <code><a href="combine_peaks.html">combine_peaks()</a></code>.</p>
 
 <dl><dt id="arg-x">x<a class="anchor" aria-label="anchor" href="#arg-x"></a></dt>
 <dd><p>An object of  type  <code>decons1</code>  or  <code>decons2</code>  as  described  in  <a href="https://spang-lab.github.io/metabodecon/articles/Classes.html">Metabodecon Classes</a>.   To
-align <code>decons0</code> objects (as returned by the now deprecated  <a href="MetaboDecon1D.html">MetaboDecon1D</a>),
-you can use <code><a href="as_metabodecon_class.html">as_decons2()</a></code> to convert it to a <code>decons2</code> object first.</p></dd>
+align <code>decons0</code> objects (as returned by the now deprecated
+<a href="MetaboDecon1D.html">MetaboDecon1D</a>), you can use <code><a href="as_metabodecon_class.html">as_decons2()</a></code> to
+convert it to a <code>decons2</code> object first.</p></dd>
 
 
 <dt id="arg-maxshift">maxShift<a class="anchor" aria-label="anchor" href="#arg-maxshift"></a></dt>
@@ -84,16 +96,29 @@ value most probably has to be increased. Passed  as  argument  <code>maxShift</c
 
 
 <dt id="arg-maxcombine">maxCombine<a class="anchor" aria-label="anchor" href="#arg-maxcombine"></a></dt>
-<dd><p>Amount of adjacent columns which may be combined for improving the alignment.
-Passed as argument <code>range</code> to <code><a href="combine_peaks.html">combine_peaks()</a></code>.</p></dd>
+<dd><p>Amount of adjacent columns which may be combined for improving
+the alignment during the CluPA step. We recommend setting this
+to 0 and instead relying on the peak snapping implemented  in
+<code><a href="get_si_mat.html">get_si_mat()</a></code>. Since version 1.7.0  the  default
+is 0. Non-zero values are deprecated and support  will  be
+removed in a future version.</p></dd>
 
 
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
 <dd><p>Whether to print additional information during the alignment process.</p></dd>
 
 
+<dt id="arg-method">method<a class="anchor" aria-label="anchor" href="#arg-method"></a></dt>
+<dd><p>Alignment backend. <code>1</code>: use the original implementation from the 'speaq'
+package. <code>2</code> (default): use metabodecon's built-in reimplementation of the
+CluPA algorithm. <code>3</code>: use metabodecon's peak-based pairwise alignment, which
+works directly on the deconvoluted peak parameters (<code>x0</code>, <code>lambda</code>, <code>A</code>).
+<strong>Method 3 is experimental and must not be used in production. It is very
+likely to change in non-backwards-compatible ways over the next few weeks.</strong></p></dd>
+
+
 <dt id="arg-install-deps">install_deps<a class="anchor" aria-label="anchor" href="#arg-install-deps"></a></dt>
-<dd><p>Alignment  relies  on  the  'speaq'  package,  which  itself  relies  on  the
+<dd><p>Only used when <code>method = 1</code>. 'speaq' relies on the
 'MassSpecWavelet' and 'impute' packages. Both, 'MassSpecWavelet' and 'impute'
 are   not   available    on    CRAN,    but    can    be    installed    from
 <a href="https://www.bioconductor.org/" class="external-link">Bioconductor</a>                              or
@@ -103,6 +128,26 @@ confirmation. If <code>install_deps=NULL</code> (default), the user will  be  as
 confirmation  before  installing  missing   dependencies.   If   asking   for
 confirmation is not possible or <code>install_deps=FALSE</code>, the function will raise
 an error if the packages are not installed.</p></dd>
+
+
+<dt id="arg-nworkers">nworkers<a class="anchor" aria-label="anchor" href="#arg-nworkers"></a></dt>
+<dd><p>Number of parallel workers for the alignment. Default is 1 (no parallelism).</p></dd>
+
+
+<dt id="arg-ref">ref<a class="anchor" aria-label="anchor" href="#arg-ref"></a></dt>
+<dd><p>Optional reference spectrum of type <code>align</code> or <code>decon2</code>. When supplied,
+all spectra in <code>x</code> are aligned towards this reference. The reference is
+prepended to <code>x</code> internally and removed from the result. If <code>NULL</code>
+(default), the reference is chosen automatically via
+<code><a href="https://rdrr.io/pkg/speaq/man/findRef.html" class="external-link">speaq::findRef()</a></code>.</p></dd>
+
+
+<dt id="arg-full">full<a class="anchor" aria-label="anchor" href="#arg-full"></a></dt>
+<dd><p>If <code>TRUE</code> (default), store the full aligned Lorentz-curve superposition in
+each returned spectrum. If <code>FALSE</code>, skip that reconstruction step to save
+time and memory. Skipping reconstruction of the superposition means
+the plotting routines will not work as expected, so only use <code>full=FALSE</code>
+if you are sure you don't need the superposition.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -133,7 +178,7 @@ an error if the packages are not installed.</p></dd>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer></div>

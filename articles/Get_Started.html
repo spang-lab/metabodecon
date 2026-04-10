@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metabodecon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.6.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.7.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -39,6 +39,7 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/Get_Started.html">Get Started</a></li>
+    <li><a class="dropdown-item" href="../articles/MDM.html">Metabodecon Models</a></li>
     <li><a class="dropdown-item" href="../articles/FAQ.html">FAQ</a></li>
     <li><a class="dropdown-item" href="../articles/MetaboDecon1D.html">MetaboDecon1D</a></li>
     <li><a class="dropdown-item" href="../articles/Datasets.html">Datasets</a></li>
@@ -69,49 +70,12 @@
       <img src="../logo.svg" class="logo" alt=""><h1>Get Started</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/v1.6.3/vignettes/Get_Started.Rmd" class="external-link"><code>vignettes/Get_Started.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/main/vignettes/Get_Started.Rmd" class="external-link"><code>vignettes/Get_Started.Rmd</code></a></small>
       <div class="d-none name"><code>Get_Started.Rmd</code></div>
     </div>
 
     
     
-<style>
-/*
-IMPORTANT: pkgdown articles [^1] and  rmarkdown  html  vignettes  [^2]  generate
-different HTML elements from the same rmarkdown content. Therefore  we  need  to
-take care to handle both usecases. In particular, articles  use  `<figure>`  and
-`<caption>`  elements,  where  vignettes  use  `<div  class="figure">`  and  `<p
-class="caption">` elements.
-
-[^1] built using `pkgdown::build_article()`)
-[^2] built using `rmarkdown::render()`
-*/
-figure, div.figure
-{
-    border: 1px solid #dee2e6;
-    border-radius: .375rem;
-    padding: 0;
-    margin: 1em 0;
-}
-caption, p.caption {
-    text-align: center;
-    font-style: italic;
-    border-top: 1px solid #dee2e6;
-    padding: 0.75rem;
-    background-color: #ffffff;
-}
-img {
-    margin: 0 auto;
-    padding: 0;
-    border: none;
-    width: 50%;
-}
-@media (max-width: 500px) {
-    img {
-        width: 100%; /* Full width for smaller viewports */
-    }
-}
-</style>
 <p>This article shows how Metabodecon can be used for deconvoluting and
 aligning one-dimensional NMR spectra using the pre-installed <a href="https://spang-lab.github.io/metabodecon/articles/Datasets.html#sim">Sim</a>
 dataset as an example. The Sim dataset includes 16 simulated spectra,
@@ -166,21 +130,21 @@ adjustments are needed, you can respond with <code>n</code> and input
 the correct values.</p>
 <p><a id="fig-deconvolute"></a></p>
 <div class="figure">
-<img src="Get_Started_files/figure-html/fig-deconvolute-1.png" alt="&lt;strong&gt;Figure 1.&lt;/strong&gt; The first spectrum  of  the  Sim  dataset.  The
+<img src="Get_Started_files/figure-html/fig-deconvolute-1.png" class="r-plt" alt="&lt;strong&gt;Figure 1.&lt;/strong&gt; The first spectrum  of  the  Sim  dataset.  The
 x-Axis gives the chemical shift of each datapoint  in  parts  per  million
 (ppm). The  y-Axis  gives  the  signal  intensity  of  each  datapoint  in
 arbitrary  units  (au).  The  signal  free  regions  are  shown  as  green
 rectangles in the left plot. The water signal  region,  usually  shown  as
 blue rectangle, is shown in the right plot. Because the water signal  half
 width is set to zero in this case, the rectangle collapses to  a  vertical
-line." width="480" height="auto"><img src="Get_Started_files/figure-html/fig-deconvolute-2.png" alt="&lt;strong&gt;Figure 1.&lt;/strong&gt; The first spectrum  of  the  Sim  dataset.  The
+line." width="50%"><img src="Get_Started_files/figure-html/fig-deconvolute-2.png" class="r-plt" alt="&lt;strong&gt;Figure 1.&lt;/strong&gt; The first spectrum  of  the  Sim  dataset.  The
 x-Axis gives the chemical shift of each datapoint  in  parts  per  million
 (ppm). The  y-Axis  gives  the  signal  intensity  of  each  datapoint  in
 arbitrary  units  (au).  The  signal  free  regions  are  shown  as  green
 rectangles in the left plot. The water signal  region,  usually  shown  as
 blue rectangle, is shown in the right plot. Because the water signal  half
 width is set to zero in this case, the rectangle collapses to  a  vertical
-line." width="480" height="auto"><p class="caption">
+line." width="50%"><p class="caption">
 <strong>Figure 1.</strong> The first spectrum of the Sim dataset. The
 x-Axis gives the chemical shift of each datapoint in parts per million
 (ppm). The y-Axis gives the signal intensity of each datapoint in
@@ -237,15 +201,15 @@ should reduce the threshold <code>delta</code> in the call to
 </ol>
 <p><a id="fig-plot-spectrum"></a></p>
 <div class="figure">
-<img src="Get_Started_files/figure-html/fig-plot-spectrum-1.png" alt="&lt;strong&gt;Figure 2.&lt;/strong&gt; Deconvolution results for the first two  spectra
+<img src="Get_Started_files/figure-html/fig-plot-spectrum-1.png" class="r-plt" alt="&lt;strong&gt;Figure 2.&lt;/strong&gt; Deconvolution results for the first two  spectra
 of  the  Sim  dataset.  The  raw  SI  (black),  smoothed  SI  (blue),   and
 superposition of Lorentz curves (red) are closely aligned, indicating  that
 &lt;code&gt;smopts&lt;/code&gt; and &lt;code&gt;delta&lt;/code&gt; were chosen well  and  that  the
-deconvolution was successful." width="480" height="auto"><img src="Get_Started_files/figure-html/fig-plot-spectrum-2.png" alt="&lt;strong&gt;Figure 2.&lt;/strong&gt; Deconvolution results for the first two  spectra
+deconvolution was successful." width="50%"><img src="Get_Started_files/figure-html/fig-plot-spectrum-2.png" class="r-plt" alt="&lt;strong&gt;Figure 2.&lt;/strong&gt; Deconvolution results for the first two  spectra
 of  the  Sim  dataset.  The  raw  SI  (black),  smoothed  SI  (blue),   and
 superposition of Lorentz curves (red) are closely aligned, indicating  that
 &lt;code&gt;smopts&lt;/code&gt; and &lt;code&gt;delta&lt;/code&gt; were chosen well  and  that  the
-deconvolution was successful." width="480" height="auto"><p class="caption">
+deconvolution was successful." width="50%"><p class="caption">
 <strong>Figure 2.</strong> Deconvolution results for the first two
 spectra of the Sim dataset. The raw SI (black), smoothed SI (blue), and
 superposition of Lorentz curves (red) are closely aligned, indicating
@@ -285,17 +249,17 @@ successful. Notably, spectrum two has been shifted significantly to the
 left.</p>
 <p><a id="fig-align"></a></p>
 <div class="figure">
-<img src="Get_Started_files/figure-html/fig-align-1.png" alt="&lt;strong&gt;Figure 3.&lt;/strong&gt; Overlay of the first eight deconvoluted  spectra
+<img src="Get_Started_files/figure-html/fig-align-1.png" class="r-plt" alt="&lt;strong&gt;Figure 3.&lt;/strong&gt; Overlay of the first eight deconvoluted  spectra
 from the Sim dataset before alignment (left) and after  alignment  (right).
 The x-Axis gives the chemical shift of each datapoint in parts per  million
 (ppm). The y-Axis gives the signal intensity of each datapoint in arbitrary
 units (au). All specta are pretty similar to each other except for Spectrum
-2, which got shifted approx. 0.01 ppm to the right." width="480" height="auto"><img src="Get_Started_files/figure-html/fig-align-2.png" alt="&lt;strong&gt;Figure 3.&lt;/strong&gt; Overlay of the first eight deconvoluted  spectra
+2, which got shifted approx. 0.01 ppm to the right." width="50%"><img src="Get_Started_files/figure-html/fig-align-2.png" class="r-plt" alt="&lt;strong&gt;Figure 3.&lt;/strong&gt; Overlay of the first eight deconvoluted  spectra
 from the Sim dataset before alignment (left) and after  alignment  (right).
 The x-Axis gives the chemical shift of each datapoint in parts per  million
 (ppm). The y-Axis gives the signal intensity of each datapoint in arbitrary
 units (au). All specta are pretty similar to each other except for Spectrum
-2, which got shifted approx. 0.01 ppm to the right." width="480" height="auto"><p class="caption">
+2, which got shifted approx. 0.01 ppm to the right." width="50%"><p class="caption">
 <strong>Figure 3.</strong> Overlay of the first eight deconvoluted
 spectra from the Sim dataset before alignment (left) and after alignment
 (right). The x-Axis gives the chemical shift of each datapoint in parts
@@ -319,7 +283,7 @@ right.
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer>

@@ -1,0 +1,159 @@
+# Package index
+
+## Deconvolution
+
+Functions to deconvolute a spectrum into its individual peaks.
+
+- [`read_spectrum()`](https://spang-lab.github.io/metabodecon/reference/read_spectrum.md)
+  : Read one or more spectra from Disk
+- [`read_spectra()`](https://spang-lab.github.io/metabodecon/reference/read_spectra.md)
+  : Read one or more spectra from Disk
+- [`plot_spectrum()`](https://spang-lab.github.io/metabodecon/reference/plot_spectrum.md)
+  **\[experimental\]** : Plot Spectrum
+- [`plot_spectra()`](https://spang-lab.github.io/metabodecon/reference/plot_spectra.md)
+  : Plot Spectra
+- [`draw_spectrum()`](https://spang-lab.github.io/metabodecon/reference/draw_spectrum.md)
+  **\[experimental\]** : Draw Spectrum
+- [`deconvolute()`](https://spang-lab.github.io/metabodecon/reference/deconvolute.md)
+  : Deconvolute one or more NMR spectra
+- [`decon_cachedir()`](https://spang-lab.github.io/metabodecon/reference/decon_cachedir.md)
+  : Get Default Cache Directory for Deconvolution
+- [`fit_mdm()`](https://spang-lab.github.io/metabodecon/reference/mdm.md)
+  [`cv_mdm()`](https://spang-lab.github.io/metabodecon/reference/mdm.md)
+  [`benchmark_mdm()`](https://spang-lab.github.io/metabodecon/reference/mdm.md)
+  [`get_pgrid()`](https://spang-lab.github.io/metabodecon/reference/mdm.md)
+  **\[experimental\]** : Metabodecon Models
+- [`predict(`*`<mdm>`*`)`](https://spang-lab.github.io/metabodecon/reference/mdm_methods.md)
+  [`print(`*`<mdm>`*`)`](https://spang-lab.github.io/metabodecon/reference/mdm_methods.md)
+  [`coef(`*`<mdm>`*`)`](https://spang-lab.github.io/metabodecon/reference/mdm_methods.md)
+  [`plot(`*`<mdm>`*`)`](https://spang-lab.github.io/metabodecon/reference/mdm_methods.md)
+  [`summary(`*`<mdm>`*`)`](https://spang-lab.github.io/metabodecon/reference/mdm_methods.md)
+  [`print(`*`<summary.mdm>`*`)`](https://spang-lab.github.io/metabodecon/reference/mdm_methods.md)
+  **\[experimental\]** : S3 methods for mdm objects
+
+## Alignment
+
+Functions to align multiple spectra.
+
+- [`align()`](https://spang-lab.github.io/metabodecon/reference/align.md)
+  : Align Spectra
+- [`combine_peaks()`](https://spang-lab.github.io/metabodecon/reference/combine_peaks.md)
+  **\[deprecated\]** : Combine Peaks
+- [`dohCluster()`](https://spang-lab.github.io/metabodecon/reference/dohCluster.md)
+  **\[deprecated\]** : Cluster Based Peak Alignment
+- [`gen_feat_mat()`](https://spang-lab.github.io/metabodecon/reference/gen_feat_mat.md)
+  **\[deprecated\]** : Generate Feature Matrix.
+- [`get_ppm_range()`](https://spang-lab.github.io/metabodecon/reference/get_ppm_range.md)
+  **\[deprecated\]** : Get PPM Range covered by Spectra
+- [`speaq_align()`](https://spang-lab.github.io/metabodecon/reference/speaq_align.md)
+  **\[deprecated\]** : Align Signals using 'speaq'
+- [`get_si_mat()`](https://spang-lab.github.io/metabodecon/reference/get_si_mat.md)
+  : Extract Matrix of aligned Signal Intensities
+
+## Datasets
+
+Functions to download and/or find example datasets.
+
+- [`datadir()`](https://spang-lab.github.io/metabodecon/reference/datadir.md)
+  : Return path to metabodecon's data directory
+- [`datadir_persistent()`](https://spang-lab.github.io/metabodecon/reference/datadir_persistent.md)
+  : Persistent Data Directory
+- [`datadir_temp()`](https://spang-lab.github.io/metabodecon/reference/datadir_temp.md)
+  : Temporary Data Directory
+- [`download_example_datasets()`](https://spang-lab.github.io/metabodecon/reference/download_example_datasets.md)
+  : Download metabodecon Example Datasets
+- [`metabodecon_file()`](https://spang-lab.github.io/metabodecon/reference/metabodecon_file.md)
+  : Return Path to File or Directory in metabodecon Package
+- [`sim`](https://spang-lab.github.io/metabodecon/reference/sim.md) :
+  The Sim Dataset
+- [`sap`](https://spang-lab.github.io/metabodecon/reference/sap.md) :
+  The SAP Dataset
+- [`tmpdir()`](https://spang-lab.github.io/metabodecon/reference/tmpdir.md)
+  : Temporary Session Directory
+
+## Utility
+
+Utility functions, e.g. for converting between units or for calculating
+y values for a given lorentz curve.
+
+- [`as_spectrum()`](https://spang-lab.github.io/metabodecon/reference/as_metabodecon_class.md)
+  [`as_decon0()`](https://spang-lab.github.io/metabodecon/reference/as_metabodecon_class.md)
+  [`as_decon1()`](https://spang-lab.github.io/metabodecon/reference/as_metabodecon_class.md)
+  [`as_decon2()`](https://spang-lab.github.io/metabodecon/reference/as_metabodecon_class.md)
+  [`as_spectra()`](https://spang-lab.github.io/metabodecon/reference/as_metabodecon_class.md)
+  [`as_decons0()`](https://spang-lab.github.io/metabodecon/reference/as_metabodecon_class.md)
+  [`as_decons1()`](https://spang-lab.github.io/metabodecon/reference/as_metabodecon_class.md)
+  [`as_decons2()`](https://spang-lab.github.io/metabodecon/reference/as_metabodecon_class.md)
+  : Convert to a Metabodecon Object
+- [`check_mdrb()`](https://spang-lab.github.io/metabodecon/reference/check_mdrb.md)
+  [`check_mdrb_deps()`](https://spang-lab.github.io/metabodecon/reference/check_mdrb.md)
+  : Check Rust Backend Requirements
+- [`convert_pos()`](https://spang-lab.github.io/metabodecon/reference/convert_pos.md)
+  [`convert_width()`](https://spang-lab.github.io/metabodecon/reference/convert_pos.md)
+  : Convert from unit A to unit B
+- [`evalwith()`](https://spang-lab.github.io/metabodecon/reference/evalwith.md)
+  : Evaluate an expression with predefined global state
+- [`get_names()`](https://spang-lab.github.io/metabodecon/reference/get_names.md)
+  : Returns the names of a metabodecon collection object.
+- [`headtail()`](https://spang-lab.github.io/metabodecon/reference/headtail.md)
+  : Show head and tail rows of a matrix-like object
+- [`install_mdrb()`](https://spang-lab.github.io/metabodecon/reference/install_mdrb.md)
+  : Install Rust Backend
+- [`is_spectrum()`](https://spang-lab.github.io/metabodecon/reference/is_metabodecon_class.md)
+  [`is_decon0()`](https://spang-lab.github.io/metabodecon/reference/is_metabodecon_class.md)
+  [`is_decon1()`](https://spang-lab.github.io/metabodecon/reference/is_metabodecon_class.md)
+  [`is_decon2()`](https://spang-lab.github.io/metabodecon/reference/is_metabodecon_class.md)
+  [`is_align()`](https://spang-lab.github.io/metabodecon/reference/is_metabodecon_class.md)
+  [`is_spectra()`](https://spang-lab.github.io/metabodecon/reference/is_metabodecon_class.md)
+  [`is_decons0()`](https://spang-lab.github.io/metabodecon/reference/is_metabodecon_class.md)
+  [`is_decons1()`](https://spang-lab.github.io/metabodecon/reference/is_metabodecon_class.md)
+  [`is_decons2()`](https://spang-lab.github.io/metabodecon/reference/is_metabodecon_class.md)
+  [`is_aligns()`](https://spang-lab.github.io/metabodecon/reference/is_metabodecon_class.md)
+  : Is an Object from a Metabodecon Class?
+- [`make_spectrum()`](https://spang-lab.github.io/metabodecon/reference/make_spectrum.md)
+  : Create a Spectrum Object
+- [`print(`*`<spectrum>`*`)`](https://spang-lab.github.io/metabodecon/reference/print_methods.md)
+  [`print(`*`<decon1>`*`)`](https://spang-lab.github.io/metabodecon/reference/print_methods.md)
+  [`print(`*`<decon2>`*`)`](https://spang-lab.github.io/metabodecon/reference/print_methods.md)
+  [`print(`*`<align>`*`)`](https://spang-lab.github.io/metabodecon/reference/print_methods.md)
+  [`print(`*`<spectra>`*`)`](https://spang-lab.github.io/metabodecon/reference/print_methods.md)
+  [`print(`*`<decons1>`*`)`](https://spang-lab.github.io/metabodecon/reference/print_methods.md)
+  [`print(`*`<decons2>`*`)`](https://spang-lab.github.io/metabodecon/reference/print_methods.md)
+  [`print(`*`<aligns>`*`)`](https://spang-lab.github.io/metabodecon/reference/print_methods.md)
+  : S3 Methods for Printing Metabodecon Objects
+- [`simulate_spectrum()`](https://spang-lab.github.io/metabodecon/reference/simulate_spectrum.md)
+  **\[experimental\]** : Simulate a 1D NMR Spectrum
+- [`transp()`](https://spang-lab.github.io/metabodecon/reference/transp.md)
+  : Make transparent
+- [`tree()`](https://spang-lab.github.io/metabodecon/reference/tree.md)
+  [`tree_preview()`](https://spang-lab.github.io/metabodecon/reference/tree.md)
+  : Print the Structure of a Directory Tree
+- [`width()`](https://spang-lab.github.io/metabodecon/reference/width.md)
+  : Calculate the Width of a Numeric Vector
+- [`aaa_Get_Started()`](https://spang-lab.github.io/metabodecon/reference/aaa_Get_Started.md)
+  [`get_started()`](https://spang-lab.github.io/metabodecon/reference/aaa_Get_Started.md)
+  : Get URL of Metabodecon "Get Started" Page
+
+## Deprecated
+
+Deprecated functions. These functions should no longer be used. They
+will be retained for a short period of time to give users time to
+migrate to their replacement function, but will be removed in future
+releases of the package.
+
+- [`get_data_dir()`](https://spang-lab.github.io/metabodecon/reference/get_data_dir.md)
+  **\[deprecated\]** : Retrieve directory path of an example dataset
+- [`MetaboDecon1D()`](https://spang-lab.github.io/metabodecon/reference/MetaboDecon1D.md)
+  **\[deprecated\]** : Deconvolute 1D NMR spectrum
+- [`calculate_lorentz_curves()`](https://spang-lab.github.io/metabodecon/reference/calculate_lorentz_curves.md)
+  **\[deprecated\]** : Calculate lorentz curves for each analyzed
+  spectrum
+- [`plot_lorentz_curves_save_as_png()`](https://spang-lab.github.io/metabodecon/reference/plot_lorentz_curves_save_as_png.md)
+  **\[deprecated\]** : Plot lorentz curves for variable range
+- [`plot_spectrum_superposition_save_as_png()`](https://spang-lab.github.io/metabodecon/reference/plot_spectrum_superposition_save_as_png.md)
+  **\[deprecated\]** : Plot spectrum approx for variable range
+- [`plot_triplets()`](https://spang-lab.github.io/metabodecon/reference/plot_triplets.md)
+  **\[deprecated\]** : Plot peak triplets for variable range
+- [`generate_lorentz_curves()`](https://spang-lab.github.io/metabodecon/reference/generate_lorentz_curves.md)
+  [`generate_lorentz_curves_sim()`](https://spang-lab.github.io/metabodecon/reference/generate_lorentz_curves.md)
+  **\[deprecated\]** : Deconvolute one or more NMR spectra

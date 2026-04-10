@@ -1,0 +1,71 @@
+# metabodecon
+
+A framework for deconvolution, alignment and postprocessing of 1D NMR
+spectra, resulting in a data matrix of aligned signal integrals. The
+deconvolution part uses the algorithm described in [Koh et
+al. (2009)](https://doi.org/10.1016/j.jmr.2009.09.003). The alignment
+part is based on functions from the ‘speaq’ package, described in
+[Beirnaert et al. (2018)](https://doi.org/10.1371/journal.pcbi.1006018)
+and [Vu et al. (2011)](https://doi.org/doi:10.1186/1471-2105-12-405). A
+detailed description and evaluation of an early version of the package,
+‘MetaboDecon1D v0.2.2’, can be found in [Haeckl et
+al. (2021)](https://doi.org/doi:10.3390/metabo11070452).
+
+## Installation
+
+To install the **stable version** from
+[CRAN](https://cran.r-project.org/), including all
+[Bioconductor](https://www.bioconductor.org/) dependencies, paste the
+following commands in a running R session (e.g. in RStudio):
+
+``` r
+install.packages("pak")
+pak::pkg_install("metabodecon")
+```
+
+Alternatively, if you prefer installing via the traditional
+[`install.packages()`](https://rdrr.io/r/utils/install.packages.html)
+function, you can do so by running the following commands:
+
+``` r
+# Install Bioconductor dependencies
+install.packages("BiocManager")
+BiocManager::install(c("MassSpecWavelet", "impute"))
+
+# Install metabodecon
+install.packages("metabodecon")
+```
+
+To install the **development version** from
+[GitHub](https://github.com/spang-lab/metabodecon/) use:
+
+``` r
+install.packages("pak")
+pak::pkg_install("spang-lab/metabodecon")
+```
+
+## Usage
+
+At [Getting
+Started](https://spang-lab.github.io/metabodecon/articles/Get_Started.html)
+you can see an example how metabodecon can be used to deconvolute an
+existing data set, followed by alignment of the data and some additional
+postprocessing steps, resulting in a data matrix of aligned signal
+integrals.
+
+At [Function
+Reference](https://spang-lab.github.io/metabodecon/reference/index.html)
+you get an overview of all functions provided by metabodecon.
+
+## Documentation
+
+metabodecon’s documentation is available at
+[spang-lab.github.io/metabodecon](https://spang-lab.github.io/metabodecon/).
+It includes pages about
+
+- [Getting
+  Started](https://spang-lab.github.io/metabodecon/articles/Get_Started.html)
+- [Contribution
+  Guidelines](https://spang-lab.github.io/metabodecon/articles/Contributing.html)
+- [Function
+  Reference](https://spang-lab.github.io/metabodecon/reference/index.html)

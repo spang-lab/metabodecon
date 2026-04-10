@@ -1,0 +1,96 @@
+# Contributing
+
+To contribute to this package, you should follow the below steps:
+
+1.  Create a issue at
+    [github.com/spang-lab/metabodecon/issues](https://github.com/spang-lab/metabodecon/issues)
+    describing the problem or feature you want to work on.
+2.  Wait until the issue is approved by a package maintainer.
+3.  Create a fork of the repository at
+    [github.com/spang-lab/metabodecon](https://github.com/spang-lab/metabodecon)
+4.  Make your edits as described in section [Making
+    Edits](#making-edits)
+5.  Create a pull request at
+    [github.com/spang-lab/metabodecon/pulls](https://github.com/spang-lab/metabodecon/pulls)
+
+## Making Edits
+
+Things you can update, are:
+
+1.  Function code in folder
+    [R](https://spang-lab.github.io/metabodecon/articles/R)
+2.  Function documentation in folder
+    [R](https://spang-lab.github.io/metabodecon/articles/R)
+3.  Package documentation in folder `vignettes`
+4.  Test cases in folder
+    [tests](https://spang-lab.github.io/metabodecon/articles/tests)
+5.  Dependencies in file
+    [DESCRIPTION](https://spang-lab.github.io/metabodecon/articles/DESCRIPTION)
+6.  Authors in file
+    [DESCRIPTION](https://spang-lab.github.io/metabodecon/articles/DESCRIPTION)
+
+Whenever you update any of those things, you should run the below
+commands to check that everything is still working as expected:
+
+``` r
+devtools::document() # Build files in man folder
+devtools::spell_check() # Check spelling (add false positives to inst/WORDLIST)
+urlchecker::url_check() # Check URLs
+run_tests(all = TRUE) # Execute tests from tests folder inkl. slow tests
+devtools::run_examples(run_donttest = TRUE) # Run all examples in the package
+devtools::check() # Check package formalities
+devtools::install() # Install as required by next commands
+toscutil::check_pkg_docs() # Check function documentation for missing tags
+pkgdown::build_site() # Build website in docs folder
+```
+
+After doing these steps, you can push your changes to Github and create
+a pull request.
+
+## Releasing to CRAN
+
+Whenever a package maintainer wants to release a new version of the
+package to CRAN, they should:
+
+1.  Check that all [release
+    requirements](https://r-pkgs.org/release.html#sec-release-initial)
+    and [CRAN
+    Policies](https://cran.r-project.org/web/packages/policies.html) are
+    fulfilled
+2.  Use the following commands to do a final check of the package and
+    release it to CRAN
+
+``` r
+# Check spelling and URLs. False positive findings of spell check should be
+# added to inst/WORDLIST.
+devtools::spell_check()
+urlchecker::url_check()
+
+# Slower, but more realistic tests than normal devtools::check()
+devtools::check(
+    args = c("--as-cran", "--timings"),
+    error_on = ("warning"),
+    check_dir = "../metabodecon-RCMDcheck",
+    remote = TRUE,
+    manual = TRUE,
+    run_dont_test = TRUE
+)
+
+# Check reverse dependencies. For details see:
+# https://r-pkgs.org/release.html#sec-release-revdep-checks
+pak::pkg_install("r-lib/revdepcheck")
+revdepcheck::revdep_check(num_workers = 8) # working again at 2025/09/12
+
+# Send your package to CRAN's builder services. You should receive an e-mail
+# within about 30 minutes with a link to the check results. Checking with
+# check_win_devel is required by CRAN policy and will (also) be done as part
+# of CRAN's incoming checks.
+devtools::check_win_oldrelease()
+devtools::check_win_release()
+devtools::check_win_devel()
+devtools::check_mac_release()
+
+# Use the following command to submit the package to CRAN or submit via the web
+# interface available at https://cran.r-project.org/submit.html.
+devtools::submit_cran()
+```

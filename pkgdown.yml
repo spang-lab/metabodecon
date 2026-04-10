@@ -1,5 +1,5 @@
 pandoc: 3.1.11
-pkgdown: 2.1.3
+pkgdown: 2.2.0
 pkgdown_sha: ~
 articles:
   Classes: Classes.html
@@ -8,8 +8,9 @@ articles:
   Datasets: Datasets.html
   FAQ: FAQ.html
   Get_Started: Get_Started.html
+  MDM: MDM.html
   MetaboDecon1D: MetaboDecon1D.html
-last_built: 2025-09-17T19:41Z
+last_built: 2026-04-10T01:12Z
 urls:
   reference: https://spang-lab.github.io/metabodecon/reference
   article: https://spang-lab.github.io/metabodecon/articles

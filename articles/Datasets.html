@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metabodecon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.6.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.7.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -39,6 +39,7 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/Get_Started.html">Get Started</a></li>
+    <li><a class="dropdown-item" href="../articles/MDM.html">Metabodecon Models</a></li>
     <li><a class="dropdown-item" href="../articles/FAQ.html">FAQ</a></li>
     <li><a class="dropdown-item" href="../articles/MetaboDecon1D.html">MetaboDecon1D</a></li>
     <li><a class="dropdown-item" href="../articles/Datasets.html">Datasets</a></li>
@@ -69,7 +70,7 @@
       <img src="../logo.svg" class="logo" alt=""><h1>Datasets</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/v1.6.3/vignettes/Datasets.Rmd" class="external-link"><code>vignettes/Datasets.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/main/vignettes/Datasets.Rmd" class="external-link"><code>vignettes/Datasets.Rmd</code></a></small>
       <div class="d-none name"><code>Datasets.Rmd</code></div>
     </div>
 
@@ -83,6 +84,8 @@ describes each of these datasets in details, i.e.</p>
 <li>how they were measured</li>
 <li>how you can access the dataset</li>
 </ul>
+<p>For package users, the canonical way to access file-based example
+datasets is <code><a href="../reference/download_example_datasets.html">download_example_datasets()</a></code>.</p>
 <div class="section level2">
 <h2 id="the-blood-dataset">The Blood dataset <a id="blood"></a><a class="anchor" aria-label="anchor" href="#the-blood-dataset"></a>
 </h2>
@@ -136,6 +139,27 @@ simulation process, see the source code of function <a href="https://github.com/
 </figcaption></figure>
 </div>
 <div class="section level2">
+<h2 id="the-aki-dataset">The AKI dataset <a id="aki"></a><a class="anchor" aria-label="anchor" href="#the-aki-dataset"></a>
+</h2>
+<p>The <em>aki</em> dataset contains 106 one-dimensional urine NMR
+spectra in Bruker format from the AKI study by Zacharias et al. (2012).
+The measured samples come from a clinical cohort collected 24 hours
+after surgery and were analyzed to compare patients who developed acute
+kidney injury with those who did not. In this dataset, 72 spectra are
+labeled as controls (<code>Biopsy kidney normal</code>) and 34 spectra
+as AKI cases (<code>Acute Kidney Injury</code>).</p>
+<p>Within <code>misc/example_datasets/bruker/aki</code>, the full
+phenotypic metadata is stored in <code>aki/s_MTBLS24.txt</code>, and the
+corresponding spectra are stored in the remaining sample directories of
+the <code>aki</code> folder.</p>
+<p>The phenotype table and spectra files originate from the public
+MetaboLights study <code>MTBLS24</code> (<a href="https://www.ebi.ac.uk/metabolights/MTBLS24" class="external-link uri">https://www.ebi.ac.uk/metabolights/MTBLS24</a>). For
+<code>metabodecon</code>, these files are filtered to the relevant
+subset (phenodata plus required Bruker files for reading spectra), then
+packaged into <code>example_datasets.zip</code> and re-distributed as a
+convenience download.</p>
+</div>
+<div class="section level2">
 <h2 id="how-to-download-datasets">How to download datasets<a class="anchor" aria-label="anchor" href="#how-to-download-datasets"></a>
 </h2>
 <p>Due to the size constraints for R packages, most of the above
@@ -171,7 +195,7 @@ jcamp-dx format</li>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer>

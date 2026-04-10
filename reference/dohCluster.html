@@ -23,7 +23,7 @@ Direct usage of this function has been deprecated with metabodecon version
 
     <a class="navbar-brand me-2" href="../index.html">metabodecon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.6.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.7.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,7 @@ Direct usage of this function has been deprecated with metabodecon version
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/Get_Started.html">Get Started</a></li>
+    <li><a class="dropdown-item" href="../articles/MDM.html">Metabodecon Models</a></li>
     <li><a class="dropdown-item" href="../articles/FAQ.html">FAQ</a></li>
     <li><a class="dropdown-item" href="../articles/MetaboDecon1D.html">MetaboDecon1D</a></li>
     <li><a class="dropdown-item" href="../articles/Datasets.html">Datasets</a></li>
@@ -54,7 +55,7 @@ Direct usage of this function has been deprecated with metabodecon version
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.svg" class="logo" alt=""><h1>Cluster Based Peak Alignment</h1>
-      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/v1.6.3/R/align.R" class="external-link"><code>R/align.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/main/R/align.R" class="external-link"><code>R/align.R</code></a></small>
       <div class="d-none name"><code>dohCluster.Rd</code></div>
     </div>
 
@@ -72,14 +73,7 @@ Alignment algorithm proposed by Vu et al. (2011) in
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">dohCluster</span><span class="op">(</span></span>
-<span>  <span class="va">X</span>,</span>
-<span>  <span class="va">peakList</span>,</span>
-<span>  refInd <span class="op">=</span> <span class="fl">0</span>,</span>
-<span>  maxShift <span class="op">=</span> <span class="fl">100</span>,</span>
-<span>  acceptLostPeak <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">dohCluster</span><span class="op">(</span><span class="va">X</span>, <span class="va">peakList</span>, refInd <span class="op">=</span> <span class="fl">0</span>, maxShift <span class="op">=</span> <span class="fl">100</span>, verbose <span class="op">=</span> <span class="cn">TRUE</span>, method <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -104,14 +98,14 @@ signals will be aligned to.</p></dd>
 <dd><p>Maximum number of points a value can be moved.</p></dd>
 
 
-<dt id="arg-acceptlostpeak">acceptLostPeak<a class="anchor" aria-label="anchor" href="#arg-acceptlostpeak"></a></dt>
-<dd><p>Whether to allow the the alignment algorithm to ignore
-peaks that cannot easily be aligned with the reference spectrum.</p></dd>
-
-
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
 <dd><p>Whether to print additional information during the alignment
 process.</p></dd>
+
+
+<dt id="arg-method">method<a class="anchor" aria-label="anchor" href="#arg-method"></a></dt>
+<dd><p>Alignment backend. <code>1</code> uses <code><a href="https://rdrr.io/pkg/speaq/man/hClustAlign.html" class="external-link">speaq::hClustAlign()</a></code>, <code>2</code>
+(default) uses metabodecon's built-in implementation.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -141,21 +135,14 @@ each spectrum.</p>
 <span class="r-in"><span>        peakList <span class="op">=</span> <span class="va">feat</span><span class="op">$</span><span class="va">peakList</span>,</span></span>
 <span class="r-in"><span>        refInd <span class="op">=</span> <span class="va">refObj</span><span class="op">$</span><span class="va">refInd</span>,</span></span>
 <span class="r-in"><span>        maxShift <span class="op">=</span> <span class="fl">100</span>,</span></span>
-<span class="r-in"><span>        acceptLostPeak <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
 <span class="r-in"><span>        verbose <span class="op">=</span> <span class="cn">TRUE</span></span></span>
 <span class="r-in"><span>    <span class="op">)</span></span></span>
 <span class="r-in"><span>    <span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">hclObj</span>, <span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  --------------------------------</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  dohCluster will run with maxShift= 100</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  If you want dohCluster to detect the optimal maxShift automatically,</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  use dohCluster(..., maxShift = NULL, ...)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  --------------------------------</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  aligning spectrum  1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Median pearson correlation of aligned spectra: 0.9977171</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Alignment time:  0.0001833333  minutesList of 2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2026-04-10 01:12:11.43 Running dohCluster with maxShift = 100 on 2 spectra</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2026-04-10 01:12:11.43 Aligning spectrum 1/2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2026-04-10 01:12:11.44 Finished dohCluster in 0.0 s</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> List of 2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ Y           : num [1:2, 1:2048] 0.0122 0.0105 0.0122 0.0106 0.0122 ...</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ new_peakList:List of 2</span>
 </code></pre></div>
@@ -169,7 +156,7 @@ each spectrum.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer></div>

@@ -1,0 +1,203 @@
+# Metabodecon Classes
+
+Metabodecon introduces a set of classes to highlight the presence of
+certain elements in corresponding objects. The order of elements may
+vary between different versions of Metabodecon, thus elements should
+always be accessed by name, for example, using `x$si` or `x[["cs"]]`.
+Elements marked as optional can be present, NULL or missing, i.e. they
+should only be used conditionally.
+
+The classes itself are described in section [Class
+Overview](#class-overview). The elements associated with a class are
+described in section [Elements](#elements). A graphical visualization of
+the classes and their corresponding functions is given in figure
+[Metabodecon Workflow](#metabodecon-workflow).
+
+## Class Overview
+
+### spectrum
+
+Represents one NMR spectrum. Objects of class ‘spectrum’ have at least
+elements 1-3 from section [Elements v1.2+](#elements-v1-2).
+
+### decon0
+
+Represents one deconvoluted NMR spectrum stored in the old
+[MetaboDecon1D()](https://spang-lab.github.io/metabodecon/reference/MetaboDecon1D.html)
+format. Objects of class ‘decon0’ have at least elements 1-18 from
+section [Elements v0.2+](#elements-v0-2).
+
+### decon1
+
+Represents one deconvoluted NMR spectrum stored in the backwards
+compatible
+[generate_lorentz_curves()](https://spang-lab.github.io/metabodecon/reference/generate_lorentz_curves.html)
+format. Objects of class ‘decon1’ have all elements from section
+[Elements v0.2+](#elements-v0-2).
+
+### decon2
+
+Represents one deconvoluted NMR spectrum stored in the new
+[deconvolute()](https://spang-lab.github.io/metabodecon/reference/deconvolute())
+format. Objects of class ‘decon2’ have all elements from section
+[Elements v1.2+](#elements-v1-2) with elements `sit$al` and `lcpar$x0al`
+set to `NULL`.
+
+### align
+
+Represents one deconvoluted NMR spectrum for which the individual peaks
+have been aligned using
+[`align()`](https://spang-lab.github.io/metabodecon/reference/align.md).
+Objects of class ‘align’ have all elements from section [Elements
+v1.2+](#elements-v1-2).
+
+### Collections
+
+The classes mentioned above represent individual objects, such as a
+single spectrum, deconvolution, or alignment. However, it is often
+useful to describe collections of these objects, such as a list of
+spectra or deconvolutions. Therefore, for each individual class, a
+corresponding “collection” class is provided. These collection classes
+are named: [spectra](#spectra), [decons0](#decons0),
+[decons1](#decons1), [decons2](#decons2), and [aligns](#aligns).
+
+## Elements
+
+### Elements v1.2+
+
+1.  `cs`: Vector of chemical shifts (CS) in parts per million (ppm).
+    Must be of the same length as `si`.
+2.  `si`: Vector of signal intensities (SI) in arbitrary units (au).
+    Element `si[i]` is the signal intensity measured at chemical shift
+    `cs[i]`, i.e. `si` must be of the same length as `cs`.
+3.  `meta`: Optional. List of metadata about the spectrum, e.g.:
+    - `name`: Optional. The name of the spectrum, e.g. `"Blood 1"` or
+      `"Urine 2"`.
+    - `path`: Optional. The path of the file/folder containing the
+      spectrum data. E.g. `"example_datasets/jcampdx/urine/urine_1.dx"`
+      or `"example_datasets/bruker/urine/urine"`.
+    - `type`: Optional. The type of experiment, e.g. `"H1 CPMG"` or
+      `"H1 NOESY"`.
+    - `fq`: Optional. Vector of signal frequencies in Hertz (Hz). Must
+      be of the same length as `si` and `cs`.
+    - `mfs`: Optional. Magnetic field strength in Tesla, e.g. `14.1`.
+    - `simpar`: Optional. True Lorentz Curve parameters. List with
+      elements `A`, `lambda` and `x0`. For details see element `lcpar`.
+      Only available if a spectrum has been simulated.
+4.  `args`: Optional. List of deconvolution parameters, i.e.:
+    - `nfit`: Optional. The number of fitting iterations.
+    - `smopts`: Optional. The smoothing parameters used for the
+      deconvolution.
+    - `delta`: Optional. The threshold used for peak filtering.
+    - `sfr`: Optional. Borders of the signal free region in ppm.
+    - `wshw`: Optional. Water signal half width in ppm.
+    - `ask`: Optional. Whether interactive mode was enabled.
+    - `verbose`: Optional. Whether verbose output was enabled.
+    - `bwc`: Optional. Level of backwards compatibility used by internal
+      calculations.
+    - `nworkers`: Optional. Number of workers used for parallel
+      processing.
+    - `use_rust`: Optional. Whether the Rust backend was used for
+      deconvolution. *(v1.4.0+)*
+    - `rtyp`: Optional. Object type returned by internal function
+      `deconvolute_spectrum`. *(v1.4.0+)*
+5.  `sit`: Dataframe of Signal Intensities (SI) after applying various
+    transformations:
+    - `wsrm`: SIs after Water Signal Removal (WSRM),
+    - `nvrm`: SIs after WSRM and Negative Value Removal (NVRM).
+    - `sm`: SIs after WSRM, NVRM and smoothing.
+    - `sup`: SIs as superposition of Lorentz Curves.
+    - `supal`: SIs as superposition of aligned Lorentz Curves.
+      *(v1.4.0+)*
+    - `al`: SIs as integrals of aligned Lorentz Curves. I.e., the
+      intensity of a peak-center-datapoint equals the integral value of
+      the corresponding peak. The intensity of a other datapoints is
+      zero.
+6.  `peak`: Dataframe of peak triplets found during peak selection:
+    - `center`: Indices of peak centers.
+    - `left`: Indices of left borders.
+    - `right`: Indices of right peak borders.
+7.  `lcpar`: Dataframe of Lorentz Curve parameters after parameter
+    approximation:
+    - `A`: Amplitude parameter.
+    - `lambda`: Halfwidth parameter.
+    - `x0`: Center parameter.
+    - `x0al`: Center parameter after the spectrum has been aligned.
+8.  `mse`: List of Mean squared error (MSE):
+    - `raw`: MSE between `si` and `sit$sup`
+    - `norm`: MSE between `si` and `sit$sup`, divided by `sum(sit$sup)`
+    - `sm`: MSE between `sit$sm` and `sit$sup`
+    - `smnorm`: MSE between `sit$sm` and `sit$sup`, divided by
+      `sum(sit$sup)`. Equals `mse_normed` in [Elements
+      v0.2+](#elements-v0-2).
+
+### Elements v0.2+
+
+1.  `filename`: Name of the analyzed spectrum.
+2.  `x_values`: Scaled datapoint numbers (SDP). Datapoints are numbered
+    in descending order going from N-1 to 0, where N equals the total
+    amount of data points. Scaled data point numbers are obtained by
+    dividing these numbers by the scale factor of the x-axis. I.e., for
+    a spectrum with 131072 datapoints and a scale factor of 1000, the
+    first scale datapoint has value 131.071 and the last one has value
+    0.
+3.  `x_values_ppm`: The chemical shift of each datapoint in ppm (parts
+    per million).
+4.  `y_values`: The scaled signal intensity (SSI) of each datapoint.
+    Obtained by reading the raw intensity values from the provided
+    `data_path` as integers and dividing them scale factor of the
+    y-axis.
+5.  `spectrum_superposition`: Scaled signal intensity obtained by
+    calculating the sum of all estimated Lorentz Curves for each data
+    point.
+6.  `mse_normed`: where is the normalized, smoothed signal intensity of
+    data point i and is the normalized superposition of Lorentz Curves
+    at data point i. Normalized in this context means that the vectors
+    were scaled so the sum over all data points equals 1.
+7.  `peak_triplets_middle`: Chemical shift of peak centers in ppm.
+8.  `peak_triplets_left`: Chemical shift of left peak borders in ppm.
+9.  `peak_triplets_right`: Chemical shift of right peak borders in ppm.
+10. `index_peak_triplets_middle`: Datapoint numbers of peak centers.
+11. `index_peak_triplets_left`: Datapoint numbers of left peak borders.
+12. `index_peak_triplets_right`: Datapoint numbers of right peak
+    borders.
+13. `integrals`: Integrals of the Lorentz Curves.
+14. `signal_free_region`: Borders of the signal free region of the
+    spectrum in scaled datapoint numbers. Left of the first element and
+    right of the second element no signals are expected. Only available
+    if
+    [`MetaboDecon1D()`](https://spang-lab.github.io/metabodecon/reference/MetaboDecon1D.md)
+    was called with more than one spectra as input.
+15. `range_water_signal_ppm`: Half width of the water signal in ppm.
+    Potential signals in this region are ignored. Only available if
+    [`MetaboDecon1D()`](https://spang-lab.github.io/metabodecon/reference/MetaboDecon1D.md)
+    was called with more than one spectra as input.
+16. `A`: Amplitude parameter of the Lorentz Curves. Provided as negative
+    number to maintain backwards compatibility with MetaboDecon1D. The
+    area under the Lorentz Curve is calculated as .
+17. `lambda`: Half width of the Lorentz Curves in scaled data points.
+    Provided as negative value to maintain backwards compatibility with
+    MetaboDecon1D. Example: a value of -0.00525 corresponds to 5.25 data
+    points. With a spectral width of 12019 Hz and 131072 data points
+    this corresponds to a halfwidth at half height of approx. 0.48 Hz.
+    The corresponding calculation is: (12019 Hz / 131071 dp) \* 5.25 dp.
+18. `x_0`: Center of the Lorentz Curves in scaled data points.
+19. `y_values_raw`: The raw signal intensity of each datapoint
+20. `x_values_hz`: The frequency of each datapoint in Hz
+21. `mse_normed_raw`: Normalized mean squared error when comparing the
+    raw signal intensities with the superposition of Lorentz Curves.
+22. `x_0_hz`: Center of the Lorentz Curves in Hz.
+23. `x_0_dp`: Center of the Lorentz Curves in data points.
+24. `x_0_ppm`: Center of the Lorentz Curves in ppm.
+25. `A_hz`: Amplitude parameter of the Lorentz Curves in Hz.
+26. `A_dp`: Amplitude parameter of the Lorentz Curves in data points.
+27. `A_ppm`: Amplitude parameter of the Lorentz Curves in ppm.
+28. `lambda_hz`: Half width of the Lorentz Curves in Hz.
+29. `lambda_dp`: Half width of the Lorentz Curves in data points.
+30. `lambda_ppm`: Half width of the Lorentz Curves in ppm.
+
+## Metabodecon Workflow
+
+![Metabodecon Workflow](Classes/metabodecon_workflow.svg)
+
+Metabodecon Workflow

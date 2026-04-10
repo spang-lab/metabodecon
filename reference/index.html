@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metabodecon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.6.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.7.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -19,6 +19,7 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/Get_Started.html">Get Started</a></li>
+    <li><a class="dropdown-item" href="../articles/MDM.html">Metabodecon Models</a></li>
     <li><a class="dropdown-item" href="../articles/FAQ.html">FAQ</a></li>
     <li><a class="dropdown-item" href="../articles/MetaboDecon1D.html">MetaboDecon1D</a></li>
     <li><a class="dropdown-item" href="../articles/Datasets.html">Datasets</a></li>
@@ -45,8 +46,7 @@
 
       <div class="section-desc"><p>Functions to deconvolute a spectrum into its individual peaks.</p></div>
 
-
-    </div><div class="section level2">
+      <dl></dl></div><div class="section level2">
 
 
 
@@ -57,43 +57,68 @@
 
         </dt>
         <dd>Read one or more spectra from Disk</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="read_spectra.html">read_spectra()</a></code>
 
         </dt>
         <dd>Read one or more spectra from Disk</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="plot_spectrum.html">plot_spectrum()</a></code>
           <span class="badge lifecycle lifecycle-experimental">experimental</span>
         </dt>
         <dd>Plot Spectrum</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="plot_spectra.html">plot_spectra()</a></code>
 
         </dt>
         <dd>Plot Spectra</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="draw_spectrum.html">draw_spectrum()</a></code>
           <span class="badge lifecycle lifecycle-experimental">experimental</span>
         </dt>
         <dd>Draw Spectrum</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="deconvolute.html">deconvolute()</a></code>
 
         </dt>
         <dd>Deconvolute one or more NMR spectra</dd>
+
+        <dt>
+
+          <code><a href="decon_cachedir.html">decon_cachedir()</a></code>
+
+        </dt>
+        <dd>Get Default Cache Directory for Deconvolution</dd>
+
+        <dt>
+
+          <code><a href="mdm.html">fit_mdm()</a></code> <code><a href="mdm.html">cv_mdm()</a></code> <code><a href="mdm.html">benchmark_mdm()</a></code> <code><a href="mdm.html">get_pgrid()</a></code>
+          <span class="badge lifecycle lifecycle-experimental">experimental</span>
+        </dt>
+        <dd>Metabodecon Models</dd>
+
+        <dt>
+
+          <code><a href="mdm_methods.html">predict(<i>&lt;mdm&gt;</i>)</a></code> <code><a href="mdm_methods.html">print(<i>&lt;mdm&gt;</i>)</a></code> <code><a href="mdm_methods.html">coef(<i>&lt;mdm&gt;</i>)</a></code> <code><a href="mdm_methods.html">plot(<i>&lt;mdm&gt;</i>)</a></code> <code><a href="mdm_methods.html">summary(<i>&lt;mdm&gt;</i>)</a></code> <code><a href="mdm_methods.html">print(<i>&lt;summary.mdm&gt;</i>)</a></code>
+          <span class="badge lifecycle lifecycle-experimental">experimental</span>
+        </dt>
+        <dd>S3 methods for mdm objects</dd>
       </dl></div><div class="section level2">
       <h2 id="alignment">Alignment<a class="anchor" aria-label="anchor" href="#alignment"></a></h2>
 
       <div class="section-desc"><p>Functions to align multiple spectra.</p></div>
 
-
-    </div><div class="section level2">
+      <dl></dl></div><div class="section level2">
 
 
 
@@ -104,37 +129,43 @@
 
         </dt>
         <dd>Align Spectra</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="combine_peaks.html">combine_peaks()</a></code>
           <span class="badge lifecycle lifecycle-deprecated">deprecated</span>
         </dt>
         <dd>Combine Peaks</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="dohCluster.html">dohCluster()</a></code>
           <span class="badge lifecycle lifecycle-deprecated">deprecated</span>
         </dt>
         <dd>Cluster Based Peak Alignment</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="gen_feat_mat.html">gen_feat_mat()</a></code>
           <span class="badge lifecycle lifecycle-deprecated">deprecated</span>
         </dt>
         <dd>Generate Feature Matrix.</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="get_ppm_range.html">get_ppm_range()</a></code>
           <span class="badge lifecycle lifecycle-deprecated">deprecated</span>
         </dt>
         <dd>Get PPM Range covered by Spectra</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="speaq_align.html">speaq_align()</a></code>
           <span class="badge lifecycle lifecycle-deprecated">deprecated</span>
         </dt>
         <dd>Align Signals using 'speaq'</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="get_si_mat.html">get_si_mat()</a></code>
 
@@ -145,8 +176,7 @@
 
       <div class="section-desc"><p>Functions to download and/or find example datasets.</p></div>
 
-
-    </div><div class="section level2">
+      <dl></dl></div><div class="section level2">
 
 
 
@@ -157,43 +187,50 @@
 
         </dt>
         <dd>Return path to metabodecon's data directory</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="datadir_persistent.html">datadir_persistent()</a></code>
 
         </dt>
         <dd>Persistent Data Directory</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="datadir_temp.html">datadir_temp()</a></code>
 
         </dt>
         <dd>Temporary Data Directory</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="download_example_datasets.html">download_example_datasets()</a></code>
 
         </dt>
         <dd>Download metabodecon Example Datasets</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="metabodecon_file.html">metabodecon_file()</a></code>
 
         </dt>
         <dd>Return Path to File or Directory in metabodecon Package</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="sim.html">sim</a></code>
 
         </dt>
         <dd>The Sim Dataset</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="sap.html">sap</a></code>
 
         </dt>
         <dd>The SAP Dataset</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="tmpdir.html">tmpdir()</a></code>
 
@@ -204,8 +241,7 @@
 
       <div class="section-desc"><p>Utility functions, e.g. for converting between units or for calculating y values for a given lorentz curve.</p></div>
 
-
-    </div><div class="section level2">
+      <dl></dl></div><div class="section level2">
 
 
 
@@ -216,73 +252,99 @@
 
         </dt>
         <dd>Convert to a Metabodecon Object</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="check_mdrb.html">check_mdrb()</a></code> <code><a href="check_mdrb.html">check_mdrb_deps()</a></code>
 
         </dt>
         <dd>Check Rust Backend Requirements</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="convert_pos.html">convert_pos()</a></code> <code><a href="convert_pos.html">convert_width()</a></code>
 
         </dt>
         <dd>Convert from unit A to unit B</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="evalwith.html">evalwith()</a></code>
 
         </dt>
         <dd>Evaluate an expression with predefined global state</dd>
-      </dl><dl><dt>
+
+        <dt>
+
+          <code><a href="get_names.html">get_names()</a></code>
+
+        </dt>
+        <dd>Returns the names of a metabodecon collection object.</dd>
+
+        <dt>
+
+          <code><a href="headtail.html">headtail()</a></code>
+
+        </dt>
+        <dd>Show head and tail rows of a matrix-like object</dd>
+
+        <dt>
 
           <code><a href="install_mdrb.html">install_mdrb()</a></code>
 
         </dt>
         <dd>Install Rust Backend</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="is_metabodecon_class.html">is_spectrum()</a></code> <code><a href="is_metabodecon_class.html">is_decon0()</a></code> <code><a href="is_metabodecon_class.html">is_decon1()</a></code> <code><a href="is_metabodecon_class.html">is_decon2()</a></code> <code><a href="is_metabodecon_class.html">is_align()</a></code> <code><a href="is_metabodecon_class.html">is_spectra()</a></code> <code><a href="is_metabodecon_class.html">is_decons0()</a></code> <code><a href="is_metabodecon_class.html">is_decons1()</a></code> <code><a href="is_metabodecon_class.html">is_decons2()</a></code> <code><a href="is_metabodecon_class.html">is_aligns()</a></code>
 
         </dt>
         <dd>Is an Object from a Metabodecon Class?</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="make_spectrum.html">make_spectrum()</a></code>
 
         </dt>
         <dd>Create a Spectrum Object</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="print_methods.html">print(<i>&lt;spectrum&gt;</i>)</a></code> <code><a href="print_methods.html">print(<i>&lt;decon1&gt;</i>)</a></code> <code><a href="print_methods.html">print(<i>&lt;decon2&gt;</i>)</a></code> <code><a href="print_methods.html">print(<i>&lt;align&gt;</i>)</a></code> <code><a href="print_methods.html">print(<i>&lt;spectra&gt;</i>)</a></code> <code><a href="print_methods.html">print(<i>&lt;decons1&gt;</i>)</a></code> <code><a href="print_methods.html">print(<i>&lt;decons2&gt;</i>)</a></code> <code><a href="print_methods.html">print(<i>&lt;aligns&gt;</i>)</a></code>
 
         </dt>
         <dd>S3 Methods for Printing Metabodecon Objects</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="simulate_spectrum.html">simulate_spectrum()</a></code>
           <span class="badge lifecycle lifecycle-experimental">experimental</span>
         </dt>
         <dd>Simulate a 1D NMR Spectrum</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="transp.html">transp()</a></code>
 
         </dt>
         <dd>Make transparent</dd>
-      </dl><dl><dt>
 
-          <code><a href="tree.html">tree()</a></code>
+        <dt>
+
+          <code><a href="tree.html">tree()</a></code> <code><a href="tree.html">tree_preview()</a></code>
 
         </dt>
         <dd>Print the Structure of a Directory Tree</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="width.html">width()</a></code>
 
         </dt>
         <dd>Calculate the Width of a Numeric Vector</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="aaa_Get_Started.html">aaa_Get_Started()</a></code> <code><a href="aaa_Get_Started.html">get_started()</a></code>
 
@@ -293,8 +355,7 @@
 
       <div class="section-desc"><p>Deprecated functions. These functions should no longer be used. They will be retained for a short period of time to give users time to migrate to their replacement function, but will be removed in future releases of the package.</p></div>
 
-
-    </div><div class="section level2">
+      <dl></dl></div><div class="section level2">
 
 
 
@@ -305,37 +366,43 @@
           <span class="badge lifecycle lifecycle-deprecated">deprecated</span>
         </dt>
         <dd>Retrieve directory path of an example dataset</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="MetaboDecon1D.html">MetaboDecon1D()</a></code>
           <span class="badge lifecycle lifecycle-deprecated">deprecated</span>
         </dt>
         <dd>Deconvolute 1D NMR spectrum</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="calculate_lorentz_curves.html">calculate_lorentz_curves()</a></code>
           <span class="badge lifecycle lifecycle-deprecated">deprecated</span>
         </dt>
         <dd>Calculate lorentz curves for each analyzed spectrum</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="plot_lorentz_curves_save_as_png.html">plot_lorentz_curves_save_as_png()</a></code>
           <span class="badge lifecycle lifecycle-deprecated">deprecated</span>
         </dt>
         <dd>Plot lorentz curves for variable range</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="plot_spectrum_superposition_save_as_png.html">plot_spectrum_superposition_save_as_png()</a></code>
           <span class="badge lifecycle lifecycle-deprecated">deprecated</span>
         </dt>
         <dd>Plot spectrum approx for variable range</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="plot_triplets.html">plot_triplets()</a></code>
           <span class="badge lifecycle lifecycle-deprecated">deprecated</span>
         </dt>
         <dd>Plot peak triplets for variable range</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="generate_lorentz_curves.html">generate_lorentz_curves()</a></code> <code><a href="generate_lorentz_curves.html">generate_lorentz_curves_sim()</a></code>
           <span class="badge lifecycle lifecycle-deprecated">deprecated</span>
@@ -351,7 +418,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer></div>
