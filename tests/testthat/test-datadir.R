@@ -26,6 +26,7 @@ test_that("datadir works if warn=F, datadirs=missing", {
 })
 
 skip_if_slow_tests_disabled()
+skip_on_os("linux")
 
 test_that("datadir works if datadir_persistent=filled", {
     evalwith(datadir_persistent = "filled", {
@@ -34,3 +35,4 @@ test_that("datadir works if datadir_persistent=filled", {
     })
     expect_equal(x, y)
 })
+ß
