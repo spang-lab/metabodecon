@@ -378,9 +378,9 @@ spectra. This internally deconvolutes and aligns them against the
 reference spectrum stored in the model:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">preds</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">mdm_tuned</span>, <span class="va">spectra_te</span>, type <span class="op">=</span> <span class="st">"all"</span>, verbosity <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## 2026-04-10 01:12:41.44 Deconvoluting 13 spectra with 1 nworkers</span></span>
-<span><span class="co">## 2026-04-10 01:12:41.54 Aligning spectra with 1 nworkers</span></span>
-<span><span class="co">## 2026-04-10 01:12:41.61 Predicting with s=lambda.min</span></span></code></pre>
+<pre><code><span><span class="co">## 2026-04-10 05:51:02.29 Deconvoluting 13 spectra with 1 nworkers</span></span>
+<span><span class="co">## 2026-04-10 05:51:02.39 Aligning spectra with 1 nworkers</span></span>
+<span><span class="co">## 2026-04-10 05:51:02.45 Predicting with s=lambda.min</span></span></code></pre>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>    sample <span class="op">=</span> <span class="fu"><a href="../reference/get_names.html">get_names</a></span><span class="op">(</span><span class="va">spectra_te</span><span class="op">)</span>,</span>

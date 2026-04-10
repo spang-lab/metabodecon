@@ -253,24 +253,24 @@ this point we have n = 4 unique labels (1.024, 1.025, 1.027 and 1.028).
 
 ``` r
 decon <- deconvolute(sim[[1]], sfr = c(3.55, 3.35))
-#> 2026-04-10 01:12:11.85 Starting deconvolution of 1 spectrum using 1 worker
-#> 2026-04-10 01:12:11.85 Starting deconvolution of sim_01 using R (legacy) backend
-#> 2026-04-10 01:12:11.85 Removing water signal
-#> 2026-04-10 01:12:11.85 Removing negative signals
-#> 2026-04-10 01:12:11.85 Smoothing signals
-#> 2026-04-10 01:12:11.86 Starting peak selection
-#> 2026-04-10 01:12:11.86 Detected 314 peaks
-#> 2026-04-10 01:12:11.86 Removing peaks with low scores
-#> 2026-04-10 01:12:11.86 Removed 287 peaks
-#> 2026-04-10 01:12:11.86 Initializing Lorentz curves
-#> 2026-04-10 01:12:11.86 MSE at peak tiplet positions: 4.0838805770844048836921
-#> 2026-04-10 01:12:11.86 Refining Lorentz Curves
-#> 2026-04-10 01:12:11.86 MSE at peak tiplet positions: 0.1609359876216345797140
-#> 2026-04-10 01:12:11.87 MSE at peak tiplet positions: 0.0228015051613790313556
-#> 2026-04-10 01:12:11.87 MSE at peak tiplet positions: 0.0071638016610617799920
-#> 2026-04-10 01:12:11.87 Formatting return object as decon2
-#> 2026-04-10 01:12:11.87 Finished deconvolution of sim_01
-#> 2026-04-10 01:12:11.87 Finished deconvolution of 1 spectrum in 0.018 secs
+#> 2026-04-10 05:50:34.37 Starting deconvolution of 1 spectrum using 1 worker
+#> 2026-04-10 05:50:34.37 Starting deconvolution of sim_01 using R (legacy) backend
+#> 2026-04-10 05:50:34.37 Removing water signal
+#> 2026-04-10 05:50:34.37 Removing negative signals
+#> 2026-04-10 05:50:34.37 Smoothing signals
+#> 2026-04-10 05:50:34.38 Starting peak selection
+#> 2026-04-10 05:50:34.38 Detected 314 peaks
+#> 2026-04-10 05:50:34.38 Removing peaks with low scores
+#> 2026-04-10 05:50:34.38 Removed 287 peaks
+#> 2026-04-10 05:50:34.38 Initializing Lorentz curves
+#> 2026-04-10 05:50:34.38 MSE at peak tiplet positions: 4.0838805770844048836921
+#> 2026-04-10 05:50:34.38 Refining Lorentz Curves
+#> 2026-04-10 05:50:34.38 MSE at peak tiplet positions: 0.1609359876216345797140
+#> 2026-04-10 05:50:34.38 MSE at peak tiplet positions: 0.0228015051613790313556
+#> 2026-04-10 05:50:34.38 MSE at peak tiplet positions: 0.0071638016610617799920
+#> 2026-04-10 05:50:34.39 Formatting return object as decon2
+#> 2026-04-10 05:50:34.39 Finished deconvolution of sim_01
+#> 2026-04-10 05:50:34.39 Finished deconvolution of 1 spectrum in 0.017 secs
 draw_spectrum(obj = decon)
 
 #> $plt_rgn_ndc
