@@ -339,7 +339,7 @@ align <- function(x,
 #' A single `align` or `decon2` object whose peaks define
 #' the rows of the output matrix. If `NULL` (default), the
 #' reference is auto-detected from `x` via
-#' [metabodecon::find_ref()]. Used by `combineMethod = 2`
+#' `find_ref()`. Used by `combineMethod = 2`
 #' only.
 #'
 #' @param drop_zero

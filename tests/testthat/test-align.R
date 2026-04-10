@@ -213,7 +213,7 @@ test_that("align can install its dependencies", {
     obj <- evalwith(
         output = "captured",
         message = "captured",
-        expr = aligns <- align(decons, install_deps = TRUE, verbose = FALSE)
+        expr = aligns <- align(decons, method = 1, install_deps = TRUE, verbose = FALSE)
     )
 
     deps_installed <- sapply(deps, requireNamespace, quietly = TRUE)

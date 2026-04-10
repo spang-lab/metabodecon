@@ -12,7 +12,7 @@ get_si_mat(x, ref = NULL, drop_zero = FALSE, maxCombine = 0, combineMethod = 2)
 \item{ref}{A single \code{align} or \code{decon2} object whose peaks define
 the rows of the output matrix. If \code{NULL} (default), the
 reference is auto-detected from \code{x} via
-\code{\link[=find_ref]{find_ref()}}. Used by \code{combineMethod = 2}
+\code{find_ref()}. Used by \code{combineMethod = 2}
 only.}
 
 \item{drop_zero}{If \code{TRUE}, rows where all values are zero are removed.}

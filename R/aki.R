@@ -677,7 +677,7 @@ grid_train_cv_lasso <- function() {
     aki <- read_aki_data()
     spectra_normed <- creatinine_normalize(aki$spectra)
     outdir <- file.path(datadir(), "grid_train_cv_lasso")
-    grid_deconvolute(spectra_normed, outdir)
+    grid_deconvolute_spectra(spectra_normed, outdir)
 }
 
 read_aki_data <- function() {
