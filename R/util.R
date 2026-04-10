@@ -80,6 +80,44 @@ width <- function(x) {
     diff(range(x))
 }
 
+#' @export
+#' @title Show head and tail rows of a matrix-like object
+#'
+#' @description
+#' Returns the first and last `n` rows of a matrix or data frame. If the input
+#' has fewer than `2*n` rows, overlapping rows are returned only once.
+#'
+#' @param x
+#' A matrix or data frame.
+#'
+#' @param n
+#' Number of rows to take from the top and bottom.
+#'
+#' @return
+#' A subset of `x` containing head and tail rows.
+#'
+#' @author 2024-2026 Tobias Schmidt: initial version.
+#'
+#' @examples
+#' x <- matrix(seq_len(30), nrow = 10)
+#' headtail(x, n = 2)
+headtail <- function(x, n = 6) {
+    ok <- is.matrix(x) || is.data.frame(x)
+    if (!ok) stop("x must be a matrix or data frame.")
+    if (!is_int(n) || length(n) != 1 || n < 0) {
+        stop("n must be a single non-negative integer.")
+    }
+
+    nr <- nrow(x)
+    if (nr == 0) return(x)
+
+    n_show <- min(as.integer(n), nr)
+    i_top <- seq_len(n_show)
+    i_bot <- seq.int(from = nr - n_show + 1, to = nr)
+    i <- unique(c(i_top, i_bot))
+    x[i, , drop = FALSE]
+}
+
 # Convert between Units (Private) #############################################
 
 #' @noRd
@@ -218,6 +256,39 @@ mkdirs <- function(path) {
 clear <- function(dir) {
     unlink(dir, recursive = TRUE, force = TRUE)
     mkdirs(dir)
+}
+
+#' @noRd
+#' @description
+#' Return a no-op cache object with the same methods we use from
+#' `cachem::cache_disk()`.
+#' @author 2026 Tobias Schmidt: initial version.
+null_cache <- function() {
+    cache <- new.env(parent = emptyenv())
+    cache$exists <- function(key) FALSE
+    cache$get <- function(key) NULL
+    cache$set <- function(key, value) invisible(NULL)
+    cache
+}
+
+#' @noRd
+#' @description
+#' Return a disk cache unless `path` is `NULL`, in which case a no-op cache is
+#' returned. The disk cache is configured without size, age, or entry-count
+#' limits, and with an effectively disabled pruning throttle.
+#' @author 2026 Tobias Schmidt: initial version.
+disk_cache <- function(path) {
+    if (is.null(path)) {
+        null_cache()
+    } else {
+        cachem::cache_disk(
+            dir = path,
+            max_size = Inf,
+            max_age = Inf,
+            max_n = Inf,
+            prune_rate = .Machine$integer.max
+        )
+    }
 }
 
 #' @noRd
@@ -513,7 +584,10 @@ str2 <- function(...) {
 
 #' @noRd
 #' @title Collapse a vector into a string
-#' @description Collapses a vector into a single string, with elements separated by a specified separator. Essentially a shorthand for `paste(x, collapse = sep)`.
+#' @description
+#' Collapses a vector into a single string, with elements separated by a
+#' specified separator. Essentially a shorthand for
+#' `paste(x, collapse = sep)`.
 #' @param x A vector to collapse.
 #' @param sep A string to use as the separator between elements. Default is ", ".
 #' @return A single string with elements of x separated by sep.
@@ -550,14 +624,135 @@ logf <- function(fmt,
 }
 
 #' @noRd
+#' @title Log formatted messages if verbosity is high enough
+#' @description
+#' Logs `fmt` via `logf()` if `verbosity >= 1` (`logv`) or `>= 2` (`logvv`).
+#' The `verbosity` argument defaults to `caller_verbosity()`, so it is
+#' automatically inherited from the calling environment when not supplied.
+#' @param fmt A format string (character) or any object to print and log.
+#' @param ... Values passed to `sprintf()` when `fmt` is character.
+#' @param verbosity
+#' Numeric verbosity level. Defaults to `caller_verbosity()`, which looks up
+#' `verbosity` in the calling environment.
+#' @return
+#' The timestamp (POSIXct) of the log entry (like `logf()` does).
+logv <- function(fmt, ..., verbosity = caller_verbosity()) {
+    if (verbosity >= 1) logf(fmt, ...) else invisible(Sys.time())
+}
+
+logvv <- function(fmt, ..., verbosity = caller_verbosity()) {
+    if (verbosity >= 2) logf(fmt, ...) else invisible(Sys.time())
+}
+
+#' @noRd
+#' @title Inherit verbosity from the calling environment
+#'
+#' @description
+#' Looks first for `verbose` and then for `verbosity` in the caller's
+#' environment, walking the lexical parent chain via
+#' `mget(..., inherits = TRUE)`. Intended to be used as a default argument:
+#' `f <- function(verbosity = caller_verbosity()) { ... }`. This makes
+#' `verbosity` behave like an inherited parameter — the caller's value flows
+#' down automatically without having to be passed explicitly at every call
+#' site.
+#'
+#' @details
+#' **How the frame arithmetic works**
+#'
+#' The canonical use pattern is `f <- function(verbosity = caller_verbosity())`.
+#' In R, default arguments are evaluated lazily inside the function's own
+#' frame. So when `f` is called without `verbosity`, the promise
+#' `caller_verbosity()` is forced inside `f`'s frame. At that point:
+#'
+#' - `parent.frame(1)` inside `caller_verbosity` is `f`'s frame.
+#' - `parent.frame(2)` is `f`'s caller — exactly the environment from which
+#'   `verbose` or `verbosity` should be inherited.
+#'
+#' The lookup then walks lexical parents via `inherits = TRUE`, so it also
+#' resolves `verbose` or `verbosity` bound in enclosing closures (e.g.
+#' anonymous functions passed to `lapply`).
+#'
+#' **Why implicit inheritance is acceptable here**
+#'
+#' As a general principle, relying on implicit parameter inheritance — where
+#' a value is silently picked up from the calling scope rather than passed
+#' explicitly — is a bad practice. It makes the call graph opaque: a reader
+#' cannot see what value a function receives just by reading the call site,
+#' which complicates both understanding and debugging.
+#'
+#' For `verbosity`, however, both of these concerns are greatly weakened:
+#'
+#' - *It does not affect correctness.* `verbosity` only controls how much
+#'   is printed; it has no effect on computed results. A wrong value causes
+#'   too much or too little output, never a wrong answer.
+#' - *Explicit passing adds pervasive clutter.* `verbosity` must be threaded
+#'   through every single function in the call chain. In a deep pipeline this
+#'   means adding a `verbosity` argument and a `verbosity = verbosity`
+#'   call-site token to dozens of functions, none of which add any
+#'   informational value to the code as documentation.
+#'
+#' The combination — negligible risk from implicit inheritance, high
+#' readability cost from explicit passing — makes `caller_verbosity()` an
+#' acceptable exception to the general rule.
+#'
+#' @param default
+#' Numeric value returned when neither `verbose` nor `verbosity` is found in
+#' the calling environment or any of its lexical parents. Defaults to `1`.
+#'
+#' @return
+#' A single numeric value: the resolved `verbose`/`verbosity` value, or
+#' `default` if neither is found.
+#'
+#' @examples
+#' d <- function(verbosity = caller_verbosity()) {
+#'     logv("d: running")         # prints when verbosity >= 1
+#'     logvv("d: verbose detail") # prints when verbosity >= 2
+#' }
+#' b <- function(verbosity = caller_verbosity()) d()
+#' a <- function(verbosity = 1) b()
+#'
+#' a(verbosity = 0) # Expected: nothing printed
+#' a(verbosity = 1) # Expected: "d: running" printed
+#' a(verbosity = 2) # Expected: both lines printed
+caller_verbosity <- function(default = 1) {
+    env <- parent.frame(2) # skip caller_verbosity; land in the caller's caller
+    mget("verbose", envir=env, inherits=TRUE, ifnotfound=list(NULL))[[1]] %||%
+        mget("verbosity", envir=env, inherits=TRUE, ifnotfound=list(NULL))[[1]] %||%
+        default
+}
+
+#' @noRd
 #' @author 2024-2025 Tobias Schmidt: initial version.
-get_logv <- function(verbose) {
-    if (verbose) logf else function(...) NULL
+human_readable_difftime <- function(x) {
+    sec <- as.numeric(x, units = "secs")
+    out <- character(length(sec))
+    for (i in seq_along(sec)) {
+        s <- sec[i]
+        if (is.na(s)) {
+            out[i] <- NA_character_
+            next
+        }
+        sign <- if (s < 0) "-" else ""
+        s <- abs(s)
+        if (s >= 3600) {
+            h <- floor(s / 3600)
+            m <- floor((s %% 3600) / 60)
+            out[i] <- sprintf("%s%dh %dmin", sign, h, m)
+        } else if (s >= 60) {
+            m <- floor(s / 60)
+            ss <- floor(s %% 60)
+            out[i] <- sprintf("%s%dmin %ds", sign, m, ss)
+        } else {
+            out[i] <- sprintf("%s%.2fs", sign, s)
+        }
+    }
+    out
 }
 
 #' @noRd
 #' @author 2024-2025 Tobias Schmidt: initial version.
 human_readable <- function(x, unit, fmt = "%.1f") {
+    if (inherits(x, "difftime")) return(human_readable_difftime(x))
     m <- max(abs(x))
     # styler: off
     if      (m >= 1e+9) { prefix <- "G"; x <- x / 1e+9 }
@@ -669,6 +864,26 @@ is_bool_or_null <- function(x, n = NULL) {
 
 #' @noRd
 #' @author 2024-2025 Tobias Schmidt: initial version.
+is_use_rust <- function(x) {
+    is.null(x) || isTRUE(x) || isFALSE(x) ||
+        (is.numeric(x) && length(x) == 1 && x %in% c(0, 0.5, 1))
+}
+
+#' @noRd
+#' @description Normalize `use_rust` to numeric: 0 (old R), 0.5 (new R), 1
+#' (Rust). Accepts TRUE/FALSE/NULL/0/0.5/1. NULL auto-detects Rust backend.
+#' @author 2024-2025 Tobias Schmidt: initial version.
+normalize_use_rust <- function(use_rust) {
+    if (is.null(use_rust)) {
+        if (check_mdrb()) return(1) else return(0)
+    }
+    if (isTRUE(use_rust))  return(1)
+    if (isFALSE(use_rust)) return(0)
+    use_rust # already 0, 0.5, or 1
+}
+
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
 is_str_or_null <- function(x) {
     is.null(x) || is_str(x)
 }
@@ -774,6 +989,18 @@ is_list_of_nums <- function(x, nl = NULL, nv = NULL) {
 }
 
 # Misc (Private) ##############################################################
+
+cut2 <- function(x, breaks) {
+    if (breaks == 1) {
+        rep(1L, length(x))
+    } else {
+        cut(x, breaks, labels = FALSE)
+    }
+}
+
+rbindlist <- function(x) {
+    do.call(rbind, x)
+}
 
 #' @noRd
 #' @author 2024-2025 Tobias Schmidt: initial version.
@@ -986,6 +1213,19 @@ du <- function(obj, pname = "", level = 0, max_level = 1, max_len = 50, unit = "
 #'
 #' @param max.level The maximum depth of directories to list.
 #'
+#' @param max.entries Maximum number of children to print per directory.
+#' If a directory has more entries than this limit, the first
+#' `ceiling(max.entries / 2)` and last `floor(max.entries / 2)` children are
+#' shown, with `... [N]` in between, where `N` is the number of omitted
+#' children.
+#'
+#' @param show.counts Logical. If `TRUE`, prints the number of direct children
+#' (files + subdirectories) in brackets after each directory name. Disabled by
+#' default.
+#'
+#' @param files.first Logical. If `TRUE`, files are listed before
+#' subdirectories. If `FALSE` (default), subdirectories are listed first.
+#'
 #' @param level Internal parameter used for recursion, indicating the current
 #' level of depth.
 #'
@@ -1000,25 +1240,112 @@ du <- function(obj, pname = "", level = 0, max_level = 1, max_len = 50, unit = "
 #' @examples
 #' metabodecon_dir <- system.file(package = "metabodecon")
 #' tree(metabodecon_dir, max.level = 1)
-tree <- function(path, max.level = 2, level = 0, prefix = "") {
-    if (level == max.level) {
-        return()
-    }
+tree <- function(path,
+                 max.level = 2,
+                 max.entries = Inf,
+                 show.counts = FALSE,
+                 files.first = FALSE,
+                 level = 0,
+                 prefix = "") {
+
+    if (level == max.level) return()
+
     entries <- list.files(path, full.names = TRUE)
     dirs <- entries[isdir <- file.info(entries)$isdir]
     files <- entries[!isdir]
-    all_entries <- sort(c(dirs, files))
+    dirs <- sort(dirs)
+    files <- sort(files)
+    all_entries <- if (isTRUE(files.first)) c(files, dirs) else c(dirs, files)
     num_entries <- length(all_entries)
-    if (level == 0) cat(path, "\n", sep = "")
-    for (i in seq_along(all_entries)) {
-        entry <- all_entries[i]
-        is_last <- i == num_entries
-        prefix2 <- if (is_last) "\u2514\u2500\u2500 " else "\u251C\u2500\u2500 "
-        cat(prefix, prefix2, basename(entry), ifelse(file.info(entry)$isdir, "/", ""), "\n", sep = "")
-        new_prefix <- if (is_last) paste0(prefix, "    ") else paste0(prefix, "\u2502   ")
-        if (file.info(entry)$isdir) tree(entry, max.level, level + 1, new_prefix)
+
+    if (level == 0) {
+        if (isTRUE(show.counts)) {
+            root_n_entries <- count_entries_in_dir(path)
+            cat(path, " [", root_n_entries, "]", "\n", sep = "")
+        } else {
+            cat(path, "\n", sep = "")
+        }
     }
+
+    if (!is.numeric(max.entries) || length(max.entries) != 1 || is.na(max.entries)) {
+        stop("max.entries must be a single non-missing numeric value.")
+    }
+    if (is.infinite(max.entries)) {
+        n_show <- num_entries
+    } else {
+        n_show <- min(num_entries, max(0, floor(max.entries)))
+    }
+    n_show <- as.integer(n_show)
+    truncated <- num_entries > n_show
+    n_top <- if (truncated) ceiling(n_show / 2) else n_show
+    n_bottom <- if (truncated) floor(n_show / 2) else 0L
+    shown_top <- if (n_top > 0) all_entries[seq_len(n_top)] else character(0)
+    shown_bottom <- if (n_bottom > 0) tail(all_entries, n_bottom) else character(0)
+
+    printed_entries <- if (truncated) {
+        c(shown_top, "...", shown_bottom)
+    } else {
+        shown_top
+    }
+    for (i in seq_along(printed_entries)) {
+        entry <- printed_entries[i]
+        is_ellipsis <- identical(entry, "...")
+        is_last <- i == length(printed_entries)
+        prefix2 <- if (is_last) "\u2514\u2500\u2500 " else "\u251C\u2500\u2500 "
+        if (is_ellipsis) {
+            n_omitted <- num_entries - n_show
+            cat(prefix, prefix2, "... [", n_omitted, "]", "\n", sep = "")
+            next
+        }
+        entry_is_dir <- isTRUE(file.info(entry)$isdir)
+        if (entry_is_dir) {
+            if (isTRUE(show.counts)) {
+                n_entries <- count_entries_in_dir(entry)
+                cat(prefix, prefix2, basename(entry), "/", " [", n_entries, "]", "\n", sep = "")
+            } else {
+                cat(prefix, prefix2, basename(entry), "/", "\n", sep = "")
+            }
+        } else {
+            cat(prefix, prefix2, basename(entry), "\n", sep = "")
+        }
+        new_prefix <- if (is_last) paste0(prefix, "    ") else paste0(prefix, "\u2502   ")
+        if (entry_is_dir) {
+            tree(
+                path = entry,
+                max.level = max.level,
+                max.entries = max.entries,
+                show.counts = show.counts,
+                files.first = files.first,
+                level = level + 1,
+                prefix = new_prefix
+            )
+        }
+    }
+
     invisible(NULL)
+}
+
+#' @export
+#' @rdname tree
+tree_preview <- function(path,
+                         max.level = 1,
+                         max.entries = 9,
+                         show.counts = TRUE,
+                         files.first = TRUE) {
+    tree(
+        path = path,
+        max.level = max.level,
+        max.entries = max.entries,
+        show.counts = show.counts,
+        files.first = files.first
+    )
+}
+
+#' @noRd
+#' @description Count direct children (files and subdirectories) in a directory.
+count_entries_in_dir <- function(dir) {
+    entries <- list.files(dir, full.names = TRUE)
+    as.integer(length(entries))
 }
 
 #' @noRd
@@ -1111,14 +1438,47 @@ transp <- function(col = "violet", alpha = 0.08) {
 
 #' @noRd
 #' @description
+#' Returns half the available CPU cores (rounded up).
+half_cores <- function(nmax = Inf) {
+    min(ceiling(parallel::detectCores() / 2), nmax)
+}
+
+#' @noRd
+#' @description
 #' Multi core version of mapply with automatic logging of worker output.
 #' For `nw == 1` normal `mapply` is used.
-#' @author 2024-2025 Tobias Schmidt: initial version.
-mcmapply <- function(nw, FUN, ..., loadpkg = TRUE, log = TRUE) {
-    if (nw == 1) return(mapply(FUN, ..., SIMPLIFY = FALSE))
+#' @author 2024-2026 Tobias Schmidt: initial version.
+mcmapply <- function(
+    nw, FUN, ...,
+    MoreArgs = NULL, RECYCLE = TRUE, SIMPLIFY = FALSE,
+    USE.NAMES = TRUE, .scheduling = c("static", "dynamic"),
+    loadpkg = TRUE, log = TRUE
+) {
+    if (nw == 1) {
+        mapply(
+            FUN, ...,
+            MoreArgs = MoreArgs, SIMPLIFY = SIMPLIFY,
+            USE.NAMES = USE.NAMES
+        )
+    } else {
+        .scheduling <- match.arg(.scheduling)
+        cl <- get_worker_pool(nw, loadpkg = loadpkg, log = log)
+        on.exit(stopCluster(cl), add = TRUE, after = FALSE)
+        clusterMap(
+            cl, FUN, ...,
+            MoreArgs = MoreArgs, RECYCLE = RECYCLE, SIMPLIFY = SIMPLIFY,
+            USE.NAMES = USE.NAMES, .scheduling = .scheduling
+        )
+    }
+}
+
+#' @noRd
+#' @description
+#' Create a worker pool with package loading and per-worker logging.
+#' @author 2026 Tobias Schmidt: initial version.
+get_worker_pool <- function(nw, loadpkg = TRUE, log = TRUE) {
     logf("Creating pool of worker processes")
     cl <- makeCluster(nw)
-    on.exit(stopCluster(cl), add = TRUE)
     if (loadpkg) {
         expr <- parse(text = 'attach(asNamespace("metabodecon"))')
         clusterCall(cl, eval, expr)
@@ -1129,7 +1489,7 @@ mcmapply <- function(nw, FUN, ..., loadpkg = TRUE, log = TRUE) {
         sapply(logfiles, logf)
         clusterApply(cl, logfiles, sink, append = TRUE, type = "output")
     }
-    clusterMap(cl, FUN, ..., SIMPLIFY = FALSE)
+    cl
 }
 
 #' @noRd
@@ -1171,6 +1531,27 @@ document <- function() {
     logf("Elapsed: %s", format(diff))
 }
 
+#' @noRd
+#' @author 2026 Tobias Schmidt: initial version.
+style <- function() {
+    stopifnot(loaded_via_devtools())
+    style_func <- function(...) {
+        transformers <- styler::tidyverse_style(indent_by = 4, ...)
+        unindent_fun_dec <- transformers$indention$unindent_fun_dec
+        formals(unindent_fun_dec)$indent_by <- 4L
+        transformers$indention$unindent_fun_dec <- unindent_fun_dec
+        transformers$space$set_no_space_around_eq_sub <- function(pd) {
+            is_eq_sub <- pd$token == "EQ_SUB"
+            is_before_eq_sub <- c(is_eq_sub[-1], FALSE)
+            pd$spaces[is_eq_sub | is_before_eq_sub] <- 0L
+            pd
+        }
+        transformers
+    }
+    styler::style_pkg(style = style_func)
+}
+
+
 # On Load (Private) #####
 
 #' @noRd
@@ -1181,21 +1562,21 @@ document <- function() {
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @details
-#' In  the  package  source  code,  this  function  is  defined  as  a  copy  of
-#' [stopifnot()]. However, during package loading, it is replaced with an  empty
-#' function unless the package is loaded via [devtools::load_all()]. The  actual
+#' In the package source code, this function is defined as a copy of
+#' [stopifnot()]. However, during package loading, it is replaced with an empty
+#' function unless the package is loaded via [devtools::load_all()]. The actual
 #' replacement is implemented in [.onLoad()].
 #'
-#' The idea is  that  exported  functions  should  use  plain  [stopifnot()]  to
-#' validate their  inputs,  whereas  private  functions  should  use  [assert()]
-#' instead. This approach  allows  us  to  use  rigorous  type  checking  during
-#' development without impacting performance in production.
+#' The idea is that exported functions should use plain [stopifnot()] to
+#' validate their inputs, whereas private functions should use
+#' [metabodecon::assert()] instead. This approach allows us to use rigorous type
+#' checking during development without impacting performance in production.
 #'
-#' If we need to keep assertions enabled in production, we can  set  the  option
+#' If we need to keep assertions enabled in production, we can set the option
 #' `metabodecon.assert` to `stopifnot` before loading the package.
 #'
-#' If we want to disable assertions during development, e.g.  to  get  realistic
-#' runtime  estimates,  we  can   set   the   option   `metabodecon.assert`   to
+#' If we want to disable assertions during development, e.g. to get realistic
+#' runtime estimates, we can set the option `metabodecon.assert` to
 #' `function(...) {}` before calling `devtools::load_all()`.
 #'
 #' Example:
@@ -1219,8 +1600,23 @@ assert <- stopifnot
 #' @author 2024-2025 Tobias Schmidt: initial version.
 .onLoad <- function(libname, pkgname) {
     pkgenv <- topenv()
+
+    # Only enable assertions during development, as they are quite runtime heavy
+    # and we want to catch problems early.
     if (!loaded_via_devtools()) pkgenv$assert <- function(...) {}
+
+    # Allow enabling assertions even when loaded via library by setting the
+    # option `metabodecon.assert` to `stopifnot` before loading the package.
     if (!is.null(x <- .Options$metabodecon.assert)) pkgenv$assert <- x
+
+    # Create a folder 'cache' inside the persistent data directory if we are on
+    # a development machine. This allows us to keep cache data across R sessions
+    # during development, which can speed up development iterations a lot.
+    if (loaded_via_devtools()) {
+        cache_dir <- file.path(datadir_persistent(), "cache")
+        dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)
+        options(metabodecon.aki_cache = cache_dir)
+    }
 }
 
 #' @noRd

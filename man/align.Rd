@@ -4,12 +4,23 @@
 \alias{align}
 \title{Align Spectra}
 \usage{
-align(x, maxShift = 50, maxCombine = 5, verbose = TRUE, install_deps = NULL)
+align(
+  x,
+  maxShift = 50,
+  maxCombine = 0,
+  verbose = TRUE,
+  method = 2,
+  install_deps = NULL,
+  nworkers = 1,
+  ref = NULL,
+  full = TRUE
+)
 }
 \arguments{
 \item{x}{An object of  type  \code{decons1}  or  \code{decons2}  as  described  in  \href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{Metabodecon Classes}.   To
-align \code{decons0} objects (as returned by the now deprecated  \link{MetaboDecon1D}),
-you can use \code{\link[=as_decons2]{as_decons2()}} to convert it to a \code{decons2} object first.}
+align \code{decons0} objects (as returned by the now deprecated
+\link{MetaboDecon1D}), you can use \code{\link[=as_decons2]{as_decons2()}} to
+convert it to a \code{decons2} object first.}
 
 \item{maxShift}{Maximum number of points along the "ppm-axis" a value can  be  moved  by  the
 'speaq' package. 50 is a suitable starting value for plasma  spectra  with  a
@@ -19,12 +30,23 @@ resolution. For urine which is more prone to chemical shift  variations  this
 value most probably has to be increased. Passed  as  argument  \code{maxShift}  to
 \code{\link[=speaq_align]{speaq_align()}}.}
 
-\item{maxCombine}{Amount of adjacent columns which may be combined for improving the alignment.
-Passed as argument \code{range} to \code{\link[=combine_peaks]{combine_peaks()}}.}
+\item{maxCombine}{Amount of adjacent columns which may be combined for improving
+the alignment during the CluPA step. We recommend setting this
+to 0 and instead relying on the peak snapping implemented  in
+\code{\link[=get_si_mat]{get_si_mat()}}. Since version 1.7.0  the  default
+is 0. Non-zero values are deprecated and support  will  be
+removed in a future version.}
 
 \item{verbose}{Whether to print additional information during the alignment process.}
 
-\item{install_deps}{Alignment  relies  on  the  'speaq'  package,  which  itself  relies  on  the
+\item{method}{Alignment backend. \code{1}: use the original implementation from the 'speaq'
+package. \code{2} (default): use metabodecon's built-in reimplementation of the
+CluPA algorithm. \code{3}: use metabodecon's peak-based pairwise alignment, which
+works directly on the deconvoluted peak parameters (\code{x0}, \code{lambda}, \code{A}).
+\strong{Method 3 is experimental and must not be used in production. It is very
+likely to change in non-backwards-compatible ways over the next few weeks.}}
+
+\item{install_deps}{Only used when \code{method = 1}. 'speaq' relies on the
 'MassSpecWavelet' and 'impute' packages. Both, 'MassSpecWavelet' and 'impute'
 are   not   available    on    CRAN,    but    can    be    installed    from
 \href{https://www.bioconductor.org/}{Bioconductor}                              or
@@ -34,6 +56,20 @@ confirmation. If \code{install_deps=NULL} (default), the user will  be  asked  f
 confirmation  before  installing  missing   dependencies.   If   asking   for
 confirmation is not possible or \code{install_deps=FALSE}, the function will raise
 an error if the packages are not installed.}
+
+\item{nworkers}{Number of parallel workers for the alignment. Default is 1 (no parallelism).}
+
+\item{ref}{Optional reference spectrum of type \code{align} or \code{decon2}. When supplied,
+all spectra in \code{x} are aligned towards this reference. The reference is
+prepended to \code{x} internally and removed from the result. If \code{NULL}
+(default), the reference is chosen automatically via
+\code{speaq::findRef()}.}
+
+\item{full}{If \code{TRUE} (default), store the full aligned Lorentz-curve superposition in
+each returned spectrum. If \code{FALSE}, skip that reconstruction step to save
+time and memory. Skipping reconstruction of the superposition means
+the plotting routines will not work as expected, so only use \code{full=FALSE}
+if you are sure you don't need the superposition.}
 }
 \value{
 An object of type \code{align} as described in \href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{Metabodecon Classes}.

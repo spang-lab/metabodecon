@@ -19,10 +19,10 @@
 #'
 #' @param persistent
 #' Logical. If TRUE, the downloaded datasets will be cached at
-#' [datadir_persistent()] to speed up future calls to
+#' [metabodecon::datadir_persistent()] to speed up future calls to
 #' `download_example_datasets()`. If FALSE, the datasets will be cached at
-#' [datadir_temp()]. If NULL, the function will check both paths for the cached
-#' datasets but will return [datadir_temp()] if the cached file does not yet
+#' [metabodecon::datadir_temp()]. If NULL, the function will check both paths for the cached
+#' datasets but will return [metabodecon::datadir_temp()] if the cached file does not yet
 #' exist.
 #'
 #' @param overwrite
@@ -36,7 +36,7 @@
 #' The path to the downloaded (and possibly extracted) datasets.
 #'
 #' @seealso
-#' [datadir()]
+#' [metabodecon::datadir()]
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
@@ -57,7 +57,7 @@ download_example_datasets <- function(dst_dir = NULL,
     # var     cached_xds = C:/Users/max/.local/share/R/metabodecon/example_datasets
     # return  dst_zip    = C:/Users/max/Downloads/example_datasets.zip
     # return  dst_xds    = C:/Users/max/Downloads/example_datasets
-    cached_zip <- cache_example_datasets(persistent, extract, overwrite, silent)
+    cached_zip <- cache_example_datasets(persistent, extract, silent)
     cached_xds <- file.path(dirname(cached_zip), "example_datasets")
     if (is.null(dst_dir)) {
         return(if (extract) cached_xds else cached_zip)
@@ -113,7 +113,7 @@ metabodecon_file <- function(name = "sim_01") {
 #' @title Return path to metabodecon's data directory
 #'
 #' @description Returns the path to the directory where
-#' [download_example_datasets()] stores metabodecon's example data sets or any
+#' [metabodecon::download_example_datasets()] stores metabodecon's example data sets or any
 #' file within that directory. By default this directory is a subdirectory of
 #' R's temporary session directory. If `persistent` is set to `TRUE`, the
 #' directory equals the data directory returned by [tools::R_user_dir()]
@@ -148,9 +148,9 @@ metabodecon_file <- function(name = "sim_01") {
 #' ).
 #'
 #' @seealso
-#' [download_example_datasets()],
-#' [datadir_persistent()],
-#' [datadir_temp()]
+#' [metabodecon::download_example_datasets()],
+#' [metabodecon::datadir_persistent()],
+#' [metabodecon::datadir_temp()]
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
@@ -191,7 +191,7 @@ datadir <- function(file = NULL, warn = TRUE, persistent = NULL) {
 #'
 #' @return Path to the persistent data directory.
 #'
-#' @seealso [datadir()], [datadir_temp()]
+#' @seealso [metabodecon::datadir()], [metabodecon::datadir_temp()]
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
@@ -208,12 +208,12 @@ datadir_persistent <- function() {
 #'
 #' @description Returns the path to the temporary data directory where
 #' metabodecon's data sets are stored. This directory equals subdirectory 'data'
-#' of metabodecons temporary session directory [tmpdir()] plus additional path
+#' of metabodecons temporary session directory [metabodecon::tmpdir()] plus additional path
 #' normalization.
 #'
 #' @return Returns the path to the temporary data directory.
 #'
-#' @seealso [tmpdir()], [datadir()], [datadir_persistent()]
+#' @seealso [metabodecon::tmpdir()], [metabodecon::datadir()], [metabodecon::datadir_persistent()]
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
@@ -241,8 +241,8 @@ datadir_temp <- function() {
 #' Returns the path to the temporary session directory.
 #'
 #' @seealso
-#' [datadir_temp()]
-#' [datadir_persistent()]
+#' [metabodecon::datadir_temp()]
+#' [metabodecon::datadir_persistent()]
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
@@ -265,19 +265,19 @@ tmpdir <- function(subdir = NULL, create = FALSE) {
 #' Returns the path to the directory storing the example files shipped with
 #' metabodecon.
 #'
-#' Deprecated since metabodecon v1.2.0. Please use [datadir()] instead. See
+#' Deprecated since metabodecon v1.2.0. Please use [metabodecon::datadir()] instead. See
 #' examples below for usage.
 #'
 #' `r lifecycle::badge("deprecated")`
 #'
-#' @param dataset_name Either `""`, `"test"`, `"blood"` or `"urine"`.
+#' @param dataset_name Either `""`, `"test"`, `"blood"`, `"urine"` or `"aki"`.
 #'
 #' @param warn Whether to print a warning message when the example folders do
-#' not yet exist, i.e. [download_example_datasets()] has not been called yet.
+#' not yet exist, i.e. [metabodecon::download_example_datasets()] has not been called yet.
 #'
 #' @return Path to the directory storing the example files.
 #'
-#' @seealso [download_example_datasets()]
+#' @seealso [metabodecon::download_example_datasets()]
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
@@ -285,7 +285,7 @@ tmpdir <- function(subdir = NULL, create = FALSE) {
 #' x <- get_data_dir("urine")                     # Deprecated
 #' y <- datadir("example_datasets/bruker/urine")  # Preferred
 #' cat(x, y, sep = "\n")
-get_data_dir <- function(dataset_name = c("", "blood", "test", "urine"), warn = TRUE) {
+get_data_dir <- function(dataset_name = c("", "blood", "test", "urine", "aki"), warn = TRUE) {
   dataset_name <- match.arg(dataset_name)
   base_data_dir <- datadir()
   data_dir <- file.path(base_data_dir, "example_datasets/bruker", dataset_name, fsep = "/")
@@ -323,10 +323,10 @@ get_data_dir <- function(dataset_name = c("", "blood", "test", "urine"), warn = 
 #' @examples
 #' str(xds)
 xds <- list(
-    url = "https://github.com/spang-lab/metabodecon/releases/download/v1.1.0/example_datasets.zip",
-    zip_size = 38425397,
-    dir_size = 56378684,
-    n_files = 1018
+    url = "https://github.com/spang-lab/metabodecon/releases/download/v1.6.3/example_datasets.zip",
+    zip_size = 75391701,
+    dir_size = 113207749,
+    n_files = 1336
 )
 
 #' @noRd
@@ -334,13 +334,11 @@ xds <- list(
 #' @title Cache Example Datasets
 #'
 #' @description
-#' If file `"example_datasets.zip"` does not yet exist at [datadir()], it is
-#' downloaded.
-#'
-#' If the zip exists but has a wrong size, it can be overwritten based on the
-#' `overwrite` parameter. If `extract` is TRUE and either folder
-#' `"example_datasets"` does not yet exist at [datadir()] or `overwrite` is
-#' TRUE, the zip file is extracted. The path to the zip file is returned.
+#' If file `"example_datasets.zip"` does not yet exist at [metabodecon::datadir()], it is
+#' downloaded. If the zip exists but is outdated or corrupt, it gets overwritten
+#' automatically. If `extract` is TRUE, the zip file is extracted, replacing an
+#' existing `"example_datasets"` directory. The path to the zip file is
+#' returned.
 #'
 #' @param persistent
 #' If TRUE, the datasets are cached permanently.
@@ -350,63 +348,57 @@ xds <- list(
 #'
 #' @param extract If TRUE, the datasets are extracted after being cached.
 #'
-#' @param overwrite
-#' First effect: If TRUE and the cached file exists but has a wrong size, the
-#' file is overwritten. If FALSE, an error is thrown in this case.
-#'
-#' Second effect (only relevant if `extract` is TRUE): If TRUE, the datasets are
-#' extracted even if the corresponding folder already exists. If FALSE, files
-#' are not extracted again.
-#'
 #' @return The path to the cached datasets.
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' \donttest{
-#' cache_example_datasets(persistent = FALSE, extract = FALSE, overwrite = FALSE)
+#' cache_example_datasets(persistent = FALSE, extract = FALSE)
 #' }
 cache_example_datasets <- function(persistent = NULL,
                                    extract = FALSE,
-                                   overwrite = FALSE,
                                    silent = FALSE) {
 
-    pdir <- datadir_persistent()
-    pzip <- norm_path(file.path(pdir, "example_datasets.zip"))
+    pzip <- zip_persistent()
     pzip_exists <- file.exists(pzip)
-    pzip_is_missing <- !pzip_exists
-    pzip_has_correct_size <- isTRUE(file.size(pzip) == xds$zip_size) # Implies existence
-    pzip_has_wrong_size <- !pzip_has_correct_size
+    pzip_ok <- isTRUE(file.size(pzip) == xds$zip_size) # Implies existence
+    pzip_nok <- !pzip_ok
 
-    tdir <- datadir_temp()
-    tzip <- file.path(tdir, "example_datasets.zip")
-    tzip_has_correct_size <- isTRUE(file.size(tzip) == xds$zip_size)
-    tzip_has_wrong_size <- !tzip_has_correct_size
+    tzip <- zip_temp()
+    tzip_ok <- isTRUE(file.size(tzip) == xds$zip_size)
+    tzip_nok <- !tzip_ok
 
-    persistent <- if (isTRUE(persistent) || (is.null(persistent) && pzip_has_correct_size)) TRUE else FALSE
+    use_pzip <- isTRUE(persistent) || (is.null(persistent) && pzip_exists)
+    use_tzip <- !use_pzip
 
-    if (isTRUE(persistent)) {
-        if (pzip_is_missing || (pzip_has_wrong_size && overwrite)) {
-            download_example_datasets_zip(pzip, copyfrom = tzip, silent = silent)
-        }
-        if (pzip_exists && pzip_has_wrong_size && !overwrite) {
-            msg <- "Path %s exists already, but has size %d instead of %d. Set `overwrite = TRUE` to overwrite."
-            stop(sprintf(msg, pzip, file.size(pzip), xds$zip_size))
-        }
-    } else {
-        if (tzip_has_wrong_size) {
-            download_example_datasets_zip(tzip, copyfrom = pzip, silent = silent)
-            # No need to ask for permission here because we only write to the temp dir
-        }
+    dst <- if (use_pzip) pzip else tzip
+    cf <- if (use_pzip && tzip_ok) tzip else if (use_tzip && pzip_ok) pzip else NULL
+
+    if (use_tzip && tzip_nok && pzip_exists && pzip_nok) {
+        fmt <- paste0("\n",
+            "Found outdated or corrupt persistent cache file at:\n%s\n",
+            "To update/repair, use 'download_example_datasets(persistent = TRUE)'\n",
+            "To remove, use 'unlink(\"%s\", recursive = TRUE)'\n"
+        )
+        msg <- sprintf(fmt, pzip, pzip)
+        warning(msg, immediate. = TRUE, call. = FALSE)
     }
 
-    zip <- if (persistent) pzip else tzip
-    dstdir <- file.path(dirname(zip), "example_datasets")
+    if ((use_tzip && tzip_nok) || (use_pzip && pzip_nok)) {
+        download_example_datasets_zip(dst, copyfrom = cf, silent = silent)
+    }
+
+    dstdir <- file.path(dirname(dst), "example_datasets")
     if (extract) {
-        if (dir.exists(dstdir) && overwrite) unlink(dstdir, recursive = TRUE)
-        if (!dir.exists(dstdir)) extract_example_datasets(zip)
+        files <- dir(dstdir, recursive=TRUE, full.names=TRUE) # 0.6s on r4
+        size <- sum(file.info(files)$size) # 0.3s on r4
+        if (size != xds$dir_size) { # captures missing and outdated dstdir
+            unlink(dstdir, recursive = TRUE) # 1s on r4
+            system.time(extract_example_datasets(dst)) # 6.9s on r4
+        }
     }
-    zip
+    dst
 }
 
 #' @noRd
@@ -434,14 +426,23 @@ extract_example_datasets <- function(path = datadir("example_datasets.zip")) {
 #' \donttest{
 #' download_example_datasets_zip("/path/to/your/directory/example_datasets.zip")
 #' }
-download_example_datasets_zip <- function(path, copyfrom = NULL, silent = FALSE) {
+download_example_datasets_zip <- function(path,
+                                          copyfrom = NULL,
+                                          silent = FALSE,
+                                          url = xds$url,
+                                          zip_size = xds$zip_size) {
     mkdirs(dirname(path))
-    if (!is.null(copyfrom) && file.exists(copyfrom) && file.size(copyfrom) == xds$zip_size) {
+    path <- normalizePath(path, "/", mustWork = FALSE)
+    if (!is.null(copyfrom) && file.exists(copyfrom) && file.size(copyfrom) == zip_size) {
         if (!silent) message(sprintf("Copying cached archive %s to %s", copyfrom, path))
         file.copy(copyfrom, path, overwrite = TRUE)
     } else {
-        if (!silent) message(sprintf("Downloading %s as %s", xds$url, path))
-        utils::download.file(xds$url, path, quiet = TRUE)
+        if (!silent) message(sprintf("Downloading %s as %s", url, path))
+        utils::download.file(url, path, quiet = TRUE)
+    }
+    if (!is.null(zip_size) && isTRUE(file.size(path) != zip_size)) {
+        msg <- "Downloaded zip at %s has size %d instead of expected %d"
+        stop(sprintf(msg, path, file.size(path), zip_size))
     }
     path
 }
@@ -485,12 +486,34 @@ mockdir <- function() {
 #' Create and return cache dir. If existing, the persistent cache dir is
 #' returned, else the temp cache dir. To force creation of the persistent cache
 #' dir, call once with `persistent=TRUE`.
-cachedir <- function(persistent = NULL) {
+cachedir <- function(subdir = NULL, persistent = NULL) {
     tcd <- file.path(tmpdir(), "cache") # temporary cache dir
     pcd <- file.path(tools::R_user_dir("metabodecon", "cache")) # persistent cache dir
     cd <- if (isTRUE(persistent) || (is.null(persistent) && dir.exists(pcd))) pcd else tcd
+    if (!is.null(subdir)) cd <- file.path(cd, subdir)
     ncd <- normalizePath(cd, "/", mustWork = FALSE)
     mkdirs(ncd)
+}
+
+#' @export
+#'
+#' @title Get Default Cache Directory for Deconvolution
+#'
+#' @description
+#' Returns the temporary session-scoped cache directory used by deconvolution
+#' functions such as [metabodecon::deconvolute()] and the internal
+#' `grid_deconvolute_spectrum()` helper.
+#'
+#' @return Path to the shared temporary cache directory for deconvolution.
+#'
+#' @author 2026 Tobias Schmidt: initial version.
+#'
+#' @examples
+#' decon_cachedir()
+decon_cachedir <- function() {
+    x <- cachedir("deconvs", persistent = FALSE)
+    if (!dir.exists(x)) dir.create(x, recursive = TRUE)
+    x
 }
 
 # Sap (Public) #####
@@ -543,7 +566,7 @@ make_sap <- function() {
 #' @author 2024-2025 Tobias Schmidt: initial version.
 update_sap <- function() {
     path <- file.path(pkg_file("example_datasets/bruker"), "sap")
-    logf("Updating %s." , path)
+    logf("Updating %s.", path)
     if (!get_yn_input("Continue?")) return(invisible())
     sap <- make_sap()
     save_spectra(sap, path, force = TRUE)
@@ -596,7 +619,7 @@ make_sim <- function(nworkers = 1) {
 #' @author 2024-2025 Tobias Schmidt: initial version.
 update_sim <- function(nworkers = 1) {
     path <- file.path(pkg_file("example_datasets/bruker"), "sim")
-    logf("Overwrite is TRUE. Updating %s." , path)
+    logf("Overwrite is TRUE. Updating %s.", path)
     if (!get_yn_input("Continue?")) return(invisible())
     sim <- make_sim(nworkers = nworkers)
     save_spectra(sim, path, force = TRUE)
@@ -624,7 +647,7 @@ update_sim <- function(nworkers = 1) {
 #'
 #' @return
 #' A `decons2` object containing the deconvolution results. For details
-#' see [deconvolute()].
+#' see [metabodecon::deconvolute()].
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
@@ -676,4 +699,139 @@ get_sim_params <- function(x, pkr = c(3.4, 3.5)) {
     noiseSD <- sd(d$y_values_raw[c(1:10000, 121073:131072)])
     name <- d$filename
     named(A, x0, lambda, noiseSD, name)
+}
+
+# AKI (Public) #####
+
+#' @noRd
+#' @title Downloads the AKI dataset from the Metabolights Database
+#' @description
+#' Recursively downloads and extracts all files of the AKI dataset (MTBLS24)
+#' from the MetaboLights database, if not already available locally.
+#' @return Path to the local directory containing the AKI dataset.
+#' @examples
+#' \dontrun{
+#' aki_dir <- download_aki_data()
+#' }
+download_aki_data_from_metabolights <- function() {
+    url <- "ftp://ftp.ebi.ac.uk/pub/databases/metabolights/studies/public/MTBLS24/"
+    dest <- datadir("aki_raw", warn = FALSE, persistent = TRUE)
+    n_files <- length(dir(dest, recursive = TRUE))
+    if (n_files >= 2046) {
+        # Return early if all files have already been downloaded and extracted
+        return(dest)
+    }
+    ftp_download(url, dest, recursive = TRUE)
+    spectra_dir <- file.path(dest, "FILES")
+    zips <- dir(spectra_dir, ".zip$", full.names = TRUE)
+    lapply(zips, unzip, exdir = spectra_dir)
+    dest
+}
+
+#' @noRd
+#' @title Update AKI Example Dataset (Development Only)
+#' @description
+#' Downloads the AKI urine NMR dataset (`MTBLS24`) from MetaboLights and copies
+#' the Bruker files required by metabodecon (`1r`, `procs`, `acqus`) to
+#' `misc/example_datasets/bruker/aki`.
+#'
+#' For details about the AKI dataset see `Dataset.Rmd`.
+#'
+#' The full source dataset can be downloaded directly from MetaboLights:
+#' <https://www.ebi.ac.uk/metabolights/MTBLS24>. The copy prepared here is a
+#' convenience subset and includes `s_MTBLS24.txt` plus only the Bruker files
+#' required to read spectra (`1r`, `procs`, `acqus`). Other spectra-related
+#' outputs and early analysis/classifier result files from Zacharias et al.
+#' (2012) are excluded to keep archive size and download time low.
+#'
+#' To make the dataset available to package users, the `example_datasets.zip` in
+#' GitHub must be updated as well. See `update_example_datasets()` for details.
+#'
+#' @return Path to the updated AKI example dataset directory.
+#' @author 2026 Tobias Schmidt: initial version.
+update_aki <- function() {
+
+    stopifnot(loaded_via_devtools())
+
+    # Download and extract AKI raw data if not already available locally
+    raw <- download_aki_data_from_metabolights()
+    src <- file.path(raw, "FILES")
+    dst <- file.path(pkg_file("misc/example_datasets/bruker"), "aki")
+    if (dir.exists(dst)) {
+        cont <- get_yn_input(sprintf("Overwrite %s ?", dst))
+        if (!cont) return(invisible())
+        unlink(dst, recursive = TRUE, force = TRUE)
+    }
+
+    # Copy required Bruker files from all AKI sample folders
+    spectra <- list.files(src, pattern = "^AKI_8", full.names = TRUE)
+    spectra <- spectra[file.info(spectra)$isdir]
+    one_r_files <- file.path(spectra, "10/pdata/10/1r")
+    procs_files <- file.path(spectra, "10/pdata/10/procs")
+    acqus_files <- file.path(spectra, "10/acqus")
+    src_files <- c(one_r_files, procs_files, acqus_files)
+    dst_files <- gsub(src, dst, src_files)
+    dst_dirs <- unique(dirname(dst_files))
+    lapply(dst_dirs, mkdirs)
+    copied_successful <- file.copy(src_files, dst_files, overwrite = TRUE)
+    stopifnot(all(copied_successful))
+
+    # Copy study metadata file
+    src_meta <- file.path(raw, "s_MTBLS24.txt")
+    dst_meta <- file.path(dst, "s_MTBLS24.txt")
+    copied_successful <- file.copy(src_meta, dst_meta, overwrite = TRUE)
+    stopifnot(copied_successful)
+
+}
+
+# Example Datasets (Development) #####
+
+#' @noRd
+#' @title Update All Example Datasets (Development Only)
+#' @description
+#' Rebuilds `example_datasets.zip` from `misc/example_datasets/` and prints the
+#' values needed to update `xds` (Example Datasets Summary). The actual content
+#' of `misc/example_datasets/` must be updated manually before calling this
+#' function.
+#'
+#' The subdirectories `blood`, `test` and `urine` contain raw spectra files as
+#' created by the NMR spectrometer in the Oefner Lab and are not generated by
+#' any function in the package.
+#'
+#' The `aki` subdirectory contains raw spectra files downloaded from the
+#' MetaboLights database and can be recreated by calling [metabodecon::update_aki()].
+#'
+#' @return The path to the updated `example_datasets.zip` file.
+#'
+#' @author 2026 Tobias Schmidt: initial version.
+update_example_datasets <- function() {
+    stopifnot(loaded_via_devtools())
+    misc <- pkg_file("misc")
+    src <- file.path(misc, "example_datasets")
+    zip <- file.path(misc, "example_datasets.zip")
+    if (file.exists(zip)) unlink(zip)
+    logf("Creating %s", zip)
+    withr::with_dir(misc, utils::zip(zip, "example_datasets", "-rq9X"))
+    logf("Done")
+    files <- dir(src, recursive = TRUE, full.names = TRUE, include.dirs = FALSE)
+    sizes <- file.info(files)$size
+    zip_size <- file.info(zip)$size
+    dir_size <- sum(sizes, na.rm = TRUE)
+    n_files <- length(files)
+    logf("")
+    logf("Next steps:")
+    logf("")
+    logf("1. Upload example_datasets.zip to GitHub")
+    logf("2. Update the xds object in data.R as follows:")
+    logf("")
+    logf("    xds <- list(")
+    logf("        url = NEW_URL [^1],")
+    logf("        zip_size = %d,", zip_size)
+    logf("        dir_size = %d,", dir_size)
+    logf("        n_files = %d", n_files)
+    logf("    )")
+    logf("")
+    logf("[^1] OLD_URL was %s", xds$url)
+    logf("")
+    invisible(zip)
 }

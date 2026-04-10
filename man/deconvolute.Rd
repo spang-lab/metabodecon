@@ -15,7 +15,10 @@ deconvolute(
   force = FALSE,
   verbose = TRUE,
   nworkers = 1,
-  use_rust = FALSE
+  use_rust = FALSE,
+  npmax = 0,
+  igrs = list(),
+  cadir = decon_cachedir()
 )
 }
 \arguments{
@@ -55,11 +58,30 @@ deconvolution process.}
 \code{"auto"}, the number of workers will be determined automatically. If a number
 greater than 1, it will be limited to the number of spectra.}
 
-\item{use_rust}{Logical. Whether to use the Rust backend for deconvolution.
-Requires the \href{https://github.com/spang-lab/mdrb}{mdrb} package. If TRUE and
-mdrb is missing, an error is thrown. If FALSE, the R implementation is used.
-If NULL, the Rust backend is used if available, otherwise the R implementation
-is used.}
+\item{use_rust}{Controls the deconvolution backend. Accepts \code{FALSE} / \code{0}
+(legacy R implementation, default), \code{TRUE} / \code{1} (Rust backend via
+\href{https://github.com/spang-lab/mdrb}{mdrb}), \code{0.5} (experimental new R
+implementation that produces results identical to the Rust backend; planned
+to become the new default in a future release), or \code{NULL} (auto-detect:
+uses Rust if available, otherwise legacy R). When set to \code{TRUE} / \code{1} and
+mdrb is not installed, an error is thrown.}
+
+\item{npmax}{Integer. Maximum number of peaks allowed in the result. If
+\code{npmax >= 1}, the \code{nfit}, \code{smopts} and \code{delta} arguments are ignored and a
+grid search over predefined parameter combinations is performed instead. The
+combination with the smallest residual area ratio and fewer than \code{npmax}
+peaks is selected. Grid search results are cached to disk by default; see
+\code{cadir}.}
+
+\item{igrs}{Ignore regions. List of length-2 numeric vectors specifying the
+start and endpoints of the chemical shift regions to ignore during
+deconvolution. Peaks whose centers fall inside any ignore region are
+excluded from fitting.}
+
+\item{cadir}{Directory for caching grid search results and deconvolution
+results for \code{npmax >= 1}. Defaults to \code{\link[=decon_cachedir]{decon_cachedir()}}. If
+\code{NULL}, caching is disabled. Pass a custom path to use a different cache
+directory.}
 }
 \value{
 A 'decon2' object as described in \href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{Metabodecon Classes}.
@@ -76,7 +98,7 @@ optimally approximate the measured spectrum.
 }
 \examples{
 ## Deconvolute a single spectrum
-spectrum <- sim[1]
+spectrum <- sim[[1]]
 decon <- deconvolute(spectrum)
 
 ## Read multiple spectra from disk and deconvolute at once

@@ -96,18 +96,19 @@ evaluated.
 \details{
 The \code{datadir_temp} and \code{datadir_persistent} arguments accept values
 "missing", "filled" and "empty". Setting a value unequal NULL causes the
-functions \code{\link[=datadir_temp]{datadir_temp()}} and/or \code{\link[=datadir_persistent]{datadir_persistent()}} to be replaced with
-mock functions pointing to fake directories. Functions depending on these
-functions will then use the fake directories instead of the real ones. When
-set to "missing" the returned mock directory does not exist. When set to
-"empty" it exists and is guaranteed to be empty. When set to "filled", it is
-populated with example datasets.
+functions \code{\link[=datadir_temp]{datadir_temp()}} and/or
+\code{\link[=datadir_persistent]{datadir_persistent()}} to be replaced with mock functions
+pointing to fake directories. Functions depending on these functions will
+then use the fake directories instead of the real ones. When set to "missing"
+the returned mock directory does not exist. When set to "empty" it exists and
+is guaranteed to be empty. When set to "filled", it is populated with example
+datasets.
 
 Attention: the mocked functions, i.e. \code{\link[=datadir_temp]{datadir_temp()}} and
-\code{\link[=datadir_persistent]{datadir_persistent()}} cannot be used directly inside \code{expr} when called via
-\code{devtools::test()}. I'm not sure why, but it seems as if devtools and/or
-testthat have their own copies of the functions which are used when the
-expression is evaluated.
+\code{\link[=datadir_persistent]{datadir_persistent()}} cannot be used directly inside \code{expr}
+when called via \code{devtools::test()}. I'm not sure why, but it seems as if
+devtools and/or testthat have their own copies of the functions which are
+used when the expression is evaluated.
 }
 \examples{
 x1 <- evalwith(output = "captured", cat("Helloworld\n"))

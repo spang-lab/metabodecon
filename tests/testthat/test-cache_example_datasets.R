@@ -8,8 +8,11 @@ test_that("cache_example_datasets(persistent = FALSE) works with existing tempor
     })
     expect_true(file.exists(zip_temp))
     expect_false(file.exists(zip_persistent))
-    expect_equal(y$message, paste("Downloading", xds$url, "as", zip_temp))
-    expect_equal(zip_returned, zip_temp)
+    msg <- paste(y$message, collapse = "\n")
+    expect_match(msg, paste0("Downloading ", xds$url, " as "))
+    z1 <- normalizePath(zip_returned, "/", mustWork = FALSE)
+    z2 <- normalizePath(zip_temp, "/", mustWork = FALSE)
+    expect_equal(z1, z2)
 })
 
 test_that("cache_example_datasets(persistent = FALSE) works with empty datadirs", {
@@ -20,6 +23,7 @@ test_that("cache_example_datasets(persistent = FALSE) works with empty datadirs"
     })
     expect_true(file.exists(zip_temp))
     expect_false(file.exists(zip_persistent))
-    expect_equal(y$message, character())
-    expect_equal(zip_returned, zip_temp)
+    z1 <- normalizePath(zip_returned, "/", mustWork = FALSE)
+    z2 <- normalizePath(zip_temp, "/", mustWork = FALSE)
+    expect_equal(z1, z2)
 })

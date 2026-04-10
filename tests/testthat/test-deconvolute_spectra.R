@@ -9,19 +9,19 @@ library(testthat)
 
 # Inputs #####
 defaults <- list(
-    x=sap,
-    nfit=3, smopts=c(1,3), delta=3, sfr=c(3.2,-3.2), wshw=0,
-    ask=FALSE, force=FALSE, verbose=FALSE, bwc=0,
-    use_rust=FALSE, nw=1, igr=list(), rtyp="idecon"
+    x = sap,
+    nfit = 3, smopts = c(1, 3), delta = 3, sfr = c(3.2, -3.2), wshw = 0,
+    ask = FALSE, force = FALSE, verbose = FALSE, bwc = 0,
+    use_rust = FALSE, nw = 1, igr = list(), rtyp = "idecon"
 )
 args <- list(
     idecons_bwc0_R = set(defaults),
-    idecons_bwc1_R = set(defaults, bwc=1),
-    idecons_bwc2_R = set(defaults, bwc=2),
-    decons0_bwc2_R = set(defaults, bwc=2, rtyp="decon0"),
-    decons1_bwc2_R = set(defaults, bwc=2, rtyp="decon1"),
-    decons2_bwc2_R = set(defaults, bwc=2, rtyp="decon2"),
-    rdecons_bwc2_R = set(defaults, bwc=2, rtyp="rdecon"),
+    idecons_bwc1_R = set(defaults, bwc = 1),
+    idecons_bwc2_R = set(defaults, bwc = 2),
+    decons0_bwc2_R = set(defaults, bwc = 2, rtyp = "decon0"),
+    decons1_bwc2_R = set(defaults, bwc = 2, rtyp = "decon1"),
+    decons2_bwc2_R = set(defaults, bwc = 2, rtyp = "decon2"),
+    rdecons_bwc2_R = set(defaults, bwc = 2, rtyp = "rdecon"),
     rdecons_bwc2_rust = set(defaults, bwc=2, rtyp="rdecon", use_rust=TRUE)
 )
 mdrb_available <- check_mdrb()

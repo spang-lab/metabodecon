@@ -9,13 +9,14 @@
 #' algorithm from the 'speaq' package, described  in  Beirnaert  et  al.  (2018)
 #' <doi:10.1371/journal.pcbi.1006018>     and     Vu     et      al.      (2011)
 #' <doi:10.1186/1471-2105-12-405> plus the additional peak combination described
-#' in [combine_peaks()].
+#' in [metabodecon::combine_peaks()].
 #'
 #' @param x
 #' An object of  type  `decons1`  or  `decons2`  as  described  in  [Metabodecon
 #' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).   To
-#' align `decons0` objects (as returned by the now deprecated  [MetaboDecon1D]),
-#' you can use [as_decons2()] to convert it to a `decons2` object first.
+#' align `decons0` objects (as returned by the now deprecated
+#' [metabodecon::MetaboDecon1D]), you can use [metabodecon::as_decons2()] to
+#' convert it to a `decons2` object first.
 #'
 #' @param maxShift
 #' Maximum number of points along the "ppm-axis" a value can  be  moved  by  the
@@ -24,17 +25,46 @@
 #' optimized  depending  on  the  type  of  analyzed  spectra  and  the  digital
 #' resolution. For urine which is more prone to chemical shift  variations  this
 #' value most probably has to be increased. Passed  as  argument  `maxShift`  to
-#' [speaq_align()].
+#' [metabodecon::speaq_align()].
 #'
 #' @param maxCombine
-#' Amount of adjacent columns which may be combined for improving the alignment.
-#' Passed as argument `range` to [combine_peaks()].
+#' Amount of adjacent columns which may be combined for improving
+#' the alignment during the CluPA step. We recommend setting this
+#' to 0 and instead relying on the peak snapping implemented  in
+#' [metabodecon::get_si_mat()]. Since version 1.7.0  the  default
+#' is 0. Non-zero values are deprecated and support  will  be
+#' removed in a future version.
 #'
 #' @param verbose
 #' Whether to print additional information during the alignment process.
 #'
+#' @param method
+#' Alignment backend. `1`: use the original implementation from the 'speaq'
+#' package. `2` (default): use metabodecon's built-in reimplementation of the
+#' CluPA algorithm. `3`: use metabodecon's peak-based pairwise alignment, which
+#' works directly on the deconvoluted peak parameters (`x0`, `lambda`, `A`).
+#' **Method 3 is experimental and must not be used in production. It is very
+#' likely to change in non-backwards-compatible ways over the next few weeks.**
+#'
+#' @param nworkers
+#' Number of parallel workers for the alignment. Default is 1 (no parallelism).
+#'
+#' @param ref
+#' Optional reference spectrum of type `align` or `decon2`. When supplied,
+#' all spectra in `x` are aligned towards this reference. The reference is
+#' prepended to `x` internally and removed from the result. If `NULL`
+#' (default), the reference is chosen automatically via
+#' `speaq::findRef()`.
+#'
+#' @param full
+#' If `TRUE` (default), store the full aligned Lorentz-curve superposition in
+#' each returned spectrum. If `FALSE`, skip that reconstruction step to save
+#' time and memory. Skipping reconstruction of the superposition means
+#' the plotting routines will not work as expected, so only use `full=FALSE`
+#' if you are sure you don't need the superposition.
+#'
 #' @param install_deps
-#' Alignment  relies  on  the  'speaq'  package,  which  itself  relies  on  the
+#' Only used when `method = 1`. 'speaq' relies on the
 #' 'MassSpecWavelet' and 'impute' packages. Both, 'MassSpecWavelet' and 'impute'
 #' are   not   available    on    CRAN,    but    can    be    installed    from
 #' [Bioconductor](https://www.bioconductor.org/)                              or
@@ -58,47 +88,126 @@
 #'     decons <- deconvolute(sim[1:2], sfr = c(3.55, 3.35))
 #'     aligned <- align(decons)
 #' }
-align <- function(x, maxShift = 50, maxCombine = 5, verbose = TRUE, install_deps = NULL) {
+align <- function(x,
+                  maxShift = 50,
+                  maxCombine = 0,
+                  verbose = TRUE,
+                  method = 2,
+                  install_deps = NULL,
+                  nworkers = 1,
+                  ref = NULL,
+                  full = TRUE) {
 
-    # Check for required packages
-    pkgvec <- c("MassSpecWavelet", "impute")
-    if (isTRUE(install_deps)) bioc_install(pkgvec, ask = FALSE, verbose = verbose)
-    if (is.null(install_deps)) bioc_install(pkgvec, ask = TRUE, verbose = verbose)
-    is_installed <- sapply(pkgvec, requireNamespace, quietly = TRUE)
-    if (any(!is_installed)) {
-        pkgvec_missing <- pkgvec[!is_installed]
-        pkgstr_missing <- paste(pkgvec_missing, collapse = ", ")
-        msg <- paste(
-            "The following required packages are missing: %s.",
-            "Please install them manually from Bioconductor or R-Universe",
-            "or try again with `install_deps = TRUE`"
-        )
-        stop(sprintf(msg, pkgstr_missing))
+    if (isFALSE(verbose)) local_options(toscutil.logf.file = nullfile())
+    if (!is_int(method, 1) || !(method %in% 1:3)) {
+        stop("`method` must be 1, 2 or 3.", call. = FALSE)
+    }
+
+    # If an external reference is supplied, prepend it to the
+    # input so speaq aligns everything towards it.
+    has_ext_ref <- !is.null(ref)
+    if (has_ext_ref) {
+        ref_d2 <- ref
+        if (is_align(ref_d2)) class(ref_d2) <- "decon2"
+        x <- c(ref_d2, x)
     }
 
     # Check and convert inputs
     xx <- as_decons2(x)
     stopifnot(length(xx) > 1)
-    for (i in 2:length(xx)) {
-        if (!is_equal(xx[[i-1]]$cs, xx[[i]]$cs)) {
-            stop("Chemical shifts must be equal across all spectra.")
+    ndps <- sapply(xx, function(xi) length(xi$cs))
+    if (length(unique(ndps)) != 1) {
+        fmt <- paste(
+            "All spectra must have the same number of data points",
+            "but spectrum 1 has %d",
+            "and spectrum %d has %d."
+        )
+        msg <- sprintf(fmt, ndps[1], i, ndps[i])
+        stop(msg, call. = FALSE)
+    }
+
+    # Check for required packages (only needed for speaq backend)
+    if (method == 1) {
+        pkgvec <- c("MassSpecWavelet", "impute")
+        if (isTRUE(install_deps)) bioc_install(pkgvec, ask = FALSE, verbose = FALSE)
+        if (is.null(install_deps)) bioc_install(pkgvec, ask = TRUE, verbose = FALSE)
+        is_installed <- sapply(pkgvec, requireNamespace, quietly = TRUE)
+        if (any(!is_installed)) {
+            pkgvec_missing <- pkgvec[!is_installed]
+            pkgstr_missing <- paste(pkgvec_missing, collapse = ", ")
+            msg <- paste(
+                "The following required packages are missing: %s.",
+                "Please install them manually from Bioconductor",
+                "or R-Universe or try again with",
+                "`install_deps = TRUE`"
+            )
+            stop(sprintf(msg, pkgstr_missing))
         }
     }
 
-    # Do initial alignment using speaq. Parameter `acceptLostPeak` must be FALSE
-    # so we can backtrack which peak has shifted to which position. The result
+    # Start alignment
+    nworkers_str <- if (nworkers == 1) "1 worker" else sprintf("%d workers", nworkers)
+    logf("Starting alignment of %d deconvoluted spectra with %s", length(xx), nworkers_str)
+    starttime <- Sys.time()
+
+    # Do initial alignment. The result
     # object contains element `new_peakList` which contains the "peak center
     # indices after alignment" (pciaa). The indices are given as continuous
     # numbers. E.g. a value of 1044.28 means that the aligned peak center is
     # between the datapoint 1044 and 1045.
-    obj <- dohCluster(
-        X <- get_sup_mat(xx),
-        peakList <- lapply(xx, get_peak_indices),
-        refInd = speaq::findRef(peakList)$refInd,
-        maxShift = maxShift,
-        acceptLostPeak = FALSE,
-        verbose = verbose
-    )
+    backend <- c("speaq", "built-in", "fast-peak")[method]
+    logf("Performing %s alignment with maxShift = %d", backend, maxShift)
+    peakList <- lapply(xx, get_peak_indices)
+    find_ref_fn <- if (method == 1) speaq::findRef else find_ref
+    refInd <- if (has_ext_ref) 1L else find_ref_fn(peakList)$refInd
+    if (method == 3) {
+        peakData <- lapply(xx, get_peak_align_data)
+        obj <- align_fast(
+            peakData = peakData,
+            refInd = refInd,
+            maxShift = maxShift,
+            verbose = verbose,
+            nworkers = nworkers
+        )
+    } else {
+        X <- get_sup_mat(xx)
+        if (nworkers == 1) {
+            obj <- dohCluster(
+                X = X, peakList = peakList, refInd = refInd,
+                maxShift = maxShift, verbose = verbose,
+                method = method
+            )
+        } else {
+            # Split seq_len(now(X)) `nworkers` submatrices, where refInd is always the first row.
+            # Example: if nworkers == 3, nrow(X) == 10 and refInd == 4, the submatrices would be:
+            # X[c(4,1,2,3), ], X[c(4,5,6,7), ], X[c(4,8,9,10), ]
+            # Then we can call dohCluster() in parallel on each submatrix with
+            # refInd == 1 and then combine the results. For parallel execution we use mclapply,
+            # as is done in `deconvolute_spectra()`.
+            idx <- setdiff(seq_len(nrow(X)), refInd)
+            k <- min(nworkers, length(idx))
+            grp <- cut(seq_along(idx), breaks = k, labels = FALSE)
+            chunks <- lapply(split(idx, grp), function(ids) c(refInd, ids))
+            XX <- lapply(chunks, function(rows) X[rows, , drop = FALSE])
+            peakLists <- lapply(chunks, function(rows) peakList[rows])
+            nw_apply <- min(nworkers, length(chunks))
+            objs <- mcmapply(
+                nw_apply, dohCluster, XX, peakLists,
+                refInd = 1, maxShift = maxShift,
+                verbose = verbose, method = method
+            )
+            Y <- X
+            new_peakList <- peakList
+            for (j in seq_along(chunks)) {
+                rows <- chunks[[j]]
+                rows_no_ref <- rows[rows != refInd]
+                if (length(rows_no_ref) == 0) next
+                Y[rows_no_ref, ] <- objs[[j]]$Y[-1, , drop = FALSE]
+                new_peakList[rows_no_ref] <- objs[[j]]$new_peakList[-1]
+            }
+            obj <- list(Y = Y, new_peakList = new_peakList)
+        }
+    }
     pciaa <- obj$new_peakList
 
     # Discretize the continous peak center indices from above by rounding. Then
@@ -120,8 +229,28 @@ align <- function(x, maxShift = 50, maxCombine = 5, verbose = TRUE, install_deps
     # B |... |   0 |  40 | ... |   0 |   0 |  40 |     | ... |  60 |
     # C |... |  70 |   0 | ... |   0 |   0 |  80 |     | ... |  90 |
     #
-    smat <- matrix(nrow = nrow(X), ncol = ncol(X))
-    for (i in seq_len(nrow(X))) smat[i, round(pciaa[[i]])] <- xx[[i]]$lcpar$A
+    logf("Discretizing peak center indices")
+    nspec <- length(xx)
+    ndp <- length(xx[[1]]$cs)
+    smat <- matrix(0, nrow = nspec, ncol = ndp)
+    for (i in seq_len(nspec)) {
+        d <- round(pciaa[[i]])
+        A <- xx[[i]]$lcpar$A
+        if (length(d) == 0) stop(sprintf("No peaks found in spectrum %d", i))
+        d <- pmin(ndp, pmax(1L, d))
+        dups <- which(duplicated(d))
+        while (length(dups) > 0) {
+            fmt <- paste(
+                "%d peak center indicies led to duplicate positions.",
+                "Original positions: %s"
+            )
+            origstr <- paste(pciaa[[i]][dups], collapse = ", ")
+            logf(fmt, length(dups), origstr)
+            d[dups] <- d[dups] + 1
+            dups <- which(duplicated(d))
+        }
+        smat[i, d] <- A
+    }
 
     # Combine signals ACROSS spectra. Example: the matrix from above would
     # become:
@@ -132,27 +261,49 @@ align <- function(x, maxShift = 50, maxCombine = 5, verbose = TRUE, install_deps
     # B |... |   0 |  40 | ... |   0 |   0 |  40 |     | ... |  60 |
     # C |... |   0 |  70 | ... |   0 |   0 |  80 |     | ... |  90 |
     #
-    cmat <- combine_peaks(smat, maxCombine)$long
+    logf("Combining peaks across spectra with maxCombine = %d", maxCombine)
+    cmat <- if (maxCombine >= 1) combine_peaks(smat, maxCombine)$long else smat
 
     # Create `align` objects from the `decon2` objects:
     # 1. Store the new peak centers in their respective slot `$lcpar$x0_al`
     # 2. Calculate new signal intensities as superposition of lorentz curves,
     #    (using the updated peak centers) and store them in `$sit$supal`.
     # 3. Store the new signal intensities as integrals in `$sit$al`.
+    logf("Creating aligns object")
     cs <- xx[[1]]$cs
     n <- length(cs)
     for (i in seq_along(xx)) {
         al <- rep(0, n)
         pciac <- which(cmat[i, ] != 0)  # Peak center indices after combine_peaks
         lcpar <- xx[[i]]$lcpar          # Lorentzian curve parameters
+        if (length(pciac) != length(lcpar$A)) {
+            msg <- paste(
+                "Number of peak centers after alignment (%d)",
+                "does not match number of peaks",
+                "in original spectrum (%d)."
+            )
+            stop(sprintf(msg, length(pciac), length(lcpar$A)))
+        }
         x0_al <- cs[pciac]              # Chemical shifts of peak centers
         al[pciac] <- lcpar$A * pi       # SIs as integrals of aligned lorentzians
         xx[[i]]$lcpar$x0_al <- x0_al
         xx[[i]]$sit$al <- al
-        xx[[i]]$sit$supal <- lorentz_sup(cs, x0_al, lcpar$A, lcpar$lambda)
+        if (full) xx[[i]]$sit$supal <- lorentz_sup(cs, x0_al, lcpar$A, lcpar$lambda)
         class(xx[[i]]) <- "align"
     }
     aligns <- structure(xx, class = "aligns")
+
+    # If an external reference was prepended, strip it from
+    # the result so the caller only gets the aligned input.
+    if (has_ext_ref) {
+        aligns <- aligns[-1]
+        class(aligns) <- "aligns"
+    }
+
+    duration <- format(round(Sys.time() - starttime, 3))
+    logf("Finished alignment in %s", duration)
+
+
     aligns
 }
 
@@ -162,29 +313,159 @@ align <- function(x, maxShift = 50, maxCombine = 5, verbose = TRUE, install_deps
 #' @title Extract Matrix of aligned Signal Intensities
 #'
 #' @description
-#' Takes an object of type `aligns`, i.e., a list of deconvoluted and aligned
-#' spectra, extracts the vector of aligned signal integrals for each spectrum
-#' and returns them as a matrix with datapoints in rows and spectra in columns.
+#' Extracts a peak-area matrix from aligned spectra. Rows are
+#' chemical-shift positions, columns are spectra. When
+#' `maxCombine = 0` the raw aligned integral vectors are returned.
+#' When `maxCombine > 0`, peaks are combined using one of two
+#' methods controlled by `combineMethod`.
 #'
 #' @param x
 #' An object of type `aligns`.
 #'
+#' @param maxCombine
+#' Controls peak combining in datapoints. `0` (default): off.
+#' Any positive number enables peak combining. For
+#' `combineMethod = 1` this is the `range` parameter of
+#' [metabodecon::combine_peaks()]. For `combineMethod = 2`
+#' this is the maximum distance to the nearest reference peak.
+#' See 'Details'.
+#'
+#' @param combineMethod
+#' Peak-combining backend. `1`: merge adjacent columns via
+#' [metabodecon::combine_peaks()]. `2` (default):
+#' nearest-neighbour snapping to reference peaks.
+#'
+#' @param ref
+#' A single `align` or `decon2` object whose peaks define
+#' the rows of the output matrix. If `NULL` (default), the
+#' reference is auto-detected from `x` via
+#' `find_ref()`. Used by `combineMethod = 2`
+#' only.
+#'
+#' @param drop_zero
+#' If `TRUE`, rows where all values are zero are removed.
+#'
+#' @details
+#' **Method 1** (`combineMethod = 1`) passes the transposed
+#' integral matrix to [metabodecon::combine_peaks()] with
+#' `range = maxCombine`. Partly-filled neighbouring columns are
+#' merged when they share no common non-zero row.
+#'
+#' **Method 2** (`combineMethod = 2`) maps every peak to the
+#' nearest reference peak and keeps it only if the distance is
+#' at most `maxCombine` datapoints. Areas of peaks that map to
+#' the same reference peak are summed.
+#'
+#' Example for method 2 with ref peaks at indices 5, 9, 20 and
+#' `maxCombine = 4`:
+#'
+#' ```txt
+#' Step 1 – Build intervals [ref ± maxCombine]:
+#'
+#'   ref:     5              9                    20
+#'            |              |                     |
+#'   int:  [1 ····· 9]   [5 ···· 13]        [16 ···· 24]
+#'             overlap!
+#'
+#' Step 2 – Shrink overlapping neighbours to midpoint.
+#'          Refs 1 & 2 overlap → mid = floor((5+9)/2) = 7.
+#'          Refs 2 & 3 don't  → keep maxCombine boundary.
+#'
+#'   ref:     5         9                         20
+#'            |         |                          |
+#'   int:  [1 ··· 7] [8 ·· 13]   gap        [16 ···· 24]
+#'
+#' Step 3 – Assign peaks to nearest ref; keep if ≤ maxCombine:
+#'
+#'   | Peak | Nearest | Dist | ≤ 4? | Action |
+#'   |------|---------|------|------|--------|
+#'   |    3 | ref 1   |    2 | yes  | keep   |
+#'   |    6 | ref 1   |    1 | yes  | keep   |
+#'   |    8 | ref 2   |    1 | yes  | keep   |
+#'   |   11 | ref 2   |    2 | yes  | keep   |
+#'   |   15 | ref 3   |    5 | no   | DROP   |
+#'   |   21 | ref 3   |    1 | yes  | keep   |
+#'
+#' Step 4 – Sum areas (A × pi) per reference peak:
+#'
+#'   ref 1 ← A(3) + A(6)    (peaks at 3, 6)
+#'   ref 2 ← A(8) + A(11)   (peaks at 8, 11)
+#'   ref 3 ← A(21)          (peak 15 dropped)
+#' ```
+#'
 #' @return
-#' A matrix of aligned signal intensities.
+#' A numeric matrix with chemical shifts as rownames and
+#' spectrum names as colnames.
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
 #' if (interactive()) {
-#'     # Example requires an interactive R session, because in case of missing
-#'     # dependencies the user will be asked for confirmation to install them.
 #'     decons <- deconvolute(sim[1:2], sfr = c(3.55, 3.35))
-#'     aligns <- align(decons)
-#'     si_mat <- get_si_mat(aligns) # 2048 x 2 matrix (2048 datapoints, 2 spectra)
+#'     aligns <- align(decons, maxCombine = 0)
+#'     si_mat_0 <- get_si_mat(aligns)
+#'     si_mat_1 <- get_si_mat(aligns, maxCombine = 20)
+#'     si_mat_2 <- get_si_mat(aligns, maxCombine = 20, combineMethod = 1)
 #' }
-get_si_mat <- function(x) {
+get_si_mat <- function(x, ref = NULL, drop_zero = FALSE,
+                       maxCombine = 0, combineMethod = 2) {
     stopifnot(is_aligns(x))
-    sapply(x, function(xi) xi$sit$al)
+    cs <- x[[1]]$cs
+    if (maxCombine == 0) {
+        mat <- sapply(x, function(xi) xi$sit$al)
+        rownames(mat) <- cs
+        if (drop_zero) {
+            mat <- mat[rowSums(mat != 0) > 0, , drop = FALSE]
+        }
+    } else if (combineMethod == 1) {
+        mat <- sapply(x, function(xi) xi$sit$al)
+        rownames(mat) <- cs
+        tmat <- t(mat)
+        cmat <- combine_peaks(tmat, range = maxCombine)$long
+        mat <- t(cmat)
+        if (drop_zero) {
+            mat <- mat[rowSums(mat != 0) > 0, , drop = FALSE]
+        }
+    } else if (combineMethod == 2) {
+        if (is.null(ref)) {
+            pl <- lapply(x, get_peak_indices)
+            idx <- find_ref(pl)$refInd
+            ref <- x[[idx]]
+        }
+        get_idx <- function(vals) {
+            idx <- match(vals, cs)
+            if (anyNA(idx)) {
+                idx <- round(convert_pos(vals, cs, seq_along(cs)))
+            }
+            pmin(length(cs), pmax(1L, as.integer(idx)))
+        }
+        ref_x0 <- if (is_align(ref)) ref$lcpar$x0_al else ref$lcpar$x0
+        ref_cs <- ref_x0
+        ref_idx <- get_idx(ref_cs)
+        nr <- length(ref_idx)
+        ns <- length(x)
+        mat <- matrix(0, nrow = nr, ncol = ns)
+        mids <- if (nr >= 2) floor((ref_idx[-nr] + ref_idx[-1]) / 2) else integer()
+        for (s in seq_len(ns)) {
+            peak_idx <- get_idx(x[[s]]$lcpar$x0_al)
+            A <- x[[s]]$lcpar$A
+            if (length(peak_idx) == 0) next
+            grp <- if (nr == 1) {
+                rep.int(1L, length(peak_idx))
+            } else {
+                findInterval(peak_idx - 0.5, mids) + 1L
+            }
+            keep <- abs(peak_idx - ref_idx[grp]) <= maxCombine
+            if (!any(keep)) next
+            sums <- rowsum(matrix(A[keep] * pi, ncol = 1), grp[keep], reorder = FALSE)
+            mat[as.integer(rownames(sums)), s] <- sums[, 1]
+        }
+        rownames(mat) <- ref_cs
+    } else {
+        stop("`combineMethod` must be 1 or 2.", call. = FALSE)
+    }
+    colnames(mat) <- get_names(x)
+    mat
 }
 
 # Exported Helpers (Deprecated) #####
@@ -204,7 +485,7 @@ get_si_mat <- function(x) {
 #' `r lifecycle::badge("deprecated")`
 #'
 #' @param spectrum_data
-#' A list of deconvoluted spectra as returned by [generate_lorentz_curves()].
+#' A list of deconvoluted spectra as returned by [metabodecon::generate_lorentz_curves()].
 #'
 #' @param full_range
 #' If TRUE, the full range of the spectra is returned. If FALSE, only the range
@@ -254,7 +535,7 @@ get_ppm_range <- function(spectrum_data, full_range = FALSE) {
 #' @description
 #' Helper function of `align()`. Should not be called directly by the user.
 #'
-#' Generates a list of elements required by [speaq_align()].
+#' Generates a list of elements required by [metabodecon::speaq_align()].
 #' See 'Value' for a detailed description of the list elements.
 #'
 #' Direct usage of this function has been deprecated with metabodecon version
@@ -436,13 +717,12 @@ speaq_align <- function(feat = gen_feat_mat(spectrum_data),
                         verbose = TRUE,
                         show = FALSE,
                         mfrow = c(2, 1)) {
-    acceptLostPeak <- FALSE # Must be FALSE so we can assign A and lambda to the respective peaks
     Y <- feat$data_matrix
     nsp <- nrow(Y) # Number of spectra
     ndp <- ncol(Y) # Number of data points
     upci_list <- feat$peakList # Unaligned peak center indices
-    idx_ref <- speaq::findRef(upci_list)$refInd # Reference spectrum
-    clust_obj <- dohCluster(Y, upci_list, idx_ref, maxShift, acceptLostPeak, verbose) # list(Y, new_peakList)
+    idx_ref <- find_ref(upci_list)$refInd # Reference spectrum
+    clust_obj <- dohCluster(Y, upci_list, idx_ref, maxShift, verbose)
     apci_list <- clust_obj$new_peakList # Aligned peak center indices
     ppm <- spectrum_data[[1]]$x_values_ppm
     M <- matrix(nrow = nsp, ncol = ndp, dimnames = list(NULL, ppm))
@@ -466,7 +746,7 @@ speaq_align <- function(feat = gen_feat_mat(spectrum_data),
 #'
 #' Helper function of `align()`. Should not be called directly by the user.
 #'
-#' Even after calling [speaq_align()], the alignment of individual signals is
+#' Even after calling [metabodecon::speaq_align()], the alignment of individual signals is
 #' not always perfect, as 'speaq' performs a segment-wise alignment i.e. groups
 #' of signals are aligned. For further improvements, partly filled neighboring
 #' columns are merged. See 'Details' for an illustrative example.
@@ -532,8 +812,8 @@ speaq_align <- function(feat = gen_feat_mat(spectrum_data),
 #'
 #' @author
 #'
-#' 2021-2024 Wolfram Gronwald: initial version.\cr 2024-2025 Tobias Schmidt:
-#' refactored initial version.
+#' 2021-2024 Wolfram Gronwald: initial version.\cr
+#' 2024-2025 Tobias Schmidt: refactored initial version.
 #'
 #' @examples
 #' deps <- c("MassSpecWavelet", "impute")
@@ -554,23 +834,38 @@ combine_peaks <- function(shifted_mat,
                           spectrum_data = NULL,
                           data_path = NULL) {
     M <- replace(shifted_mat, is.na(shifted_mat), 0)
-    U <- M != 0 # Unequal zero matrix. U[i,j] is TRUE if M[i,j] is nonzero, else FALSE.
-    uu <- colSums(U) # Unequal zero vector. u[j] gives the amount of nonzero elements in M[,j].
+    # U[i,j] is TRUE if M[i,j] is nonzero, else FALSE.
+    U <- M != 0
+    # uu[j] gives the number of nonzero elements in M[,j].
+    uu <- colSums(U)
+    nc <- ncol(M)
     for (i in (nrow(M) - 1):lower_bound) {
         for (j in which(uu == i)) {
             if (uu[j] == 0) next
-            nn <- c((j - range):(j - 1), (j + 1):(j + range)) # Neighbors of j.
-            cc <- combine_scores(U, uu, j, nn)
-            while (!all(cc == 0)) {
+            from <- max(1, j - range)
+            to <- min(nc, j + range)
+            nn <- seq(from, to)
+            nn <- nn[nn != j]
+            if (length(nn) == 0) next
+            mj <- M[, j]
+            uj <- U[, j]
+            repeat {
+                nn <- nn[uu[nn] > 0]
+                if (length(nn) == 0) break
+                cc <- combine_scores(U, uu, j, nn, uj = uj)
+                if (max(cc) == 0) break
                 n <- nn[which.max(cc)]
-                M[, j] <- M[, j] + M[, n]
-                U[, j] <- U[, j] | U[, n]
+                mj <- mj + M[, n]
+                uj <- uj | U[, n]
                 uu[j] <- uu[j] + uu[n]
                 M[, n] <- 0
                 U[, n] <- FALSE
                 uu[n] <- 0
-                cc <- combine_scores(U, uu, j, nn)
+                nn <- nn[nn != n]
+                if (length(nn) == 0) break
             }
+            M[, j] <- mj
+            U[, j] <- uj
         }
     }
     if (!is.null(spectrum_data)) colnames(M) <- spectrum_data[[1]]$x_values_ppm
@@ -604,20 +899,20 @@ combine_peaks <- function(shifted_mat,
 #' `r lifecycle::badge("deprecated")`
 #'
 #' @param X Dataframe of signal intensities from all spectra as returned by
-#' [gen_feat_mat()].
+#' [metabodecon::gen_feat_mat()].
 #'
-#' @param peakList List of peak indices as returned [gen_feat_mat()].
+#' @param peakList List of peak indices as returned [metabodecon::gen_feat_mat()].
 #'
 #' @param refInd Number of the reference spectrum i.e. the spectrum to which all
 #' signals will be aligned to.
 #'
 #' @param maxShift Maximum number of points a value can be moved.
 #'
-#' @param acceptLostPeak Whether to allow the the alignment algorithm to ignore
-#' peaks that cannot easily be aligned with the reference spectrum.
-#'
 #' @param verbose Whether to print additional information during the alignment
 #' process.
+#'
+#' @param method Alignment backend. `1` uses `speaq::hClustAlign()`, `2`
+#' (default) uses metabodecon's built-in implementation.
 #'
 #' @return
 #' A list containing two data frames `Y` and `new_peakList`. The first one
@@ -642,7 +937,6 @@ combine_peaks <- function(shifted_mat,
 #'         peakList = feat$peakList,
 #'         refInd = refObj$refInd,
 #'         maxShift = 100,
-#'         acceptLostPeak = TRUE,
 #'         verbose = TRUE
 #'     )
 #'     str(hclObj, 1)
@@ -651,26 +945,52 @@ dohCluster <- function(X,
                        peakList,
                        refInd = 0,
                        maxShift = 100,
-                       acceptLostPeak = TRUE,
-                       verbose = TRUE) {
-    res <- if (is.null(maxShift)) {
-        if (verbose) {
-            cat("\n --------------------------------")
-            cat("\n maxShift=NULL, thus dohCluster will automatically detect the optimal value of maxShift.")
-            cat("\n --------------------------------\n")
+                       verbose = TRUE,
+                       method = 2) {
+    if (isFALSE(verbose)) local_options(toscutil.logf.file = nullfile())
+    Y <- X
+    peakListNew <- peakList
+    startTime <- proc.time()
+    nspec <- nrow(X)
+    logf("Running dohCluster with maxShift = %d on %d spectra", maxShift, nspec)
+    refSpec <- Y[refInd, ]
+    for (tarInd in seq_len(nspec)) {
+        if (tarInd != refInd) {
+            logf("Aligning spectrum %d/%d", tarInd, nspec)
+            targetSpec <- Y[tarInd, ]
+            n_ref <- length(peakList[[refInd]])
+            n_tar <- length(peakList[[tarInd]])
+            myPeakList <- c(peakList[[refInd]], peakList[[tarInd]])
+            myPeakLabel <- c(rep(1, n_ref), rep(0, n_tar))
+            startP <- 1
+            endP <- length(targetSpec)
+            res <- if (method == 1) {
+                speaq::hClustAlign(
+                    refSpec, targetSpec,
+                    myPeakList, myPeakLabel,
+                    startP, endP,
+                    maxShift = maxShift,
+                    acceptLostPeak = FALSE
+                )
+            } else {
+                hclust_align(
+                    refSpec, targetSpec,
+                    myPeakList, myPeakLabel,
+                    startP, endP,
+                    maxShift = maxShift
+                )
+            }
+            Y[tarInd, ] <- res$tarSpec
+            n_res <- length(res$peakList)
+            n_end <- min(n_ref + n_tar, n_res)
+            peakListNew[[tarInd]] <- res$peakList[
+                (n_ref + 1):n_end
+            ]
         }
-        dohCluster_withoutMaxShift(X, peakList, refInd, acceptLostPeak, verbose)
-    } else {
-        if (verbose) {
-            cat("\n --------------------------------")
-            cat("\n dohCluster will run with maxShift=", maxShift)
-            cat("\n If you want dohCluster to detect the optimal maxShift automatically,")
-            cat("\n use dohCluster(..., maxShift = NULL, ...)")
-            cat("\n --------------------------------\n")
-        }
-        dohCluster_withMaxShift(X, peakList, refInd, maxShift, acceptLostPeak, verbose)
     }
-    return(res)
+    elapsed <- (proc.time() - startTime)[3]
+    logf("Finished dohCluster in %.1f s", elapsed)
+    list("Y" = Y, "new_peakList" = peakListNew)
 }
 
 # Private Helpers #####
@@ -732,184 +1052,28 @@ dohCluster <- function(X,
 #' cc[2] == 0  # M[, 3] and M[, 1] are not combinable
 #' cc[3] == 0  # M[, 4] and M[, 1] are not combinable
 #' cc[4] == 1  # M[, 5] and M[, 1] are combinable and M[, 5] has one nonzero element
-combine_scores <- function(U, uu, j, nn) {
-    sapply(seq_along(nn), function(k) {
-        n <- nn[k] # Index of neighboring column
-        combinable <- sum(U[, n] & U[, j]) == 0
-        if (combinable) uu[n] else 0
-    })
-}
+combine_scores <- function(U, uu, j, nn, uj = NULL) {
+    nn <- nn[nn >= 1 & nn <= ncol(U)]
+    if (length(nn) == 0) return(numeric(0))
+    if (is.null(uj)) uj <- U[, j]
 
-#' @noRd
-#' @author
-#' 2021-2024 Wolfram Gronwald: initial version.\cr
-#' 2024-2025 Tobias Schmidt: refactored initial version.
-dohCluster_withoutMaxShift <- function(X,
-                                       peakList,
-                                       refInd = 0,
-                                       acceptLostPeak = TRUE,
-                                       verbose = TRUE) {
-    if (verbose) {
-        startTime <- proc.time()
-    }
-    maxShift_ladder <- 2^(c(1:trunc(log2(ncol(X) / 2))))
-    bestCor <- -1
-    corVec <- NULL
-    bestY <- NULL
-    bestMaxShift <- 0
-    for (maxShift_val in maxShift_ladder) {
-        if (verbose) {
-            cat("\n maxShift=", maxShift_val)
-        }
-        Y <- X
-        peakListNew <- peakList
-        refSpec <- Y[refInd, ]
-        for (tarInd in seq_len(nrow(X))) {
-            if (tarInd != refInd) {
-                targetSpec <- Y[tarInd, ]
-                myPeakList <- c(peakList[[refInd]], peakList[[tarInd]])
-                myPeakLabel <- c(
-                    rep(1, length(peakList[[refInd]])),
-                    rep(0, length(peakList[[tarInd]]))
-                )
-                startP <- 1
-                endP <- length(targetSpec)
-                res <- speaq::hClustAlign(
-                    refSpec,
-                    targetSpec,
-                    myPeakList,
-                    myPeakLabel,
-                    startP,
-                    endP,
-                    maxShift = maxShift_val,
-                    acceptLostPeak = acceptLostPeak
-                )
-                Y[tarInd, ] <- res$tarSpec
-                if (length(myPeakList) > length(res$peakList)) {
-                    peakListNew[[tarInd]] <- res$peakList[(length(peakList[[refInd]]) +
-                        1):length(res$peakList)]
-                } else {
-                    peakListNew[[tarInd]] <- res$peakList[(length(peakList[[refInd]]) +
-                        1):length(myPeakList)]
-                }
-            }
-        }
-        Z <- stats::cor(t(Y))
-        newCor <- stats::median(Z[lower.tri(Z)])
-        corVec <- c(corVec, newCor)
-        if (verbose) {
-            cat(
-                "\n Median Pearson correlation coefficent:",
-                newCor, ", the best result:", bestCor
-            )
-        }
-        if (newCor > bestCor) {
-            bestCor <- newCor
-            bestY <- Y
-            bestMaxShift <- maxShift_val
-        }
-    }
-    if (verbose) {
-        cat(
-            "\nOptimal maxShift=", bestMaxShift, "with median Pearson correlation of aligned spectra=",
-            bestCor
-        )
-        plot(log2(maxShift_ladder), corVec,
-            type = "b",
-            xlab = "log2(maxShift)", ylab = "Median Pearson correlation coefficent",
-            main = paste("Optimal maxShift=", bestMaxShift,
-                " (red star) \n with median Pearson correlation coefficent of ",
-                round(bestCor, 6),
-                sep = ""
-            )
-        )
-        graphics::points(log2(bestMaxShift), bestCor, col = "red", pch = 8, cex = 2)
-    }
-    if (verbose) {
-        endTime <- proc.time()
-        cat("\n Alignment time: ", (endTime[3] - startTime[3]) / 60, " minutes")
-    }
-    # Added by me at 31.08.21
-    return_list <- list("Y" = bestY, "new_peakList" = peakListNew)
-    return(return_list)
-}
-
-#' @noRd
-#' @author
-#' 2021-2024 Wolfram Gronwald: initial version.\cr
-#' 2024-2025 Tobias Schmidt: refactored initial version.
-dohCluster_withMaxShift <- function(X,
-                                    peakList,
-                                    refInd = 0,
-                                    maxShift = 100,
-                                    acceptLostPeak = TRUE,
-                                    verbose = TRUE) {
-    Y <- X
-    peakListNew <- peakList
-    if (verbose) {
-        startTime <- proc.time()
-    }
-    refSpec <- Y[refInd, ]
-    for (tarInd in seq_len(nrow(X))) {
-        if (tarInd != refInd) {
-            if (verbose) {
-                cat("\n aligning spectrum ", tarInd)
-            }
-            targetSpec <- Y[tarInd, ]
-            myPeakList <- c(peakList[[refInd]], peakList[[tarInd]])
-            myPeakLabel <- double(length(myPeakList))
-            for (i in seq_along(peakList[[refInd]])) myPeakLabel[i] <- 1
-            startP <- 1
-            endP <- length(targetSpec)
-            res <- speaq::hClustAlign(
-                refSpec,
-                targetSpec,
-                myPeakList,
-                myPeakLabel,
-                startP,
-                endP,
-                maxShift = maxShift,
-                acceptLostPeak = acceptLostPeak
-            )
-            Y[tarInd, ] <- res$tarSpec
-            if (length(myPeakList) > length(res$peakList)) {
-                peakListNew[[tarInd]] <- res$peakList[(length(peakList[[refInd]]) +
-                    1):length(res$peakList)]
-            } else {
-                peakListNew[[tarInd]] <- res$peakList[(length(peakList[[refInd]]) +
-                    1):length(myPeakList)]
-            }
-        }
-    }
-    if (verbose) {
-        Z <- stats::cor(t(Y))
-        newCor <- stats::median(Z[lower.tri(Z)])
-        cat(
-            "\n Median pearson correlation of aligned spectra:",
-            newCor
-        )
-        endTime <- proc.time()
-        cat(
-            "\n Alignment time: ", (endTime[3] - startTime[3]) / 60,
-            " minutes"
-        )
-    }
-
-    # Added modifications:
-    return_list <- list("Y" = Y, "new_peakList" = peakListNew)
-    return(return_list)
+    # A neighbor is combinable if it has no shared nonzero row with column j.
+    overlaps <- .colSums(U[, nn, drop = FALSE] & uj, nrow(U), length(nn))
+    cc <- uu[nn]
+    cc[overlaps > 0] <- 0
+    unname(cc)
 }
 
 #' @noRd
 #'
 #' @description
-#' Helper function of [gen_feat_mat()] to extract the deconvolution parameters
+#' Helper function of [metabodecon::gen_feat_mat()] to extract the deconvolution parameters
 #' from `data_path`, where `data_path` can be a `decon1` or `decons1` object or
 #' a folder containing a `"parameters.txt"` and `"approximated_spectrum.txt"`
 #' file, as created when calling `MetaboDecon1D()` before version 1.2.
 #'
 #' @param data_path
-#' A list of deconvoluted spectra as returned by [generate_lorentz_curves()] or
+#' A list of deconvoluted spectra as returned by [metabodecon::generate_lorentz_curves()] or
 #' a path to a folder containing ".* parameters.txt" and ".*
 #' approximated_spectrum.txt" files.
 #'
@@ -929,14 +1093,30 @@ dohCluster_withMaxShift <- function(X,
 get_decon_params <- function(data_path, warn = TRUE, check = TRUE) {
     dd <- data_path
     if (is.list(dd)) {
-        dd <- if (is_decon_list(dd)) dd else if (is_decon_obj(dd)) list(dd) else stop("data_path must be a list of deconvoluted spectra.")
+        dd <- if (is_decon_list(dd)) {
+            dd
+        } else if (is_decon_obj(dd)) {
+            list(dd)
+        } else {
+            stop("data_path must be a list of deconvoluted spectra.")
+        }
         w <- lapply(dd, function(d) d$x_0)
         lambda <- lapply(dd, function(d) d$lambda)
         A <- lapply(dd, function(d) d$A)
         spectrum_superposition <- lapply(dd, function(d) d$spectrum_superposition)
         params <- named(w, lambda, A, spectrum_superposition)
     } else {
-        if (!file.exists(dd)) stop(dd, " does not exist.") else if (warn) warning("You have provided a path to `gen_feat_mat()`. Since metabodecon v1.2 it is recommended to provide the output of `generate_lorentz_curves()` directly to speed up computations. For details see section 'Details' after calling `help('gen_feat_mat')`.")
+        if (!file.exists(dd)) {
+            stop(dd, " does not exist.")
+        } else if (warn) {
+            warning(
+                "You have provided a path to `gen_feat_mat()`. Since",
+                "metabodecon v1.2 it is recommended to provide the output of",
+                "`generate_lorentz_curves()` directly to speed up",
+                "computations. For details see section 'Details' after",
+                "calling `help('gen_feat_mat')`."
+            )
+        }
         params <- read_decon_params(dd)
     }
     if (check) check_decon_params(params)
@@ -952,7 +1132,9 @@ read_decon_params <- function(data_path) {
     spc_nam <- sub(" approximated_spectrum.txt", "", basename(spc_txt))
     if (length(par_txt) != length(spc_txt)) stop("Number of parameter files and spectrum files differs.")
     if (length(par_txt) == 0) stop("No parameter files found in the given directory.")
-    mapply(par_nam, spc_nam, FUN = function(p, s) if (p != s) warning(sprintf("Mismatched file names: %s and %s\n", p, s)) )
+    mapply(par_nam, spc_nam, FUN = function(p, s) {
+        if (p != s) warning(sprintf("Mismatched file names: %s and %s\n", p, s))
+    })
     par_lst <- lapply(par_txt, function(file) {
         data <- as.matrix(data.table::fread(file, header = FALSE))
         rownames(data) <- data[, 1]
@@ -1030,6 +1212,137 @@ get_peak_indices <- function(decon2) {
 }
 
 #' @noRd
+#' @author 2026 Tobias Schmidt: initial version.
+get_peak_align_data <- function(decon2) {
+    cs <- decon2$cs
+    dp <- seq_along(cs)
+    list(
+        x0 = convert_pos(decon2$lcpar$x0, cs, dp),
+        lambda = abs(convert_width(decon2$lcpar$lambda, cs, dp)),
+        A = abs(decon2$lcpar$A),
+        n = length(cs)
+    )
+}
+
+#' @noRd
+#' @author 2026 Tobias Schmidt: initial version.
+estimate_peak_shift <- function(refData, tarData, maxShift = 50) {
+    rx <- refData$x0
+    tx <- tarData$x0
+    rA <- pmax(abs(refData$A), .Machine$double.eps)
+    tA <- pmax(abs(tarData$A), .Machine$double.eps)
+    rl <- pmax(refData$lambda, 1)
+    tl <- pmax(tarData$lambda, 1)
+    scores <- numeric(2 * maxShift + 1)
+    bins <- seq.int(-maxShift, maxShift)
+    for (i in seq_along(tx)) {
+        j1 <- findInterval(tx[i] - maxShift, rx) + 1L
+        j2 <- findInterval(tx[i] + maxShift, rx)
+        j1 <- max(1L, j1)
+        j2 <- min(length(rx), j2)
+        if (j1 > j2) next
+        idx <- j1:j2
+        delta <- tx[i] - rx[idx]
+        sim <- pmin(tl[i], rl[idx]) / pmax(tl[i], rl[idx])
+        w <- pmin(tA[i], rA[idx]) * sim
+        pos <- round(delta) + maxShift + 1L
+        for (k in seq_along(pos)) {
+            scores[pos[k]] <- scores[pos[k]] + w[k]
+        }
+    }
+    if (all(scores == 0)) return(0)
+    bins[which.max(scores)]
+}
+
+#' @noRd
+#' @author 2026 Tobias Schmidt: initial version.
+match_peak_pairs <- function(refData, tarData, shift = 0, tol_mult = 2) {
+    rx <- refData$x0
+    tx <- tarData$x0
+    xadj <- tx - shift
+    idx <- findInterval(xadj, rx)
+    lo <- pmax(idx, 1L)
+    hi <- pmin(idx + 1L, length(rx))
+    dlo <- abs(xadj - rx[lo])
+    dhi <- abs(xadj - rx[hi])
+    idx_ref <- lo
+    use_hi <- dhi < dlo
+    idx_ref[use_hi] <- hi[use_hi]
+    resid <- xadj - rx[idx_ref]
+    tl <- pmax(tarData$lambda, 1)
+    rl <- pmax(refData$lambda[idx_ref], 1)
+    tol <- pmax(1, tol_mult * (tl + rl))
+    keep <- abs(resid) <= tol
+    if (!any(keep)) {
+        return(list(idx_tar = integer(0), delta = numeric(0), weight = numeric(0)))
+    }
+    idx_tar <- which(keep)
+    idx_ref <- idx_ref[keep]
+    rl <- rl[keep]
+    delta <- tx[idx_tar] - rx[idx_ref]
+    sim <- pmin(tl[keep], rl) / pmax(tl[keep], rl)
+    w <- pmin(abs(tarData$A[keep]), abs(refData$A[idx_ref])) * sim
+    ord <- order(abs(resid[keep]), -w)
+    idx_tar <- idx_tar[ord]
+    idx_ref <- idx_ref[ord]
+    delta <- delta[ord]
+    w <- w[ord]
+    ok <- !duplicated(idx_ref)
+    list(
+        idx_tar = idx_tar[ok],
+        delta = delta[ok],
+        weight = pmax(w[ok], .Machine$double.eps)
+    )
+}
+
+#' @noRd
+#' @author 2026 Tobias Schmidt: initial version.
+interpolate_peak_shifts <- function(x,
+                                    shift,
+                                    weight,
+                                    xout,
+                                    maxShift = 50,
+                                    fallback = 0) {
+    n <- length(x)
+    if (n == 0) return(rep(fallback, length(xout)))
+    if (n == 1) return(rep(shift[1], length(xout)))
+    ord <- order(x)
+    x <- x[ord]
+    shift <- shift[ord]
+    weight <- weight[ord]
+    ng <- min(12L, max(1L, floor(n / 4L)))
+    if (ng == 1L) return(rep(weighted_median(shift, weight), length(xout)))
+    grp <- cut(seq_len(n), breaks = ng, labels = FALSE)
+    knot_x <- vapply(split(seq_len(n), grp), function(i) {
+        weighted_mean(x[i], weight[i])
+    }, numeric(1))
+    knot_s <- vapply(split(seq_len(n), grp), function(i) {
+        weighted_median(shift[i], weight[i])
+    }, numeric(1))
+    if (length(knot_x) == 1) return(rep(knot_s[1], length(xout)))
+    y <- stats::approx(knot_x, knot_s, xout = xout, rule = 2)$y
+    y <- pmin(maxShift, pmax(-maxShift, y))
+    y[!is.finite(y)] <- fallback
+    y
+}
+
+#' @noRd
+#' @author 2026 Tobias Schmidt: initial version.
+weighted_mean <- function(x, w) {
+    sum(x * w) / sum(w)
+}
+
+#' @noRd
+#' @author 2026 Tobias Schmidt: initial version.
+weighted_median <- function(x, w) {
+    ord <- order(x)
+    x <- x[ord]
+    w <- w[ord]
+    i <- which(cumsum(w) >= sum(w) / 2)[1]
+    x[i]
+}
+
+#' @noRd
 #' @author 2024-2025 Tobias Schmidt: initial version.
 get_sup_mat <- function(decons2) {
     do.call(rbind, lapply(decons2, function(d) d$sit$sup))
@@ -1052,13 +1365,14 @@ get_sup_mat <- function(decons2) {
 #'
 #' | req | ask  | ia   | action                                     |
 #' | --- | ---- | ---- | ------------------------------------------ |
-#' | F   | [TF] | [TF] | Return                                     |
+#' | F   | TF   | TF   | Return                                     |
 #' | T   | T    | T    | Ask user and install or return accordingly |
 #' | T   | T    | F    | Stop with error                            |
-#' | T   | F    | [TF] | Install                                    |
+#' | T   | F    | TF   | Install                                    |
 #'
-#' req = Installation required (because requested packages are not yet installed
-#' on the system)
+#' - req = Is installation required?
+#' - ask = Is `ask` argument TRUE?
+#' - ia = Interactive session?
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
@@ -1082,4 +1396,112 @@ bioc_install <- function(pkgs, ask = TRUE, verbose = TRUE) {
     }
     repos <- c("https://bioc.r-universe.dev", "https://cloud.r-project.org")
     utils::install.packages(pkgs_missing, repos = repos, keep_outputs = tmpdir("bioc_install"))
+}
+
+# Experimental #####
+
+#' @noRd
+#' @author 2026 Tobias Schmidt: initial version.
+align_fast <- function(peakData,
+                       refInd = 1,
+                       maxShift = 50,
+                       verbose = TRUE,
+                       nworkers = 1) {
+    if (isFALSE(verbose)) local_options(toscutil.logf.file = nullfile())
+    startTime <- proc.time()
+    nspec <- length(peakData)
+    logf("Running align_fast with maxShift = %d on %d spectra", maxShift, nspec)
+    new_peakList <- lapply(peakData, function(x) x$x0)
+    tarInd <- setdiff(seq_len(nspec), refInd)
+    if (length(tarInd) > 0) {
+        nw <- min(nworkers, length(tarInd))
+        est_shift <- estimate_peak_shift
+        match_pairs <- match_peak_pairs
+        w_mean <- weighted_mean
+        w_med <- weighted_median
+        interp_shift <- function(x,
+                                 shift,
+                                 weight,
+                                 xout,
+                                 maxShift = 50,
+                                 fallback = 0) {
+            n <- length(x)
+            if (n == 0) return(rep(fallback, length(xout)))
+            if (n == 1) return(rep(shift[1], length(xout)))
+            ord <- order(x)
+            x <- x[ord]
+            shift <- shift[ord]
+            weight <- weight[ord]
+            ng <- min(12L, max(1L, floor(n / 4L)))
+            if (ng == 1L) return(rep(w_med(shift, weight), length(xout)))
+            grp <- cut(seq_len(n), breaks = ng, labels = FALSE)
+            knot_x <- vapply(split(seq_len(n), grp), function(i) {
+                w_mean(x[i], weight[i])
+            }, numeric(1))
+            knot_s <- vapply(split(seq_len(n), grp), function(i) {
+                w_med(shift[i], weight[i])
+            }, numeric(1))
+            if (length(knot_x) == 1) return(rep(knot_s[1], length(xout)))
+            y <- stats::approx(knot_x, knot_s, xout = xout, rule = 2)$y
+            y <- pmin(maxShift, pmax(-maxShift, y))
+            y[!is.finite(y)] <- fallback
+            y
+        }
+        worker_fun <- function(tarData, refData, maxShift) {
+            shift0 <- est_shift(refData, tarData, maxShift)
+            match <- match_pairs(refData, tarData, shift = shift0)
+            if (length(match$idx_tar) < 3) {
+                out <- tarData$x0 - shift0
+                out <- pmin(tarData$n, pmax(1, out))
+                return(out)
+            }
+            shift <- interp_shift(
+                x = tarData$x0[match$idx_tar],
+                shift = match$delta,
+                weight = match$weight,
+                xout = tarData$x0,
+                maxShift = maxShift,
+                fallback = shift0
+            )
+            out <- tarData$x0 - shift
+            out <- pmin(tarData$n, pmax(1, out))
+            out
+        }
+        res <- mcmapply(
+            nw,
+            worker_fun,
+            peakData[tarInd],
+            MoreArgs = list(refData = peakData[[refInd]], maxShift = maxShift),
+            SIMPLIFY = FALSE,
+            USE.NAMES = FALSE,
+            loadpkg = FALSE
+        )
+        new_peakList[tarInd] <- res
+    }
+    elapsed <- (proc.time() - startTime)[3]
+    logf("Finished align_fast in %.1f s", elapsed)
+    list(Y = NULL, new_peakList = new_peakList)
+}
+
+#' @noRd
+#' @author 2026 Tobias Schmidt: initial version.
+align_fast_pair <- function(tarData, refData, maxShift = 50) {
+    shift0 <- estimate_peak_shift(refData, tarData, maxShift)
+    match <- match_peak_pairs(refData, tarData, shift = shift0)
+    if (length(match$idx_tar) < 3) {
+        out <- tarData$x0 - shift0
+        out <- pmin(tarData$n, pmax(1, out))
+        return(out)
+    }
+    shift <- interpolate_peak_shifts(
+        x = tarData$x0[match$idx_tar],
+        shift = match$delta,
+        weight = match$weight,
+        xout = tarData$x0,
+        maxShift = maxShift,
+        fallback = shift0
+    )
+    out <- tarData$x0 - shift
+    out <- pmin(tarData$n, pmax(1, out))
+    out
 }

@@ -1,5 +1,12 @@
 # Copilot Instructions for MetaboDecon
 
+## Workspace Conventions
+
+- Use `./tmp` for temporary files (it is gitignored and Rbuildignored).
+  Never write temp files outside the project directory.
+- If code changes must be tested with multiple workers, remind the user to
+  reinstall the package before they run those tests.
+
 ## Coding Guidelines
 
 - All roxygen comments should start with a tag, in particular title and
@@ -7,14 +14,39 @@
 - Character limit is 80. Prefer short variable names like `x` and `y` to achieve
   that. If it's not clear from the function docs what a variable means, use a
   comment to describe it upon first use.
+- Fill lines up to ~80 chars to minimize vertical space. Prefer single-line
+  calls over multi-line when they fit. Going slightly over 80 (up to ~90) is
+  tolerable if it avoids splitting a call across 3 lines.
 - Prefer the use of helper variables instead of function nesting to reduce line
   length and improve readability. E.g. `x <- f(a); y <- g(x)` instead of `y <-
   g(f(a))`. Function nesting is ok if everything still fits in 80 chars and the
   function names are short and readable.
+- Avoid defining functions inside other functions, except for temporary
+  callbacks passed directly to `lapply()`, `sapply()`, `vapply()`, etc.
+  Prefer top-level private helper functions instead to keep function bodies
+  short and easy to scan.
 - Do not use pipe operators `%>%` or `|>`.
 - Always use fully qualified names for functions from other packages, e.g.
   `ggplot2::ggplot()`. Exceptions are functions from R's standard library like
   `sum()`, `mean()`, etc.
+
+## Pseudocode mode for vignettes
+
+- Definition: "pseudocode mode" means code examples are written primarily for
+  readability and teaching, while still running under normal/ideal conditions.
+- Scope: Use pseudocode mode for all newly added or modified code in
+  `vignettes/*.Rmd`.
+- Keep code compact and direct: prefer fewer lines, fewer helper variables, and
+  simple control flow.
+- Prefer clear intent over defensive robustness in vignettes. Avoid extra
+  safeguards that distract from the main idea unless they are essential to
+  understand the method.
+- Keep naming short when context is obvious (e.g. `X`, `y`, `te`, `Xtr`,
+  `Xte`).
+- Prefer single-line function calls in vignettes. Avoid multiline calls unless
+  required for readability of `*apply()` loops or unavoidable long literals.
+- Avoid defensive checks and fallback branches in vignette chunks. In pseudocode
+  mode, prefer short, direct, didactic code that assumes normal conditions.
 
 ## Project Structure
 

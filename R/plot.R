@@ -15,8 +15,22 @@
 #' @param ...
 #' Additional arguments passed to the conversion function.
 #'
+#' @param foc_rgn
+#' Numeric vector of length 2 specifying the focus region in ppm
+#' (e.g. `c(3.55, 3.35)`). If NULL (default), the full spectrum is shown.
+#'
+#' @param what
+#' Which signal to plot: `"supal"` (aligned superposition, default with
+#' fallback to `"sup"` then `"si"`), `"sup"` (superposition) or `"si"` (raw).
+#'
 #' @param sfy
 #' Scaling factor for the y-axis.
+#'
+#' @param cols
+#' Character vector of colors, one per spectrum. Defaults to `rainbow(n)`.
+#'
+#' @param names
+#' Character vector of legend labels. Defaults to spectrum names.
 #'
 #' @param xlab
 #' Label for the x-axis.
@@ -28,13 +42,16 @@
 #' A numeric vector of length 4, which specifies the margins of the plot.
 #'
 #' @param lgd
-#' Logical. If TRUE, a legend is drawn.
+#' Logical or list. If TRUE, a legend is drawn at "topright" with
+#' `cex = 0.8`. If a list, its elements are passed to [legend()] to
+#' override position, size, etc. Set `show = FALSE` inside the list
+#' (or pass `lgd = FALSE`) to hide.
 #'
 #' @return
 #' A plot of the deconvoluted spectra.
 #'
 #' @seealso
-#' [plot_spectrum()] for a much more sophisticated plotting routine
+#' [metabodecon::plot_spectrum()] for a much more sophisticated plotting routine
 #' suitable for plotting a single spectrum.
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
@@ -44,69 +61,58 @@
 #' plot_spectra(obj)
 plot_spectra <- function(obj,
                          ...,
+                         foc_rgn = NULL,
+                         what = c("si", "sup", "supal"),
                          sfy = 1e6,
+                         cols = NULL,
+                         names = NULL,
                          xlab = "Chemical Shift [ppm]",
                          ylab = paste("Signal Intensity [au] /", sfy),
                          mar = c(4.1, 4.1, 1.1, 0.1),
-                         lgd = TRUE) {
+                         lgd = list()) {
+    what <- match.arg(what)
     objs <- as_v12_collection(obj, ...)
-    sis <- lapply(objs, function(x) (x$sit$supal %||% x$sit$sup %||% x$si) / sfy)
-    x0s <- lapply(objs, function(x) x$lcpar$x0)
+    n <- length(objs)
+    n <- length(objs)
     css <- lapply(objs, function(x) x$cs)
+    sis <- lapply(objs, function(x) {
+        y <- switch(what,
+            supal = x$sit$supal %||% x$sit$sup %||% x$si,
+            sup   = x$sit$sup %||% x$si,
+            si    = x$si
+        )
+        y / sfy
+    })
+
+    # Subset to focus region
+    if (!is.null(foc_rgn)) {
+        lo <- min(foc_rgn); hi <- max(foc_rgn)
+        for (i in seq_len(n)) {
+            keep <- css[[i]] >= lo & css[[i]] <= hi
+            css[[i]] <- css[[i]][keep]
+            sis[[i]] <- sis[[i]][keep]
+        }
+    }
+
+    cs_min <- min(vapply(css, min, 0))
+    cs_max <- max(vapply(css, max, 0))
     si_min <- 0
-    si_max <- max(sapply(sis, max))
-    cs_min <- min(sapply(css, min))
-    cs_max <- max(sapply(css, max))
-    line_colors <- rainbow(length(objs))
-    legend_text <- paste("Spectrum", 1:length(objs))
+    si_max <- max(vapply(sis, max, 0))
+    cols <- cols %||% rainbow(n)
+    names <- names %||% get_names(objs)
+
     local_par(mar = mar)
-    plot(
-        x = NA,
-        type = "n",
-        xlab = xlab,
-        ylab = ylab,
-        xlim = c(cs_max, cs_min),
-        ylim = c(si_min, si_max)
-    )
-    for (i in seq_along(objs)) {
-        lines(x = css[[i]], y = sis[[i]], col = line_colors[[i]])
+    plot(NA, type = "n", xlab = xlab, ylab = ylab,
+        xlim = c(cs_max, cs_min), ylim = c(si_min, si_max))
+    for (i in seq_len(n)) {
+        lines(x = css[[i]], y = sis[[i]], col = cols[i])
     }
-    if (is_decons2(objs)) {
-        x0_min <- min(sapply(x0s, min))
-        x0_max <- max(sapply(x0s, max))
-        x0_width <- x0_max - x0_min
-        x0_quart <- x0_width / 4
-        abline(
-            v = c(x0_min, x0_max),
-            lty = 2
-        )
-        arrows(
-            x0 = c(x0_min + x0_quart, x0_max - x0_quart),
-            x1 = c(x0_min, x0_max),
-            y0 = si_max * 0.8,
-            y1 = si_max * 0.8,
-            length = 0.2,
-            lty = 2,
-            col = "black"
-        )
-        text(
-            x = mean(c(x0_min, x0_max)),
-            y = 0.8 * si_max,
-            labels = "ppm range"
-        )
-        mtext(
-            text = round(c(x0_min, x0_max), 4),
-            side = 3,
-            line = 0,
-            at = c(x0_min, x0_max)
-        )
+    lgd <- combine(list(show = TRUE, x = "topright", cex = 0.8), lgd)
+    if (isTRUE(lgd$show)) {
+        lgd$show <- NULL
+        do.call(legend, c(list(legend = names, col = cols, lty = 1), lgd))
     }
-    if (lgd) legend(
-        x = "topright",
-        legend = legend_text,
-        col = line_colors,
-        lty = 1
-    )
+    invisible(NULL)
 }
 
 #' @export
@@ -124,7 +130,7 @@ plot_spectra <- function(obj,
 #' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
 #'
 #' @param ...
-#' Additional arguments passed to [draw_spectrum()] for **every** sub figure.
+#' Additional arguments passed to [metabodecon::draw_spectrum()] for **every** sub figure.
 #' See 'Details'.
 #'
 #' @param obj
@@ -142,7 +148,7 @@ plot_spectra <- function(obj,
 #' of the full spectrum width. Only used if `foc_rgn` is set to NULL.
 #'
 #' @param sub1,sub2,sub3
-#' List of arguments passed to [draw_spectrum()] when drawing sub figure
+#' List of arguments passed to [metabodecon::draw_spectrum()] when drawing sub figure
 #' 1-3. See 'Details'.
 #'
 #' @param mar
@@ -165,18 +171,18 @@ plot_spectra <- function(obj,
 #'
 #' @details
 #' This function first initializes a new plotting canvas.  After  that  it  calls
-#' [draw_spectrum()] multiple times to draw the following sub figures  onto  the
+#' [metabodecon::draw_spectrum()] multiple times to draw the following sub figures  onto  the
 #' plotting canvas:
 #'
 #' 1. The signal intensities in the focus region
 #' 2. The second derivative in the focus region
 #' 3. The signal intensities over all datapoints
 #'
-#' The  argument  lists  for  the  individual  calls  to  [draw_spectrum()]  are
-#' determined at runtime and depend on the arguments passed to [plot_spectrum()]
+#' The  argument  lists  for  the  individual  calls  to  [metabodecon::draw_spectrum()]  are
+#' determined at runtime and depend on the arguments passed to [metabodecon::plot_spectrum()]
 #' as well as the currently active graphics device. To customize the  appearance
 #' of the  individual  sub  plots,  you  can  overwrite  each  value  passed  to
-#' [draw_spectrum()] by providing  a  corresponding  named  element  in  `sub1`,
+#' [metabodecon::draw_spectrum()] by providing  a  corresponding  named  element  in  `sub1`,
 #' `sub2` or `sub3`.
 #'
 #' A sketch of the resulting figure is shown below.
@@ -304,8 +310,8 @@ plot_spectrum <- function(x,
     fig1 <- do.call(draw_spectrum, args$sub1)
     fig2 <- do.call(draw_spectrum, args$sub2)
     fig3 <- do.call(draw_spectrum, args$sub3)
-    figC <- draw_con_lines(fig1 %||% fig2, fig3, con_lines)
-    figF <- draw_box(frame)
+    draw_con_lines(fig1 %||% fig2, fig3, con_lines)
+    draw_box(frame)
 
     invisible(NULL)
 }
@@ -313,9 +319,10 @@ plot_spectrum <- function(x,
 #' @export
 #' @title Draw Spectrum
 #' @description
-#' Draws a single spectrum.  Internally  used  by  [plot_spectrum()],  which  is
+#' Draws a single spectrum.  Internally  used  by  [metabodecon::plot_spectrum()],  which  is
 #' usually  the  recommended  way  to  plot  spectra.  For  usage  examples  see
-#' [test/testthat/test-draw_spectrum.R](https://github.com/spang-lab/metabodecon/blob/main/tests/testthat/test-draw_spectrum.R).
+#' [test/testthat/test-draw_spectrum.R](
+#' https://github.com/spang-lab/metabodecon/blob/main/tests/testthat/test-draw_spectrum.R).
 #'
 #' `r lifecycle::badge("experimental")`
 #'
@@ -389,9 +396,10 @@ plot_spectrum <- function(x,
 #' aligned lorentzian curves (al_lines),
 #' respectively.
 #'
-#' @param cent_pts,bord_pts,norm_pts
-#' List of parameters passed to [points()] when drawing the peak center  points,
-#' peak border points and non-peak points.
+#' @param cent_pts,tp_pts,fp_pts,miss_pts,bord_pts,norm_pts
+#' List of parameters passed to [points()] when drawing the peak center points,
+#' true positive peaks, false positive peaks, missed peaks, peak border points
+#' and non-peak points.
 #'
 #' @param bg_rect,lc_rects,foc_rect,tp_rects
 #' List of parameters passed to [rect()] when drawing the background, lorentzian
@@ -484,12 +492,12 @@ draw_spectrum <- function(
     d2_line   = list(), al_line  = list(),
     lc_lines  = list(), tp_lines = list(), al_lines  = list(),
     cent_pts  = list(), bord_pts = list(), norm_pts  = list(),
+    tp_pts    = list(), fp_pts   = list(), miss_pts  = list(),
     bg_rect   = list(), foc_rect = list(), lc_rects  = list(), tp_rects = list(),
     bt_axis   = list(), lt_axis  = list(), tp_axis   = list(), rt_axis  = list(),
     bt_text   = list(), lt_text  = list(), tp_text   = list(), rt_text  = list(),
     tp_verts  = list(), lc_verts = list(), al_verts  = list(),
-    ze_hline  = list(),
-    al_arrows = list(),
+    ze_hline  = list(), al_arrows = list(),
     lgd       = list()
 ) {
     # Check and enrich inputs (278us)
@@ -512,7 +520,10 @@ draw_spectrum <- function(
     for (var in names(defaults)) {
         env[[var]] <- combine(defaults[[var]], env[[var]], var)
     }
-    decon_only <- c("sm_line", "lc_lines", "sp_line", "lc_rects", "cent_pts", "bord_pts")
+    decon_only <- c(
+        "sm_line", "lc_lines", "sp_line", "lc_rects",
+        "cent_pts", "tp_pts", "fp_pts", "miss_pts", "bord_pts"
+    )
     align_only <- c("al_line", "al_verts", "al_arrows")
     if (is_spectrum(obj)) for (var in decon_only) env[[var]]$show <- FALSE
     if (!is_align(obj)) for (var in align_only) env[[var]]$show <- FALSE
@@ -549,12 +560,12 @@ draw_spectrum <- function(
     }
 
     # Get indices of important points relative to all data points (611us)
-    idp <- idp_all <- seq_along(cs_all) # Data points
+    idp_all <- seq_along(cs_all) # Data points
     icp <- icp_all <- obj$peak$center # Center points (NS)
     ibp <- ibp_all <- unique(sort(c(obj$peak$left, obj$peak$right))) # Border points (NS)
-    ipp <- ipp_all <- sort(c(icp_all, ibp_all)) # Peak points (NS)
+    ipp_all <- sort(c(icp_all, ibp_all)) # Peak points (NS)
     inp <- inp_all <- setdiff(idp_all, ipp_all) # Nonpeak points (NS)
-    ifp <- ifp_all <- which(cs_all >= min(foc_rgn) & cs_all <= max(foc_rgn)) # Focus points
+    ifp_all <- which(cs_all >= min(foc_rgn) & cs_all <= max(foc_rgn)) # Focus points
 
     # Get estimated lorentz parameters across all data points (8us)
     lcpar <- obj$lcpar %||% empty_df(c("x0", "A", "lambda")) # (NS)
@@ -563,14 +574,21 @@ draw_spectrum <- function(
     truepar <- truepar %||% obj$meta$simpar
     trpar <- if (is.null(truepar)) {
         warnmsg <- "True params missing. Provide 'truepar' or unset 'tp_*' arguments."
-        if (any(tp_rects$show, tp_lines$show, tp_verts$show)) warning(warnmsg, call. = FALSE)
+        if (any(tp_rects$show, tp_lines$show, tp_verts$show,
+                tp_pts$show, fp_pts$show, miss_pts$show)) {
+            warning(warnmsg, call. = FALSE)
+        }
         tp_rects$show <- FALSE
         tp_lines$show <- FALSE
         tp_verts$show <- FALSE
+        tp_pts$show <- FALSE
+        fp_pts$show <- FALSE
+        miss_pts$show <- FALSE
         empty_df(c("x0", "A", "lambda"))
     } else {
         as.data.frame(truepar[c("x0", "A", "lambda")])
     }
+
 
     # Calculate amplitude and display height for estimated and true lorentzians
     if (nrow(lcpar) > 0) {
@@ -591,19 +609,17 @@ draw_spectrum <- function(
     if (foc_only) {
         # Get indices of important points relative to the vector of focus points (198us)
         offset <- min(ifp_all) - 1
-        idp <- idp_foc <- ifp_all - offset # Data points
-        icp <- icp_foc <- intersect(icp_all, ifp_all) - offset # Center points (NS)
-        ibp <- ibp_foc <- intersect(ibp_all, ifp_all) - offset # Border points (NS)
-        ipp <- ipp_foc <- intersect(ipp_all, ifp_all) - offset # Peak points (NS)
-        inp <- inp_foc <- intersect(inp_all, ifp_all) - offset # Nonpeak points (NS)
+        icp <- intersect(icp_all, ifp_all) - offset # Center points (NS)
+        ibp <- intersect(ibp_all, ifp_all) - offset # Border points (NS)
+        inp <- intersect(inp_all, ifp_all) - offset # Nonpeak points (NS)
 
         # Get xy values over the focus region (18us)
-        cs <- cs_foc <- cs_all[ifp_all]
-        si <- si_foc <- si_all[ifp_all]
-        sm <- sm_foc <- sm_all[ifp_all]
-        d2 <- d2_foc <- d2_all[ifp_all]
-        sup <- sup_foc <- sup_all[ifp_all]
-        supal <- supal_foc <- supal_all[ifp_all]
+        cs <- cs_all[ifp_all]
+        si <- si_all[ifp_all]
+        sm <- sm_all[ifp_all]
+        d2 <- d2_all[ifp_all]
+        sup <- sup_all[ifp_all]
+        supal <- supal_all[ifp_all]
 
         # Filter out lorentzians not affecting focus region (239us)
         y_tresh <- 0.001 * diff(range(si))
@@ -612,16 +628,19 @@ draw_spectrum <- function(
             y_foc_end   <- lorentz(x = max(foc_rgn), lcpar = lcpar)
             high_in_foc <- y_foc_start > y_tresh | y_foc_end > y_tresh
             x0_in_foc   <- lcpar$x0 > min(foc_rgn) & lcpar$x0 < max(foc_rgn)
-            affects_foc <- high_in_foc | x0_in_foc
+            high_in_foc | x0_in_foc
         }
         lcpar <- lcpar[affects_foc_rgn(lcpar), ]
         trpar <- trpar[affects_foc_rgn(trpar), ]
+        if (nrow(lcpar) > 50 && !isFALSE(al_arrows$show)) {
+            al_arrows$show <- FALSE
+        }
     }
 
     # Define a seperate dataframe `alpar` holding the parameters of the aligned
     # lorentzians. If no aligned lorentzians are present, set alpar to an empty
     # dataframe.
-    alpar <- if (is.null(lcpar$x0_al)) lcpar[0,] else lcpar
+    alpar <- if (is.null(lcpar$x0_al)) lcpar[0, ] else lcpar
     alpar$x0 <- lcpar$x0_al
     alpar$x0_al <- NULL
 
@@ -652,6 +671,7 @@ draw_spectrum <- function(
     draw_points(cs[icp], ypts[icp], cent_pts)
     draw_points(cs[ibp], ypts[ibp], bord_pts)
     draw_points(cs[inp], ypts[inp], norm_pts)
+    draw_prarp_pts(cs, si, trpar, lcpar, tp_pts, fp_pts, miss_pts)
     # Deconvolution Lines
     draw_line(cs, sup, sp_line)
     apply(lcpar, 1, draw_lc_line, cs, lc_lines, ythresh) # 13ms
@@ -679,8 +699,9 @@ draw_spectrum <- function(
     # Legend
     draw_legend(
         lgd, si_line, sm_line, lc_lines, sp_line, d2_line,
-        cent_pts, bord_pts, norm_pts,
+        cent_pts, tp_pts, fp_pts, miss_pts, bord_pts, norm_pts,
         lc_verts, tp_verts,
+        al_line, al_lines, al_arrows,
         ze_hline
     )
     list(
@@ -695,7 +716,7 @@ draw_spectrum <- function(
 #' @title Setup a development environment for `plot_spectrum`
 #' @author 2024-2025 Tobias Schmidt: initial version.
 mkenv_plot_spectrum <- function() {
-    args <- stub(
+    stub(
         func = plot_spectrum,
         x = deconvolute(metabodecon::sim[[1]], sfr = c(3.55, 3.35)),
         ... = NULL,
@@ -708,7 +729,7 @@ mkenv_plot_spectrum <- function() {
 mkenv_draw_spectrum <- function() {
     decons <- deconvolute(metabodecon::sim[1:4], sfr = c(3.55, 3.35))
     aligns <- align(decons, maxShift = 100, maxCombine = 0)
-    args <- stub(
+    stub(
         func = draw_spectrum,
         obj = aligns[[2]],
         envir = .GlobalEnv
@@ -897,7 +918,6 @@ test_grafical_units <- function() {
         label <- sprintf("0.25 - 0.75 %s == %s %s", unit, xur, "user")
         text(x = 0.5, y = y, labels = label, pos = 3)
     }
-    fig1 <- par("fig")
     with_fig(
         fig = c(0, 1, 0, 1),
         expr = {
@@ -927,7 +947,7 @@ plot_sfr <- function(cs, si, sfr) {
         type = "l",
         xlab = "Chemical Shift [ppm]",
         ylab = "Signal Intensity [au]",
-        xlim = xlim <- c(max(cs), min(cs)),
+        xlim = c(max(cs), min(cs)),
         xaxs = "i",
     )
     txt <- "Signal Free Region"
@@ -1072,27 +1092,35 @@ plot_dummy <- function(text = "Dummy Text") {
 #' @noRd
 #' @author 2024-2025 Tobias Schmidt: initial version.
 draw_legend <- function(args, si_line, sm_line, lc_lines, sp_line, d2_line,
-                        cent_pts, bord_pts, norm_pts,
+                        cent_pts, tp_pts, fp_pts, miss_pts, bord_pts, norm_pts,
                         lc_verts, tp_verts,
+                        al_line, al_lines, al_arrows,
                         ze_hline) {
     if (isFALSE(pop(args, "show"))) return()
     lins <- list("Raw Signal" = si_line,
                  "Smoothed Signal" = sm_line,
                  "Single Lorentzian" = lc_lines,
                  "Sum of Lorentzians" = sp_line,
+                 "Aligned Signal" = al_line,
+                 "Aligned Lorentzian" = al_lines,
                  "Second Derivative" = d2_line)
     pnts <- list("Center Point" = cent_pts,
+                 "True Positive" = tp_pts,
+                 "False Positive" = fp_pts,
+                 "Missed Peak" = miss_pts,
                  "Border Point" = bord_pts,
                  "NonPeak Point" = norm_pts)
     vrts <- list("Estimated Center" = lc_verts,
                  "True Center" = tp_verts)
+    arws <- list("Alignment Shift" = al_arrows)
     hlns <- list("Zero Line" = ze_hline)
     is_visible <- function(x) isTRUE(x$show)
     lins <- lins[sapply(lins, is_visible)]
     pnts <- pnts[sapply(pnts, is_visible)]
     vrts <- vrts[sapply(vrts, is_visible)]
+    arws <- arws[sapply(arws, is_visible)]
     hlns <- hlns[sapply(hlns, is_visible)]
-    objs <- c(lins, pnts, vrts, hlns)
+    objs <- c(lins, pnts, vrts, arws, hlns)
     if (length(objs) == 0) return()
     args$legend <- names(objs)
     args$col <- sapply(objs, function(obj) obj$col %||% "black")
@@ -1100,15 +1128,22 @@ draw_legend <- function(args, si_line, sm_line, lc_lines, sp_line, d2_line,
         unlist(sapply(lins, function(obj) obj$lty %||% 1)),
         unlist(rep(NA, length(pnts))),
         unlist(rep(NA, length(vrts))),
+        unlist(sapply(arws, function(obj) obj$lty %||% 1)),
         unlist(sapply(hlns, function(obj) obj$lty %||% 1))
     )
     args$pch <- c(
         unlist(rep(NA, length(lins))),
         unlist(sapply(pnts, function(obj) obj$pch %||% 1)),
         unlist(rep(124, length(vrts))),
+        unlist(rep(NA, length(arws))),
         unlist(rep(NA, length(hlns)))
     )
     args$x <- args$x %||% "topright"
+    local_par(xpd = NA)
+    tw <- try(max(strwidth(args$legend, cex = args$cex %||% 1)) * 1.1, silent = TRUE)
+    if (is.null(args$text.width) && is.numeric(tw) && length(tw) == 1 && tw > 0) {
+        args$text.width <- tw
+    }
     do.call(legend, args)
 }
 
@@ -1195,6 +1230,8 @@ draw_mtext <- function(side = 1, args = list()) {
     if (is.null(args$text)) return()
     if (is.null(args$cex)) args$cex <- par("cex")
     if (is.null(args$line)) args$line <- c(2, 3, 0, 0)[side]
+    xpd <- pop(args, "xpd")
+    if (!is.null(xpd)) local_par(xpd = xpd)
     args$side <- side
     do.call(mtext, args)
 }
@@ -1250,7 +1287,7 @@ draw_verts <- function(x, h, args = list()) {
     if (isFALSE(pop(args, "show"))
         || length(x) == 0
         || length(x) != length(h)) return()
-    height <- pop(args, "height", default = "full")
+    pop(args, "height", default = "full")
     args$x0 <- x
     args$x1 <- x
     args$y0 <- rep(par("usr")[3], length(x))
@@ -1287,6 +1324,80 @@ draw_points <- function(x, y, args = list()) {
     do.call(points, args)
 }
 
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
+get_prarp_match <- function(trpar, lcpar, tp_pts, fp_pts, miss_pts, tol = 0.001) {
+    tp_x <- fp_x <- miss_x <- numeric(0)
+    if (!any(tp_pts$show, fp_pts$show, miss_pts$show)) {
+        return(list(tp_x = tp_x, fp_x = fp_x, miss_x = miss_x))
+    }
+    if (nrow(trpar) == 0 || nrow(lcpar) == 0) {
+        tp_pts$show <- FALSE
+        fp_pts$show <- FALSE
+        miss_pts$show <- FALSE
+        return(list(tp_x = tp_x, fp_x = fp_x, miss_x = miss_x))
+    }
+
+    x0_true <- trpar$x0
+    x0_found <- lcpar$x0
+    idx_true <- sapply(x0_found, function(x0) {
+        which.min(abs(x0_true - x0))
+    })
+    dist_found <- abs(x0_found - x0_true[idx_true])
+    found_correct <- dist_found < tol
+
+    idx_found <- sapply(x0_true, function(x0) {
+        which.min(abs(x0_found - x0))
+    })
+    dist_true <- abs(x0_true - x0_found[idx_found])
+    true_found <- dist_true < tol
+
+    tp_x <- x0_found[found_correct]
+    fp_x <- x0_found[!found_correct]
+    miss_x <- x0_true[!true_found]
+    list(tp_x = tp_x, fp_x = fp_x, miss_x = miss_x)
+}
+
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
+draw_prarp_pts <- function(cs, si, trpar, lcpar, tp_pts, fp_pts, miss_pts) {
+    match <- get_prarp_match(trpar, lcpar, tp_pts, fp_pts, miss_pts)
+    tp_x <- match$tp_x
+    fp_x <- match$fp_x
+    miss_x <- match$miss_x
+    if (length(tp_x) == 0 && length(fp_x) == 0 && length(miss_x) == 0) return()
+    xmin <- min(cs)
+    xmax <- max(cs)
+    tp_x <- tp_x[tp_x >= xmin & tp_x <= xmax]
+    fp_x <- fp_x[fp_x >= xmin & fp_x <= xmax]
+    miss_x <- miss_x[miss_x >= xmin & miss_x <= xmax]
+    tp_y <- if (length(tp_x) > 0) calc_y0(cs, si, tp_x) else numeric(0)
+    fp_y <- if (length(fp_x) > 0) calc_y0(cs, si, fp_x) else numeric(0)
+    miss_y <- if (length(miss_x) > 0) calc_y0(cs, si, miss_x) else numeric(0)
+    ensure_filled_tri <- function(args) {
+        if (is.null(args$pch)) args$pch <- 24
+        if (args$pch %in% 21:25 && is.null(args$bg)) {
+            args$bg <- args$col %||% "black"
+        }
+        args
+    }
+    draw_points(tp_x, tp_y, ensure_filled_tri(tp_pts))
+    draw_points(fp_x, fp_y, ensure_filled_tri(fp_pts))
+    draw_points(miss_x, miss_y, ensure_filled_tri(miss_pts))
+}
+
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
+calc_y0 <- function(x, y, x0) {
+    i0 <- convert_pos(x0, x, seq_along(x))
+    i0_floor <- floor(i0)
+    i0_ceil <- ceiling(i0)
+    i0_frac <- i0 - i0_floor
+    y_floor <- y[i0_floor]
+    y_ceil <- y[i0_ceil]
+    y_floor + (y_ceil - y_floor) * i0_frac
+}
+
 # Get Helpers (Private) #####
 
 #' @noRd
@@ -1320,7 +1431,9 @@ get_foc_rgn <- function(obj, foc_frac = NULL) {
 #' @noRd
 #' @author 2024-2025 Tobias Schmidt: initial version.
 get_sub_fig_args <- function(obj, foc_frac, foc_rgn, sub1, sub2, sub3, dot_args) {
-    if ((n <- length(dot_args)) != (k <- length(names(dot_args)))) {
+    n <- length(dot_args)
+    k <- length(names(dot_args))
+    if (n != k) {
         if (n == 1) dot_args <- dot_args[[1]]
         else stop("... must contain tag=value pairs or a single list of such pairs")
     }
@@ -1343,7 +1456,7 @@ get_sub_fig_args <- function(obj, foc_frac, foc_rgn, sub1, sub2, sub3, dot_args)
         "123" = list(c(0.00, 1.00, 0.50, 1.00), c(0.00, 1.00, 0.30, 0.50), c(0.00, 1.00, 0.00, 0.20)),
         stop("Invalid layout")
     )
-    mars <- switch(layout,          # b  l  t  r
+    mars <- switch(layout,          # b  l    t  r
         "1_3" = list(c(1, 4, 2, 2), c(0, 0, 0, 0), c(0, 0, 1, 0)),
         "_23" = list(c(0, 0, 0, 0), c(1, 2, 2, 2), c(0, 0, 1, 0)),
         "123" = list(c(0, 4, 2, 2), c(1, 4, 0, 2), c(0, 0, 1, 0)),
@@ -1362,7 +1475,6 @@ get_sub_fig_args <- function(obj, foc_frac, foc_rgn, sub1, sub2, sub3, dot_args)
         mar = mars[[i]]
     ))
     # Subfig 1
-    def_args[[1]]$bt_axis  <- list(show = FALSE)
     def_args[[1]]$bt_text  <- if (sub2$show || sub3$show) list(show = FALSE)
     # Subfig 2
     def_args[[2]]$bt_text  <- if (sub3$show) list(show = FALSE)
@@ -1397,15 +1509,15 @@ get_draw_spectrum_defaults <- function(show_d2 = FALSE,
     lgdx <- if (show_d2) "bottomright" else "topright"
     list(
         # Legend
-        lgd       = list(show = TRUE, x = lgdx, bg = "white"),
+        lgd       = list(show = TRUE, x = lgdx, bg = transp("white", 0.7)),
         # Spectrum Lines
-        si_line   = list(show = show_si, col = "black"),
+        si_line   = list(show = show_si || show_al, col = "black"),
         sm_line   = list(show = show_si, col = "blue"),
         d2_line   = list(show = show_d2),
         # Deconvolution Lines
         sp_line   = list(show = show_si, col = "red"),
-        lc_lines  = list(show = (show_si || show_al) && foc_only, col = "darkgrey", fill = "grey95"),
-        lc_verts  = list(show = show_al, col = "darkgrey"),
+        lc_lines  = list(show = show_si && foc_only, col = "darkgrey", fill = "grey95"),
+        lc_verts  = list(show = FALSE, col = "darkgrey"),
         lc_rects  = list(show = FALSE, col = transp("darkgrey"), border = NA),
         # True Parameter Lines
         tp_lines  = list(show = FALSE, col = "darkgreen"),
@@ -1413,13 +1525,16 @@ get_draw_spectrum_defaults <- function(show_d2 = FALSE,
         tp_rects  = list(show = FALSE, col = transp("darkgreen", 0.12), border = NA),
         # Alignment Lines
         al_line   = list(show = show_al, col = "purple"),
-        al_lines  = list(show = show_al && foc_only, col = "thistle4", fill = transp("thistle1", 0.5)),
-        al_verts  = list(show = show_al, col = "thistle4"),
-        al_arrows = list(show = show_al, col = "darkgrey", lty = 2),
+        al_lines  = list(show = FALSE, col = "thistle4", fill = transp("thistle1", 0.5)),
+        al_verts  = list(show = FALSE, col = "thistle4"),
+        al_arrows = list(show = FALSE, col = "darkgrey", lty = 2),
         # Zero Line
         ze_hline  = list(show = show_d2, col = "black", lty = 3),
         # Points
         cent_pts  = list(show = show_si && foc_only, col = "blue", bg = "blue", pch = 24),
+        tp_pts    = list(show = FALSE, col = "darkgreen", pch = 24),
+        fp_pts    = list(show = FALSE, col = "red", pch = 24),
+        miss_pts  = list(show = FALSE, col = "orange", pch = 24),
         bord_pts  = list(show = FALSE, col = "blue", pch = 124),
         norm_pts  = list(show = FALSE, col = "black", pch = 124),
         # Backgrounds
@@ -1556,7 +1671,7 @@ set_fig <- function(fig = NULL, add = TRUE) {
 
 #' @noRd
 #' @title Plot into specific figure region
-#' @description For Details see [set_fig()].
+#' @description For Details see [metabodecon::set_fig()].
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #' @examples
 #' plot_dummy <- function() {
@@ -1604,14 +1719,12 @@ local_fig <- function(fig = NULL, add = TRUE, envir = parent.frame()) {
 #' stopifnot(isTRUE(x) && isFALSE(y))
 mf_filled_by_row <- function() {
     mfg <- par("mfg")
-    row <- mfg[1]
-    col <- mfg[2]
     nrows <- mfg[3]
     ncols <- mfg[4]
     if (nrows == 1 || ncols == 1) {
         # In this case it doesn't matter, as the figure spots in the grid will
         # be filled top-to-bottom / left-to-right in both cases.
-        return(TRUE)
+        TRUE
     } else {
         # We have at least two rows AND two cols. So what we can do is to set
         # c(1, 1) as next figure, and then advance one frame. If we end up in
@@ -1630,6 +1743,6 @@ mf_filled_by_row <- function() {
         plot_empty() # Draw into c(1, 1)
         plot_empty() # Draw into c(1, 2) or c(2, 1)
         mfg2 <- par("mfg") # Query current position
-        return(if (mfg2[1] == 1) TRUE else FALSE)
+        if (mfg2[1] == 1) TRUE else FALSE
     }
 }

@@ -4,14 +4,7 @@
 \alias{dohCluster}
 \title{Cluster Based Peak Alignment}
 \usage{
-dohCluster(
-  X,
-  peakList,
-  refInd = 0,
-  maxShift = 100,
-  acceptLostPeak = TRUE,
-  verbose = TRUE
-)
+dohCluster(X, peakList, refInd = 0, maxShift = 100, verbose = TRUE, method = 2)
 }
 \arguments{
 \item{X}{Dataframe of signal intensities from all spectra as returned by
@@ -24,11 +17,11 @@ signals will be aligned to.}
 
 \item{maxShift}{Maximum number of points a value can be moved.}
 
-\item{acceptLostPeak}{Whether to allow the the alignment algorithm to ignore
-peaks that cannot easily be aligned with the reference spectrum.}
-
 \item{verbose}{Whether to print additional information during the alignment
 process.}
+
+\item{method}{Alignment backend. \code{1} uses \code{speaq::hClustAlign()}, \code{2}
+(default) uses metabodecon's built-in implementation.}
 }
 \value{
 A list containing two data frames \code{Y} and \code{new_peakList}. The first one
@@ -63,7 +56,6 @@ if (all(deps_installed)) {
         peakList = feat$peakList,
         refInd = refObj$refInd,
         maxShift = 100,
-        acceptLostPeak = TRUE,
         verbose = TRUE
     )
     str(hclObj, 1)

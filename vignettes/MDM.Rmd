@@ -1,0 +1,272 @@
+---
+title: "Metabodecon Models"
+output:
+  rmarkdown::html_vignette: default
+  pdf_document:
+    latex_engine: xelatex
+header-includes:
+  - \usepackage{fontspec}
+  - \usepackage{etoolbox}
+  - \usepackage{fvextra}
+  - \usepackage{needspace}
+  - \definecolor{shadecolor}{RGB}{232,232,232}
+  - \fvset{breaklines=true,breakanywhere=true}
+  - \BeforeBeginEnvironment{Shaded}{\Needspace{10\baselineskip}}
+  - \BeforeBeginEnvironment{Shaded}{\vspace{0.5em}}
+  - \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines=true,breakanywhere=true,commandchars=\\\{\}}
+  - \RecustomVerbatimEnvironment{verbatim}{Verbatim}{breaklines=true,breakanywhere=true}
+css: styles.css
+vignette: >
+  %\VignetteIndexEntry{Metabodecon Models}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r set-defaults, echo=FALSE, results=FALSE, message=FALSE}
+knitr::opts_chunk$set(
+    fig.dim = c(6, 4),
+    fig.show = "hold",
+    out.width = "100%",
+    echo = TRUE,
+    message = FALSE,
+    warning = FALSE
+)
+```
+
+This article demonstrates how to use `fit_mdm()`, `cv_mdm()` and
+`benchmark_mdm()` to build, tune and evaluate classification models on
+deconvoluted NMR spectra. We simulate a toy dataset with known group
+differences, split it into training and test sets, run a small grid search to
+find good preprocessing parameters, and then evaluate on held-out data.
+
+# Simulate spectra
+
+We start by defining shared peak parameters for 40 spectra. Every spectrum has
+20 peaks with slightly varying positions, half-widths and areas between samples.
+Five of these peaks carry subtle group information: their areas differ by +/- 5%
+between groups A and B.
+
+```{r simulate-spectra}
+library(metabodecon)
+set.seed(42)
+
+n <- 40
+npk <- 20
+cs_range <- seq(from = 3.6, length.out = 2048, by = -0.00015)
+
+# Base peak parameters (shared across all spectra)
+base_x0 <- sort(runif(npk, 3.35, 3.55))
+base_A <- runif(npk, 5, 15) * 1e3
+base_lam <- runif(npk, 0.9, 1.3) / 1e3
+
+# Assign group labels
+group <- factor(rep(c("A", "B"), each = n / 2))
+
+# Discriminating peak indices
+diff_AB <- 1:5    # peaks with slightly different areas between groups
+
+spectra <- vector("list", n)
+for (i in seq_len(n)) {
+    x0 <- base_x0 + rnorm(npk, sd = 0.0003)
+    A <- base_A * runif(npk, 0.7, 1.3)
+    lam <- base_lam * runif(npk, 0.9, 1.1)
+
+    # Group-specific area shift (+/- 5%)
+    if (group[i] == "A") {
+        A[diff_AB] <- A[diff_AB] * 1.05
+    } else {
+        A[diff_AB] <- A[diff_AB] * 0.95
+    }
+
+    spectra[[i]] <- simulate_spectrum(
+        name = sprintf("s_%03d", i), cs = cs_range,
+        x0 = sort(x0), A = A, lambda = lam,
+        noise = rnorm(length(cs_range), sd = 2000)
+    )
+}
+class(spectra) <- "spectra"
+names(group) <- get_names(spectra)
+```
+
+The following figure shows four spectra from each group overlaid on top of each
+other. The subtle area differences are hard to spot visually.
+
+```{r plot-simulated, fig.dim = c(6, 4), out.width = "100%"}
+idx_A <- which(group == "A")[1:4]
+idx_B <- which(group == "B")[1:4]
+plot_spectra(spectra[c(idx_A, idx_B)])
+```
+
+# Train/test split
+
+We use two thirds of the data for training and one third for testing.
+
+```{r split}
+set.seed(1)
+n_train <- round(2 / 3 * n)
+train_idx <- sort(sample(n, n_train))
+test_idx <- setdiff(seq_len(n), train_idx)
+
+spectra_tr <- spectra[train_idx]
+spectra_te <- spectra[test_idx]
+class(spectra_tr) <- "spectra"
+class(spectra_te) <- "spectra"
+y_tr <- group[train_idx]
+y_te <- group[test_idx]
+```
+
+# Fit a single model
+
+`fit_mdm()` deconvolutes the spectra, aligns them, builds a feature matrix and
+fits a lasso model via `cv.glmnet()`. Here we use the default deconvolution
+parameters:
+
+```{r fit-default}
+mdm_default <- fit_mdm(
+    spectra_tr, y_tr,
+    nfit = 3, smit = 2, smws = 5, delta = 6.4, npmax = 0,
+    maxShift = 100, maxCombine = 30, verbosity = 0
+)
+print(mdm_default)
+```
+
+# Tune preprocessing via grid search
+
+`cv_mdm()` evaluates a grid of preprocessing parameter combinations. For each
+configuration it builds the feature matrix, runs `cv.glmnet()` with a fixed fold
+assignment, and records the held-out accuracy and AUC at `lambda.min`. We use a
+deliberately small grid here to keep vignette build time short:
+
+```{r cv-mdm}
+pgrid <- expand.grid(
+    smit = 2,
+    smws = c(3, 5),
+    delta = c(4, 6),
+    nfit = 5,
+    npmax = 0,
+    maxShift = 100,
+    maxCombine = 30,
+    stringsAsFactors = FALSE
+)
+pgrid$acc <- NA_real_
+pgrid$auc <- NA_real_
+mdm_tuned <- cv_mdm(
+    spectra_tr, y_tr,
+    pgrid = pgrid,
+    nfolds = 5,
+    verbosity = 0
+)
+```
+
+The performance grid shows how each parameter combination scored:
+
+```{r pgrid-results}
+pg <- mdm_tuned$pgrid
+pg <- pg[order(-pg$auc), ]
+knitr::kable(
+    head(pg, 10),
+    digits = c(0, 0, 0, 0, 0, 0, 0, 3, 4),
+    row.names = FALSE,
+    caption = "Top 10 parameter combinations by AUC."
+)
+```
+
+# Compare deconvolution results
+
+Let us compare the deconvolution of the first training spectrum using the default
+parameters and the best parameters found by the grid search:
+
+```{r compare-decon, fig.dim = c(6, 4), out.width = "100%"}
+# Deconvolute first two training spectra with default and tuned parameters
+pair <- spectra_tr[1:2]
+class(pair) <- "spectra"
+
+d_default <- deconvolute(
+    pair, nfit = 3, smopts = c(2, 5), delta = 4, npmax = 0, verbose = FALSE
+)
+
+m <- mdm_tuned$meta
+d_tuned <- deconvolute(
+    pair, nfit = m$nfit, smopts = c(m$smit, m$smws),
+    delta = m$delta, npmax = m$npmax, verbose = FALSE
+)
+
+par(mfrow = c(1, 2), mar = c(4, 4, 2, 1))
+plot_spectrum(d_default[[1]], main = "Default params")
+plot_spectrum(d_tuned[[1]], main = "Tuned params")
+```
+
+# Inspect lasso features
+
+The non-zero coefficients of the lasso model reveal which chemical shift
+positions are most important for distinguishing the two groups:
+
+```{r coefs}
+cf <- coef(mdm_tuned)
+cf_nz <- cf[cf[, 1] != 0, , drop = FALSE]
+knitr::kable(
+    data.frame(
+        feature = rownames(cf_nz),
+        coefficient = round(cf_nz[, 1], 4)
+    ),
+    row.names = FALSE,
+    caption = "Non-zero lasso coefficients at lambda.min."
+)
+```
+
+# Predict test samples
+
+We use `predict.mdm()` to classify the held-out test spectra. This internally
+deconvolutes and aligns them against the reference spectrum stored in the model:
+
+```{r predict-test}
+preds <- predict(mdm_tuned, spectra_te, type = "all", verbosity = 0)
+results <- data.frame(
+    sample = get_names(spectra_te),
+    true = y_te,
+    predicted = preds$class,
+    prob_B = round(preds$prob, 3)
+)
+```
+
+```{r confusion-matrix}
+acc <- mean(preds$class == y_te)
+auc <- metabodecon:::AUC(y_te, preds$prob)
+cat(sprintf("Test accuracy: %.1f%%\n", acc * 100))
+cat(sprintf("Test AUC:      %.4f\n", auc))
+knitr::kable(
+    table(True = y_te, Predicted = preds$class),
+    caption = "Confusion matrix on test set."
+)
+```
+
+# Benchmark with nested cross-validation
+
+To obtain an unbiased estimate of end-to-end predictive performance,
+`benchmark_mdm()` wraps `cv_mdm()` in an outer cross-validation loop. The outer
+held-out fold is never seen during preprocessing or model fitting, so the
+resulting accuracy and AUC are honest estimates.
+
+A typical call looks like this:
+
+```{r benchmark-code, eval = FALSE}
+bm <- benchmark_mdm(
+    spectra_tr, y_tr,
+    pgrid = pgrid,
+    nfo = 3,        # 3 outer folds
+    nfl = 5,        # 5 inner folds for cv.glmnet
+    nwo = 3,        # 1 outer worker per fold
+    nwi = 4         # 4 inner workers for deconvolution
+)
+# bm$predictions contains per-sample held-out predictions
+# bm$models contains the cv_mdm model for each outer fold
+cat(sprintf(
+    "Nested CV accuracy: %.1f%%\n",
+    mean(bm$predictions$true == bm$predictions$pred) * 100
+))
+```
+
+Note that `benchmark_mdm()` is computationally expensive because it runs the
+full grid search for each outer fold. We recommend running it on a machine with
+enough RAM and CPU cores to use at least as many outer workers (`nwo`) as outer
+folds (`nfo`). It is therefore not executed in this vignette.

@@ -1,61 +1,40 @@
 ---
 title: "Get Started"
-output: rmarkdown::html_vignette
+output:
+  rmarkdown::html_vignette: default
+  pdf_document:
+    latex_engine: xelatex
+header-includes:
+  - \usepackage{fontspec}
+  - \usepackage{etoolbox}
+  - \usepackage{fvextra}
+  - \usepackage{needspace}
+  - \definecolor{shadecolor}{RGB}{232,232,232}
+  - \fvset{breaklines=true,breakanywhere=true}
+  - \BeforeBeginEnvironment{Shaded}{\Needspace{10\baselineskip}}
+  - \BeforeBeginEnvironment{Shaded}{\vspace{0.5em}}
+  - \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines=true,breakanywhere=true,commandchars=\\\{\}}
+  - \RecustomVerbatimEnvironment{verbatim}{Verbatim}{breaklines=true,breakanywhere=true}
+css: styles.css
 vignette: >
   %\VignetteIndexEntry{Get Started}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
-<style>
-/*
-IMPORTANT: pkgdown articles [^1] and  rmarkdown  html  vignettes  [^2]  generate
-different HTML elements from the same rmarkdown content. Therefore  we  need  to
-take care to handle both usecases. In particular, articles  use  `<figure>`  and
-`<caption>`  elements,  where  vignettes  use  `<div  class="figure">`  and  `<p
-class="caption">` elements.
-
-[^1] built using `pkgdown::build_article()`)
-[^2] built using `rmarkdown::render()`
-*/
-figure, div.figure
-{
-    border: 1px solid #dee2e6;
-    border-radius: .375rem;
-    padding: 0;
-    margin: 1em 0;
-}
-caption, p.caption {
-    text-align: center;
-    font-style: italic;
-    border-top: 1px solid #dee2e6;
-    padding: 0.75rem;
-    background-color: #ffffff;
-}
-img {
-    margin: 0 auto;
-    padding: 0;
-    border: none;
-    width: 50%;
-}
-@media (max-width: 500px) {
-    img {
-        width: 100%; /* Full width for smaller viewports */
-    }
-}
-</style>
-
 ```{r set-defaults, echo=FALSE, results=FALSE, message=FALSE}
 knitr::opts_chunk$set(
     fig.dim = c(5, 5), # Size of stored figures in inches
     fig.show = "hold", # Render images as inline elements
-    out.height = "auto", # (1)
+    out.width = "50%", # [^1]
     eval = FALSE,
     echo = FALSE,
     results = FALSE,
     message = FALSE
-    # (1) Either out.width or out.heigt must be set of rmarkdown will not put
-    # a div.figure around the individual img elements
+    # [^1]: Either out.width or out.height must be set or rmarkdown will
+    # not put a div.figure around the individual img elements. Furthermore,
+    # we must not use out.width = "auto" or out.height = "auto", as LaTeX
+    # cannot handle that.
 )
 ```
 

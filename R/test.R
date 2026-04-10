@@ -15,7 +15,7 @@
 #'
 #' - Redirect or capture the output and/or message stream via [sink()]
 #' - Measure the runtime of the evaluated expression via [system.time()]
-#' - Creating a temporary test directory (inside [tmpdir()]) and populating it
+#' - Creating a temporary test directory (inside [metabodecon::tmpdir()]) and populating it
 #'   with input files according to `inputs`
 #' - Predefine answers for calls to [readline()] happening during evaluation of
 #'   `expr`
@@ -64,18 +64,19 @@
 #' @details
 #' The `datadir_temp` and `datadir_persistent` arguments accept values
 #' "missing", "filled" and "empty". Setting a value unequal NULL causes the
-#' functions [datadir_temp()] and/or [datadir_persistent()] to be replaced with
-#' mock functions pointing to fake directories. Functions depending on these
-#' functions will then use the fake directories instead of the real ones. When
-#' set to "missing" the returned mock directory does not exist. When set to
-#' "empty" it exists and is guaranteed to be empty. When set to "filled", it is
-#' populated with example datasets.
+#' functions [metabodecon::datadir_temp()] and/or
+#' [metabodecon::datadir_persistent()] to be replaced with mock functions
+#' pointing to fake directories. Functions depending on these functions will
+#' then use the fake directories instead of the real ones. When set to "missing"
+#' the returned mock directory does not exist. When set to "empty" it exists and
+#' is guaranteed to be empty. When set to "filled", it is populated with example
+#' datasets.
 #'
-#' Attention: the mocked functions, i.e. [datadir_temp()] and
-#' [datadir_persistent()] cannot be used directly inside `expr` when called via
-#' `devtools::test()`. I'm not sure why, but it seems as if devtools and/or
-#' testthat have their own copies of the functions which are used when the
-#' expression is evaluated.
+#' Attention: the mocked functions, i.e. [metabodecon::datadir_temp()] and
+#' [metabodecon::datadir_persistent()] cannot be used directly inside `expr`
+#' when called via `devtools::test()`. I'm not sure why, but it seems as if
+#' devtools and/or testthat have their own copies of the functions which are
+#' used when the expression is evaluated.
 #'
 #' @return
 #' A list containing with following elements:
@@ -103,7 +104,7 @@
 #'
 #' x4 <- evalwith(Sys.sleep(0.02))
 #' str(x4)
-evalwith <- function(expr, # nolint: cyclocomp_linter.
+evalwith <- function(expr,
                      testdir = NULL,
                      answers = NULL,
                      output = NULL,
@@ -152,7 +153,11 @@ evalwith <- function(expr, # nolint: cyclocomp_linter.
     }
     msgvec <- vector("character")
     if (!is.null(message)) {
-        msgcon <- if (message == "captured") textConnection("msgvec", "wr", local = TRUE) else file(message, open = "wt")
+        msgcon <- if (message == "captured") {
+            textConnection("msgvec", "wr", local = TRUE)
+        } else {
+            file(message, open = "wt")
+        }
         sink(msgcon, type = "message")
         on.exit(close(msgcon), add = TRUE, after = FALSE)
         on.exit(sink(NULL, type = "message"), add = TRUE, after = FALSE)
@@ -211,7 +216,7 @@ evalwith <- function(expr, # nolint: cyclocomp_linter.
 #'
 #' @description
 #' Creates a mock readline function that returns the next element from a
-#' character vector each time it's called. Used internally by [mock_readline()].
+#' character vector each time it's called. Used internally by [metabodecon::mock_readline()].
 #'
 #' @param texts A character vector of responses to be returned by the readline
 #' function.
@@ -251,7 +256,7 @@ get_readline_mock <- function(texts, env = as.environment(list())) {
 #' @description
 #' Returns a function  that,  when  called,  returns  a  path  to  a  mock  data
 #' directory. The type and state of the mock data directory  can  be  specified.
-#' Used internally by [mock_datadir()].
+#' Used internally by [metabodecon::mock_datadir()].
 #'
 #' @param type
 #' Type of data directory to mock. Can be "persistent" or "temp".
@@ -373,6 +378,35 @@ skip_if_speaq_deps_missing <- function() {
 }
 
 #' @noRd
+#' @author 2026 Tobias Schmidt: initial version.
+normalize_svg_ids <- function(path) {
+    txt <- readLines(path, warn = FALSE)
+    txt <- sub(
+        '^<g id="surface[0-9]+">$',
+        '<g id="surface1">',
+        txt
+    )
+    writeLines(txt, path, useBytes = TRUE)
+}
+
+#' @noRd
+#' @author 2026 Tobias Schmidt: initial version.
+make_stable_svg_writer <- function(...) {
+    svg_args <- list(...)
+
+    function(plot, file, title = "") {
+        plot_fun <- plot
+        args <- c(list(
+            quote(withr::with_svg),
+            new = file,
+            code = quote(plot_fun())
+        ), svg_args)
+        eval(as.call(args))
+        normalize_svg_ids(file)
+    }
+}
+
+#' @noRd
 #' @title Check files sizes
 #'
 #' @description
@@ -401,7 +435,10 @@ expect_file_size <- function(testdir, size_exp) {
     file_has_correct_size <- size_obs > size_exp * 0.9 & size_obs < size_exp * 1.1
     lapply(seq_along(size_exp), function(i) {
         if (!isTRUE(file_has_correct_size[i])) {
-            message(sprintf("Size of %s is %s which is not between %s and %s", paths[i], size_obs[i], size_exp[i] * 0.9, size_exp[i] * 1.1))
+            message(sprintf(
+                "Size of %s is %s which is not between %s and %s",
+                paths[i], size_obs[i], size_exp[i] * 0.9, size_exp[i] * 1.1
+            ))
         }
     })
     testthat::expect_true(all(file_has_correct_size))
@@ -446,7 +483,7 @@ expect_str <- function(obj, expected_str, ...) {
 #' score is calculated.
 #'
 #' @param decon A list containing the deconvolution results, as returned by
-#' [generate_lorentz_curves()].
+#' [metabodecon::generate_lorentz_curves()].
 #'
 #' @param lcpar A data frame containing the true parameters of the peaks.
 #'
@@ -502,7 +539,11 @@ calc_prarp <- function(x, truepar = NULL, ...) {
     prarp <- peak_ratio * area_ratio
     prarpx <- peak_ratio_x * area_ratio
 
-    named(prarpx, prarp, peak_ratio_x, peak_ratio, np_true, np_found, np_correct, np_wrong, area_ratio, area_spectrum, area_residuals)
+    named(
+        prarpx, prarp, peak_ratio_x, peak_ratio,
+        np_true, np_found, np_correct, np_wrong,
+        area_ratio, area_spectrum, area_residuals
+    )
 }
 
 #' @noRd
@@ -696,11 +737,11 @@ vcomp <- function(x, y, xpct = 0, silent = FALSE) {
 #' @noRd
 #'
 #' @description
-#' Compares a spectrum deconvoluted with [generate_lorentz_curves_v12()] with a
-#' spectrum deconvoluted with [MetaboDecon1D()].
+#' Compares a spectrum deconvoluted with [metabodecon::generate_lorentz_curves_v12()] with a
+#' spectrum deconvoluted with [metabodecon::MetaboDecon1D()].
 #'
-#' @param new Result of [generate_lorentz_curves_v12()].
-#' @param old Result of [MetaboDecon1D()].
+#' @param new Result of [metabodecon::generate_lorentz_curves_v12()].
+#' @param old Result of [metabodecon::MetaboDecon1D()].
 #' @param silent Logical. If TRUE, no output is printed.
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
@@ -844,7 +885,7 @@ compare_spectra <- function(new, old, silent = FALSE) { # styler: off
 # styler: on
 
 #' @noRd
-#' @description Helper of [compare_spectra()].
+#' @description Helper of [metabodecon::compare_spectra()].
 #' @author 2024-2025 Tobias Schmidt: initial version.
 update_defaults <- function(func, ...) {
     kwargs <- list(...)
@@ -860,7 +901,7 @@ update_defaults <- function(func, ...) {
 
 #' @noRd
 #' @author 2024-2025 Tobias Schmidt: initial version.
-MetaboDecon1D_silent <- function(# Passed on to [MetaboDecon1D()]
+MetaboDecon1D_silent <- function(# Passed on to [metabodecon::MetaboDecon1D()]
                                  filepath,
                                  filename = NA,
                                  file_format = "bruker",
@@ -903,7 +944,7 @@ MetaboDecon1D_silent <- function(# Passed on to [MetaboDecon1D()]
 
 #' @noRd
 #' @author 2024-2025 Tobias Schmidt: initial version.
-MetaboDecon1D_silent_sim <- function(# Passed on to [MetaboDecon1D()]
+MetaboDecon1D_silent_sim <- function(# Passed on to [metabodecon::MetaboDecon1D()]
                                      filepath,
                                      filename = NA,
                                      file_format = "bruker",

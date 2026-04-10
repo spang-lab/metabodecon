@@ -1,3 +1,37 @@
+# metabodecon 1.7.0
+
+* `deconvolute()` gained `npmax`, `igrs`, and `cachedir` parameters for limiting
+  the number of peaks, ignoring ppm ranges, and caching results to disk.
+* `deconvolute()` `use_rust` now accepts `0.5` to select an experimental new R
+  backend that produces results identical to the Rust backend.
+* `align()` gained a `method` parameter: `1` = speaq, `2` = built-in CluPA
+  reimplementation (default), `3` = peak-based pairwise alignment directly on
+  deconvoluted peak parameters (experimental).
+* `align()` gained a `full` parameter. When `FALSE`, the aligned superposition
+  is not reconstructed, saving time during grid searches.
+* `get_si_mat()` gained `maxCombine`, `combineMethod`, `ref`, and `drop_zero`
+  parameters for peak combining and reference-based snapping.
+* `plot_spectra()` gained `foc_rgn`, `what`, `cols`, and `names` parameters for
+  focus-region zooming, signal selection, custom colors, and legend labels.
+* `draw_spectrum()` can now display true/false/missed peaks.
+* `tree()` gained `show.counts`, `files.first`, and `max.entries` parameters.
+  Added `tree_preview()` as a compact alias.
+* Added `fit_mdm()` for fitting lasso models on deconvoluted NMR spectra with
+  explicit deconvolution parameters (`nfit`/`smit`/`smws`/`delta`) alongside
+  `npmax`.
+* Added `cv_mdm()` for cross-validated preprocessing grid search (replaces the
+  former `fit_mdm_grid()`).
+* Added `benchmark_mdm()` for nested-CV performance estimation.
+* Added `get_pgrid()` for predefined preprocessing parameter grids.
+* Added S3 methods for `mdm` objects: `predict`, `print`, `coef`, `plot`,
+  `summary`.
+* Added `c()`, `format()`, and `summary()` methods for all public and private
+  class families.
+* Optimized `lorentz_sup()`: auto-selects a compiled C backend (~10x faster)
+  when available, otherwise uses a vectorized R backend (~3x faster).
+  Controllable via `options(metabodecon.lorentz_sup_version)`.
+* Added AKI example dataset.
+
 # metabodecon 1.6.3
 
 * Improved exception for r-universe machine in `test-install_mdrb.R`.

@@ -7,7 +7,8 @@
 calculate_lorentz_curves(deconv_result, number_of_files = NA)
 }
 \arguments{
-\item{deconv_result}{A list as returned by \code{\link[=generate_lorentz_curves]{generate_lorentz_curves()}} or \link{MetaboDecon1D}.}
+\item{deconv_result}{A list as returned by \code{\link[=generate_lorentz_curves]{generate_lorentz_curves()}} or
+\code{\link[=MetaboDecon1D]{MetaboDecon1D()}}.}
 
 \item{number_of_files}{Number of spectra to analyze}
 }

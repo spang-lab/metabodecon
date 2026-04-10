@@ -51,4 +51,3 @@ sim_subset <- test_that("MetaboDecon1D works for multiple spectra", {
     expect_true(obj1$prarpx >= 0.732)
     expect_true(obj2$prarpx >= 0.710)
 })
-

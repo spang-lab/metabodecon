@@ -1,6 +1,7 @@
 ---
 title: "Datasets"
 output: rmarkdown::html_vignette
+css: styles.css
 vignette: >
   %\VignetteIndexEntry{Datasets}
   %\VignetteEngine{knitr::rmarkdown}
@@ -18,6 +19,9 @@ in details, i.e.
 - which and how many samples are included
 - how they were measured
 - how you can access the dataset
+
+For package users, the canonical way to access file-based example datasets is
+`download_example_datasets()`.
 
 # The Blood dataset <a id="blood"></a>
 
@@ -74,6 +78,25 @@ process, see the source code of function
     kept constant.
 [^2]: The standard deviation (SD) of the noise was calculated as SD of signal
     intensities from the signal free region.
+
+# The AKI dataset <a id="aki"></a>
+
+The _aki_ dataset contains 106 one-dimensional urine NMR spectra in Bruker
+format from the AKI study by Zacharias et al. (2012). The measured samples come
+from a clinical cohort collected 24 hours after surgery and were analyzed to
+compare patients who developed acute kidney injury with those who did not. In
+this dataset, 72 spectra are labeled as controls (`Biopsy kidney normal`) and 34
+spectra as AKI cases (`Acute Kidney Injury`).
+
+Within `misc/example_datasets/bruker/aki`, the full phenotypic metadata is
+stored in `aki/s_MTBLS24.txt`, and the corresponding spectra are stored in the
+remaining sample directories of the `aki` folder.
+
+The phenotype table and spectra files originate from the public MetaboLights
+study `MTBLS24` (<https://www.ebi.ac.uk/metabolights/MTBLS24>). For
+`metabodecon`, these files are filtered to the relevant subset (phenodata plus
+required Bruker files for reading spectra), then packaged into
+`example_datasets.zip` and re-distributed as a convenience download.
 
 # How to download datasets
 

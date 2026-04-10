@@ -1,6 +1,7 @@
 ---
 title: "Metabodecon Classes"
 output: rmarkdown::html_vignette
+css: styles.css
 vignette: >
   %\VignetteIndexEntry{Metabodecon Classes}
   %\VignetteEngine{knitr::rmarkdown}

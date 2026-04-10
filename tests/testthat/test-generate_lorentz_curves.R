@@ -7,6 +7,7 @@
 # jcampdx errors.
 
 sap <- test_that("GLC works for single spectrum", {
+    withr::local_output_sink(nullfile())
     decon1 <- generate_lorentz_curves(
         data_path = sap[[1]],
         nfit = 3,
@@ -25,6 +26,7 @@ sap <- test_that("GLC works for single spectrum", {
 })
 
 sim_subset <- test_that("MetaboDecon1D works for multiple spectra", {
+    withr::local_output_sink(nullfile())
     decons1 <- generate_lorentz_curves(
         data_path = sim[1:2],
         nfit = 3,
@@ -47,6 +49,7 @@ sim_subset <- test_that("MetaboDecon1D works for multiple spectra", {
 })
 
 wrong_sfr <- test_that("GLC works when no peaks are filtered out", {
+    withr::local_output_sink(nullfile())
     x <- simulate_spectrum(ndp = 256, npk = 3)
     expect_error(
         generate_lorentz_curves(

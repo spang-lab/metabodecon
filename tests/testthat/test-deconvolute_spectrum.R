@@ -1,17 +1,17 @@
 # Inputs #####
 defaults <- list(
-    x=sap[[1]],
-    nfit=3, smopts=c(1,3), delta=3, sfr=c(3.2,-3.2), wshw=0,
-    ask=FALSE, force=FALSE, verbose=FALSE, bwc=0,
-    use_rust=FALSE, nw=1, igr=list(), rtyp="idecon"
+    x = sap[[1]],
+    nfit = 3, smopts = c(1, 3), delta = 3, sfr = c(3.2, -3.2), wshw = 0,
+    ask = FALSE, force = FALSE, verbose = FALSE, bwc = 0,
+    use_rust = FALSE, nw = 1, igr = list(), rtyp = "idecon"
 )
 args <- list(
     idecon_bwc0 = set(defaults),
-    idecon_bwc1 = set(defaults, bwc=1),
-    idecon_bwc2 = set(defaults, bwc=2),
-    idecon_rust = set(defaults, bwc=2, use_rust=TRUE),
-    rdecon_bwc2 = set(defaults, bwc=2, rtyp="rdecon"),
-    rdecon_rust = set(defaults, bwc=2, rtyp="rdecon", use_rust=TRUE)
+    idecon_bwc1 = set(defaults, bwc = 1),
+    idecon_bwc2 = set(defaults, bwc = 2),
+    idecon_rust = set(defaults, bwc = 2, use_rust = TRUE),
+    rdecon_bwc2 = set(defaults, bwc = 2, rtyp = "rdecon"),
+    rdecon_rust = set(defaults, bwc = 2, rtyp = "rdecon", use_rust = TRUE)
 )
 mdrb_available <- check_mdrb()
 
@@ -74,6 +74,30 @@ bwc <- test_that(
     expect_equal(decon0_deconvolute, decon0_MetaboDecon1D)
 })
 
+igr <- test_that(
+    "Peaks in ignore regions are excluded", {
+    # sap[[1]] has 3 peaks at ppm ~2.8, ~0.1, ~-2.2 (with bwc=2, delta=3)
+    igr <- list(c(-0.5, 0.5))
+    d_r <- deconvolute_spectrum(
+        sap[[1]], nfit = 3, smopts = c(1, 3), delta = 3, sfr = c(3.2, -3.2),
+        wshw = 0, ask = FALSE, force = FALSE, verbose = FALSE, bwc = 2,
+        use_rust = FALSE, igr = igr, rtyp = "idecon"
+    )
+    n_no_igr <- sum(obj$idecon_bwc2$peak$high)
+    n_with_igr <- sum(d_r$peak$high)
+    expect_equal(n_no_igr, 4)
+    expect_equal(n_with_igr, 3)
+    if (mdrb_available) {
+        d_rust <- deconvolute_spectrum(
+            sap[[1]], nfit = 3, smopts = c(1, 3), delta = 3,
+            sfr = c(3.2, -3.2), wshw = 0, ask = FALSE, force = FALSE,
+            verbose = FALSE, bwc = 2, use_rust = TRUE, igr = igr,
+            rtyp = "idecon"
+        )
+        expect_equal(sum(d_rust$peak$high), 3)
+    }
+})
+
 # Rust Checks #####
 
 skip_on_cran()
@@ -110,7 +134,7 @@ rust_r_equality <- test_that(
     # be equal.
     idecon_bwc2_mod <- obj$idecon_bwc2
     idecon_rust_mod <- obj$idecon_rust
-    idecon_bwc2_mod$args$use_rust <- TRUE
+    idecon_bwc2_mod$args$use_rust <- 1
     idecon_bwc2_mod[c("peak", "Z", "lci", "lca", "lcr")] <- NULL
     idecon_rust_mod[c("peak", "Z", "lci", "lca", "lcr")] <- NULL
     expect_equal(idecon_rust_mod, idecon_bwc2_mod)
