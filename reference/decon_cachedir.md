@@ -23,5 +23,5 @@ Path to the shared temporary cache directory for deconvolution.
 
 ``` r
 decon_cachedir()
-#> [1] "/tmp/RtmpoVTN85/metabodecon/cache/deconvs"
+#> [1] "/tmp/RtmpTeNkY0/metabodecon/cache/deconvs"
 ```

@@ -30,5 +30,5 @@ Returns the path to the temporary data directory.
 
 ``` r
 datadir_temp()
-#> [1] "/tmp/RtmpoVTN85/metabodecon/data"
+#> [1] "/tmp/RtmpTeNkY0/metabodecon/data"
 ```

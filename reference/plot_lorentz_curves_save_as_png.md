@@ -72,6 +72,6 @@ plot_lorentz_curves_save_as_png(sim_decon, out_dir = png_dir, ask = FALSE)
 #> Plot Lorentz curves of sim_01
 #> Plot Lorentz curves of sim_02
 dir(png_dir, full.names = TRUE)
-#> [1] "/tmp/RtmpoVTN85/metabodecon/sim_decon/pngs/sim_01_lorentz_curves.png"
-#> [2] "/tmp/RtmpoVTN85/metabodecon/sim_decon/pngs/sim_02_lorentz_curves.png"
+#> [1] "/tmp/RtmpTeNkY0/metabodecon/sim_decon/pngs/sim_01_lorentz_curves.png"
+#> [2] "/tmp/RtmpTeNkY0/metabodecon/sim_decon/pngs/sim_02_lorentz_curves.png"
 ```

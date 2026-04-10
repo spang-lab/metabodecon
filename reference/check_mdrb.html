@@ -112,17 +112,17 @@ Column <code>comment</code> is a string string describing the check result.</p>
 <span class="r-in"><span><span class="co"># depending on your system, might involve updating or installing</span></span></span>
 <span class="r-in"><span><span class="co"># Rust toolchain components.</span></span></span>
 <span class="r-in"><span><span class="fu">check_mdrb_deps</span><span class="op">(</span>verbose <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2026-04-10 05:59:01.45 Checking R version...</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2026-04-10 05:59:01.45 Checking if buildtools exist...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2026-04-10 07:15:44.83 Checking R version...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2026-04-10 07:15:44.83 Checking if buildtools exist...</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Trying to compile a simple C file</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Running /opt/R/4.5.3/lib/R/bin/R CMD SHLIB foo.c</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> using C compiler: ‘gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0’</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> gcc -std=gnu2x -I"/opt/R/4.5.3/lib/R/include" -DNDEBUG -DR_NO_REMAP  -I/usr/local/include    -fpic  -g -O2  -c foo.c -o foo.o</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> gcc -std=gnu2x -shared -L/opt/R/4.5.3/lib/R/lib -L/usr/local/lib -o foo.so foo.o -L/opt/R/4.5.3/lib/R/lib -lR</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2026-04-10 05:59:01.62 Checking cargo version...</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2026-04-10 05:59:01.68 Checking rustc version...</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2026-04-10 05:59:01.80 Done</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2026-04-10 07:15:45.01 Checking cargo version...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2026-04-10 07:15:45.07 Checking rustc version...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2026-04-10 07:15:45.18 Done</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                check passed                                      comment</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> r           R &gt;= 4.2   TRUE                             Current: R 4.5.3</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> rtools  Rtools exist   TRUE        Testcall: pkgbuild::has_build_tools()</span>
