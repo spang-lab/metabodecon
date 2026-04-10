@@ -367,25 +367,25 @@ plot_deconvolution_metrics <- function() {
     ord <- order(meta$type)
     AR <- AR[, ord]
     NP <- NP[, ord]
-    hm <- function(M, file, title) {
-        Z <- as.matrix(M)
-        col <- grDevices::colorRampPalette(c("#FFF7BC", "#225EA8"))(100)
-        grDevices::pdf(file, 11, 7)
-        ht <- ComplexHeatmap::Heatmap(
-            Z,
-            name = title,
-            col = col,
-            cluster_rows = FALSE,
-            cluster_columns = FALSE,
-            row_names_gp = grid::gpar(fontsize = 8),
-            column_names_gp = grid::gpar(fontsize = 6),
-            column_names_rot = 90
-        )
-        ComplexHeatmap::draw(ht, heatmap_legend_side = "right")
-        grDevices::dev.off()
-    }
-    hm(AR, "AR_heatmap.pdf", "Area Ratio")
-    hm(NP, "NP_heatmap.pdf", "Number of Peaks")
+    # hm <- function(M, file, title) {
+    #     Z <- as.matrix(M)
+    #     col <- grDevices::colorRampPalette(c("#FFF7BC", "#225EA8"))(100)
+    #     grDevices::pdf(file, 11, 7)
+    #     ht <- ComplexHeatmap::Heatmap(
+    #         Z,
+    #         name = title,
+    #         col = col,
+    #         cluster_rows = FALSE,
+    #         cluster_columns = FALSE,
+    #         row_names_gp = grid::gpar(fontsize = 8),
+    #         column_names_gp = grid::gpar(fontsize = 6),
+    #         column_names_rot = 90
+    #     )
+    #     ComplexHeatmap::draw(ht, heatmap_legend_side = "right")
+    #     grDevices::dev.off()
+    # }
+    # hm(AR, "AR_heatmap.pdf", "Area Ratio")
+    # hm(NP, "NP_heatmap.pdf", "Number of Peaks")
 }
 
 plot_deconvolution_metrics_R <- function() {
@@ -422,27 +422,27 @@ plot_deconvolution_metrics_R <- function() {
     ord <- order(meta$type)
     AR <- AR[, ord]
     NP <- NP[, ord]
-    hm <- function(M, file, title) {
-        Z <- as.matrix(M)
-        col <- grDevices::colorRampPalette(c("#FFF7BC", "#225EA8"))(100)
-        grDevices::pdf(file, 11, 7)
-        ht <- ComplexHeatmap::Heatmap(
-            Z,
-            name = title,
-            col = col,
-            cluster_rows = FALSE,
-            cluster_columns = FALSE,
-            row_names_gp = grid::gpar(fontsize = 8),
-            column_names_gp = grid::gpar(fontsize = 6),
-            column_names_rot = 90
-        )
-        ComplexHeatmap::draw(ht, heatmap_legend_side = "right")
-        grDevices::dev.off()
-    }
+    # hm <- function(M, file, title) {
+    #     Z <- as.matrix(M)
+    #     col <- grDevices::colorRampPalette(c("#FFF7BC", "#225EA8"))(100)
+    #     grDevices::pdf(file, 11, 7)
+    #     ht <- ComplexHeatmap::Heatmap(
+    #         Z,
+    #         name = title,
+    #         col = col,
+    #         cluster_rows = FALSE,
+    #         cluster_columns = FALSE,
+    #         row_names_gp = grid::gpar(fontsize = 8),
+    #         column_names_gp = grid::gpar(fontsize = 6),
+    #         column_names_rot = 90
+    #     )
+    #     ComplexHeatmap::draw(ht, heatmap_legend_side = "right")
+    #     grDevices::dev.off()
+    # }
     write.csv(AR, "AR_R.csv")
     write.csv(NP, "NP_R.csv")
-    hm(AR, "AR_R_heatmap.pdf", "Area Ratio")
-    hm(NP, "NP_R_heatmap.pdf", "Number of Peaks")
+    # hm(AR, "AR_R_heatmap.pdf", "Area Ratio")
+    # hm(NP, "NP_R_heatmap.pdf", "Number of Peaks")
 }
 
 
