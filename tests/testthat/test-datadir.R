@@ -35,4 +35,3 @@ test_that("datadir works if datadir_persistent=filled", {
     })
     expect_equal(x, y)
 })
-ß
