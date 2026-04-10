@@ -51,8 +51,6 @@ Imports:
 Suggests:
     BiocManager,
     cachem,
-    circlize,
-    ComplexHeatmap,
     covr,
     devtools,
     diffobj,
