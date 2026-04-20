@@ -232,7 +232,7 @@ fit_mdm <- function(
     # Mandatory
     spectra, y,
     # Shared
-    sfr = NULL, use_rust = TRUE, nworkers = 1, verbosity = 2,
+    sfr = NULL, use_rust = 0.5, nworkers = 1, verbosity = 2,
     seed = 1, cadir = decon_cachedir(), check = TRUE,
     # Deconvolution
     npmax = 1000, nfit = 5, smit = 2, smws = 5, delta = 6.4,
@@ -359,7 +359,7 @@ cv_mdm <- function(
     # Mandatory
     spectra, y, sfr = NULL,
     # Shared
-    use_rust = TRUE, nworkers = 1, verbosity = 2,
+    use_rust = 0.5, nworkers = 1, verbosity = 2,
     seed = 1, cadir = decon_cachedir(), check = TRUE,
     # Peak combining
     combineMethod = 2,
@@ -460,7 +460,7 @@ benchmark_mdm <- function(
     # Mandatory
     spectra, y, sfr = NULL,
     # Shared
-    use_rust = TRUE, verbosity = 2,
+    use_rust = 0.5, verbosity = 2,
     seed = 1, cadir = decon_cachedir(),
     # Workers
     nwo = 1, nwi = half_cores(),
@@ -505,7 +505,7 @@ benchmark_mdm <- function(
     pred_metrics <- mcmapply(
         nwoa, predict.mdm,
         object=mdms, newdata=te_spectra,
-        MoreArgs=list(type="all", nworkers=nwi),
+        MoreArgs=list(type="all", nworkers=nwi, verbosity=verbosity - 1),
         SIMPLIFY=FALSE, USE.NAMES=FALSE
     )
     preds <- mapply(
@@ -606,7 +606,7 @@ get_pgrid <- function(
 
 init_cache <- function(
     x, sfr, pgrid = get_pgrid(), nworkers = 1,
-    verbosity = 1, use_rust = TRUE, cadir = decon_cachedir()
+    verbosity = 1, use_rust = 0.5, cadir = decon_cachedir()
 ) {
 
     ns <- length(x)
@@ -875,7 +875,7 @@ predict.mdm <- function(object,
     }
     if (is_spectra(newdata)) {
         m <- object$meta
-        logf("Deconvoluting %d spectra with %d nworkers",
+        logv("Deconvoluting %d spectra with %d nworkers",
              length(newdata), nworkers)
         if (m$npmax > 0) {
             decons <- deconvolute(
@@ -894,7 +894,7 @@ predict.mdm <- function(object,
                 nworkers = nworkers
             )
         }
-        logf("Aligning spectra with %d nworkers", nworkers)
+        logv("Aligning spectra with %d nworkers", nworkers)
         als <- align(
             decons, maxShift = m$maxShift, maxCombine = 0,
             verbose = verbosity >= 2, nworkers = nworkers,
@@ -909,7 +909,7 @@ predict.mdm <- function(object,
     } else {
         Xn <- as.matrix(newdata)
     }
-    logf("Predicting with s=%s", as.character(s))
+    logv("Predicting with s=%s", as.character(s))
     requireNamespace("glmnet", quietly = TRUE)
     score <- as.numeric(predict(object$model, newx = Xn, s = s, type = "link"))
     prob <- as.numeric(predict(object$model, newx = Xn, s = s, type = "response"))
