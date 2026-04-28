@@ -624,6 +624,27 @@ logf <- function(fmt,
 }
 
 #' @noRd
+catft <- function(fmt, ...) {
+
+    now <- Sys.time()
+
+    # Finish previous log by printing it's duration
+    prev <- getOption("metabodecon.catft.time", NULL)
+    dt <- if (is.null(prev)) "" else sprintf(" (%.1fs)\n", as.numeric(now - prev))
+    istty <- isatty(stdout())
+    if (istty) dt <- paste0(esc$bright_cyan, dt, esc$reset)
+    cat(dt)
+
+    # Start new log message with timestamp and formatted text
+    txt <- sprintf(fmt, ...)
+    ts <- format(now, "%Y-%m-%d %H:%M:%S")
+    if (istty) txt <- paste0(esc$bright_black, txt, esc$reset)
+    msg <- sprintf("%s %s", ts, txt)
+    cat(msg)
+    options(metabodecon.catft.time = now)
+}
+
+#' @noRd
 #' @title Log formatted messages if verbosity is high enough
 #' @description
 #' Logs `fmt` via `logf()` if `verbosity >= 1` (`logv`) or `>= 2` (`logvv`).
@@ -832,6 +853,10 @@ is_bool <- function(x, n = NULL) {
     is.logical(x) && (is.null(n) || length(x) == n)
 }
 
+is_bool_or_num <- function(x, n = 1) {
+    (is.logical(x) || (is.numeric(x)) && (is.null(n) || length(x) == n))
+}
+
 #' @noRd
 #' @author 2024-2025 Tobias Schmidt: initial version.
 is_str <- function(x) {
@@ -860,26 +885,6 @@ is_char_or_null <- function(x, n = NULL, pattern = NULL) {
 #' @author 2024-2025 Tobias Schmidt: initial version.
 is_bool_or_null <- function(x, n = NULL) {
     is.null(x) || is_bool(x, n)
-}
-
-#' @noRd
-#' @author 2024-2025 Tobias Schmidt: initial version.
-is_use_rust <- function(x) {
-    is.null(x) || isTRUE(x) || isFALSE(x) ||
-        (is.numeric(x) && length(x) == 1 && x %in% c(0, 0.5, 1))
-}
-
-#' @noRd
-#' @description Normalize `use_rust` to numeric: 0 (old R), 0.5 (new R), 1
-#' (Rust). Accepts TRUE/FALSE/NULL/0/0.5/1. NULL auto-detects Rust backend.
-#' @author 2024-2025 Tobias Schmidt: initial version.
-normalize_use_rust <- function(use_rust) {
-    if (is.null(use_rust)) {
-        if (check_mdrb()) return(1) else return(0)
-    }
-    if (isTRUE(use_rust))  return(1)
-    if (isFALSE(use_rust)) return(0)
-    use_rust # already 0, 0.5, or 1
 }
 
 #' @noRd
@@ -1460,7 +1465,7 @@ mcmapply <- function(
             MoreArgs = MoreArgs, SIMPLIFY = SIMPLIFY,
             USE.NAMES = USE.NAMES
         )
-    } else {
+    } else if (.Platform$OS.type == "windows") {
         .scheduling <- match.arg(.scheduling)
         cl <- get_worker_pool(nw, loadpkg = loadpkg, log = log)
         on.exit(stopCluster(cl), add = TRUE, after = FALSE)
@@ -1468,6 +1473,12 @@ mcmapply <- function(
             cl, FUN, ...,
             MoreArgs = MoreArgs, RECYCLE = RECYCLE, SIMPLIFY = SIMPLIFY,
             USE.NAMES = USE.NAMES, .scheduling = .scheduling
+        )
+    } else {
+        parallel::mcmapply(
+            FUN, ...,
+            MoreArgs = MoreArgs, SIMPLIFY = SIMPLIFY,
+            USE.NAMES = USE.NAMES, mc.cores = nw
         )
     }
 }
