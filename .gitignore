@@ -6,7 +6,9 @@
 *_files/
 *.bkp
 *.code-workspace
+*.o
 *.pdf
+*.so
 *.tar.gz
 *Rproj*
 /check/
@@ -20,9 +22,9 @@ docs/
 inst/doc
 inst/doc/
 misc/*.rds
+misc/example_datasets.zip
 misc/example_datasets/bruker/aki.bak/
 tests/testthat_outputs/
+testthat.log
 tmp
 vdiffr.Rout.fail
-misc/example_datasets.zip
-testthat.log
