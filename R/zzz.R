@@ -17,6 +17,7 @@
 # Docs ########################################################################
 
 #' @keywords internal
+#' @useDynLib metabodecon, .registration=TRUE
 "_PACKAGE"
 
 #' @export
