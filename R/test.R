@@ -532,12 +532,12 @@ calc_prarp <- function(x, truepar = NULL, ...) {
     peak_ratio   <- min(np_found, np_true) / max(np_found, np_true)
     peak_ratio_x <- np_correct / (np_true + np_wrong)
 
-    area_spectrum <- sum(obj$si)
+    area_spectrum <- sum(abs(obj$si))
     area_residuals <- sum(abs(obj$sit$sup - obj$si))
-    area_ratio <- 1 - (min(area_residuals, area_spectrum) / max(area_residuals, area_spectrum))
+    area_ratio <- area_residuals / area_spectrum
 
-    prarp <- peak_ratio * area_ratio
-    prarpx <- peak_ratio_x * area_ratio
+    prarp <- peak_ratio * (1 - area_ratio)
+    prarpx <- peak_ratio_x * (1 - area_ratio)
 
     named(
         prarpx, prarp, peak_ratio_x, peak_ratio,
@@ -733,156 +733,6 @@ vcomp <- function(x, y, xpct = 0, silent = FALSE) {
     }
     invisible(status)
 }
-
-#' @noRd
-#'
-#' @description
-#' Compares a spectrum deconvoluted with [metabodecon::generate_lorentz_curves_v12()] with a
-#' spectrum deconvoluted with [metabodecon::MetaboDecon1D()].
-#'
-#' @param new Result of [metabodecon::generate_lorentz_curves_v12()].
-#' @param old Result of [metabodecon::MetaboDecon1D()].
-#' @param silent Logical. If TRUE, no output is printed.
-#'
-#' @author 2024-2025 Tobias Schmidt: initial version.
-#'
-#' @examples
-#' sim_01 <- metabodecon_file("sim_01")[1]
-#' new <- generate_lorentz_curves_sim(sim_01)
-#' old <- MetaboDecon1D(sim_01)
-#' r <- compare_spectra(new, old, silent = FALSE)
-compare_spectra <- function(new, old, silent = FALSE) { # styler: off
-
-    # Check args
-    if (!is_idecon(new)) stop("new must be an object of type idecon")
-    if (!is_decon0(old)) stop("old must be an object of type decon0")
-    msg <- "old$debuglist is missing (set debug = TRUE in MetaboDecon1D())"
-    if (!"debuglist" %in% names(old)) stop(msg)
-
-    # Define comparison functions
-    ident <- update_defaults(vcomp, xpct = 0, silent = silent)
-    equal <- update_defaults(vcomp, xpct = 1, silent = silent)
-
-    # Define result vector
-    r <-  logical()
-
-    # Compare values after spectrum has been read and scaled
-    o2 <- old$debuglist$data
-    r[1] <-  equal(new$y_raw, o2$spectrum_y_raw)
-    r[1] <-  ident(as.numeric(new$y_raw), as.numeric(o2$spectrum_y_raw))
-    r[2] <-  ident(new$y_scaled, o2$spectrum_y)
-
-    # Compare values after water signal removal
-    o3 <- old$debuglist$wsrm
-    new_sfr <- enrich_sfr(sfr = new$args$sfr, x = new)
-    r[3] <-  ident(new$n, o3$spectrum_length)
-    r[4] <-  ident(new$sdp, o3$spectrum_x)
-    r[5] <-  equal(new$ppm, o3$spectrum_x_ppm)
-    r[6] <-  ident(new_sfr$left_sdp, o3$signal_free_region_left)
-    r[7] <-  ident(new_sfr$right_sdp, o3$signal_free_region_right)
-    r[8] <-  ident(new$wsr$left_dp, o3$water_signal_left)
-    r[9] <-  ident(new$wsr$right_dp, o3$water_signal_right)
-    r[10] <- ident(new$y_nows, o3$spectrum_y)
-
-    # Compare values after negative value removal
-    o4 <- old$debuglist$nvrm
-    r[11] <- ident(new$y_pos, o4$spectrum_y)
-
-    # Compare values after  smoothing
-    o5 <- old$debuglist$smooth
-    r[12] <- ident(new$y_smooth, o5$spectrum_y)
-
-    # Compare values after peak selection
-    o6 <- old$debuglist$peaksel
-    r[14] <- equal(new$d, c(NA, o6$second_derivative[2, ], NA))
-    r[16] <- equal(new$peak$center, o6$peaks_x + 1) # (1)
-    r[17] <- equal(new$peak$right, o6$left_position[1, ] + 1) # (1)
-    r[18] <- equal(new$peak$left, o6$right_position[1, ] + 1) # (1)
-    # (1) MetaboDecon1D did not store NAs at the border, which is bad, because
-    # you need to shift every index by one when you switch from
-    # `second_derivative` to any other vector like `x_ppm` or `y_au`.
-
-
-    # Filter peaks
-    o7 <- old$debuglist$peakfilter
-    o8 <- old$debuglist$peakscore
-    border_is_na <- which(is.na(new$peak$left) | is.na(new$peak$right)) # (2)
-    new_peak2    <- if (length(border_is_na) > 0) new$peak[-border_is_na, ] else new$peak
-    left_pos     <- if (is.matrix(o7$left_position)) o7$left_position[1, ] else o7$left_position
-    right_pos    <- if (is.matrix(o7$right_position)) o7$right_position[1, ] else o7$right_position
-    new_idx_left   <- which(new_peak2$region == "sfrl")
-    new_idx_right  <- which(new_peak2$region == "sfrr")
-    new_idx_sfr    <- c(new_idx_left, new_idx_right)
-    new_mean_score <- mean(c(new_peak2$score[new_idx_sfr]))
-    new_mean_sd    <- sd(new_peak2$score[new_idx_sfr])
-    r[19] <- equal(new_peak2$center,               o7$peaks_index + 1) # (1)
-    r[20] <- equal(new_peak2$right,                left_pos + 1)
-    r[21] <- equal(new_peak2$left,                 right_pos + 1)
-    r[22] <- equal(new$sdp[new_peak2$center],      o7$peaks_x)
-    r[25] <- ident(new_peak2$score,                o8$scores[1, ])
-    r[26] <- ident(new_idx_left,                   o8$index_left)
-    r[27] <- ident(new_idx_right,                  o8$index_right)
-    r[23] <- ident(new_mean_score,                 o8$mean_score)
-    r[24] <- ident(new_mean_sd,                    o8$sd_score)
-    r[28] <- equal(new$peak$center[new$peak$high], o8$filtered_peaks + 1) # (1)
-    r[29] <- ident(new$peak$right[new$peak$high],  o8$filtered_left_position + 1)
-    r[30] <- ident(new$peak$left[new$peak$high],   o8$filtered_right_position + 1)
-    r[31] <- ident(new$peak$score[new$peak$high],  o8$save_scores)
-
-    # Lorent Curve init values
-    o9    <- old$debuglist$parinit
-    r[32] <- equal(new$lci$P$ic,   o9$filtered_peaks + 1) # (1)
-    r[33] <- ident(new$lci$P$ir,   o9$filtered_left_position + 1)
-    r[34] <- ident(new$lci$P$il,   o9$filtered_right_position + 1)
-    r[35] <- equal(new$lci$A,      o9$A)
-    r[36] <- equal(new$lci$lambda, o9$lambda)
-    r[37] <- equal(new$lci$w,      o9$w)
-
-    # Lorent Curve refined values
-    o10 <- old$debuglist$parapprox
-    r[38] <- ident(new$lcr$w,         o10$w_new         )
-    r[39] <- equal(new$lcr$lambda,    o10$lambda_new    )
-    r[40] <- equal(new$lcr$A,         o10$A_new         )
-    r[41] <- equal(new$lcr$integrals, o10$integrals[1, ])
-
-    # Return List
-    old_sfr <- old$signal_free_region %||% new$ret$signal_free_region
-    old_rws <- old$range_water_signal_ppm %||% new$ret$range_water_signal_ppm
-    r[42] <- equal(new$ret$number_of_files,            old$number_of_files)
-    r[43] <- ident(new$ret$filename,                   old$filename)
-    r[44] <- ident(new$ret$x_values,                   old$x_values)
-    r[45] <- ident(new$ret$x_values_ppm,               old$x_values_ppm)
-    r[46] <- ident(new$ret$y_values,                   old$y_values)
-    r[47] <- equal(new$ret$spectrum_superposition,     old$spectrum_superposition[1, ])
-    r[48] <- ident(new$ret$mse_normed,                 old$mse_normed)
-    r[49] <- equal(new$ret$index_peak_triplets_middle, old$index_peak_triplets_middle)
-    r[50] <- equal(new$ret$index_peak_triplets_left,   old$index_peak_triplets_left)
-    r[51] <- equal(new$ret$index_peak_triplets_right,  old$index_peak_triplets_right)
-    r[52] <- ident(new$ret$peak_triplets_middle,       old$peak_triplets_middle)
-    r[53] <- ident(new$ret$peak_triplets_left,         old$peak_triplets_left)
-    r[54] <- ident(new$ret$peak_triplets_right,        old$peak_triplets_right)
-    r[55] <- equal(new$ret$integrals,                  old$integrals[1, ])
-    r[56] <- equal(new$ret$A,                          old$A)
-    r[57] <- equal(new$ret$lambda,                     old$lambda)
-    r[58] <- ident(new$ret$x_0,                        old$x_0)
-    r[59] <- equal(new$ret$signal_free_region,         old_sfr)
-    r[60] <- equal(new$ret$range_water_signal_ppm,     old_rws)
-
-    # Print summary
-    if (!silent) {
-        msg <- "Identical: %s, Equal: %s, Different: %s, Error: %s, Empty: %s"
-        logf(msg, sum(r == 0), sum(r == 1), sum(r == 2), sum(r == 3), sum(r == 4))
-    }
-
-
-    # (2) The original MetaboDecon1D implementation throws away NAs, so for
-    #     comparsion we need to do the same
-
-    # Return results
-    r[is.na(r)] <- 4
-    invisible(r)
-}
-# styler: on
 
 #' @noRd
 #' @description Helper of [metabodecon::compare_spectra()].
