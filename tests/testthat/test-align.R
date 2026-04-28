@@ -144,6 +144,44 @@ test_that("fast peak backend gives same result for 1 vs multiple workers", {
     expect_equal(al2, al1)
 })
 
+test_that("align raises error for invalid method", {
+    expect_error(align(decons, verbose = FALSE, method = 99),
+                 "`method` must be 1, 2 or 3")
+})
+
+test_that("align with full=FALSE omits supal", {
+    skip_if_speaq_deps_missing()
+    al_nofull <- align(decons, verbose = FALSE, full = FALSE)
+    for (i in seq_along(al_nofull)) {
+        expect_null(al_nofull[[i]]$sit$supal)
+    }
+    # full=TRUE (default) should include supal
+    al_full <- align(decons, verbose = FALSE, full = TRUE)
+    for (i in seq_along(al_full)) {
+        expect_false(is.null(al_full[[i]]$sit$supal))
+    }
+})
+
+test_that("align with external ref returns only input spectra", {
+    skip_if_speaq_deps_missing()
+    # When ref is supplied the reference is prepended internally but must be
+    # stripped from the result, so the caller gets exactly length(x) spectra.
+    al_auto <- align(decons, verbose = FALSE)
+    al_ref  <- align(decons, verbose = FALSE, ref = decons[[1]])
+    expect_equal(length(al_ref), length(decons))
+    expect_equal(names(al_ref), names(decons))
+})
+
+test_that("align raises error for spectra with mismatched data-point counts", {
+    skip_if_speaq_deps_missing()
+    short <- simulate_spectrum(ndp = 128, npk = 2)
+    long  <- simulate_spectrum(ndp = 256, npk = 2)
+    d_short <- deconvolute(short, sfr = c(Inf, -Inf), force = TRUE, verbose = FALSE)
+    d_long  <- deconvolute(long,  sfr = c(Inf, -Inf), force = TRUE, verbose = FALSE)
+    mixed <- structure(list(d_short, d_long), class = "decons2")
+    expect_error(align(mixed, verbose = FALSE))
+})
+
 skip_if_slow_tests_disabled()
 
 test_that("align can install its dependencies", {

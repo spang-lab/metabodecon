@@ -7,6 +7,7 @@
 combine_peaks(
   shifted_mat,
   range = 5,
+  ref = NULL,
   lower_bound = 1,
   spectrum_data = NULL,
   data_path = NULL
@@ -18,8 +19,13 @@ combine_peaks(
 \item{range}{Amount of adjacent columns which are permitted to be used for
 improving the alignment.}
 
+\item{ref}{Integer vector of column indices to snap to. If \code{NULL}
+(default), neighbouring columns are merged greedily. If provided,
+each nonzero entry is assigned to the nearest ref column (breaking
+ties to the left) and kept only if the distance is at most \code{range}.}
+
 \item{lower_bound}{Minimum amount of non-zero elements per column to trigger
-the alignment improvement.}
+the alignment improvement. Only used when \code{ref} is \code{NULL}.}
 
 \item{spectrum_data}{The list of deconvoluted spectra as returned by
 \code{generate_lorentz_curves()} that was used to generate \code{shifted_mat}. No

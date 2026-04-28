@@ -87,8 +87,7 @@ m <- structure(
     model = NULL,
     ref = NULL,
     meta = list(npmax = 1000, nfit = 3, smit = 2, smws = 5,
-                delta = 6.4, maxShift = 100, maxCombine = 50,
-                combineMethod = 2)
+                delta = 6.4, maxShift = 100, maxCombine = 50)
   ),
   class = "mdm"
 )

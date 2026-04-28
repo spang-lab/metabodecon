@@ -87,11 +87,8 @@ should be a list of such values. Only required if \code{x} is a \code{decon0} ob
 where element \code{range_water_signal_ppm} is missing (or a \code{decons0} objected
 containing such \code{decon0} objects).}
 
-\item{bwc}{Level of backwards compatibility. If \code{bwc == 0}, bug fixes introduced after
-version 0.2.2 of Metabodecon are not used. If \code{bwc == 1}, new features
-introduced after version 0.2.2 of Metabodecon (e.g. faster algorithms) are
-not used. If \code{bwc == 2}, all bug fixes and features introduced after version
-0.2.2 are used. Support for \code{bwc == 0} will be removed in 'metabodecon v2.0'.}
+\item{bwc}{Level of backwards compatibility. Kept for backwards compatibility;
+all conversions now use \code{bwc = 2} logic. Ignored.}
 
 \item{file_format}{The file_format of the spectrum file. E.g. \code{"bruker"} or \code{"jcampdx"}.}
 

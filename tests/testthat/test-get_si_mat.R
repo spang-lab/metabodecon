@@ -43,11 +43,11 @@ test_that("get_si_mat with maxCombine returns reduced matrix", {
     decons <- deconvolute(sim[1:2], sfr = c(3.55, 3.35))
     al <- align(decons, maxCombine = 0, verbose = FALSE)
 
-    mat_raw <- get_si_mat(al)
-    mat_20dp <- get_si_mat(al, maxCombine = 20)
-    mat_40dp <- get_si_mat(al, maxCombine = 40)
+    mat_raw   <- get_si_mat(al)
+    mat_20dp  <- get_si_mat(al, maxCombine = 20, drop_zero = TRUE)
+    mat_40dp  <- get_si_mat(al, maxCombine = 40, drop_zero = TRUE)
 
-    # Snapped matrices should have fewer rows (one per ref peak)
+    # After combining and dropping all-zero rows, matrix should be smaller
     expect_lt(nrow(mat_20dp), nrow(mat_raw))
     expect_lt(nrow(mat_40dp), nrow(mat_raw))
     expect_equal(ncol(mat_20dp), ncol(mat_raw))

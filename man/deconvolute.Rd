@@ -10,8 +10,8 @@ deconvolute(
   smopts = c(2, 5),
   delta = 6.4,
   sfr = NULL,
-  wshw = 0,
-  ask = FALSE,
+  wshw = NULL,
+  ask = NULL,
   force = FALSE,
   verbose = TRUE,
   nworkers = 1,
@@ -40,7 +40,9 @@ standard deviation of peak scores in the SFR. See 'Details'.}
 \item{sfr}{Numeric vector with two entries: the ppm positions for the left
 and right border of the signal-free region of the spectrum. See 'Details'.}
 
-\item{wshw}{Half-width of the water artifact in ppm.  See 'Details'.}
+\item{wshw}{Half-width of the water artifact in ppm.  See 'Details'.
+Deprecated: setting a non-zero value will produce a deprecation warning.
+Future versions will always use \code{wshw=0}.}
 
 \item{ask}{Logical. Whether to ask for user input during the deconvolution
 process. If FALSE, the provided default values will be used.}
@@ -58,13 +60,12 @@ deconvolution process.}
 \code{"auto"}, the number of workers will be determined automatically. If a number
 greater than 1, it will be limited to the number of spectra.}
 
-\item{use_rust}{Controls the deconvolution backend. Accepts \code{FALSE} / \code{0}
-(legacy R implementation, default), \code{TRUE} / \code{1} (Rust backend via
-\href{https://github.com/spang-lab/mdrb}{mdrb}), \code{0.5} (experimental new R
-implementation that produces results identical to the Rust backend; planned
-to become the new default in a future release), or \code{NULL} (auto-detect:
-uses Rust if available, otherwise legacy R). When set to \code{TRUE} / \code{1} and
-mdrb is not installed, an error is thrown.}
+\item{use_rust}{Controls the deconvolution backend. \code{FALSE} or any numeric
+value \verb{< 1} (default) uses the R implementation. \code{TRUE} or any numeric
+value \verb{>= 1} uses the Rust backend via
+\href{https://github.com/spang-lab/mdrb}{mdrb}. \code{NULL} auto-detects: uses Rust
+if available, otherwise R. When set to \code{TRUE} / \verb{>= 1} and mdrb is not
+installed, an error is thrown.}
 
 \item{npmax}{Integer. Maximum number of peaks allowed in the result. If
 \code{npmax >= 1}, the \code{nfit}, \code{smopts} and \code{delta} arguments are ignored and a

@@ -255,8 +255,7 @@ bm <- benchmark_mdm(
     pgrid = pgrid,
     nfo = 3,        # 3 outer folds
     nfl = 5,        # 5 inner folds for cv.glmnet
-    nwo = 3,        # 1 outer worker per fold
-    nwi = 4         # 4 inner workers for deconvolution
+    nworkers = 4    # 4 workers for deconvolution and alignment
 )
 # bm$predictions contains per-sample held-out predictions
 # bm$models contains the cv_mdm model for each outer fold
@@ -267,6 +266,4 @@ cat(sprintf(
 ```
 
 Note that `benchmark_mdm()` is computationally expensive because it runs the
-full grid search for each outer fold. We recommend running it on a machine with
-enough RAM and CPU cores to use at least as many outer workers (`nwo`) as outer
-folds (`nfo`). It is therefore not executed in this vignette.
+full grid search for each outer fold. It is therefore not executed in this vignette.

@@ -12,7 +12,7 @@ fit_mdm(
   spectra,
   y,
   sfr = NULL,
-  use_rust = TRUE,
+  use_rust = 0.5,
   nworkers = 1,
   verbosity = 2,
   seed = 1,
@@ -25,7 +25,6 @@ fit_mdm(
   delta = 6.4,
   maxShift = 200,
   maxCombine = 50,
-  combineMethod = 2,
   nfolds = 10
 )
 
@@ -33,13 +32,12 @@ cv_mdm(
   spectra,
   y,
   sfr = NULL,
-  use_rust = TRUE,
+  use_rust = 0.5,
   nworkers = 1,
   verbosity = 2,
   seed = 1,
   cadir = decon_cachedir(),
   check = TRUE,
-  combineMethod = 2,
   pgrid = get_pgrid("dynamic2"),
   ignore = NULL,
   warm_cache = TRUE,
@@ -50,13 +48,11 @@ benchmark_mdm(
   spectra,
   y,
   sfr = NULL,
-  use_rust = TRUE,
+  use_rust = 0.5,
   verbosity = 2,
   seed = 1,
   cadir = decon_cachedir(),
-  nwo = 1,
-  nwi = half_cores(),
-  combineMethod = 2,
+  nworkers = half_cores(),
   pgrid = get_pgrid(),
   nfo = 5,
   nfl = 10
@@ -103,12 +99,10 @@ ignored. Set to 0 to use explicit deconvolution parameters instead.}
 \item{maxShift}{Maximum alignment shift.}
 
 \item{maxCombine}{Maximum peak-combining distance in datapoints, passed to
-\code{\link[=get_si_mat]{get_si_mat()}}. Interpretation depends on \code{combineMethod}.}
-
-\item{combineMethod}{Peak-combining backend passed to
-\code{\link[=get_si_mat]{get_si_mat()}}. \code{1}: column merging via
-\code{\link[=combine_peaks]{combine_peaks()}}. \code{2} (default): nearest-neighbour
-snapping to reference peaks.}
+\code{\link[=get_si_mat]{get_si_mat()}}. During training, no reference is passed so
+partly-filled neighbouring columns are merged. During prediction, the stored
+model feature positions are passed as \code{ref}, so new peaks are snapped to
+those positions.}
 
 \item{nfolds}{Number of folds for the \code{cv.glmnet()} call in \code{\link[=fit_mdm]{fit_mdm()}}
 and \code{\link[=cv_mdm]{cv_mdm()}}. Default 10.}
@@ -120,13 +114,6 @@ by \code{\link[=get_pgrid]{get_pgrid()}}.}
 
 \item{warm_cache}{Logical. Whether to pre-populate the disk cache before
 starting the grid search.}
-
-\item{nwo}{Number of workers for the outer cross-validation in
-\code{\link[=benchmark_mdm]{benchmark_mdm()}}. Each outer worker holds a full copy of
-\code{spectra} and \code{y}.}
-
-\item{nwi}{Number of workers used inside each outer fold for
-\code{\link[=cv_mdm]{cv_mdm()}} and \code{\link[=predict.mdm]{predict.mdm()}}.}
 
 \item{nfo}{Number of outer folds in \code{\link[=benchmark_mdm]{benchmark_mdm()}}.}
 
@@ -165,8 +152,8 @@ A mdm is a essentially a glmnet lasso model, fitted on a feature matrix X,
 obtained by deconvoluting and aligning spectra and snapping their peaks to a
 shared reference spectrum. Lambda is chosen via cross-validation on X.
 Deconvolution parameters (\code{npmax} or \code{nfit}/\code{smit}/\code{smws}/\code{delta}),
-alignment parameter \code{maxShift}, and peak-combining parameters
-(\code{maxCombine}, \code{combineMethod}) are tunable hyperparameters.
+alignment parameter \code{maxShift} and peak-combining parameter \code{maxCombine}
+are tunable hyperparameters.
 
 When \code{npmax > 0}, deconvolution runs an internal grid search over smoothing
 and fitting parameters and keeps at most \code{npmax} peaks. The explicit
@@ -208,18 +195,11 @@ avoids redundant preprocessing when \code{\link[=cv_mdm]{cv_mdm()}} evaluates
 several settings on the same spectra.
 }
 
-\subsection{Memory usage by parallel workers}{
+\subsection{Parallelism}{
 
-Each outer worker in \code{\link[=benchmark_mdm]{benchmark_mdm()}} keeps its own copy of
-\code{spectra} and \code{y}, so memory use grows roughly with \code{nwo}. Large \code{nwo} values
-can therefore require substantial RAM for large input datasets.
-
-Inner workers (\code{nwi}) are used inside each outer worker for deconvolution,
-alignment and prediction on held-out spectra. They process only the spectra
-needed for the current task, so their memory impact is much smaller. In
-RAM-constrained settings, use \code{nwo = 1} and increase \code{nwi} instead.
-
-The total amount of processes spawned is \code{nwo * nwi.}
+\code{\link[=benchmark_mdm]{benchmark_mdm()}} runs outer folds sequentially and
+delegates all parallel work to \code{\link[=deconvolute]{deconvolute()}} and
+\code{\link[=align]{align()}} via the \code{nworkers} argument.
 }
 }
 \examples{
@@ -245,14 +225,14 @@ The total amount of processes spawned is \code{nwo * nwi.}
      mdm <- fit_mdm(
          spectra, y, sfr=NULL,
          nfit=5, smit=3, smws=3, delta=3, npmax=0,
-         maxShift=128, maxCombine=256, combineMethod=1,
+         maxShift=128, maxCombine=256,
          nworkers=half_cores(), cadir=cadir
      )
 
      mdm <- fit_mdm(
          spectra, y, sfr = NULL,
          nfit=5, smit=0, smws=0, delta=0, npmax=1000,
-         maxShift=64, maxCombine=16, combineMethod=1,
+         maxShift=64, maxCombine=16,
          nworkers=half_cores(), cadir=cadir
      )
 

@@ -53,50 +53,28 @@ test_that("format and summary work for decon2 and align", {
     expect_equal(sa$n_peaks, length(a1$lcpar$A))
 })
 
-test_that("private c methods combine private objects", {
-    is1 <- structure(list(ppm = c(2, 1), meta = list(name = "is1")), class = "ispec")
-    is2 <- structure(list(ppm = c(3, 2), meta = list(name = "is2")), class = "ispec")
-    ie1 <- structure(list(ppm = c(2, 1), lcr = list(A = c(1, 2)), meta = list(name = "ie1")), class = "idecon")
-    ie2 <- structure(list(ppm = c(3, 2), lcr = list(A = c(1)), meta = list(name = "ie2")), class = "idecon")
+test_that("private c methods combine rdecon objects", {
     rd1 <- structure(list(meta = list(name = "rd1")), class = "rdecon")
     rd2 <- structure(list(meta = list(name = "rd2")), class = "rdecon")
 
-    xis <- c(is1, is2)
-    xie <- c(ie1, ie2)
     xrd <- c(rd1, rd2)
 
-    expect_true(inherits(xis, "ispecs"))
-    expect_true(inherits(xie, "idecons"))
     expect_true(inherits(xrd, "rdecons"))
-    expect_equal(length(xis), 2)
-    expect_equal(length(xie), 2)
     expect_equal(length(xrd), 2)
 })
 
-test_that("private format methods return readable labels", {
-    is1 <- structure(list(ppm = c(2, 1), meta = list(name = "is1")), class = "ispec")
-    ie1 <- structure(list(ppm = c(2, 1), lcr = list(A = c(1, 2)), meta = list(name = "ie1")), class = "idecon")
+test_that("private format methods return readable labels for rdecon", {
     rd1 <- structure(list(meta = list(name = "rd1")), class = "rdecon")
 
-    expect_match(format(is1), "ispec object")
-    expect_match(format(ie1), "idecon object")
     expect_match(format(rd1), "rdecon object")
 })
 
-test_that("private summary methods return expected structures", {
-    is1 <- structure(list(ppm = c(2, 1), meta = list(name = "is1")), class = "ispec")
-    ie1 <- structure(list(ppm = c(2, 1), lcr = list(A = c(1, 2)), meta = list(name = "ie1")), class = "idecon")
+test_that("private summary methods return expected structures for rdecon", {
     rd1 <- structure(list(meta = list(name = "rd1")), class = "rdecon")
 
-    ss <- summary(is1)
-    sd <- summary(ie1)
     sr <- summary(rd1)
 
-    expect_true(is.list(ss))
-    expect_true(is.list(sd))
     expect_true(is.list(sr))
-    expect_equal(ss$n_dp, 2)
-    expect_equal(sd$n_peaks, 2)
     expect_equal(sr$name, "rd1")
 })
 

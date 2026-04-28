@@ -2,99 +2,64 @@
 defaults <- list(
     x = sap[[1]],
     nfit = 3, smopts = c(1, 3), delta = 3, sfr = c(3.2, -3.2), wshw = 0,
-    ask = FALSE, force = FALSE, verbose = FALSE, bwc = 0,
-    use_rust = FALSE, nw = 1, igr = list(), rtyp = "idecon"
+    ask = FALSE, force = FALSE, verbose = FALSE,
+    use_rust = FALSE, nworkers = 1, igrs = list(), rtyp = "decon2"
 )
 args <- list(
-    idecon_bwc0 = set(defaults),
-    idecon_bwc1 = set(defaults, bwc = 1),
-    idecon_bwc2 = set(defaults, bwc = 2),
-    idecon_rust = set(defaults, bwc = 2, use_rust = TRUE),
-    rdecon_bwc2 = set(defaults, bwc = 2, rtyp = "rdecon"),
-    rdecon_rust = set(defaults, bwc = 2, rtyp = "rdecon", use_rust = TRUE)
+    decon2_r    = set(defaults),
+    rdecon_r    = set(defaults, rtyp = "rdecon"),
+    rdecon_rust = set(defaults, rtyp = "rdecon", use_rust = TRUE)
 )
 mdrb_available <- check_mdrb()
 
 # Helpers #####
 try_deconvolute_spectrum <- function(args) {
-    try(do.call(deconvolute_spectrum, args), silent=TRUE)
+    try(do.call(deconvolute_spectrum, args), silent = TRUE)
 }
 
 try_calc_prarpx <- function(obj) {
-    try(calc_prarpx(obj), silent=TRUE)
+    try(calc_prarpx(obj), silent = TRUE)
 }
 
 # Calls #####
-obj <- sapply(args, try_deconvolute_spectrum, simplify=FALSE)
-prarp <- sapply(obj, try_calc_prarpx, simplify=FALSE)
+obj <- sapply(args, try_deconvolute_spectrum, simplify = FALSE)
+prarp <- sapply(obj, try_calc_prarpx, simplify = FALSE)
 
 # Checks #####
 r_structures <- test_that(
     "Returned decon objects have correct structure with R backend", {
-    # We only test 'idecon' and 'rdecon' objects, as that's enough to
-    # cover the R and Rust backends. Conversions to other types are tested
-    # in test-as_decon.R.
-    expect_identical(object = names(obj$idecon_bwc0), expected = idecon_members)
-    expect_identical(object = names(obj$idecon_bwc1), expected = idecon_members)
-    expect_identical(object = names(obj$idecon_bwc2), expected = idecon_members)
-
-    expect_identical(object = names(obj$rdecon_bwc2), expected = NULL)
-
-    expect_identical(object = class(obj$idecon_bwc0), expected = "idecon")
-    expect_identical(object = class(obj$idecon_bwc1), expected = "idecon")
-    expect_identical(object = class(obj$idecon_bwc2), expected = "idecon")
-    expect_identical(object = class(obj$rdecon_bwc2), expected = "try-error")
+    expect_identical(object = names(obj$decon2_r), expected = decon2_members)
+    expect_identical(object = class(obj$decon2_r), expected = "decon2")
+    expect_identical(object = class(obj$rdecon_r), expected = "try-error")
 })
 
 r_prarps <- test_that(
     "PRARPs are good with R backend", {
-    expect_true(prarp$idecon_bwc0 >= 0.507) # (1)
-    expect_true(prarp$idecon_bwc1 >= 0.961)
-    expect_true(prarp$idecon_bwc2 >= 0.961)
-    expect_true(inherits(prarp$rdecon_bwc2, "try-error"))
-    expect_true(prarp$idecon_bwc0 <= prarp$idecon_bwc1) # (2)
-    expect_true(prarp$idecon_bwc1 <= prarp$idecon_bwc2) # (2)
+    expect_true(prarp$decon2_r >= 0.961) # (1)
+    expect_true(inherits(prarp$rdecon_r, "try-error"))
     # (1) MetaboDecon1D has a PRARPX of 0.507. See test-MetaboDecon1d.R.
-    # (2) Higher bwc versions should lead to higher PRARPs
 })
 
-bwc <- test_that(
-    "Deconvolute with bwc=0 returns the same result as MetaboDecon1D", {
-    decon0_deconvolute <- as_decon0(obj$idecon_bwc0, optional = FALSE)
-    decon0_MetaboDecon1D <- MetaboDecon1D_silent(
-        filepath = metabodecon_file("bruker/sap"),
-        filename = "sap_01",
-        number_iterations = 3,
-        range_water_signal_ppm = 0,
-        signal_free_region = c(3.2, -3.2),
-        smoothing_param = c(1, 3),
-        delta = 3
-    )
-    spec <- read_spectrum(metabodecon_file("bruker/sap/sap_01"))
-    expect_equal(decon0_deconvolute, decon0_MetaboDecon1D)
-})
-
-igr <- test_that(
+igrs_test <- test_that(
     "Peaks in ignore regions are excluded", {
-    # sap[[1]] has 3 peaks at ppm ~2.8, ~0.1, ~-2.2 (with bwc=2, delta=3)
-    igr <- list(c(-0.5, 0.5))
+    # sap[[1]] has 4 peaks (delta=3); 1 peak is near ppm ~0.1
+    igrs <- list(c(-0.5, 0.5))
     d_r <- deconvolute_spectrum(
-        sap[[1]], nfit = 3, smopts = c(1, 3), delta = 3, sfr = c(3.2, -3.2),
-        wshw = 0, ask = FALSE, force = FALSE, verbose = FALSE, bwc = 2,
-        use_rust = FALSE, igr = igr, rtyp = "idecon"
+        sap[[1]], nfit = 3, smopts = c(1, 3), delta = 3,
+        sfr = c(3.2, -3.2), wshw = 0, ask = FALSE, force = FALSE,
+        verbose = FALSE, use_rust = FALSE, igrs = igrs, rtyp = "decon2"
     )
-    n_no_igr <- sum(obj$idecon_bwc2$peak$high)
-    n_with_igr <- sum(d_r$peak$high)
-    expect_equal(n_no_igr, 4)
-    expect_equal(n_with_igr, 3)
+    n_no_igrs  <- nrow(obj$decon2_r$lcpar)
+    n_with_igrs <- nrow(d_r$lcpar)
+    expect_equal(n_no_igrs, 4)
+    expect_equal(n_with_igrs, 3)
     if (mdrb_available) {
         d_rust <- deconvolute_spectrum(
             sap[[1]], nfit = 3, smopts = c(1, 3), delta = 3,
             sfr = c(3.2, -3.2), wshw = 0, ask = FALSE, force = FALSE,
-            verbose = FALSE, bwc = 2, use_rust = TRUE, igr = igr,
-            rtyp = "idecon"
+            verbose = FALSE, use_rust = TRUE, igrs = igrs, rtyp = "decon2"
         )
-        expect_equal(sum(d_rust$peak$high), 3)
+        expect_equal(nrow(d_rust$lcpar), 3)
     }
 })
 
@@ -111,46 +76,22 @@ skip_if_not(mdrb_available) # (1)
 
 rust_structures <- test_that(
     "Returned decon objects have correct structure with Rust backend", {
-    expect_identical(object = names(obj$idecon_rust), expected = idecon_members)
     expect_identical(object = names(obj$rdecon_rust), expected = rdecon_members)
-    expect_identical(object = class(obj$idecon_rust), expected = "idecon")
     expect_identical(object = class(obj$rdecon_rust), expected = "rdecon")
 })
 
 rust_prarps <- test_that(
     "PRARPs are good with Rust backend", {
-    expect_true(prarp$idecon_rust >= 0.961)
     expect_true(prarp$rdecon_rust >= 0.961)
-    expect_true(prarp$idecon_bwc2 <= prarp$idecon_rust) # (1)
-    expect_true(prarp$idecon_bwc2 <= prarp$rdecon_rust) # (1)
-    # (1) Rust should be better or equal to R
+    expect_true(prarp$decon2_r <= prarp$rdecon_rust) # Rust >= R
 })
 
-rust_r_equality <- test_that(
-    "Rust and R backend produce equal results", {
-
-    # Update all fields from the idecon_bwc2 object for which differences
-    # are to be expected. After patching these fields, the objects should
-    # be equal.
-    idecon_bwc2_mod <- obj$idecon_bwc2
-    idecon_rust_mod <- obj$idecon_rust
-    idecon_bwc2_mod$args$use_rust <- 1
-    idecon_bwc2_mod[c("peak", "Z", "lci", "lca", "lcr")] <- NULL
-    idecon_rust_mod[c("peak", "Z", "lci", "lca", "lcr")] <- NULL
-    expect_equal(idecon_rust_mod, idecon_bwc2_mod)
-
-    # Altough the estimated Lorentzian Parameters are expected to be slightly
-    # different, the PRARPs should be roughly the same. In fact, the rust prarp
-    # should be higher, as it already uses the raw SIs for the approximation
-    # steps, which is not yet implemented in the R version.
-    expect_true(prarp$idecon_rust >= prarp$idecon_bwc2)
-
-    # Different return types should not affect PRARPs
-    expect_true(prarp$idecon_rust == prarp$rdecon_rust)
-
+r_rust_comparison <- test_that(
+    "R and Rust produce similar quality results", {
     # Make sure the objects are plottable
     expect_no_error(evalwith(plot = "captured", {
-        plot_spectrum(obj$idecon_rust)
+        plot_spectrum(obj$decon2_r)
         plot_spectrum(obj$rdecon_rust)
     }))
 })
+

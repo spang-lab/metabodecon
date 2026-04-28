@@ -3,20 +3,15 @@ library(testthat)
 # Test Strategy #####
 
 # 1. Get the sap spectrum.
-# 2. Deconvolute the sap spectrum using [deconvolute_spectrum()] into an idecon
+# 2. Deconvolute the sap spectrum using [deconvolute_spectrum()] into a decon2
 #    object.
-# 3. Convert the idecon object to decon0, decon1 and decon2 objects.
-# 4. Verify the values of the idecon object and the decon[0-2] objects by
-#    plotting and printing their structure. After that, we know that the idecon
-#    objects as well as decon[0-2] objects obtained by direct conversion are
-#    correct.
-# 5. Convert to decon from each typ to each other type and verify that the
-#    objects obtained from these conversions are equal to the original
-#    (verified) objects.
+# 3. Convert the decon2 object to decon0, decon1 objects.
+# 4. Verify the structure of all decon[0-2] objects.
+# 5. Convert each type to each other type and verify equality.
 
 # Inputs #####
 trySilent <- function(expr) try(expr, silent = TRUE)
-idecon <- trySilent(deconvolute_spectrum(
+decon2 <- trySilent(deconvolute_spectrum(
     x = sap$sap_01,
     sfr = c(3.2, -3.2),
     smopts = c(2, 3),
@@ -30,143 +25,135 @@ rdecon <- trySilent(deconvolute_spectrum(
     use_rust = TRUE,
     verbose = FALSE
 ))
-decon2i <- try(as_decon2(idecon), silent = TRUE) # (1)
-decon1i <- try(as_decon1(idecon), silent = TRUE) # (1)
-decon0i <- try(as_decon0(idecon), silent = TRUE) # (1)
-decon2r <- try(as_decon2(rdecon), silent = TRUE) # (1)
-decon1r <- try(as_decon1(rdecon), silent = TRUE) # (1)
-decon0r <- try(as_decon0(rdecon), silent = TRUE) # (1)
-# (1) Name objects as decon[0-2][ir] (with trailing i or r) to indicate the
-# origin of these objects (idecon or rdecon).
+decon12 <- try(as_decon1(decon2), silent = TRUE) # decon1 from decon2
+decon02 <- try(as_decon0(decon2), silent = TRUE) # decon0 from decon2
+decon2r <- try(as_decon2(rdecon), silent = TRUE) # decon2 from rdecon
+decon1r <- try(as_decon1(rdecon), silent = TRUE) # expected try-error
+decon0r <- try(as_decon0(rdecon), silent = TRUE) # expected try-error
 mdrb_available <- check_mdrb()
 
 # Checks #####
 
-test_derivatives_idecon <- test_that("(idecon -> decon[0-2] works", {
+test_derivatives_decon2 <- test_that("decon2 -> decon[0-2] works", {
     withr::local_output_sink(nullfile())
-    expect_equal(names(idecon),  idecon_members)
-    expect_equal(names(decon2i), decon2_members)
-    expect_equal(names(decon1i), decon1_members)
-    expect_equal(names(decon0i), decon0_members)
-    expect_equal(class(idecon),  "idecon")
-    expect_equal(class(decon2i), "decon2")
-    expect_equal(class(decon1i), "decon1")
-    expect_equal(class(decon0i), "list")
+    expect_equal(names(decon2),  decon2_members)
+    expect_equal(names(decon12), decon1_members)
+    expect_equal(names(decon02), decon0_members)
+    expect_equal(class(decon2),  "decon2")
+    expect_equal(class(decon12), "decon1")
+    expect_equal(class(decon02), "list")
 })
 
-test_interactively_idecon <- if (identical(environment(), globalenv())) {
-    str(idecon,  2, digits.d = 10)
-    str(decon2i, 2, digits.d = 10)
-    str(decon1i, 2, digits.d = 10)
-    str(decon0i, 2, digits.d = 10)
-    plot_spectrum(idecon,  sub1 = list(lt_axis = list(sf = 100)), sub2 = TRUE)
-    plot_spectrum(decon2i, sub1 = list(lt_axis = list(sf = 100)), sub2 = TRUE)
-    plot_spectrum(decon1i, sub1 = list(lt_axis = list(sf = 100)), sub2 = TRUE)
+test_interactively_decon2 <- if (identical(environment(), globalenv())) {
+    str(decon2,  2, digits.d = 10)
+    str(decon12, 2, digits.d = 10)
+    str(decon02, 2, digits.d = 10)
+    plot_spectrum(decon2,  sub1 = list(lt_axis = list(sf = 100)), sub2 = TRUE)
+    plot_spectrum(decon12, sub1 = list(lt_axis = list(sf = 100)), sub2 = TRUE)
 }
 
-test_decon22i <- test_that("(decon2 <- decon2) == (decon2 <- idecon)", {
+test_decon22 <- test_that("(decon2 <- decon2) is a roundtrip", {
     withr::local_output_sink(nullfile())
-    decon22i <- as_decon2(decon2i)
-    expect_equal(decon22i, decon2i)
+    expect_equal(as_decon2(decon2), decon2)
 })
 
-test_decon21i <- test_that("(decon2 <- decon1) == (decon2 <- idecon)", {
+test_decon21 <- test_that("(decon2 <- decon1) == (decon2 <- decon2)", {
     withr::local_output_sink(nullfile())
-    decon21i <- as_decon2(decon1i)
+    x <- as_decon2(decon12)
     # Diffs in `meta$simpar`, `args`, `sit$wsrm`, `sit$nvrm` are expected, so we
-    # patch them first to make the comparsion possible.
-    decon21i$sit$wsrm <- decon2i$sit$wsrm
-    decon21i$sit$nvrm <- decon2i$sit$nvrm
-    decon21i$meta$simpar <- decon2i$meta$simpar
-    decon21i$args <- decon2i$args
-    expect_equal(decon21i, decon2i)
+    # patch them first to make the comparison possible. Row names of `peak` are
+    # also reset during roundtrip, so patch those too.
+    x$sit$wsrm    <- decon2$sit$wsrm
+    x$sit$nvrm    <- decon2$sit$nvrm
+    x$meta$simpar <- decon2$meta$simpar
+    x$args        <- decon2$args
+    row.names(x$peak) <- as.integer(row.names(decon2$peak))
+    expect_equal(x, decon2)
 })
 
-test_decon20i <- test_that("(decon2 <- decon0) == (decon2 <- idecon)", {
+test_decon20 <- test_that("(decon2 <- decon0) == (decon2 <- decon2)", {
     withr::local_output_sink(nullfile())
-    decon20i <- as_decon2(decon0i, spectrum = sap[[1]])
+    x <- as_decon2(decon02, spectrum = sap[[1]])
     # Diffs in `meta$simpar`, `args`, `sit$wsrm`, `sit$nvrm` are expected, so we
-    # patch them first to make the comparsion possible.
-    decon20i$sit$wsrm <- decon2i$sit$wsrm
-    decon20i$sit$nvrm <- decon2i$sit$nvrm
-    decon20i$meta$simpar <- decon2i$meta$simpar
-    decon20i$args <- decon2i$args
-    expect_equal(decon20i, decon2i)
+    # patch them first to make the comparison possible. Row names of `peak` are
+    # also reset during roundtrip, so patch those too.
+    x$sit$wsrm    <- decon2$sit$wsrm
+    x$sit$nvrm    <- decon2$sit$nvrm
+    x$meta$simpar <- decon2$meta$simpar
+    x$args        <- decon2$args
+    row.names(x$peak) <- as.integer(row.names(decon2$peak))
+    expect_equal(x, decon2)
 })
 
-test_decon12i <- test_that("(decon1 <- decon2) == (decon1 <- idecon)", {
+test_decon12 <- test_that("(decon1 <- decon2) == (decon1 <- decon2)", {
     withr::local_output_sink(nullfile())
-    decon12i <- as_decon1(decon2i);
-    expect_equal(decon12i, decon1i)
+    expect_equal(as_decon1(decon2), decon12)
 })
 
-test_decon11i <- test_that("(decon1 <- decon1) == (decon1 <- idecon)", {
+test_decon11 <- test_that("(decon1 <- decon1) is a roundtrip", {
     withr::local_output_sink(nullfile())
-    decon11i <- as_decon1(decon1i)
-    expect_equal(decon11i, decon1i)
+    expect_equal(as_decon1(decon12), decon12)
 })
 
-test_decon10i <- test_that("(decon1 <- decon0) == (decon1 <- idecon)", {
+test_decon10 <- test_that("(decon1 <- decon0) == (decon1 <- decon2)", {
     withr::local_output_sink(nullfile())
-    decon10i <- as_decon1(decon0i, spectrum = sap[[1]])
-    expect_equal(decon10i, decon1i)
+    expect_equal(as_decon1(decon02, spectrum = sap[[1]]), decon12)
 })
 
-test_decon02i <- test_that("(decon0 <- decon2) == (decon0 <- idecon)", {
+test_decon02 <- test_that("(decon0 <- decon2) == (decon0 <- decon2)", {
     withr::local_output_sink(nullfile())
-    decon02i <- as_decon0(decon2i);
-    expect_equal(decon02i, decon0i)
+    expect_equal(as_decon0(decon2), decon02)
 })
 
-test_decon01i <- test_that("(decon0 <- decon1) == (decon0 <- idecon)", {
+test_decon01 <- test_that("(decon0 <- decon1) == (decon0 <- decon2)", {
     withr::local_output_sink(nullfile())
-    decon01i <- as_decon0(decon1i)
-    expect_equal(decon01i, decon0i)
+    expect_equal(as_decon0(decon12), decon02)
 })
 
-test_decon00i <- test_that("(decon0 <- decon0) == (decon0 <- idecon)", {
+test_decon00 <- test_that("(decon0 <- decon0) is a roundtrip", {
     withr::local_output_sink(nullfile())
-    decon00i <- as_decon0(decon0i)
-    expect_equal(decon00i, decon0i)
+    expect_equal(as_decon0(decon02), decon02)
 })
 
-test_idecon_reversibility <- test_that("conversion are reversible", {
+test_decon2_reversibility <- test_that("conversions are reversible", {
     withr::local_output_sink(nullfile())
 
-    decon222 <- as_decon2(as_decon2(decon2i))
-    decon212 <- as_decon2(as_decon1(decon2i))
-    decon202 <- as_decon2(as_decon1(decon2i))
-    decon121 <- as_decon1(as_decon2(decon1i))
-    decon111 <- as_decon1(as_decon1(decon1i))
-    decon101 <- as_decon1(as_decon0(decon1i), spectrum = sap[[1]])
-    decon020 <- as_decon0(as_decon2(decon0i, spectrum = sap[[1]]))
-    decon010 <- as_decon0(as_decon1(decon0i, spectrum = sap[[1]]))
-    decon000 <- as_decon0(as_decon0(decon0i))
+    decon222 <- as_decon2(as_decon2(decon2))
+    decon212 <- as_decon2(as_decon1(decon2))
+    decon202 <- as_decon2(as_decon1(decon2))
+    decon121 <- as_decon1(as_decon2(decon12))
+    decon111 <- as_decon1(as_decon1(decon12))
+    decon101 <- as_decon1(as_decon0(decon12), spectrum = sap[[1]])
+    decon020 <- as_decon0(as_decon2(decon02, spectrum = sap[[1]]))
+    decon010 <- as_decon0(as_decon1(decon02, spectrum = sap[[1]]))
+    decon000 <- as_decon0(as_decon0(decon02))
 
     # We know that conversion from decon2 to decon[01] is lossy, so when going
     # back from decon[01] to decon2, this information cannot be recovered
     # without additional user input. I.e., in order to allow the comparison of
     # decon212 and decon202 with decon2, we need to restore the missing
     # information manually.
-    decon212$args        <- decon2i$args        # Optional element. Ok.
-    decon212$meta$simpar <- decon2i$meta$simpar # Optional element. Ok.
-    decon212$sit$wsrm    <- decon2i$sit$wsrm    # Required element. TODO.
-    decon212$sit$nvrm    <- decon2i$sit$nvrm    # Required element. TODO.
+    decon212$args        <- decon2$args        # Optional element. Ok.
+    decon212$meta$simpar <- decon2$meta$simpar # Optional element. Ok.
+    decon212$sit$wsrm    <- decon2$sit$wsrm    # Required element. TODO.
+    decon212$sit$nvrm    <- decon2$sit$nvrm    # Required element. TODO.
+    row.names(decon212$peak) <- as.integer(row.names(decon2$peak)) # Reset by roundtrip.
 
-    decon202$args        <- decon2i$args
-    decon202$meta$simpar <- decon2i$meta$simpar
-    decon202$sit$wsrm    <- decon2i$sit$wsrm
-    decon202$sit$nvrm    <- decon2i$sit$nvrm
+    decon202$args        <- decon2$args
+    decon202$meta$simpar <- decon2$meta$simpar
+    decon202$sit$wsrm    <- decon2$sit$wsrm
+    decon202$sit$nvrm    <- decon2$sit$nvrm
+    row.names(decon202$peak) <- as.integer(row.names(decon2$peak)) # Reset by roundtrip.
 
-    expect_equal(decon020, decon0i)
-    expect_equal(decon010, decon0i)
-    expect_equal(decon000, decon0i)
-    expect_equal(decon121, decon1i)
-    expect_equal(decon111, decon1i)
-    expect_equal(decon101, decon1i)
-    expect_equal(decon222, decon2i)
-    expect_equal(decon212, decon2i)
-    expect_equal(decon202, decon2i)
+    expect_equal(decon020, decon02)
+    expect_equal(decon010, decon02)
+    expect_equal(decon000, decon02)
+    expect_equal(decon121, decon12)
+    expect_equal(decon111, decon12)
+    expect_equal(decon101, decon12)
+    expect_equal(decon222, decon2)
+    expect_equal(decon212, decon2)
+    expect_equal(decon202, decon2)
 })
 
 # Rust Checks #####
@@ -180,7 +167,7 @@ skip_if_not(mdrb_available) # (1)
 # to see that something is wrong. I.e, in such as scenario, there is no need to
 # execute the following tests and spam the log file.
 
-test_derivatives_rdecon <- test_that("(idecon -> decon[0-2] works", {
+test_derivatives_rdecon <- test_that("rdecon -> decon[0-2] works", {
     withr::local_output_sink(nullfile())
     expect_equal(names(rdecon),  rdecon_members)
     expect_equal(names(decon2r), decon2_members)
@@ -198,8 +185,4 @@ test_interactively_rdecon <- if (identical(environment(), globalenv())) {
     str(decon2r, 2, digits.d = 10)
     plot_spectrum(rdecon,  sub1 = list(lt_axis = list(sf = 100)), sub2 = TRUE)
     plot_spectrum(decon2r, sub1 = list(lt_axis = list(sf = 100)), sub2 = TRUE)
-    # decon0 objects are not supported by plot_spectrum(), however, since decon0
-    # is a strict subset of decon1, it's enough to plot decon1. Later on, the
-    # decon0 and decon1 objects will be compared to verify that the decon0
-    # object is valid as well.
 }

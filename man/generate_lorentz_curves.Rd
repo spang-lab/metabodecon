@@ -80,7 +80,9 @@ standard deviation of peak scores in the SFR. See 'Details'.}
 \item{sfr}{Numeric vector with two entries: the ppm positions for the left
 and right border of the signal-free region of the spectrum. See 'Details'.}
 
-\item{wshw}{Half-width of the water artifact in ppm.  See 'Details'.}
+\item{wshw}{Half-width of the water artifact in ppm.  See 'Details'.
+Deprecated: setting a non-zero value will produce a deprecation warning.
+Future versions will always use \code{wshw=0}.}
 
 \item{ask}{Logical. Whether to ask for user input during the deconvolution
 process. If FALSE, the provided default values will be used.}
