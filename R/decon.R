@@ -43,14 +43,15 @@
 #' deconvolution process.
 #'
 #' @param wshw Half-width of the water artifact in ppm.  See 'Details'.
+#' Deprecated: setting a non-zero value will produce a deprecation warning.
+#' Future versions will always use `wshw=0`.
 #'
-#' @param use_rust Controls the deconvolution backend. Accepts `FALSE` / `0`
-#' (legacy R implementation, default), `TRUE` / `1` (Rust backend via
-#' [mdrb](https://github.com/spang-lab/mdrb)), `0.5` (experimental new R
-#' implementation that produces results identical to the Rust backend; planned
-#' to become the new default in a future release), or `NULL` (auto-detect:
-#' uses Rust if available, otherwise legacy R). When set to `TRUE` / `1` and
-#' mdrb is not installed, an error is thrown.
+#' @param use_rust Controls the deconvolution backend. `FALSE` or any numeric
+#' value `< 1` (default) uses the R implementation. `TRUE` or any numeric
+#' value `>= 1` uses the Rust backend via
+#' [mdrb](https://github.com/spang-lab/mdrb). `NULL` auto-detects: uses Rust
+#' if available, otherwise R. When set to `TRUE` / `>= 1` and mdrb is not
+#' installed, an error is thrown.
 #'
 #' @param npmax Integer. Maximum number of peaks allowed in the result. If
 #' `npmax >= 1`, the `nfit`, `smopts` and `delta` arguments are ignored and a
@@ -91,10 +92,22 @@
 #' spectra <- read_spectra(spectra_dir)
 #' decons <- deconvolute(spectra, sfr = c(3.55, 3.35))
 deconvolute <- function(x,
-    nfit=3,    smopts=c(2, 5), delta=6.4,    sfr=NULL,      wshw=0,
-    ask=FALSE, force=FALSE,    verbose=TRUE, nworkers=1,    use_rust=FALSE,
-    npmax=0,   igrs=list(),    cadir=decon_cachedir()
+    nfit=3,     smopts=c(2,5),  delta=6.4,     sfr=NULL,    wshw=NULL,
+    ask=NULL,   force=FALSE,    verbose=TRUE,  nworkers=1,  use_rust=FALSE,
+    npmax=0,    igrs=list(),    cadir=decon_cachedir()
 ) {
+
+    # Deprecation warnings for removed parameters
+    if (!is.null(wshw)) lifecycle::deprecate_warn(
+        "2.0.0", "deconvolute(wshw=)",
+        details = "wshw will be removed. Future versions always use wshw=0."
+    )
+    if (!is.null(ask)) lifecycle::deprecate_warn(
+        "2.0.0", "deconvolute(ask=)",
+        details = "ask will be removed. Future versions always use ask=FALSE."
+    )
+    wshw <- wshw %||% 0
+    ask  <- ask  %||% FALSE
 
     # Check inputs
     stopifnot(
@@ -103,20 +116,19 @@ deconvolute <- function(x,
         is_num_or_null(sfr, 2),       is_num_or_null(wshw, 1),
         is_bool(ask, 1),              is_bool(force, 1),
         is_bool(verbose, 1),          is_int(nworkers, 1),
-        is_use_rust(use_rust),        is_int(npmax, 1),
+        is_bool_or_num(use_rust),     is_int(npmax, 1),
         is_list_of_nums(igrs, nv=2),  is_str_or_null(cadir)
     )
 
     # Set suitable defaults
     sfr <- sfr %||% quantile(x$cs %||% x[[1]]$cs, c(0.9, 0.1))
-    use_rust <- normalize_use_rust(use_rust)
     if (use_rust == 1) check_mdrb(stop_on_fail = TRUE)
 
     # Perform deconvolution
     decons2 <- deconvolute_spectra(x,
         nfit, smopts, delta, sfr, wshw,
-        ask, force, verbose, bwc=2,
-        use_rust, nw=nworkers, igr=igrs, rtyp="decon2",
+        ask, force, verbose,
+        use_rust, nworkers=nworkers, igrs=igrs, rtyp="decon2",
         npmax=npmax, cadir=cadir
     )
 
@@ -128,19 +140,12 @@ deconvolute <- function(x,
 
 #' @noRd
 #' @inheritParams deconvolute
-#' @param bwc Whether to produce results backwards compatible with
-#' [metabodecon::MetaboDecon1D()]. If `bwc == 0`, bug fixes introduced after version 0.2.2 of
-#' Metabodecon are not used. If `bwc == 1`, new features introduced after
-#' version 0.2.2 of Metabodecon (e.g. faster algorithms) are not used. If `bwc
-#' == 2`, all bug fixes and features introduced after version 0.2.2 are used.
-#'
-#' Support for `bwc == 0` will be removed in 'metabodecon v2.0'.
 #' @author 2024-2025 Tobias Schmidt: initial version.
-deconvolute_spectra <- function(x,
-    nfit=3,        smopts=c(2, 5),    delta=6.4,      sfr=c(3.55, 3.35),
-    wshw=0,        ask=FALSE,         force=FALSE,    verbose=TRUE,
-    bwc=2,         use_rust=FALSE,    nw=1,           igr=list(),
-    rtyp="idecon", npmax=0,           cadir=decon_cachedir()
+deconvolute_spectra <- function(
+    x,                  nfit=3,          smopts=c(2, 5),          delta=6.4,
+    sfr=c(3.55, 3.35),  wshw=0,          ask=FALSE,               force=FALSE,
+    verbose=TRUE,       use_rust=FALSE,  nworkers=1,              igrs=list(),
+    rtyp="decon2",      npmax=0,         cadir=decon_cachedir(),  hash=NULL
 ) {
 
     # Check inputs
@@ -148,14 +153,22 @@ deconvolute_spectra <- function(x,
         is_spectrum(x) || is_spectra(x),
         is_int(nfit, 1), is_int(smopts, 2), is_num(delta, 1),
         is_bool(ask, 1), is_bool(force, 1), is_bool(verbose, 1),
-        is_num(bwc, 1),
         is_num(sfr, 2)  || is_list_of_nums(sfr, length(x), 2),
         is_num(wshw, 1) || is_list_of_nums(wshw, length(x), 1),
-        if (rtyp == "rdecon") use_rust == 1 else is_use_rust(use_rust),
-        is_int(nw, 1), is.list(igr),
-        is_char(rtyp, 1, "(decon[0-2]|idecon|rdecon)"),
+        is_bool_or_null(use_rust),
+        is_int(nworkers, 1), is.list(igrs),
+        is_char(rtyp, 1, "(decon[0-2]|rdecon)"),
         is_int(npmax, 1), is_str_or_null(cadir)
     )
+
+    # Return cached result when hash matches
+    if (!is.null(hash)) {
+        dc <- getOption("metabodecon.decon_cache")
+        if (!is.null(dc$key) && dc$key == hash) {
+            logf("Skipping deconvolution (cache hit)")
+            return(dc$decons)
+        }
+    }
 
     # Configure logging
     if (!verbose) local_options(toscutil.logf.file = nullfile())
@@ -164,7 +177,7 @@ deconvolute_spectra <- function(x,
     spectra <- as_spectra(x)
     ns <- length(spectra)
     nc2 <- ceiling(detectCores() / 2)
-    nw_apply <- if (nw == "auto") min(nc2, ns) else nw
+    nw_apply <- if (nworkers == "auto") min(nc2, ns) else nworkers
     nw_apply_str <- if (nw_apply == 1) "1 worker" else sprintf("%d workers", nw_apply)
     nw_deconv <- 1
     ns_str <- if (ns == 1) "1 spectrum" else sprintf("%d spectra", ns)
@@ -172,7 +185,7 @@ deconvolute_spectra <- function(x,
     sfr_list <- get_sfr(spectra, sfr, ask, adjno)
     wshw_list <- get_wshw(spectra, wshw, ask, adjno)
     smopts_list <- get_smopts(spectra, smopts)
-    igr_list <- list(igr)
+    igrs_list <- list(igrs)
     cadir_list <- list(cadir)
 
     # Deconvolute spectra
@@ -181,13 +194,18 @@ deconvolute_spectra <- function(x,
     decon_list <- mcmapply(nw_apply, deconvolute_spectrum,
         spectra,
         nfit, smopts_list, delta, sfr_list, wshw_list,
-        ask, force, verbose, bwc,
-        use_rust, nw_deconv, igr_list, rtyp,
+        ask, force, verbose,
+        use_rust, nw_deconv, igrs_list, rtyp,
         npmax, cadir_list
     )
     decons <- as_collection(decon_list, rtyp)
     duration <- format(round(Sys.time() - starttime, 3))
     logf("Finished deconvolution of %s in %s", ns_str, duration)
+
+    # Store in cache if hash was provided
+    if (!is.null(hash)) {
+        options(metabodecon.decon_cache = list(key = hash, decons = decons))
+    }
 
     # Return
     decons
@@ -199,29 +217,29 @@ deconvolute_spectra <- function(x,
 #' @examples
 #' x <- sap[[1]];
 #' nfit <- 3; smopts <- c(1,3); delta <- 3; sfr <- c(3.2,-3.2); wshw <- 0;
-#' ask <- FALSE; force <- FALSE; verbose <- FALSE; bwc <- 2;
-#' use_rust <- FALSE; nw <- 1; igr <- list(); rtyp <- "idecon"
-#' idecon <- deconvolute_spectrum(
+#' ask <- FALSE; force <- FALSE; verbose <- FALSE;
+#' use_rust <- FALSE; nworkers <- 1; igrs <- list(); rtyp <- "decon2"
+#' decon <- deconvolute_spectrum(
 #'      x, nfit, smopts, delta, sfr, wshw,
-#'      ask, force, verbose, bwc,
-#'      use_rust, nw, igr, rtyp
+#'      ask, force, verbose,
+#'      use_rust, nworkers, igrs, rtyp
 #' )
 #'
 #' x <- read_spectrum(metabodecon_file("urine_1"))
 #' nfit <- 3; smopts <- c(2,5); delta <- 6;
 #' sfr <- quantile(x$cs, c(0.9, 0.1)); wshw <- 0;
-#' ask <- FALSE; force <- FALSE; verbose <- TRUE; bwc <- 2;
-#' use_rust <- TRUE; nw <- 1; igr <- list(); rtyp <- "decon2"
+#' ask <- FALSE; force <- FALSE; verbose <- TRUE;
+#' use_rust <- TRUE; nworkers <- 1; igrs <- list(); rtyp <- "decon2"
 #' npmax=1000
 #' decon1 <- deconvolute_spectrum(
 #'      x, nfit, smopts, delta, sfr, wshw,
-#'      ask, force, verbose, bwc, use_rust, nw, igr, rtyp,
+#'      ask, force, verbose, use_rust, nworkers, igrs, rtyp,
 #'      npmax
 #' )
 deconvolute_spectrum <- function(x,
     nfit=3, smopts=c(2, 5), delta=6.4, sfr=c(3.55, 3.35), wshw=0,
-    ask=FALSE, force=FALSE, verbose=TRUE, bwc=2,
-    use_rust=0, nw=1, igr=list(), rtyp="idecon",
+    ask=FALSE, force=FALSE, verbose=TRUE,
+    use_rust=FALSE, nworkers=1, igrs=list(), rtyp="decon2",
     npmax=0, cadir=decon_cachedir()
 ) {
 
@@ -230,23 +248,22 @@ deconvolute_spectrum <- function(x,
         is_spectrum(x),
         is_int(nfit, 1),  is_int(smopts, 2),      is_num(delta, 1),
         is_num(sfr, 2),   is_num(wshw, 1),        is_bool(force, 1),
-        is_num(bwc, 1),   is_use_rust(use_rust),  is_int(nw, 1),
-        is_list_of_nums(igr, nv=2),
-        is_char(rtyp, 1, "(decon[0-2]|idecon|rdecon)"),
+        is_bool_or_num(use_rust),  is_int(nworkers, 1),
+        is_list_of_nums(igrs, nv=2),
+        is_char(rtyp, 1, "(decon[0-2]|rdecon)"),
         is_int(npmax, 1), is_str_or_null(cadir)
     )
-    use_rust <- normalize_use_rust(use_rust)
 
     # Init locals
     if (isFALSE(verbose)) local_options(toscutil.logf.file = nullfile())
     name <- get_name(x)
-    backend <- c("R (legacy)", "R (experimental)", "Rust")[use_rust * 2 + 1]
+    backend <- if (use_rust == 1) "Rust" else "R"
     suffix <- sprintf(" using %s backend", backend)
 
     # Stop early if deconvolution is cached
     if (npmax >= 1) {
         cache <- disk_cache(cadir)
-        args <- list("ds", x, sfr, wshw, force, bwc, use_rust, npmax, rtyp)
+        args <- list("ds", x, sfr, wshw, force, use_rust, npmax, rtyp)
         cachehash <- rlang::hash(args)
         if (cache$exists(cachehash)) {
             logf("Cache hit for %s (npmax=%d)", name, npmax)
@@ -283,18 +300,16 @@ deconvolute_spectrum <- function(x,
     # Deconvolute with given/optimal parameters
     logf("Starting deconvolution of %s%s", name, suffix)
     decon <- if (use_rust == 1) {
-        deconvolute_rust(x, sfr, smopts, delta, nfit, igr, nw, args)
-    } else if (use_rust == 0.5) {
-        deconvolute_r_new(x, sfr, smopts, delta, nfit, wshw, force, igr, args)
+        deconvolute_rust(x, sfr, smopts, delta, nfit, igrs, nworkers, args)
     } else {
-        deconvolute_r_old(x, sfr, smopts, delta, nfit, wshw, force, bwc, igr, args)
+        deconvolute_r(x, sfr, smopts, delta, nfit, force, igrs, args)
     }
 
     # Format, cache and return
     logf("Formatting return object as %s", rtyp)
     convert <- switch(rtyp,
         "decon0"=as_decon0, "decon1"=as_decon1, "decon2"=as_decon2,
-        "idecon"=as_idecon, "rdecon"=as_rdecon
+        "rdecon"=as_rdecon
     )
     decon <- convert(decon)
     if (npmax >= 1) cache$set(cachehash, decon)
@@ -304,16 +319,16 @@ deconvolute_spectrum <- function(x,
 
 #' @noRd
 deconvolute_rust <- function(
-    x, sfr, smopts, delta, nfit, igr, nw, args
+    x, sfr, smopts, delta, nfit, igrs, nworkers, args
 ) {
     mdrb_spectrum <- mdrb::Spectrum$new(x$cs, x$si, sfr)
     mdrb_deconvr <- mdrb::Deconvoluter$new()
     mdrb_deconvr$set_moving_average_smoother(smopts[1], smopts[2])
     mdrb_deconvr$set_noise_score_selector(delta)
     mdrb_deconvr$set_analytical_fitter(nfit)
-    for (r in igr) mdrb_deconvr$add_ignore_region(r[1], r[2])
-    mdrb_decon <- if (nw > 1) {
-        mdrb_deconvr$set_threads(nw)
+    for (r in igrs) mdrb_deconvr$add_ignore_region(r[1], r[2])
+    mdrb_decon <- if (nworkers > 1) {
+        mdrb_deconvr$set_threads(nworkers)
         mdrb_deconvr$par_deconvolute_spectrum(mdrb_spectrum)
     } else {
         mdrb_deconvr$deconvolute_spectrum(mdrb_spectrum)
@@ -322,36 +337,20 @@ deconvolute_rust <- function(
 }
 
 #' @noRd
-deconvolute_r_old <- function(
-    x, sfr, smopts, delta, nfit, wshw, force, bwc, igr, args
+deconvolute_r <- function(
+    x, sfr, smopts, delta, nfit, force, igrs, args
 ) {
-    ispec <- as_ispec(x)
-    ispec <- set(ispec, args=args)
-    ispec <- rm_water_signal(ispec, wshw, bwc)
-    ispec <- rm_negative_signals(ispec)
-    ispec <- smooth_signals(ispec, smopts[1], smopts[2], bwc)
-    ispec <- find_peaks(ispec)
-    ispec <- filter_peaks(ispec, sfr, delta, force, bwc, igr)
-    ispec <- fit_lorentz_curves(ispec, nfit, bwc)
-    as_idecon(ispec)
-}
-
-#' @noRd
-deconvolute_r_new <- function(
-    x, sfr, smopts, delta, nfit, wshw, force, igr, args
-) {
-    cs <- x$cs; si <- x$si
+    cs <- x$cs;
+    si <- x$si
     sfr_igr <- list(c(Inf, max(sfr)), c(min(sfr), -Inf))
-    r_igr <- c(sfr_igr, igr)
-    wsrm <- rm_water_signal2(cs, si, wshw)
-    nvrm <- rm_negative_signals2(wsrm)
-    sm <- smooth_signals2(nvrm, smopts[1], smopts[2])
+    igrs <- c(sfr_igr, igrs)
+    sm <- smooth_signals2(si, smopts[1], smopts[2])
     peaks <- find_peaks2(sm)
-    peaks <- filter_peaks2(peaks, cs, sfr, delta, force, r_igr)
+    peaks <- filter_peaks2(peaks, cs, sfr, delta, force, igrs)
     lcpar <- fit_lorentz_curves2(cs, si, peaks, nfit)
     sup <- lorentz_sup(cs, lcpar = lcpar)
     sit <- data.frame(
-        wsrm = wsrm * 1e6, nvrm = nvrm * 1e6,
+        wsrm = si * 1e6, nvrm = si * 1e6,
         sm = sm * 1e6, sup = sup
     )
     mse_list <- list(
@@ -371,7 +370,7 @@ grid_deconvolute_spectra <- function(
     x,
     sfr=NULL,
     verbose=TRUE,
-    nw=1,
+    nworkers=1,
     use_rust=FALSE,
     cadir = decon_cachedir() # (1)
     # (1) We share the cache between `grid_deconvolute_spectra()` and
@@ -385,8 +384,8 @@ grid_deconvolute_spectra <- function(
         is_spectra(x),
         is_num_or_null(sfr, 2)  || is_list_of_nums(sfr, length(x), 2),
         is_bool(verbose, 1),
-        is_int(nw, 1),
-        is_use_rust(use_rust),
+        is_int(nworkers, 1),
+        is_bool_or_num(use_rust),
         is_str_or_null(cadir)
     )
     sfr <- sfr %||% quantile(x[[1]]$cs, c(0.9, 0.1))
@@ -403,8 +402,8 @@ grid_deconvolute_spectra <- function(
 
     logf("Running grid deconvolution for remaining %d spectra", sum(!seen))
     u <- x[!seen] # u == unseen spectra
-    nw <- min(nw, length(u))
-    gridlist[!seen] <- mcmapply(nw, grid_deconvolute_spectrum,
+    nworkers <- min(nworkers, length(u))
+    gridlist[!seen] <- mcmapply(nworkers, grid_deconvolute_spectrum,
         x=u, sfr=list(sfr), verbose=verbose, use_rust=use_rust,
         cadir=list(cadir)
     )
@@ -441,16 +440,14 @@ grid_deconvolute_spectra <- function(
 #' runtimeRust <- Sys.time() - b
 #'
 grid_deconvolute_spectrum <- function(
-    x,
-    sfr=NULL,
-    verbose=TRUE,
-    use_rust=FALSE,
+    x, sfr=NULL, verbose=TRUE, use_rust=FALSE,
+    smit = c(2,3), smws = c(3,5,7,9), delta = 2:8, nfit = c(3,4,5),
     cadir=decon_cachedir()
 ) {
 
     assert(
         is_spectrum(x), is_num_or_null(sfr, 2), is_bool(verbose, 1),
-        is_use_rust(use_rust), is_str_or_null(cadir)
+        is_bool_or_num(use_rust), is_str_or_null(cadir)
     )
     if (!verbose) local_options(toscutil.logf.file = nullfile())
 
@@ -465,7 +462,7 @@ grid_deconvolute_spectrum <- function(
         logf("Cache hit for %s", get_name(x))
         return(cache$get(hash))
     }
-    backend <- c("R (legacy)", "R (experimental)", "Rust")[use_rust * 2 + 1]
+    backend <- if (use_rust) "Rust" else "R"
     specname <- get_name(x)
 
     logf("Grid deconvoluting %s using %s", specname, backend)
@@ -533,8 +530,6 @@ get_sfr <- function(x, sfr, ask, adjno) {
     n <- length(x)
     if (is_num(sfr, 2)) sfr <- rep(list(sfr), n)
     if (!is_list_of_nums(sfr, n, 2)) stop("sfr should be a [list of] num(2)")
-    if (ask && adjno == 0) sfr <- lapply(seq_len(n), function(i) confirm_sfr(x[[i]], sfr[[i]]))
-    if (ask && adjno >= 1) sfr <- rep(list(confirm_sfr(x[[adjno]], sfr[[adjno]])), n)
     names(sfr) <- get_names(x)
     sfr
 }
@@ -547,8 +542,6 @@ get_wshw <- function(x, wshw, ask, adjno) {
     if (is_num(wshw, 1)) wshw <- rep(list(wshw), n)
     if (is_num(wshw, n)) wshw <- as.list(wshw)
     if (!is_list_of_nums(wshw, n, 1)) stop("wshw should be a [list of] num(1)")
-    if (ask && adjno == 0) wshw <- mapply(confirm_wshw, x, wshw, SIMPLIFY = FALSE)
-    if (ask && adjno >= 1) wshw <- rep(list(confirm_wshw(x[[adjno]], wshw[[adjno]])), n)
     names(wshw) <- names(x)
     wshw
 }
@@ -579,80 +572,6 @@ get_smopts <- function(x, smopts) {
 # Helpers for deconvolute_spectrum #####
 
 #' @noRd
-#' @author
-#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
-#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
-#' MetaboDecon1D. Added code for bwc > 1.
-rm_water_signal <- function(x, wshw, bwc) {
-    assert(is_ispec(x), is_num(wshw, 1), is_num(bwc, 1))
-    logf("Removing water signal")
-    if (bwc >= 1) {
-        ppm_center <- (x$ppm[1] + x$ppm[length(x$ppm)]) / 2
-        idx_wsr <- which(x$ppm > ppm_center - wshw & x$ppm < ppm_center + wshw)
-        x$y_nows <- x$y_scaled
-        x$y_nows[idx_wsr] <- min(x$y_nows)
-    } else {
-        wsr <- enrich_wshw(wshw, x)
-        left <- wsr$left_dp
-        right <- wsr$right_dp
-        idx_wsr <- right:left # (1)
-        x$y_nows <- x$y_scaled
-        x$y_nows[idx_wsr] <- 0.01 / x$sf[2]
-        # (1) Order is important here, because right and left are floats. Example:
-        # right <- 3.3; left <- 1.4
-        # right:left == c(3.3, 2.3)
-        # left:right == c(1.4, 2.4)
-    }
-    x
-}
-
-#' @noRd
-#' @author
-#' 2020-2021 Martina Haeckl:
-#' Wrote initial version as part of MetaboDecon1D.\cr
-#' 2024-2025 Tobias Schmidt:
-#' Extracted and refactored corresponding code from MetaboDecon1D.
-#' Added code for bwc > 1.
-#' Dropped support for bwc == 0.
-#' @param x Chemical Shifts in parts per million (ppm)
-#' @param y Signal Intensities in arbtary units (au)
-#' @param wshw Half-width of the water artifact in ppm
-#' @return
-#' A numeric vector of the signal intensities with the water signal removed.
-rm_water_signal2 <- function(x, y, wshw) {
-    assert(is_num(x), is_num(y), is_num(wshw, 1))
-    logf("Removing water signal")
-    cntr <- (x[1] + x[length(x)]) / 2
-    y[which(x > cntr - wshw & x < cntr + wshw)] <- min(y)
-    y
-}
-
-#' @noRd
-#' @author
-#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
-#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
-#' MetaboDecon1D. Added code for bwc > 1.
-rm_negative_signals <- function(spec) {
-    logf("Removing negative signals")
-    errmsg <- "Water signal not removed yet. Call `rm_water_signal()` first."
-    if (is.null(spec$y_nows)) stop(errmsg)
-    spec$y_pos <- abs(spec$y_nows)
-    spec
-}
-
-#' @noRd
-#' @author
-#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
-#' 2024-2025 Tobias Schmidt:
-#' Extracted and refactored corresponding code from MetaboDecon1D.
-#' Added code for bwc > 1.
-#' Dropped support for bwc == 0.
-rm_negative_signals2 <- function(y) {
-    logf("Removing negative signals")
-    abs(y)
-}
-
-#' @noRd
 #'
 #' @title Smooth Signal Intensities using a Moving Average
 #'
@@ -675,58 +594,8 @@ rm_negative_signals2 <- function(y) {
 #' - `spec$y_smooth`: A numeric vector of the smoothed values after
 #'
 #' @details
-#' Old and slow version producing the same results as the
-#' implementation within `deconvolution` from `MetaboDecon1D_deconvolution.R`.
-#'
-#' @author
-#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
-#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
-#' MetaboDecon1D.
-smooth_signals <- function(spec, reps = 2, k = 5, verbose = TRUE) {
-    if (verbose) logf("Smoothing signals")
-    if (k %% 2 == 0) stop("k must be odd")
-    n <- length(spec$y_pos) # number of data points in total
-    ws <- floor(k / 2) # window size left/right of center
-    ct <- seq_len(n) # center positions
-    lb <- pmax(ct - ws, 1) # left borders
-    rb <- pmin(ct + ws, n) # right borders
-    nw <- rb - lb + 1 # number of data points in window
-    Z <- data.frame(spec$y_pos)
-    for (j in seq_len(reps)) {
-        zj <- Z[[j]]
-        zk <- sapply(seq_len(n), function(i) sum(zj[lb[i]:rb[i]]))
-        zk <- (1 / nw) * zk
-        Z[[j + 1]] <- zk
-    }
-    spec[c("Z", "y_smooth")] <- list(Z[, -1], Z[, reps + 1])
-    spec
-}
-
-#' @noRd
-#'
-#' @title Smooth Signal Intensities using a Moving Average
-#'
-#' @description
-#' Smoothes signal intensities by applying a [moving average](
-#' https://en.wikipedia.org/wiki/Moving_average) filter with a window size of k.
-#'
-#' @param y Signal intensities in arbtary units (au)
-#'
-#' @param reps The number of times to apply the moving average.
-#'
-#' @param k The number of points within the moving average window. Must be odd,
-#' so the smoothed point is in the middle of the window.
-#'
-#' @return
-#' A numeric vector of the smoothed values.
-#'
-#' @author
-#' 2020-2021 Martina Haeckl:
-#' Wrote initial version as part of MetaboDecon1D.\cr
-#' 2024-2025 Tobias Schmidt:
-#' Extracted and refactored corresponding code from MetaboDecon1D.
-#' Added code for bwc > 1.
-#' Dropped support for bwc == 0.
+#' Applies a centered moving average. Boundary values are filled with
+#' the mean of available neighbors to maintain vector length.
 smooth_signals2 <- function(y, reps = 2, k = 5) {
     if (k %% 2 == 0) stop("k must be odd")
     n <- length(y)
@@ -759,22 +628,6 @@ smooth_signals2 <- function(y, reps = 2, k = 5) {
     y
 }
 
-#' @noRd
-#' @author
-#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
-#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
-#' MetaboDecon1D.
-find_peaks <- function(spec) {
-    spec$d <- calc_second_derivative(spec$y_smooth)
-    spec$peak <- find_peaks2(spec$y_smooth)
-    spec
-}
-
-#' @noRd
-#' @author
-#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
-#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
-#' MetaboDecon1D.
 find_peaks2 <- function(y) {
     logf("Starting peak selection")
     d <- calc_second_derivative(y)
@@ -790,8 +643,7 @@ find_peaks2 <- function(y) {
 #' @noRd
 #' @title Filter Peaks with Low Scores
 #' @description
-#' Modular replacement for [metabodecon::filter_peaks()]. Takes atomic vectors
-#' instead of the monolithic `ispec` list. Peaks whose center ppm falls outside
+#' Filters peaks by score. Peaks whose center ppm falls outside
 #' `sfr` are used to estimate noise; signal-region peaks with scores below `mean
 #' + delta * sd` are removed. Peaks inside any `igr` region are also removed.
 #' @param peaks Data frame with columns `left`, `center`, `right`, `score`.
@@ -854,7 +706,7 @@ fit_lorentz_curves2 <- function(cs, si, peaks, nfit = 3) {
     x1 <- cs[il]; x2 <- cs[ic]; x3 <- cs[ir]
     y1 <- si[il]; y2 <- si[ic]; y3 <- si[ir]
 
-    # Mirror shoulders (match Rust PeakStencil::mirror_shoulder)
+    # Mirror shoulders
     mirror <- function(x1, x2, x3, y1, y2, y3) {
         inc <- y1 <= y2 & y2 <= y3  # ascending
         dec <- y1 >= y2 & y2 >= y3  # descending
@@ -867,7 +719,7 @@ fit_lorentz_curves2 <- function(cs, si, peaks, nfit = 3) {
     m <- mirror(x1, x2, x3, y1, y2, y3)
     x1 <- m$x1; x3 <- m$x3; y1 <- m$y1; y3 <- m$y3
 
-    # Solve 3-equation system (match Rust FitterAnalytical)
+    # Solve 3-equation system
     solve_params <- function(x1, x2, x3, y1, y2, y3) {
         # maximum_position (x0)
         num <- x1^2 * y1 * (y2 - y3) + x2^2 * y2 * (y3 - y1) + x3^2 * y3 * (y1 - y2)
@@ -893,7 +745,7 @@ fit_lorentz_curves2 <- function(cs, si, peaks, nfit = 3) {
     # Iterative refinement
     for (iter in seq_len(nfit)) {
         # Superposition at each reduced spectrum point
-        sup <- lorentz_sup_raw(rs_x, p$sfhw, p$hw2, p$maxp)
+        sup <- lorentz_sup(rs_x, x0 = p$maxp, Al = p$sfhw, l2 = p$hw2)
         # Ratio: original / superposition
         ratio <- rs_y / sup
         ratio[!is.finite(ratio)] <- 1
@@ -910,327 +762,14 @@ fit_lorentz_curves2 <- function(cs, si, peaks, nfit = 3) {
     # Filter degenerate peaks (match Rust CHECK_PRECISION = 1e6 * eps)
     eps <- 1e6 * .Machine$double.eps
     ok <- p$sfhw > eps & p$hw2 > eps
-    sfhw <- p$sfhw[ok]; hw2 <- p$hw2[ok]; maxp <- p$maxp[ok]
+    sfhw <- p$sfhw[ok]
+    hw2 <- p$hw2[ok]
+    maxp <- p$maxp[ok]
 
     # Convert (sfhw, hw2, maxp) → (x0, A, lambda) for decon2 format
     lambda <- sqrt(hw2)
     A <- sfhw / lambda
     data.frame(x0 = maxp, A = A, lambda = lambda)
-}
-
-#' @noRd
-#' @title Superposition using (sfhw, hw2, maxp) parameterization
-#' @description
-#' Computes the superposition of Lorentzians at positions `x` using the
-#' transformed parameters (sfhw, hw2, maxp) as used during fitting. This
-#' avoids unnecessary sqrt/division during iteration.
-#' @return Numeric vector of superposition values.
-lorentz_sup_raw <- function(x, sfhw, hw2, maxp) {
-    result <- numeric(length(x))
-    for (j in seq_along(maxp)) {
-        result <- result + sfhw[j] / (hw2[j] + (x - maxp[j])^2)
-    }
-    result
-}
-
-#' @noRd
-#' @title Filter Peaks with Low Scores Outside Signal-Free Region
-#'
-#' @description
-#' Calculates a score for each peak in the spectrum. Peaks with scores that are
-#' lower than `mu + delta * sigma` are filtered out, with `mu` being the mean
-#' and `sigma` the standard deviation of the scores of peaks within the
-#' signal-free region (SFR).
-#'
-#' @param spec A list containing the spectrum data, including peaks and their
-#' scores, and the signal-free region definition.
-#'
-#' @param delta A numeric value specifying how many standard deviations `s` a
-#' score needs to be above `mu` to not get filtered out. Here `s` denotes the
-#' standard deviation of peak scores in the signal free region (SFR) and `mu`
-#' denotes the average peak score within the SFR.
-#'
-#' @param force If no peaks are found in the SFR, the function stops with an
-#' error message by default. If `force` is TRUE, the function instead proceeds
-#' without filtering any peaks, potentially increasing runtime.
-#'
-#' @param igr List of length-2 numeric vectors specifying chemical shift
-#' regions to ignore. Peaks whose centers fall inside any ignore region are
-#' excluded.
-#'
-#' @return
-#' Returns the modified `spec` list with the `peak` component updated to
-#' indicate which peaks are considered significant based on their score relative
-#' to the SFR and the `delta` parameter. Peaks within the SFR are marked with a
-#' specific region code ("sfrl" for peaks in the left SFR and "sfrr" for peaks
-#' in the right SFR). Peaks in the normal region have the region-code "norm".
-#'
-#' @details
-#' The function first identifies peaks within the SFR by comparing their center
-#' positions against the SFR boundaries. If peaks are found within the SFR, it
-#' calculates the mean and standard deviation of their scores to establish a
-#' filtering threshold. Peaks with scores below this threshold are considered
-#' low and filtered out. If no peaks are found within the SFR and `force` is
-#' FALSE, the function stops and issues an error message. If `force` is TRUE,
-#' the function proceeds without filtering, potentially increasing runtime.
-#'
-#' @author
-#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
-#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
-#' MetaboDecon1D. Added code for bwc > 1.
-#'
-#' @examples
-#' peak <- list(score = c(1, 5, 2), center = c(1, 2, 3))
-#' sdp <- c(3, 2, 1)
-#' ispec <- named(peak, sdp)
-#' sfr <- list(left_sdp = 2.8, right_sdp = 1.2)
-#' rm3 <- filtered_ispec <- filter_peaks(ispec, sfr)
-#' rm2 <- filtered_ispec <- filter_peaks(ispec, sfr, delta = 1)
-filter_peaks <- function(
-    ispec, sfr, delta = 6.4, force = FALSE, bwc = 1, igr = list()
-) {
-    assert(is_ispec(ispec))
-    logf("Removing peaks with low scores")
-    sdp <- ispec$sdp
-    ppm <- ispec$ppm
-    plb <- ispec$peak$left
-    prb <- ispec$peak$right
-    pct <- ispec$peak$center
-    psc <- ispec$peak$score
-    pok <- !is.na(plb) & !is.na(pct) & !is.na(prb)
-    if (bwc < 1) {
-        sfr <- enrich_sfr(sfr, ispec)
-        in_left_sfr <- sdp[pct] >= sfr$left_sdp
-        in_right_sfr <- sdp[pct] <= sfr$right_sdp
-    } else {
-        in_left_sfr <- ppm[pct] >= max(sfr)
-        in_right_sfr <- ppm[pct] <= min(sfr)
-    }
-    in_sfr <- in_left_sfr | in_right_sfr
-    if (sum(in_sfr) > 1) {
-        mu <- mean(psc[in_sfr])
-        sigma <- sd(psc[in_sfr])
-    } else {
-        if (!force) stop(paste(
-            "Not enough signals found in signal free region.",
-            "Please double check deconvolution parameters."
-        ))
-        logf(paste(
-            "Not enough signals found in signal free region.",
-            "This is a clear indication that the deconvolution parameters",
-            "are not set correctly. Continuing anyways without dynamic peak",
-            "filtering, because `force` is TRUE. Note that this might",
-            "increase runtime drastically."
-        ))
-        mu <- 0
-        sigma <- 0
-    }
-    ispec$peak$high <- pok & (psc > mu + delta * sigma)
-    if (length(igr) > 0) {
-        cp <- if (bwc < 1) sdp[pct] else ppm[pct]
-        in_igr <- vapply(cp, function(c) {
-            any(vapply(igr, function(r) {
-                c >= min(r) & c <= max(r)
-            }, logical(1)))
-        }, logical(1))
-        ispec$peak$high <- ispec$peak$high & !in_igr
-    }
-    ispec$peak$region <- "norm"
-    ispec$peak$region[in_left_sfr] <- "sfrl"
-    ispec$peak$region[in_right_sfr] <- "sfrr"
-    logf("Removed %d peaks", sum(!ispec$peak$high))
-    ispec
-}
-
-#' @noRd
-#' @author
-#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
-#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
-#' MetaboDecon1D. Added code for bwc > 1.
-fit_lorentz_curves <- function(spec, nfit = 3, bwc = 1) {
-    logf("Initializing Lorentz curves")
-    spec$lci <- lc <- init_lc(spec) # Lorentz Curves Initialized
-    spec$lca <- vector("list", length = nfit) # Lorentz Curves Approximated
-    logf("Refining Lorentz Curves")
-    for (i in 1:nfit) spec$lca[[i]] <- lc <- refine_lc_v14(spec, lc$Z)
-    A <- lc$A
-    lambda <- lc$lambda
-    w <- lc$w
-    if (bwc < 1) {
-        limits <- c(0, max(spec$sdp) + (1 / spec$sf[1]))
-        integrals <- lorentz_int(w, A, lambda, limits = limits)
-    } else {
-        integrals <- A * (- pi)
-    }
-    spec$lcr <- list(A = A, lambda = lambda, w = w, integrals = integrals)
-    spec
-}
-
-#' @noRd
-#' @author
-#' 2020-2021 Martina Haeckl:
-#' Wrote initial version as part of MetaboDecon1D.\cr
-#' 2024-2025 Tobias Schmidt:
-#' Extracted and refactored corresponding code from MetaboDecon1D.
-#' Added code for bwc > 1.
-fit_lorentz_curves <- function(spec, nfit = 3, bwc = 1) {
-    logf("Initializing Lorentz curves")
-    spec$lci <- lc <- init_lc(spec) # Lorentz Curves Initialized
-    spec$lca <- vector("list", length = nfit) # Lorentz Curves Approximated
-    logf("Refining Lorentz Curves")
-    for (i in seq_len(nfit)) spec$lca[[i]] <- lc <- refine_lc_v14(spec, lc$Z)
-    A <- lc$A
-    lambda <- lc$lambda
-    w <- lc$w
-    if (bwc < 1) {
-        limits <- c(0, max(spec$sdp) + (1 / spec$sf[1]))
-        integrals <- lorentz_int(w, A, lambda, limits = limits)
-    } else {
-        integrals <- A * (- pi)
-    }
-    spec$lcr <- list(A = A, lambda = lambda, w = w, integrals = integrals)
-    spec
-}
-
-# Helpers for get_sfr and get_wshw #####
-
-#' @noRd
-#' @description Repeatedly ask the user to confirm/refine SFR borders.
-#' @param x Any metabodecon object.
-#' @author 2024-2025 Tobias Schmidt: initial version.
-confirm_sfr <- function(x, sfr = c(11.44494, -1.8828)) {
-    si <- x$y_scaled %||% x$si
-    cs <- x$ppm %||% x$cs
-    cs_min <- min(cs)
-    cs_max <- max(cs)
-    plot_sfr(cs, si, sfr)
-    sfr_ok <- get_yn_input("Borders of signal free region (green) correctly selected?")
-    while (!sfr_ok) {
-        get_border <- function(msg) get_num_input(msg, cs_min, cs_max)
-        sfr[1] <- get_border("Choose another left border: [e.g. 12]")
-        sfr[2] <- get_border("Choose another right border: [e.g. -2]")
-        plot_sfr(cs, si, sfr)
-        sfr_ok <- get_yn_input("Borders of signal free region (green) correctly selected?")
-    }
-    sfr
-}
-
-#' @noRd
-#' @description Repeatedly ask the user to confirm/refine the WSHW.
-#' @author 2024-2025 Tobias Schmidt: initial version.
-confirm_wshw <- function(x, wshw) {
-    cs <- x$cs %||% x$ppm
-    si <- x$si %||% x$y_scaled
-    plot_ws(cs, si, wshw)
-    ws_ok <- get_yn_input("Water artefact fully inside blue area?")
-    while (!ws_ok) {
-        wshw <- get_num_input("Choose another half width range (in ppm) for the water artefact: [e.g. 0.1222154]")
-        plot_ws(cs, si, wshw)
-        ws_ok <- get_yn_input("Water artefact fully inside blue area?")
-    }
-    wshw
-}
-
-# Helpers for filter_peaks #####
-
-#' @noRd
-#' @description
-#' Takes the SFR in PPM and returns the SFR in PPM, DP and SDP.
-#' @note
-#' Because the conversion from PPM to DP/SDP is slightly off (by 1-2 data
-#' points), the SFR borders in DP/SDP returned by this function are also
-#' incorrect. However, to maintain backwards compatibility with the old
-#' MetaboDecon1D function, the behaviour is not changed in this function.
-#' Instead, to only work with the correct ppm values, set `bwc = 2` in
-#' [metabodecon::filter_peaks()]. For details see `CHECK-2: signal free region calculation`
-#' in `TODOS.md`. (Update 2025-09-14: TODOS are no longer tracked in a separate
-#' file, but outside of the repository. To retrieve the last actively maintained
-#' version of `TODOS.md`, checkout commit 8b1f61b, i.e., v1.5.0.)
-#' @author 2024-2025 Tobias Schmidt: initial version.
-enrich_sfr <- function(sfr, x) {
-    assert(is_ispec(x) || is_idecon(x))
-    left_ppm <- sfr[1]
-    right_ppm <- sfr[2]
-    left_dp <- (x$n + 1) - (x$ppm_max - left_ppm) / x$ppm_nstep
-    left_sdp <- left_dp / x$sf[1]
-    right_dp <- (x$n + 1) - (x$ppm_max - right_ppm) / x$ppm_nstep
-    right_sdp <- right_dp / x$sf[1]
-    named(left_ppm, right_ppm, left_dp, right_dp, left_sdp, right_sdp)
-}
-
-#' @noRd
-#' @description
-#' Same as [metabodecon::enrich_sfr()], but only requires the chemical shift vector instead
-#' of the full `spectrum` or `idecon` object. That's easier to test and
-#' maintain.
-#' @author 2025 Tobias Schmidt: initial version.
-enrich_sfr2 <- function(sfr, cs) {
-    n <- length(cs)
-    ppm_max <- max(cs)
-    ppm_nstep <- diff(range(cs)) / n
-    left_ppm <- sfr[1]
-    right_ppm <- sfr[2]
-    left_dp <- (n + 1) - (ppm_max - left_ppm) / ppm_nstep
-    left_sdp <- left_dp / 1000
-    right_dp <- (n + 1) - (ppm_max - right_ppm) / ppm_nstep
-    right_sdp <- right_dp / 1000
-    named(left_ppm, right_ppm, left_dp, right_dp, left_sdp, right_sdp)
-}
-
-#' @noRd
-#' @description
-#' Calculates the WSR in dp and ppm from the WSHW in ppm.
-#' @note
-#' Because the conversion from PPM to DP/SDP is slightly off (by 1-2 data
-#' points), the SFR borders in DP/SDP returned by this function are also
-#' incorrect. However, to maintain backwards compatibility with the old
-#' MetaboDecon1D function, the behaviour is not changed in this function.
-#' Instead, to only work with the correct ppm values, set `bwc = 2` in
-#' [metabodecon::rm_water_signal()]. For details see `CHECK-3: water signal calculation` in
-#' `TODOS.md`. (Update 2025-09-14: TODOS are no longer tracked in a separate
-#' file, but outside of the repository. To retrieve the last actively maintained
-#' version of `TODOS.md`, checkout commit 8b1f61b, i.e., v1.5.0.)
-#' @author 2024-2025 Tobias Schmidt: initial version.
-enrich_wshw <- function(wshw, x) {
-    assert(is_ispec(x) || is_idecon(x))
-    x <- as_ispec(x)
-    hwidth_ppm <- wshw
-    hwidth_dp <- hwidth_ppm / x$ppm_nstep
-    center_dp <- x$n / 2
-    right_dp <- center_dp + hwidth_dp
-    left_dp <- center_dp - hwidth_dp
-    center_ppm <- x$ppm[center_dp]
-    right_ppm <- x$ppm[right_dp]
-    left_ppm <- x$ppm[left_dp]
-    if (left_dp <= 1 || right_dp >= x$n) stop("WSR is out of range")
-    named(
-        left_ppm, right_ppm, center_ppm, hwidth_ppm,
-        left_dp, right_dp, center_dp, hwidth_dp
-    )
-}
-
-#' @noRd
-#' @description
-#' Same as [metabodecon::enrich_wshw()], but only requires the chemical shift vector instead
-#' of the full `spectrum` or `idecon` object. That's easier to test and
-#' maintain.
-#' @author 2025 Tobias Schmidt: initial version.
-enrich_wshw2 <- function(wshw, cs) {
-    n <- length(cs)
-    ppm_nstep <- diff(range(cs)) / n
-    hwidth_ppm <- wshw
-    hwidth_dp <- hwidth_ppm / ppm_nstep
-    center_dp <- n / 2
-    right_dp <- center_dp + hwidth_dp
-    left_dp <- center_dp - hwidth_dp
-    center_ppm <- cs[center_dp]
-    right_ppm <- cs[right_dp]
-    left_ppm <- cs[left_dp]
-    if (left_dp <= 1 || right_dp >= n) stop("WSR is out of range")
-    named(
-        left_ppm, right_ppm, center_ppm, hwidth_ppm,
-        left_dp, right_dp, center_dp, hwidth_dp
-    )
 }
 
 # Helpers for find_peak #####
@@ -1245,85 +784,6 @@ calc_second_derivative <- function(y) {
     d
 }
 
-#' @noRd
-#' @author
-#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
-#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
-#' MetaboDecon1D.
-get_right_border <- function(j, d, m) {
-    r <- j + 1
-    while (r < m) { # use r<m instead of r<=m because c4 requires d[r+1]
-        is_right_root <- (d[r] < 0 && d[r + 1] >= 0)
-        is_right_maximum <- (d[r] > d[r - 1] && d[r] >= d[r + 1])
-        is_right_border <- is_right_root || is_right_maximum
-        if (isTRUE(is_right_border)) return(r)
-        r <- r + 1
-    }
-    NA
-}
-
-#' @noRd
-#' @author
-#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
-#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
-#' MetaboDecon1D.
-get_left_border <- function(j, d) {
-    l <- j - 1
-    while (l > 1) { # use l>1 instead of l>=1 because c4 requires d[l-1]
-        is_left_root <- (d[l] < 0 && d[l - 1] >= 0)
-        is_left_maximum <- (d[l] > d[l + 1] && d[l] >= d[l - 1])
-        is_left_border <- is_left_root || is_left_maximum
-        if (isTRUE(is_left_border)) return(l)
-        l <- l - 1
-    }
-    NA
-}
-
-#' @noRd
-#'
-#' @title Get Peak Score
-#'
-#' @description
-#' Calculate the score of a peak based on the sum of absolute second derivative
-#' values of its datapoints.
-#'
-#' @param j <- Index of the peak center
-#' @param l <- Index of the left border
-#' @param r <- Index of the right border
-#' @param a <- Absolute values of the second derivative for all data points
-#'
-#' @return The score of the peak.
-#'
-#' @author
-#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
-#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
-#' MetaboDecon1D.
-#'
-#' @examples
-#'
-#' #      ____________________________________________________
-#' #     |____2________5___________9_______12____14____16_____|
-#' #     |             x                                      |
-#' #     |          x  x  x  x                    x           |
-#' #     |       x  x  x  x  x  x              x  x           |
-#' #     |_.__x__x__x__x__x__x__x__x__.__.__x__x__x__x__x__.__|
-#'
-#' y <- c( 0, 1, 2, 3, 4, 3, 3, 2, 1, 0, 0, 1, 2, 3, 1, 1, 0  )
-#' a <- c(NA, 0, 0, 0, 2, 1, 1, 0, 0, 1, 1, 0, 0, 3, 2, 1, NA )
-#' all.equal(a, abs(calc_second_derivative(y)))
-#'
-#' s1 <- get_peak_score( 5, 2,   9, a)
-#' s2 <- get_peak_score(14, 12, 16, a)
-#' stopifnot(s1 == min(sum(a[ 2:5]),  sum(a[ 5:9] )))
-#' stopifnot(s2 == min(sum(a[12:14]), sum(a[14:16])))
-get_peak_score <- function(j, l, r, a) {
-    if (any(is.na(a[c(l, j, r)]))) {
-        0
-    } else {
-        min(sum(a[l:j]), sum(a[j:r]))
-    }
-}
-
 get_peak_centers_fast <- function(d) {
     dl <- c(NA, d[-length(d)])
     dr <- c(d[-1], NA)
@@ -1335,7 +795,7 @@ get_peak_centers_fast <- function(d) {
 #' @param d Vector of second derivative (of the smoothed signal intensities).
 #' @param pc Peak center indices.
 #' @author 2025 Tobias Schmidt: initial version.
-get_right_borders_fast <- function(d, pc, bwc = 2) {
+get_right_borders_fast <- function(d, pc) {
     # Example Inputs:
     # d <- c(-2, -4, -2, 1, 2, 1, -1, 1, -2, -1) # Second Derivative
     # pc <- c(2, 7, 9) # Corresponding Peak Center Indices
@@ -1402,329 +862,7 @@ get_peak_scores_fast <- function(d, pc, lb, rb) {
     score
 }
 
-# Helpers for fit_lorentz_curves #####
-
-#' @noRd
-#' @title Initialize Lorentz Curve Parameters
-#' @param spec
-#' List with elements: `x`, `y`, `peak` where `peak` is a list with elements
-#' `center`, `left`, `right` and `high`.
-#' @author
-#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
-#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
-#' MetaboDecon1D.
-init_lc <- function(spec, verbose = TRUE) {
-
-    # Init values
-    p <- spec$peak
-    ir <- p$right[p$high]  #
-    ic <- p$center[p$high] # Index of each peak triplet position (PTP)
-    il <- p$left[p$high]   #
-    lmr <- sort(unique(c(il, ic, ir))) # Combined PTP indices
-    rr <- match(ir, lmr) #
-    rc <- match(ic, lmr) # Rank of each PTP
-    rl <- match(il, lmr) #
-    x <- spec$sdp; y <- spec$y_smooth # X and Y value for each data point
-    xlmr <- x[lmr]; # X value for each PTP
-    yr <- y[ir]; yc <- y[ic]; yl <- y[il]; # Intensity of each PTP
-    xr <- x[ir]; xc <- x[ic]; xl <- x[il]; # Position of each PTP
-
-    # Replace shoulders
-    as <- (yr > yc) & (yc > yl) # Ascending shoulders (AS)
-    ds <- (yr < yc) & (yc < yl) # Descending shoulders (DS)
-    xl[ds] <- 2 * xc[ds] - xr[ds] # Replace DS with mirrored points (MP)
-    xr[as] <- 2 * xc[as] - xl[as] # Replace AS with MP
-    yl[ds] <- yr[ds] # Replace DS with MP
-    yr[as] <- yl[as] # Replace AS with MP
-
-    # Calculate distances
-    wr  <- xr - xr #
-    wc  <- xc - xr # Express positions wr/wc/wl as "distance to right border"
-    wl  <- xl - xr #
-    wrc <- wr - wc; wrl <- wr - wl; wcl <- wc - wl # x - distance between PTPs
-    yrc <- yr - yc; yrl <- yr - yl; ycl <- yc - yl # y - distance between PTPs
-
-    # Estimate parameters
-    w <- calc_w(wr, wc, wl, yr, yc, yl, wrc, wrl, wcl, yrc, yrl, ycl, xr)
-    lambda <- calc_lambda(wr, wc, wl, yr, yc, yl, wrc, wrl, wcl, yrc, yrl, ycl, xr)
-    A <- calc_A(wr, wc, wl, yr, yc, yl, wrc, wrl, wcl, yrc, yrl, ycl, lambda, w, xr)
-
-    # Calculate contribution of each lorentz curve to each PTP data point
-    Z <- matrix(0, nrow = length(lmr), ncol = length(ic)) # 3614 x 1227 urine_1
-    idx_A_non_zero <- which(A != 0)
-    for (j in idx_A_non_zero) {
-        Z[, j] <- abs(A[j] * (lambda[j] / (lambda[j]^2 + (xlmr - w[j])^2)))
-    }
-
-    # Print MSE
-    mse <- mse(y[lmr], rowSums(Z))
-    if (verbose) logf("MSE at peak tiplet positions: %.22f", mse)
-
-    # Create return list
-    P <- data.frame(il, ic, ir, rl, rc, rr, xl, xc, xr, yl, yc, yr, as, ds)
-    D <- data.frame(wl, wc, wr, wrc, wrl, wcl, yrc, yrl, ycl)
-    named(A, lambda, w, Z, D, P) # nolint: object_usage_linter
-}
-
-#' @noRd
-#' @title Initialize Lorentz Curve Parameters
-#' @param p
-#' data.frame with columns `center`, `left`, `right` and `high`, giving the
-#' indices of the datapoints identified as peak triplet positions (PTPs) and
-#' whether the peak is above the score threshold (`high == TRUE`) or not.
-#' @param x Vector of scaled data points (SDP).
-#' @param y Smoothed intensity values.
-#' @return
-#' A list with elements:
-#' * `A`: Area parameter of each Lorentz curve.
-#' * `lambda`: Width parameter of each Lorentz curve.
-#' * `w`: Position parameter of each Lorentz curve.
-#' * `Z`: Matrix with height of each Lorentz curve (col) at each PTP (row).
-#' * `D`: Data frame with distances between PTPs.
-#' * `P`: Data frame with information about each PTP.
-#' @author
-#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
-#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
-#' MetaboDecon1D.
-init_lc2 <- function(x, y, p, verbose = TRUE) {
-
-    # Init values
-    ir <- p$right[p$high]  #
-    ic <- p$center[p$high] # Index of each peak triplet position (PTP)
-    il <- p$left[p$high]   #
-    lmr <- sort(unique(c(il, ic, ir))) # Combined PTP indices
-    rr <- match(ir, lmr) #
-    rc <- match(ic, lmr) # Rank of each PTP
-    rl <- match(il, lmr) #
-    xlmr <- x[lmr]; # X value for each PTP
-    yr <- y[ir]; yc <- y[ic]; yl <- y[il]; # Intensity of each PTP
-    xr <- x[ir]; xc <- x[ic]; xl <- x[il]; # Position of each PTP
-
-    # Replace shoulders
-    as <- (yr > yc) & (yc > yl) # Ascending shoulders (AS)
-    ds <- (yr < yc) & (yc < yl) # Descending shoulders (DS)
-    xl[ds] <- 2 * xc[ds] - xr[ds] # Replace DS with mirrored points (MP)
-    xr[as] <- 2 * xc[as] - xl[as] # Replace AS with MP
-    yl[ds] <- yr[ds] # Replace DS with MP
-    yr[as] <- yl[as] # Replace AS with MP
-
-    # Calculate distances
-    wr  <- xr - xr #
-    wc  <- xc - xr # Express positions wr/wc/wl as "distance to right border"
-    wl  <- xl - xr #
-    wrc <- wr - wc; wrl <- wr - wl; wcl <- wc - wl # x - distance between PTPs
-    yrc <- yr - yc; yrl <- yr - yl; ycl <- yc - yl # y - distance between PTPs
-
-    # Estimate parameters
-    w <- calc_w(wr, wc, wl, yr, yc, yl, wrc, wrl, wcl, yrc, yrl, ycl, xr)
-    lambda <- calc_lambda(wr, wc, wl, yr, yc, yl, wrc, wrl, wcl, yrc, yrl, ycl, xr)
-    A <- calc_A(wr, wc, wl, yr, yc, yl, wrc, wrl, wcl, yrc, yrl, ycl, lambda, w, xr)
-
-    # Calculate contribution of each lorentz curve to each PTP data point
-    Z <- matrix(0, nrow = length(lmr), ncol = length(ic)) # 3614 x 1227 urine_1
-    idx_A_non_zero <- which(A != 0)
-    for (j in idx_A_non_zero) {
-        Z[, j] <- abs(A[j] * (lambda[j] / (lambda[j]^2 + (xlmr - w[j])^2)))
-    }
-
-    # Print MSE
-    mse <- mse(y[lmr], rowSums(Z))
-    if (verbose) logf("MSE at peak tiplet positions: %.22f", mse)
-
-    # Create return list
-    P <- data.frame(il, ic, ir, rl, rc, rr, xl, xc, xr, yl, yc, yr, as, ds)
-    D <- data.frame(wl, wc, wr, wrc, wrl, wcl, yrc, yrl, ycl)
-    named(A, lambda, w, Z, D, P) # nolint: object_usage_linter
-}
-
-#' @noRd
-#' @author
-#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
-#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
-#' MetaboDecon1D.\cr
-refine_lc_v14 <- function(spec, Z) {
-
-    # Init x and y values
-    x <- spec$sdp; y <- spec$y_smooth # x and y value for each data point
-
-    # Init peak related variables
-    p <- spec$peak
-    ir <- p$right[p$high]; ic <- p$center[p$high]; il <- p$left[p$high] # index of each peak triplet position (PTP)
-    lmr <- sort(unique(c(il, ic, ir))) # combined PTP indices
-    rr <- match(ir, lmr);  rc <- match(ic, lmr);   rl <- match(il, lmr) # rank  of each PTP
-    xlmr <- x[lmr]; # x value for each PTP
-    yr <- y[ir]; yc <- y[ic]; yl <- y[il]; # intensity of each PTP
-    xr <- x[ir]; xc <- x[ic]; xl <- x[il]; # position of each PTP
-    sl <- sc <- sr <- numeric(length(ic)); # sum of lorentz curves (SLC) at each PTP
-    ql <- qc <- qr <- numeric(length(ic)); # ratio (SLC / original spectrum) at each PTP
-
-    # Init distance related variables
-    wr  <- wc  <- wl  <- numeric(length(ic));
-    wrc <- wrl <- wcl <- numeric(length(ic));
-    yrc <- yrl <- ycl <- numeric(length(ic));
-
-    # Init lorentz curves parameters and matrices
-    A <- lambda <- w <- numeric(length(ic))
-
-    for (i in seq_along(il)) {
-
-        # Calculate the sum of all lorentz curves for each data point
-        sl[i] <- sum(Z[rl[i], ])
-        sc[i] <- sum(Z[rc[i], ])
-        sr[i] <- sum(Z[rr[i], ])
-
-        # Calculate the proportion between original spectrum an the sum of the
-        # lorentz curves for each peak triplets position
-        ql[i] <- yl[i] / sl[i]
-        qc[i] <- yc[i] / sc[i]
-        qr[i] <- yr[i] / sr[i]
-
-        # Calculate the new heights of the peak triplets
-        yl[i] <- Z[rl[i], i] * ql[i]
-        yc[i] <- Z[rc[i], i] * qc[i]
-        yr[i] <- Z[rr[i], i] * qr[i]
-
-        # Calculate mirrored points for ascending and descending shoulders
-        if ((yl[i] < yc[i]) && (yc[i] < yr[i])) { # Ascending shoulder
-            xr[i] <- 2 * xc[i] - xl[i]
-            yr[i] <- yl[i]
-        }
-        if ((yl[i] > yc[i]) && (yc[i] > yr[i])) { # Descending shoulder
-            xl[i] <- 2 * xc[i] - xr[i]
-            yl[i] <- yr[i]
-        }
-
-        # Calculate distances between peak triplet positions and intensities
-        wr[i] <- xr[i] - xr[i]
-        wc[i] <- xc[i] - xr[i]
-        wl[i] <- xl[i] - xr[i]
-        wrc[i] <- wr[i] - wc[i]
-        wrl[i] <- wr[i] - wl[i]
-        wcl[i] <- wc[i] - wl[i]
-        yrc[i] <- yr[i] - yc[i]
-        yrl[i] <- yr[i] - yl[i]
-        ycl[i] <- yc[i] - yl[i]
-
-        # Estimate parameters
-        w[i] <- calc_w(
-            wr[i], wc[i], wl[i],
-            yr[i], yc[i], yl[i],
-            wrc[i], wrl[i], wcl[i],
-            yrc[i], yrl[i], ycl[i],
-            xr[i]
-        )
-        lambda[i] <- calc_lambda(
-            wr[i], wc[i], wl[i],
-            yr[i], yc[i], yl[i],
-            wrc[i], wrl[i], wcl[i],
-            yrc[i], yrl[i], ycl[i],
-            xr[i]
-        )
-        A[i] <- calc_A(
-            wr[i], wc[i], wl[i],
-            yr[i], yc[i], yl[i],
-            wrc[i], wrl[i], wcl[i],
-            yrc[i], yrl[i], ycl[i],
-            lambda[i], w[i], xr[i]
-        )
-
-        # Calculate contribution of each lorentz curve to each data point
-        cond <- (w[i] == 0) || (lambda[i] == 0) || (A[i] == 0)
-        Z[, i] <- if (cond) 0 else abs(A[i] * (lambda[i] / (lambda[i]^2 + (xlmr - w[i])^2)))
-
-        if (w[i] == 0 || lambda[i] == 0 || A[i] == 0) {
-            Z[, i] <- 0
-        } else {
-            Z[, i] <- abs(A[i] * (lambda[i] / (lambda[i]^2 + (xlmr - w[i])^2)))
-        }
-    }
-
-    # Print MSE
-    mse <- mse(y[lmr], rowSums(Z))
-    logf("MSE at peak tiplet positions: %.22f", mse)
-
-    # Create return list
-    P <- data.frame(il, ic, ir, rl, rc, rr, xl, xc, xr, yl, yc, yr, sl, sc, sr, ql, qc, qr)
-    D <- data.frame(wl, wc, wr, wrc, wrl, wcl, yrc, yrl, ycl)
-    named(A, lambda, w, Z, D, P) # nolint: object_usage_linter
-}
-
-#' @noRd
-#' @author
-#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
-#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
-#' MetaboDecon1D.\cr
-refine_lc2 <- function(lc) {
-
-}
-
-#' @noRd
-#' @author
-#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D
-#' based on Appendix E of Koh et. al. 2009.\cr
-#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
-#' MetaboDecon1D.
-calc_w <- function(wr, wc, wl, yr, yc, yl, wrc, wrl, wcl, yrc, yrl, ycl, xr) {
-    t1 <- wr^2 * yr * ycl
-    t2 <- wl^2 * yl * yrc
-    t3 <- wc^2 * yc * yrl
-    t4 <- 2 * wrc * yr * yc
-    t5 <- 2 * wcl * yc * yl
-    t6 <- 2 * wrl * yr * yl
-    w <- (t1 + t2 - t3) / (t4 + t5 - t6) + xr
-    w[is.nan(w)] <- 0 # If (t4 + t5 - t6) is 0, then w is NaN. In this case we set w to 0.
-    w
-}
-
-#' @noRd
-#' @author
-#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D
-#' based on Appendix E of Koh et. al. 2009.\cr
-#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
-#' MetaboDecon1D.
-calc_lambda <- function(wr, wc, wl, yr, yc, yl, wrc, wrl, wcl, yrc, yrl, ycl, xr) {
-    num <- -wc^4 * yc^2 * yrl^2 - wr^4 * yr^2 * ycl^2 - wl^4 * yrc^2 * yl^2
-    num <- num + 4 * wc * wl^3 * yc * ((-yr) + yc) * yl^2
-    num <- num + 4 * wc^3 * wl * yc^2 * yl * ((-yr) + yl)
-    num <- num + 4 * wr^3 * yr^2 * ycl * (wc * yc - wl * yl)
-    num <- num + 4 * wr * yr * (
-        wc^3 * yc^2 * yrl
-        - wc * wl^2 * yc * (yr + yc - 2 * yl) * yl
-        + wl^3 * yrc * yl^2
-        - wc^2 * wl * yc * yl * (yr - 2 * yc + yl)
-    )
-    num <- num + 2 * wc^2 * wl^2 * yc * yl * (yr^2 - 3 * yc * yl + yr * (yc + yl))
-    num <- num + 2 * wr^2 * yr * (
-        -2 * wc * wl * yc * yl * (-2 * yr + yc + yl)
-        + wl^2 * yl * (yr * (yc - 3 * yl) + yc * (yc + yl))
-        + wc^2 * yc * (yr * (-3 * yc + yl) + yl * (yc + yl))
-    )
-    den <- 2 * sqrt((wr * yr * ycl + wl * yrc * yl + wc * yc * ((-yr) + yl))^2)
-    lambda <- -(sqrt(abs(num)) / den)
-    lambda[is.nan(lambda)] <- 0
-    lambda
-}
-
-#' @noRd
-#' @author
-#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D
-#' based on Appendix E of Koh et. al. 2009.\cr
-#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
-#' MetaboDecon1D.
-calc_A <- function(wr, wc, wl, yr, yc, yl, wrc, wrl, wcl, yrc, yrl, ycl, lambda, w, xr) {
-    num <- -4 * wrc * wrl * wcl * yr * yc * yl
-    num <- num * (wr * yr * ycl + wl * yl * yrc + wc * yc * (-yrl))
-    num <- num * lambda
-    den <- wrc^4 * yr^2 * yc^2
-    den <- den - 2 * wrc^2 * yr * yc * (wrl^2 * yr + wcl^2 * yc) * yl
-    den <- den + (wrl^2 * yr - wcl^2 * yc)^2 * yl^2
-    A <- num / den
-    A[is.nan(A)] <- 0
-    A
-}
-
 # General helpers #####
-
 #' @noRd
 #' @title Calculate Lorentz Curve values
 #'
@@ -1775,8 +913,17 @@ lorentz <- function(x, x0, A, lambda, lcpar = NULL) {
 
 #' @noRd
 #' @author
-#' 2024-2026 Tobias Schmidt: initial versions (v1, v2, v3).
-lorentz_sup <- function(x, x0, A, lambda, lcpar = NULL) {
+#' 2024-2026 Tobias Schmidt: initial versions (v1-v3); 2026 compiled-C version.
+#' @param x Positions at which to evaluate (numeric vector).
+#' @param x0 Peak centres (numeric vector, length np).
+#' @param A Peak amplitudes (length np). Only needed when Al is NULL.
+#' @param lambda Peak half-widths (length np). Only needed when l2 is NULL.
+#' @param lcpar Optional named list/data frame with fields A, lambda, x0/x_0/w.
+#' @param Al Pre-computed |A * lambda| (length np). Avoids recomputation.
+#' @param l2 Pre-computed lambda^2 (length np). Avoids recomputation.
+lorentz_sup <- function(
+    x, x0, A = NULL, lambda = NULL, lcpar = NULL, Al = NULL, l2 = NULL
+) {
     if (!is.null(lcpar)) {
         nams <- names(lcpar)
         if ("A" %in% nams) A <- lcpar[["A"]]
@@ -1785,178 +932,10 @@ lorentz_sup <- function(x, x0, A, lambda, lcpar = NULL) {
         if ("x0" %in% nams) x0 <- lcpar[["x0"]]
         if ("w" %in% nams) x0 <- lcpar[["w"]]
     }
-    v <- getOption("metabodecon.lorentz_sup_version", NULL)
-    if (is.null(v)) {
-        cfun <- get_lorentz_sup_c()
-        v <- if (is.function(cfun)) 3 else 2
-    }
-    if (v == 1) {
-        sapply(x, function(xi) {
-            sum(abs(A * (lambda / (lambda^2 + (xi - x0)^2))))
-        })
-    } else if (v == 2) {
-        Al <- abs(A * lambda)
-        l2 <- lambda^2
-        result <- numeric(length(x))
-        for (j in seq_along(x0)) {
-            result <- result + Al[j] / (l2[j] + (x - x0[j])^2)
-        }
-        result
-    } else if (v == 3) {
-        cfun <- get_lorentz_sup_c()
-        cfun(x, x0, A, lambda)
-    } else {
-        stop("Invalid lorentz_sup_version: ", v)
-    }
-}
-
-#' @noRd
-#' @description
-#' Returns the compiled C implementation of lorentz_sup, or FALSE if compilation
-#' is not possible. On first call, attempts to compile via [inline::cfunction()]
-#' and caches the result (function or FALSE) in
-#' `options("metabodecon.lorentz_sup_c")` so subsequent calls are instant.
-#' @author 2026 Tobias Schmidt: initial version.
-get_lorentz_sup_c <- function() {
-    cfun <- getOption("metabodecon.lorentz_sup_c")
-    if (!is.null(cfun)) return(cfun)
-    cfun <- tryCatch(
-        compile_lorentz_sup_c(),
-        error = function(e) FALSE
-    )
-    options(metabodecon.lorentz_sup_c = cfun)
-    cfun
-}
-
-#' @noRd
-#' @description
-#' Compiles the C implementation of lorentz_sup via inline::cfunction.
-#' Throws an error if 'inline' is not installed or compilation fails.
-#' @author 2026 Tobias Schmidt: initial version.
-compile_lorentz_sup_c <- function() {
-    if (!requireNamespace("inline", quietly = TRUE)) {
-        stop("Package 'inline' required for C version")
-    }
-    inline::cfunction(
-        sig = c(
-            x = "numeric", x0 = "numeric",
-            A = "numeric", lambda = "numeric"
-        ),
-        body = '
-            int nx = Rf_length(x), np = Rf_length(x0);
-            double *px  = REAL(x),  *px0 = REAL(x0);
-            double *pA  = REAL(A),  *plam = REAL(lambda);
-            SEXP res = Rf_protect(Rf_allocVector(REALSXP, nx));
-            double *pr = REAL(res);
-            memset(pr, 0, nx * sizeof(double));
-            double *Al = (double *)R_alloc(np, sizeof(double));
-            double *l2 = (double *)R_alloc(np, sizeof(double));
-            for (int j = 0; j < np; j++) {
-                Al[j] = fabs(pA[j] * plam[j]);
-                l2[j] = plam[j] * plam[j];
-            }
-            for (int i = 0; i < nx; i++) {
-                double s = 0.0, xi = px[i];
-                for (int j = 0; j < np; j++) {
-                    double d = xi - px0[j];
-                    s += Al[j] / (l2[j] + d * d);
-                }
-                pr[i] = s;
-            }
-            Rf_unprotect(1);
-            return res;
-        ',
-        includes = '#include <math.h>\n#include <string.h>'
-    )
-}
-
-#' @noRd
-benchmark_lorentz_sup <- function() {
-
-    x <- read_spectrum(metabodecon_file("urine_1"))
-    rt <- function(expr) system.time(expr)[["elapsed"]]
-    opts <- options()
-    on.exit(options(opts))
-
-    logf("Get compile time for C version")
-    options(metabodecon.lorentz_sup_c = NULL)
-    tc <- rt(cfun <- get_lorentz_sup_c())
-
-    logf("Version NULL: auto-select (C if available, else R v2)")
-    options(metabodecon.lorentz_sup_version = NULL)
-    td0 <- rt(d0 <- deconvolute(x, verbose = FALSE, use_rust = FALSE))
-    cs <- d0$cs
-    lcpar <- d0$lcpar
-    ts0 <- rt(s0 <- lorentz_sup(cs, lcpar = lcpar))
-
-    logf("Version 1: loop over data points")
-    options(metabodecon.lorentz_sup_version = 1)
-    td1 <- rt(d1 <- deconvolute(x, verbose = FALSE, use_rust = FALSE))
-    ts1 <- rt(s1 <- lorentz_sup(cs, lcpar = lcpar))
-
-    logf("Version 2: loop over peaks")
-    options(metabodecon.lorentz_sup_version = 2)
-    td2 <- rt(d2 <- deconvolute(x, verbose = FALSE, use_rust = FALSE))
-    ts2 <- rt(s2 <- lorentz_sup(cs, lcpar = lcpar))
-
-    logf("Version 3: loop in C")
-    options(metabodecon.lorentz_sup_version = 3)
-    td3 <- rt(d3 <- deconvolute(x, verbose = FALSE, use_rust = FALSE))
-    ts3 <- rt(s3 <- lorentz_sup(cs, lcpar = lcpar))
-
-    logf("Version 1 + Rust backend")
-    options(metabodecon.lorentz_sup_version = 1)
-    tdr1 <- rt(dr1 <- deconvolute(x, verbose = FALSE, use_rust = TRUE))
-    tdr1b <- rt(dr1b <- deconvolute(x, verbose = FALSE, use_rust = TRUE))
-    tdr1c <- rt(dr1c <- deconvolute(x, verbose = FALSE, use_rust = TRUE))
-
-    logf("Version 2 + Rust backend")
-    options(metabodecon.lorentz_sup_version = 2)
-    tdr2 <- rt(dr2 <- deconvolute(x, verbose = FALSE, use_rust = TRUE))
-
-    logf("Version 3 + Rust backend")
-    options(metabodecon.lorentz_sup_version = 3)
-    tdr3 <- rt(dr3 <- deconvolute(x, verbose = FALSE, use_rust = TRUE))
-
-    # Print results
-    logf("")
-    logf("Urine1: %d datapoints, %d peaks",
-        length(cs), length(lcpar$A))
-    logf("")
-    logf("Correctness checks:")
-    logf("  all.equal(d1, d0):  %s", isTRUE(all.equal(d1, d0)))
-    logf("  all.equal(d2, d0):  %s", isTRUE(all.equal(d2, d0)))
-    logf("  all.equal(d3, d0):  %s", isTRUE(all.equal(d3, d0)))
-    logf("")
-    logf("  all.equal(dr1, d0):  %s", isTRUE(all.equal(dr1, d0)))
-    logf("  all.equal(dr2, d0):  %s", isTRUE(all.equal(dr2, d0)))
-    logf("  all.equal(dr3, d0):  %s", isTRUE(all.equal(dr3, d0)))
-    logf("")
-    logf("  all.equal(dr2, dr1):  %s", isTRUE(all.equal(dr2, dr1)))
-    logf("  all.equal(dr3, dr1):  %s", isTRUE(all.equal(dr3, dr1)))
-    logf("")
-    logf("  all.equal(s1, s0):  %s", isTRUE(all.equal(s1, s0)))
-    logf("  all.equal(s2, s0):  %s", isTRUE(all.equal(s2, s0)))
-    logf("  all.equal(s3, s0):  %s", isTRUE(all.equal(s3, s0)))
-    logf("")
-    logf("lorentz_sup timings:")
-    logf("  v0 (auto):       %7.3f s  (%.1fx)", ts0, ts1 / ts0)
-    logf("  v1 (dp-loop):    %7.3f s", ts1)
-    logf("  v2 (pk-loop):    %7.3f s  (%.1fx)", ts2, ts1 / ts2)
-    logf("  v3 (C-loop):     %7.3f s  (%.1fx)", ts3, ts1 / ts3)
-    logf("  compile time v3: %7.3f s", tc)
-    logf("")
-    logf("deconvolute timings (R backend):")
-    logf("  v0 (auto):       %7.3f s  (%.1fx)", td0, td1 / td0)
-    logf("  v1 (dp-loop):    %7.3f s", td1)
-    logf("  v2 (pk-loop):    %7.3f s  (%.1fx)", td2, td1 / td2)
-    logf("  v3 (C-loop):     %7.3f s  (%.1fx)", td3, td1 / td3)
-    logf("")
-    logf("deconvolute timings (Rust backend):")
-    logf("  v1 (dp-loop):    %7.3f s  (%.1fx)", tdr1, td1 / tdr1)
-    logf("  v2 (pk-loop):    %7.3f s  (%.1fx)", tdr2, td1 / tdr2)
-    logf("  v3 (C-loop):     %7.3f s  (%.1fx)", tdr3, td1 / tdr3)
-    logf("")
+    if (is.null(Al)) Al <- abs(A * lambda)
+    if (is.null(l2)) l2 <- lambda^2
+    .Call(lorentz_sup_c, as.double(x), as.double(x0),
+          as.double(Al), as.double(l2))
 }
 
 #' @noRd
