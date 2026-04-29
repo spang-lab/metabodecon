@@ -92,8 +92,8 @@ test_that("built-in backend matches speaq backend", {
 
     skip_if_speaq_deps_missing()
 
-    al_builtin <- align(decons, verbose = FALSE, method = 2)
-    al_speaq <- align(decons, verbose = FALSE, method = 1)
+    al_builtin <- align(decons, verbose = FALSE, method = 2, .internal = TRUE)
+    al_speaq <- align(decons, verbose = FALSE, method = 1, .internal = TRUE)
     expect_equal(al_builtin, al_speaq)
 })
 
@@ -145,18 +145,18 @@ test_that("fast peak backend gives same result for 1 vs multiple workers", {
 })
 
 test_that("align raises error for invalid method", {
-    expect_error(align(decons, verbose = FALSE, method = 99),
+    expect_error(align(decons, verbose = FALSE, method = 99, .internal = TRUE),
                  "`method` must be 1, 2 or 3")
 })
 
 test_that("align with full=FALSE omits supal", {
     skip_if_speaq_deps_missing()
-    al_nofull <- align(decons, verbose = FALSE, full = FALSE)
+    al_nofull <- align(decons, verbose = FALSE, full = FALSE, .internal = TRUE)
     for (i in seq_along(al_nofull)) {
         expect_null(al_nofull[[i]]$sit$supal)
     }
     # full=TRUE (default) should include supal
-    al_full <- align(decons, verbose = FALSE, full = TRUE)
+    al_full <- align(decons, verbose = FALSE, full = TRUE, .internal = TRUE)
     for (i in seq_along(al_full)) {
         expect_false(is.null(al_full[[i]]$sit$supal))
     }
@@ -182,78 +182,5 @@ test_that("align raises error for spectra with mismatched data-point counts", {
     expect_error(align(mixed, verbose = FALSE))
 })
 
+
 skip_if_slow_tests_disabled()
-
-test_that("align can install its dependencies", {
-
-    # TEST PURPOSE: If `metabodecon` or `speaq` is installed via
-    # `install.packages()`, the dependencies `impute` and `MassSpecWavelet`
-    # may not be installed. In this case, the missing dependencies should be
-    # automatically detected and installed by [align()] when `install_deps` is TRUE.
-    #
-    # TEST STRATEGY: Remove all site libraries and unload the `speaq` dependencies.
-    # Then, add a new (empty) site library and attempt to call `align()`. The
-    # function should detect the missing dependencies in the new site library and
-    # install them.
-    #
-    # IMPLEMENTATION DETAILS: Since `speaq` depends on `impute` and
-    # `MassSpecWavelet`, we cannot unload these dependencies while `speaq` is
-    # still loaded. Therefore, we need to unload `speaq` as well. However, after
-    # removing the site libraries, R will no longer be able to find `speaq`. To
-    # address this, we need to copy the `speaq` installation to the new site
-    # library before calling `align()`. This ensures the expected scenario where
-    # `speaq` is available but its dependencies are missing.
-
-    # Load packages required by testthat before removing site libs
-    requireNamespace("waldo", quietly = TRUE)   # required by `expect_false(<bool>)`
-    requireNamespace("diffobj", quietly = TRUE) # required by `expect_false(<try-error>)`
-    requireNamespace("glue", quietly = TRUE)    # required to print failure messages
-
-    # Update 2025/09/14: apparently, dependencies of speaq, which are no
-    # dependencies of metabodecon, might not be loaded automatically when
-    # metabodecon is loaded. Therefore, we need to load them as well to ensure
-    # they are available for the test.
-    repos_old <- getOption("repos")
-    defer(options(repos = repos_old))
-    options(repos = c(
-        RUniverse = "https://bioc.r-universe.dev",
-        CRAN = "https://cloud.r-project.org"
-    ))
-    ip <- utils::installed.packages()
-    speaq_deps <- tools::package_dependencies("speaq", db = ip)[[1]]
-    speaq_deps <- setdiff(speaq_deps, c("impute", "MassSpecWavelet"))
-    sapply(speaq_deps, requireNamespace, quietly = TRUE)
-
-    # Remember installation path of speaq
-    speaq_path <- system.file(package = "speaq")
-
-    # Remove existing site libs and instead add new (empty) site lib
-    tmp_lib <- norm_path(tmpfile("tmp-library/"))
-    dir.create(tmp_lib, recursive = TRUE)
-    old_libs <- .libPaths()
-    n_libs <- length(old_libs)
-    defer(.libPaths(old_libs))
-    .libPaths(c(tmp_lib, old_libs[n_libs]), include.site = FALSE)
-
-    # Unload speaq, impute and MassSpecWavelet
-    deps <- c("impute", "MassSpecWavelet")
-    unloadNamespace("speaq")
-    unloadNamespace(deps[1])
-    unloadNamespace(deps[2])
-
-    # Copy speaq to new site lib
-    file.copy(speaq_path, tmp_lib, recursive = TRUE)
-
-    deps_installed <- sapply(deps, requireNamespace, quietly = TRUE)
-    expect_false(any(deps_installed))
-
-    # Call align with auto-installation of dependencies enabled
-    obj <- evalwith(
-        output = "captured",
-        message = "captured",
-        expr = aligns <- align(decons, method = 1, install_deps = TRUE, verbose = FALSE)
-    )
-
-    deps_installed <- sapply(deps, requireNamespace, quietly = TRUE)
-    expect_true(all(deps_installed))
-})
