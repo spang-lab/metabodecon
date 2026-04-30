@@ -10,22 +10,11 @@
 #' @param x A `spectrum` or `spectra` object as described in [Metabodecon
 #' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
 #'
-#' @param ...
-#' All arguments after `x` must be passed by name. Positional use is not
-#' supported. Passing the removed arguments `wshw`, `ask`, or `cadir` or the
-#' deprecated `smopts` produces a warning; any other unknown name is an error.
-#'
 #' @param delta Threshold for peak filtering. Higher values result in more peaks
 #' being filtered out. A peak is filtered if its score is below \eqn{\mu +
 #' \sigma \cdot \delta}{mu + s * delta}, where \eqn{\mu}{mu} is the average
 #' peak score in the signal-free region (SFR), and \eqn{\sigma}{s} is the
 #' standard deviation of peak scores in the SFR. See 'Details'.
-#'
-#' @param force If FALSE, the function stops with an error message if no peaks
-#' are found in the signal free region (SFR), as these peaks are required as a
-#' reference for peak filtering. If TRUE, the function instead proceeds without
-#' peak filtering, potentially increasing runtime and memory usage
-#' significantly.
 #'
 #' @param nfit Integer. Number of iterations for approximating the parameters
 #' for the Lorentz curves. See 'Details'.
@@ -86,52 +75,25 @@
 #' spectra <- read_spectra(spectra_dir)
 #' decons <- deconvolute(spectra, sfr = c(3.55,3.35))
 deconvolute <- function(
-    x, ...,
-    nfit=3, smit=2, smws=5, delta=6.4, sfr=NULL,
-    force=FALSE, verbose=TRUE, nworkers=1, use_rust=FALSE,
-    npmax=0, igrs=list()
+    x, nfit=3, smit=2, smws=5, delta=6.4, npmax=0, sfr=NULL, igrs=list(),
+    use_rust=FALSE, verbose=TRUE, nworkers=1
 ) {
 
     # Check inputs
-    dots <- list(...)
-    deprecated <- c("wshw", "ask", "cadir", "smopts")
-    unnamed <- !nzchar(names(dots))
-    unknown <- setdiff(names(dots), deprecated)
-    unknown_str <- paste(unknown, collapse = ", ")
-    if (length(dots) > 0 && any(unnamed)) {
-        stop("All arguments to deconvolute() must be named (except x)")
-    }
-    if (length(unknown)) {
-        stop(sprintf("Unknown argument(s): %s", unknown_str))
-    }
-    if ("wshw" %in% names(dots)) {
-        warning("Argument 'wshw' has been removed from the public interface in v2.0.0 and will be ignored")
-    }
-    if ("ask" %in% names(dots)) {
-        warning("Argument 'ask' has been removed from the public interface in v2.0.0 and will be ignored")
-    }
-    if ("cadir" %in% names(dots)) {
-        warning("Argument 'cadir' has been removed from the public interface in v2.0.0 and will be ignored")
-    }
-    if ("smopts" %in% names(dots)) {
-        warning("Argument 'smopts' has been superseded in v2.0.0. Please use 'smit' and 'smws' instead")
-        smit <- dots$smopts[1]
-        smws <- dots$smopts[2]
-    }
     stopifnot(
         is_spectrum_or_spectra(x), is_int(nfit, 1),
         is_int_or_null(smit, 1),   is_int_or_null(smws, 1),
-        is_num_or_null(delta, 1),  is_num_or_null(sfr, 2),
-        is_bool(force, 1),         is_bool(verbose, 1),
-        is_int(nworkers, 1),       is_bool_or_num(use_rust),
-        is_int(npmax, 1),          is_list_of_nums(igrs, nv=2)
+        is_num_or_null(delta, 1),  is_int(npmax, 1),
+        is_num_or_null(sfr, 2),    is_list_of_nums(igrs, nv=2),
+        is_bool_or_num(use_rust),  is_int(nworkers, 1),
+        is_bool(verbose, 1)
     )
     if (use_rust == 1) check_mdrb(stop_on_fail = TRUE)
 
     # Perform deconvolution
     decons2 <- deconvolute_spectra(x,
         nfit=nfit, smit=smit, smws=smws, delta=delta, sfr=sfr,
-        force=force, verbose=verbose,
+        force=FALSE, verbose=verbose,
         use_rust=use_rust, nworkers=nworkers, igrs=igrs, rtyp="decon2",
         npmax=npmax
     )
@@ -149,7 +111,7 @@ deconvolute_spectra <- function(
     x,           nfit=3,       smit=2,          smws=5,        delta=6.4,
     sfr=NULL,    force=FALSE,  verbose=TRUE,    use_rust=FALSE,
     nworkers=1,  igrs=list(),  rtyp="decon2",   npmax=0,
-    cadir=decon_cachedir(),    hash=NULL,       full=TRUE
+    cadir=decon_cachedir(),    full=TRUE
 ) {
 
     # Check inputs
@@ -164,14 +126,17 @@ deconvolute_spectra <- function(
     )
     sfr <- sfr %||% quantile(x$cs %||% x[[1]]$cs, c(0.9, 0.1))
 
-    if (!full && is.null(hash)) stop("hash is missing (req if full is FALSE)")
-
-    # Return cached result when hash matches
-    if (!is.null(hash)) {
-        dc <- getOption("metabodecon.decon_cache")
-        if (!is.null(dc$key) && dc$key == hash) {
+    if (isFALSE(full)) {
+        xhash <- attr(x, "hash")
+        if (is.null(xhash)) stop("full=FALSE requires x@hash to be set")
+        key <- rlang::hash(list(
+            xhash, nfit, smit, smws, delta, sfr, force, use_rust, igrs, rtyp,
+            npmax, cadir
+        ))
+        cache <- getOption("metabodecon.ds.cache", list(key="", decons=NULL))
+        if (cache$key == hash) {
             logf("Skipping deconvolution (cache hit)")
-            return(dc$decons)
+            return(cache$decons)
         }
     }
 
@@ -204,9 +169,9 @@ deconvolute_spectra <- function(
     duration <- format(round(Sys.time() - starttime, 3))
     logf("Finished deconvolution of %s in %s", ns_str, duration)
 
-    # Store in cache if hash was provided
-    if (!is.null(hash)) {
-        options(metabodecon.decon_cache = list(key = hash, decons = decons))
+    # Store in cache if full is FALSE (i.e. we're called from `cv_mdm()`)
+    if (isFALSE(full)) {
+        options(metabodecon.ds.cache = list(key=key, decons=decons))
     }
 
     # Return

@@ -32,7 +32,7 @@ test_that("align works", {
     for (i in seq_along(aligns)) {
         decons_copy[[i]]$sit$supal    <- aligns[[i]]$sit$supal
         decons_copy[[i]]$lcpar$x0al  <- aligns[[i]]$lcpar$x0al
-        decons_copy[[i]]$lcpar$cial  <- aligns[[i]]$lcpar$cial
+        decons_copy[[i]]$lcpar$pcial  <- aligns[[i]]$lcpar$pcial
         class(decons_copy[[i]]) <- "align"
     }
     class(decons_copy) <- "aligns"
@@ -40,7 +40,7 @@ test_that("align works", {
 
     # Check that the alignment worked, our expectations are:
     # 1. x0al     is shifted roughly 0.3 to the right compared to x0
-    # 2. cial     indexes cs at the aligned peak centers (cs[cial] == x0al)
+    # 2. pcial     indexes cs at the aligned peak centers (cs[pcial] == x0al)
     # 3. sit$supal is the superposition of the aligned Lorentz curves
     x0 <- aligns$sap_01_shifted$lcpar$x0
     x0al <- aligns$sap_01_shifted$lcpar$x0al
@@ -48,8 +48,8 @@ test_that("align works", {
     expect_true(all(shifts > 0.2 & shifts < 0.4))
 
     cs <- aligns$sap_01_shifted$cs
-    cial <- aligns$sap_01_shifted$lcpar$cial
-    expect_equal(cs[cial], x0al)
+    pcial <- aligns$sap_01_shifted$lcpar$pcial
+    expect_equal(cs[pcial], x0al)
 
     A <- aligns$sap_01_shifted$lcpar$A
     supal <- aligns$sap_01_shifted$sit$supal

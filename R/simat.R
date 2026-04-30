@@ -53,7 +53,7 @@ si_mat <- function(x, drop_zero = FALSE, maxCombine = 0, intervals = NULL) {
     if (maxCombine == 0) {
         mat <- t(sapply(x, function(xi) {
             al <- numeric(nc)
-            al[xi$lcpar$cial] <- xi$lcpar$A * base::pi
+            al[xi$lcpar$pcial] <- xi$lcpar$A * base::pi
             al
         }))
         colnames(mat) <- cs
@@ -114,8 +114,7 @@ si_mat <- function(x, drop_zero = FALSE, maxCombine = 0, intervals = NULL) {
 #' @author 2024-2025 Tobias Schmidt: initial version.
 get_si_mat <- function(x, drop_zero = FALSE, maxCombine = 0, intervals = NULL) {
     lifecycle::deprecate_warn("2.0.0", "get_si_mat()", "si_mat()")
-    t(si_mat(x, drop_zero = drop_zero, maxCombine = maxCombine,
-             intervals = intervals))
+    t(si_mat(x, drop_zero = drop_zero, maxCombine = maxCombine, intervals = intervals))
 }
 
 # Combine Peaks #####
@@ -282,6 +281,18 @@ combine_peaks <- function(M, maxCombine=5, lower_bound=1) {
 #' cc[2] == 0  # M[, 3] and M[, 1] are not combinable
 #' cc[3] == 0  # M[, 4] and M[, 1] are not combinable
 #' cc[4] == 1  # M[, 5] and M[, 1] are combinable and M[, 5] has one nonzero element
+combine_scores <- function(U, uu, j, nn, uj = NULL) {
+    nn <- nn[nn >= 1 & nn <= ncol(U)]
+    if (length(nn) == 0) return(numeric(0))
+    if (is.null(uj)) uj <- U[, j]
+
+    # A neighbor is combinable if it has no shared nonzero row with column j.
+    overlaps <- .colSums(U[, nn, drop = FALSE] & uj, nrow(U), length(nn))
+    cc <- uu[nn]
+    cc[overlaps > 0] <- 0
+    unname(cc)
+}
+
 # Build a data frame of non-overlapping intervals around `centers`.
 # Each interval stretches `maxCombine` datapoints in each direction,
 # clipped to [1, nc]. Where two intervals would overlap, both borders
@@ -298,16 +309,5 @@ make_intervals <- function(centers, maxCombine, nc) {
     data.frame(center = centers, min = lo, max = hi)
 }
 
-combine_scores <- function(U, uu, j, nn, uj = NULL) {
-    nn <- nn[nn >= 1 & nn <= ncol(U)]
-    if (length(nn) == 0) return(numeric(0))
-    if (is.null(uj)) uj <- U[, j]
-
-    # A neighbor is combinable if it has no shared nonzero row with column j.
-    overlaps <- .colSums(U[, nn, drop = FALSE] & uj, nrow(U), length(nn))
-    cc <- uu[nn]
-    cc[overlaps > 0] <- 0
-    unname(cc)
-}
 
 
