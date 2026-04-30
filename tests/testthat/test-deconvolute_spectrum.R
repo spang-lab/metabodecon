@@ -2,13 +2,12 @@
 defaults <- list(
     x = sap[[1]],
     nfit = 3, smit = 1, smws = 3, delta = 3, sfr = c(3.2, -3.2),
-    force = FALSE, verbose = FALSE,
-    use_rust = FALSE, nworkers = 1, igrs = list(), rtyp = "decon2"
+    verbose = FALSE,
+    use_rust = FALSE, igrs = list()
 )
 args <- list(
-    decon2_r    = set(defaults),
-    rdecon_r    = set(defaults, rtyp = "rdecon"),
-    rdecon_rust = set(defaults, rtyp = "rdecon", use_rust = TRUE)
+    decon2_r    = defaults,
+    decon2_rust = set(defaults, use_rust = TRUE)
 )
 mdrb_available <- check_mdrb()
 
@@ -29,14 +28,12 @@ prarp <- sapply(obj, try_calc_prarpx, simplify = FALSE)
 r_structures <- test_that(
     "Returned decon objects have correct structure with R backend", {
     expect_identical(object = names(obj$decon2_r), expected = decon2_members)
-    expect_identical(object = class(obj$decon2_r), expected = "decon2")
-    expect_identical(object = class(obj$rdecon_r), expected = "try-error")
+    expect_identical(object = class(obj$decon2_r), expected = c("decon2", "spectrum"))
 })
 
 r_prarps <- test_that(
     "PRARPs are good with R backend", {
     expect_true(prarp$decon2_r >= 0.961) # (1)
-    expect_true(inherits(prarp$rdecon_r, "try-error"))
     # (1) MetaboDecon1D has a PRARPX of 0.507. See test-MetaboDecon1d.R.
 })
 
@@ -46,8 +43,8 @@ igrs_test <- test_that(
     igrs <- list(c(-0.5, 0.5))
     d_r <- deconvolute_spectrum(
         sap[[1]], nfit = 3, smit = 1, smws = 3, delta = 3,
-        sfr = c(3.2, -3.2), force = FALSE,
-        verbose = FALSE, use_rust = FALSE, igrs = igrs, rtyp = "decon2"
+        sfr = c(3.2, -3.2),
+        verbose = FALSE, use_rust = FALSE, igrs = igrs
     )
     n_no_igrs  <- nrow(obj$decon2_r$lcpar)
     n_with_igrs <- nrow(d_r$lcpar)
@@ -56,8 +53,8 @@ igrs_test <- test_that(
     if (mdrb_available) {
         d_rust <- deconvolute_spectrum(
             sap[[1]], nfit = 3, smit = 1, smws = 3, delta = 3,
-            sfr = c(3.2, -3.2), force = FALSE,
-            verbose = FALSE, use_rust = TRUE, igrs = igrs, rtyp = "decon2"
+            sfr = c(3.2, -3.2),
+            verbose = FALSE, use_rust = TRUE, igrs = igrs
         )
         expect_equal(nrow(d_rust$lcpar), 3)
     }
@@ -76,14 +73,14 @@ skip_if_not(mdrb_available) # (1)
 
 rust_structures <- test_that(
     "Returned decon objects have correct structure with Rust backend", {
-    expect_identical(object = names(obj$rdecon_rust), expected = rdecon_members)
-    expect_identical(object = class(obj$rdecon_rust), expected = "rdecon")
+    expect_identical(object = names(obj$decon2_rust), expected = decon2_members)
+    expect_identical(object = class(obj$decon2_rust), expected = c("decon2", "spectrum"))
 })
 
 rust_prarps <- test_that(
     "PRARPs are good with Rust backend", {
-    expect_true(prarp$rdecon_rust >= 0.961)
-    expect_true(prarp$decon2_r <= prarp$rdecon_rust) # Rust >= R
+    expect_true(prarp$decon2_rust >= 0.961)
+    expect_true(prarp$decon2_r <= prarp$decon2_rust) # Rust >= R
 })
 
 r_rust_comparison <- test_that(
@@ -91,7 +88,7 @@ r_rust_comparison <- test_that(
     # Make sure the objects are plottable
     expect_no_error(evalwith(plot = "captured", {
         plot_spectrum(obj$decon2_r)
-        plot_spectrum(obj$rdecon_rust)
+        plot_spectrum(obj$decon2_rust)
     }))
 })
 

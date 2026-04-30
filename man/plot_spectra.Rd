@@ -20,7 +20,7 @@ plot_spectra(
 }
 \arguments{
 \item{obj}{An object of type \code{decons0}, \code{decons1} or \code{decons2}. For details see
-\href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{Metabodecon Classes}.}
+\link{metabodecon-classes}.}
 
 \item{...}{Additional arguments passed to the conversion function.}
 

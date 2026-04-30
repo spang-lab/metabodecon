@@ -12,7 +12,6 @@ articles:
       - Datasets
       - Contributing
       - Compatibility
-      - Classes
 reference:
 - title: Deconvolution
   desc: Functions to deconvolute a spectrum into its individual peaks.

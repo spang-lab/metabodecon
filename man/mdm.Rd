@@ -16,7 +16,6 @@ fit_mdm(
   nworkers = 1,
   verbosity = 2,
   seed = 1,
-  cadir = decon_cachedir(),
   check = TRUE,
   npmax = 1000,
   nfit = 5,
@@ -31,17 +30,15 @@ fit_mdm(
 cv_mdm(
   spectra,
   y,
+  pgrid = get_pgrid("default"),
   sfr = NULL,
-  use_rust = 0.5,
+  igrs = list(),
+  use_rust = FALSE,
   nworkers = 1,
   verbosity = 2,
   seed = 1,
-  cadir = decon_cachedir(),
-  check = TRUE,
-  pgrid = get_pgrid("dynamic2"),
-  ignore = NULL,
-  warm_cache = TRUE,
-  nfolds = 10
+  nfolds = 10,
+  check = TRUE
 )
 
 benchmark_mdm(
@@ -51,14 +48,13 @@ benchmark_mdm(
   use_rust = 0.5,
   verbosity = 2,
   seed = 1,
-  cadir = decon_cachedir(),
   nworkers = half_cores(),
   pgrid = get_pgrid(),
   nfo = 5,
   nfl = 10
 )
 
-get_pgrid(conf = "dynamic2")
+get_pgrid(conf = "default")
 }
 \arguments{
 \item{spectra}{List-like spectra object with \code{cs} and \code{si} vectors.}
@@ -78,9 +74,6 @@ decrements by 1. Messages print when \code{verbosity >= 1}.}
 \item{seed}{Random seed used for fold assignment in \code{\link[=benchmark_mdm]{benchmark_mdm()}} and
 for inner cross-validation splits in \code{\link[=cv_mdm]{cv_mdm()}} and
 \code{\link[=fit_mdm]{fit_mdm()}}.}
-
-\item{cadir}{Directory used to cache deconvolution results across grid points and
-processes. Defaults to \code{\link[=decon_cachedir]{decon_cachedir()}}.}
 
 \item{check}{Logical. Whether to validate inputs at function entry.}
 
@@ -110,11 +103,6 @@ and \code{\link[=cv_mdm]{cv_mdm()}}. Default 10.}
 \item{pgrid}{Data frame of preprocessing parameter combinations as returned
 by \code{\link[=get_pgrid]{get_pgrid()}}.}
 
-\item{ignore}{Optional integer vector of sample indices to exclude.}
-
-\item{warm_cache}{Logical. Whether to pre-populate the disk cache before
-starting the grid search.}
-
 \item{nfo}{Number of outer folds in \code{\link[=benchmark_mdm]{benchmark_mdm()}}.}
 
 \item{nfl}{Number of folds for the \code{cv.glmnet()} call inside
@@ -123,6 +111,8 @@ starting the grid search.}
 
 \item{conf}{Character string selecting a predefined parameter grid
 configuration.}
+
+\item{ignore}{Optional integer vector of sample indices to exclude.}
 }
 \value{
 \code{\link[=fit_mdm]{fit_mdm()}} returns an object of class \code{mdm} with elements
@@ -178,13 +168,14 @@ outer cross-validation loop to estimate end-to-end predictive performance.
 It returns the per-fold models and held-out predictions.
 }
 \details{
-\subsection{Disk caching across processes}{
+\subsection{Grid-search results carried by spectra}{
 
-\code{\link[=cv_mdm]{cv_mdm()}} and \code{\link[=benchmark_mdm]{benchmark_mdm()}} can share
-deconvolution results through directory \code{cadir}. This on-disk cache lets
-parallel workers reuse expensive preprocessing results while keeping RAM use
-manageable. Disk caching can be disabled by setting \code{cadir = NULL}, but this will increase runtime drastically (from a few minutes/hours
-to several days).
+When \code{npmax > 0}, deconvolution requires a per-spectrum performance grid
+to pick the best smoothing/fitting parameters. \code{\link[=cv_mdm]{cv_mdm()}} and
+\code{\link[=benchmark_mdm]{benchmark_mdm()}} call \code{\link[=grid_deconvolute_spectra]{grid_deconvolute_spectra()}}
+once at the start to attach a \verb{$grid} element to each spectrum. The
+enriched spectra are then passed down to all subsequent deconvolution calls,
+which avoids redundant grid searches across pgrid rows and outer folds.
 }
 
 \subsection{RAM caching within processes}{
@@ -215,7 +206,6 @@ delegates all parallel work to \code{\link[=deconvolute]{deconvolute()}} and
      y <- factor(aki$meta$type, levels = c("Control", "AKI"))
      names(y) <- rownames(aki$meta)
      sfr <- c(11, -2)
-     cadir <- cachedir("deconvs", persistent = TRUE)
 
 
 
@@ -226,14 +216,14 @@ delegates all parallel work to \code{\link[=deconvolute]{deconvolute()}} and
          spectra, y, sfr=NULL,
          nfit=5, smit=3, smws=3, delta=3, npmax=0,
          maxShift=128, maxCombine=256,
-         nworkers=half_cores(), cadir=cadir
+         nworkers=half_cores()
      )
 
      mdm <- fit_mdm(
          spectra, y, sfr = NULL,
          nfit=5, smit=0, smws=0, delta=0, npmax=1000,
          maxShift=64, maxCombine=16,
-         nworkers=half_cores(), cadir=cadir
+         nworkers=half_cores()
      )
 
 
@@ -242,14 +232,14 @@ delegates all parallel work to \code{\link[=deconvolute]{deconvolute()}} and
 
      mdm_grid_stat1 <- cv_mdm(
          spectra, y, pgrid=get_pgrid("static1"),
-         nworkers=half_cores(), use_rust=TRUE, cadir=cadir
+         nworkers=half_cores(), use_rust=TRUE
      )
      saveRDS(mdm_grid_stat1, "tmp/mdm_grid_stat1.rds")
 
 
      mdm_grid_stat2 <- cv_mdm(
          spectra, y, pgrid=get_pgrid("static2"),
-         nworkers=half_cores(), use_rust=TRUE, cadir=cadir
+         nworkers=half_cores(), use_rust=TRUE
      )
      saveRDS(mdm_grid_stat2, "tmp/mdm_grid_stat2.rds")
      #
@@ -259,7 +249,7 @@ delegates all parallel work to \code{\link[=deconvolute]{deconvolute()}} and
 
      mdm_grid_stat3 <- cv_mdm(
          spectra, y, pgrid=get_pgrid("static3"),
-         nworkers=half_cores(), use_rust=TRUE, cadir=cadir
+         nworkers=half_cores(), use_rust=TRUE
      )
      saveRDS(mdm_grid_stat3, "tmp/mdm_grid_stat3.rds")
      #
@@ -269,11 +259,11 @@ delegates all parallel work to \code{\link[=deconvolute]{deconvolute()}} and
 
      mdm_grid_dyn2 <- cv_mdm(
          spectra, y, pgrid=get_pgrid("dynamic2"),
-         nworkers=half_cores(), use_rust=TRUE, cadir=cadir
+         nworkers=half_cores(), use_rust=TRUE
      )
 
      # -~-~-~ Full Benchmark -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
-     bm <- benchmark_mdm(spectra, y, sfr, cadir=cadir)
+     bm <- benchmark_mdm(spectra, y, sfr)
 
      # -~-~-~ Interactive Development -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
      stub(fit_mdm, spectra=spectra, y=y, sfr=sfr)

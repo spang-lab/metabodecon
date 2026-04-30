@@ -201,11 +201,6 @@ in_hz <- function(cs, fqref) {
 #' checkout commit 8b1f61b, i.e., v1.5.0.)
 #' @author 2024-2025 Tobias Schmidt: initial version.
 sfr_in_ppm_bwc <- function(sfr_sdp, sdp, ppm) {
-    assert(
-        is.numeric(sfr_sdp), length(sfr_sdp) == 2,
-        is.numeric(sdp), length(sdp) >= 5,
-        is.numeric(ppm), length(ppm) == length(sdp)
-    )
     n <- length(sdp)
     sdp_step <- diff(range(sdp)) / (n - 1)
     ppm_nstep <- diff(range(ppm)) / n
@@ -1110,11 +1105,6 @@ called_from_globalenv <- function() {
 #' is.symbol(xx$a)  # TRUE
 get_args <- function(func = NULL, ignore = character(), env = parent.frame())
 {
-    assert(
-        is.null(ignore) || is.character(ignore),
-        is.environment(env),
-        is.null(func) || is.function(func)
-    )
     if (is.null(func)) {
         args <- as.list(env)
         args[ignore] <- NULL
@@ -1150,8 +1140,7 @@ empty_df <- function(names) {
 #'    protons
 #'
 #' @param x
-#' A `spectrum` object as described in [Metabodecon
-#' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
+#' A `spectrum` object as described in [metabodecon-classes].
 #'
 #' @return
 #' The magnetic field strength in Tesla.
@@ -1610,64 +1599,15 @@ style <- function() {
     styler::style_pkg(style = style_func)
 }
 
+expand.grid2 <- function(..., KEEP.OUT.ATTRS=FALSE, stringsAsFactors=FALSE) {
+    expand.grid(..., KEEP.OUT.ATTRS=KEEP.OUT.ATTRS, stringsAsFactors=stringsAsFactors)
+}
 
 # On Load (Private) #####
 
 #' @noRd
-#'
-#' @description
-#' Acts like [stopifnot()] during development but does nothing in production.
-#'
-#' @author 2024-2025 Tobias Schmidt: initial version.
-#'
-#' @details
-#' In the package source code, this function is defined as a copy of
-#' [stopifnot()]. However, during package loading, it is replaced with an empty
-#' function unless the package is loaded via [devtools::load_all()]. The actual
-#' replacement is implemented in [.onLoad()].
-#'
-#' The idea is that exported functions should use plain [stopifnot()] to
-#' validate their inputs, whereas private functions should use
-#' [metabodecon::assert()] instead. This approach allows us to use rigorous type
-#' checking during development without impacting performance in production.
-#'
-#' If we need to keep assertions enabled in production, we can set the option
-#' `metabodecon.assert` to `stopifnot` before loading the package.
-#'
-#' If we want to disable assertions during development, e.g. to get realistic
-#' runtime estimates, we can set the option `metabodecon.assert` to
-#' `function(...) {}` before calling `devtools::load_all()`.
-#'
-#' Example:
-#'
-#' ```r
-#' # Steps:
-#' # (1) Load metabodecon with assertions disabled
-#  # (2) Unload metabodecon
-#  # (3A) Configure stopifnot as the assertion function OR
-#  # (3B) Configure empty function as assertion function
-#  # (4) Reload metabodecon
-#' library(metabodecon)                           # (1)
-#' unloadNamespace("metabodecon")                 # (2)
-#' options(metabodecon.assert = stopifnot)        # (3A)
-#' options(metabodecon.assert = function(...) {}) # (3B)
-#' library(metabodecon)                           # (4)
-#' ```
-assert <- stopifnot
-
-#' @noRd
 #' @author 2024-2025 Tobias Schmidt: initial version.
 .onLoad <- function(libname, pkgname) {
-    pkgenv <- topenv()
-
-    # Only enable assertions during development, as they are quite runtime heavy
-    # and we want to catch problems early.
-    if (!loaded_via_devtools()) pkgenv$assert <- function(...) {}
-
-    # Allow enabling assertions even when loaded via library by setting the
-    # option `metabodecon.assert` to `stopifnot` before loading the package.
-    if (!is.null(x <- .Options$metabodecon.assert)) pkgenv$assert <- x
-
     # Create a folder 'cache' inside the persistent data directory if we are on
     # a development machine. This allows us to keep cache data across R sessions
     # during development, which can speed up development iterations a lot.

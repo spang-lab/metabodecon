@@ -50,6 +50,12 @@ information on the Sim and Blood datasets, see [Datasets].
 [Sim]: https://spang-lab.github.io/metabodecon/articles/Datasets.html#sim
 [Datasets]: https://spang-lab.github.io/metabodecon/articles/Datasets.html
 
+For an overview of the S3 classes used to represent spectra throughout the
+package (`spectrum`, `decon2`, `align`, and their collections), see
+[`?metabodecon-classes`][metabodecon-classes].
+
+[metabodecon-classes]: https://spang-lab.github.io/metabodecon/reference/metabodecon-classes.html
+
 # Deconvolute spectra
 
 To find the path to the  Sim  dataset,  you  can  use  the  `metabodecon_file()`

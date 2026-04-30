@@ -1,25 +1,158 @@
-# Print (Public) #####
+# Class Documentation #####
 
-#' @name print_methods
-#' @rdname print_methods
+#' @name metabodecon-classes
+#' @aliases spectrum spectra decon2 decons2 align aligns
 #'
-#' @title S3 Methods for Printing Metabodecon Objects
+#' @title Metabodecon Class Hierarchy
 #'
 #' @description
-#' S3 Methods for printing metabodecon objects as described in the [Metabodecon
-#' Classes](https://spang-lab.github.io/metabodecon/articles/).
+#' Metabodecon represents NMR data using a small set of S3 classes connected
+#' by **cumulative inheritance**. A raw spectrum has class `"spectrum"`. After
+#' [deconvolute()] it gains the class `"decon2"` (so its class vector becomes
+#' `c("decon2", "spectrum")`). After [align()] it gains the class `"align"`
+#' (class vector `c("align", "decon2", "spectrum")`). The corresponding
+#' collection classes follow the same pattern.
 #'
-#' @param x
-#' The object to print.
+#' Because every deconvoluted/aligned object is still a `spectrum` (in the
+#' `inherits()` sense), generic functions defined on `spectrum`/`spectra`
+#' (such as `print`, `format`, `summary`, `c`, `plot`) keep working at every
+#' stage. The label printed by `print()`/`format()` reflects the most-specific
+#' class, e.g. `"align object (...)"`.
 #'
-#' @param name
-#' Logical. If TRUE, the name of the object is printed before the object.
+#' Element order in an object may vary between versions; always access fields
+#' by name (`x$si`, `x[["cs"]]`). Elements marked *optional* may be absent or
+#' `NULL`.
 #'
-#' @param ...
-#' Not used. Only accepted to comply with generic [base::print()].
+#' @section Singlet classes:
 #'
-#' @return
-#' NULL, called for side effect of printing to the standard output device.
+#' \describe{
+#' \item{`spectrum`}{A single NMR spectrum. Class vector: `"spectrum"`.
+#'   Constructed by [read_spectrum()], [make_spectrum()], or
+#'   [simulate_spectrum()]. Carries the fields under
+#'   *Always present (spectrum)* below.}
+#' \item{`decon2`}{A single deconvoluted NMR spectrum. Class vector:
+#'   `c("decon2", "spectrum")`. Produced by [deconvolute()]. In addition to
+#'   the `spectrum` fields, a `decon2` carries the *Added by deconvolute()*
+#'   fields below.}
+#' \item{`align`}{A single deconvoluted NMR spectrum whose peak positions
+#'   have been aligned across a collection. Class vector:
+#'   `c("align", "decon2", "spectrum")`. Produced by [align()]. Carries
+#'   everything a `decon2` does, plus the *Added by align()* fields below.}
+#' }
+#'
+#' @section Collection classes:
+#'
+#' For each singlet class there is a collection class that wraps a list of
+#' those singlets:
+#'
+#' \describe{
+#' \item{`spectra`}{List of `spectrum`. Class vector `"spectra"`.}
+#' \item{`decons2`}{List of `decon2`. Class vector `c("decons2", "spectra")`.}
+#' \item{`aligns`}{List of `align`. Class vector
+#'   `c("aligns", "decons2", "spectra")`.}
+#' }
+#'
+#' Collections inherit from `"spectra"`, so generic methods written for
+#' `spectra` also work on `decons2` and `aligns`. Constructed by
+#' [read_spectra()] (returns `spectra`), [deconvolute()] when given a
+#' `spectra` (returns `decons2`), and [align()] (returns `aligns`).
+#' Concatenation with `c()` follows the cumulative rule: the result class is
+#' the most-general (least-specific) class present among the inputs. Mixing
+#' an `align` with a plain `decon2` yields a `decons2`; mixing any plain
+#' `spectrum` in yields a `spectra`.
+#'
+#' @section Always present (spectrum):
+#'
+#' \enumerate{
+#' \item `cs`: Vector of chemical shifts in ppm. Same length as `si`.
+#' \item `si`: Vector of signal intensities (au). `si[i]` is the intensity
+#'   at `cs[i]`.
+#' \item `meta`: Optional list of metadata, e.g.:
+#'   \itemize{
+#'     \item `name`: Name of the spectrum, e.g. `"Blood 1"`.
+#'     \item `path`: Path to the source file/folder.
+#'     \item `type`: Experiment type, e.g. `"H1 CPMG"` or `"H1 NOESY"`.
+#'     \item `fq`: Signal frequencies in Hz (same length as `si`/`cs`).
+#'     \item `mfs`: Magnetic field strength in Tesla.
+#'     \item `simpar`: True Lorentz-curve parameters (simulated spectra only).
+#'   }
+#' }
+#'
+#' @section Added by deconvolute():
+#'
+#' A `decon2` object additionally has:
+#'
+#' \enumerate{
+#'   \setcounter{enumi}{3}
+#' \item `args`: List of deconvolution parameters used (`nfit`, `smit`,
+#'   `smws`, `delta`, `sfr`, `igrs`, `npmax`, `use_rust`, `verbose`).
+#' \item `sit`: Data frame of signal intensities after transformations:
+#'   `sm` (smoothed), `sup` (superposition of fitted Lorentz curves), and
+#'   `supal` (superposition of *aligned* Lorentz curves, added by `align()`).
+#' \item `peak`: Data frame of peak triplets with columns `center`, `left`,
+#'   `right`: integer indices into `cs`.
+#' \item `lcpar`: Data frame of Lorentz-curve parameters with columns `A`
+#'   (amplitude), `lambda` (half-width), `x0` (center, in `cs` units), and
+#'   `x0al`/`pcial` (aligned center and integer index into `cs`, added by
+#'   `align()`).
+#' \item `mse`: List of mean-squared errors: `raw` (between `si` and
+#'   `sit$sup`), `norm` (`raw` divided by `sum(sit$sup)`), `sm` (between
+#'   `sit$sm` and `sit$sup`), `smnorm` (`sm` divided by `sum(sit$sup)`).
+#' }
+#'
+#' @section Added by align():
+#'
+#' An `align` object has the same fields as `decon2`, but with the
+#' alignment slots populated: `lcpar$x0al`, `lcpar$pcial`, `sit$supal`.
+#'
+#' @section Methods, predicates, and converters:
+#'
+#' Methods defined for `spectrum`/`spectra` (and inherited by all
+#' subclasses): [print()][print.spectrum], `format()`, `summary()`,
+#' `c()`, `[`.
+#'
+#' Predicates: [is_spectrum()], [is_spectra()]. For lifecycle-specific
+#' checks use `inherits(x, "decon2")`, `inherits(x, "aligns")`, etc.
+#'
+#' Converters: [as_spectra()] turns a path or list of `spectrum` into a
+#' `spectra`. [as_decon2()] / [as_decons2()] are identity converters that
+#' validate their input.
+#'
+#' @author 2024-2025 Tobias Schmidt: initial version.
+#'
+#' @examples
+#' s <- sim[[1]]
+#' inherits(s, "spectrum")
+#'
+#' d <- deconvolute(s, sfr = c(3.55, 3.35))
+#' class(d)               # c("decon2", "spectrum")
+#' inherits(d, "spectrum") # TRUE
+#'
+#' ds <- deconvolute(sim[1:3], sfr = c(3.55, 3.35))
+#' class(ds)              # c("decons2", "spectra")
+NULL
+
+
+# Print #####
+
+#' @export
+#'
+#' @name print.spectrum
+#' @rdname print.spectrum
+#'
+#' @title Print Method for spectrum and spectra Objects
+#'
+#' @description
+#' S3 print methods for the base metabodecon classes. Subclasses (`decon2`,
+#' `align`, `decons2`, `aligns`) inherit these methods; the printed label
+#' reflects the most-specific class. See [metabodecon-classes].
+#'
+#' @param x The object to print.
+#' @param name Logical or string. If `TRUE`, prepend the object's name. If a
+#' string, prepend that string.
+#' @param ... Unused. Accepted to comply with [base::print()].
+#'
+#' @return `NULL`, invisibly. Called for the side effect of printing.
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
@@ -27,642 +160,183 @@
 #' print(sim[[1]])
 #' print(sim[[1]], name = TRUE)
 #' print(sim)
-#' decon <- deconvolute(sim[[1]], sfr = c(3.55, 3.35))
-#' print(decon)
-NULL
-
-#' @export
-#' @rdname print_methods
+#' print(deconvolute(sim[[1]], sfr = c(3.55, 3.35)))
 print.spectrum <- function(x, name = FALSE, ...) {
-    namestr <- if (name) paste0(x$meta$name %||% "NULL", ": ") else ""
-    fmt <- "%sspectrum object (%d dp, %.1f to %.1f ppm)\n"
-    catf(fmt, namestr, length(x$cs), max(x$cs), min(x$cs))
-}
-
-#' @export
-#' @rdname print_methods
-print.decon1 <- function(x, name = FALSE, ...) {
-    ppm <- x$x_values_ppm
-    n <- length(ppm)
-    name <- if (name) paste0(x$filename %||% "NULL", ": ") else ""
-    fmt <- "%sdecon1 object (%d dp, %.1f to %.1f ppm, %d peaks)\n"
-    catf(fmt, name, n, max(ppm), min(ppm), length(x$A))
-}
-
-#' @export
-#' @rdname print_methods
-print.decon2 <- function(x, name = FALSE, ...) {
-    name <- if (name) paste0(x$meta$name %||% "NULL", ": ") else ""
-    fmt <- "%sdecon2 object (%d dp, %.1f to %.1f ppm, %d peaks)\n"
-    catf(fmt, name, length(x$cs), max(x$cs), min(x$cs), length(x$lcpar$A))
-}
-
-#' @export
-#' @rdname print_methods
-print.align <- function(x, name = FALSE, ...) {
-    name <- if (name) paste0(x$meta$name %||% "NULL", ": ") else ""
-    fmt <- "%salign object (%d dp, %.1f to %.1f ppm, %d peaks)\n"
-    catf(fmt, name, length(x$cs), max(x$cs), min(x$cs), length(x$lcpar$A))
-}
-
-#' @export
-#' @rdname print_methods
-print.spectra <- function(x, ...) {
-    msg <- "spectra object consisting of %d spectrum objects:\n"
-    catf(msg, length(x, ...))
-    nams <- get_names(x, ...)
-    msg <- "%s (%d datapoints from %.2f - %.2f ppm)\n"
-    mapply(x, ..., nams, FUN = function(x, nam) {
-        catf(msg, nam, length(x$si), min(x$cs), max(x$cs))
-    })
+    cat(format(x, name = name), "\n", sep = "")
     invisible(NULL)
 }
 
 #' @export
-#' @rdname print_methods
-print.decons1 <- function(x, ...) {
-    catf("decons1 object with %s decon1 elements\n", length(x))
+#' @rdname print.spectrum
+print.spectra <- function(x, ...) {
+    sg <- if (length(x)) class(x[[1]])[1] else "spectrum"
+    catf("%s object with %d %s elements:\n", class(x)[1], length(x), sg)
     invisible(sapply(x, print, name = TRUE))
 }
 
-#' @export
-#' @rdname print_methods
-print.decons2 <- function(x, ...) {
-    catf("decons2 object with %s decon2 elements\n", length(x))
-    invisible(sapply(x, print, name = TRUE))
-}
+# Format #####
 
 #' @export
-#' @rdname print_methods
-print.aligns <- function(x, ...) {
-    catf("aligns object with %s align elements\n", length(x))
-    invisible(sapply(x, print, name = TRUE))
-}
-
-# Print (Private) #####
-
-#' @export
-print.rdecon <- function(x, name = FALSE, ...) {
-    name <- {
-        if (isTRUE(name)) paste0(get_name(x) %||% "NULL", ": ")
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
+format.spectrum <- function(x, name = FALSE, ...) {
+    nam <- {
+        if (isTRUE(name)) paste0(get_name(x, "NULL"), ": ")
         else if (is.character(name)) paste0(name, ": ")
         else ""
     }
-    catf("%srdecon object\n", name)
+    np <- if (inherits(x, "decon2")) sprintf(", %d peaks", length(x$lcpar$A)) else ""
+    fmt <- "%s%s object (%d dp, %.1f to %.1f ppm%s)"
+    sprintf(fmt, nam, class(x)[1], length(x$cs), max(x$cs), min(x$cs), np)
 }
 
 #' @export
-print.rdecons <- function(x, ...) {
-    catf("rdecons object with %s rdecon elements\n", length(x))
-    nams <- get_names(x)
-    invisible(mapply(print, x, nams))
+#' @noRd
+format.spectra <- function(x, ...) {
+    sg <- if (length(x)) class(x[[1]])[1] else "spectrum"
+    sprintf("%s object with %d %s elements", class(x)[1], length(x), sg)
 }
 
-# Subset (Private) #####
+# Summary #####
 
+#' @export
 #' @noRd
 #' @author 2024-2025 Tobias Schmidt: initial version.
-`[.collection` <- function(x, i, ...) {
+summary.spectrum <- function(object, ...) {
+    x <- object
+    base <- list(
+        name = get_name(x, NA_character_),
+        n_dp = length(x$cs),
+        ppm_min = min(x$cs),
+        ppm_max = max(x$cs)
+    )
+    if (inherits(x, "decon2"))
+        c(base, list(n_peaks = length(x$lcpar$A), mse_norm = x$mse$norm))
+    else
+        c(base, list(si_min = min(x$si), si_max = max(x$si)))
+}
+
+#' @export
+#' @noRd
+summary.spectra <- function(object, ...) {
+    rows <- lapply(object, function(e) as.data.frame(summary(e)))
+    out <- do.call(rbind, rows)
+    rownames(out) <- NULL
+    out
+}
+
+# Subset #####
+
+#' @export
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
+`[.spectra` <- function(x, i, ...) {
     result <- NextMethod("[")
     class(result) <- class(x)
     result
 }
 
-#' @export
-`[.spectra` <- `[.collection`
+# Concat #####
 
 #' @export
-`[.decons0` <- `[.collection`
-
-#' @export
-`[.decons1` <- `[.collection`
-
-#' @export
-`[.decons2` <- `[.collection`
-
-#' @export
-`[.aligns` <- `[.collection`
-
-#' @export
-`[.rdecons` <- `[.collection`
-
-# Concat (Private) #####
-
 #' @noRd
+#' @title Concatenate spectrum/spectra Objects
+#' @description
+#' Combines any mix of `spectrum`-family singlets, `spectra`-family
+#' collections, and lists of singlets into a single collection. The output
+#' class chain is the most-general (least-specific) common class among the
+#' inputs: a mix of `align` and plain `decon2` yields `c("decons2",
+#' "spectra")`; any plain `spectrum` in the mix yields just `"spectra"`.
 #' @author 2024-2025 Tobias Schmidt: initial version.
-concat_collection_args <- function(args,
-                                   recursive,
-                                   is_elem,
-                                   is_coll,
-                                   coll_class,
-                                   default_names,
-                                   update_n_files = FALSE,
-                                   err_msg = NULL) {
-    assert(is_bool(recursive, 1))
-    out <- list()
-    for (arg in args) {
-        if (is.null(arg)) next
-        if (is_elem(arg)) {
-            out <- c(out, list(arg))
-        } else if (is_coll(arg)) {
-            out <- c(out, unclass(arg))
-        } else if (is.list(arg) && all(sapply(arg, is_elem))) {
-            out <- c(out, arg)
-        } else {
-            stop(err_msg, call. = FALSE)
-        }
-    }
-    class(out) <- coll_class
-    out <- set_names(out, get_names(out, default = default_names))
-    if (isTRUE(update_n_files)) {
-        n <- length(out)
-        for (i in seq_len(n)) out[[i]]$number_of_files <- n
-    }
-    out
-}
-
-#' @export
 c.spectrum <- function(..., recursive = FALSE) {
-    concat_collection_args(
-        args = list(...),
-        recursive = recursive,
-        is_elem = is_spectrum,
-        is_coll = is_spectra,
-        coll_class = "spectra",
-        default_names = "spectrum_%d",
-        err_msg = "All arguments to c.spectrum must be spectrum or spectra."
-    )
+    elems <- list()
+    for (a in list(...)) {
+        if (is.null(a)) next
+        if (inherits(a, "spectra")) elems <- c(elems, unclass(a))
+        else if (inherits(a, "spectrum")) elems <- c(elems, list(a))
+        else if (is.list(a) && all(sapply(a, inherits, "spectrum")))
+            elems <- c(elems, a)
+        else stop("All arguments must be spectrum or spectra.", call. = FALSE)
+    }
+    if (all(sapply(elems, inherits, "align")))
+        cls <- c("aligns", "decons2", "spectra")
+    else if (all(sapply(elems, inherits, "decon2")))
+        cls <- c("decons2", "spectra")
+    else
+        cls <- "spectra"
+    sg <- switch(cls[1], spectra = "spectrum", decons2 = "decon2", aligns = "align")
+    out <- structure(elems, class = cls)
+    set_names(out, get_names(out, default = paste0(sg, "_%d")))
 }
 
 #' @export
-c.spectra <- function(..., recursive = FALSE) {
-    concat_collection_args(
-        args = list(...),
-        recursive = recursive,
-        is_elem = is_spectrum,
-        is_coll = is_spectra,
-        coll_class = "spectra",
-        default_names = "spectrum_%d",
-        err_msg = "All arguments to c.spectra must be spectrum or spectra."
-    )
-}
-
-#' @export
-c.decon1 <- function(..., recursive = FALSE) {
-    concat_collection_args(
-        args = list(...),
-        recursive = recursive,
-        is_elem = is_decon1,
-        is_coll = is_decons1,
-        coll_class = "decons1",
-        default_names = "decon1_%d",
-        update_n_files = TRUE,
-        err_msg = "All arguments to c.decon1 must be decon1 or decons1."
-    )
-}
-
-#' @export
-c.decons1 <- function(..., recursive = FALSE) {
-    c.decon1(..., recursive = recursive)
-}
-
-#' @export
-c.decon2 <- function(..., recursive = FALSE) {
-    concat_collection_args(
-        args = list(...),
-        recursive = recursive,
-        is_elem = is_decon2,
-        is_coll = is_decons2,
-        coll_class = "decons2",
-        default_names = "decon2_%d",
-        err_msg = "All arguments to c.decon2 must be decon2 or decons2."
-    )
-}
-
-#' @export
-c.decons2 <- function(..., recursive = FALSE) {
-    c.decon2(..., recursive = recursive)
-}
-
-#' @export
-c.align <- function(..., recursive = FALSE) {
-    concat_collection_args(
-        args = list(...),
-        recursive = recursive,
-        is_elem = is_align,
-        is_coll = is_aligns,
-        coll_class = "aligns",
-        default_names = "align_%d",
-        err_msg = "All arguments to c.align must be align or aligns."
-    )
-}
-
-#' @export
-c.aligns <- function(..., recursive = FALSE) {
-    c.align(..., recursive = recursive)
-}
-
-#' @export
-c.rdecon <- function(..., recursive = FALSE) {
-    concat_collection_args(
-        args = list(...),
-        recursive = recursive,
-        is_elem = is_rdecon,
-        is_coll = is_rdecons,
-        coll_class = "rdecons",
-        default_names = "rdecon_%d",
-        err_msg = "All arguments to c.rdecon must be rdecon or rdecons."
-    )
-}
-
-#' @export
-c.rdecons <- function(..., recursive = FALSE) {
-    c.rdecon(..., recursive = recursive)
-}
-
-# Format (Public) #####
-
-#' @export
-format.spectrum <- function(x, ...) {
-    fmt <- "spectrum object (%d dp, %.1f to %.1f ppm)"
-    sprintf(fmt, length(x$cs), max(x$cs), min(x$cs))
-}
-
-#' @export
-format.decon1 <- function(x, ...) {
-    ppm <- x$x_values_ppm
-    fmt <- "decon1 object (%d dp, %.1f to %.1f ppm, %d peaks)"
-    sprintf(fmt, length(ppm), max(ppm), min(ppm), length(x$A))
-}
-
-#' @export
-format.decon2 <- function(x, ...) {
-    fmt <- "decon2 object (%d dp, %.1f to %.1f ppm, %d peaks)"
-    sprintf(fmt, length(x$cs), max(x$cs), min(x$cs), length(x$lcpar$A))
-}
-
-#' @export
-format.align <- function(x, ...) {
-    fmt <- "align object (%d dp, %.1f to %.1f ppm, %d peaks)"
-    sprintf(fmt, length(x$cs), max(x$cs), min(x$cs), length(x$lcpar$A))
-}
-
-#' @export
-format.spectra <- function(x, ...) {
-    sprintf("spectra object with %d spectrum elements", length(x))
-}
-
-#' @export
-format.decons1 <- function(x, ...) {
-    sprintf("decons1 object with %d decon1 elements", length(x))
-}
-
-#' @export
-format.decons2 <- function(x, ...) {
-    sprintf("decons2 object with %d decon2 elements", length(x))
-}
-
-#' @export
-format.aligns <- function(x, ...) {
-    sprintf("aligns object with %d align elements", length(x))
-}
-
-#' @export
-format.rdecon <- function(x, ...) {
-    "rdecon object"
-}
-
-#' @export
-format.rdecons <- function(x, ...) {
-    sprintf("rdecons object with %d rdecon elements", length(x))
-}
-
-# Summary (Public) #####
-
-#' @export
-summary.spectrum <- function(object, ...) {
-    x <- object
-    list(
-        name = get_name(x, NA_character_),
-        n_dp = length(x$cs),
-        ppm_min = min(x$cs),
-        ppm_max = max(x$cs),
-        si_min = min(x$si),
-        si_max = max(x$si)
-    )
-}
-
-#' @export
-summary.decon1 <- function(object, ...) {
-    x <- object
-    list(
-        name = x$filename %||% NA_character_,
-        n_dp = length(x$x_values_ppm),
-        ppm_min = min(x$x_values_ppm),
-        ppm_max = max(x$x_values_ppm),
-        n_peaks = length(x$A),
-        mse_normed = x$mse_normed
-    )
-}
-
-#' @export
-summary.decon2 <- function(object, ...) {
-    x <- object
-    list(
-        name = x$meta$name %||% NA_character_,
-        n_dp = length(x$cs),
-        ppm_min = min(x$cs),
-        ppm_max = max(x$cs),
-        n_peaks = length(x$lcpar$A),
-        mse_norm = x$mse$norm
-    )
-}
-
-#' @export
-summary.align <- function(object, ...) {
-    summary.decon2(object, ...)
-}
-
 #' @noRd
-summary_collection <- function(x, summary_fun) {
-    rows <- lapply(x, function(elem) as.data.frame(summary_fun(elem)))
-    out <- do.call(rbind, rows)
-    rownames(out) <- NULL
-    # We set rownames to NULL, because we have a 'name' column anyways, so it's
-    # more helpful to see the row numbers than the row names twice.
-    out
-}
+c.spectra <- c.spectrum
 
-#' @export
-summary.spectra <- function(object, ...) {
-    summary_collection(object, summary.spectrum)
-}
-
-#' @export
-summary.decons1 <- function(object, ...) {
-    summary_collection(object, summary.decon1)
-}
-
-#' @export
-summary.decons2 <- function(object, ...) {
-    summary_collection(object, summary.decon2)
-}
-
-#' @export
-summary.aligns <- function(object, ...) {
-    summary_collection(object, summary.align)
-}
-
-#' @export
-summary.rdecon <- function(object, ...) {
-    list(name = get_name(object, NA_character_))
-}
-
-#' @export
-summary.rdecons <- function(object, ...) {
-    summary_collection(object, summary.rdecon)
-}
-
-# Checks (Public) #####
+# Predicates #####
 
 #' @export
 #'
-#' @name is_metabodecon_class
+#' @name is_spectrum
+#' @rdname is_spectrum
 #'
-#' @title Is an Object from a Metabodecon Class?
+#' @title Is an Object a spectrum or spectra?
 #'
 #' @description
-#' Check if an object is an instance of a specific 'Metabodecon Class'. See
-#' [Metabodecon
-#' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html) for a
-#' list of classes.
+#' Check if an object inherits from one of the base metabodecon classes
+#' (`spectrum` or `spectra`). Since deconvoluted (`decon2`) and aligned
+#' (`align`) objects inherit from `spectrum` (and `decons2`/`aligns` from
+#' `spectra`), they also satisfy these checks. To test for a specific
+#' lifecycle stage, use [base::inherits()] directly, e.g.
+#' `inherits(x, "decon2")` or `inherits(x, "aligns")`. See
+#' [metabodecon-classes].
 #'
-#' @param x
-#' The object to check.
+#' @param x The object to check.
 #'
-#' @param check_class
-#' Logical indicating whether to check the class of the object.
-#'
-#' @param check_contents
-#' Logical indicating whether to check the contents of the object.
-#'
-#' @param check_child_classes
-#' Logical indicating whether to check the class of each element of the object.
-#'
-#' @return
-#' TRUE if the object is an instance of the specified class, otherwise FALSE.
+#' @return `TRUE` if the object inherits from the named class, else `FALSE`.
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
-#' ss <- sim[1:2]
-#' s1 <- sim[[1]]
-#' is_spectra(ss) # TRUE
-#' is_spectrum(s1) # TRUE
-#' is_spectrum(s1, check_contents = TRUE) # TRUE
+#' is_spectrum(sim[[1]])  # TRUE
+#' is_spectra(sim[1:2])   # TRUE
 #'
-#' dd <- deconvolute(ss, sfr = c(3.55, 3.35))
-#' d1 <- dd[[1]]
-#' is_decons0(dd) # FALSE
-#' is_decons1(dd) # FALSE
-#' is_decons2(dd) # TRUE
-#' is_decon0(d1) # FALSE
-#' is_decon1(d1) # FALSE
-#' is_decon2(d1) # TRUE
-#'
-#' if (interactive()) {
-#'     # Example requires an interactive R session, because in case of missing
-#'     # dependencies the user will be asked for confirmation to install them.
-#'     aa <- align(dd)
-#'     a1 <- aa[[1]]
-#'     is_align(a1) # TRUE
-#'     is_aligns(aa) # TRUE
-#' }
-#'
-is_spectrum <- function(x,
-                        check_class = TRUE,
-                        check_contents = FALSE) {
-    # styler: off
-    if (check_class && !inherits(x, "spectrum")) return(FALSE)
-    if (!check_contents) return(TRUE)
-    if (!is.list(x)) return(FALSE)
-    mandatory <- c("si", "cs")
-    if (!all(mandatory %in% names(x))) return(FALSE)
-    # styler: on
-    return(TRUE)
-}
+#' d <- deconvolute(sim[[1]], sfr = c(3.55, 3.35))
+#' is_spectrum(d)              # TRUE (decon2 inherits from spectrum)
+#' inherits(d, "decon2")       # TRUE
+is_spectrum <- function(x) inherits(x, "spectrum")
 
 #' @export
-#' @rdname is_metabodecon_class
-is_decon0 <- function(x) {
-    is.list(x) && all(decon0_members_mandatory %in% names(x)) && !is_decon1(x)
-}
+#' @rdname is_spectrum
+is_spectra <- function(x) inherits(x, "spectra")
 
-#' @export
-#' @rdname is_metabodecon_class
-is_decon1 <- function(x) inherits(x, "decon1")
-
-#' @export
-#' @rdname is_metabodecon_class
-is_decon2 <- function(x) inherits(x, "decon2")
-
-#' @export
-#' @rdname is_metabodecon_class
-is_align <- function(x) inherits(x, "align")
-
-#' @export
-#' @rdname is_metabodecon_class
-is_spectra <- function(x,
-                       check_class = TRUE,
-                       check_contents = FALSE,
-                       check_child_classes = FALSE) {
-    # styler: off
-    if (check_class && !inherits(x, "spectra")) return(FALSE)
-    if (check_child_classes && !all(sapply(x, is_spectrum))) return(FALSE)
-    if (!check_contents) return(TRUE)
-    if (!is.list(x)) return(FALSE)
-    if (!all(sapply(x, is_spectrum, check_contents = TRUE))) return(FALSE)
-    # styler: on
-    return(TRUE)
-}
-
-#' @export
-#' @rdname is_metabodecon_class
-is_decons0 <- function(x) all(sapply(x, is_decon0))
-
-#' @export
-#' @rdname is_metabodecon_class
-is_decons1 <- function(x) inherits(x, "decons1")
-
-#' @export
-#' @rdname is_metabodecon_class
-is_decons2 <- function(x) inherits(x, "decons2")
-
-#' @export
-#' @rdname is_metabodecon_class
-is_aligns <- function(x) inherits(x, "aligns")
-
-# Checks (Private) #####
-
-is_spectrum_or_spectra <- function(x) is_spectrum(x) || is_spectra(x)
-is_rdecon <- function(x) inherits(x, "rdecon")
-is_rdecons <- function(x) inherits(x, "rdecons")
-
-# Convert (Public) #####
+# Converters #####
 
 #' @export
 #'
-#' @name as_metabodecon_class
-#' @rdname as_metabodecon_class
+#' @name as_spectra
+#' @rdname as_spectra
 #'
 #' @title Convert to a Metabodecon Object
 #'
-#' @description Convert a object to a Metabodecon object.
+#' @description
+#' Identity-or-validate converters between metabodecon classes. See
+#' [metabodecon-classes] for the class hierarchy.
 #'
 #' @param x
-#' The object to convert.
+#' The object to convert. For [as_spectra()], either a `spectrum`,
+#' a list of `spectrum`, or a path passed to [read_spectra()].
 #'
-#' @param sf
-#' Scale factor used during Only required if `x` is a decon0 object.
+#' @param file_format,expno,procno,raw,silent,force
+#' Passed to [read_spectra()] when `x` is a path.
 #'
-#' @param sfs
-#' List of scale factors. Only required if `x` is a list of decon0 objects.
-#'
-#' @param spectrum,spectra
-#' The `spectrum`/`spectra` object corresponding to `x` as returned by
-#' [metabodecon::read_spectrum()] / [metabodecon::read_spectra]. Only required if `x` is a decon0 object.
-#'
-#' @param sfr,sfrs
-#' `sfr` should be a vector specifying the borders of the signal free region.
-#' `sfrs` should be a list of such vectors. Only required if `x` is a `decon0`
-#' object where element `signal_free_region` is missing (or a `decons0` objected
-#' containing such `decon0` objects).
-#'
-#' @param wshw,wshws
-#' `wshw` should specify the half width of the water signal region. `wshws`
-#' should be a list of such values. Only required if `x` is a `decon0` object
-#' where element `range_water_signal_ppm` is missing (or a `decons0` objected
-#' containing such `decon0` objects).
-#'
-#' @param bwc
-#' Level of backwards compatibility. Kept for backwards compatibility;
-#' all conversions now use `bwc = 2` logic. Ignored.
-#'
-#' @param optional
-#' Logical. If `TRUE`, the two optional elements `signal_free_region` and
-#' `range_water_signal_ppm` are included in the returned `decon0` object.
-#'
-#' @param nworkers
-#' Number of workers for parallel processing.
-#'
-#' @return An object of the specified class.
+#' @return An object of the requested class.
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
-#' dirpath <- metabodecon_file("sim_subset")
-#' spectra <- read_spectra(dirpath)
-#' spectrum <- spectra[[1]]
-#' decons1 <- generate_lorentz_curves_sim(spectra)
-#' decon1 <- generate_lorentz_curves_sim(spectrum)
-#' decon2 <- as_decon2(decon1)
-as_spectrum <- function(x, sf = c(1e3, 1e6)) {
-    if (is_spectrum(x)) {
-        return(x)
-    } else if (is_decon1(x)) {
-        cs <- x$x_values_ppm
-        si <- x$y_values_raw %||% (x$y_values * sf[2])
-        name <- x$filename
-        fq <- x$x_values_hz
-        meta <- named(name, fq)
-        obj <- named(cs, si, meta)
-        return(structure(obj, class = "spectrum"))
-    } else {
-        msg <- "Converting %s to spectrum is not suppoorted"
-        msg <- sprintf(msg, class(x)[1])
-        stop(msg)
-    }
-}
-
-#' @export
-#' @rdname as_metabodecon_class
-as_decon0 <- function(x,
-                      sf = NULL,
-                      spectrum = NULL,
-                      optional = TRUE) {
-    if (is_decon0(x)) return(x)
-    y <- as_decon1(x)
-    y <- unclass(y)
-    y[if (optional) decon0_members else decon0_members_mandatory]
-}
-
-#' @export
-#' @rdname as_metabodecon_class
-as_decon1 <- function(x,
-                      sf = c(1e3, 1e6),
-                      spectrum = NULL,
-                      sfr = NULL,
-                      wshw = NULL,
-                      bwc = 2) {
-    if (is_decon0(x)) as_decon1.decon0(x, sf, spectrum, sfr, wshw, bwc)
-    else if (is_decon1(x)) x
-    else if (is_decon2(x)) as_decon1.decon2(x, sf, spectrum, sfr, wshw, bwc)
-    else stop(sprintf("Converting %s to decon1 is not supported", class(x)[1]))
-}
-
-#' @export
-#' @rdname as_metabodecon_class
-as_decon2 <- function(x, sf = c(1e3, 1e6), spectrum = NULL, sfr = NULL, wshw = NULL, bwc = 2) {
-    if (is_decon0(x)) as_decon2.decon1(x = as_decon1(x, sf, spectrum, sfr, wshw, bwc))
-    else if (is_decon1(x)) as_decon2.decon1(x)
-    else if (is_decon2(x)) x
-    else if (is_rdecon(x)) as_decon2.rdecon(x)
-    else stop(sprintf("Converting %s to decon2 is not supported", class(x)[1]))
-}
-
-#' @export
-#' @rdname as_metabodecon_class
-#' @inheritParams read_spectra
+#' as_spectra(sim[[1]])
+#' as_decon2(deconvolute(sim[[1]], sfr = c(3.55, 3.35)))
 as_spectra <- function(x,
                        file_format = "bruker",
                        expno = 10,
@@ -670,378 +344,37 @@ as_spectra <- function(x,
                        raw = FALSE,
                        silent = TRUE,
                        force = FALSE) {
-    if (is_spectrum(x)) {
+    if (inherits(x, "spectra")) {
+        x
+    } else if (inherits(x, "spectrum")) {
         xx <- structure(list(x), class = "spectra")
-        xx <- set_names(xx, get_names(xx))
-    } else if (all(sapply(x, is_spectrum))) {
+        set_names(xx, get_names(xx))
+    } else if (is.list(x) && all(sapply(x, inherits, "spectrum"))) {
         xx <- structure(x, class = "spectra")
-        xx <- set_names(xx, get_names(xx))
+        set_names(xx, get_names(xx))
     } else if (is.character(x) && file.exists(x)) {
-        xx <- read_spectra(x, file_format, expno, procno, raw, silent, force)
+        read_spectra(x, file_format, expno, procno, raw, silent, force)
     } else {
-        stop("Input must be a path, spectrum or list of spectrum objects")
+        stop("Input must be a path, spectrum, or list of spectrum objects.")
     }
-    xx
 }
 
 #' @export
-#' @rdname as_metabodecon_class
-as_decons0 <- function(x,
-                       sfs = list(c(1e3, 1e6)),
-                       spectra = list(NULL),
-                       nworkers = 1) {
-    if (is_decons0(x)) {
-        return(x)
-    } else if (is_decons1(x) || is_decons2(x)) {
-        decons0 <- mcmapply(as_decon0, x, sfs, spectra, nw = nworkers)
-    } else if (is.list(x) && all(sapply(x, is_decon0))) {
-        decons0 <- x
-    } else {
-        stop(paste(
-            "Input must be a list of decon0 objects or a single object",
-            "of type decons0, decons1 or decons2."
-        ))
-    }
-    # Don't set names or class for decons0, as the original MetaboDecon1D
-    # objects didn't have names or classes as well and we want to stay backwards
-    # compatible. If someone wants to have names, they can use `decons1` or
-    # `decons2` instead.
-    n <- length(decons0)
-    for (i in seq_len(n)) decons0[[i]]$number_of_files <- n
-    decons0
+#' @rdname as_spectra
+as_decon2 <- function(x) {
+    if (inherits(x, "decon2")) x
+    else stop(sprintf("Cannot convert %s to decon2.", class(x)[1]))
 }
 
 #' @export
-#' @rdname as_metabodecon_class
-as_decons1 <- function(x,
-                       sfs = list(c(1e3, 1e6)),
-                       spectra = list(NULL),
-                       sfrs = list(NULL),
-                       wshws = list(NULL),
-                       bwc = 2,
-                       nworkers = 1) {
-    if (is_decons1(x)) {
-        return(x)
-    } else if (is_decons0(x) || is_decons2(x)) {
-        decons1 <- mcmapply(as_decon1, x, sfs, spectra, sfrs, wshws, bwc, nw = nworkers)
-    } else if (is.list(x) && all(sapply(x, is_decon1))) {
-        decons1 <- x
-    } else {
-        stop(paste(
-            "Input must be a list of decon1 objects or a single object",
-            "of type decons0, decons1 or decons2."
-        ))
+#' @rdname as_spectra
+as_decons2 <- function(x) {
+    if (inherits(x, "decons2")) return(x)
+    if (is.list(x) && all(sapply(x, inherits, "decon2"))) {
+        out <- structure(x, class = c("decons2", "spectra"))
+        return(set_names(out, get_names(out)))
     }
-    names(decons1) <- get_names(x)
-    class(decons1) <- "decons1"
-    n <- length(decons1)
-    for (i in seq_len(n)) decons1[[i]]$number_of_files <- n
-    decons1
-}
-
-#' @export
-#' @rdname as_metabodecon_class
-as_decons2 <- function(x,
-                       sfs = list(c(1e3, 1e6)),
-                       spectra = list(NULL),
-                       sfrs = list(NULL),
-                       wshws = list(NULL),
-                       bwc = 2,
-                       nworkers = 1) {
-    if (is_decons2(x)) {
-        return(x)
-    } else if (is_decons0(x) || is_decons1(x)) {
-        decons2 <- mcmapply(as_decon2, x, sfs, spectra, sfrs, wshws, bwc, nw = nworkers)
-    } else if (is.list(x) && all(sapply(x, is_decon2))) {
-        decons2 <- x
-    } else {
-        stop(paste(
-            "Input must be a list of decon2 objects or a single object",
-            "of type decons0, decons1 or decons2."
-        ))
-    }
-    names(decons2) <- get_names(x)
-    class(decons2) <- "decons2"
-    decons2
-}
-
-# Convert (Private) #####
-
-as_decon1.decon0 <- function(x,
-                            sf = c(1e3, 1e6),
-                            spectrum = NULL,
-                            sfr = NULL,
-                            wshw = NULL,
-                            bwc = 2) {
-    if (is.null(sf)) stop("Please provide `sf`")
-    if (is.null(spectrum)) stop("Please provide `spectrum`")
-    # Define some shorthands
-    fq <- spectrum$meta$fq
-    si <- spectrum$si
-    ssp <- as.numeric(x$spectrum_superposition)
-    ppm <- x$x_values_ppm
-    sdp <- x$x_values
-    dp <- round(x$x_values * sf[1])
-    y <- x
-    # Append optional elements if missing
-    if (is.null(x[["signal_free_region"]])) {
-        if (is.null(sfr)) stop("Please provide `sfr`")
-        y[["signal_free_region"]] <- sfr_in_sdp_bwc(sfr, ppm, sf)
-    }
-    if (is.null(x[["range_water_signal_ppm"]])) {
-        if (is.null(wshw)) stop("Please provide `wshw`")
-        y[["range_water_signal_ppm"]] <- wshw
-    }
-    # Make sure elements are in correct order
-    y <- y[decon0_members]
-    # Calculate decon1 elements
-    y$y_values_raw <- si
-    y$x_values_hz <- fq
-    y$mse_normed_raw <- mse(si, ssp, normed = TRUE)
-    y$signal_free_region_ppm <- sfr %||% sfr_in_ppm_bwc(x[["signal_free_region"]], sdp, ppm)
-    y$x_0_hz <- convert_pos(x$x_0, sdp, fq)
-    y$x_0_dp <- convert_pos(x$x_0, sdp, dp)
-    y$x_0_ppm <- convert_pos(x$x_0, sdp, ppm)
-    y$A_hz <- convert_width(x$A, sdp, fq)
-    y$A_dp <- convert_width(x$A, sdp, dp)
-    y$A_ppm <- convert_width(x$A, sdp, ppm)
-    y$lambda_hz <- convert_width(x$lambda, sdp, fq)
-    y$lambda_dp <- convert_width(x$lambda, sdp, dp)
-    y$lambda_ppm <- convert_width(x$lambda, sdp, ppm)
-    class(y) <- "decon1"
-    y
-}
-
-as_decon1.decon2 <- function(x, sf, spectrum, sfr, wshw, bwc) {
-    # Helper vars
-    cs <- x$cs
-    si <- x$si
-    n <- length(si)
-    dpn <- (n - 1):0
-    sdp <- dpn / 1e3
-    fq <- x$meta$fq
-    cs_step <- width(cs) / (n - 1)
-    dpn_step <- 1
-    fq_step <- if (!is.null(fq)) width(fq) / (n - 1)
-    sdp_step <- dpn_step / 1e3
-    x0_ppm <- x$lcpar$x0
-    A_raw_ppm <- x$lcpar$A
-    lambda_ppm <- x$lcpar$lambda
-    x0_dp <- convert_pos(x0_ppm, cs, dpn)
-    x0_sdp <- convert_pos(x0_ppm, cs, sdp)
-    x0_hz <- if (!is.null(fq)) convert_pos(x0_ppm, cs, fq)
-    A_raw_dp <- A_raw_ppm * (dpn_step / cs_step)
-    A_raw_sdp <- A_raw_ppm * (sdp_step / cs_step)
-    A_raw_hz <- if (!is.null(fq)) A_raw_ppm * (fq_step / cs_step)
-    A_sc_ppm <- A_raw_ppm / 1e6
-    A_sc_dp <- A_raw_dp / 1e6
-    A_sc_sdp <- A_raw_sdp / 1e6
-    A_sc_hz <- if (!is.null(fq)) A_raw_hz / 1e6
-    lambda_dp <- convert_width(lambda_ppm, cs, dpn)
-    lambda_sdp <- convert_width(lambda_ppm, cs, sdp)
-    lambda_hz <- if (!is.null(fq)) abs(convert_width(lambda_ppm, cs, fq))
-    limits_sdp <- NULL
-    integrals <- t(lorentz_int(x0_sdp, A_sc_sdp, lambda_sdp, limits = limits_sdp))
-    # Outputs
-    y <- structure(class = "decon1", .Data = list())
-    y$number_of_files <- 1
-    y$filename <- x$meta$name
-    y$x_values <- seq.int(length(x$cs) - 1, 0, -1) / sf[1]
-    y$x_values_ppm <- x$cs
-    y$y_values <- x$sit$sm / 1e6
-    y$spectrum_superposition <- t(x$sit$sup / 1e6)
-    y$mse_normed <- x$mse$smnorm
-    y$index_peak_triplets_middle <- x$peak$center
-    y$index_peak_triplets_left <- x$peak$right # decon[01] has left and right inverted
-    y$index_peak_triplets_right <- x$peak$left # decon[01] has left and right inverted
-    y$peak_triplets_middle <- x$cs[x$peak$center]
-    y$peak_triplets_left <- x$cs[x$peak$right] # decon[01] has left and right inverted
-    y$peak_triplets_right <- x$cs[x$peak$left] # decon[01] has left and right inverted
-    sdp <- ((length(x$cs) - 1):0) / sf[1]
-    y$integrals <- integrals
-    y$signal_free_region <- sfr_in_sdp_bwc(x$args$sfr, x$cs, sf)
-    y$range_water_signal_ppm <- x$args$wshw
-    y$A <- -A_sc_sdp
-    y$lambda <- -lambda_sdp
-    y$x_0 <- x0_sdp
-    y$y_values_raw <- x$si
-    y$x_values_hz <- if (!is.null(fq)) x$meta$fq
-    y$mse_normed_raw <- x$mse$norm
-    y$signal_free_region_ppm <- x$args$sfr
-    y$x_0_hz <- if (!is.null(fq)) x0_hz
-    y$x_0_dp <- x0_dp
-    y$x_0_ppm <- x0_ppm
-    y$A_hz <- if (!is.null(fq)) (A_sc_hz)
-    y$A_dp <- -A_sc_dp
-    y$A_ppm <- -A_sc_ppm
-    y$lambda_hz <- if (!is.null(fq)) (lambda_hz)
-    y$lambda_dp <- -lambda_dp
-    y$lambda_ppm <- -lambda_ppm
-    y
-}
-
-#' @noRd
-#' @author 2024-2025 Tobias Schmidt: initial version.
-as_decon2.decon1 <- function(x, ...) {
-    cs <- x$x_values_ppm
-    si <- x$y_values_raw
-    meta <- list(
-        name = x$filename,
-        fq = x$x_values_hz
-    )
-    args <- list(
-        nfit = NA, smit = NA, smws = NA, delta = NA,
-        sfr = sfr_in_ppm_bwc(x$signal_free_region, x$x_values, x$x_values_ppm),
-        wshw = x$range_water_signal_ppm,
-        ask = NA, force = NA, verbose = NA, bwc = NA, nworkers = NA
-    )
-    sit <- data.frame(
-        wsrm = NA, nvrm = NA,
-        sm = x$y_values * 1e6,
-        sup = x$spectrum_superposition[1, ] * 1e6
-    )
-    peak <- data.frame(
-        left = x$index_peak_triplets_right, # decon[01] has left and right inverted
-        center = x$index_peak_triplets_middle,
-        right = x$index_peak_triplets_left
-    )
-    lcpar <- data.frame(
-        x0 = x$x_0_ppm,
-        A = -(x$A_ppm * 1e6),
-        lambda = -(x$lambda_ppm)
-    )
-    mse <- list(
-        raw  = mse(si, sit$sup, normed = FALSE),
-        norm = x$mse_normed_raw,
-        sm = mse(sit$sm, sit$sup, normed = FALSE),
-        smnorm = x$mse_normed
-    )
-    obj <- named(cs, si, meta, args, sit, peak, lcpar, mse)
-    class(obj) <- "decon2"
-    obj
-}
-
-#' @noRd
-#' @author 2024-2025 Tobias Schmidt: initial version.
-as_decon2.rdecon <- function(x, ...) {
-    assert(is_rdecon(x))
-    cs <- x$mdrb_spectrum$chemical_shifts()
-    si <- x$mdrb_spectrum$intensities()
-    meta <- x$spectrum$meta
-    args <- x$args
-    sup <- x$mdrb_decon$superposition_vec(cs)
-    lcpar <- as.data.frame(x$mdrb_decon$lorentzians())[, c("x0", "A", "lambda")]
-    wsrm <- si # Rust backend doesn't remove the water signal
-    nvrm <- si # Rust backend doesn't remove negative values
-    reps <- args$smit
-    size <- args$smws
-    sm <- smooth_signals2(nvrm, reps, size)
-    sit <- named(wsrm, nvrm, sm, sup)
-    mse <- list(
-        raw = mse(si, sup, norm=FALSE), # (1)
-        norm = mse(si, sup, norm=TRUE),
-        sm = mse(sm, sup, norm=FALSE),
-        smnorm = mse(sm, sup, norm=TRUE)
-        # (1) x$mdrb_decon$mse() deviates from mse() results, so we need to
-        # calculate ourselves until Rust backend provides the correct values
-        # (see TODOS.md). (Update 2025-09-14: TODOS are no longer tracked in
-        # TODOS.md, but outside of the repository. To retrieve the last actively
-        # maintained version of TODOS.md, checkout commit 8b1f61b, i.e.,
-        # v1.5.0.)
-    )
-    peak <- get_peak(lcpar$x0, cs) # Should be provided directly by Rust backend in future versions
-    obj <- named(cs, si, meta, args, sit, peak, lcpar, mse)
-    class(obj) <- "decon2"
-    obj
-}
-
-#' @noRd
-#' @author 2024-2025 Tobias Schmidt: initial version.
-as_rdecon <- function(x) {
-    assert( # (1)
-        is_spectrum(x$spectrum),
-        is.list(x$args),
-        typeof(x$mdrb_spectrum) == "externalptr",
-        typeof(x$mdrb_deconvr) == "externalptr",
-        typeof(x$mdrb_decon) == "externalptr",
-        class(x$mdrb_spectrum) == "Spectrum",
-        class(x$mdrb_deconvr) == "Deconvoluter",
-        class(x$mdrb_decon) == "Deconvolution"
-    )
-    stopifnot(length(x) == 5) # (1)
-    structure(x, class = "rdecon")
-    # (1) This function is private, so in theory it can never be called with
-    # invalid arguments, as all public functions validate their inputs first.
-    # Therefore, using assert for type checking is correct, as assert-checks are
-    # deactivated when the package is loaded via library(), i.e. the
-    # "production" code will run faster.
-    #
-    # However, in practice, it's very easy to run into nasty problems as soon as
-    # assertions are disabled (e.g. when calling this function with invalid
-    # arguments during unit testing). To prevent such scenarios, we include a
-    # very tiny, super-fast sanity check here, using stopifnot. This check
-    # will always run, even in production code, and might us save a lot of
-    # headaches in the future.
-}
-
-#' @noRd
-#' @author 2024-2025 Tobias Schmidt: initial version.
-as_rdecons <- function(x) {
-    if (is_rdecons(x)) return(x)
-    assert(is.list(x), all(sapply(x, is_rdecon)))
-    structure(x, class = "rdecons")
-}
-
-#' @noRd
-#' @title Convert a List of Singlets to a Collection
-#' @author 2024-2025 Tobias Schmidt: initial version.
-as_collection <- function(x, cls) {
-    assert(
-        is.list(x),
-        is_char(cls, 1, "(decon[0-2]|rdecon)"),
-        cls == "decon0" || all(sapply(x, class) == cls)
-    )
-    switch(cls,
-        "decon0" = as_decons0(x),
-        "decon1" = as_decons1(x),
-        "decon2" = as_decons2(x),
-        "rdecon" = as_rdecons(x),
-        stop("Unsupported class: ", cls)
-    )
-}
-
-#' @noRd
-#' @title Convert any Singlet to a "v1.2+" Singlet
-#' @author 2024-2025 Tobias Schmidt: initial version.
-as_v12_singlet <- function(obj) {
-    if (is_spectrum(obj)) obj
-    else if (is_rdecon(obj)) as_decon2(obj)
-    else if (is_decon0(obj)) stop("decon0 objects are not supported. Convert with as_decon2.")
-    else if (is_decon1(obj)) as_decon2(obj)
-    else if (is_decon2(obj)) obj
-    else if (is_align(obj)) obj
-    else stop(sprintf("Objects of class %s are not supported.", class(obj)))
-}
-
-#' @noRd
-#' @title Convert a Collection to a "v1.2+" Collection
-#' @author 2024-2025 Tobias Schmidt: initial version.
-as_v12_collection <- function(obj) {
-    if (is_spectra(obj)) obj
-    else if (is_decons0(obj)) stop("decons0 objects are not supported. Convert with as_decons2.")
-    else if (is_decons1(obj)) as_decons2(obj)
-    else if (is_decons2(obj)) obj
-    else if (is_aligns(obj)) obj
-    else stop(sprintf("Objects of class %s are not supported.", class(obj)))
-}
-
-# Constructors (Private) #####
-
-#' @noRd
-#' @author 2024-2025 Tobias Schmidt: initial version.
-new_rdecon <- function(spectrum, args, mdrb_spectrum, mdrb_deconvr, mdrb_decon) {
-    x <- named(spectrum, args, mdrb_spectrum, mdrb_deconvr, mdrb_decon)
-    as_rdecon(x)
+    stop("Input must be a list of decon2 objects or a decons2 object.")
 }
 
 # Getters (Private) #####
@@ -1117,7 +450,6 @@ get_default_names <- function(x, default) {
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 get_peak <- function(x0, cs) {
-    assert(is_num(x0), is_num(cs))
     center <- round(convert_pos(x0, cs, seq_along(cs)))
     data.frame(left = center - 1, center = center, right = center + 1)
 }
@@ -1127,7 +459,6 @@ get_peak <- function(x0, cs) {
 #' @noRd
 #' @author 2024-2025 Tobias Schmidt: initial version.
 set_names <- function(x, nams) {
-    assert(is.list(x))
     has_names <- all(sapply(x, function(e) "name" %in% names(e)))
     has_meta_names <- all(sapply(x, function(e) "name" %in% names(e$meta)))
     names(x) <- nams
@@ -1138,111 +469,4 @@ set_names <- function(x, nams) {
 
 # Members (Private) #####
 
-spectrum_members <- c(
-    "cs",
-    "si",
-    "meta"
-)
-
-rdecon_members <- c(
-    "spectrum",
-    "args",
-    "mdrb_spectrum",
-    "mdrb_deconvr",
-    "mdrb_decon"
-)
-
-decon0_members <- c(
-    "number_of_files",
-    "filename",
-    "x_values",
-    "x_values_ppm",
-    "y_values",
-    "spectrum_superposition",
-    "mse_normed",
-    "index_peak_triplets_middle",
-    "index_peak_triplets_left",
-    "index_peak_triplets_right",
-    "peak_triplets_middle",
-    "peak_triplets_left",
-    "peak_triplets_right",
-    "integrals",
-    "signal_free_region",
-    "range_water_signal_ppm",
-    "A",
-    "lambda",
-    "x_0"
-)
-
-decon0_members_optional <- c(
-    "signal_free_region",
-    "range_water_signal_ppm"
-)
-
-decon0_members_mandatory <- setdiff(
-    decon0_members,
-    decon0_members_optional
-)
-
-decon1_members <- c(
-    decon0_members,
-    "y_values_raw",
-    "x_values_hz",
-    "mse_normed_raw",
-    "signal_free_region_ppm",
-    "x_0_hz",
-    "x_0_dp",
-    "x_0_ppm",
-    "A_hz",
-    "A_dp",
-    "A_ppm",
-    "lambda_hz",
-    "lambda_dp",
-    "lambda_ppm"
-)
-
-decon2_members <- c(
-    "cs",
-    "si",
-    "meta",
-    "args",
-    "sit",
-    "peak",
-    "lcpar",
-    "mse"
-)
-
-align_members <- decon2_members
-
-#' @noRd
-#' @author 2024-2025 Tobias Schmidt: initial version.
-is_decon_obj <- function(x) {
-    keys <- c(
-        "number_of_files",
-        "filename",
-        "x_values",
-        "x_values_ppm",
-        "y_values",
-        "spectrum_superposition",
-        "mse_normed",
-        "index_peak_triplets_middle",
-        "index_peak_triplets_left",
-        "index_peak_triplets_right",
-        "peak_triplets_middle",
-        "peak_triplets_left",
-        "peak_triplets_right",
-        "integrals",
-        "signal_free_region",
-        "range_water_signal_ppm",
-        "A",
-        "lambda",
-        "x_0"
-    )
-    if (is.list(x) && all(keys %in% names(x))) TRUE else FALSE
-}
-
-#' @noRd
-#' @author 2024-2025 Tobias Schmidt: initial version.
-is_decon_list <- function(x) {
-    if (is.list(x) && all(sapply(x, is_decon_obj))) TRUE else FALSE
-}
+decon2_members <- c("cs", "si", "meta", "args", "sit", "peak", "lcpar", "mse")

@@ -52,7 +52,7 @@ draw_spectrum(
 )
 }
 \arguments{
-\item{obj}{An object of type \code{spectrum} or \code{decon2}. For details see \href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{Metabodecon Classes}.}
+\item{obj}{An object of type \code{spectrum} or \code{decon2}. For details see \link{metabodecon-classes}.}
 
 \item{foc_rgn}{Numeric vector specifying the start and end of focus region in ppm.}
 

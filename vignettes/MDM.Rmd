@@ -24,12 +24,8 @@ vignette: >
 
 ```{r set-defaults, echo=FALSE, results=FALSE, message=FALSE}
 knitr::opts_chunk$set(
-    fig.dim = c(6, 4),
-    fig.show = "hold",
-    out.width = "100%",
-    echo = TRUE,
-    message = FALSE,
-    warning = FALSE
+    fig.dim = c(5, 5), fig.show = "hold", out.width = "100%",
+    echo = TRUE, message = FALSE, warning = FALSE
 )
 ```
 
@@ -49,35 +45,20 @@ between groups A and B.
 ```{r simulate-spectra}
 library(metabodecon)
 set.seed(42)
-
-n <- 40
+n <- 36
 npk <- 20
 cs_range <- seq(from = 3.6, length.out = 2048, by = -0.00015)
-
-# Base peak parameters (shared across all spectra)
 base_x0 <- sort(runif(npk, 3.35, 3.55))
 base_A <- runif(npk, 5, 15) * 1e3
 base_lam <- runif(npk, 0.9, 1.3) / 1e3
-
-# Assign group labels
 group <- factor(rep(c("A", "B"), each = n / 2))
-
-# Discriminating peak indices
-diff_AB <- 1:5    # peaks with slightly different areas between groups
-
+diff_AB <- 1:5
 spectra <- vector("list", n)
 for (i in seq_len(n)) {
-    x0 <- base_x0 + rnorm(npk, sd = 0.0003)
+    x0 <- base_x0 + rnorm(npk, sd=0.00030) + rnorm(1, sd=0.00060)
     A <- base_A * runif(npk, 0.7, 1.3)
     lam <- base_lam * runif(npk, 0.9, 1.1)
-
-    # Group-specific area shift (+/- 5%)
-    if (group[i] == "A") {
-        A[diff_AB] <- A[diff_AB] * 1.05
-    } else {
-        A[diff_AB] <- A[diff_AB] * 0.95
-    }
-
+    if (group[i] == "A") A[diff_AB] <- A[diff_AB] * 1.1
     spectra[[i]] <- simulate_spectrum(
         name = sprintf("s_%03d", i), cs = cs_range,
         x0 = sort(x0), A = A, lambda = lam,

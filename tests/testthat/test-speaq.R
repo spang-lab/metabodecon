@@ -4,7 +4,7 @@
 
 # find_ref -----------------------------------------------------------
 
-test_that("find_ref picks the best reference spectrum", {
+test_that("find_ref_ind picks the best reference spectrum", {
     # Generated with:
     #   pl <- list(c(10, 50, 100, 200), c(12, 48, 102, 198),
     #              c(11, 51, 99, 201))
@@ -15,7 +15,7 @@ test_that("find_ref picks the best reference spectrum", {
         c(12, 48, 102, 198),
         c(11, 51, 99, 201)
     )
-    res <- find_ref(pl)
+    res <- find_ref_ind(pl)
     expect_equal(res$refInd, 1)
     expect_equal(res$orderSpec, c(1, 3, 2))
 })

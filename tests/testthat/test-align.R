@@ -33,9 +33,9 @@ test_that("align works", {
         decons_copy[[i]]$sit$supal    <- aligns[[i]]$sit$supal
         decons_copy[[i]]$lcpar$x0al  <- aligns[[i]]$lcpar$x0al
         decons_copy[[i]]$lcpar$pcial  <- aligns[[i]]$lcpar$pcial
-        class(decons_copy[[i]]) <- "align"
+        class(decons_copy[[i]]) <- c("align", "decon2", "spectrum")
     }
-    class(decons_copy) <- "aligns"
+    class(decons_copy) <- c("aligns", "decons2", "spectra")
     expect_equal(object = aligns, expected = decons_copy)
 
     # Check that the alignment worked, our expectations are:
@@ -94,12 +94,14 @@ test_that("built-in backend matches speaq backend", {
 
 test_that("align with full=FALSE omits supal", {
     skip_if_speaq_deps_missing()
-    al_nofull <- align_decons(decons, verbose = FALSE, full = FALSE)
+    decons_h <- decons
+    attr(decons_h, "hash") <- rlang::hash(decons_h)
+    al_nofull <- align_decons(decons_h, verbose = FALSE, full = FALSE)
     for (i in seq_along(al_nofull)) {
         expect_null(al_nofull[[i]]$sit$supal)
     }
     # full=TRUE (default) should include supal
-    al_full <- align_decons(decons, verbose = FALSE, full = TRUE)
+    al_full <- align_decons(decons_h, verbose = FALSE, full = TRUE)
     for (i in seq_along(al_full)) {
         expect_false(is.null(al_full[[i]]$sit$supal))
     }
@@ -117,11 +119,14 @@ test_that("align with external ref returns only input spectra", {
 
 test_that("align raises error for spectra with mismatched data-point counts", {
     skip_if_speaq_deps_missing()
-    short <- simulate_spectrum(ndp = 128, npk = 2)
-    long  <- simulate_spectrum(ndp = 256, npk = 2)
-    d_short <- deconvolute(short, sfr = c(Inf, -Inf), force = TRUE, verbose = FALSE)
-    d_long  <- deconvolute(long,  sfr = c(Inf, -Inf), force = TRUE, verbose = FALSE)
-    mixed <- structure(list(d_short, d_long), class = "decons2")
+    # Build two decon2 objects with different cs lengths directly to bypass
+    # deconvolute() (which would itself fail on a degenerate sfr).
+    short <- decons[[1]]
+    long  <- decons[[1]]
+    long$cs <- c(long$cs, long$cs[length(long$cs)] - 0.001)
+    long$si <- c(long$si, 0)
+    long$sit <- rbind(long$sit, long$sit[nrow(long$sit), ])
+    mixed <- structure(list(short, long), class = c("decons2", "spectra"))
     expect_error(align(mixed, verbose = FALSE))
 })
 

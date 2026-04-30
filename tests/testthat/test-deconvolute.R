@@ -19,7 +19,7 @@ deconvolute_sap1 <- function(use_rust = FALSE) {
 
 expect_sap1_deconvolution_worked <- function(decon2) {
     expect_identical(object=names(decon2), expected=decon2_members)
-    expect_identical(object=class(decon2), expected="decon2")
+    expect_true(inherits(decon2, "decon2"))
     expect_true(calc_prarpx(decon2) >= 0.961) # (1)
     # (1) MetaboDecon1D has a PRARPX of 0.507. See test-MetaboDecon1d.R.
 }
@@ -44,9 +44,9 @@ test_sap1 <- test_that("deconvolute works for a single spectrum", {
 test_sim_subset <- test_that("deconvolute works for multiple spectra", {
     withr::local_output_sink(nullfile())
     decons2 <- deconvolute(x = sim[1:2], sfr = c(3.55, 3.35))
-    expect_identical(class(decons2), "decons2")
-    expect_identical(class(decons2[[1]]), "decon2")
-    expect_identical(class(decons2[[2]]), "decon2")
+    expect_true(inherits(decons2, "decons2"))
+    expect_true(inherits(decons2[[1]], "decon2"))
+    expect_true(inherits(decons2[[2]], "decon2"))
     expect_identical(names(decons2), c("sim_01", "sim_02"))
     expect_identical(names(decons2[[1]]), decon2_members)
     expect_identical(names(decons2[[2]]), decon2_members)
@@ -60,7 +60,6 @@ test_wrong_sfr <- test_that("deconvolute works when no peaks are filtered out", 
     withr::local_output_sink(nullfile())
     x <- simulate_spectrum(ndp = 256, npk = 3)
     expect_error(deconvolute(x, sfr = c(Inf, -Inf), smit = 0, smws = 3))
-    deconForc <- deconvolute(x, sfr = c(Inf, -Inf), smit = 0, smws = 3, force = TRUE)
 })
 
 # Rust Checks #####
@@ -83,25 +82,21 @@ rust_backend <- test_that("deconvolute works with rust backend", {
 
     withr::local_output_sink(nullfile())
 
-    # | Abbreviations | Meaning                         |
-    # | --------------| ------------------------------- |
-    # | rt, rn, rf    |  use_rust = {TRUE, NULL, FALSE} |
-    # | mm, ma        |  mdrb = {missing, available}    |
+    # | Abbreviations | Meaning                  |
+    # | --------------| ------------------------ |
+    # | rt, rf        |  use_rust = {TRUE, FALSE}|
+    # | mm, ma        |  mdrb = {missing, available} |
 
     # Mdrb missing (mm)
     with_mocked_bindings(get_mdrb_version=get_zero_version, code = {
         rt_mm <- try(deconvolute_sap1(use_rust=TRUE), silent=TRUE)
-        rn_mm <- try(deconvolute_sap1(use_rust=NULL), silent=TRUE)
         rf_mm <- try(deconvolute_sap1(use_rust=FALSE), silent=TRUE)
     })
     expect_sap1_deconvolution_failed(rt_mm, "Using.*Rust.*requires mdrb.*")
-    expect_sap1_deconvolution_worked(rn_mm)
     expect_sap1_deconvolution_worked(rf_mm)
     # Mdrb available (ma)
     rt_ma <- try(deconvolute_sap1(use_rust=TRUE), silent=TRUE)
-    rn_ma <- try(deconvolute_sap1(use_rust=NULL), silent=TRUE)
     rf_ma <- try(deconvolute_sap1(use_rust=FALSE), silent=TRUE)
     expect_sap1_deconvolution_worked(rt_ma)
-    expect_sap1_deconvolution_worked(rn_ma)
     expect_sap1_deconvolution_worked(rf_ma)
 })

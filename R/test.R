@@ -518,7 +518,7 @@ expect_str <- function(obj, expected_str, ...) {
 #'
 calc_prarp <- function(x, truepar = NULL, ...) {
 
-    obj <- as_decon2(x, ...)
+    obj <- as_decon2(x)
     truepar <- truepar %||% obj$meta$simpar
 
     x0_true <- truepar$x0

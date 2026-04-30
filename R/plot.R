@@ -9,8 +9,7 @@
 #'
 #' @param obj
 #' An object of type `decons0`, `decons1` or `decons2`. For details see
-#' [Metabodecon
-#' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
+#' [metabodecon-classes].
 #'
 #' @param ...
 #' Additional arguments passed to the conversion function.
@@ -71,8 +70,7 @@ plot_spectra <- function(obj,
                          mar = c(4.1, 4.1, 1.1, 0.1),
                          lgd = list()) {
     what <- match.arg(what)
-    objs <- as_v12_collection(obj, ...)
-    n <- length(objs)
+    objs <- as_spectra(obj)
     n <- length(objs)
     css <- lapply(objs, function(x) x$cs)
     sis <- lapply(objs, function(x) {
@@ -126,8 +124,7 @@ plot_spectra <- function(obj,
 #'
 #' @param x
 #' An object of type `spectrum`, `decon0`, `decon1`, `decon2` or `align`. For
-#' details see [Metabodecon
-#' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
+#' details see [metabodecon-classes].
 #'
 #' @param ...
 #' Additional arguments passed to [metabodecon::draw_spectrum()] for **every** sub figure.
@@ -273,7 +270,7 @@ plot_spectra <- function(obj,
 #'
 plot_spectrum <- function(x,
                           ...,
-                          obj = as_v12_singlet(x),
+                          obj = x,
                           foc_frac = get_foc_frac(obj),
                           foc_rgn = get_foc_rgn(obj, foc_frac),
                           sub1 = TRUE,
@@ -286,7 +283,7 @@ plot_spectrum <- function(x,
 
     # Check and parse inputs
     stopifnot(
-        is_spectrum(obj) || is_decon2(obj) || is_align(obj),
+        inherits(obj, "spectrum"),
         is_num(foc_frac, 2),
         is_num(foc_rgn, 2)
     )
@@ -327,8 +324,7 @@ plot_spectrum <- function(x,
 #' `r lifecycle::badge("experimental")`
 #'
 #' @param obj
-#' An object of type `spectrum` or `decon2`. For details see [Metabodecon
-#' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
+#' An object of type `spectrum` or `decon2`. For details see [metabodecon-classes].
 #'
 #' @param add
 #' If TRUE, draw into the currently open figure. If FALSE, start a new figure.
@@ -502,7 +498,6 @@ draw_spectrum <- function(
 ) {
     # Check and enrich inputs (278us)
     if (isFALSE(show)) return()
-    obj <- as_v12_singlet(obj)
     stopifnot(
         is_num(foc_rgn, 2) || is.null(foc_rgn),
         is_num(foc_frac, 2) || is.null(foc_frac),
@@ -515,7 +510,7 @@ draw_spectrum <- function(
     )
     foc_frac <- foc_frac %||% get_foc_frac(obj, foc_rgn)
     foc_rgn <- foc_rgn %||% get_foc_rgn(obj, foc_frac)
-    defaults <- get_draw_spectrum_defaults(show_d2, foc_only, is_align(obj))
+    defaults <- get_draw_spectrum_defaults(show_d2, foc_only, inherits(obj, "align"))
     env <- environment()
     for (var in names(defaults)) {
         env[[var]] <- combine(defaults[[var]], env[[var]], var)
@@ -525,8 +520,8 @@ draw_spectrum <- function(
         "cent_pts", "tp_pts", "fp_pts", "miss_pts", "bord_pts"
     )
     align_only <- c("al_line", "al_verts", "al_arrows")
-    if (is_spectrum(obj)) for (var in decon_only) env[[var]]$show <- FALSE
-    if (!is_align(obj)) for (var in align_only) env[[var]]$show <- FALSE
+    if (!inherits(obj, "decon2")) for (var in decon_only) env[[var]]$show <- FALSE
+    if (!inherits(obj, "align")) for (var in align_only) env[[var]]$show <- FALSE
 
     # Ensure backwards compatibility to MetaboDecon 1.2.7
     warn_msg <- "Setting `%s$text` is deprecated since MetaboDecon 1.3. Use `%s$text` instead."
@@ -1403,10 +1398,6 @@ calc_y0 <- function(x, y, x0) {
 #' @noRd
 #' @author 2024-2025 Tobias Schmidt: initial version.
 get_foc_frac <- function(obj, foc_rgn = NULL) {
-    assert(
-        is_num(obj$cs),
-        is.null(foc_rgn) || (is_num(foc_rgn, 2))
-    )
     if (is.null(foc_rgn)) {
         n <- length(obj$cs)
         width <- min(256 / n, 0.5)
@@ -1420,10 +1411,6 @@ get_foc_frac <- function(obj, foc_rgn = NULL) {
 #' @noRd
 #' @author 2024-2025 Tobias Schmidt: initial version.
 get_foc_rgn <- function(obj, foc_frac = NULL) {
-    assert(
-        is_num(obj$cs),
-        is_num_or_null(foc_frac, 2)
-    )
     if (is.null(foc_frac)) foc_frac <- get_foc_frac(obj)
     quantile(obj$cs, foc_frac)
 }
@@ -1497,11 +1484,6 @@ get_sub_fig_args <- function(obj, foc_frac, foc_rgn, sub1, sub2, sub3, dot_args)
 get_draw_spectrum_defaults <- function(show_d2 = FALSE,
                                        foc_only = TRUE,
                                        aligned = FALSE) {
-    assert(
-        is_bool(show_d2),
-        is_bool(foc_only),
-        is_bool(aligned)
-    )
     show_si <- !show_d2 && !aligned
     show_al <- !show_d2 && aligned
     ylab <- if (show_d2) "Second Derivative" else "Signal Intensity [au]"

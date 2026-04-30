@@ -13,8 +13,7 @@
 #' in [metabodecon::combine_peaks()].
 #'
 #' @param x
-#' An object of type `decons2` or `aligns`, as described in [Metabodecon
-#' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
+#' An object of type `decons2` or `aligns`, as described in [metabodecon-classes].
 #'
 #' @param ref
 #' Optional reference spectrum of type `align` or `decon2`. When supplied,
@@ -35,8 +34,7 @@
 #' Number of parallel workers. Default is 1 (no parallelism).
 #'
 #' @return
-#' An object of type `aligns` as described in [Metabodecon
-#' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
+#' An object of type `aligns` as described in [metabodecon-classes].
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
@@ -44,26 +42,32 @@
 #' decons <- deconvolute(sim[1:2], sfr = c(3.55, 3.35))
 #' aligned <- align(decons)
 align <- function(x, ref=NULL, maxShift=50, verbose=TRUE, nworkers=1) {
-
     stopifnot(
-        is_decons2(x) || is_aligns(x),
+        inherits(x, "decons2"),
         is_int(maxShift,1), is_bool(verbose,1), is_int(nworkers,1),
-        is.null(ref) || is_decon2(ref) || is_align(ref)
+        is.null(ref) || inherits(ref, "decon2")
     )
-
     align_decons(x, ref, maxShift, verbose, nworkers)
-
 }
 
 # Internal #####
 
-align_decons <- function(x, ref=NULL, maxShift=50, verbose=TRUE, nworkers=1, full=TRUE) {
+align_decons <- function(
+    x, ref=NULL, maxShift=50, verbose=TRUE, nworkers=1,
+    full=TRUE, use_speaq=FALSE
+) {
+
+    # Validate consistent number of data points across spectra
+    ndps <- vapply(x, function(s) length(s$cs), integer(1))
+    if (length(unique(ndps)) > 1) {
+        stop("All spectra must have the same number of data points.")
+    }
 
     # Use early stopping if full is FALSE
     if (isFALSE(full)) {
         xhash <- attr(x, "hash")
         if (is.null(xhash)) stop("full=FALSE requires x@hash to be set")
-        key <- rlang::hash(list(xhash, ref, maxShift))
+        key <- rlang::hash(list(xhash, ref, maxShift, use_speaq))
         cache <- getOption("metabodecon.ad.cache", list(key="", aligns=NULL))
         if (cache$key == key) {
             logf("Skipping deconvolution (cache hit)")
@@ -73,8 +77,11 @@ align_decons <- function(x, ref=NULL, maxShift=50, verbose=TRUE, nworkers=1, ful
 
     # Do alignments
     ref <- ref %||% find_ref(x)
-    aligns <- mcmapply(nworkers, align_decon, x, MoreArgs = list(ref, maxShift))
-    class(aligns) <- "aligns"
+    aligns <- mcmapply(
+        nworkers, align_decon, x,
+        MoreArgs = list(ref, maxShift, full=full, use_speaq=use_speaq)
+    )
+    class(aligns) <- c("aligns", "decons2", "spectra")
 
     # Store in cache if full is FALSE
     if (isFALSE(full)) options(metabodecon.ad.cache = list(key=key, aligns=aligns))
@@ -82,7 +89,7 @@ align_decons <- function(x, ref=NULL, maxShift=50, verbose=TRUE, nworkers=1, ful
 
 }
 
-align_decon <- function(x, ref, maxShift, full=TRUE) {
+align_decon <- function(x, ref, maxShift, full=TRUE, use_speaq=FALSE) {
 
     # Init Helpers
     pci_x <- round(convert_pos(x$lcpar$x0, x$cs, seq_along(x$cs)))
@@ -99,14 +106,17 @@ align_decon <- function(x, ref, maxShift, full=TRUE) {
         peakLabel = c(rep(1, np_ref), rep(0, np_x)),
         startP = 1,
         endP = length(x$sit$sup),
-        maxShift = maxShift
+        maxShift = maxShift,
+        use_speaq = use_speaq
     )
     if(length(obj$peakList) != np_tot) stop("Lost peaks during alignment")
 
-    # Prepare return object
-    x$lcpar$x0al <- obj$peakList[(np_ref+1):np_tot]
+    # Prepare return object: pcial = integer index, x0al = aligned ppm
+    pcial <- obj$peakList[(np_ref+1):np_tot]
+    x$lcpar$x0al <- x$cs[pcial]
+    x$lcpar$pcial <- pcial
     if (full) x$sit$supal <- lorentz_sup(x$cs, x$lcpar$x0al, x$lcpar$A, x$lcpar$lambda)
-    class(x) <- "align"
+    class(x) <- c("align", "decon2", "spectrum")
 
     x
 }

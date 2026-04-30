@@ -1,46 +1,20 @@
 #!/usr/bin/env Rscript
 
 # PURPOSE: Check that all exported functions in the package have a defined lifecycle.
-# USAGE: Rscript check-lifecycle.R [--missing-only]
+# USAGE: Rscript check-lifecycle.R [--missing-only] [--strict]
 
 file_ignore <- c()
 fn_ignore <- c(
     # align.R
     "align", # stable
-    "get_si_mat", # stable
-    # class.R
-    "print.spectrum", # s3
-    "print.decon1", # s3
-    "print.decon2", # s3
-    "print.align", # s3
-    "print.spectra", # s3
-    "print.decons1", # s3
-    "print.decons2", # s3
-    "print.aligns", # s3
-    "print.ispec", # s3
-    "print.idecon", # s3
-    "print.rdecon", # s3
-    "print.ispecs", # s3
-    "print.idecons", # s3
-    "print.rdecons", # s3
-    "is_spectrum", # stable
-    "is_decon0", # stable
-    "is_decon1", # stable
-    "is_decon2", # stable
-    "is_align", # stable
-    "is_spectra", # stable
-    "is_decons0", # stable
-    "is_decons1", # stable
-    "is_decons2", # stable
-    "is_aligns", # stable
-    "as_spectrum", # stable
-    "as_decon0", # stable
-    "as_decon1", # stable
-    "as_decon2", # stable
-    "as_spectra", # stable
-    "as_decons0", # stable
-    "as_decons1", # stable
-    "as_decons2", # stable
+    # class.R (S3 methods + predicates + converters)
+    "print.spectrum",
+    "print.spectra",
+    "is_spectrum",
+    "is_spectra",
+    "as_spectra",
+    "as_decon2",
+    "as_decons2",
     # data.R
     "download_example_datasets", # stable
     "metabodecon_file", # stable
@@ -50,10 +24,19 @@ fn_ignore <- c(
     "tmpdir", # stable
     # decon.R
     "deconvolute", # stable
-    "generate_lorentz_curves_sim", # documented with "generate_lorentz_curves"
+    # mdm.R (S3 methods)
+    "print.mdm",
+    "print.summary.mdm",
+    "predict.mdm",
+    "coef.mdm",
+    "plot.mdm",
+    "summary.mdm",
     # plot.R
     "plot_spectra", # stable
-    # spectrum.R
+    # simat.R
+    "si_mat", # stable
+    "get_si_mat", # deprecated (lifecycle declared via deprecate_warn)
+    # spec.R
     "read_spectrum", # stable
     "read_spectra", # stable
     "make_spectrum", # stable
@@ -70,6 +53,8 @@ fn_ignore <- c(
 )
 args <- commandArgs(trailingOnly = TRUE)
 missing_only <- "--missing-only" %in% args
+strict <- "--strict" %in% args
+total_missing <- 0
 fg <- list(reset="\033[0m", warn="\033[91m", ok="\033[92m", file="\033[94m")
 if (!isatty(stdout())) fg <- list(reset="", warn="", ok="", file="")
 r_dir <- if (dir.exists("./R/")) "./R/" else "..R/"
@@ -108,4 +93,9 @@ for (r_file in r_files) {
     color <- if (n_miss == 0) fg$ok else fg$warn
     n_total <- n_ok + n_miss
     cat(sprintf("%s %s%d/%d%s\n", r_file_colored, color, n_ok, n_total, fg$reset))
+    total_missing <- total_missing + n_miss
+}
+if (strict && total_missing > 0) {
+    cat(sprintf("\n%d exported function(s) missing lifecycle tag\n", total_missing))
+    quit(status = 1)
 }

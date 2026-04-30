@@ -495,27 +495,6 @@ cachedir <- function(subdir = NULL, persistent = NULL) {
     mkdirs(ncd)
 }
 
-#' @export
-#'
-#' @title Get Default Cache Directory for Deconvolution
-#'
-#' @description
-#' Returns the temporary session-scoped cache directory used by deconvolution
-#' functions such as [metabodecon::deconvolute()] and the internal
-#' `grid_deconvolute_spectrum()` helper.
-#'
-#' @return Path to the shared temporary cache directory for deconvolution.
-#'
-#' @author 2026 Tobias Schmidt: initial version.
-#'
-#' @examples
-#' decon_cachedir()
-decon_cachedir <- function() {
-    x <- cachedir("deconvs", persistent = FALSE)
-    if (!dir.exists(x)) dir.create(x, recursive = TRUE)
-    x
-}
-
 # Sap (Public) #####
 
 sap_docs <- NULL # To get a symbol in the outline
@@ -563,8 +542,7 @@ sim_docs <- NULL # To get a symbol in the outline
 #' @format
 #' A `spectra` object consisting of 16 `spectrum` objects, where each spectrum
 #' contains 2048 datapoints ranging from 3.60 to 3.29 ppm. For details about
-#' `spectrum` and `spectra` objects see [Metabodecon
-#' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
+#' `spectrum` and `spectra` objects see [metabodecon-classes].
 #'
 "sim" # To regenerate this dataset, see `data-raw/data.R`.
 

@@ -11,14 +11,12 @@ library(testthat)
 defaults <- list(
     x = sap,
     nfit = 3, smit = 1, smws = 3, delta = 3, sfr = c(3.2, -3.2),
-    force = FALSE, verbose = FALSE,
-    use_rust = FALSE, nworkers = 1, igrs = list(), rtyp = "decon2"
+    verbose = FALSE,
+    use_rust = FALSE, nworkers = 1, igrs = list()
 )
 args <- list(
-    decons0_R = set(defaults, rtyp = "decon0"),
-    decons1_R = set(defaults, rtyp = "decon1"),
-    decons2_R = set(defaults, rtyp = "decon2"),
-    rdecons_rust = set(defaults, rtyp = "rdecon", use_rust = TRUE)
+    decons2_R = defaults,
+    decons2_rust = set(defaults, use_rust = TRUE)
 )
 mdrb_available <- check_mdrb()
 
@@ -33,15 +31,8 @@ obj <- sapply(args, try_deconvolute_spectra, simplify = FALSE)
 # Checks #####
 r_return_types <- test_that("R return types are ok", {
 
-    expect_identical(class(obj$decons0_R), "list")
-    expect_identical(class(obj$decons1_R), "decons1")
-    expect_identical(class(obj$decons2_R), "decons2")
-
-    expect_identical(class(obj$decons0_R[[1]]), "list")
-    expect_identical(class(obj$decons1_R[[1]]), "decon1")
-    expect_identical(class(obj$decons2_R[[1]]), "decon2")
-
-    expect_identical(names(obj$decons1_R[[1]]), decon1_members)
+    expect_true(inherits(obj$decons2_R, "decons2"))
+    expect_true(inherits(obj$decons2_R[[1]], "decon2"))
     expect_identical(names(obj$decons2_R[[1]]), decon2_members)
 })
 
@@ -57,7 +48,7 @@ skip_if_not(mdrb_available) # (1)
 # execute the following tests and spam the log file.
 
 rust_return_types <- test_that("Rust return types are ok", {
-    expect_identical(class(obj$rdecons_rust), "rdecons")
-    expect_identical(class(obj$rdecons_rust[[1]]), "rdecon")
-    expect_identical(names(obj$rdecons_rust[[1]]), rdecon_members)
+    expect_true(inherits(obj$decons2_rust, "decons2"))
+    expect_true(inherits(obj$decons2_rust[[1]], "decon2"))
+    expect_identical(names(obj$decons2_rust[[1]]), decon2_members)
 })

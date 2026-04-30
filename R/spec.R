@@ -38,8 +38,7 @@
 #' If `TRUE`, try to continue when encountering errors and print info messages
 #' instead. To hide these messages as well, set `silent = TRUE`.
 #'
-#' @return A `spectrum` object as described in [Metabodecon
-#' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
+#' @return A `spectrum` object as described in [metabodecon-classes].
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
@@ -166,8 +165,7 @@ read_spectra <- function(data_path = pkg_file("example_datasets/bruker/urine"),
 #' @param mfs
 #' The magnetic field strength in Tesla.
 #'
-#' @return A `spectrum` object as described in [Metabodecon
-#' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
+#' @return A `spectrum` object as described in [metabodecon-classes].
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
@@ -241,8 +239,7 @@ make_spectrum <- function(si,
 #' @param lambda The peak width parameter.
 #' @param noise The noise to add to the spectrum.
 #'
-#' @return A `spectrum` object as described in [Metabodecon
-#' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
+#' @return A `spectrum` object as described in [metabodecon-classes].
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
@@ -593,13 +590,7 @@ save_spectrum <- function(x,
                           force = FALSE,
                           verbose = TRUE) {
 
-    # Check input args, init temp dir and log function
-    assert(
-        is_spectrum(x),
-        length(dir(path)) == 0 || isTRUE(force),
-        is_bool(force),
-        is_bool(verbose)
-    )
+    # Init temp dir and log function
     temp <- tmpdir(subdir = TRUE)
     logv("Saving bruker files to %s", temp)
 
@@ -668,12 +659,6 @@ save_spectrum <- function(x,
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #' @title Save Spectra to Disk in Bruker Format
 save_spectra <- function(x, path, force = FALSE, verbose = TRUE) {
-    assert(
-        is_spectra(x),
-        length(dir(path)) == 0 || isTRUE(force),
-        is_bool(force),
-        is_bool(verbose)
-    )
     subpaths <- sapply(x, function(s) file.path(path, s$meta$name))
     mkdirs(path)
     for (i in seq_along(x)) {

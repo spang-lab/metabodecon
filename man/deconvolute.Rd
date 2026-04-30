@@ -7,29 +7,27 @@
 deconvolute(
   x,
   nfit = 3,
-  smopts = c(2, 5),
+  smit = 2,
+  smws = 5,
   delta = 6.4,
-  sfr = NULL,
-  wshw = NULL,
-  ask = NULL,
-  force = FALSE,
-  verbose = TRUE,
-  nworkers = 1,
-  use_rust = FALSE,
   npmax = 0,
+  sfr = NULL,
   igrs = list(),
-  cadir = decon_cachedir()
+  use_rust = FALSE,
+  verbose = TRUE,
+  nworkers = 1
 )
 }
 \arguments{
-\item{x}{A \code{spectrum} or \code{spectra} object as described in \href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{Metabodecon Classes}.}
+\item{x}{A \code{spectrum} or \code{spectra} object as described in \link{metabodecon-classes}.}
 
 \item{nfit}{Integer. Number of iterations for approximating the parameters
 for the Lorentz curves. See 'Details'.}
 
-\item{smopts}{Numeric vector with two entries: the number of smoothing
-iterations and the number of data points to use for smoothing (must be odd).
-See 'Details'.}
+\item{smit}{Integer. Number of smoothing iterations. See 'Details'.}
+
+\item{smws}{Integer. Smoothing window size (number of data points; must be
+odd). See 'Details'.}
 
 \item{delta}{Threshold for peak filtering. Higher values result in more peaks
 being filtered out. A peak is filtered if its score is below \eqn{\mu +
@@ -37,28 +35,20 @@ being filtered out. A peak is filtered if its score is below \eqn{\mu +
 peak score in the signal-free region (SFR), and \eqn{\sigma}{s} is the
 standard deviation of peak scores in the SFR. See 'Details'.}
 
+\item{npmax}{Integer. Maximum number of peaks allowed in the result. If
+\code{npmax >= 1}, the \code{nfit}, \code{smit}, \code{smws} and \code{delta} arguments are ignored
+and a grid search over predefined parameter combinations is performed
+instead. The combination with the smallest residual area ratio and fewer
+than \code{npmax} peaks is selected. Grid search results are cached to disk
+automatically.}
+
 \item{sfr}{Numeric vector with two entries: the ppm positions for the left
 and right border of the signal-free region of the spectrum. See 'Details'.}
 
-\item{wshw}{Half-width of the water artifact in ppm.  See 'Details'.
-Deprecated: setting a non-zero value will produce a deprecation warning.
-Future versions will always use \code{wshw=0}.}
-
-\item{ask}{Logical. Whether to ask for user input during the deconvolution
-process. If FALSE, the provided default values will be used.}
-
-\item{force}{If FALSE, the function stops with an error message if no peaks
-are found in the signal free region (SFR), as these peaks are required as a
-reference for peak filtering. If TRUE, the function instead proceeds without
-peak filtering, potentially increasing runtime and memory usage
-significantly.}
-
-\item{verbose}{Logical. Whether to print log messages during the
-deconvolution process.}
-
-\item{nworkers}{Number of workers to use for parallel processing. If
-\code{"auto"}, the number of workers will be determined automatically. If a number
-greater than 1, it will be limited to the number of spectra.}
+\item{igrs}{Ignore regions. List of length-2 numeric vectors specifying the
+start and endpoints of the chemical shift regions to ignore during
+deconvolution. Peaks whose centers fall inside any ignore region are
+excluded from fitting.}
 
 \item{use_rust}{Controls the deconvolution backend. \code{FALSE} or any numeric
 value \verb{< 1} (default) uses the R implementation. \code{TRUE} or any numeric
@@ -67,25 +57,15 @@ value \verb{>= 1} uses the Rust backend via
 if available, otherwise R. When set to \code{TRUE} / \verb{>= 1} and mdrb is not
 installed, an error is thrown.}
 
-\item{npmax}{Integer. Maximum number of peaks allowed in the result. If
-\code{npmax >= 1}, the \code{nfit}, \code{smopts} and \code{delta} arguments are ignored and a
-grid search over predefined parameter combinations is performed instead. The
-combination with the smallest residual area ratio and fewer than \code{npmax}
-peaks is selected. Grid search results are cached to disk by default; see
-\code{cadir}.}
+\item{verbose}{Logical. Whether to print log messages during the
+deconvolution process.}
 
-\item{igrs}{Ignore regions. List of length-2 numeric vectors specifying the
-start and endpoints of the chemical shift regions to ignore during
-deconvolution. Peaks whose centers fall inside any ignore region are
-excluded from fitting.}
-
-\item{cadir}{Directory for caching grid search results and deconvolution
-results for \code{npmax >= 1}. Defaults to \code{\link[=decon_cachedir]{decon_cachedir()}}. If
-\code{NULL}, caching is disabled. Pass a custom path to use a different cache
-directory.}
+\item{nworkers}{Number of workers to use for parallel processing. If
+\code{"auto"}, the number of workers will be determined automatically. If a number
+greater than 1, it will be limited to the number of spectra.}
 }
 \value{
-A 'decon2' object as described in \href{https://spang-lab.github.io/metabodecon/articles/Classes.html}{Metabodecon Classes}.
+A 'decon2' object as described in \link{metabodecon-classes}.
 }
 \description{
 Deconvolutes NMR spectra by modeling each detected signal within
@@ -105,7 +85,7 @@ decon <- deconvolute(spectrum)
 ## Read multiple spectra from disk and deconvolute at once
 spectra_dir <- metabodecon_file("sim_subset")
 spectra <- read_spectra(spectra_dir)
-decons <- deconvolute(spectra, sfr = c(3.55, 3.35))
+decons <- deconvolute(spectra, sfr = c(3.55,3.35))
 }
 \author{
 2024-2025 Tobias Schmidt: initial version.

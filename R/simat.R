@@ -8,33 +8,53 @@
 #' Extracts a peak-area matrix from aligned spectra. Rows are spectra,
 #' columns are chemical-shift positions (features).
 #'
-#' - `maxCombine = 0`: returns the raw aligned integral vectors.
-#' - `maxCombine > 0`, `intervals = NULL`: applies [combine_peaks()] to merge
-#'   neighboring columns before returning.
-#' - `maxCombine > 0`, `intervals` provided: returns one column per interval,
-#'   mapping each spectrum's nearest in-interval peak to that column.
+#' @details
+#' Rules:
+#' 1. If `maxCombine==0` the peak areas are returned as is.
+#' 2. If `maxCombine > 0 && length(peakPos) == 0` non-overlapping neighboring
+#'    columns with `maxCombine` distance are merged first.
+#' 3. If `maxCombine > 0 && length(peakPos) > 0` each peak is moved towards its
+#'    closest `peakPos`, if it is within `maxCombine` distance. If multiple peaks
+#'    have the same "closest peakPos", only the closest one is shifted.
 #'
-#' @param x
-#' An object of type `aligns`.
+#' Example: assume the following Peak Area Matrix
 #'
-#' @param maxCombine
-#' Maximum snap distance in datapoints. `0` (default): raw integrals are
-#' returned. `> 0` with `intervals = NULL`: applies `combine_peaks`. `> 0`
-#' with `intervals`: maps peaks to interval centers.
+#'         1  2  3  4  5  6  7  8  9
+#' si1 = c(0, 0, 0, 2, 0, 0, 0, 4, 0) --> pcial=c(4,8),   A=c(2,4)
+#' si2 = c(0, 0, 3, 0, 0, 0, 0, 4, 0) --> pcial=c(3,8),   A=c(3,4)
+#' si3 = c(0, 0, 2, 4, 0, 0, 5, 0, 0) --> pcial=c(3,4,7), A=c(2,4,5)
+#' si4 = c(0, 0, 0, 0, 3, 0, 0, 0, 3) --> pcial=c(5,9),   A=c(3,3)
+#' si5 = c(0, 0, 0, 0, 2, 0, 0, 0, 3) --> pcial=c(5,9),   A=c(2,3)
 #'
-#' @param intervals
-#' A data frame with integer columns `center`, `min`, and `max` (datapoint
-#' indices). Each row defines one interval. A peak of spectrum `i` is assigned
-#' to interval `j` if it falls within `[min[j], max[j]]` and is the closest
-#' peak to `center[j]`; all others are discarded. When `NULL` (default) and
-#' `maxCombine > 0`, `combine_peaks` is used instead.
+#' If we call `si_mat(x, maxCombine=0)`, the matrix is returned as is.
 #'
-#' @param drop_zero
-#' If `TRUE`, columns where all values are zero are removed.
+#' If we call `si_mat(x, maxCombine=1)`, we get
 #'
-#' @return
-#' A numeric matrix with spectrum names as rownames and chemical shifts
-#' (or interval centers) as colnames.
+#'         1  2  3  4  5  6  7  8  9
+#' si1 = c(0, 0, 0, 2, 0, 0, 0, 4, 0)
+#' si2 = c(0, 0, 3, 0, 0, 0, 0, 4, 0)
+#' si3 = c(0, 0, 2, 4, 0, 0, 0, 5, 0)
+#' si4 = c(0, 0, 0, 3, 0, 0, 0, 3, 0)
+#' si5 = c(0, 0, 0, 2, 0, 0, 0, 3, 0)
+#'
+#' If we call `si_mat(x, maxCombine=1, peakPos=c(3,4,9))`, we get
+#'
+#'         1  2  3  4  5  6  7  8  9
+#' si1 = c(0, 0, 0, 2, 0, 0, 0, 0, 4)
+#' si2 = c(0, 0, 3, 0, 0, 0, 0, 0, 4)
+#' si3 = c(0, 0, 2, 4, 0, 0, 5, 0, 0)
+#' si4 = c(0, 0, 0, 3, 0, 0, 0, 0, 3)
+#' si5 = c(0, 0, 0, 2, 0, 0, 0, 0, 3)
+#'
+#' @param x An object of type `aligns`.
+#' @param maxCombine How many adjacent columns to consider for merging.
+#' @param peakPos Integer vector of column indices in the `cs` grid to snap
+#'   peaks to. Used to align new spectra to the same features as a reference
+#'   matrix (see 'Details').
+#' @param drop_zero Drop columns where all values are zero?
+#'
+#' @return A matrix with spectra in rows and chemical shifts as colnames.
+#'   Always has `length(x[[1]]$cs)` columns, regardless of `peakPos`.
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
@@ -44,9 +64,12 @@
 #'     aligns <- align(decons)
 #'     X0 <- si_mat(aligns)
 #'     Xc <- si_mat(aligns, maxCombine = 20)
+#'     # Reuse the feature grid of Xc on new spectra:
+#'     pp <- which(colSums(Xc != 0) > 0)
+#'     Xn <- si_mat(aligns, maxCombine = 20, peakPos = pp)
 #' }
-si_mat <- function(x, drop_zero = FALSE, maxCombine = 0, intervals = NULL) {
-    stopifnot(is_aligns(x))
+si_mat <- function(x, drop_zero=FALSE, maxCombine=0, peakPos=NULL) {
+    stopifnot(inherits(x, "aligns"))
     cs <- x[[1]]$cs
     ns <- length(x)
     nc <- length(cs)
@@ -56,7 +79,6 @@ si_mat <- function(x, drop_zero = FALSE, maxCombine = 0, intervals = NULL) {
             al[xi$lcpar$pcial] <- xi$lcpar$A * base::pi
             al
         }))
-        colnames(mat) <- cs
     } else {
         get_idx <- function(vals) {
             idx <- match(vals, cs)
@@ -67,33 +89,70 @@ si_mat <- function(x, drop_zero = FALSE, maxCombine = 0, intervals = NULL) {
         for (s in seq_len(ns)) {
             pidx <- get_idx(x[[s]]$lcpar$x0al)
             A <- x[[s]]$lcpar$A
-            for (p in seq_along(pidx)) mat[s, pidx[p]] <- mat[s, pidx[p]] + A[p] * base::pi
-        }
-        if (is.null(intervals)) {
-            mat <- combine_peaks(mat, maxCombine)
-            colnames(mat) <- cs
-        } else {
-            ni <- nrow(intervals)
-            result <- matrix(0, nrow = ns, ncol = ni)
-            for (s in seq_len(ns)) {
-                row <- mat[s, ]
-                nz <- which(row != 0)
-                if (length(nz) == 0) next
-                for (j in seq_len(ni)) {
-                    lo <- intervals$min[j]; hi <- intervals$max[j]
-                    cand <- nz[nz >= lo & nz <= hi]
-                    if (length(cand) == 0) next
-                    k <- cand[which.min(abs(cand - intervals$center[j]))]
-                    result[s, j] <- row[k]
-                }
+            for (p in seq_along(pidx)) {
+                mat[s, pidx[p]] <- mat[s, pidx[p]] + A[p] * base::pi
             }
-            mat <- result
-            colnames(mat) <- cs[intervals$center]
+        }
+        if (length(peakPos) == 0) {
+            mat <- combine_peaks(mat, maxCombine)
+        } else {
+            mat <- snap_to_peakPos(mat, peakPos, maxCombine)
         }
     }
-    if (drop_zero) mat <- mat[, colSums(mat != 0) > 0, drop = FALSE]
+    colnames(mat) <- cs
     rownames(mat) <- get_names(x)
+    if (drop_zero) mat <- mat[, colSums(mat != 0) > 0, drop = FALSE]
     mat
+}
+
+#' @noRd
+#' @title Snap peaks to a fixed feature grid
+#'
+#' @description
+#' For each spectrum row of `mat`, move each non-zero entry to its closest
+#' `peakPos` column index, provided the distance is `<= maxCombine`. At most
+#' one peak per spectrum can land on a given `peakPos` column: when several
+#' peaks share the same closest target, the nearest one is shifted and the
+#' others stay at their original column.
+#'
+#' Tie rules:
+#' - Peak equidistant between two `peakPos`: snap to the leftmost (lowest
+#'   column index).
+#' - Two peaks equidistant from the same `peakPos`: shift the left peak,
+#'   leave the right one in place.
+#'
+#' @param mat Numeric matrix (spectra × cs grid) of raw peak areas.
+#' @param peakPos Integer vector of target column indices.
+#' @param maxCombine Maximum allowed snap distance in columns.
+#'
+#' @return A matrix with the same dimensions as `mat`.
+snap_to_peakPos <- function(mat, peakPos, maxCombine) {
+    ns <- nrow(mat)
+    nc <- ncol(mat)
+    pp <- sort(unique(pmin(nc, pmax(1L, as.integer(peakPos)))))
+    out <- matrix(0, nrow = ns, ncol = nc)
+    if (length(pp) == 0) return(out)
+    # Midpoints between consecutive pp form the bucket boundaries. With
+    # `left.open = TRUE`, peaks landing exactly on a midpoint go to the LEFT
+    # bucket, which gives the leftmost-peakPos tie rule for free.
+    mids <- (pp[-length(pp)] + pp[-1]) / 2
+    for (s in seq_len(ns)) {
+        nz <- which(mat[s, ] != 0) # ascending: leftmost peak wins ties
+        if (length(nz) == 0) next
+        # k[p] = index in pp of the closest target for peak nz[p]
+        k <- findInterval(nz, mids, left.open = TRUE) + 1L
+        d <- abs(nz - pp[k])
+        target <- nz
+        ok <- which(d <= maxCombine)
+        # Peaks with the same closest pp are contiguous in `ok` (both nz and
+        # pp are sorted), so a single linear sweep picks the run-wise winner.
+        for (kk in unique(k[ok])) {
+            grp <- ok[k[ok] == kk]
+            target[grp[which.min(d[grp])]] <- pp[kk]
+        }
+        out[cbind(s, target)] <- mat[s, nz]
+    }
+    out
 }
 
 #' @export
@@ -112,9 +171,9 @@ si_mat <- function(x, drop_zero = FALSE, maxCombine = 0, intervals = NULL) {
 #' colnames (the transpose of [si_mat()]).
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
-get_si_mat <- function(x, drop_zero = FALSE, maxCombine = 0, intervals = NULL) {
+get_si_mat <- function(x, drop_zero = FALSE, maxCombine = 0, peakPos = NULL) {
     lifecycle::deprecate_warn("2.0.0", "get_si_mat()", "si_mat()")
-    t(si_mat(x, drop_zero = drop_zero, maxCombine = maxCombine, intervals = intervals))
+    t(si_mat(x, drop_zero = drop_zero, maxCombine = maxCombine, peakPos = peakPos))
 }
 
 # Combine Peaks #####
@@ -292,22 +351,3 @@ combine_scores <- function(U, uu, j, nn, uj = NULL) {
     cc[overlaps > 0] <- 0
     unname(cc)
 }
-
-# Build a data frame of non-overlapping intervals around `centers`.
-# Each interval stretches `maxCombine` datapoints in each direction,
-# clipped to [1, nc]. Where two intervals would overlap, both borders
-# are shrunk to the midpoint (floor) of the two centers.
-make_intervals <- function(centers, maxCombine, nc) {
-    n <- length(centers)
-    lo <- pmax(1L, centers - maxCombine)
-    hi <- pmin(nc, centers + maxCombine)
-    if (n >= 2) {
-        mids <- floor((centers[-n] + centers[-1]) / 2)
-        hi[-n] <- pmin(hi[-n], mids)
-        lo[-1] <- pmax(lo[-1], mids)
-    }
-    data.frame(center = centers, min = lo, max = hi)
-}
-
-
-
