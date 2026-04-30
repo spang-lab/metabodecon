@@ -16,6 +16,12 @@
 #' An object of type `decons2` or `aligns`, as described in [Metabodecon
 #' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
 #'
+#' @param ref
+#' Optional reference spectrum of type `align` or `decon2`. When supplied,
+#' all spectra in `x` are aligned towards this reference. The reference is
+#' prepended to `x` internally and removed from the result. If `NULL`
+#' (default), the reference is chosen automatically.
+#'
 #' @param maxShift
 #' Maximum number of datapoints a peak center may be shifted during CluPA
 #' alignment. 50 is a suitable starting value for plasma spectra with a digital
@@ -28,12 +34,6 @@
 #' @param nworkers
 #' Number of parallel workers. Default is 1 (no parallelism).
 #'
-#' @param ref
-#' Optional reference spectrum of type `align` or `decon2`. When supplied,
-#' all spectra in `x` are aligned towards this reference. The reference is
-#' prepended to `x` internally and removed from the result. If `NULL`
-#' (default), the reference is chosen automatically.
-#'
 #' @return
 #' An object of type `aligns` as described in [Metabodecon
 #' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
@@ -44,38 +44,54 @@
 #' decons <- deconvolute(sim[1:2], sfr = c(3.55, 3.35))
 #' aligned <- align(decons)
 align <- function(x, ref=NULL, maxShift=50, verbose=TRUE, nworkers=1) {
+
     stopifnot(
         is_decons2(x) || is_aligns(x),
         is_int(maxShift,1), is_bool(verbose,1), is_int(nworkers,1),
         is.null(ref) || is_decon2(ref) || is_align(ref)
     )
-    align_decons(x, maxShift, verbose, nworkers, ref)
+
+    align_decons(x, ref, maxShift, verbose, nworkers)
+
 }
 
+# Internal #####
+
 align_decons <- function(x, ref=NULL, maxShift=50, verbose=TRUE, nworkers=1, full=TRUE) {
+
+    # Use early stopping if full is FALSE
     if (isFALSE(full)) {
         xhash <- attr(x, "hash")
         if (is.null(xhash)) stop("full=FALSE requires x@hash to be set")
         key <- rlang::hash(list(xhash, ref, maxShift))
         cache <- getOption("metabodecon.ad.cache", list(key="", aligns=NULL))
-        if (cache$key == hash) {
+        if (cache$key == key) {
             logf("Skipping deconvolution (cache hit)")
             return(cache$aligns)
         }
     }
-    ref <- ref %||% x[[find_ref(x)$refInd]]
+
+    # Do alignments
+    ref <- ref %||% find_ref(x)
     aligns <- mcmapply(nworkers, align_decon, x, MoreArgs = list(ref, maxShift))
-    if (isFALSE(full)) {
-        options(metabodecon.ad.cache = list(key=key, aligns=a))
-    }
+    class(aligns) <- "aligns"
+
+    # Store in cache if full is FALSE
+    if (isFALSE(full)) options(metabodecon.ad.cache = list(key=key, aligns=aligns))
+    aligns
+
 }
 
 align_decon <- function(x, ref, maxShift, full=TRUE) {
+
+    # Init Helpers
     pci_x <- round(convert_pos(x$lcpar$x0, x$cs, seq_along(x$cs)))
     pci_ref <- round(convert_pos(ref$lcpar$x0, ref$cs, seq_along(ref$cs)))
     np_x <- length(pci_x)
     np_ref <- length(pci_ref)
     np_tot <- np_ref + np_x
+
+    # Do 'Cluster Based Peak Alignment' (CluPA)
     obj <- hclust_align(
         refSpec = ref$sit$sup,
         tarSpec = x$sit$sup,
@@ -85,10 +101,19 @@ align_decon <- function(x, ref, maxShift, full=TRUE) {
         endP = length(x$sit$sup),
         maxShift = maxShift
     )
-    if(length(obj$peakList) == np_tot) stop("Lost peaks during alignment")
+    if(length(obj$peakList) != np_tot) stop("Lost peaks during alignment")
+
+    # Prepare return object
     x$lcpar$x0al <- obj$peakList[(np_ref+1):np_tot]
     if (full) x$sit$supal <- lorentz_sup(x$cs, x$lcpar$x0al, x$lcpar$A, x$lcpar$lambda)
+    class(x) <- "align"
+
     x
+}
+
+find_ref <- function(x) {
+    pci <- lapply(x, function(s) round(convert_pos(s$lcpar$x0, s$cs, seq_along(s$cs))))
+    x[[find_ref_ind(pci)$refInd]]
 }
 
 # Speaq #####
@@ -116,7 +141,7 @@ align_decon <- function(x, ref, maxShift, full=TRUE) {
 #' and `orderSpec` (all indices ordered by suitability).
 #'
 #' @author 2025 Tobias Schmidt: initial version.
-find_ref <- function(peakList) {
+find_ref_ind <- function(peakList) {
     n <- length(peakList)
     sumDis <- double(n)
     for (r in seq_len(n)) {
@@ -227,10 +252,8 @@ do_shift <- function(seg, step) {
 #'
 #' @param refSpec Numeric vector (full reference spectrum).
 #' @param tarSpec Numeric vector (full target spectrum).
-#' @param peakList Integer vector of peak positions (ref then
-#' target, interleaved via labels).
-#' @param peakLabel Integer vector, 1 for ref peaks, 0 for
-#' target peaks.
+#' @param peakList Integer vector of peak positions (ref then target, interleaved via labels).
+#' @param peakLabel Integer vector, 1 for ref peaks, 0 for target peaks.
 #' @param startP Start index of the segment to align.
 #' @param endP End index of the segment to align.
 #' @param maxShift Maximum shift per recursion level.
