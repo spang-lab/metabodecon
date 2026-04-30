@@ -1,4 +1,4 @@
-# Public API #####
+# API #####
 
 #' @export
 #'
@@ -102,7 +102,7 @@ deconvolute <- function(
     if (length(decons2) == 1) decons2[[1]] else decons2
 }
 
-# Internal main functions #####
+# Internal #####
 
 #' @noRd
 #' @inheritParams deconvolute
@@ -147,23 +147,19 @@ deconvolute_spectra <- function(
     spectra <- as_spectra(x)
     ns <- length(spectra)
     nc2 <- ceiling(detectCores() / 2)
-    nw_apply <- if (nworkers == "auto") min(nc2, ns) else nworkers
-    nw_apply_str <- if (nw_apply == 1) "1 worker" else sprintf("%d workers", nw_apply)
-    nw_deconv <- 1
+    nw <- if (nworkers == "auto") min(nc2, ns) else nworkers
+    nw_str <- if (nw == 1) "1 worker" else sprintf("%d workers", nw)
     ns_str <- if (ns == 1) "1 spectrum" else sprintf("%d spectra", ns)
-    sfr_list <- get_sfr(spectra, sfr)
-    igrs_list <- list(igrs)
-    cadir_list <- list(cadir)
 
     # Deconvolute spectra
-    logf("Starting deconvolution of %s using %s", ns_str, nw_apply_str)
+    logf("Starting deconvolution of %s using %s", ns_str, nw_str)
     starttime <- Sys.time()
-    decon_list <- mcmapply(nw_apply, deconvolute_spectrum,
-        spectra,
-        nfit, smit, smws, delta, sfr_list,
-        force, verbose,
-        use_rust, nw_deconv, igrs_list, rtyp,
-        npmax, cadir_list
+    decon_list <- mcmapply(
+        nw, deconvolute_spectrum, spectra,
+        MoreArgs = list(
+            nfit, smit, smws, delta, sfr, force, verbose,
+            use_rust, igrs, rtyp, npmax, cadir_list
+        )
     )
     decons <- as_collection(decon_list, rtyp)
     duration <- format(round(Sys.time() - starttime, 3))
@@ -205,9 +201,8 @@ deconvolute_spectra <- function(
 #' )
 deconvolute_spectrum <- function(x,
     nfit=3, smit=2, smws=5, delta=6.4, sfr=c(3.55, 3.35),
-    force=FALSE, verbose=TRUE,
-    use_rust=FALSE, nworkers=1, igrs=list(), rtyp="decon2",
-    npmax=0, cadir=decon_cachedir()
+    force=FALSE, verbose=TRUE, use_rust=FALSE, igrs=list(),
+    rtyp="decon2", npmax=0, cadir=decon_cachedir()
 ) {
 
     # Check inputs
@@ -268,7 +263,7 @@ deconvolute_spectrum <- function(x,
     # Deconvolute with given/optimal parameters
     logf("Starting deconvolution of %s%s", name, suffix)
     decon <- if (use_rust == 1) {
-        deconvolute_rust(x, sfr, smit, smws, delta, nfit, igrs, nworkers, args)
+        deconvolute_rust(x, sfr, smit, smws, delta, nfit, igrs, args)
     } else {
         deconvolute_r(x, sfr, smit, smws, delta, nfit, force, igrs, args)
     }
@@ -287,7 +282,7 @@ deconvolute_spectrum <- function(x,
 
 #' @noRd
 deconvolute_rust <- function(
-    x, sfr, smit, smws, delta, nfit, igrs, nworkers, args
+    x, sfr, smit, smws, delta, nfit, igrs, args
 ) {
     mdrb_spectrum <- mdrb::Spectrum$new(x$cs, x$si, sfr)
     mdrb_deconvr <- mdrb::Deconvoluter$new()
@@ -295,12 +290,7 @@ deconvolute_rust <- function(
     mdrb_deconvr$set_noise_score_selector(delta)
     mdrb_deconvr$set_analytical_fitter(nfit)
     for (r in igrs) mdrb_deconvr$add_ignore_region(r[1], r[2])
-    mdrb_decon <- if (nworkers > 1) {
-        mdrb_deconvr$set_threads(nworkers)
-        mdrb_deconvr$par_deconvolute_spectrum(mdrb_spectrum)
-    } else {
-        mdrb_deconvr$deconvolute_spectrum(mdrb_spectrum)
-    }
+    mdrb_deconvr$deconvolute_spectrum(mdrb_spectrum)
     new_rdecon(x, args, mdrb_spectrum, mdrb_deconvr, mdrb_decon)
 }
 
@@ -314,20 +304,17 @@ deconvolute_r <- function(
     igrs <- c(sfr_igr, igrs)
     sm <- smooth_signals2(si, smit, smws)
     peaks <- find_peaks2(sm)
-    peaks <- filter_peaks2(peaks, cs, sfr, delta, force, igrs)
-    lcpar <- fit_lorentz_curves2(cs, si, peaks, nfit)
-    sup <- lorentz_sup(cs, lcpar = lcpar)
-    sit <- data.frame(
-        wsrm = si * 1e6, nvrm = si * 1e6,
-        sm = sm * 1e6, sup = sup
-    )
+    peaks <- filter_peaks2(peaks, x$cs, sfr, delta, force, igrs)
+    lcpar <- fit_lorentz_curves2(x$cs, si, peaks, nfit)
+    sup <- lorentz_sup(x$cs, lcpar = lcpar)
+    sit <- data.frame(sm=sm, sup=sup)
     mse_list <- list(
         raw = mse(si, sup, normed = FALSE),
         norm = mse(si, sup, normed = TRUE),
         sm = mse(sit$sm, sup, normed = FALSE),
         smnorm = mse(sit$sm, sup, normed = TRUE)
     )
-    decon <- list(cs = cs, si = si, meta = x$meta, args = args,
+    decon <- list(cs = x$cs, si = si, meta = x$meta, args = args,
         sit = sit, peak = peaks[, c("left", "center", "right")],
         lcpar = lcpar, mse = mse_list)
     class(decon) <- "decon2"
@@ -362,21 +349,21 @@ grid_deconvolute_spectra <- function(
     cache <- disk_cache(cadir)
     hashes <- lapply(x, function(s) rlang::hash(list("gds", s, sfr, use_rust)))
     gridlist <- vector("list", length(x))
+
     logf("Checking for cached results")
     seen <- sapply(hashes, cache$exists)
+
     logf("Reading %d/%d results from cache", sum(seen), length(x))
     gridlist[seen] <- lapply(hashes[seen], function(h) cache$get(h))
     if (sum(seen) == length(x)) return(invisible(gridlist))
 
     logf("Running grid deconvolution for remaining %d spectra", sum(!seen))
-    u <- x[!seen] # u == unseen spectra
-    nworkers <- min(nworkers, length(u))
-    gridlist[!seen] <- mcmapply(nworkers, grid_deconvolute_spectrum,
-        x=u, sfr=list(sfr), verbose=verbose, use_rust=use_rust,
-        cadir=list(cadir)
+    xu <- x[!seen]
+    nworkers <- min(nworkers, length(xu))
+    gridlist[!seen] <- mcmapply(
+        nworkers, grid_deconvolute_spectrum, x=xu,
+        MoreArgs = list(sfr=sfr, verbose=verbose, use_rust=use_rust, cadir=cadir)
     )
-    # Note: grid_deconvolute_spectrum() caches its own result, so we
-    # don't need to write to the cache here.
     invisible(gridlist)
 }
 
@@ -424,18 +411,19 @@ grid_deconvolute_spectrum <- function(
     # Read from cache if available
     hash <- rlang::hash(list("gds", x, sfr, use_rust))
     cache <- disk_cache(cadir)
+    specname <- get_name(x)
     if (cache$exists(hash)) {
-        logf("Cache hit for %s", get_name(x))
+        logf("Cache hit for %s", specname)
         return(cache$get(hash))
     }
-    backend <- if (use_rust) "Rust" else "R"
-    specname <- get_name(x)
 
-    logf("Grid deconvoluting %s using %s", specname, backend)
+    logf("Grid deconvoluting %s", specname)
+
     grid <- expand.grid(smit=c(2,3), smws=c(3,5,7,9), delta=2:8, nfit=c(3,4,5))
     default_args <- as.list(formals(deconvolute_spectrum))
     call_args <- list(x=x, sfr=sfr, verbose=FALSE, use_rust=use_rust, npmax=0)
     args <- modifyList(default_args, call_args)
+
     for (i in seq_len(nrow(grid))) {
         logf("Grid search iteration %d/%d", i, nrow(grid))
         args[names(grid)] <- grid[i, ]
@@ -443,26 +431,11 @@ grid_deconvolute_spectrum <- function(
         grid[i, "ar"] <- sum(abs(d$sit$sup - d$si)) / sum(abs(d$si))
         grid[i, "np"] <- nrow(d$lcpar)
     }
+
     logf("Finished grid deconvolution of %s", specname)
+
     cache$set(hash, grid)
     grid
-}
-
-# Helpers for deconvolute_spectra #####
-
-#' @noRd
-#' @description
-#' Converts one or more SFR vectors to a list of vectors of the correct length.
-#' @param x Any metabodecon collection object.
-#' @param sfr SFR defaults. Can be a vector of length 2 or a list. If a list is
-#' provided, it must have the same length as `x`.
-#' @author 2024-2025 Tobias Schmidt: initial version.
-get_sfr <- function(x, sfr) {
-    n <- length(x)
-    if (is_num(sfr, 2)) sfr <- rep(list(sfr), n)
-    if (!is_list_of_nums(sfr, n, 2)) stop("sfr should be a [list of] num(2)")
-    names(sfr) <- get_names(x)
-    sfr
 }
 
 # Helpers for deconvolute_spectrum #####
@@ -524,15 +497,22 @@ smooth_signals2 <- function(y, reps = 2, k = 5) {
     y
 }
 
-find_peaks2 <- function(y) {
+find_peaks2 <- function(y, use_c=FALSE) {
     logf("Starting peak selection")
-    d <- calc_second_derivative(y)
-    pc <- get_peak_centers_fast(d)
-    rb <- get_right_borders_fast(d, pc)
-    lb <- get_left_borders_fast(d, pc)
-    sc <- get_peak_scores_fast(d, pc, lb, rb)
-    P <- data.frame(left = lb, center = pc, right = rb, score = sc)
-    logf("Detected %d peaks", length(pc))
+    P <- if (use_c) {
+        .Call(find_peaks_c, as.double(y))
+    } else {
+        d <- calc_second_derivative(y)
+        pc <- get_peak_centers_fast(d)
+        rb <- get_right_borders_fast(d, pc)
+        lb <- get_left_borders_fast(d, pc)
+        sc <- get_peak_scores_fast(d, pc, lb, rb)
+        P <- data.frame(left = lb, center = pc, right = rb, score = sc)
+        P <- P[!is.na(P$left) & !is.na(P$right), ]
+        rownames(P) <- NULL
+        P
+    }
+    logf("Detected %d peaks", nrow(P))
     P
 }
 

@@ -157,7 +157,7 @@ Functions for deconvoluting NMR spectra.
 - (exported) `generate_lorentz_curves_sim`: Optimized for the "Sim" dataset.
 - (private) `deconvolute_spectra`: Internal function for deconvoluting multiple spectra.
 - (private) `deconvolute_spectrum`: Internal function for deconvoluting a single spectrum.
-- (private) `smooth_signals`: Smooths signal intensities using a moving average.
+- (private) `smooth_signals2`: Smooths signal intensities using a moving average.
 - (private) `find_peaks`: Detects peaks in the spectrum.
 - (private) `filter_peaks`: Filters peaks with low scores outside the signal-free region.
 - (private) `fit_lorentz_curves`: Fits Lorentz curves to the detected peaks.
@@ -347,6 +347,6 @@ Test live inside ./tests/testthat. The followings tests exist:
 36. `test-read_one_r_file.R`
 37. `test-read_procs_file.R`
 38. `test-read_spectrum.R`
-39. `test-smooth_signals.R`
+39. `test-smooth_signals2.R`
 40. `test-speaq_align.R`
 41. `test-vcomp.R`

@@ -94,7 +94,7 @@ Config/testthat/start-first:
     datadir,
     get_decon_params,
     generate_lorentz_curves,
-    smooth_signals,
+    smooth_signals2,
     speaq_align
 RdMacros: mathjaxr
 BuildManual: TRUE

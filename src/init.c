@@ -3,9 +3,11 @@
 #include <R_ext/Rdynload.h>
 
 extern SEXP lorentz_sup_c(SEXP, SEXP, SEXP, SEXP);
+extern SEXP find_peaks_c(SEXP);
 
 static const R_CallMethodDef CallMethods[] = {
     {"lorentz_sup_c", (DL_FUNC) &lorentz_sup_c, 4},
+    {"find_peaks_c",  (DL_FUNC) &find_peaks_c,  1},
     {NULL, NULL, 0}
 };
 
