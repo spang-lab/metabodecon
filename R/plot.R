@@ -640,9 +640,9 @@ draw_spectrum <- function(
     # Define a seperate dataframe `alpar` holding the parameters of the aligned
     # lorentzians. If no aligned lorentzians are present, set alpar to an empty
     # dataframe.
-    alpar <- if (is.null(lcpar$x0_al)) lcpar[0, ] else lcpar
-    alpar$x0 <- lcpar$x0_al
-    alpar$x0_al <- NULL
+    alpar <- if (is.null(lcpar$x0al)) lcpar[0, ] else lcpar
+    alpar$x0 <- lcpar$x0al
+    alpar$x0al <- NULL
 
     # Get x and y limits (43us)
     xlim <- c(max(cs), min(cs))
@@ -681,9 +681,9 @@ draw_spectrum <- function(
     # Alignment Lines
     draw_line(cs, supal, al_line)
     apply(alpar, 1, draw_lc_line, cs, al_lines, ythresh) # 13ms
-    draw_verts(lcpar$x0_al, lcpar$vheight, al_verts)
+    draw_verts(lcpar$x0al, lcpar$vheight, al_verts)
     # Arrows
-    draw_arrows(lcpar$x0, lcpar$x0_al, lcpar$vheight, al_arrows)
+    draw_arrows(lcpar$x0, lcpar$x0al, lcpar$vheight, al_arrows)
     # Focus Rectangle
     draw_rect(foc_rgn, ylim_foc, foc_rect)
     # Axes
@@ -728,7 +728,7 @@ mkenv_plot_spectrum <- function() {
 #' @author 2024-2025 Tobias Schmidt: initial version.
 mkenv_draw_spectrum <- function() {
     decons <- deconvolute(metabodecon::sim[1:4], sfr = c(3.55, 3.35))
-    aligns <- align(decons, maxShift = 100, maxCombine = 0)
+    aligns <- align(decons, maxShift = 100)
     stub(
         func = draw_spectrum,
         obj = aligns[[2]],
@@ -821,7 +821,7 @@ test_draw_spectrum <- function(figs = 1:8,
     spectra <- metabodecon::sim[1:4] # Lazydata is not available in the package namespace
     decons <- deconvolute(spectra, sfr = c(3.55, 3.35))
     decon <- decons[[2]]
-    aligns <- align(decons, maxShift = 100, maxCombine = 10)
+    aligns <- align(decons, maxShift = 100)
     align <- aligns[[2]]
     if (store) local_pdf("tmp/test_draw_spectrum.pdf", width = 14, height = 10)
 

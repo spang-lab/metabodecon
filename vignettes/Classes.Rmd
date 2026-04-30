@@ -28,7 +28,7 @@ Represents one deconvoluted NMR spectrum stored in the backwards compatible [gen
 
 ## decon2
 
-Represents one deconvoluted NMR spectrum stored in the new [deconvolute()] format. Objects of class 'decon2' have all elements from section [Elements v1.2+] with elements `sit$al` and `lcpar$x0al` set to `NULL`.
+Represents one deconvoluted NMR spectrum stored in the new [deconvolute()] format. Objects of class 'decon2' have all elements from section [Elements v1.2+] with elements `lcpar$x0al`, `lcpar$cial`, and `sit$supal` set to `NULL`.
 
 ## align
 
@@ -53,7 +53,8 @@ The classes mentioned above represent individual objects, such as a single spect
     - `simpar`: Optional. True Lorentz Curve parameters. List with elements `A`, `lambda` and `x0`. For details see element `lcpar`. Only available if a spectrum has been simulated.
 4. `args`: Optional. List of deconvolution parameters, i.e.:
     - `nfit`: Optional. The number of fitting iterations.
-    - `smopts`: Optional. The smoothing parameters used for the deconvolution.
+    - `smit`: Optional. The number of smoothing iterations.
+    - `smws`: Optional. The smoothing window size.
     - `delta`: Optional. The threshold used for peak filtering.
     - `sfr`: Optional. Borders of the signal free region in ppm.
     - `wshw`: Optional. Water signal half width in ppm.
@@ -69,7 +70,6 @@ The classes mentioned above represent individual objects, such as a single spect
     - `sm`: SIs after WSRM, NVRM and smoothing.
     - `sup`: SIs as superposition of Lorentz Curves.
     - `supal`: SIs as superposition of aligned Lorentz Curves. *(v1.4.0+)*
-    - `al`: SIs as integrals of aligned Lorentz Curves. I.e., the intensity of a peak-center-datapoint equals the integral value of the corresponding peak. The intensity of a other datapoints is zero.
 6. `peak`: Dataframe of peak triplets found during peak selection:
     - `center`: Indices of peak centers.
     - `left`: Indices of left borders.
@@ -78,7 +78,8 @@ The classes mentioned above represent individual objects, such as a single spect
     - `A`: Amplitude parameter.
     - `lambda`: Halfwidth parameter.
     - `x0`: Center parameter.
-    - `x0al`: Center parameter after the spectrum has been aligned.
+    - `x0al`: Center parameter after the spectrum has been aligned. *(v1.4.0+)*
+    - `cial`: Integer indices into `cs` for the aligned peak centers (i.e. `cs[cial] == x0al`). *(v1.5.0+)*
 8. `mse`: List of Mean squared error (MSE):
     - `raw`: MSE between `si` and `sit$sup`
     - `norm`: MSE between `si` and `sit$sup`, divided by `sum(sit$sup)`

@@ -328,8 +328,8 @@ not_cran <- function() {
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
-#' run_tests(get_smopts)           # Runs fast tests for get_smopts
-#' run_tests(get_smopts, all=TRUE) # Runs all tests for get_smopts
+#' run_tests(get_sfr)           # Runs fast tests for get_sfr
+#' run_tests(get_sfr, all=TRUE) # Runs all tests for get_sfr
 #' run_tests()                     # Run all fast tests of the package
 #' run_tests(all=TRUE)             # Run all tests of the package
 run_tests <- function(func = NULL, all = FALSE) {

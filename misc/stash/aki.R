@@ -78,7 +78,7 @@ run_aki_benchmark <- function(  aki = read_aki_data(),
             nworkers=nworkers, use_rust=use_rust, npmax=npmax
         )
         aligns <- align(
-            decons, maxShift=maxShift, maxCombine=maxCombine, verbose=verbose,
+            decons, maxShift=maxShift, verbose=verbose,
             nworkers=nworkers
         )
         Xall <- t(get_si_mat(aligns))

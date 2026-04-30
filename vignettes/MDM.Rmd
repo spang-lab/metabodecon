@@ -182,12 +182,12 @@ pair <- spectra_tr[1:2]
 class(pair) <- "spectra"
 
 d_default <- deconvolute(
-    pair, nfit = 3, smopts = c(2, 5), delta = 4, npmax = 0, verbose = FALSE
+    pair, nfit = 3, smit = 2, smws = 5, delta = 4, npmax = 0, verbose = FALSE
 )
 
 m <- mdm_tuned$meta
 d_tuned <- deconvolute(
-    pair, nfit = m$nfit, smopts = c(m$smit, m$smws),
+    pair, nfit = m$nfit, smit = m$smit, smws = m$smws,
     delta = m$delta, npmax = m$npmax, verbose = FALSE
 )
 

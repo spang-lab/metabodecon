@@ -10,8 +10,8 @@ library(testthat)
 # Inputs #####
 defaults <- list(
     x = sap,
-    nfit = 3, smopts = c(1, 3), delta = 3, sfr = c(3.2, -3.2), wshw = 0,
-    ask = FALSE, force = FALSE, verbose = FALSE,
+    nfit = 3, smit = 1, smws = 3, delta = 3, sfr = c(3.2, -3.2),
+    force = FALSE, verbose = FALSE,
     use_rust = FALSE, nworkers = 1, igrs = list(), rtyp = "decon2"
 )
 args <- list(

@@ -2456,8 +2456,8 @@ generate_lorentz_curves <- function(data_path,
 
     # Deconvolute
     decons1 <- deconvolute_spectra(spectra,
-        nfit, smopts, delta, sfr, wshw,
-        ask, force, verbose,
+        nfit=nfit, smit=smopts[1], smws=smopts[2], delta=delta, sfr=sfr,
+        force=force, verbose=verbose,
         use_rust=FALSE, nworkers=nworkers, igrs=list(), rtyp="decon1"
     )
 

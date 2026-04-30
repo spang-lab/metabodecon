@@ -1,8 +1,8 @@
 # Inputs #####
 defaults <- list(
     x = sap[[1]],
-    nfit = 3, smopts = c(1, 3), delta = 3, sfr = c(3.2, -3.2), wshw = 0,
-    ask = FALSE, force = FALSE, verbose = FALSE,
+    nfit = 3, smit = 1, smws = 3, delta = 3, sfr = c(3.2, -3.2),
+    force = FALSE, verbose = FALSE,
     use_rust = FALSE, nworkers = 1, igrs = list(), rtyp = "decon2"
 )
 args <- list(
@@ -45,8 +45,8 @@ igrs_test <- test_that(
     # sap[[1]] has 4 peaks (delta=3); 1 peak is near ppm ~0.1
     igrs <- list(c(-0.5, 0.5))
     d_r <- deconvolute_spectrum(
-        sap[[1]], nfit = 3, smopts = c(1, 3), delta = 3,
-        sfr = c(3.2, -3.2), wshw = 0, ask = FALSE, force = FALSE,
+        sap[[1]], nfit = 3, smit = 1, smws = 3, delta = 3,
+        sfr = c(3.2, -3.2), force = FALSE,
         verbose = FALSE, use_rust = FALSE, igrs = igrs, rtyp = "decon2"
     )
     n_no_igrs  <- nrow(obj$decon2_r$lcpar)
@@ -55,8 +55,8 @@ igrs_test <- test_that(
     expect_equal(n_with_igrs, 3)
     if (mdrb_available) {
         d_rust <- deconvolute_spectrum(
-            sap[[1]], nfit = 3, smopts = c(1, 3), delta = 3,
-            sfr = c(3.2, -3.2), wshw = 0, ask = FALSE, force = FALSE,
+            sap[[1]], nfit = 3, smit = 1, smws = 3, delta = 3,
+            sfr = c(3.2, -3.2), force = FALSE,
             verbose = FALSE, use_rust = TRUE, igrs = igrs, rtyp = "decon2"
         )
         expect_equal(nrow(d_rust$lcpar), 3)

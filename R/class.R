@@ -890,7 +890,7 @@ as_decon2.decon1 <- function(x, ...) {
         fq = x$x_values_hz
     )
     args <- list(
-        nfit = NA, smopts = NA, delta = NA,
+        nfit = NA, smit = NA, smws = NA, delta = NA,
         sfr = sfr_in_ppm_bwc(x$signal_free_region, x$x_values, x$x_values_ppm),
         wshw = x$range_water_signal_ppm,
         ask = NA, force = NA, verbose = NA, bwc = NA, nworkers = NA
@@ -933,8 +933,8 @@ as_decon2.rdecon <- function(x, ...) {
     lcpar <- as.data.frame(x$mdrb_decon$lorentzians())[, c("x0", "A", "lambda")]
     wsrm <- si # Rust backend doesn't remove the water signal
     nvrm <- si # Rust backend doesn't remove negative values
-    reps <- args$smopts[[1]]
-    size <- args$smopts[[2]]
+    reps <- args$smit
+    size <- args$smws
     sm <- smooth_signals2(nvrm, reps, size)
     sit <- named(wsrm, nvrm, sm, sup)
     mse <- list(

@@ -327,7 +327,7 @@ Test live inside ./tests/testthat. The followings tests exist:
 16. `test-get_decon_params.R`
 17. `test-get_names.R`
 18. `test-get_sfr.R`
-19. `test-get_smopts.R`
+19. `test-get_sfr.R`
 20. `test-get_wshw.R`
 21. `test-init_lorentz_curves.R`
 22. `test-is_float_str.R`

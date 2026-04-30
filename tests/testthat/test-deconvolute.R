@@ -10,7 +10,7 @@ mdrb_available <- check_mdrb()
 deconvolute_sap1 <- function(use_rust = FALSE) {
     deconvolute(
         sap1,
-        smopts = c(1, 3),
+        smit = 1, smws = 3,
         delta = 3,
         sfr = c(3.2, -3.2),
         use_rust = use_rust
@@ -59,8 +59,8 @@ test_sim_subset <- test_that("deconvolute works for multiple spectra", {
 test_wrong_sfr <- test_that("deconvolute works when no peaks are filtered out", {
     withr::local_output_sink(nullfile())
     x <- simulate_spectrum(ndp = 256, npk = 3)
-    expect_error(deconvolute(x, sfr = c(Inf, -Inf), smopts = c(0, 3)))
-    deconForc <- deconvolute(x, sfr = c(Inf, -Inf), smopts = c(0, 3), force = TRUE)
+    expect_error(deconvolute(x, sfr = c(Inf, -Inf), smit = 0, smws = 3))
+    deconForc <- deconvolute(x, sfr = c(Inf, -Inf), smit = 0, smws = 3, force = TRUE)
 })
 
 # Rust Checks #####

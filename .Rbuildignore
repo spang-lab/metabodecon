@@ -1,3 +1,4 @@
+^data-raw$
 ^_pkgdown\.yml$
 ^.*\.Rproj\.*$
 ^.*\.tar\.gz$

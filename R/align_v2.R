@@ -16,6 +16,10 @@
 #' An object of type `decons2` or `aligns`, as described in [Metabodecon
 #' Classes](https://spang-lab.github.io/metabodecon/articles/Classes.html).
 #'
+#' @param ...
+#' Reserved for internal package use. External callers should not pass
+#' additional arguments.
+#'
 #' @param maxShift
 #' Maximum number of datapoints a peak center may be shifted during CluPA
 #' alignment. 50 is a suitable starting value for plasma spectra with a digital
@@ -39,9 +43,6 @@
 #' prepended to `x` internally and removed from the result. If `NULL`
 #' (default), the reference is chosen automatically.
 #'
-#' @param ...
-#' Reserved for internal package use. External callers should not pass
-#' additional arguments.
 #'
 #' @return
 #' An object of type `aligns` as described in [Metabodecon

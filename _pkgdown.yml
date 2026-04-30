@@ -30,7 +30,6 @@ reference:
   desc: Functions to align multiple spectra.
   contents:
   - align
-  - combine_peaks
   - dohCluster
   - gen_feat_mat
   - get_ppm_range

@@ -1,3 +1,5 @@
+# FTP helpers used by data-raw/data.R to download datasets from MetaboLights.
+# Run `devtools::load_all()` before sourcing this file.
 
 # Internal API #####
 

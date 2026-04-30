@@ -19,11 +19,11 @@ cacheenv <- environment()
 #' @examples
 #' spectra <- sim[1:3]
 #' decons <- deconvolute(sim[1:3])
-#' aligns <- align(decons, maxShift = 100, maxCombine = 10)
+#' aligns <- align(decons, maxShift = 100)
 #' mkfig_nmr_challenges(spectra, decons, aligns)
 mkfig_nmr_challenges <- function(spectra = metabodecon::sim[1:3],
                                  decons = deconvolute(spectra),
-                                 aligns = align(decons, maxShift = 100, maxCombine = 10),
+                                 aligns = align(decons, maxShift = 100),
                                  show = FALSE,
                                  store = TRUE,
                                  path = tmpdir(),
@@ -56,7 +56,7 @@ mkfig_nmr_challenges <- function(spectra = metabodecon::sim[1:3],
 test_plot_nmr_challenges <- function(interactive = TRUE) {
     spectra <- metabodecon::sim[1:3]
     decons <- deconvolute(spectra)
-    aligns <- align(decons, maxShift = 100, maxCombine = 10)
+    aligns <- align(decons, maxShift = 100)
     if (interactive) {
         .GlobalEnv$spectra <- spectra
         .GlobalEnv$decons <- decons

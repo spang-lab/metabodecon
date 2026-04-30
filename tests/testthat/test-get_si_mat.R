@@ -41,7 +41,7 @@ test_that("get_si_mat with maxCombine returns reduced matrix", {
     if (!all(inst)) skip(paste("Missing deps:", collapse(deps[!inst])))
 
     decons <- deconvolute(sim[1:2], sfr = c(3.55, 3.35))
-    al <- align(decons, maxCombine = 0, verbose = FALSE)
+    al <- align(decons, verbose = FALSE)
 
     mat_raw   <- get_si_mat(al)
     mat_20dp  <- get_si_mat(al, maxCombine = 20, drop_zero = TRUE)
@@ -61,7 +61,7 @@ make_aligns_for_get_si_mat_test <- function(cs, peaks_list, areas_list) {
         al[peaks_list[[i]]] <- areas_list[[i]] * pi
         structure(list(
             cs = cs,
-            lcpar = list(x0 = x0, x0_al = x0, A = areas_list[[i]]),
+            lcpar = list(x0 = x0, x0al = x0, A = areas_list[[i]]),
             sit = list(al = al),
             meta = list(name = sprintf("spec_%d", i))
         ), class = "align")

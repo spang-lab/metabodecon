@@ -14,13 +14,13 @@ trySilent <- function(expr) try(expr, silent = TRUE)
 decon2 <- trySilent(deconvolute_spectrum(
     x = sap$sap_01,
     sfr = c(3.2, -3.2),
-    smopts = c(2, 3),
+    smit = 2, smws = 3,
     verbose = FALSE
 ))
 rdecon <- trySilent(deconvolute_spectrum(
     x = sap$sap_01,
     sfr = c(3.2, -3.2),
-    smopts = c(2, 3),
+    smit = 2, smws = 3,
     rtyp = "rdecon",
     use_rust = TRUE,
     verbose = FALSE

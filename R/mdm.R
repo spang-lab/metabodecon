@@ -20,8 +20,8 @@
 #' obtained by deconvoluting and aligning spectra and snapping their peaks to a
 #' shared reference spectrum. Lambda is chosen via cross-validation on X.
 #' Deconvolution parameters (`npmax` or `nfit`/`smit`/`smws`/`delta`),
-#' alignment parameter `maxShift`, and peak-combining parameters
-#' (`maxCombine`, `combineMethod`) are tunable hyperparameters.
+#' alignment parameter `maxShift` and peak-combining parameter `maxCombine`
+#' are tunable hyperparameters.
 #'
 #' When `npmax > 0`, deconvolution runs an internal grid search over smoothing
 #' and fitting parameters and keeps at most `npmax` peaks. The explicit
@@ -63,18 +63,11 @@
 #' avoids redundant preprocessing when [metabodecon::cv_mdm()] evaluates
 #' several settings on the same spectra.
 #'
-#' ## Memory usage by parallel workers
+#' ## Parallelism
 #'
-#' Each outer worker in [metabodecon::benchmark_mdm()] keeps its own copy of
-#' `spectra` and `y`, so memory use grows roughly with `nwo`. Large `nwo` values
-#' can therefore require substantial RAM for large input datasets.
-#'
-#' Inner workers (`nwi`) are used inside each outer worker for deconvolution,
-#' alignment and prediction on held-out spectra. They process only the spectra
-#' needed for the current task, so their memory impact is much smaller. In
-#' RAM-constrained settings, use `nwo = 1` and increase `nwi` instead.
-#'
-#' The total amount of processes spawned is `nwo * nwi.`
+#' [metabodecon::benchmark_mdm()] runs outer folds sequentially and
+#' delegates all parallel work to [metabodecon::deconvolute()] and
+#' [metabodecon::align()] via the `nworkers` argument.
 #'
 #' @param spectra List-like spectra object with `cs` and `si` vectors.
 #' @param y Factor vector with class labels for each spectrum.
@@ -91,12 +84,10 @@
 #' @param maxShift Maximum alignment shift.
 #' @param maxCombine
 #' Maximum peak-combining distance in datapoints, passed to
-#' [metabodecon::get_si_mat()]. Interpretation depends on `combineMethod`.
-#' @param combineMethod
-#' Peak-combining backend passed to
-#' [metabodecon::get_si_mat()]. `1`: column merging via
-#' [metabodecon::combine_peaks()]. `2` (default): nearest-neighbour
-#' snapping to reference peaks.
+#' [metabodecon::get_si_mat()]. During training, no reference is passed so
+#' partly-filled neighbouring columns are merged. During prediction, the stored
+#' model feature positions are passed as `ref`, so new peaks are snapped to
+#' those positions.
 #' @param nworkers
 #' Number of workers used by [metabodecon::fit_mdm()] and
 #' [metabodecon::cv_mdm()] for deconvolution and alignment.
@@ -108,13 +99,6 @@
 #' @param cadir
 #' Directory used to cache deconvolution results across grid points and
 #' processes. Defaults to [metabodecon::decon_cachedir()].
-#' @param nwo
-#' Number of workers for the outer cross-validation in
-#' [metabodecon::benchmark_mdm()]. Each outer worker holds a full copy of
-#' `spectra` and `y`.
-#' @param nwi
-#' Number of workers used inside each outer fold for
-#' [metabodecon::cv_mdm()] and [metabodecon::predict.mdm()].
 #' @param nfo Number of outer folds in [metabodecon::benchmark_mdm()].
 #' @param nfl
 #' Number of folds for the `cv.glmnet()` call inside
@@ -172,14 +156,14 @@
 #'      mdm <- fit_mdm(
 #'          spectra, y, sfr=NULL,
 #'          nfit=5, smit=3, smws=3, delta=3, npmax=0,
-#'          maxShift=128, maxCombine=256, combineMethod=1,
+#'          maxShift=128, maxCombine=256,
 #'          nworkers=half_cores(), cadir=cadir
 #'      )
 #'
 #'      mdm <- fit_mdm(
 #'          spectra, y, sfr = NULL,
 #'          nfit=5, smit=0, smws=0, delta=0, npmax=1000,
-#'          maxShift=64, maxCombine=16, combineMethod=1,
+#'          maxShift=64, maxCombine=16,
 #'          nworkers=half_cores(), cadir=cadir
 #'      )
 #'
@@ -239,118 +223,60 @@ fit_mdm <- function(
     # Alignment
     maxShift = 200,
     # Peak combining
-    maxCombine = 50, combineMethod = 2,
+    maxCombine = 50,
     # Glmnet
     nfolds = 10
 ) {
 
     if (check) check_mdm_args(
-        spectra = spectra, y = y, sfr = sfr,
-        use_rust = use_rust, nworkers = nworkers,
-        verbosity = verbosity, seed = seed,
-        cadir = cadir, check = check,
-        nfolds = nfolds,
-        npmax = npmax, nfit = nfit, smit = smit,
-        smws = smws, delta = delta,
-        maxShift = maxShift, maxCombine = maxCombine,
-        combineMethod = combineMethod
+        spectra=spectra, y=y, sfr=sfr, use_rust=use_rust, nworkers=nworkers,
+        verbosity=verbosity, seed=seed, cadir=cadir, check=check, nfolds=nfolds,
+        npmax=npmax, nfit=nfit, smit=smit, smws=smws, delta=delta,
+        maxShift=maxShift, maxCombine=maxCombine
     )
 
-    # Cache keys
-    hash <- attr(spectra, "hash")
-    decons_key <- list(
-        hash = hash, sfr = sfr, use_rust = use_rust,
-        npmax = npmax, nfit = nfit, smit = smit,
-        smws = smws, delta = delta
+    logv("Deconvoluting (npmax=%d, nfit=%d, smit=%d, smws=%d, delta=%.1f)",
+         npmax, nfit, smit, smws, delta)
+    shash <- attr(spectra, "hash")
+    if (is.null(shash)) stop("spectra must carry a 'hash' attribute.", call.=FALSE)
+    decon_hash <- rlang::hash(list(shash, sfr, use_rust, npmax, nfit, smit, smws, delta))
+    decons <- deconvolute_spectra(
+        x=spectra, sfr=sfr, verbose=verbosity >= 2, use_rust=use_rust,
+        nfit=nfit, smit=smit, smws=smws, delta=delta, npmax=npmax,
+        nworkers=nworkers, cadir=cadir, hash=decon_hash, full=FALSE
     )
-    aligns_key <- c(decons_key, list(
-        maxShift = maxShift
-    ))
-    cache <- getOption("metabodecon.fit_mdm.cache")
-    dc <- !is.null(hash) && identical(cache$decons_key, decons_key)
-    ac <- !is.null(hash) && identical(cache$aligns_key, aligns_key)
-
-    fmt <- "Deconvoluting (npmax=%d, nfit=%d, smit=%d, smws=%d, delta=%.1f, cached=%s)"
-    logv(fmt, npmax, nfit, smit, smws, delta, dc)
-    decons <- if (dc) cache$decons else deconvolute(
-        x = spectra, sfr = sfr, verbose = verbosity >= 2,
-        use_rust = use_rust, nfit = nfit,
-        smopts = c(smit, smws), delta = delta,
-        npmax = npmax, nworkers = nworkers, cadir = cadir
-    )
-    if (!is.null(hash) && !dc) {
-        options(metabodecon.fit_mdm.cache = list(
-            decons_key = decons_key, decons = decons
-        ))
-    }
-    nps <- unname(unlist(lapply(decons, function(decon) nrow(decon$lcpar))))
+    nps <- unname(unlist(lapply(decons, function(d) nrow(d$lcpar))))
     npzero <- sum(nps == 0)
     if (npzero > 0) {
         logv("Aborting: %d/%d spectra produced zero peaks", npzero, length(nps))
-        meta <- list(
-            sfr = sfr, use_rust = use_rust, npmax = npmax, nfit = nfit,
-            smit = smit, smws = smws, delta = delta,
-            maxShift = maxShift, maxCombine = maxCombine,
-            combineMethod = combineMethod
-        )
-        mdm <- list(model = NULL, ref = NULL, meta = meta)
-        return(structure(mdm, class = "mdm"))
+        meta <- list(sfr=sfr, use_rust=use_rust, npmax=npmax, nfit=nfit,
+            smit=smit, smws=smws, delta=delta, maxShift=maxShift, maxCombine=maxCombine)
+        return(structure(list(model=NULL, ref=NULL, meta=meta), class="mdm"))
     }
-    nprange <- range(nps)
-    logv("Peak range: [%d, %d]", nprange[1], nprange[2])
+    logv("Peak range: [%d, %d]", range(nps)[1], range(nps)[2])
+    attr(decons, "hash") <- decon_hash
 
-    logv("Aligning (maxShift=%d, cached=%s)", maxShift, ac)
-    aligns <- if (ac) cache$aligns else align(
-        x = decons, maxShift = maxShift,
-        maxCombine = 0, verbose = verbosity >= 2,
-        nworkers = nworkers, method = 2, full = FALSE
+    logv("Aligning (maxShift=%d, maxCombine=%g)", maxShift, maxCombine)
+    aligns <- align_decons(
+        xx=decons, maxShift=maxShift, verbose=verbosity >= 2,
+        nworkers=nworkers, full=FALSE
     )
 
-    if (!is.null(hash)) {
-        options(metabodecon.fit_mdm.cache = list(
-            decons_key = decons_key, aligns_key = aligns_key,
-            decons = decons, aligns = aligns
-        ))
-    }
-
-    fmt <- "Constructing feature matrix (combineMethod=%d, maxCombine=%g)"
-    logv(fmt, combineMethod, maxCombine)
-    pl <- lapply(aligns, get_peak_indices)
-    idx <- find_ref(pl)$refInd
-    ref <- aligns[[idx]]
-    if (combineMethod == 1) {
-        mat <- get_si_mat(
-            aligns, combineMethod = 1, maxCombine = maxCombine,
-            drop_zero = TRUE
-        )
-        X <- t(mat)
-        feat_cs <- as.numeric(rownames(mat))
-    } else {
-        mat <- get_si_mat(
-            aligns, combineMethod = 2, maxCombine = maxCombine,
-            ref = ref, drop_zero = TRUE
-        )
-        X <- t(mat)
-        feat_cs <- as.numeric(rownames(mat))
-    }
+    logv("Constructing feature matrix")
+    ref <- find_ref(aligns)
+    mat <- si_mat(aligns, maxCombine=maxCombine)
+    peak_cols <- which(colSums(mat != 0) > 0)
+    intervals <- make_intervals(peak_cols, maxCombine, nc=ncol(mat))
+    X <- mat[, peak_cols, drop=FALSE]
 
     logv("Fitting cv.glmnet")
-    foldid <- get_foldid(y = y, nfolds = nfolds, seed = seed)
-    model <- glmnet::cv.glmnet(
-        X, y, family = "binomial", alpha = 1,
-        foldid = foldid, keep = TRUE
-    )
+    foldid <- get_foldid(y=y, nfolds=nfolds, seed=seed)
+    model <- glmnet::cv.glmnet(X, y, family="binomial", alpha=1, foldid=foldid, keep=TRUE)
 
     logv("Constructing and returning mdm object")
-    meta <- list(
-        sfr = sfr, use_rust = use_rust,
-        npmax = npmax, nfit = nfit, smit = smit,
-        smws = smws, delta = delta,
-        maxShift = maxShift, maxCombine = maxCombine,
-        combineMethod = combineMethod, feat_cs = feat_cs
-    )
-    mdm <- list(model = model, ref = ref, meta = meta)
-    structure(mdm, class = "mdm")
+    meta <- list(sfr=sfr, use_rust=use_rust, npmax=npmax, nfit=nfit, smit=smit,
+        smws=smws, delta=delta, maxShift=maxShift, maxCombine=maxCombine, intervals=intervals)
+    structure(list(model=model, ref=ref, meta=meta), class="mdm")
 }
 
 #' @export
@@ -361,8 +287,6 @@ cv_mdm <- function(
     # Shared
     use_rust = 0.5, nworkers = 1, verbosity = 2,
     seed = 1, cadir = decon_cachedir(), check = TRUE,
-    # Peak combining
-    combineMethod = 2,
     # Grid
     pgrid = get_pgrid("dynamic2"),
     ignore = NULL, warm_cache = TRUE,
@@ -371,11 +295,9 @@ cv_mdm <- function(
 ) {
 
     if (check) check_mdm_args(
-        spectra = spectra, y = y, sfr = sfr,
-        use_rust = use_rust, nworkers = nworkers,
-        verbosity = verbosity, nfolds = nfolds,
-        seed = seed, cadir = cadir, pgrid = pgrid,
-        ignore = ignore, check = check
+        spectra=spectra, y=y, sfr=sfr, use_rust=use_rust, nworkers=nworkers,
+        verbosity=verbosity, nfolds=nfolds, seed=seed, cadir=cadir,
+        pgrid=pgrid, ignore=ignore, check=check
     )
 
     if (!is.null(ignore)) {
@@ -384,51 +306,36 @@ cv_mdm <- function(
         y <- y[-ignore]
     }
 
-    if (warm_cache) {
-        init_cache(
-            x = spectra, sfr = sfr,
-            verbosity = verbosity - 1,
-            nworkers = nworkers, use_rust = use_rust,
-            cadir = cadir, pgrid = pgrid
-        )
-    }
+    if (warm_cache) init_cache(
+        x=spectra, sfr=sfr, verbosity=verbosity - 1,
+        nworkers=nworkers, use_rust=use_rust, cadir=cadir, pgrid=pgrid
+    )
+
+    on.exit(options(metabodecon.align_cache=NULL, metabodecon.decon_cache=NULL), add=TRUE)
 
     np <- nrow(pgrid)
     ns <- length(spectra)
     logv("Starting grid search (%d combinations, %s spectra)", np, ns)
-    on.exit(options(metabodecon.fit_mdm.cache = NULL), add = TRUE)
-    attr(spectra, "hash") <- rlang::hash(spectra)
 
-    foldid <- get_foldid(y = y, nfolds = nfolds, seed = seed)
-    pp_names <- c(
-        "npmax", "nfit", "smit", "smws", "delta",
-        "maxShift", "maxCombine"
+    foldid <- get_foldid(y=y, nfolds=nfolds, seed=seed)
+    pp_cols <- intersect(
+        c("npmax", "nfit", "smit", "smws", "delta", "maxShift", "maxCombine"),
+        names(pgrid)
     )
-    pp_cols <- intersect(pp_names, names(pgrid))
 
     best_mdm <- NULL
     best_auc <- -Inf
     for (i in seq_len(np)) {
-        pc <- as.list(pgrid[i, pp_cols, drop = FALSE])
-        tag <- paste(
-            sprintf("%s=%g", pp_cols, unlist(pc)),
-            collapse = ", "
-        )
+        pc <- as.list(pgrid[i, pp_cols, drop=FALSE])
+        tag <- paste(sprintf("%s=%g", pp_cols, unlist(pc)), collapse=", ")
         logv("[%d/%d]: %s", i, np, tag)
         mdm <- do.call(fit_mdm, c(
-            list(
-                spectra = spectra, y = y, sfr = sfr,
-                use_rust = use_rust, nworkers = nworkers,
-                verbosity = verbosity - 1, seed = seed,
-                cadir = cadir, check = FALSE,
-                combineMethod = combineMethod,
-                nfolds = nfolds
-            ),
+            list(spectra=spectra, y=y, sfr=sfr, use_rust=use_rust, nworkers=nworkers,
+                 verbosity=verbosity - 1, seed=seed, cadir=cadir, check=FALSE, nfolds=nfolds),
             pc
         ))
         if (is.null(mdm$model)) {
-            pgrid$acc[i] <- 0
-            pgrid$auc[i] <- 0
+            pgrid$acc[i] <- 0; pgrid$auc[i] <- 0
             logv("[%d/%d] zero peaks, skipping", i, np)
             next
         }
@@ -437,13 +344,10 @@ cv_mdm <- function(
         link <- cvfit$fit.preval[, li]
         prob <- 1 / (1 + exp(-link))
         lvs <- levels(y)
-        pred <- factor(ifelse(prob > 0.5, lvs[2], lvs[1]), levels = lvs)
+        pred <- factor(ifelse(prob > 0.5, lvs[2], lvs[1]), levels=lvs)
         pgrid$acc[i] <- mean(pred == y)
         pgrid$auc[i] <- AUC(y, prob)
-        if (pgrid$auc[i] > best_auc) {
-            best_auc <- pgrid$auc[i]
-            best_mdm <- mdm
-        }
+        if (pgrid$auc[i] > best_auc) { best_auc <- pgrid$auc[i]; best_mdm <- mdm }
         logv("[%d/%d] acc=%.2f%% auc=%.4f | best auc=%.4f",
             i, np, pgrid$acc[i] * 100, pgrid$auc[i], best_auc)
     }
@@ -457,66 +361,47 @@ cv_mdm <- function(
 #' @export
 #' @rdname mdm
 benchmark_mdm <- function(
-    # Mandatory
-    spectra, y, sfr = NULL,
-    # Shared
-    use_rust = 0.5, verbosity = 2,
-    seed = 1, cadir = decon_cachedir(),
-    # Workers
-    nwo = 1, nwi = half_cores(),
-    # Peak combining
-    combineMethod = 2,
-    # Grid
-    pgrid = get_pgrid(),
-    # CV folds
-    nfo = 5, nfl = 10
+    spectra, y, sfr=NULL,
+    use_rust=0.5, verbosity=2,  seed=1, cadir=decon_cachedir(),
+    nworkers=half_cores(), pgrid=get_pgrid(), nfo=5, nfl=10
 ) {
+
     check_mdm_args(
-        spectra=spectra, y=y, sfr=sfr, use_rust=use_rust,
-        verbosity=verbosity, nfolds=nfo, nfl=nfl,
-        nwo=nwo, nwi=nwi, cadir=cadir, pgrid=pgrid, seed=seed
+        spectra=spectra, y=y, sfr=sfr, use_rust=use_rust, verbosity=verbosity,
+        nfolds=nfo, nfl=nfl, nworkers=nworkers, cadir=cadir, pgrid=pgrid,
+        seed=seed
     )
 
-    ns <- length(spectra)
     init_cache(
-        x=spectra, sfr=sfr, verbosity=verbosity - 1,
-        nworkers=nwi * nwo, use_rust=use_rust, cadir=cadir,
-        pgrid=pgrid
+        x=spectra, sfr=sfr, verbosity=verbosity-1, nworkers=nworkers,
+        use_rust=use_rust, cadir=cadir, pgrid=pgrid
     )
 
     logv("Fitting cv_mdm for %d outer folds", nfo)
-    te_list <- get_test_ids(nfolds=nfo, nsamples=ns, seed=seed, y=y)
+    te_list <- get_test_ids(nfolds=nfo, nsamples=length(spectra), seed=seed, y=y)
     fids <- seq_along(te_list)
-    nwoa <- min(nwo, nfo)
-    mdms <- mcmapply(
-        nwoa, cv_mdm,
-        ignore=te_list,
-        MoreArgs=list(
-            spectra=spectra, y=y, sfr=sfr, use_rust=use_rust,
-            nworkers=nwi, verbosity=verbosity - 1,
-            combineMethod=combineMethod,
-            nfolds=nfl, seed=seed, cadir=cadir,
-            pgrid=pgrid, warm_cache=FALSE, check=FALSE
-        )
-    )
+    mdms <- lapply(te_list, function(ignore) cv_mdm(
+        ignore=ignore, spectra=spectra, y=y, sfr=sfr, use_rust=use_rust,
+        nworkers=nworkers, verbosity=verbosity - 1, nfolds=nfl, seed=seed,
+        cadir=cadir, pgrid=pgrid, warm_cache=FALSE, check=FALSE
+    ))
 
     logv("Predicting on held-out test folds")
     te_spectra <- lapply(te_list, function(te) spectra[te])
-    pred_metrics <- mcmapply(
-        nwoa, predict.mdm,
-        object=mdms, newdata=te_spectra,
-        MoreArgs=list(type="all", nworkers=nwi, verbosity=verbosity - 1),
+    preds_raw <- mapply(
+        predict.mdm, object=mdms, newdata=te_spectra,
+        MoreArgs=list(type="all", nworkers=nworkers, verbosity=verbosity - 1),
         SIMPLIFY=FALSE, USE.NAMES=FALSE
     )
     preds <- mapply(
-        FUN=function(fid, te, pred) {
-            data.frame(fold=fid, true=y[te], link=pred$link, prob=pred$prob, pred=pred$class)
+        FUN = function(fid, te, p) {
+            data.frame(fold=fid, true=y[te], link=p$link, prob=p$prob, pred=p$class)
         },
-        fids, te_list, pred_metrics,
-        SIMPLIFY=FALSE, USE.NAMES=FALSE)
-
+        fids, te_list, preds_raw,
+        SIMPLIFY=FALSE, USE.NAMES=FALSE
+    )
     Y <- do.call(rbind, preds)
-    acc <- mean(Y$true == Y$pred, na.rm = TRUE)
+    acc <- mean(Y$true == Y$pred, na.rm=TRUE)
     logv("Nested CV accuracy: %.2f%%", acc * 100)
     out <- list(models=mdms, predictions=Y)
     out$mdms <- out$models
@@ -641,11 +526,7 @@ init_cache <- function(
             nwu_i <- min(nwu, length(xu))
             fmt <- "Deconvoluting %d unseen spectra (npmax=%d, nworkers=%d)"
             logv(fmt, length(xu), npmax, nwu_i)
-            deconvolute(
-                x = xu, sfr = sfr, wshw = 0,
-                verbose = verbosity >= 2, nworkers = nwu_i,
-                use_rust = use_rust, cadir = cadir,
-                npmax = npmax
+            deconvolute_spectra(x=xu, sfr=sfr, verbose=verbosity>1, nworkers=nwu_i, use_rust=use_rust, npmax=npmax
             )
         }
     }
@@ -715,11 +596,11 @@ AUC <- function(y, yhat) {
 check_mdm_args <- function(
     spectra, y, sfr,
     use_rust = NULL, nworkers = NULL, verbosity = NULL,
-    nfolds = NULL, nfl = NULL, nwo = NULL, nwi = NULL,
+    nfolds = NULL, nfl = NULL,
     cadir = NULL, pgrid = NULL,
     ignore = NULL, seed = NULL, check = NULL,
     npmax = NULL, nfit = NULL, smit = NULL, smws = NULL, delta = NULL,
-    maxShift = NULL, maxCombine = NULL, combineMethod = NULL
+    maxShift = NULL, maxCombine = NULL
 ) {
     pp_names <- c(
         "npmax", "nfit", "smit", "smws", "delta",
@@ -737,15 +618,11 @@ check_mdm_args <- function(
         is_num_or_null(delta, 1),
         is_int_or_null(maxShift, 1),
         is_int_or_null(maxCombine, 1),
-        is_int_or_null(combineMethod, 1),
-        is.null(combineMethod) || combineMethod %in% 1:2,
-        is_use_rust(use_rust),
+        is_bool_or_num(use_rust),
         is_int_or_null(nworkers, 1),
         is_int_or_null(verbosity, 1),
         is.null(nfolds) || (is_int(nfolds, 1) && nfolds >= 2),
         is.null(nfl) || (is_int(nfl, 1) && nfl >= 2),
-        is_int_or_null(nwo, 1),
-        is_int_or_null(nwi, 1),
         is_str_or_null(cadir),
         is.null(pgrid) || (
             is.data.frame(pgrid) &&
@@ -767,12 +644,6 @@ check_mdm_args <- function(
     }
     if (!is.null(nfl) && nfl > length(y)) {
         stop("`nfl` must not exceed the number of samples.", call. = FALSE)
-    }
-    if (!is.null(nwo) && nwo < 1) {
-        stop("`nwo` must be at least 1.", call. = FALSE)
-    }
-    if (!is.null(nwi) && nwi < 1) {
-        stop("`nwi` must be at least 1.", call. = FALSE)
     }
     if (!is.null(ignore) && any(!ignore %in% seq_along(spectra))) {
         stop("`ignore` contains invalid sample indices.", call. = FALSE)
@@ -837,8 +708,7 @@ check_mdm_args <- function(
 #'     model = NULL,
 #'     ref = NULL,
 #'     meta = list(npmax = 1000, nfit = 3, smit = 2, smws = 5,
-#'                 delta = 6.4, maxShift = 100, maxCombine = 50,
-#'                 combineMethod = 2)
+#'                 delta = 6.4, maxShift = 100, maxCombine = 50)
 #'   ),
 #'   class = "mdm"
 #' )
@@ -875,37 +745,19 @@ predict.mdm <- function(object,
     }
     if (is_spectra(newdata)) {
         m <- object$meta
-        logv("Deconvoluting %d spectra with %d nworkers",
-             length(newdata), nworkers)
-        if (m$npmax > 0) {
-            decons <- deconvolute(
-                x = newdata, sfr = m$sfr,
-                verbose = verbosity >= 2,
-                use_rust = m$use_rust, npmax = m$npmax,
-                nworkers = nworkers
-            )
+        logv("Deconvoluting %d spectra with %d nworkers", length(newdata), nworkers)
+        decons <- if (m$npmax > 0) {
+            deconvolute(x=newdata, sfr=m$sfr, verbose=verbosity >= 2,
+                use_rust=m$use_rust, npmax=m$npmax, nworkers=nworkers)
         } else {
-            decons <- deconvolute(
-                x = newdata, sfr = m$sfr,
-                verbose = verbosity >= 2,
-                use_rust = m$use_rust, nfit = m$nfit,
-                smopts = c(m$smit, m$smws),
-                delta = m$delta, npmax = 0,
-                nworkers = nworkers
-            )
+            deconvolute(x=newdata, sfr=m$sfr, verbose=verbosity >= 2,
+                use_rust=m$use_rust, nfit=m$nfit, smit=m$smit, smws=m$smws,
+                delta=m$delta, npmax=0, nworkers=nworkers)
         }
         logv("Aligning spectra with %d nworkers", nworkers)
-        als <- align(
-            decons, maxShift = m$maxShift, maxCombine = 0,
-            verbose = verbosity >= 2, nworkers = nworkers,
-            ref = object$ref, method = 2, full = FALSE
-        )
-        feat_ref <- list(lcpar = list(x0_al = m$feat_cs), cs = object$ref$cs)
-        class(feat_ref) <- "align"
-        Xn <- t(get_si_mat(
-            als, combineMethod = 2, maxCombine = m$maxCombine,
-            ref = feat_ref, drop_zero = TRUE
-        ))
+        als <- align_decons(xx=decons, maxShift=m$maxShift, verbose=verbosity >= 2,
+            nworkers=nworkers, ref=object$ref, full=FALSE)
+        Xn <- si_mat(als, maxCombine=m$maxCombine, intervals=m$intervals)
     } else {
         Xn <- as.matrix(newdata)
     }
@@ -928,7 +780,7 @@ predict.mdm <- function(object,
 print.mdm <- function(x, ...) {
     stopifnot(inherits(x, "mdm"), is.list(x$meta))
     pp <- c("npmax", "nfit", "smit", "smws", "delta",
-            "maxShift", "maxCombine", "combineMethod")
+            "maxShift", "maxCombine")
     cat("metabodecon model (mdm)\n")
     for (nm in pp) {
         lab <- formatC(paste0(nm, ":"), width = -15)
@@ -960,10 +812,10 @@ plot.mdm <- function(x, ...) {
 summary.mdm <- function(object, ...) {
     stopifnot(inherits(object, "mdm"), is.list(object$meta))
     pp <- c("npmax", "nfit", "smit", "smws", "delta",
-            "maxShift", "maxCombine", "combineMethod")
+        "maxShift", "maxCombine")
     out <- object$meta[pp]
-    out$n_peaks <- if (is.null(object$ref)) 0L
-                   else length(get_peak_indices(object$ref))
+    out$n_peaks <- if (is.null(object$meta$intervals)) 0L
+                   else nrow(object$meta$intervals)
     out$grid_rows <- if (is.null(object$pgrid)) 0L
                      else nrow(object$pgrid)
     class(out) <- "summary.mdm"
