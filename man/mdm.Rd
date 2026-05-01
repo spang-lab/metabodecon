@@ -3,37 +3,18 @@
 \name{mdm}
 \alias{mdm}
 \alias{fit_mdm}
-\alias{cv_mdm}
-\alias{benchmark_mdm}
-\alias{get_pgrid}
+\alias{get_mog}
+\alias{fit_bm}
+\alias{benchmark}
 \title{Metabodecon Models}
 \usage{
 fit_mdm(
-  spectra,
+  x,
   y,
-  sfr = NULL,
-  use_rust = 0.5,
-  nworkers = 1,
-  verbosity = 2,
-  seed = 1,
-  check = TRUE,
-  npmax = 1000,
-  nfit = 5,
-  smit = 2,
-  smws = 5,
-  delta = 6.4,
-  maxShift = 200,
-  maxCombine = 50,
-  nfolds = 10
-)
-
-cv_mdm(
-  spectra,
-  y,
-  pgrid = get_pgrid("default"),
+  mog = get_mog("default"),
   sfr = NULL,
   igrs = list(),
-  use_rust = FALSE,
+  use_rust = 0.5,
   nworkers = 1,
   verbosity = 2,
   seed = 1,
@@ -41,92 +22,75 @@ cv_mdm(
   check = TRUE
 )
 
-benchmark_mdm(
-  spectra,
+get_mog(conf = "default")
+
+fit_bm(
+  x,
   y,
-  sfr = NULL,
-  use_rust = 0.5,
-  verbosity = 2,
+  igrs = list(),
+  nbin = 1000,
   seed = 1,
-  nworkers = half_cores(),
-  pgrid = get_pgrid(),
-  nfo = 5,
-  nfl = 10
+  nfolds = 10,
+  verbosity = 2,
+  check = TRUE
 )
 
-get_pgrid(conf = "default")
+benchmark(x, y, ..., fun = "fit_mdm", k = 5, seed = 1, verbosity = 2)
 }
 \arguments{
-\item{spectra}{List-like spectra object with \code{cs} and \code{si} vectors.}
+\item{x}{Spectra object. May already carry per-spectrum \verb{$grid} tables.}
 
 \item{y}{Factor vector with class labels for each spectrum.}
 
-\item{sfr}{Signal free region. See \code{\link[=deconvolute]{deconvolute()}} for details.}
+\item{mog}{Model-fitting grid. A data frame with columns \code{nfit}, \code{smit}, \code{smws},
+\code{delta}, \code{npmax}, \code{maxShift}, \code{maxCombine}. See \code{\link[=get_mog]{get_mog()}}.}
 
-\item{use_rust}{Logical. Whether to use the Rust backend.}
+\item{sfr}{Signal-free region. See \code{\link[=deconvolute]{deconvolute()}}.}
 
-\item{nworkers}{Number of workers used by \code{\link[=fit_mdm]{fit_mdm()}} and
-\code{\link[=cv_mdm]{cv_mdm()}} for deconvolution and alignment.}
+\item{igrs}{Ignore regions: list of length-2 numeric vectors specifying
+ppm ranges to exclude. Matches the \code{igrs} argument of
+\code{\link[=deconvolute]{deconvolute()}}. For \code{\link[=fit_mdm]{fit_mdm()}}, forwarded
+to deconvolution. For \code{\link[=fit_bm]{fit_bm()}}, the \code{nbin} bins are
+distributed only across the non-ignored part of the ppm range.}
 
-\item{verbosity}{Integer. Verbosity level; each nested call
-decrements by 1. Messages print when \code{verbosity >= 1}.}
+\item{use_rust}{Use the Rust backend?}
 
-\item{seed}{Random seed used for fold assignment in \code{\link[=benchmark_mdm]{benchmark_mdm()}} and
-for inner cross-validation splits in \code{\link[=cv_mdm]{cv_mdm()}} and
-\code{\link[=fit_mdm]{fit_mdm()}}.}
+\item{nworkers}{Number of workers for deconvolution and alignment.}
 
-\item{check}{Logical. Whether to validate inputs at function entry.}
+\item{verbosity}{Verbosity level.}
 
-\item{npmax}{Maximum number of peaks to retain. When \code{npmax > 0}, deconvolution runs an
-internal grid search and the explicit \code{nfit}/\code{smit}/\code{smws}/\code{delta} are
-ignored. Set to 0 to use explicit deconvolution parameters instead.}
+\item{seed}{Random seed for fold assignments.}
 
-\item{nfit}{Number of Lorentz-curve fitting iterations (used when \code{npmax == 0}).}
+\item{nfolds}{Number of folds for the inner \code{\link[glmnet:cv.glmnet]{glmnet::cv.glmnet()}} call.}
 
-\item{smit}{Number of smoothing iterations (used when \code{npmax == 0}).}
+\item{check}{Validate inputs at function entry?}
 
-\item{smws}{Smoothing window size (used when \code{npmax == 0}).}
+\item{conf}{Character string selecting a predefined \code{mog} configuration.}
 
-\item{delta}{Peak-filter threshold (used when \code{npmax == 0}).}
+\item{nbin}{Number of bins in the non-ignored part of the ppm range.}
 
-\item{maxShift}{Maximum alignment shift.}
+\item{...}{Extra arguments forwarded to \code{fun}.}
 
-\item{maxCombine}{Maximum peak-combining distance in datapoints, passed to
-\code{\link[=get_si_mat]{get_si_mat()}}. During training, no reference is passed so
-partly-filled neighbouring columns are merged. During prediction, the stored
-model feature positions are passed as \code{ref}, so new peaks are snapped to
-those positions.}
+\item{fun}{Name of fitter function. Either "fit_mdm" or "fit_bm"`.}
 
-\item{nfolds}{Number of folds for the \code{cv.glmnet()} call in \code{\link[=fit_mdm]{fit_mdm()}}
-and \code{\link[=cv_mdm]{cv_mdm()}}. Default 10.}
-
-\item{pgrid}{Data frame of preprocessing parameter combinations as returned
-by \code{\link[=get_pgrid]{get_pgrid()}}.}
-
-\item{nfo}{Number of outer folds in \code{\link[=benchmark_mdm]{benchmark_mdm()}}.}
-
-\item{nfl}{Number of folds for the \code{cv.glmnet()} call inside
-\code{\link[=benchmark_mdm]{benchmark_mdm()}}. Passed as \code{nfolds} to
-\code{\link[=fit_mdm]{fit_mdm()}}.}
-
-\item{conf}{Character string selecting a predefined parameter grid
-configuration.}
-
-\item{ignore}{Optional integer vector of sample indices to exclude.}
+\item{k}{Number of outer folds for \code{\link[=benchmark]{benchmark()}}.}
 }
 \value{
 \code{\link[=fit_mdm]{fit_mdm()}} returns an object of class \code{mdm} with elements
-\code{model} (a \code{\link[glmnet:cv.glmnet]{glmnet::cv.glmnet()}} object), \code{ref} (the reference alignment
-spectrum) and \code{meta} (list of preprocessing parameters).
+\code{model} (best \code{\link[glmnet:cv.glmnet]{glmnet::cv.glmnet()}}), \code{ref} (reference alignment spectrum),
+\code{params} (scalar parameters of the best model) and \code{mog} (input grid
+augmented with \code{acc}/\code{auc} columns).
 
-\code{\link[=cv_mdm]{cv_mdm()}} returns an \code{mdm} object with an additional element
-\code{pgrid} containing the performance grid.
+\code{\link[=fit_bm]{fit_bm()}} returns an object of class \code{bm} with elements
+\code{model} and \code{params}.
 
-\code{\link[=benchmark_mdm]{benchmark_mdm()}} returns a list with elements:
+\code{\link[=benchmark]{benchmark()}} returns a list with elements:
 \itemize{
-\item \code{models}: List of \code{mdm} objects, one per outer fold.
-\item \code{predictions}: Data frame with columns \code{fold}, \code{true}, \code{link}, \code{prob},
+\item \code{models}: list of fitted models, one per outer fold.
+\item \code{predictions}: data frame with columns \code{fold}, \code{true}, \code{link}, \code{prob},
 \code{pred}.
+\item \code{performance}: data frame with per-fold \code{acc} and \code{auc}.
+\item \code{overall}: list with pooled \code{acc} and \code{auc}.
 }
 }
 \description{
@@ -136,139 +100,59 @@ spectrum) and \code{meta} (list of preprocessing parameters).
 production. Their API is very likely to change in non-backwards-compatible
 ways over the next few weeks.}
 
-Utilities for fitting, tuning and benchmarking 'metabodecon models' (mdm).
+Utilities for fitting, tuning and benchmarking 'metabodecon models' (mdm)
+and 'binning models' (bm).
 
-A mdm is a essentially a glmnet lasso model, fitted on a feature matrix X,
-obtained by deconvoluting and aligning spectra and snapping their peaks to a
-shared reference spectrum. Lambda is chosen via cross-validation on X.
-Deconvolution parameters (\code{npmax} or \code{nfit}/\code{smit}/\code{smws}/\code{delta}),
-alignment parameter \code{maxShift} and peak-combining parameter \code{maxCombine}
-are tunable hyperparameters.
+A mdm is essentially a \code{\link[glmnet:cv.glmnet]{glmnet::cv.glmnet()}} lasso model, fitted on a
+feature matrix obtained by deconvoluting and aligning spectra and snapping
+their peaks to a shared reference. Deconvolution parameters
+(\code{npmax}/\code{nfit}/\code{smit}/\code{smws}/\code{delta}), alignment parameter \code{maxShift} and
+peak-combining parameter \code{maxCombine} are tunable hyperparameters.
 
-When \code{npmax > 0}, deconvolution runs an internal grid search over smoothing
-and fitting parameters and keeps at most \code{npmax} peaks. The explicit
-\code{nfit}/\code{smit}/\code{smws}/\code{delta} values are ignored in that case. When
-\code{npmax == 0}, the explicit parameters are used directly.
+A bm is a lasso model fitted on a binned-intensity feature matrix and
+serves as a simple baseline for comparison against \code{mdm} models.
 
-\code{\link[=fit_mdm]{fit_mdm()}} deconvolutes spectra, aligns detected peaks,
-combines them via \code{\link[=get_si_mat]{get_si_mat()}} and fits one lasso model via
-\code{\link[glmnet:cv.glmnet]{glmnet::cv.glmnet()}}. Lambda is selected internally by cross-validation
-but no performance metrics are reported. Use \code{\link[=cv_mdm]{cv_mdm()}} to
-tune preprocessing parameters and \code{\link[=benchmark_mdm]{benchmark_mdm()}} for
-unbiased performance estimates.
+\code{\link[=fit_mdm]{fit_mdm()}} iterates over the rows of a 'model fitting grid'
+(\code{mog}) — see \code{\link[=get_mog]{get_mog()}} — and for each row deconvolutes,
+aligns, builds the feature matrix and fits a \code{\link[glmnet:cv.glmnet]{glmnet::cv.glmnet()}} model.
+Held-out accuracy and AUC at \code{lambda.min} are recorded for each row. The
+best model and the augmented grid are returned. A single-row \code{mog}
+degenerates to fitting one model.
 
-\code{\link[=cv_mdm]{cv_mdm()}} evaluates a grid of preprocessing parameter
-combinations. For each grid row it builds a feature matrix, runs
-\code{\link[glmnet:cv.glmnet]{glmnet::cv.glmnet()}} with a fixed fold assignment, and records the
-held-out accuracy and AUC at \code{lambda.min}. Returns the model with the best
-AUC and the full performance grid.
+\code{\link[=fit_bm]{fit_bm()}} fits a single binning-based lasso model.
 
-\code{\link[=benchmark_mdm]{benchmark_mdm()}} wraps \code{\link[=cv_mdm]{cv_mdm()}} in an
-outer cross-validation loop to estimate end-to-end predictive performance.
-It returns the per-fold models and held-out predictions.
+\code{\link[=benchmark]{benchmark()}} runs an outer k-fold cross-validation over any
+fitter function (\code{fit_mdm}, \code{fit_bm}, ...) to estimate end-to-end
+predictive performance, and returns per-fold models, predictions and
+performance metrics.
 }
 \details{
-\subsection{Grid-search results carried by spectra}{
+\subsection{Caching within \code{fit_mdm}}{
 
-When \code{npmax > 0}, deconvolution requires a per-spectrum performance grid
-to pick the best smoothing/fitting parameters. \code{\link[=cv_mdm]{cv_mdm()}} and
-\code{\link[=benchmark_mdm]{benchmark_mdm()}} call \code{\link[=grid_deconvolute_spectra]{grid_deconvolute_spectra()}}
-once at the start to attach a \verb{$grid} element to each spectrum. The
-enriched spectra are then passed down to all subsequent deconvolution calls,
-which avoids redundant grid searches across pgrid rows and outer folds.
+Rows of \code{mog} are sorted by \verb{(npmax, nfit, smit, smws, delta, maxShift, maxCombine)} so identical decon-tuples and align-tuples cluster. Inside
+the loop, the most recent deconvolution and alignment are kept and reused
+whenever the relevant subset of parameters is unchanged.
 }
 
-\subsection{RAM caching within processes}{
+\subsection{Grid-search results carried by spectra}{
 
-\code{\link[=fit_mdm]{fit_mdm()}} caches the most recent deconvolution and alignment
-results in RAM when the input \code{spectra} carries a \code{"hash"} attribute. This
-avoids redundant preprocessing when \code{\link[=cv_mdm]{cv_mdm()}} evaluates
-several settings on the same spectra.
+When any row of \code{mog} has \code{npmax > 0}, \code{\link[=fit_mdm]{fit_mdm()}} calls
+\code{\link[=grid_deconvolute_spectra]{grid_deconvolute_spectra()}} once up front to attach a
+\verb{$grid} element to each spectrum. The enriched spectra are reused across
+rows and outer folds. \code{\link[=benchmark]{benchmark()}} does the same up-front
+attachment for \code{fun = "fit_mdm"}.
 }
 
 \subsection{Parallelism}{
 
-\code{\link[=benchmark_mdm]{benchmark_mdm()}} runs outer folds sequentially and
-delegates all parallel work to \code{\link[=deconvolute]{deconvolute()}} and
-\code{\link[=align]{align()}} via the \code{nworkers} argument.
+\code{\link[=benchmark]{benchmark()}} runs outer folds sequentially and delegates
+all parallelism to the inner fitter via \code{nworkers} (\code{fit_mdm}).
 }
 }
 \examples{
 \dontrun{
-
-
-
-     # -~-~-~ Inputs -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
-
-     aki <- read_aki_data()
-     spectra <- aki$spectra
-     attr(spectra, "hash") <- rlang::hash(spectra)
-     y <- factor(aki$meta$type, levels = c("Control", "AKI"))
-     names(y) <- rownames(aki$meta)
-     sfr <- c(11, -2)
-
-
-
-     # -~-~-~-~-~-~-~-~-~ Single -~-~-~-~-~-~-~-~-~
-
-     # Best "simple" model from aki.R (0.797 [0.75 - 0.83])
-     mdm <- fit_mdm(
-         spectra, y, sfr=NULL,
-         nfit=5, smit=3, smws=3, delta=3, npmax=0,
-         maxShift=128, maxCombine=256,
-         nworkers=half_cores()
-     )
-
-     mdm <- fit_mdm(
-         spectra, y, sfr = NULL,
-         nfit=5, smit=0, smws=0, delta=0, npmax=1000,
-         maxShift=64, maxCombine=16,
-         nworkers=half_cores()
-     )
-
-
-
-     # -~-~-~-~-~-~-~-~-~ Search -~-~-~-~-~-~-~-~-~
-
-     mdm_grid_stat1 <- cv_mdm(
-         spectra, y, pgrid=get_pgrid("static1"),
-         nworkers=half_cores(), use_rust=TRUE
-     )
-     saveRDS(mdm_grid_stat1, "tmp/mdm_grid_stat1.rds")
-
-
-     mdm_grid_stat2 <- cv_mdm(
-         spectra, y, pgrid=get_pgrid("static2"),
-         nworkers=half_cores(), use_rust=TRUE
-     )
-     saveRDS(mdm_grid_stat2, "tmp/mdm_grid_stat2.rds")
-     #
-     # Best static2: acc=0.82, auc=0.89
-     # smit=2, smws=3, delta=6, nfit=7, npmax=0, maxShift=100, maxCombine=30
-
-
-     mdm_grid_stat3 <- cv_mdm(
-         spectra, y, pgrid=get_pgrid("static3"),
-         nworkers=half_cores(), use_rust=TRUE
-     )
-     saveRDS(mdm_grid_stat3, "tmp/mdm_grid_stat3.rds")
-     #
-     # Best static3: acc=79.34\% auc=0.8589
-     # smit=2, smws=7, delta=8, nfit=10, npmax=0, maxShift=100, maxCombine=30
-
-
-     mdm_grid_dyn2 <- cv_mdm(
-         spectra, y, pgrid=get_pgrid("dynamic2"),
-         nworkers=half_cores(), use_rust=TRUE
-     )
-
-     # -~-~-~ Full Benchmark -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
-     bm <- benchmark_mdm(spectra, y, sfr)
-
-     # -~-~-~ Interactive Development -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
-     stub(fit_mdm, spectra=spectra, y=y, sfr=sfr)
-     stub(cv_mdm, spectra=spectra, y=y, sfr=sfr)
-     stub(benchmark_mdm, spectra=spectra, y=y, sfr=sfr)
+  m <- fit_mdm(spectra, y, mog = get_mog("default"))
+  bm <- benchmark(spectra, y, fun = "fit_mdm", k = 5,
+                  mog = get_mog("default"))
 }
-
 }

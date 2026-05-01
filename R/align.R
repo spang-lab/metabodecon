@@ -63,18 +63,6 @@ align_decons <- function(
         stop("All spectra must have the same number of data points.")
     }
 
-    # Use early stopping if full is FALSE
-    if (isFALSE(full)) {
-        xhash <- attr(x, "hash")
-        if (is.null(xhash)) stop("full=FALSE requires x@hash to be set")
-        key <- rlang::hash(list(xhash, ref, maxShift, use_speaq))
-        cache <- getOption("metabodecon.ad.cache", list(key="", aligns=NULL))
-        if (cache$key == key) {
-            logf("Skipping deconvolution (cache hit)")
-            return(cache$aligns)
-        }
-    }
-
     # Do alignments
     ref <- ref %||% find_ref(x)
     aligns <- mcmapply(
@@ -82,11 +70,7 @@ align_decons <- function(
         MoreArgs = list(ref, maxShift, full=full, use_speaq=use_speaq)
     )
     class(aligns) <- c("aligns", "decons2", "spectra")
-
-    # Store in cache if full is FALSE
-    if (isFALSE(full)) options(metabodecon.ad.cache = list(key=key, aligns=aligns))
     aligns
-
 }
 
 align_decon <- function(x, ref, maxShift, full=TRUE, use_speaq=FALSE) {

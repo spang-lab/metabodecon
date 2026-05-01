@@ -16,6 +16,7 @@
 ^CONTRIBUTE\.md$
 ^cran-comments\.md$
 ^CRAN-SUBMISSION$
+^data-raw$
 ^dist$
 ^doc$
 ^Dockerfile$

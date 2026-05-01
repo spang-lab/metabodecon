@@ -16,13 +16,12 @@
 * `draw_spectrum()` can now display true/false/missed peaks.
 * `tree()` gained `show.counts`, `files.first`, and `max.entries` parameters.
   Added `tree_preview()` as a compact alias.
-* Added `fit_mdm()` for fitting lasso models on deconvoluted NMR spectra with
-  explicit deconvolution parameters (`nfit`/`smit`/`smws`/`delta`) alongside
-  `npmax`.
-* Added `cv_mdm()` for cross-validated preprocessing grid search (replaces the
-  former `fit_mdm_grid()`).
-* Added `benchmark_mdm()` for nested-CV performance estimation.
-* Added `get_pgrid()` for predefined preprocessing parameter grids.
+* Added `fit_mdm()` for fitting lasso models on deconvoluted NMR spectra,
+  with built-in cross-validated grid search over a preprocessing grid (`mog`).
+* Added `benchmark()` for nested-CV performance estimation; accepts any model
+  fitting function via the `fun` argument (e.g. `fun = "fit_mdm"`).
+* Added `fit_bm()` and `predict.bm()` for a binning-based baseline model.
+* Added `get_mog()` for predefined model fitting grids.
 * Added S3 methods for `mdm` objects: `predict`, `print`, `coef`, `plot`,
   `summary`.
 * Added `c()`, `format()`, and `summary()` methods for all public and private

@@ -8,6 +8,7 @@
 \alias{plot.mdm}
 \alias{summary.mdm}
 \alias{print.summary.mdm}
+\alias{predict.bm}
 \title{S3 methods for mdm objects}
 \usage{
 \method{predict}{mdm}(
@@ -29,6 +30,14 @@
 \method{summary}{mdm}(object, ...)
 
 \method{print}{summary.mdm}(x, ...)
+
+\method{predict}{bm}(
+  object,
+  newdata,
+  type = c("all", "prob", "class", "link"),
+  s = "lambda.min",
+  ...
+)
 }
 \arguments{
 \item{object, x}{A fitted \code{mdm} object (for \code{predict}, \code{coef}, \code{summary}, \code{print} and \code{plot})
@@ -86,8 +95,8 @@ m <- structure(
   list(
     model = NULL,
     ref = NULL,
-    meta = list(npmax = 1000, nfit = 3, smit = 2, smws = 5,
-                delta = 6.4, maxShift = 100, maxCombine = 50)
+    params = list(npmax = 1000, nfit = 3, smit = 2, smws = 5,
+                  delta = 6.4, maxShift = 100, maxCombine = 50)
   ),
   class = "mdm"
 )
@@ -95,7 +104,7 @@ print(m)
 summary(m)
 
 \dontrun{
-  m <- cv_mdm(spectra, y, sfr = c(11, -2))
+  m <- fit_mdm(spectra, y, mog = get_mog("default"), sfr = c(11, -2))
   predict(m, test_spectra, type = "prob")
   coef(m)
   plot(m)

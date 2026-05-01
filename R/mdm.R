@@ -14,391 +14,336 @@
 #' production. Their API is very likely to change in non-backwards-compatible
 #' ways over the next few weeks.**
 #'
-#' Utilities for fitting, tuning and benchmarking 'metabodecon models' (mdm).
+#' Utilities for fitting, tuning and benchmarking 'metabodecon models' (mdm)
+#' and 'binning models' (bm).
 #'
-#' A mdm is a essentially a glmnet lasso model, fitted on a feature matrix X,
-#' obtained by deconvoluting and aligning spectra and snapping their peaks to a
-#' shared reference spectrum. Lambda is chosen via cross-validation on X.
-#' Deconvolution parameters (`npmax` or `nfit`/`smit`/`smws`/`delta`),
-#' alignment parameter `maxShift` and peak-combining parameter `maxCombine`
-#' are tunable hyperparameters.
+#' A mdm is essentially a [glmnet::cv.glmnet()] lasso model, fitted on a
+#' feature matrix obtained by deconvoluting and aligning spectra and snapping
+#' their peaks to a shared reference. Deconvolution parameters
+#' (`npmax`/`nfit`/`smit`/`smws`/`delta`), alignment parameter `maxShift` and
+#' peak-combining parameter `maxCombine` are tunable hyperparameters.
 #'
-#' When `npmax > 0`, deconvolution runs an internal grid search over smoothing
-#' and fitting parameters and keeps at most `npmax` peaks. The explicit
-#' `nfit`/`smit`/`smws`/`delta` values are ignored in that case. When
-#' `npmax == 0`, the explicit parameters are used directly.
+#' A bm is a lasso model fitted on a binned-intensity feature matrix and
+#' serves as a simple baseline for comparison against `mdm` models.
 #'
-#' [metabodecon::fit_mdm()] deconvolutes spectra, aligns detected peaks,
-#' combines them via [metabodecon::get_si_mat()] and fits one lasso model via
-#' [glmnet::cv.glmnet()]. Lambda is selected internally by cross-validation
-#' but no performance metrics are reported. Use [metabodecon::cv_mdm()] to
-#' tune preprocessing parameters and [metabodecon::benchmark_mdm()] for
-#' unbiased performance estimates.
+#' [metabodecon::fit_mdm()] iterates over the rows of a 'model fitting grid'
+#' (`mog`) — see [metabodecon::get_mog()] — and for each row deconvolutes,
+#' aligns, builds the feature matrix and fits a [glmnet::cv.glmnet()] model.
+#' Held-out accuracy and AUC at `lambda.min` are recorded for each row. The
+#' best model and the augmented grid are returned. A single-row `mog`
+#' degenerates to fitting one model.
 #'
-#' [metabodecon::cv_mdm()] evaluates a grid of preprocessing parameter
-#' combinations. For each grid row it builds a feature matrix, runs
-#' [glmnet::cv.glmnet()] with a fixed fold assignment, and records the
-#' held-out accuracy and AUC at `lambda.min`. Returns the model with the best
-#' AUC and the full performance grid.
+#' [metabodecon::fit_bm()] fits a single binning-based lasso model.
 #'
-#' [metabodecon::benchmark_mdm()] wraps [metabodecon::cv_mdm()] in an
-#' outer cross-validation loop to estimate end-to-end predictive performance.
-#' It returns the per-fold models and held-out predictions.
+#' [metabodecon::benchmark()] runs an outer k-fold cross-validation over any
+#' fitter function (`fit_mdm`, `fit_bm`, ...) to estimate end-to-end
+#' predictive performance, and returns per-fold models, predictions and
+#' performance metrics.
 #'
 #' @details
 #'
+#' ## Caching within `fit_mdm`
+#'
+#' Rows of `mog` are sorted by `(npmax, nfit, smit, smws, delta, maxShift,
+#' maxCombine)` so identical decon-tuples and align-tuples cluster. Inside
+#' the loop, the most recent deconvolution and alignment are kept and reused
+#' whenever the relevant subset of parameters is unchanged.
+#'
 #' ## Grid-search results carried by spectra
 #'
-#' When `npmax > 0`, deconvolution requires a per-spectrum performance grid
-#' to pick the best smoothing/fitting parameters. [metabodecon::cv_mdm()] and
-#' [metabodecon::benchmark_mdm()] call [metabodecon::grid_deconvolute_spectra()]
-#' once at the start to attach a `$grid` element to each spectrum. The
-#' enriched spectra are then passed down to all subsequent deconvolution calls,
-#' which avoids redundant grid searches across pgrid rows and outer folds.
-#'
-#' ## RAM caching within processes
-#'
-#' [metabodecon::fit_mdm()] caches the most recent deconvolution and alignment
-#' results in RAM when the input `spectra` carries a `"hash"` attribute. This
-#' avoids redundant preprocessing when [metabodecon::cv_mdm()] evaluates
-#' several settings on the same spectra.
+#' When any row of `mog` has `npmax > 0`, [metabodecon::fit_mdm()] calls
+#' [metabodecon::grid_deconvolute_spectra()] once up front to attach a
+#' `$grid` element to each spectrum. The enriched spectra are reused across
+#' rows and outer folds. [metabodecon::benchmark()] does the same up-front
+#' attachment for `fun = "fit_mdm"`.
 #'
 #' ## Parallelism
 #'
-#' [metabodecon::benchmark_mdm()] runs outer folds sequentially and
-#' delegates all parallel work to [metabodecon::deconvolute()] and
-#' [metabodecon::align()] via the `nworkers` argument.
+#' [metabodecon::benchmark()] runs outer folds sequentially and delegates
+#' all parallelism to the inner fitter via `nworkers` (`fit_mdm`).
 #'
-#' @param spectra List-like spectra object with `cs` and `si` vectors.
+#' @param x Spectra object. May already carry per-spectrum `$grid` tables.
 #' @param y Factor vector with class labels for each spectrum.
-#' @param sfr Signal free region. See [metabodecon::deconvolute()] for details.
-#' @param use_rust Logical. Whether to use the Rust backend.
-#' @param npmax
-#' Maximum number of peaks to retain. When `npmax > 0`, deconvolution runs an
-#' internal grid search and the explicit `nfit`/`smit`/`smws`/`delta` are
-#' ignored. Set to 0 to use explicit deconvolution parameters instead.
-#' @param nfit Number of Lorentz-curve fitting iterations (used when `npmax == 0`).
-#' @param smit Number of smoothing iterations (used when `npmax == 0`).
-#' @param smws Smoothing window size (used when `npmax == 0`).
-#' @param delta Peak-filter threshold (used when `npmax == 0`).
-#' @param maxShift Maximum alignment shift.
-#' @param maxCombine
-#' Maximum peak-combining distance in datapoints, passed to
-#' [metabodecon::get_si_mat()]. During training, no reference is passed so
-#' partly-filled neighbouring columns are merged. During prediction, the stored
-#' model feature positions are passed as `ref`, so new peaks are snapped to
-#' those positions.
-#' @param nworkers
-#' Number of workers used by [metabodecon::fit_mdm()] and
-#' [metabodecon::cv_mdm()] for deconvolution and alignment.
-#' @param verbosity Integer. Verbosity level; each nested call
-#' decrements by 1. Messages print when `verbosity >= 1`.
-#' @param nfolds
-#' Number of folds for the `cv.glmnet()` call in [metabodecon::fit_mdm()]
-#' and [metabodecon::cv_mdm()]. Default 10.
-#' @param nfo Number of outer folds in [metabodecon::benchmark_mdm()].
-#' @param nfl
-#' Number of folds for the `cv.glmnet()` call inside
-#' [metabodecon::benchmark_mdm()]. Passed as `nfolds` to
-#' [metabodecon::fit_mdm()].
-#' @param seed
-#' Random seed used for fold assignment in [metabodecon::benchmark_mdm()] and
-#' for inner cross-validation splits in [metabodecon::cv_mdm()] and
-#' [metabodecon::fit_mdm()].
-#' @param check Logical. Whether to validate inputs at function entry.
-#' @param pgrid
-#' Data frame of preprocessing parameter combinations as returned
-#' by [metabodecon::get_pgrid()].
-#' @param ignore Optional integer vector of sample indices to exclude.
-#' @param conf
-#' Character string selecting a predefined parameter grid
-#' configuration.
+#' @param mog Model-fitting grid as returned by [metabodecon::get_mog()].
+#' @param sfr Signal-free region. See [metabodecon::deconvolute()].
+#' @param use_rust Use the Rust backend?
+#' @param nworkers Number of workers for deconvolution and alignment.
+#' @param verbosity Verbosity level.
+#' @param seed Random seed for fold assignments.
+#' @param nfolds Number of folds for the inner [glmnet::cv.glmnet()] call.
+#' @param check Validate inputs at function entry?
+#' @param igrs Ignore regions passed to `fun`.
+#' @param nbin Number of bins in the non-ignored part of the ppm range.
+#' @param fun Name of fitter function. Either "fit_mdm" or "fit_bm"`.
+#' @param k Number of outer folds for [metabodecon::benchmark()].
+#' @param ... Extra arguments forwarded to `fun`.
+#' @param conf Character string selecting a predefined `mog` configuration.
 #'
 #' @return
 #' [metabodecon::fit_mdm()] returns an object of class `mdm` with elements
-#' `model` (a [glmnet::cv.glmnet()] object), `ref` (the reference alignment
-#' spectrum) and `meta` (list of preprocessing parameters).
+#' `model` (best [glmnet::cv.glmnet()]), `ref` (reference alignment spectrum),
+#' `params` (all settings needed to reproduce predictions: chosen grid row
+#' plus non-grid arguments such as `sfr`, `igrs`, `use_rust` and `peakPos`)
+#' and `mog` (input grid augmented with `acc`/`auc` columns).
 #'
-#' [metabodecon::cv_mdm()] returns an `mdm` object with an additional element
-#' `pgrid` containing the performance grid.
+#' [metabodecon::fit_bm()] returns an object of class `bm` with elements
+#' `model` and `params`.
 #'
-#' [metabodecon::benchmark_mdm()] returns a list with elements:
-#' - `models`: List of `mdm` objects, one per outer fold.
-#' - `predictions`: Data frame with columns `fold`, `true`, `link`, `prob`,
+#' [metabodecon::benchmark()] returns a list with elements:
+#' - `models`: list of fitted models, one per outer fold.
+#' - `predictions`: data frame with columns `fold`, `true`, `link`, `prob`,
 #'   `pred`.
+#' - `performance`: data frame with per-fold `acc` and `auc`.
+#' - `overall`: list with pooled `acc` and `auc`.
 #'
 #' @examples
 #' \dontrun{
-#'
-#'
-#'
-#'      # -~-~-~ Inputs -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
-#'
-#'      aki <- read_aki_data()
-#'      spectra <- aki$spectra
-#'      attr(spectra, "hash") <- rlang::hash(spectra)
-#'      y <- factor(aki$meta$type, levels = c("Control", "AKI"))
-#'      names(y) <- rownames(aki$meta)
-#'      sfr <- c(11, -2)
-#'
-#'
-#'
-#'      # -~-~-~-~-~-~-~-~-~ Single -~-~-~-~-~-~-~-~-~
-#'
-#'      # Best "simple" model from aki.R (0.797 [0.75 - 0.83])
-#'      mdm <- fit_mdm(
-#'          spectra, y, sfr=NULL,
-#'          nfit=5, smit=3, smws=3, delta=3, npmax=0,
-#'          maxShift=128, maxCombine=256,
-#'          nworkers=half_cores()
-#'      )
-#'
-#'      mdm <- fit_mdm(
-#'          spectra, y, sfr = NULL,
-#'          nfit=5, smit=0, smws=0, delta=0, npmax=1000,
-#'          maxShift=64, maxCombine=16,
-#'          nworkers=half_cores()
-#'      )
-#'
-#'
-#'
-#'      # -~-~-~-~-~-~-~-~-~ Search -~-~-~-~-~-~-~-~-~
-#'
-#'      mdm_grid_stat1 <- cv_mdm(
-#'          spectra, y, pgrid=get_pgrid("static1"),
-#'          nworkers=half_cores(), use_rust=TRUE
-#'      )
-#'      saveRDS(mdm_grid_stat1, "tmp/mdm_grid_stat1.rds")
-#'
-#'
-#'      mdm_grid_stat2 <- cv_mdm(
-#'          spectra, y, pgrid=get_pgrid("static2"),
-#'          nworkers=half_cores(), use_rust=TRUE
-#'      )
-#'      saveRDS(mdm_grid_stat2, "tmp/mdm_grid_stat2.rds")
-#'      #
-#'      # Best static2: acc=0.82, auc=0.89
-#'      # smit=2, smws=3, delta=6, nfit=7, npmax=0, maxShift=100, maxCombine=30
-#'
-#'
-#'      mdm_grid_stat3 <- cv_mdm(
-#'          spectra, y, pgrid=get_pgrid("static3"),
-#'          nworkers=half_cores(), use_rust=TRUE
-#'      )
-#'      saveRDS(mdm_grid_stat3, "tmp/mdm_grid_stat3.rds")
-#'      #
-#'      # Best static3: acc=79.34% auc=0.8589
-#'      # smit=2, smws=7, delta=8, nfit=10, npmax=0, maxShift=100, maxCombine=30
-#'
-#'
-#'      mdm_grid_dyn2 <- cv_mdm(
-#'          spectra, y, pgrid=get_pgrid("dynamic2"),
-#'          nworkers=half_cores(), use_rust=TRUE
-#'      )
-#'
-#'      # -~-~-~ Full Benchmark -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
-#'      bm <- benchmark_mdm(spectra, y, sfr)
-#'
-#'      # -~-~-~ Interactive Development -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
-#'      stub(fit_mdm, spectra=spectra, y=y, sfr=sfr)
-#'      stub(cv_mdm, spectra=spectra, y=y, sfr=sfr)
-#'      stub(benchmark_mdm, spectra=spectra, y=y, sfr=sfr)
+#'   m <- fit_mdm(spectra, y, mog = get_mog("default"))
+#'   bm <- benchmark(spectra, y, fun = "fit_mdm", k = 5,
+#'                   mog = get_mog("default"))
 #' }
-#'
 fit_mdm <- function(
-    # Mandatory
-    spectra, y,
-    # Shared
-    sfr = NULL, use_rust = 0.5, nworkers = 1, verbosity = 2,
-    seed = 1, check = TRUE,
-    # Deconvolution
-    npmax = 1000, nfit = 5, smit = 2, smws = 5, delta = 6.4,
-    # Alignment
-    maxShift = 200,
-    # Peak combining
-    maxCombine = 50,
-    # Glmnet
-    nfolds = 10
+    x, y, mog = get_mog("default"),
+    sfr = NULL, igrs = list(), use_rust = 0.5, nworkers = 1, verbosity = 2,
+    seed = 1, nfolds = 10, check = TRUE
 ) {
-
     if (check) check_mdm_args(
-        spectra=spectra, y=y, sfr=sfr, use_rust=use_rust, nworkers=nworkers,
-        verbosity=verbosity, seed=seed, check=check, nfolds=nfolds,
-        npmax=npmax, nfit=nfit, smit=smit, smws=smws, delta=delta,
-        maxShift=maxShift, maxCombine=maxCombine
+        x = x, y = y, mog = mog, sfr = sfr, igrs = igrs,
+        use_rust = use_rust, nworkers = nworkers, verbosity = verbosity,
+        seed = seed, nfolds = nfolds
     )
 
-    logv("Deconvoluting (npmax=%d, nfit=%d, smit=%d, smws=%d, delta=%.1f)",
-         npmax, nfit, smit, smws, delta)
-    shash <- attr(spectra, "hash")
-    if (is.null(shash)) stop("spectra must carry a 'hash' attribute.", call.=FALSE)
-    decon_hash <- rlang::hash(list(shash, sfr, use_rust, npmax, nfit, smit, smws, delta))
-    decons <- deconvolute_spectra(
-        x=spectra, sfr=sfr, verbose=verbosity >= 2, use_rust=use_rust,
-        nfit=nfit, smit=smit, smws=smws, delta=delta, npmax=npmax,
-        nworkers=nworkers, full=FALSE
-    )
-    nps <- unname(unlist(lapply(decons, function(d) nrow(d$lcpar))))
-    npzero <- sum(nps == 0)
-    if (npzero > 0) {
-        logv("Aborting: %d/%d spectra produced zero peaks", npzero, length(nps))
-        meta <- list(sfr=sfr, use_rust=use_rust, npmax=npmax, nfit=nfit,
-            smit=smit, smws=smws, delta=delta, maxShift=maxShift, maxCombine=maxCombine)
-        return(structure(list(model=NULL, ref=NULL, meta=meta), class="mdm"))
-    }
-    logv("Peak range: [%d, %d]", range(nps)[1], range(nps)[2])
-    attr(decons, "hash") <- decon_hash
+    # Sort rows so identical decon/align tuples cluster.
+    ord <- with(mog, order(npmax, nfit, smit, smws, delta, maxShift, maxCombine))
+    mog <- mog[ord, , drop = FALSE]
+    rownames(mog) <- NULL
+    mog$acc <- NA_real_
+    mog$auc <- NA_real_
 
-    logv("Aligning (maxShift=%d, maxCombine=%g)", maxShift, maxCombine)
-    aligns <- align_decons(
-        xx=decons, maxShift=maxShift, verbose=verbosity >= 2,
-        nworkers=nworkers, full=FALSE
-    )
-
-    logv("Constructing feature matrix")
-    ref <- find_ref(aligns)
-    mat <- si_mat(aligns, maxCombine=maxCombine)
-    peakPos <- which(colSums(mat != 0) > 0)
-    X <- mat[, peakPos, drop=FALSE]
-
-    logv("Fitting cv.glmnet")
-    foldid <- get_foldid(y=y, nfolds=nfolds, seed=seed)
-    model <- glmnet::cv.glmnet(X, y, family="binomial", alpha=1, foldid=foldid, keep=TRUE)
-
-    logv("Constructing and returning mdm object")
-    meta <- list(
-        sfr=sfr, use_rust=use_rust, npmax=npmax, nfit=nfit, smit=smit,
-        smws=smws, delta=delta, maxShift=maxShift, maxCombine=maxCombine,
-        peakPos=peakPos
-    )
-    structure(list(model=model, ref=ref, meta=meta), class="mdm")
-}
-
-#' @export
-#' @rdname mdm
-cv_mdm <- function(
-    spectra, y, pgrid=get_pgrid("default"), sfr=NULL, igrs=list(),
-    use_rust=FALSE, nworkers=1, verbosity=2, seed=1, nfolds = 10,
-    check=TRUE
-) {
-
-    on.exit(options(metabodecon.ad.cache=NULL, metabodecon.ds.cache=NULL), add=TRUE)
-    if (any(pgrid$npmax > 0)) {
-        spectra <- grid_deconvolute_spectra(
-            x=spectra, sfr=sfr, verbose=verbosity >= 2,
-            nworkers=min(nworkers, length(spectra)), use_rust=use_rust
+    # Pre-attach per-spectrum `$grid` tables when any row uses npmax > 0.
+    if (any(mog$npmax > 0)) {
+        x <- grid_deconvolute_spectra(
+            x = x, deg = mog, sfr = sfr, igrs = igrs,
+            verbose = verbosity >= 2,
+            nworkers = min(nworkers, length(x)), use_rust = use_rust
         )
     }
 
-    np <- nrow(pgrid)
-    ns <- length(spectra)
+    nr <- nrow(mog)
+    ns <- length(x)
+    logv("Starting grid search (%d combinations, %d spectra)", nr, ns)
 
-    logv("Starting grid search (%d combinations, %s spectra)", np, ns)
+    foldid <- get_foldid(y = y, nfolds = nfolds, seed = seed)
 
-    best_mdm <- NULL
-    best_auc <- -Inf
-    for (i in seq_len(np)) {
+    # Last-iteration cache for decon and align results.
+    last_dkey <- NULL; d <- NULL
+    last_akey <- NULL; a <- NULL
+    best_mdm <- NULL; best_auc <- -Inf
 
-        row <- pgrid[i, , drop=FALSE]
-        tag <- paste0(names(row), "=", as.character(unlist(row)), collapse=", ")
+    for (i in seq_len(nr)) {
+        r <- mog[i, , drop = FALSE]
+        tag <- sprintf(
+            paste0("npmax=%d nfit=%d smit=%d smws=%d delta=%g ",
+                   "maxShift=%d maxCombine=%g"),
+            r$npmax, r$nfit, r$smit, r$smws, r$delta,
+            r$maxShift, r$maxCombine
+        )
+        logv("[%d/%d] %s", i, nr, tag)
 
-
-        logv("[%d/%d]: %s", i, np, tag)
-
-        p <- pgrid[i, , drop=FALSE]
-
-        mdm <- do.call(fit_mdm, c(
-            list(spectra=spectra, y=y, sfr=sfr, use_rust=use_rust, nworkers=nworkers,
-                 verbosity=verbosity - 1, seed=seed, check=FALSE, nfolds=nfolds),
-            pc
-        ))
-        if (is.null(mdm$model)) {
-            pgrid$acc[i] <- 0; pgrid$auc[i] <- 0
-            logv("[%d/%d] zero peaks, skipping", i, np)
+        dkey <- list(r$npmax, r$nfit, r$smit, r$smws, r$delta)
+        if (!identical(dkey, last_dkey)) {
+            d <- deconvolute_spectra(
+                x = x, sfr = sfr, igrs = igrs, verbose = verbosity >= 2,
+                use_rust = use_rust, nfit = r$nfit, smit = r$smit,
+                smws = r$smws, delta = r$delta, npmax = r$npmax,
+                nworkers = nworkers, full = FALSE
+            )
+            last_dkey <- dkey
+            last_akey <- NULL
+        }
+        nps <- vapply(d, function(o) nrow(o$lcpar), integer(1))
+        if (any(nps == 0)) {
+            logv("[%d/%d] %d spectra produced zero peaks; skipping",
+                 i, nr, sum(nps == 0))
+            mog$acc[i] <- 0; mog$auc[i] <- 0
             next
         }
-        cvfit <- mdm$model
+
+        akey <- list(dkey, r$maxShift)
+        if (!identical(akey, last_akey)) {
+            a <- align_decons(
+                x = d, maxShift = r$maxShift, verbose = verbosity >= 2,
+                nworkers = nworkers, full = FALSE
+            )
+            last_akey <- akey
+        }
+
+        ref <- find_ref(a)
+        mat <- si_mat(a, maxCombine = r$maxCombine)
+        peakPos <- which(colSums(mat != 0) > 0)
+        X <- mat[, peakPos, drop = FALSE]
+
+        cvfit <- glmnet::cv.glmnet(
+            X, y, family = "binomial", alpha = 1,
+            foldid = foldid, keep = TRUE
+        )
         li <- which(cvfit$lambda == cvfit$lambda.min)
         link <- cvfit$fit.preval[, li]
         prob <- 1 / (1 + exp(-link))
         lvs <- levels(y)
-        pred <- factor(ifelse(prob > 0.5, lvs[2], lvs[1]), levels=lvs)
-        pgrid$acc[i] <- mean(pred == y)
-        pgrid$auc[i] <- AUC(y, prob)
-        if (pgrid$auc[i] > best_auc) { best_auc <- pgrid$auc[i]; best_mdm <- mdm }
-        logv("[%d/%d] acc=%.2f%% auc=%.4f | best auc=%.4f",
-            i, np, pgrid$acc[i] * 100, pgrid$auc[i], best_auc)
+        pred <- factor(ifelse(prob > 0.5, lvs[2], lvs[1]), levels = lvs)
+        mog$acc[i] <- mean(pred == y)
+        mog$auc[i] <- AUC(y, prob)
+        logv("[%d/%d] acc=%.2f%% auc=%.4f",
+             i, nr, mog$acc[i] * 100, mog$auc[i])
+
+        if (!is.na(mog$auc[i]) && mog$auc[i] > best_auc) {
+            best_auc <- mog$auc[i]
+            params <- list(
+                sfr = sfr, igrs = igrs, use_rust = use_rust,
+                npmax = r$npmax, nfit = r$nfit, smit = r$smit,
+                smws = r$smws, delta = r$delta,
+                maxShift = r$maxShift, maxCombine = r$maxCombine,
+                peakPos = peakPos
+            )
+            best_mdm <- structure(
+                list(model = cvfit, ref = ref, params = params),
+                class = "mdm"
+            )
+        }
     }
-    ibest <- which.max(pgrid$auc)
-    logv("Best [%d/%d]: acc=%.2f%% auc=%.4f", ibest, np,
-        pgrid$acc[ibest] * 100, pgrid$auc[ibest])
-    best_mdm$pgrid <- pgrid
+
+    if (is.null(best_mdm)) {
+        logv("No valid model found (all rows produced zero peaks).")
+        params <- list(sfr = sfr, igrs = igrs, use_rust = use_rust)
+        return(structure(
+            list(model = NULL, ref = NULL, params = params, mog = mog),
+            class = "mdm"
+        ))
+    }
+    best_mdm$mog <- mog
+    ibest <- which.max(mog$auc)
+    logv("Best [%d/%d]: acc=%.2f%% auc=%.4f",
+         ibest, nr, mog$acc[ibest] * 100, mog$auc[ibest])
     best_mdm
 }
 
 #' @export
 #' @rdname mdm
-benchmark_mdm <- function(
-    spectra, y, sfr=NULL,
-    use_rust=0.5, verbosity=2,  seed=1,
-    nworkers=half_cores(), pgrid=get_pgrid(), nfo=5, nfl=10
-) {
-
-    check_mdm_args(spectra=spectra, y=y, sfr=sfr, use_rust=use_rust, verbosity=verbosity, nfolds=nfo, nfl=nfl, nworkers=nworkers, pgrid=pgrid, seed=seed)
-    if (any(pgrid$npmax > 0)) {
-        spectra <- grid_deconvolute_spectra(
-            x=spectra, sfr=sfr, verbose=verbosity >= 2,
-            nworkers=min(nworkers, length(spectra)), use_rust=use_rust
-        )
-    }
-
-    logv("Fitting cv_mdm for %d outer folds", nfo)
-    te_list <- get_test_ids(nfolds=nfo, nsamples=length(spectra), seed=seed, y=y)
-    fids <- seq_along(te_list)
-    mdms <- lapply(te_list, function(ignore) cv_mdm(
-        ignore=ignore, spectra=spectra, y=y, sfr=sfr, use_rust=use_rust,
-        nworkers=nworkers, verbosity=verbosity - 1, nfolds=nfl, seed=seed,
-        pgrid=pgrid, check=FALSE
-    ))
-
-    logv("Predicting on held-out test folds")
-    te_spectra <- lapply(te_list, function(te) spectra[te])
-    preds_raw <- mapply(
-        predict.mdm, object=mdms, newdata=te_spectra,
-        MoreArgs=list(type="all", nworkers=nworkers, verbosity=verbosity - 1),
-        SIMPLIFY=FALSE, USE.NAMES=FALSE
+get_mog <- function(conf = "default") {
+    g <- expand.grid2(
+        nfit       = switch(conf, dynamic = 0, 5),
+        smit       = switch(conf, dynamic = 0, 2),
+        smws       = switch(conf, dynamic = 0, static = c(3, 5, 7, 9), 5),
+        delta      = switch(conf, dynamic = 0, static = c(3.2, 4.8, 6.4, 8.0), 6.4),
+        npmax      = switch(conf, dynamic = seq(400, 1600, 200), 0),
+        maxShift   = 200,
+        maxCombine = 50
     )
-    preds <- mapply(
-        FUN = function(fid, te, p) {
-            data.frame(fold=fid, true=y[te], link=p$link, prob=p$prob, pred=p$class)
-        },
-        fids, te_list, preds_raw,
-        SIMPLIFY=FALSE, USE.NAMES=FALSE
-    )
-    Y <- do.call(rbind, preds)
-    acc <- mean(Y$true == Y$pred, na.rm=TRUE)
-    logv("Nested CV accuracy: %.2f%%", acc * 100)
-    out <- list(models=mdms, predictions=Y)
-    out$mdms <- out$models
-    out
+    ord <- with(g, order(npmax, nfit, smit, smws, delta, maxShift, maxCombine))
+    g <- g[ord, , drop = FALSE]
+    rownames(g) <- NULL
+    g
 }
 
 #' @export
 #' @rdname mdm
-get_pgrid <- function(conf = "default") {
-    P <- expand.grid2(
-        nfit  = switch(conf, dynamic=0, 10),
-        smit  = switch(conf, dynamic=0, 2),
-        smws  = switch(conf, dynamic=0, static=c(3,5,7,9), 5),
-        delta = switch(conf, dynamic=0, static=c(3.2,4.8,6.4,8.0), 6.4),
-        npmax = switch(conf, dynamic=seq(400,1600,200), 0),
+fit_bm <- function(
+    x, y, igrs=list(), nbin=1000,
+    seed=1, nfolds=10, verbosity=2, check=TRUE
+) {
+    if (check) check_bm_args(x=x, y=y, igrs=igrs, nbin=nbin, seed=seed, nfolds=nfolds, verbosity=verbosity)
+
+    logv("Binning %d spectra into %d bins (igrs excluded)", length(x), nbin)
+    X <- bin_spectra(x, igrs=igrs, nbin=nbin)
+    foldid <- get_foldid(y=y, nfolds=nfolds, seed=seed)
+
+    logv("Fitting cv.glmnet on %d features", ncol(X))
+    model <- glmnet::cv.glmnet(X, y, family="binomial", alpha=1, foldid=foldid, keep=TRUE)
+    params <- list(igrs=igrs, nbin=nbin, feat_names=colnames(X))
+
+    structure(list(model=model, params=params), class="bm")
+}
+
+#' @export
+#' @rdname mdm
+benchmark <- function(
+    x, y, ..., fun = "fit_mdm",
+    k = 5, seed = 1, verbosity = 2
+) {
+    stopifnot(
+        is_spectra(x), is.factor(y), length(y) == length(x),
+        is_str(fun), is_int(k, 1), k >= 2,
+        is_int(seed, 1), is_int(verbosity, 1)
     )
-    ord <- order(P$npmax, P$nfit, P$smit, P$smws, P$delta, P$maxShift, P$maxCombine)
-    P <- P[ord, ]
-    P$acc <- NA_real_
-    P$auc <- NA_real_
-    rownames(P) <- NULL
-    P
+    if (nlevels(y) != 2 || any(table(y) == 0)) {
+        stop("`y` must contain exactly 2 non-empty classes.", call. = FALSE)
+    }
+    if (k > length(y)) {
+        stop("`k` must not exceed the number of samples.", call. = FALSE)
+    }
+    if (!fun %in% c("fit_mdm", "fit_bm")) {
+        stop("Unsupported fun=", fun, call. = FALSE)
+    }
+
+    dots <- list(...)
+    fitter <- match.fun(fun)
+    pred_fn <- if (fun == "fit_mdm") predict.mdm else predict.bm
+
+    # One-time grid attach when fitting mdm with npmax > 0.
+    if (fun == "fit_mdm" && !is.null(dots$mog) && any(dots$mog$npmax > 0)) {
+        x <- grid_deconvolute_spectra(
+            x = x, deg = dots$mog, sfr = dots$sfr,
+            igrs = dots$igrs %||% list(),
+            verbose = verbosity >= 2,
+            nworkers = dots$nworkers %||% 1L,
+            use_rust = dots$use_rust %||% FALSE
+        )
+    }
+
+    # Forward verbosity-1 to the fitter (overrides any user-passed value).
+    dots$verbosity <- max(0L, verbosity - 1L)
+
+    te_list <- get_test_ids(
+        nfolds = k, nsamples = length(x), seed = seed, y = y
+    )
+    models <- vector("list", k)
+    fold_preds <- vector("list", k)
+    perf <- data.frame(
+        fold = integer(0), acc = numeric(0), auc = numeric(0)
+    )
+
+    logv("Running %d-fold outer CV with fun=%s", k, fun)
+    for (i in seq_along(te_list)) {
+        te <- te_list[[i]]
+        tr <- setdiff(seq_along(x), te)
+        logv("[fold %d/%d] fitting", i, k)
+        m <- do.call(fitter, c(list(x = x[tr], y = y[tr]), dots))
+        p <- pred_fn(m, x[te], type = "all")
+        fp <- data.frame(
+            fold = i, true = y[te], link = p$link,
+            prob = p$prob, pred = p$class
+        )
+        fold_preds[[i]] <- fp
+        acc <- mean(fp$pred == fp$true, na.rm = TRUE)
+        auc <- AUC(fp$true, fp$prob)
+        perf <- rbind(perf, data.frame(fold = i, acc = acc, auc = auc))
+        logv("[fold %d/%d] acc=%.2f%% auc=%.4f",
+             i, k, acc * 100, auc)
+        models[[i]] <- m
+    }
+
+    preds <- do.call(rbind, fold_preds)
+    overall_acc <- mean(preds$true == preds$pred, na.rm = TRUE)
+    overall_auc <- AUC(preds$true, preds$prob)
+    logv("Overall: acc=%.2f%% auc=%.4f",
+         overall_acc * 100, overall_auc)
+    list(
+        models = models,
+        predictions = preds,
+        performance = perf,
+        overall = list(acc = overall_acc, auc = overall_auc)
+    )
 }
 
 # Helpers #####
@@ -462,46 +407,30 @@ AUC <- function(y, yhat) {
 }
 
 check_mdm_args <- function(
-    spectra, y, sfr,
-    use_rust = NULL, nworkers = NULL, verbosity = NULL,
-    nfolds = NULL, nfl = NULL,
-    pgrid = NULL,
-    ignore = NULL, seed = NULL, check = NULL,
-    npmax = NULL, nfit = NULL, smit = NULL, smws = NULL, delta = NULL,
-    maxShift = NULL, maxCombine = NULL
+    x, y, mog,
+    sfr = NULL, igrs = list(), use_rust = NULL, nworkers = NULL,
+    verbosity = NULL, seed = NULL, nfolds = NULL
 ) {
-    pp_names <- c(
-        "npmax", "nfit", "smit", "smws", "delta",
-        "maxShift", "maxCombine"
-    )
+    cols <- c("nfit", "smit", "smws", "delta", "npmax",
+              "maxShift", "maxCombine")
     stopifnot(
-        is_spectra(spectra),
+        is_spectra(x),
         is.factor(y),
-        length(y) == length(spectra),
+        length(y) == length(x),
+        is.data.frame(mog),
+        nrow(mog) >= 1,
+        all(cols %in% names(mog)),
         is_num_or_null(sfr, 2),
-        is_int_or_null(npmax, 1),
-        is_int_or_null(nfit, 1),
-        is_int_or_null(smit, 1),
-        is_int_or_null(smws, 1),
-        is_num_or_null(delta, 1),
-        is_int_or_null(maxShift, 1),
-        is_int_or_null(maxCombine, 1),
+        is_list_of_nums(igrs, nv = 2),
         is_bool_or_num(use_rust),
         is_int_or_null(nworkers, 1),
         is_int_or_null(verbosity, 1),
-        is.null(nfolds) || (is_int(nfolds, 1) && nfolds >= 2),
-        is.null(nfl) || (is_int(nfl, 1) && nfl >= 2),
-        is.null(pgrid) || (
-            is.data.frame(pgrid) &&
-            nrow(pgrid) >= 1 &&
-            all(pp_names %in% names(pgrid))
-        ),
-        is_int_or_null(ignore),
         is_int_or_null(seed, 1),
-        is_bool_or_null(check, 1)
+        is.null(nfolds) || (is_int(nfolds, 1) && nfolds >= 2)
     )
-    if (!is.null(names(y)) && !identical(get_names(spectra), names(y))) {
-        stop("Names of `spectra` and `y` must match and be in the same order.", call. = FALSE)
+    if (!is.null(names(y)) && !identical(get_names(x), names(y))) {
+        stop("Names of `x` and `y` must match and be in the same order.",
+             call. = FALSE)
     }
     if (nlevels(y) != 2 || any(table(y) == 0)) {
         stop("`y` must contain exactly 2 non-empty classes.", call. = FALSE)
@@ -509,13 +438,97 @@ check_mdm_args <- function(
     if (!is.null(nfolds) && nfolds > length(y)) {
         stop("`nfolds` must not exceed the number of samples.", call. = FALSE)
     }
-    if (!is.null(nfl) && nfl > length(y)) {
-        stop("`nfl` must not exceed the number of samples.", call. = FALSE)
-    }
-    if (!is.null(ignore) && any(!ignore %in% seq_along(spectra))) {
-        stop("`ignore` contains invalid sample indices.", call. = FALSE)
+    invisible(NULL)
+}
+
+check_bm_args <- function(x, y, igrs, nbin, seed, nfolds, verbosity) {
+    stopifnot(
+        is_spectra(x), is.factor(y), length(y) == length(x),
+        is_list_of_nums(igrs, nv = 2),
+        is_int(nbin, 1), nbin >= 1,
+        is_int_or_null(seed, 1),
+        is_int(nfolds, 1), nfolds >= 2, nfolds <= length(y),
+        is_int_or_null(verbosity, 1)
+    )
+    if (nlevels(y) != 2 || any(table(y) == 0)) {
+        stop("`y` must contain exactly 2 non-empty classes.", call. = FALSE)
     }
     invisible(NULL)
+}
+
+# Bin a spectra object into `nbin` equal-width bins distributed across the
+# non-ignored part of the ppm range. The kept domain is `[min(cs), max(cs)]`
+# minus all intervals in `igrs`. Its total length is split into `nbin`
+# bins of equal width; each kept sub-interval gets a proportional share.
+# Returns a numeric matrix with one row per spectrum and named columns
+# (rounded bin centers).
+bin_spectra <- function(spectra, igrs = list(), nbin = 1000) {
+    cs0 <- spectra[[1]]$cs
+    lo <- min(cs0); hi <- max(cs0)
+    # Build kept intervals as [lo, hi] minus the union of igrs.
+    if (length(igrs) == 0) {
+        kept <- list(c(lo, hi))
+    } else {
+        ig <- t(vapply(igrs, function(r) c(min(r), max(r)), numeric(2)))
+        ig <- ig[order(ig[, 1]), , drop = FALSE]
+        # Merge overlapping ignore regions.
+        merged <- ig[1, , drop = FALSE]
+        for (i in seq_len(nrow(ig))[-1]) {
+            if (ig[i, 1] <= merged[nrow(merged), 2]) {
+                merged[nrow(merged), 2] <- max(merged[nrow(merged), 2], ig[i, 2])
+            } else {
+                merged <- rbind(merged, ig[i, , drop = FALSE])
+            }
+        }
+        # Complement within [lo, hi].
+        kept <- list()
+        cur <- lo
+        for (i in seq_len(nrow(merged))) {
+            a <- max(lo, merged[i, 1]); b <- min(hi, merged[i, 2])
+            if (cur < a) kept[[length(kept) + 1]] <- c(cur, a)
+            cur <- max(cur, b)
+        }
+        if (cur < hi) kept[[length(kept) + 1]] <- c(cur, hi)
+    }
+    if (length(kept) == 0) stop("All ppm range is ignored.", call. = FALSE)
+
+    # Distribute nbin bins across kept intervals proportional to length.
+    lens <- vapply(kept, function(r) r[2] - r[1], numeric(1))
+    total <- sum(lens)
+    bw <- total / nbin
+    # Per-interval bin counts, rounded but summing to nbin.
+    raw <- lens / bw
+    nb_each <- floor(raw)
+    rem <- nbin - sum(nb_each)
+    if (rem > 0) {
+        ord <- order(raw - nb_each, decreasing = TRUE)
+        nb_each[ord[seq_len(rem)]] <- nb_each[ord[seq_len(rem)]] + 1L
+    }
+
+    elo <- numeric(0); ehi <- numeric(0); centers <- numeric(0)
+    for (i in seq_along(kept)) {
+        if (nb_each[i] == 0) next
+        e <- seq(kept[[i]][1], kept[[i]][2], length.out = nb_each[i] + 1)
+        elo <- c(elo, e[-length(e)])
+        ehi <- c(ehi, e[-1])
+        centers <- c(centers, (e[-length(e)] + e[-1]) / 2)
+    }
+
+    n <- length(spectra)
+    X <- matrix(0, nrow = n, ncol = length(centers))
+    for (i in seq_len(n)) {
+        cs <- spectra[[i]]$cs
+        si <- spectra[[i]]$si
+        ord <- order(cs)
+        cs <- cs[ord]; si <- si[ord]
+        cum <- c(0, cumsum(si))
+        idx_hi <- findInterval(ehi, cs)
+        idx_lo <- findInterval(elo, cs)
+        X[i, ] <- cum[idx_hi + 1] - cum[idx_lo + 1]
+    }
+    colnames(X) <- sprintf("%.4f", centers)
+    rownames(X) <- get_names(spectra)
+    X
 }
 
 # S3 methods #####
@@ -574,8 +587,8 @@ check_mdm_args <- function(
 #'   list(
 #'     model = NULL,
 #'     ref = NULL,
-#'     meta = list(npmax = 1000, nfit = 3, smit = 2, smws = 5,
-#'                 delta = 6.4, maxShift = 100, maxCombine = 50)
+#'     params = list(npmax = 1000, nfit = 3, smit = 2, smws = 5,
+#'                   delta = 6.4, maxShift = 100, maxCombine = 50)
 #'   ),
 #'   class = "mdm"
 #' )
@@ -583,7 +596,7 @@ check_mdm_args <- function(
 #' summary(m)
 #'
 #' \dontrun{
-#'   m <- cv_mdm(spectra, y, sfr = c(11, -2))
+#'   m <- fit_mdm(spectra, y, mog = get_mog("default"), sfr = c(11, -2))
 #'   predict(m, test_spectra, type = "prob")
 #'   coef(m)
 #'   plot(m)
@@ -611,20 +624,23 @@ predict.mdm <- function(object,
         return(z)
     }
     if (is_spectra(newdata)) {
-        m <- object$meta
+        m <- object$params
         logv("Deconvoluting %d spectra with %d nworkers", length(newdata), nworkers)
         decons <- if (m$npmax > 0) {
-            deconvolute(x=newdata, sfr=m$sfr, verbose=verbosity >= 2,
+            deconvolute(x=newdata, sfr=m$sfr, igrs=m$igrs %||% list(),
+                verbose=verbosity >= 2,
                 use_rust=m$use_rust, npmax=m$npmax, nworkers=nworkers)
         } else {
-            deconvolute(x=newdata, sfr=m$sfr, verbose=verbosity >= 2,
+            deconvolute(x=newdata, sfr=m$sfr, igrs=m$igrs %||% list(),
+                verbose=verbosity >= 2,
                 use_rust=m$use_rust, nfit=m$nfit, smit=m$smit, smws=m$smws,
                 delta=m$delta, npmax=0, nworkers=nworkers)
         }
         logv("Aligning spectra with %d nworkers", nworkers)
-        als <- align_decons(xx=decons, maxShift=m$maxShift, verbose=verbosity >= 2,
+        als <- align_decons(x=decons, maxShift=m$maxShift, verbose=verbosity >= 2,
             nworkers=nworkers, ref=object$ref, full=FALSE)
         Xn <- si_mat(als, maxCombine=m$maxCombine, peakPos=m$peakPos)
+        Xn <- Xn[, m$peakPos, drop=FALSE]
     } else {
         Xn <- as.matrix(newdata)
     }
@@ -645,16 +661,18 @@ predict.mdm <- function(object,
 #' @export
 #' @rdname mdm_methods
 print.mdm <- function(x, ...) {
-    stopifnot(inherits(x, "mdm"), is.list(x$meta))
+    stopifnot(inherits(x, "mdm"), is.list(x$params))
     pp <- c("npmax", "nfit", "smit", "smws", "delta",
             "maxShift", "maxCombine")
     cat("metabodecon model (mdm)\n")
     for (nm in pp) {
+        v <- x$params[[nm]]
+        if (is.null(v)) next
         lab <- formatC(paste0(nm, ":"), width = -15)
-        cat("  ", lab, x$meta[[nm]], "\n", sep = "")
+        cat("  ", lab, v, "\n", sep = "")
     }
-    if (!is.null(x$pgrid)) {
-        cat("  grid rows:     ", nrow(x$pgrid), "\n", sep = "")
+    if (!is.null(x$mog)) {
+        cat("  grid rows:     ", nrow(x$mog), "\n", sep = "")
     }
     invisible(x)
 }
@@ -677,14 +695,12 @@ plot.mdm <- function(x, ...) {
 #' @export
 #' @rdname mdm_methods
 summary.mdm <- function(object, ...) {
-    stopifnot(inherits(object, "mdm"), is.list(object$meta))
+    stopifnot(inherits(object, "mdm"), is.list(object$params))
     pp <- c("npmax", "nfit", "smit", "smws", "delta",
         "maxShift", "maxCombine")
-    out <- object$meta[pp]
-    out$n_peaks <- if (is.null(object$meta$peakPos)) 0L
-                   else nrow(object$meta$peakPos)
-    out$grid_rows <- if (is.null(object$pgrid)) 0L
-                     else nrow(object$pgrid)
+    out <- object$params[pp]
+    out$n_peaks <- length(object$params$peakPos %||% integer(0))
+    out$grid_rows <- if (is.null(object$mog)) 0L else nrow(object$mog)
     class(out) <- "summary.mdm"
     out
 }
@@ -699,4 +715,33 @@ print.summary.mdm <- function(x, ...) {
         cat("  ", lab, x[[nm]], "\n", sep = "")
     }
     invisible(x)
+}
+
+#' @export
+#' @rdname mdm_methods
+predict.bm <- function(object,
+                       newdata,
+                       type = c("all", "prob", "class", "link"),
+                       s = "lambda.min",
+                       ...) {
+    stopifnot(inherits(object, "bm"))
+    type <- match.arg(type)
+    Xn <- if (is_spectra(newdata)) {
+        Xb <- bin_spectra(newdata, igrs = object$params$igrs,
+                          nbin = object$params$nbin)
+        Xb[, object$params$feat_names, drop = FALSE]
+    } else {
+        as.matrix(newdata)
+    }
+    requireNamespace("glmnet", quietly = TRUE)
+    score <- as.numeric(stats::predict(object$model, newx = Xn, s = s,
+                                       type = "link"))
+    prob <- as.numeric(stats::predict(object$model, newx = Xn, s = s,
+                                      type = "response"))
+    pred <- stats::predict(object$model, newx = Xn, s = s, type = "class")[, 1]
+    pred <- factor(pred, levels = object$model$glmnet.fit$classnames)
+    if (type == "all") return(data.frame(link = score, prob = prob, class = pred))
+    if (type == "class") return(pred)
+    if (type == "prob") return(prob)
+    score
 }

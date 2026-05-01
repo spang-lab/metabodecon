@@ -9,6 +9,7 @@
 #   source("data-raw/data.R")
 #   update_sap()     # regenerates data/sap.rda and inst/example_datasets/bruker/sap
 #   update_sim()     # regenerates data/sim.rda and inst/example_datasets/bruker/sim
+#   update_sim2()    # regenerates data/sim2.rda
 #   update_aki()     # downloads MTBLS24, copies to inst/example_datasets/bruker/aki
 #   update_example_datasets()  # rebuilds misc/example_datasets.zip
 
@@ -79,6 +80,59 @@ update_sim <- function(nworkers = 1) {
     save_spectra(sim, path, force = TRUE)
     usethis::use_data(sim, overwrite = TRUE)
     path
+}
+
+# Sim2 #####
+
+#' @noRd
+#' @author 2026 Tobias Schmidt: initial version.
+#' @description
+#' Builds the `sim2` classification dataset: 36 simulated 1D NMR spectra split
+#' into two groups (A and B), where five out of ~25 peaks per spectrum differ
+#' systematically between the groups by 10% in area. Peak parameter
+#' distributions (number of peaks, areas, half-widths, noise) were chosen to
+#' match the values recovered by deconvoluting the [metabodecon::sim] dataset
+#' (which itself is derived from the Blood reference dataset; see
+#' [metabodecon::sim]). The result is a `spectra` object with the per-spectrum
+#' group labels attached as `attr(., "group")`.
+make_sim2 <- function() {
+    set.seed(42)
+    n <- 36   # number of spectra
+    npk <- 25 # number of peaks
+    cs <- seq(from = 3.59, length.out = 2048, by = -0.00015)
+    base_x0 <- sort(stats::runif(npk, 3.37, 3.52))
+    base_A <- stats::rlnorm(npk, meanlog = log(2500), sdlog = 1)
+    base_lam <- stats::runif(npk, 0.0009, 0.0013)
+    group <- factor(rep(c("A", "B"), each = n/2))
+    diff_AB <- 1:5 # peaks differing between A and B
+    spectra <- vector("list", n)
+    for (i in seq_len(n)) {
+        x0 <- base_x0 + stats::rnorm(npk, sd = 0.00030) # within-group jitter
+        x0 <- x0 + stats::rnorm(1, sd = 0.00060) # global ppm shift
+        A <- base_A * stats::runif(npk, 0.7, 1.3)
+        lam <- base_lam * stats::runif(npk, 0.9, 1.1)
+        if (group[i] == "A") A[diff_AB] <- A[diff_AB] * 1.1
+        spectra[[i]] <- simulate_spectrum(
+            name = sprintf("sim2_%03d", i), cs = cs,
+            x0 = sort(x0), A = A, lambda = lam,
+            noise = stats::rnorm(length(cs), sd = 2200)
+        )
+    }
+    names(spectra) <- vapply(spectra, function(s) s$meta$name, character(1))
+    class(spectra) <- "spectra"
+    names(group) <- names(spectra)
+    attr(spectra, "group") <- group
+    spectra
+}
+
+#' @noRd
+#' @author 2026 Tobias Schmidt: initial version.
+update_sim2 <- function() {
+    logf("Updating data/sim2.rda")
+    if (!get_yn_input("Continue?")) return(invisible())
+    sim2 <- make_sim2()
+    usethis::use_data(sim2, overwrite = TRUE)
+    invisible(sim2)
 }
 
 #' @noRd

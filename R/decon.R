@@ -115,20 +115,6 @@ deconvolute_spectra <- function(
 ) {
     sfr <- sfr %||% quantile(x$cs %||% x[[1]]$cs, c(0.9, 0.1))
 
-    # RAM cache lookup (used when called from cv_mdm with full=FALSE)
-    if (isFALSE(full)) {
-        xhash <- attr(x, "hash")
-        if (is.null(xhash)) stop("full=FALSE requires x@hash to be set")
-        key <- rlang::hash(list(
-            xhash, nfit, smit, smws, delta, sfr, force, use_rust, igrs, npmax
-        ))
-        cache <- getOption("metabodecon.ds.cache", list(key="", decons=NULL))
-        if (identical(cache$key, key)) {
-            logf("Skipping deconvolution (cache hit)")
-            return(cache$decons)
-        }
-    }
-
     # Configure logging
     if (!verbose) local_options(toscutil.logf.file = nullfile())
 
@@ -164,13 +150,6 @@ deconvolute_spectra <- function(
     decons <- as_decons2(decon_list)
     duration <- format(round(Sys.time() - starttime, 3))
     logf("Finished deconvolution of %s in %s", ns_str, duration)
-
-    # Store in cache if full is FALSE (i.e. we're called from `cv_mdm()`)
-    if (isFALSE(full)) {
-        options(metabodecon.ds.cache = list(key=key, decons=decons))
-    }
-
-    # Return
     decons
 }
 
@@ -310,8 +289,16 @@ decon2_from_rust <- function(x, args, sfr, igrs, nfit, smit, smws, delta) {
 #' that already carry a `$grid` element are left untouched. The enriched
 #' `spectra` object is returned so workers in `deconvolute_spectra()` can
 #' look up best parameters locally.
+#'
+#' @param deg
+#' Optional deconvolution-parameter grid (a data frame with columns `nfit`,
+#' `smit`, `smws`, `delta`; extra columns like `npmax`, `maxShift`,
+#' `maxCombine` are ignored). When supplied, only rows with `npmax > 0` are
+#' used. When `NULL`, a default cartesian product
+#' (`smit=c(2,3), smws=c(3,5,7,9), delta=2:8, nfit=c(3,4,5)`) is used.
 grid_deconvolute_spectra <- function(
-    x, sfr=NULL, verbose=TRUE, nworkers=1, use_rust=FALSE
+    x, deg=NULL, sfr=NULL, igrs=list(), verbose=TRUE, nworkers=1,
+    use_rust=FALSE
 ) {
     sfr <- sfr %||% quantile(x[[1]]$cs, c(0.9, 0.1))
     if (isFALSE(verbose)) local_options(toscutil.logf.file = nullfile())
@@ -325,7 +312,8 @@ grid_deconvolute_spectra <- function(
     nw <- min(nworkers, length(idx))
     enriched <- mcmapply(
         nw, grid_deconvolute_spectrum, x=x[idx],
-        MoreArgs = list(sfr=sfr, verbose=verbose, use_rust=use_rust)
+        MoreArgs = list(deg=deg, sfr=sfr, igrs=igrs, verbose=verbose,
+                        use_rust=use_rust)
     )
     for (k in seq_along(idx)) x[[idx[k]]] <- enriched[[k]]
     invisible(x)
@@ -336,6 +324,10 @@ grid_deconvolute_spectra <- function(
 #' @title Deconvolute one spectrum using a grid of parameters
 #'
 #' @inheritParams deconvolute_spectrum
+#'
+#' @param deg
+#' Optional deconvolution-parameter grid. See `grid_deconvolute_spectra()`
+#' for details.
 #'
 #' @return
 #' The input spectrum with a `$grid` element attached: a data frame with
@@ -352,20 +344,20 @@ grid_deconvolute_spectra <- function(
 #' xRust <- grid_deconvolute_spectrum(x, use_rust=TRUE)
 #'
 grid_deconvolute_spectrum <- function(
-    x, sfr=NULL, verbose=TRUE, use_rust=FALSE,
-    smit=c(2,3), smws=c(3,5,7,9), delta=2:8, nfit=c(3,4,5)
+    x, deg=NULL, sfr=NULL, igrs=list(), verbose=TRUE, use_rust=FALSE
 ) {
     if (!is.null(x$grid)) return(x)
     if (!verbose) local_options(toscutil.logf.file = nullfile())
     sfr <- sfr %||% quantile(x$cs %||% x[[1]]$cs, c(0.9, 0.1))
 
+    grid <- deg_to_grid(deg)
     specname <- get_name(x)
     logf("Grid deconvoluting %s", specname)
 
-    grid <- expand.grid(smit=smit, smws=smws, delta=delta, nfit=nfit)
-    pnames <- names(grid)
+    pnames <- c("smit", "smws", "delta", "nfit")
     default_args <- as.list(formals(deconvolute_spectrum))
-    call_args <- list(x=x, sfr=sfr, verbose=FALSE, use_rust=use_rust, npmax=0)
+    call_args <- list(x=x, sfr=sfr, igrs=igrs, verbose=FALSE,
+                       use_rust=use_rust, npmax=0)
     args <- modifyList(default_args, call_args)
 
     for (i in seq_len(nrow(grid))) {
@@ -379,6 +371,26 @@ grid_deconvolute_spectrum <- function(
     logf("Finished grid deconvolution of %s", specname)
     x$grid <- grid
     x
+}
+
+# Build a (smit, smws, delta, nfit) grid from a `deg` data frame or use the
+# default cartesian product when `deg` is NULL. Used by
+# grid_deconvolute_spectrum().
+deg_to_grid <- function(deg) {
+    cols <- c("smit", "smws", "delta", "nfit")
+    if (is.null(deg)) {
+        return(expand.grid(
+            smit=c(2,3), smws=c(3,5,7,9), delta=2:8, nfit=c(3,4,5)
+        ))
+    }
+    if (!is.data.frame(deg) || !all(cols %in% names(deg))) {
+        stop("deg must be a data frame with columns ", toString(cols))
+    }
+    if ("npmax" %in% names(deg)) deg <- deg[deg$npmax > 0, , drop=FALSE]
+    g <- unique(deg[, cols, drop=FALSE])
+    if (nrow(g) == 0) stop("deg yields no rows with npmax > 0")
+    rownames(g) <- NULL
+    g
 }
 
 # Helpers for deconvolute_spectrum #####

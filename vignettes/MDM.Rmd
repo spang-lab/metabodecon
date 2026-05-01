@@ -29,44 +29,25 @@ knitr::opts_chunk$set(
 )
 ```
 
-This article demonstrates how to use `fit_mdm()`, `cv_mdm()` and
-`benchmark_mdm()` to build, tune and evaluate classification models on
-deconvoluted NMR spectra. We simulate a toy dataset with known group
-differences, split it into training and test sets, run a small grid search to
-find good preprocessing parameters, and then evaluate on held-out data.
+This article demonstrates how to use `fit_mdm()` and `benchmark()` to build,
+tune and evaluate classification models on deconvoluted NMR spectra. We use
+the simulated `sim2` dataset shipped with the package, split it into training
+and test sets, run a small grid search to find good preprocessing parameters,
+and then evaluate on held-out data.
 
-# Simulate spectra
+# Load spectra
 
-We start by defining shared peak parameters for 40 spectra. Every spectrum has
-20 peaks with slightly varying positions, half-widths and areas between samples.
-Five of these peaks carry subtle group information: their areas differ by +/- 5%
-between groups A and B.
+`sim2` contains 36 simulated 1D NMR spectra split evenly into groups `A` and
+`B`. Five out of 25 peaks per spectrum differ between groups by 10% in area.
+The group labels are attached as an attribute. For details on how the dataset
+was constructed, see `?sim2`.
 
-```{r simulate-spectra}
+```{r load-spectra}
 library(metabodecon)
-set.seed(42)
-n <- 36
-npk <- 20
-cs_range <- seq(from = 3.6, length.out = 2048, by = -0.00015)
-base_x0 <- sort(runif(npk, 3.35, 3.55))
-base_A <- runif(npk, 5, 15) * 1e3
-base_lam <- runif(npk, 0.9, 1.3) / 1e3
-group <- factor(rep(c("A", "B"), each = n / 2))
-diff_AB <- 1:5
-spectra <- vector("list", n)
-for (i in seq_len(n)) {
-    x0 <- base_x0 + rnorm(npk, sd=0.00030) + rnorm(1, sd=0.00060)
-    A <- base_A * runif(npk, 0.7, 1.3)
-    lam <- base_lam * runif(npk, 0.9, 1.1)
-    if (group[i] == "A") A[diff_AB] <- A[diff_AB] * 1.1
-    spectra[[i]] <- simulate_spectrum(
-        name = sprintf("s_%03d", i), cs = cs_range,
-        x0 = sort(x0), A = A, lambda = lam,
-        noise = rnorm(length(cs_range), sd = 2000)
-    )
-}
-class(spectra) <- "spectra"
-names(group) <- get_names(spectra)
+data(sim2)
+spectra <- sim2
+group <- attr(sim2, "group")
+n <- length(spectra)
 ```
 
 The following figure shows four spectra from each group overlaid on top of each
@@ -99,50 +80,44 @@ y_te <- group[test_idx]
 # Fit a single model
 
 `fit_mdm()` deconvolutes the spectra, aligns them, builds a feature matrix and
-fits a lasso model via `cv.glmnet()`. Here we use the default deconvolution
-parameters:
+fits a lasso model via `cv.glmnet()`. The model fitting grid (`mog`) controls
+the preprocessing parameters explored. With a single-row grid, `fit_mdm()`
+fits one model:
 
 ```{r fit-default}
-mdm_default <- fit_mdm(
-    spectra_tr, y_tr,
+mog_default <- data.frame(
     nfit = 3, smit = 2, smws = 5, delta = 6.4, npmax = 0,
-    maxShift = 100, maxCombine = 30, verbosity = 0
+    maxShift = 100, maxCombine = 30
+)
+mdm_default <- fit_mdm(
+    spectra_tr, y_tr, mog = mog_default, verbosity = 0
 )
 print(mdm_default)
 ```
 
 # Tune preprocessing via grid search
 
-`cv_mdm()` evaluates a grid of preprocessing parameter combinations. For each
-configuration it builds the feature matrix, runs `cv.glmnet()` with a fixed fold
-assignment, and records the held-out accuracy and AUC at `lambda.min`. We use a
-deliberately small grid here to keep vignette build time short:
+A multi-row `mog` makes `fit_mdm()` evaluate a grid of preprocessing parameter
+combinations. For each row it builds the feature matrix, runs `cv.glmnet()`
+with a fixed fold assignment, and records the held-out accuracy and AUC at
+`lambda.min`. We use a deliberately small grid here to keep vignette build
+time short:
 
-```{r cv-mdm}
-pgrid <- expand.grid(
-    smit = 2,
-    smws = c(3, 5),
-    delta = c(4, 6),
-    nfit = 5,
-    npmax = 0,
-    maxShift = 100,
-    maxCombine = 30,
+```{r tune-mdm}
+mog <- expand.grid(
+    smit = 2, smws = c(3, 5), delta = c(4, 6), nfit = 5, npmax = 0,
+    maxShift = 100, maxCombine = 30,
     stringsAsFactors = FALSE
 )
-pgrid$acc <- NA_real_
-pgrid$auc <- NA_real_
-mdm_tuned <- cv_mdm(
-    spectra_tr, y_tr,
-    pgrid = pgrid,
-    nfolds = 5,
-    verbosity = 0
+mdm_tuned <- fit_mdm(
+    spectra_tr, y_tr, mog = mog, nfolds = 5, verbosity = 0
 )
 ```
 
 The performance grid shows how each parameter combination scored:
 
-```{r pgrid-results}
-pg <- mdm_tuned$pgrid
+```{r mog-results}
+pg <- mdm_tuned$mog
 pg <- pg[order(-pg$auc), ]
 knitr::kable(
     head(pg, 10),
@@ -166,7 +141,7 @@ d_default <- deconvolute(
     pair, nfit = 3, smit = 2, smws = 5, delta = 4, npmax = 0, verbose = FALSE
 )
 
-m <- mdm_tuned$meta
+m <- mdm_tuned$params
 d_tuned <- deconvolute(
     pair, nfit = m$nfit, smit = m$smit, smws = m$smws,
     delta = m$delta, npmax = m$npmax, verbose = FALSE
@@ -224,27 +199,26 @@ knitr::kable(
 # Benchmark with nested cross-validation
 
 To obtain an unbiased estimate of end-to-end predictive performance,
-`benchmark_mdm()` wraps `cv_mdm()` in an outer cross-validation loop. The outer
+`benchmark()` wraps `fit_mdm()` in an outer cross-validation loop. The outer
 held-out fold is never seen during preprocessing or model fitting, so the
 resulting accuracy and AUC are honest estimates.
 
 A typical call looks like this:
 
 ```{r benchmark-code, eval = FALSE}
-bm <- benchmark_mdm(
+bm <- benchmark(
     spectra_tr, y_tr,
-    pgrid = pgrid,
-    nfo = 3,        # 3 outer folds
-    nfl = 5,        # 5 inner folds for cv.glmnet
-    nworkers = 4    # 4 workers for deconvolution and alignment
+    fun = "fit_mdm", k = 3, nworkers = 4,
+    mog = mog, nfolds = 5
 )
 # bm$predictions contains per-sample held-out predictions
-# bm$models contains the cv_mdm model for each outer fold
+# bm$models contains the fit_mdm model for each outer fold
 cat(sprintf(
     "Nested CV accuracy: %.1f%%\n",
     mean(bm$predictions$true == bm$predictions$pred) * 100
 ))
 ```
 
-Note that `benchmark_mdm()` is computationally expensive because it runs the
-full grid search for each outer fold. It is therefore not executed in this vignette.
+Note that `benchmark()` is computationally expensive because it runs the full
+grid search for each outer fold. It is therefore not executed in this
+vignette.
