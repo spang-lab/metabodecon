@@ -8,8 +8,8 @@
 #' @description
 #' Metabodecon represents NMR data using a small set of S3 classes connected
 #' by **cumulative inheritance**. A raw spectrum has class `"spectrum"`. After
-#' [deconvolute()] it gains class `"decon2"`, so its class vector becomes
-#' `c("decon2", "spectrum")`. After [align()] it gains class `"align"`, with
+#' [metabodecon::deconvolute()] it gains class `"decon2"`, so its class vector becomes
+#' `c("decon2", "spectrum")`. After [metabodecon::align()] it gains class `"align"`, with
 #' class vector `c("align", "decon2", "spectrum")`. The corresponding
 #' collection classes follow the same pattern.
 #'
@@ -28,8 +28,8 @@
 #' get_names(x, default = "spectrum_\045d")
 #'
 #' @param x A metabodecon object, collection, list of objects, or path.
-#' @param default Used by [get_names()] when no object names are present.
-#' @param ... Parameters passed to [read_spectrum()] when `x` is a path.
+#' @param default Used by [metabodecon::get_names()] when no object names are present.
+#' @param ... Parameters passed to [metabodecon::read_spectrum()] when `x` is a path.
 #'
 #' @return
 #' `is_spectrum()` and `is_spectra()` return `TRUE` or `FALSE`.
@@ -39,18 +39,18 @@
 #' @section Singlet classes:
 #'
 #' - `spectrum`: A single NMR spectrum. Class vector: `"spectrum"`.
-#'   Constructed by [read_spectrum()], [make_spectrum()], or
-#'   [simulate_spectrum()]. Carries the fields under *Always present
+#'   Constructed by [metabodecon::read_spectrum()], [metabodecon::make_spectrum()], or
+#'   [metabodecon::simulate_spectrum()]. Carries the fields under *Always present
 #'   (spectrum)* below.
 #'
 #' - `decon2`: A single deconvoluted NMR spectrum. Class vector:
-#'   `c("decon2", "spectrum")`. Produced by [deconvolute()]. In addition to
+#'   `c("decon2", "spectrum")`. Produced by [metabodecon::deconvolute()]. In addition to
 #'   the `spectrum` fields, a `decon2` carries the *Added by deconvolute()*
 #'   fields below.
 #'
 #' - `align`: A single deconvoluted NMR spectrum whose peak positions have
 #'   been aligned across a collection. Class vector:
-#'   `c("align", "decon2", "spectrum")`. Produced by [align()]. Carries
+#'   `c("align", "decon2", "spectrum")`. Produced by [metabodecon::align()]. Carries
 #'   everything a `decon2` does, plus the *Added by align()* fields below.
 #'
 #' @section Collection classes:
@@ -65,8 +65,8 @@
 #'
 #' Collections inherit from `"spectra"`, so generic methods written for
 #' `spectra` also work on `decons2` and `aligns`. Constructed by
-#' [read_spectra()] (returns `spectra`), [deconvolute()] when given a
-#' `spectra` (returns `decons2`), and [align()] (returns `aligns`).
+#' [metabodecon::read_spectra()] (returns `spectra`), [metabodecon::deconvolute()] when given a
+#' `spectra` (returns `decons2`), and [metabodecon::align()] (returns `aligns`).
 #' Concatenation follows the cumulative rule: the result class is the
 #' most-general, least-specific class among the inputs. Mixing an `align` with
 #' a plain `decon2` yields `decons2`; mixing any plain `spectrum` in yields

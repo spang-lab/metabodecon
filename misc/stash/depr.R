@@ -1,3 +1,114 @@
+
+# Testing Helpers #####
+
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
+MetaboDecon1D_silent <- function(# Passed on to [metabodecon::MetaboDecon1D()]
+                                 filepath,
+                                 filename = NA,
+                                 file_format = "bruker",
+                                 number_iterations = 10,
+                                 range_water_signal_ppm = 0.1527692,
+                                 signal_free_region = c(11.44494, -1.8828),
+                                 smoothing_param = c(2, 5),
+                                 delta = 6.4,
+                                 scale_factor = c(1000, 1000000),
+                                 debug = FALSE,
+                                 store_results = NULL,
+                                 # Passed on to [evalwith()]
+                                 output = "captured",
+                                 message = "captured",
+                                 plot = "captured",
+                                 # Passed on to [get_MetaboDecon1D_answers()]
+                                 expno = 10,
+                                 procno = 10) {
+    answers <- get_MetaboDecon1D_answers(
+        ns = if (is.na(filename)) length(list.dirs(filepath)) else 1,
+        wshw = if (is.null(range_water_signal_ppm)) 0 else range_water_signal_ppm,
+        sfr = signal_free_region,
+        format = file_format,
+        expno = expno,
+        procno = procno
+    )
+    metabodecon:::evalwith(
+        answers = answers,
+        output = output,
+        message = output,
+        plot = plot,
+        decon0 <- MetaboDecon1D(
+            filepath, filename, file_format, number_iterations,
+            range_water_signal_ppm, signal_free_region, smoothing_param, delta,
+            scale_factor, debug, store_results
+        )
+    )
+    decon0
+}
+
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
+MetaboDecon1D_silent_sim <- function(# Passed on to [metabodecon::MetaboDecon1D()]
+                                     filepath,
+                                     filename = NA,
+                                     file_format = "bruker",
+                                     number_iterations = 3,
+                                     range_water_signal_ppm = 0,
+                                     signal_free_region = c(3.55, 3.35),
+                                     smoothing_param = c(2, 5),
+                                     delta = 6.4,
+                                     scale_factor = c(1000, 1000000),
+                                     debug = FALSE,
+                                     store_results = NULL,
+                                     # Passed on to [evalwith()]
+                                     output = "captured",
+                                     message = "captured",
+                                     plot = "captured",
+                                     # Passed to [get_MetaboDecon1D_answers()]
+                                     expno = 10,
+                                     procno = 10) {
+    MetaboDecon1D_silent(
+        filepath, filename, file_format,
+        number_iterations, range_water_signal_ppm, signal_free_region,
+        smoothing_param, delta, scale_factor, debug, store_results,
+        output, message, plot, expno, procno
+    )
+}
+
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
+#' @examples
+#' sim <- metabodecon_file("bruker/sim_subset")
+#' answers <- get_MetaboDecon1D_answers(ns = 1, wshw = 0, sfr = c(3.55, 3.35))
+#' x <- evalwith(
+#'     answers = answers,
+#'     output = "captured",
+#'     message = "captured",
+#'     plot = "captured",
+#'     expr = { decon_01 <- MetaboDecon1D(sim, "sim_01") }
+#' )
+#' str(decon_01, 1)
+get_MetaboDecon1D_answers <- function(ns = 1, # Number of spectra
+                                      wshw = 0.1527692,
+                                      sfr = c(11.44494, -1.8828),
+                                      format = "bruker",
+                                      expno = 10,
+                                      procno = 10) {
+    c(
+        ExpNo       = if (format == "bruker") expno else NULL,
+        ProcNo      = if (format == "bruker") procno else NULL,
+        SameParam   = if (ns > 1) "y" else NULL,
+        AdjNo       = if (ns > 1) "1" else NULL,
+        SFRok       = "n",
+        Left        = max(sfr),
+        Right       = min(sfr),
+        SFRok       = "y",
+        WSok        = "n",
+        WSHW        = wshw,
+        WSok        = "y",
+        SaveResults = "n"
+    )
+}
+
+
 # MetaboDecon1D API (Public) #####
 
 #' @export
@@ -2882,4 +2993,3 @@ analyze_noise_methods <- function(ask = TRUE) {
     hist(slRND, breaks = 0:20 + 0.5, xlim = c(0, 20))
     hist(slSFR, breaks = 0:20 + 0.5, xlim = c(0, 20))
 }
-

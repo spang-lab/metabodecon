@@ -13,7 +13,7 @@
 #' in [metabodecon::combine_peaks()].
 #'
 #' @param x
-#' An object of type `decons2` or `aligns`, as described in [metabodecon-classes].
+#' An object of type `decons2` or `aligns`, as described in [metabodecon::metabodecon-classes].
 #'
 #' @param ref
 #' Optional reference spectrum of type `align` or `decon2`. When supplied,
@@ -34,7 +34,7 @@
 #' Number of parallel workers. Default is 1 (no parallelism).
 #'
 #' @return
-#' An object of type `aligns` as described in [metabodecon-classes].
+#' An object of type `aligns` as described in [metabodecon::metabodecon-classes].
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'

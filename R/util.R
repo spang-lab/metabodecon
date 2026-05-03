@@ -1140,7 +1140,7 @@ empty_df <- function(names) {
 #'    protons
 #'
 #' @param x
-#' A `spectrum` object as described in [metabodecon-classes].
+#' A `spectrum` object as described in [metabodecon::metabodecon-classes].
 #'
 #' @return
 #' The magnetic field strength in Tesla.

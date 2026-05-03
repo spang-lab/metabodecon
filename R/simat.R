@@ -161,14 +161,14 @@ snap_to_peakPos <- function(mat, peakPos, maxCombine) {
 #' @description
 #' `r lifecycle::badge("deprecated")`
 #'
-#' Deprecated in favour of [si_mat()], which returns the same data with
+#' Deprecated in favour of [metabodecon::si_mat()], which returns the same data with
 #' spectra in rows and features (chemical shifts) in columns.
 #'
 #' @inheritParams si_mat
 #'
 #' @return
 #' A numeric matrix with chemical shifts as rownames and spectrum names as
-#' colnames (the transpose of [si_mat()]).
+#' colnames (the transpose of [metabodecon::si_mat()]).
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 get_si_mat <- function(x, drop_zero = FALSE, maxCombine = 0, peakPos = NULL) {

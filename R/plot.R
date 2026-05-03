@@ -9,7 +9,7 @@
 #'
 #' @param obj
 #' An object of type `decons0`, `decons1` or `decons2`. For details see
-#' [metabodecon-classes].
+#' [metabodecon::metabodecon-classes].
 #'
 #' @param ...
 #' Additional arguments passed to the conversion function.
@@ -124,7 +124,7 @@ plot_spectra <- function(obj,
 #'
 #' @param x
 #' An object of type `spectrum`, `decon0`, `decon1`, `decon2` or `align`. For
-#' details see [metabodecon-classes].
+#' details see [metabodecon::metabodecon-classes].
 #'
 #' @param ...
 #' Additional arguments passed to [metabodecon::draw_spectrum()] for **every** sub figure.
@@ -324,7 +324,7 @@ plot_spectrum <- function(x,
 #' `r lifecycle::badge("experimental")`
 #'
 #' @param obj
-#' An object of type `spectrum` or `decon2`. For details see [metabodecon-classes].
+#' An object of type `spectrum` or `decon2`. For details see [metabodecon::metabodecon-classes].
 #'
 #' @param add
 #' If TRUE, draw into the currently open figure. If FALSE, start a new figure.

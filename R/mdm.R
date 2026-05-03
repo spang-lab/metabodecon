@@ -205,8 +205,8 @@ get_mog <- function(conf="default") {
     g <- expand.grid2(
         nfit = switch(conf, dynamic=0, 5),
         smit = switch(conf, dynamic=0, 2),
-        smws = switch(conf, dynamic=0, static=c(3, 5, 7, 9), 5),
-        delta = switch(conf, dynamic=0, static=c(3.2, 4.8, 6.4, 8.0), 6.4),
+        smws = switch(conf, dynamic=0, static=c(3,5,7,9), 5),
+        delta = switch(conf, dynamic=0, static=c(1.6, 3.2, 4.8, 6.4, 8.0), 6.4),
         npmax = switch(conf, dynamic=seq(400,1600,200), 0),
         maxShift = switch(conf, default=50, c(50,100,150,200,250)),
         maxCombine = switch(conf, default=5, c(5,10,20,30,40,50))

@@ -38,7 +38,7 @@
 #' If `TRUE`, try to continue when encountering errors and print info messages
 #' instead. To hide these messages as well, set `silent = TRUE`.
 #'
-#' @return A `spectrum` object as described in [metabodecon-classes].
+#' @return A `spectrum` object as described in [metabodecon::metabodecon-classes].
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
@@ -165,7 +165,7 @@ read_spectra <- function(data_path = pkg_file("example_datasets/bruker/urine"),
 #' @param mfs
 #' The magnetic field strength in Tesla.
 #'
-#' @return A `spectrum` object as described in [metabodecon-classes].
+#' @return A `spectrum` object as described in [metabodecon::metabodecon-classes].
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
@@ -239,7 +239,7 @@ make_spectrum <- function(si,
 #' @param lambda The peak width parameter.
 #' @param noise The noise to add to the spectrum.
 #'
-#' @return A `spectrum` object as described in [metabodecon-classes].
+#' @return A `spectrum` object as described in [metabodecon::metabodecon-classes].
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'

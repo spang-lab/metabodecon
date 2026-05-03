@@ -542,7 +542,7 @@ sim_docs <- NULL # To get a symbol in the outline
 #' @format
 #' A `spectra` object consisting of 16 `spectrum` objects, where each spectrum
 #' contains 2048 datapoints ranging from 3.60 to 3.29 ppm. For details about
-#' `spectrum` and `spectra` objects see [metabodecon-classes].
+#' `spectrum` and `spectra` objects see [metabodecon::metabodecon-classes].
 #'
 "sim" # To regenerate this dataset, see `data-raw/data.R`.
 
@@ -564,7 +564,7 @@ sim2_docs <- NULL # To get a symbol in the outline
 #' contains 2048 datapoints ranging from 3.59 to 3.28 ppm. The per-spectrum
 #' group labels are attached as `attr(sim2, "group")`, a named factor with
 #' levels `A` and `B`. For details about `spectrum` and `spectra` objects see
-#' [metabodecon-classes].
+#' [metabodecon::metabodecon-classes].
 #'
 #' @details
 #' Peak parameters (positions, areas, half-widths and noise) were chosen to

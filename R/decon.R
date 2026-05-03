@@ -7,7 +7,7 @@
 #' @description Deconvolutes NMR spectra by modeling each detected signal within
 #' a spectrum as Lorentz Curve.
 #'
-#' @param x A `spectrum` or `spectra` object as described in [metabodecon-classes].
+#' @param x A `spectrum` or `spectra` object as described in [metabodecon::metabodecon-classes].
 #'
 #' @param delta Threshold for peak filtering. Higher values result in more peaks
 #' being filtered out. A peak is filtered if its score is below \eqn{\mu +
@@ -52,7 +52,7 @@
 #' deconvolution. Peaks whose centers fall inside any ignore region are
 #' excluded from fitting.
 #'
-#' @return A 'decon2' object as described in [metabodecon-classes].
+#' @return A 'decon2' object as described in [metabodecon::metabodecon-classes].
 #'
 #' @details
 #'
@@ -279,7 +279,9 @@ deconvolute_spectrum_rust <- function(
 #' additionally has an `npmax` column — in which case only unique
 #' `(nfit, smit, smws, delta)` rows with `npmax > 0` are used.
 grid_deconvolute_spectra <- function(
-    x, deg=NULL, sfr=NULL, igrs=list(), verbose=TRUE, nworkers=1,
+    x,
+    deg=expand.grid2(nfit=5, smit=2, smws=c(3,5,7,9), delta=2:8),
+    sfr=NULL, igrs=list(), verbose=TRUE, nworkers=1,
     use_rust=FALSE
 ) {
     if (isFALSE(verbose)) local_options(toscutil.logf.file = nullfile())
@@ -653,4 +655,84 @@ lorentz_int <- function(x0, A, lambda, lcpar = NULL, limits = NULL) {
         b <- max(limits)
         A * (atan((b - x0) / lambda) - atan((a - x0) / lambda))
     }
+}
+
+#' @noRd
+#'
+#' @title Calculate the PRARP Score
+#'
+#' @description
+#' Calculates the PRARP score for a deconvolution. The PRARP score is the
+#' product of the peak ratio and the area ratio and can be used to assess the
+#' quality of a deconvolution. See 'Details' for more information on how the
+#' score is calculated.
+#'
+#' @param decon A list containing the deconvolution results, as returned by
+#' [metabodecon::generate_lorentz_curves()].
+#'
+#' @param lcpar A data frame containing the true parameters of the peaks.
+#'
+#' @return The PRARP score as numeric scalar. In addition, a plot is created to
+#' visualize the deconvolution results.
+#'
+#' @details
+#' The PRARP score is calculated as follows:
+#'
+#' peak_ratio = min(peaks_true, peaks_found) / max(peaks_true, peaks_found)
+#' area_ratio = min(area_true,  area_found)  / max(area_true,  area_found)
+#' prarp      = peak_ratio * area_ratio
+#'
+#' I.e., the score is close to 1 if the number of peaks and the area of the
+#' peaks are similar in the true and found spectra and the score is close to 0
+#' if the number of peaks and/or the area of the peaks are very different.
+#'
+#' @author 2024-2025 Tobias Schmidt: initial version.
+#'
+#' @examples
+#' ## Bad deconvolution (PRARP ~= 0.2)
+#' decon <- generate_lorentz_curves_sim(sim[[1]], delta = 6.4)
+#' truepar <- sim[[1]]$meta$simpar[c("A", "x0", "lambda")]
+#' calc_prarp(decon, truepar)
+#' plot_prarp(decon, truepar)
+#'
+#' ## Good deconvolution (PRARP ~= 0.64)
+#' decon <- generate_lorentz_curves_sim(sim[[1]], delta = 0)
+#' truepar <- sim[[1]]$meta$simpar[c("A", "x0", "lambda")]
+#' calc_prarp(decon, truepar)
+#' plot_prarp(decon, truepar)
+#'
+calc_prarp <- function(x, truepar = NULL, ...) {
+
+    obj <- as_decon2(x)
+    truepar <- truepar %||% obj$meta$simpar
+
+    x0_true <- truepar$x0
+    x0_found <- obj$lcpar$x0
+    idx_closest_true_peak <- sapply(x0_found, function(x0) which.min(abs(x0_true - x0)))
+
+    np_true <- length(truepar$x0)
+    np_found <- length(idx_closest_true_peak)
+    np_correct <- length(unique(idx_closest_true_peak))
+    np_wrong <- np_found - np_correct
+    peak_ratio   <- min(np_found, np_true) / max(np_found, np_true)
+    peak_ratio_x <- np_correct / (np_true + np_wrong)
+
+    area_spectrum <- sum(abs(obj$si))
+    area_residuals <- sum(abs(obj$sit$sup - obj$si))
+    area_ratio <- area_residuals / area_spectrum
+
+    prarp <- peak_ratio * (1 - area_ratio)
+    prarpx <- peak_ratio_x * (1 - area_ratio)
+
+    named(
+        prarpx, prarp, peak_ratio_x, peak_ratio,
+        np_true, np_found, np_correct, np_wrong,
+        area_ratio, area_spectrum, area_residuals
+    )
+}
+
+#' @noRd
+#' @author 2024-2025 Tobias Schmidt: initial version.
+calc_prarpx <- function(x, truepar = NULL, ...) {
+    calc_prarp(x, truepar)$prarpx
 }
