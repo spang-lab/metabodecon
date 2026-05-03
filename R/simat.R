@@ -250,6 +250,7 @@ get_si_mat <- function(x, drop_zero = FALSE, maxCombine = 0, peakPos = NULL) {
 #'     str(obj)
 #' }
 combine_peaks <- function(M, maxCombine=5, lower_bound=1) {
+    if (anyNA(M)) stop("`M` must not contain NA values.", call.=FALSE)
     U <- M != 0
     uu <- colSums(U)
     nc <- ncol(M)

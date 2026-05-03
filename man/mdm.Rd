@@ -38,20 +38,15 @@ fit_bm(
 benchmark(x, y, ..., fun = "fit_mdm", k = 5, seed = 1, verbosity = 2)
 }
 \arguments{
-\item{x}{Spectra object. May already carry per-spectrum \verb{$grid} tables.}
+\item{x}{Spectra object. May already carry per-spectrum \verb{$deg} tables.}
 
 \item{y}{Factor vector with class labels for each spectrum.}
 
-\item{mog}{Model-fitting grid. A data frame with columns \code{nfit}, \code{smit}, \code{smws},
-\code{delta}, \code{npmax}, \code{maxShift}, \code{maxCombine}. See \code{\link[=get_mog]{get_mog()}}.}
+\item{mog}{Model-fitting grid as returned by \code{\link[=get_mog]{get_mog()}}.}
 
 \item{sfr}{Signal-free region. See \code{\link[=deconvolute]{deconvolute()}}.}
 
-\item{igrs}{Ignore regions: list of length-2 numeric vectors specifying
-ppm ranges to exclude. Matches the \code{igrs} argument of
-\code{\link[=deconvolute]{deconvolute()}}. For \code{\link[=fit_mdm]{fit_mdm()}}, forwarded
-to deconvolution. For \code{\link[=fit_bm]{fit_bm()}}, the \code{nbin} bins are
-distributed only across the non-ignored part of the ppm range.}
+\item{igrs}{Ignore regions passed to \code{fun}.}
 
 \item{use_rust}{Use the Rust backend?}
 
@@ -78,8 +73,9 @@ distributed only across the non-ignored part of the ppm range.}
 \value{
 \code{\link[=fit_mdm]{fit_mdm()}} returns an object of class \code{mdm} with elements
 \code{model} (best \code{\link[glmnet:cv.glmnet]{glmnet::cv.glmnet()}}), \code{ref} (reference alignment spectrum),
-\code{params} (scalar parameters of the best model) and \code{mog} (input grid
-augmented with \code{acc}/\code{auc} columns).
+\code{params} (all settings needed to reproduce predictions: chosen grid row
+plus non-grid arguments such as \code{sfr}, \code{igrs}, \code{use_rust} and \code{peakPos})
+and \code{mog} (input grid augmented with \code{acc}/\code{auc} columns).
 
 \code{\link[=fit_bm]{fit_bm()}} returns an object of class \code{bm} with elements
 \code{model} and \code{params}.
@@ -138,7 +134,7 @@ whenever the relevant subset of parameters is unchanged.
 
 When any row of \code{mog} has \code{npmax > 0}, \code{\link[=fit_mdm]{fit_mdm()}} calls
 \code{\link[=grid_deconvolute_spectra]{grid_deconvolute_spectra()}} once up front to attach a
-\verb{$grid} element to each spectrum. The enriched spectra are reused across
+\verb{$deg} element to each spectrum. The enriched spectra are reused across
 rows and outer folds. \code{\link[=benchmark]{benchmark()}} does the same up-front
 attachment for \code{fun = "fit_mdm"}.
 }
@@ -151,8 +147,7 @@ all parallelism to the inner fitter via \code{nworkers} (\code{fit_mdm}).
 }
 \examples{
 \dontrun{
-  m <- fit_mdm(spectra, y, mog = get_mog("default"))
-  bm <- benchmark(spectra, y, fun = "fit_mdm", k = 5,
-                  mog = get_mog("default"))
+  m <- fit_mdm(spectra, y, mog=get_mog("default"))
+  bm <- benchmark(spectra, y, fun="fit_mdm", k=5, mog=get_mog("default"))
 }
 }

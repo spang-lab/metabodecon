@@ -551,7 +551,9 @@ draw_spectrum <- function(
     supal <- supal_all <- obj$sit$supal # NULL for spectrum and decon objects (NSD)
     if (!isFALSE(d2_line$show)) {
         if (is.null(sm_all)) warning("Smoothed SI is missing. Calculating second derivative from raw SI.")
-        d2 <- d2_all <- calc_second_derivative(sm_all %||% si_all)
+        y <- sm_all %||% si_all
+        n <- length(y)
+        d2 <- d2_all <- c(NA, y[-n]) + c(y[-1], NA) - 2 * y
     }
 
     # Get indices of important points relative to all data points (611us)

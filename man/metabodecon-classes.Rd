@@ -8,41 +8,62 @@
 \alias{decons2}
 \alias{align}
 \alias{aligns}
-\title{Metabodecon Class Hierarchy}
+\alias{is_spectrum}
+\alias{is_spectra}
+\alias{as_spectra}
+\alias{as_decon2}
+\alias{as_decons2}
+\alias{get_names}
+\title{Metabodecon Classes and Helpers}
+\usage{
+is_spectrum(x)
+is_spectra(x)
+as_spectra(x, ...)
+as_decon2(x)
+as_decons2(x)
+get_names(x, default = "spectrum_\045d")
+}
+\arguments{
+\item{x}{A metabodecon object, collection, list of objects, or path.}
+
+\item{default}{Used by \code{\link[=get_names]{get_names()}} when no object names are present.}
+
+\item{...}{Parameters passed to \code{\link[=read_spectrum]{read_spectrum()}} when \code{x} is a path.}
+}
+\value{
+\code{is_spectrum()} and \code{is_spectra()} return \code{TRUE} or \code{FALSE}.
+The \verb{as_*()} functions return an object of the requested class.
+\code{get_names()} returns a character vector.
+}
 \description{
 Metabodecon represents NMR data using a small set of S3 classes connected
 by \strong{cumulative inheritance}. A raw spectrum has class \code{"spectrum"}. After
-\code{\link[=deconvolute]{deconvolute()}} it gains the class \code{"decon2"} (so its class vector becomes
-\code{c("decon2", "spectrum")}). After \code{\link[=align]{align()}} it gains the class \code{"align"}
-(class vector \code{c("align", "decon2", "spectrum")}). The corresponding
+\code{\link[=deconvolute]{deconvolute()}} it gains class \code{"decon2"}, so its class vector becomes
+\code{c("decon2", "spectrum")}. After \code{\link[=align]{align()}} it gains class \code{"align"}, with
+class vector \code{c("align", "decon2", "spectrum")}. The corresponding
 collection classes follow the same pattern.
 
-Because every deconvoluted/aligned object is still a \code{spectrum} (in the
-\code{inherits()} sense), generic functions defined on \code{spectrum}/\code{spectra}
-(such as \code{print}, \code{format}, \code{summary}, \code{c}, \code{plot}) keep working at every
-stage. The label printed by \code{print()}/\code{format()} reflects the most-specific
-class, e.g. \code{"align object (...)"}.
-
-Element order in an object may vary between versions; always access fields
-by name (\code{x$si}, \code{x[["cs"]]}). Elements marked \emph{optional} may be absent or
-\code{NULL}.
+Every deconvoluted or aligned object is still a \code{spectrum} in the
+\code{\link[base:class]{base::inherits()}} sense, so S3 generic behavior for \code{spectrum} or
+\code{spectra} also works at every stage. Element order may vary between
+versions; always access fields by name, e.g. \code{x$si} or \code{x[["cs"]]}.
+Elements marked optional may be absent or \code{NULL}.
 }
 \section{Singlet classes}{
 
-
-\describe{
-\item{\code{spectrum}}{A single NMR spectrum. Class vector: \code{"spectrum"}.
+\itemize{
+\item \code{spectrum}: A single NMR spectrum. Class vector: \code{"spectrum"}.
 Constructed by \code{\link[=read_spectrum]{read_spectrum()}}, \code{\link[=make_spectrum]{make_spectrum()}}, or
-\code{\link[=simulate_spectrum]{simulate_spectrum()}}. Carries the fields under
-\emph{Always present (spectrum)} below.}
-\item{\code{decon2}}{A single deconvoluted NMR spectrum. Class vector:
+\code{\link[=simulate_spectrum]{simulate_spectrum()}}. Carries the fields under \emph{Always present
+(spectrum)} below.
+\item \code{decon2}: A single deconvoluted NMR spectrum. Class vector:
 \code{c("decon2", "spectrum")}. Produced by \code{\link[=deconvolute]{deconvolute()}}. In addition to
 the \code{spectrum} fields, a \code{decon2} carries the \emph{Added by deconvolute()}
-fields below.}
-\item{\code{align}}{A single deconvoluted NMR spectrum whose peak positions
-have been aligned across a collection. Class vector:
+fields below.
+\item \code{align}: A single deconvoluted NMR spectrum whose peak positions have
+been aligned across a collection. Class vector:
 \code{c("align", "decon2", "spectrum")}. Produced by \code{\link[=align]{align()}}. Carries
-everything a \code{decon2} does, plus the \emph{Added by align()} fields below.}
+everything a \code{decon2} does, plus the \emph{Added by align()} fields below.
 }
 }
 
@@ -51,40 +72,33 @@ everything a \code{decon2} does, plus the \emph{Added by align()} fields below.}
 
 For each singlet class there is a collection class that wraps a list of
 those singlets:
-
-\describe{
-\item{\code{spectra}}{List of \code{spectrum}. Class vector \code{"spectra"}.}
-\item{\code{decons2}}{List of \code{decon2}. Class vector \code{c("decons2", "spectra")}.}
-\item{\code{aligns}}{List of \code{align}. Class vector
-\code{c("aligns", "decons2", "spectra")}.}
+\itemize{
+\item \code{spectra}: List of \code{spectrum}. Class vector \code{"spectra"}.
+\item \code{decons2}: List of \code{decon2}. Class vector \code{c("decons2", "spectra")}.
+\item \code{aligns}: List of \code{align}. Class vector
+\code{c("aligns", "decons2", "spectra")}.
 }
 
 Collections inherit from \code{"spectra"}, so generic methods written for
 \code{spectra} also work on \code{decons2} and \code{aligns}. Constructed by
 \code{\link[=read_spectra]{read_spectra()}} (returns \code{spectra}), \code{\link[=deconvolute]{deconvolute()}} when given a
 \code{spectra} (returns \code{decons2}), and \code{\link[=align]{align()}} (returns \code{aligns}).
-Concatenation with \code{c()} follows the cumulative rule: the result class is
-the most-general (least-specific) class present among the inputs. Mixing
-an \code{align} with a plain \code{decon2} yields a \code{decons2}; mixing any plain
-\code{spectrum} in yields a \code{spectra}.
+Concatenation follows the cumulative rule: the result class is the
+most-general, least-specific class among the inputs. Mixing an \code{align} with
+a plain \code{decon2} yields \code{decons2}; mixing any plain \code{spectrum} in yields
+\code{spectra}.
 }
 
 \section{Always present (spectrum)}{
 
-
 \enumerate{
 \item \code{cs}: Vector of chemical shifts in ppm. Same length as \code{si}.
-\item \code{si}: Vector of signal intensities (au). \code{si[i]} is the intensity
-at \code{cs[i]}.
-\item \code{meta}: Optional list of metadata, e.g.:
-\itemize{
-\item \code{name}: Name of the spectrum, e.g. \code{"Blood 1"}.
-\item \code{path}: Path to the source file/folder.
-\item \code{type}: Experiment type, e.g. \code{"H1 CPMG"} or \code{"H1 NOESY"}.
-\item \code{fq}: Signal frequencies in Hz (same length as \code{si}/\code{cs}).
-\item \code{mfs}: Magnetic field strength in Tesla.
-\item \code{simpar}: True Lorentz-curve parameters (simulated spectra only).
-}
+\item \code{si}: Vector of signal intensities (au). \code{si[i]} is the intensity at
+\code{cs[i]}.
+\item \code{meta}: Optional list of metadata, e.g. \code{name} (spectrum name), \code{path}
+(source path), \code{type} (experiment type), \code{fq} (signal frequencies in Hz),
+\code{mfs} (magnetic field strength), or \code{simpar} (true Lorentz-curve
+parameters for simulated spectra).
 }
 }
 
@@ -92,58 +106,71 @@ at \code{cs[i]}.
 
 
 A \code{decon2} object additionally has:
-
 \enumerate{
-\setcounter{enumi}{3}
-\item \code{args}: List of deconvolution parameters used (\code{nfit}, \code{smit},
-\code{smws}, \code{delta}, \code{sfr}, \code{igrs}, \code{npmax}, \code{use_rust}, \code{verbose}).
-\item \code{sit}: Data frame of signal intensities after transformations:
-\code{sm} (smoothed), \code{sup} (superposition of fitted Lorentz curves), and
-\code{supal} (superposition of \emph{aligned} Lorentz curves, added by \code{align()}).
+\item \code{args}: List of deconvolution parameters used (\code{nfit}, \code{smit}, \code{smws},
+\code{delta}, \code{sfr}, \code{igrs}, \code{npmax}, \code{use_rust}, \code{verbose}).
+\item \code{sit}: Data frame of signal intensities after transformations: \code{sm}
+(smoothed), \code{sup} (superposition of fitted Lorentz curves), and \code{supal}
+(superposition of aligned Lorentz curves, added by \code{align()}).
 \item \code{peak}: Data frame of peak triplets with columns \code{center}, \code{left},
 \code{right}: integer indices into \code{cs}.
 \item \code{lcpar}: Data frame of Lorentz-curve parameters with columns \code{A}
 (amplitude), \code{lambda} (half-width), \code{x0} (center, in \code{cs} units), and
 \code{x0al}/\code{pcial} (aligned center and integer index into \code{cs}, added by
 \code{align()}).
-\item \code{mse}: List of mean-squared errors: \code{raw} (between \code{si} and
-\code{sit$sup}), \code{norm} (\code{raw} divided by \code{sum(sit$sup)}), \code{sm} (between
-\code{sit$sm} and \code{sit$sup}), \code{smnorm} (\code{sm} divided by \code{sum(sit$sup)}).
 }
 }
 
 \section{Added by align()}{
 
 
-An \code{align} object has the same fields as \code{decon2}, but with the
-alignment slots populated: \code{lcpar$x0al}, \code{lcpar$pcial}, \code{sit$supal}.
+An \code{align} object has the same fields as \code{decon2}, but with the alignment
+slots populated:
+\itemize{
+\item \code{lcpar$x0al}: Peak Centers after Alignment in ppm
+\item \code{lcpar$pcial}: Peak Centers after Alignment in datapoint indices
+\item \code{sit$supal}: Signal Intensities of the superposition of aligned Lorentz curves
+}
 }
 
-\section{Methods, predicates, and converters}{
+\section{Predicates}{
 
 
-Methods defined for \code{spectrum}/\code{spectra} (and inherited by all
-subclasses): \link[=print.spectrum]{print()}, \code{format()}, \code{summary()},
-\code{c()}, \code{[}.
+\code{is_spectrum()} and \code{is_spectra()} test inheritance from the base
+metabodecon classes. Since \code{decon2} and \code{align} inherit from \code{spectrum},
+and \code{decons2} and \code{aligns} inherit from \code{spectra}, they satisfy these
+checks. To test for a specific lifecycle stage, use \code{\link[base:class]{base::inherits()}}
+directly, e.g. \code{inherits(x, "decon2")} or \code{inherits(x, "aligns")}.
+}
 
-Predicates: \code{\link[=is_spectrum]{is_spectrum()}}, \code{\link[=is_spectra]{is_spectra()}}. For lifecycle-specific
-checks use \code{inherits(x, "decon2")}, \code{inherits(x, "aligns")}, etc.
+\section{Converters}{
 
-Converters: \code{\link[=as_spectra]{as_spectra()}} turns a path or list of \code{spectrum} into a
-\code{spectra}. \code{\link[=as_decon2]{as_decon2()}} / \code{\link[=as_decons2]{as_decons2()}} are identity converters that
-validate their input.
+\code{as_spectra()} turns a path, \code{spectrum}, or list of \code{spectrum} objects into
+a \code{spectra} collection. \code{as_decon2()} and \code{as_decons2()} are identity
+converters that validate their input.
+}
+
+\section{Naming helpers}{
+
+\code{get_names()} returns collection names by checking each element's metadata,
+each element's direct \code{name}, the list names, and finally generated default
+names.
 }
 
 \examples{
 s <- sim[[1]]
 inherits(s, "spectrum")
+is_spectrum(s)
 
 d <- deconvolute(s, sfr = c(3.55, 3.35))
-class(d)               # c("decon2", "spectrum")
+class(d) # c("decon2", "spectrum")
 inherits(d, "spectrum") # TRUE
 
 ds <- deconvolute(sim[1:3], sfr = c(3.55, 3.35))
 class(ds)              # c("decons2", "spectra")
+as_spectra(s)
+get_names(list(s, myspec = s))
+
 }
 \author{
 2024-2025 Tobias Schmidt: initial version.

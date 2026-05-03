@@ -93,19 +93,19 @@ used directly as the feature matrix.
 \examples{
 m <- structure(
   list(
-    model = NULL,
-    ref = NULL,
-    params = list(npmax = 1000, nfit = 3, smit = 2, smws = 5,
-                  delta = 6.4, maxShift = 100, maxCombine = 50)
+    model=NULL,
+    ref=NULL,
+    params=list(npmax=1000, nfit=3, smit=2, smws=5,
+                delta=6.4, maxShift=100, maxCombine=50)
   ),
-  class = "mdm"
+  class="mdm"
 )
 print(m)
 summary(m)
 
 \dontrun{
-  m <- fit_mdm(spectra, y, mog = get_mog("default"), sfr = c(11, -2))
-  predict(m, test_spectra, type = "prob")
+  m <- fit_mdm(spectra, y, mog=get_mog("default"), sfr=c(11, -2))
+  predict(m, test_spectra, type="prob")
   coef(m)
   plot(m)
 }

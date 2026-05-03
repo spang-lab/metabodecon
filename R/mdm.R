@@ -53,7 +53,7 @@
 #'
 #' When any row of `mog` has `npmax > 0`, [metabodecon::fit_mdm()] calls
 #' [metabodecon::grid_deconvolute_spectra()] once up front to attach a
-#' `$grid` element to each spectrum. The enriched spectra are reused across
+#' `$deg` element to each spectrum. The enriched spectra are reused across
 #' rows and outer folds. [metabodecon::benchmark()] does the same up-front
 #' attachment for `fun = "fit_mdm"`.
 #'
@@ -62,7 +62,7 @@
 #' [metabodecon::benchmark()] runs outer folds sequentially and delegates
 #' all parallelism to the inner fitter via `nworkers` (`fit_mdm`).
 #'
-#' @param x Spectra object. May already carry per-spectrum `$grid` tables.
+#' @param x Spectra object. May already carry per-spectrum `$deg` tables.
 #' @param y Factor vector with class labels for each spectrum.
 #' @param mog Model-fitting grid as returned by [metabodecon::get_mog()].
 #' @param sfr Signal-free region. See [metabodecon::deconvolute()].
@@ -98,73 +98,61 @@
 #'
 #' @examples
 #' \dontrun{
-#'   m <- fit_mdm(spectra, y, mog = get_mog("default"))
-#'   bm <- benchmark(spectra, y, fun = "fit_mdm", k = 5,
-#'                   mog = get_mog("default"))
+#'   m <- fit_mdm(spectra, y, mog=get_mog("default"))
+#'   bm <- benchmark(spectra, y, fun="fit_mdm", k=5, mog=get_mog("default"))
 #' }
 fit_mdm <- function(
-    x, y, mog = get_mog("default"),
-    sfr = NULL, igrs = list(), use_rust = 0.5, nworkers = 1, verbosity = 2,
-    seed = 1, nfolds = 10, check = TRUE
+    x, y, mog=get_mog("default"),
+    sfr=NULL, igrs=list(), use_rust=0.5, nworkers=1, verbosity=2,
+    seed=1, nfolds=10, check=TRUE
 ) {
     if (check) check_mdm_args(
-        x = x, y = y, mog = mog, sfr = sfr, igrs = igrs,
-        use_rust = use_rust, nworkers = nworkers, verbosity = verbosity,
-        seed = seed, nfolds = nfolds
+        x=x, y=y, mog=mog, sfr=sfr, igrs=igrs,
+        use_rust=use_rust, nworkers=nworkers, verbosity=verbosity,
+        seed=seed, nfolds=nfolds
     )
 
     # Sort rows so identical decon/align tuples cluster.
-    ord <- with(mog, order(npmax, nfit, smit, smws, delta, maxShift, maxCombine))
-    mog <- mog[ord, , drop = FALSE]
+    ord <- with(
+        mog, order(npmax, nfit, smit, smws, delta, maxShift, maxCombine)
+    )
+    mog <- mog[ord, , drop=FALSE]
     rownames(mog) <- NULL
     mog$acc <- NA_real_
     mog$auc <- NA_real_
 
-    # Pre-attach per-spectrum `$grid` tables when any row uses npmax > 0.
+    # Pre-attach per-spectrum `$deg` tables when any row uses npmax > 0.
     if (any(mog$npmax > 0)) {
         x <- grid_deconvolute_spectra(
-            x = x, deg = mog, sfr = sfr, igrs = igrs,
-            verbose = verbosity >= 2,
-            nworkers = min(nworkers, length(x)), use_rust = use_rust
+            x=x, deg=mog, sfr=sfr, igrs=igrs,
+            verbose=verbosity >= 2,
+            nworkers=min(nworkers, length(x)), use_rust=use_rust
         )
     }
 
     nr <- nrow(mog)
     ns <- length(x)
     logv("Starting grid search (%d combinations, %d spectra)", nr, ns)
-
-    foldid <- get_foldid(y = y, nfolds = nfolds, seed = seed)
-
-    # Last-iteration cache for decon and align results.
-    last_dkey <- NULL; d <- NULL
-    last_akey <- NULL; a <- NULL
-    best_mdm <- NULL; best_auc <- -Inf
-
+    foldid <- get_foldid(y=y, nfolds=nfolds, seed=seed)
+    last_dkey <- NULL; last_akey <- NULL
+    best_mdm <- NULL;  best_auc <- -Inf
+    row_fmt <- "[%d/%d] npmax=%d nfit=%d smit=%d smws=%d delta=%g maxShift=%d maxCombine=%g"
     for (i in seq_len(nr)) {
-        r <- mog[i, , drop = FALSE]
-        tag <- sprintf(
-            paste0("npmax=%d nfit=%d smit=%d smws=%d delta=%g ",
-                   "maxShift=%d maxCombine=%g"),
-            r$npmax, r$nfit, r$smit, r$smws, r$delta,
-            r$maxShift, r$maxCombine
-        )
-        logv("[%d/%d] %s", i, nr, tag)
-
+        r <- mog[i, , drop=FALSE]
+        logv(row_fmt, i, nr, r$npmax, r$nfit, r$smit, r$smws, r$delta, r$maxShift, r$maxCombine)
         dkey <- list(r$npmax, r$nfit, r$smit, r$smws, r$delta)
         if (!identical(dkey, last_dkey)) {
             d <- deconvolute_spectra(
-                x = x, sfr = sfr, igrs = igrs, verbose = verbosity >= 2,
-                use_rust = use_rust, nfit = r$nfit, smit = r$smit,
-                smws = r$smws, delta = r$delta, npmax = r$npmax,
-                nworkers = nworkers, full = FALSE
+                x=x, sfr=sfr, igrs=igrs, verbose=verbosity>=2,
+                use_rust=use_rust, nfit=r$nfit, smit=r$smit, smws=r$smws,
+                delta=r$delta, npmax=r$npmax, nworkers=nworkers, full=FALSE
             )
             last_dkey <- dkey
             last_akey <- NULL
         }
         nps <- vapply(d, function(o) nrow(o$lcpar), integer(1))
         if (any(nps == 0)) {
-            logv("[%d/%d] %d spectra produced zero peaks; skipping",
-                 i, nr, sum(nps == 0))
+            logv("[%d/%d] %d spectra produced zero peaks; skipping", i, nr, sum(nps == 0))
             mog$acc[i] <- 0; mog$auc[i] <- 0
             next
         }
@@ -172,76 +160,59 @@ fit_mdm <- function(
         akey <- list(dkey, r$maxShift)
         if (!identical(akey, last_akey)) {
             a <- align_decons(
-                x = d, maxShift = r$maxShift, verbose = verbosity >= 2,
-                nworkers = nworkers, full = FALSE
+                x=d, maxShift=r$maxShift, verbose=verbosity >= 2,
+                nworkers=nworkers, full=FALSE
             )
             last_akey <- akey
         }
 
         ref <- find_ref(a)
-        mat <- si_mat(a, maxCombine = r$maxCombine)
+        mat <- si_mat(a, maxCombine=r$maxCombine)
         peakPos <- which(colSums(mat != 0) > 0)
-        X <- mat[, peakPos, drop = FALSE]
+        X <- mat[, peakPos, drop=FALSE]
 
-        cvfit <- glmnet::cv.glmnet(
-            X, y, family = "binomial", alpha = 1,
-            foldid = foldid, keep = TRUE
-        )
+        cvfit <- glmnet::cv.glmnet(X, y, family="binomial", alpha=1, foldid=foldid, keep=TRUE)
         li <- which(cvfit$lambda == cvfit$lambda.min)
         link <- cvfit$fit.preval[, li]
         prob <- 1 / (1 + exp(-link))
         lvs <- levels(y)
-        pred <- factor(ifelse(prob > 0.5, lvs[2], lvs[1]), levels = lvs)
+        pred <- factor(ifelse(prob > 0.5, lvs[2], lvs[1]), levels=lvs)
         mog$acc[i] <- mean(pred == y)
         mog$auc[i] <- AUC(y, prob)
-        logv("[%d/%d] acc=%.2f%% auc=%.4f",
-             i, nr, mog$acc[i] * 100, mog$auc[i])
+        logv("[%d/%d] acc=%.2f%% auc=%.4f", i, nr, mog$acc[i] * 100, mog$auc[i])
 
         if (!is.na(mog$auc[i]) && mog$auc[i] > best_auc) {
             best_auc <- mog$auc[i]
             params <- list(
-                sfr = sfr, igrs = igrs, use_rust = use_rust,
-                npmax = r$npmax, nfit = r$nfit, smit = r$smit,
-                smws = r$smws, delta = r$delta,
-                maxShift = r$maxShift, maxCombine = r$maxCombine,
-                peakPos = peakPos
+                sfr=sfr, igrs=igrs, use_rust=use_rust, npmax=r$npmax,
+                nfit=r$nfit, smit=r$smit, smws=r$smws, delta=r$delta,
+                maxShift=r$maxShift, maxCombine=r$maxCombine, peakPos=peakPos
             )
-            best_mdm <- structure(
-                list(model = cvfit, ref = ref, params = params),
-                class = "mdm"
-            )
+            best_mdm <- structure(list(model=cvfit, ref=ref, params=params), class="mdm")
         }
     }
 
-    if (is.null(best_mdm)) {
-        logv("No valid model found (all rows produced zero peaks).")
-        params <- list(sfr = sfr, igrs = igrs, use_rust = use_rust)
-        return(structure(
-            list(model = NULL, ref = NULL, params = params, mog = mog),
-            class = "mdm"
-        ))
-    }
     best_mdm$mog <- mog
     ibest <- which.max(mog$auc)
-    logv("Best [%d/%d]: acc=%.2f%% auc=%.4f",
-         ibest, nr, mog$acc[ibest] * 100, mog$auc[ibest])
+    fmt <- "Best [%d/%d]: acc=%.2f%% auc=%.4f"
+    logv(fmt, ibest, nr, mog$acc[ibest] * 100, mog$auc[ibest])
     best_mdm
 }
 
 #' @export
 #' @rdname mdm
-get_mog <- function(conf = "default") {
+get_mog <- function(conf="default") {
     g <- expand.grid2(
-        nfit       = switch(conf, dynamic = 0, 5),
-        smit       = switch(conf, dynamic = 0, 2),
-        smws       = switch(conf, dynamic = 0, static = c(3, 5, 7, 9), 5),
-        delta      = switch(conf, dynamic = 0, static = c(3.2, 4.8, 6.4, 8.0), 6.4),
-        npmax      = switch(conf, dynamic = seq(400, 1600, 200), 0),
-        maxShift   = 200,
-        maxCombine = 50
+        nfit = switch(conf, dynamic=0, 5),
+        smit = switch(conf, dynamic=0, 2),
+        smws = switch(conf, dynamic=0, static=c(3, 5, 7, 9), 5),
+        delta = switch(conf, dynamic=0, static=c(3.2, 4.8, 6.4, 8.0), 6.4),
+        npmax = switch(conf, dynamic=seq(400,1600,200), 0),
+        maxShift = switch(conf, default=50, c(50,100,150,200,250)),
+        maxCombine = switch(conf, default=5, c(5,10,20,30,40,50))
     )
-    ord <- with(g, order(npmax, nfit, smit, smws, delta, maxShift, maxCombine))
-    g <- g[ord, , drop = FALSE]
+    ord <- order(g$npmax, g$nfit, g$smit, g$smws, g$delta, g$maxShift, g$maxCombine)
+    g <- g[ord, , drop=FALSE]
     rownames(g) <- NULL
     g
 }
@@ -252,24 +223,29 @@ fit_bm <- function(
     x, y, igrs=list(), nbin=1000,
     seed=1, nfolds=10, verbosity=2, check=TRUE
 ) {
-    if (check) check_bm_args(x=x, y=y, igrs=igrs, nbin=nbin, seed=seed, nfolds=nfolds, verbosity=verbosity)
-
-    logv("Binning %d spectra into %d bins (igrs excluded)", length(x), nbin)
+    if (check) check_bm_args(
+        x=x, y=y, igrs=igrs, nbin=nbin,
+        seed=seed, nfolds=nfolds, verbosity=verbosity
+    )
+    logv(
+        "Binning %d spectra into %d bins (igrs excluded)",
+        length(x), nbin
+    )
     X <- bin_spectra(x, igrs=igrs, nbin=nbin)
     foldid <- get_foldid(y=y, nfolds=nfolds, seed=seed)
-
     logv("Fitting cv.glmnet on %d features", ncol(X))
-    model <- glmnet::cv.glmnet(X, y, family="binomial", alpha=1, foldid=foldid, keep=TRUE)
+    model <- glmnet::cv.glmnet(
+        X, y, family="binomial", alpha=1, foldid=foldid, keep=TRUE
+    )
     params <- list(igrs=igrs, nbin=nbin, feat_names=colnames(X))
-
     structure(list(model=model, params=params), class="bm")
 }
 
 #' @export
 #' @rdname mdm
 benchmark <- function(
-    x, y, ..., fun = "fit_mdm",
-    k = 5, seed = 1, verbosity = 2
+    x, y, ..., fun="fit_mdm",
+    k=5, seed=1, verbosity=2
 ) {
     stopifnot(
         is_spectra(x), is.factor(y), length(y) == length(x),
@@ -277,13 +253,13 @@ benchmark <- function(
         is_int(seed, 1), is_int(verbosity, 1)
     )
     if (nlevels(y) != 2 || any(table(y) == 0)) {
-        stop("`y` must contain exactly 2 non-empty classes.", call. = FALSE)
+        stop("`y` must contain exactly 2 non-empty classes.", call.=FALSE)
     }
     if (k > length(y)) {
-        stop("`k` must not exceed the number of samples.", call. = FALSE)
+        stop("`k` must not exceed the number of samples.", call.=FALSE)
     }
     if (!fun %in% c("fit_mdm", "fit_bm")) {
-        stop("Unsupported fun=", fun, call. = FALSE)
+        stop("Unsupported fun=", fun, call.=FALSE)
     }
 
     dots <- list(...)
@@ -293,11 +269,11 @@ benchmark <- function(
     # One-time grid attach when fitting mdm with npmax > 0.
     if (fun == "fit_mdm" && !is.null(dots$mog) && any(dots$mog$npmax > 0)) {
         x <- grid_deconvolute_spectra(
-            x = x, deg = dots$mog, sfr = dots$sfr,
-            igrs = dots$igrs %||% list(),
-            verbose = verbosity >= 2,
-            nworkers = dots$nworkers %||% 1L,
-            use_rust = dots$use_rust %||% FALSE
+            x=x, deg=dots$mog, sfr=dots$sfr,
+            igrs=dots$igrs %||% list(),
+            verbose=verbosity >= 2,
+            nworkers=dots$nworkers %||% 1L,
+            use_rust=dots$use_rust %||% FALSE
         )
     }
 
@@ -305,12 +281,12 @@ benchmark <- function(
     dots$verbosity <- max(0L, verbosity - 1L)
 
     te_list <- get_test_ids(
-        nfolds = k, nsamples = length(x), seed = seed, y = y
+        nfolds=k, nsamples=length(x), seed=seed, y=y
     )
     models <- vector("list", k)
     fold_preds <- vector("list", k)
     perf <- data.frame(
-        fold = integer(0), acc = numeric(0), auc = numeric(0)
+        fold=integer(0), acc=numeric(0), auc=numeric(0)
     )
 
     logv("Running %d-fold outer CV with fun=%s", k, fun)
@@ -318,31 +294,32 @@ benchmark <- function(
         te <- te_list[[i]]
         tr <- setdiff(seq_along(x), te)
         logv("[fold %d/%d] fitting", i, k)
-        m <- do.call(fitter, c(list(x = x[tr], y = y[tr]), dots))
-        p <- pred_fn(m, x[te], type = "all")
+        m <- do.call(fitter, c(list(x=x[tr], y=y[tr]), dots))
+        p <- pred_fn(m, x[te], type="all")
         fp <- data.frame(
-            fold = i, true = y[te], link = p$link,
-            prob = p$prob, pred = p$class
+            fold=i, true=y[te], link=p$link,
+            prob=p$prob, pred=p$class
         )
         fold_preds[[i]] <- fp
-        acc <- mean(fp$pred == fp$true, na.rm = TRUE)
+        acc <- mean(fp$pred == fp$true, na.rm=TRUE)
         auc <- AUC(fp$true, fp$prob)
-        perf <- rbind(perf, data.frame(fold = i, acc = acc, auc = auc))
-        logv("[fold %d/%d] acc=%.2f%% auc=%.4f",
-             i, k, acc * 100, auc)
+        perf <- rbind(perf, data.frame(fold=i, acc=acc, auc=auc))
+        logv("[fold %d/%d] acc=%.2f%% auc=%.4f", i, k, acc * 100, auc)
         models[[i]] <- m
     }
 
     preds <- do.call(rbind, fold_preds)
-    overall_acc <- mean(preds$true == preds$pred, na.rm = TRUE)
+    overall_acc <- mean(preds$true == preds$pred, na.rm=TRUE)
     overall_auc <- AUC(preds$true, preds$prob)
-    logv("Overall: acc=%.2f%% auc=%.4f",
-         overall_acc * 100, overall_auc)
+    logv(
+        "Overall: acc=%.2f%% auc=%.4f",
+        overall_acc * 100, overall_auc
+    )
     list(
-        models = models,
-        predictions = preds,
-        performance = perf,
-        overall = list(acc = overall_acc, auc = overall_auc)
+        models=models,
+        predictions=preds,
+        performance=perf,
+        overall=list(acc=overall_acc, auc=overall_auc)
     )
 }
 
@@ -354,11 +331,11 @@ as_binary01 <- function(y) {
     as.integer(y == lvs[2])
 }
 
-get_test_ids <- function(nfolds = 5, nsamples, seed = 1, y = NULL) {
+get_test_ids <- function(nfolds=5, nsamples, seed=1, y=NULL) {
     set.seed(seed)
     if (is.null(y)) {
         ids <- sample(seq_len(nsamples))
-        grp <- split(ids, cut(seq_along(ids), nfolds, labels = FALSE))
+        grp <- split(ids, cut(seq_along(ids), nfolds, labels=FALSE))
         return(lapply(grp, sort))
     }
 
@@ -369,7 +346,7 @@ get_test_ids <- function(nfolds = 5, nsamples, seed = 1, y = NULL) {
 
     for (lev in levs) {
         ids <- sample(which(y == lev))
-        grp <- split(ids, cut(seq_along(ids), nfolds, labels = FALSE))
+        grp <- split(ids, cut(seq_along(ids), nfolds, labels=FALSE))
         for (k in seq_len(nfolds)) {
             out[[k]] <- c(out[[k]], grp[[k]])
         }
@@ -378,9 +355,9 @@ get_test_ids <- function(nfolds = 5, nsamples, seed = 1, y = NULL) {
     lapply(out, sort)
 }
 
-get_foldid <- function(y, nfolds = 5, seed = 1) {
+get_foldid <- function(y, nfolds=5, seed=1) {
     te_list <- get_test_ids(
-        nfolds = nfolds, nsamples = length(y), seed = seed, y = y
+        nfolds=nfolds, nsamples=length(y), seed=seed, y=y
     )
     foldid <- integer(length(y))
     for (i in seq_along(te_list)) foldid[te_list[[i]]] <- i
@@ -408,11 +385,13 @@ AUC <- function(y, yhat) {
 
 check_mdm_args <- function(
     x, y, mog,
-    sfr = NULL, igrs = list(), use_rust = NULL, nworkers = NULL,
-    verbosity = NULL, seed = NULL, nfolds = NULL
+    sfr=NULL, igrs=list(), use_rust=NULL, nworkers=NULL,
+    verbosity=NULL, seed=NULL, nfolds=NULL
 ) {
-    cols <- c("nfit", "smit", "smws", "delta", "npmax",
-              "maxShift", "maxCombine")
+    cols <- c(
+        "nfit", "smit", "smws", "delta", "npmax",
+        "maxShift", "maxCombine"
+    )
     stopifnot(
         is_spectra(x),
         is.factor(y),
@@ -421,7 +400,7 @@ check_mdm_args <- function(
         nrow(mog) >= 1,
         all(cols %in% names(mog)),
         is_num_or_null(sfr, 2),
-        is_list_of_nums(igrs, nv = 2),
+        is_list_of_nums(igrs, nv=2),
         is_bool_or_num(use_rust),
         is_int_or_null(nworkers, 1),
         is_int_or_null(verbosity, 1),
@@ -429,14 +408,16 @@ check_mdm_args <- function(
         is.null(nfolds) || (is_int(nfolds, 1) && nfolds >= 2)
     )
     if (!is.null(names(y)) && !identical(get_names(x), names(y))) {
-        stop("Names of `x` and `y` must match and be in the same order.",
-             call. = FALSE)
+        stop(
+            "Names of `x` and `y` must match and be in the same order.",
+            call.=FALSE
+        )
     }
     if (nlevels(y) != 2 || any(table(y) == 0)) {
-        stop("`y` must contain exactly 2 non-empty classes.", call. = FALSE)
+        stop("`y` must contain exactly 2 non-empty classes.", call.=FALSE)
     }
     if (!is.null(nfolds) && nfolds > length(y)) {
-        stop("`nfolds` must not exceed the number of samples.", call. = FALSE)
+        stop("`nfolds` must not exceed the number of samples.", call.=FALSE)
     }
     invisible(NULL)
 }
@@ -444,14 +425,14 @@ check_mdm_args <- function(
 check_bm_args <- function(x, y, igrs, nbin, seed, nfolds, verbosity) {
     stopifnot(
         is_spectra(x), is.factor(y), length(y) == length(x),
-        is_list_of_nums(igrs, nv = 2),
+        is_list_of_nums(igrs, nv=2),
         is_int(nbin, 1), nbin >= 1,
         is_int_or_null(seed, 1),
         is_int(nfolds, 1), nfolds >= 2, nfolds <= length(y),
         is_int_or_null(verbosity, 1)
     )
     if (nlevels(y) != 2 || any(table(y) == 0)) {
-        stop("`y` must contain exactly 2 non-empty classes.", call. = FALSE)
+        stop("`y` must contain exactly 2 non-empty classes.", call.=FALSE)
     }
     invisible(NULL)
 }
@@ -462,7 +443,7 @@ check_bm_args <- function(x, y, igrs, nbin, seed, nfolds, verbosity) {
 # bins of equal width; each kept sub-interval gets a proportional share.
 # Returns a numeric matrix with one row per spectrum and named columns
 # (rounded bin centers).
-bin_spectra <- function(spectra, igrs = list(), nbin = 1000) {
+bin_spectra <- function(spectra, igrs=list(), nbin=1000) {
     cs0 <- spectra[[1]]$cs
     lo <- min(cs0); hi <- max(cs0)
     # Build kept intervals as [lo, hi] minus the union of igrs.
@@ -470,14 +451,16 @@ bin_spectra <- function(spectra, igrs = list(), nbin = 1000) {
         kept <- list(c(lo, hi))
     } else {
         ig <- t(vapply(igrs, function(r) c(min(r), max(r)), numeric(2)))
-        ig <- ig[order(ig[, 1]), , drop = FALSE]
+        ig <- ig[order(ig[, 1]), , drop=FALSE]
         # Merge overlapping ignore regions.
-        merged <- ig[1, , drop = FALSE]
+        merged <- ig[1, , drop=FALSE]
         for (i in seq_len(nrow(ig))[-1]) {
             if (ig[i, 1] <= merged[nrow(merged), 2]) {
-                merged[nrow(merged), 2] <- max(merged[nrow(merged), 2], ig[i, 2])
+                merged[nrow(merged), 2] <- max(
+                    merged[nrow(merged), 2], ig[i, 2]
+                )
             } else {
-                merged <- rbind(merged, ig[i, , drop = FALSE])
+                merged <- rbind(merged, ig[i, , drop=FALSE])
             }
         }
         # Complement within [lo, hi].
@@ -490,7 +473,7 @@ bin_spectra <- function(spectra, igrs = list(), nbin = 1000) {
         }
         if (cur < hi) kept[[length(kept) + 1]] <- c(cur, hi)
     }
-    if (length(kept) == 0) stop("All ppm range is ignored.", call. = FALSE)
+    if (length(kept) == 0) stop("All ppm range is ignored.", call.=FALSE)
 
     # Distribute nbin bins across kept intervals proportional to length.
     lens <- vapply(kept, function(r) r[2] - r[1], numeric(1))
@@ -501,21 +484,21 @@ bin_spectra <- function(spectra, igrs = list(), nbin = 1000) {
     nb_each <- floor(raw)
     rem <- nbin - sum(nb_each)
     if (rem > 0) {
-        ord <- order(raw - nb_each, decreasing = TRUE)
+        ord <- order(raw - nb_each, decreasing=TRUE)
         nb_each[ord[seq_len(rem)]] <- nb_each[ord[seq_len(rem)]] + 1L
     }
 
     elo <- numeric(0); ehi <- numeric(0); centers <- numeric(0)
     for (i in seq_along(kept)) {
         if (nb_each[i] == 0) next
-        e <- seq(kept[[i]][1], kept[[i]][2], length.out = nb_each[i] + 1)
+        e <- seq(kept[[i]][1], kept[[i]][2], length.out=nb_each[i] + 1)
         elo <- c(elo, e[-length(e)])
         ehi <- c(ehi, e[-1])
         centers <- c(centers, (e[-length(e)] + e[-1]) / 2)
     }
 
     n <- length(spectra)
-    X <- matrix(0, nrow = n, ncol = length(centers))
+    X <- matrix(0, nrow=n, ncol=length(centers))
     for (i in seq_len(n)) {
         cs <- spectra[[i]]$cs
         si <- spectra[[i]]$si
@@ -585,32 +568,31 @@ bin_spectra <- function(spectra, igrs = list(), nbin = 1000) {
 #' @examples
 #' m <- structure(
 #'   list(
-#'     model = NULL,
-#'     ref = NULL,
-#'     params = list(npmax = 1000, nfit = 3, smit = 2, smws = 5,
-#'                   delta = 6.4, maxShift = 100, maxCombine = 50)
+#'     model=NULL,
+#'     ref=NULL,
+#'     params=list(npmax=1000, nfit=3, smit=2, smws=5,
+#'                 delta=6.4, maxShift=100, maxCombine=50)
 #'   ),
-#'   class = "mdm"
+#'   class="mdm"
 #' )
 #' print(m)
 #' summary(m)
 #'
 #' \dontrun{
-#'   m <- fit_mdm(spectra, y, mog = get_mog("default"), sfr = c(11, -2))
-#'   predict(m, test_spectra, type = "prob")
+#'   m <- fit_mdm(spectra, y, mog=get_mog("default"), sfr=c(11, -2))
+#'   predict(m, test_spectra, type="prob")
 #'   coef(m)
 #'   plot(m)
 #' }
-predict.mdm <- function(object,
-                        newdata,
-                        type = c("all", "prob", "class", "link"),
-                        s = "lambda.min",
-                        nworkers = 1,
-                        verbosity = 1,
-                        ...) {
+predict.mdm <- function(
+    object, newdata,
+    type=c("all", "prob", "class", "link"),
+    s="lambda.min", nworkers=1, verbosity=1, ...
+) {
     stopifnot(
         inherits(object, "mdm"), is_int(nworkers, 1),
-        is_num(s, 1) || is_str(s), is_spectra(newdata) || is.matrix(newdata) || is.data.frame(newdata)
+        is_num(s, 1) || is_str(s),
+        is_spectra(newdata) || is.matrix(newdata) || is.data.frame(newdata)
     )
     type <- match.arg(type)
     if (is.null(object$model)) {
@@ -625,33 +607,44 @@ predict.mdm <- function(object,
     }
     if (is_spectra(newdata)) {
         m <- object$params
-        logv("Deconvoluting %d spectra with %d nworkers", length(newdata), nworkers)
+        logv(
+            "Deconvoluting %d spectra with %d nworkers",
+            length(newdata), nworkers
+        )
         decons <- if (m$npmax > 0) {
-            deconvolute(x=newdata, sfr=m$sfr, igrs=m$igrs %||% list(),
+            deconvolute(
+                x=newdata, sfr=m$sfr, igrs=m$igrs %||% list(),
                 verbose=verbosity >= 2,
-                use_rust=m$use_rust, npmax=m$npmax, nworkers=nworkers)
+                use_rust=m$use_rust, npmax=m$npmax, nworkers=nworkers
+            )
         } else {
-            deconvolute(x=newdata, sfr=m$sfr, igrs=m$igrs %||% list(),
+            deconvolute(
+                x=newdata, sfr=m$sfr, igrs=m$igrs %||% list(),
                 verbose=verbosity >= 2,
-                use_rust=m$use_rust, nfit=m$nfit, smit=m$smit, smws=m$smws,
-                delta=m$delta, npmax=0, nworkers=nworkers)
+                use_rust=m$use_rust, nfit=m$nfit, smit=m$smit,
+                smws=m$smws, delta=m$delta, npmax=0, nworkers=nworkers
+            )
         }
         logv("Aligning spectra with %d nworkers", nworkers)
-        als <- align_decons(x=decons, maxShift=m$maxShift, verbose=verbosity >= 2,
-            nworkers=nworkers, ref=object$ref, full=FALSE)
+        als <- align_decons(
+            x=decons, maxShift=m$maxShift, verbose=verbosity >= 2,
+            nworkers=nworkers, ref=object$ref, full=FALSE
+        )
         Xn <- si_mat(als, maxCombine=m$maxCombine, peakPos=m$peakPos)
         Xn <- Xn[, m$peakPos, drop=FALSE]
     } else {
         Xn <- as.matrix(newdata)
     }
     logv("Predicting with s=%s", as.character(s))
-    requireNamespace("glmnet", quietly = TRUE)
-    score <- as.numeric(predict(object$model, newx = Xn, s = s, type = "link"))
-    prob <- as.numeric(predict(object$model, newx = Xn, s = s, type = "response"))
-    pred <- predict(object$model, newx = Xn, s = s, type = "class")[, 1]
+    requireNamespace("glmnet", quietly=TRUE)
+    score <- as.numeric(predict(object$model, newx=Xn, s=s, type="link"))
+    prob <- as.numeric(predict(object$model, newx=Xn, s=s, type="response"))
+    pred <- predict(object$model, newx=Xn, s=s, type="class")[, 1]
     lvs <- object$model$glmnet.fit$classnames
-    pred <- factor(pred, levels = lvs)
-    if (type == "all") return(data.frame(link = score, prob = prob, class = pred))
+    pred <- factor(pred, levels=lvs)
+    if (type == "all") {
+        return(data.frame(link=score, prob=prob, class=pred))
+    }
     if (type == "class") return(pred)
     if (type == "prob") return(prob)
     if (type == "link") return(score)
@@ -662,17 +655,19 @@ predict.mdm <- function(object,
 #' @rdname mdm_methods
 print.mdm <- function(x, ...) {
     stopifnot(inherits(x, "mdm"), is.list(x$params))
-    pp <- c("npmax", "nfit", "smit", "smws", "delta",
-            "maxShift", "maxCombine")
+    pp <- c(
+        "npmax", "nfit", "smit", "smws", "delta",
+        "maxShift", "maxCombine"
+    )
     cat("metabodecon model (mdm)\n")
     for (nm in pp) {
         v <- x$params[[nm]]
         if (is.null(v)) next
-        lab <- formatC(paste0(nm, ":"), width = -15)
-        cat("  ", lab, v, "\n", sep = "")
+        lab <- formatC(paste0(nm, ":"), width=-15)
+        cat("  ", lab, v, "\n", sep="")
     }
     if (!is.null(x$mog)) {
-        cat("  grid rows:     ", nrow(x$mog), "\n", sep = "")
+        cat("  grid rows:     ", nrow(x$mog), "\n", sep="")
     }
     invisible(x)
 }
@@ -681,7 +676,7 @@ print.mdm <- function(x, ...) {
 #' @rdname mdm_methods
 coef.mdm <- function(object, ...) {
     stopifnot(inherits(object, "mdm"), !is.null(object$model))
-    stats::coef(object$model, s = "lambda.min", ...)
+    stats::coef(object$model, s="lambda.min", ...)
 }
 
 #' @export
@@ -696,8 +691,10 @@ plot.mdm <- function(x, ...) {
 #' @rdname mdm_methods
 summary.mdm <- function(object, ...) {
     stopifnot(inherits(object, "mdm"), is.list(object$params))
-    pp <- c("npmax", "nfit", "smit", "smws", "delta",
-        "maxShift", "maxCombine")
+    pp <- c(
+        "npmax", "nfit", "smit", "smws", "delta",
+        "maxShift", "maxCombine"
+    )
     out <- object$params[pp]
     out$n_peaks <- length(object$params$peakPos %||% integer(0))
     out$grid_rows <- if (is.null(object$mog)) 0L else nrow(object$mog)
@@ -711,36 +708,41 @@ print.summary.mdm <- function(x, ...) {
     stopifnot(inherits(x, "summary.mdm"))
     cat("Summary of mdm\n")
     for (nm in names(x)) {
-        lab <- formatC(paste0(nm, ":"), width = -15)
-        cat("  ", lab, x[[nm]], "\n", sep = "")
+        lab <- formatC(paste0(nm, ":"), width=-15)
+        cat("  ", lab, x[[nm]], "\n", sep="")
     }
     invisible(x)
 }
 
 #' @export
 #' @rdname mdm_methods
-predict.bm <- function(object,
-                       newdata,
-                       type = c("all", "prob", "class", "link"),
-                       s = "lambda.min",
-                       ...) {
+predict.bm <- function(
+    object, newdata,
+    type=c("all", "prob", "class", "link"),
+    s="lambda.min", ...
+) {
     stopifnot(inherits(object, "bm"))
     type <- match.arg(type)
     Xn <- if (is_spectra(newdata)) {
-        Xb <- bin_spectra(newdata, igrs = object$params$igrs,
-                          nbin = object$params$nbin)
-        Xb[, object$params$feat_names, drop = FALSE]
+        Xb <- bin_spectra(
+            newdata, igrs=object$params$igrs, nbin=object$params$nbin
+        )
+        Xb[, object$params$feat_names, drop=FALSE]
     } else {
         as.matrix(newdata)
     }
-    requireNamespace("glmnet", quietly = TRUE)
-    score <- as.numeric(stats::predict(object$model, newx = Xn, s = s,
-                                       type = "link"))
-    prob <- as.numeric(stats::predict(object$model, newx = Xn, s = s,
-                                      type = "response"))
-    pred <- stats::predict(object$model, newx = Xn, s = s, type = "class")[, 1]
-    pred <- factor(pred, levels = object$model$glmnet.fit$classnames)
-    if (type == "all") return(data.frame(link = score, prob = prob, class = pred))
+    requireNamespace("glmnet", quietly=TRUE)
+    score <- as.numeric(
+        stats::predict(object$model, newx=Xn, s=s, type="link")
+    )
+    prob <- as.numeric(
+        stats::predict(object$model, newx=Xn, s=s, type="response")
+    )
+    pred <- stats::predict(object$model, newx=Xn, s=s, type="class")[, 1]
+    pred <- factor(pred, levels=object$model$glmnet.fit$classnames)
+    if (type == "all") {
+        return(data.frame(link=score, prob=prob, class=pred))
+    }
     if (type == "class") return(pred)
     if (type == "prob") return(prob)
     score

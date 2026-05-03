@@ -46,6 +46,15 @@ test_that("lorentz_sup: lcpar interface matches explicit args", {
     )
 })
 
+test_that("lorentz_sup rejects mismatched peak-vector lengths", {
+    x <- seq(0, 10, length.out = 50)
+    expect_error(
+        lorentz_sup(x, x0 = c(2, 5), Al = 1, l2 = c(0.3, 0.5)^2),
+        "x0, Al, and l2 must have the same length.",
+        fixed = TRUE
+    )
+})
+
 test_that("lorentz_sup_c == lorentz_sup_v1 == lorentz_sup_v2", {
     set.seed(42)
     x  <- seq(0, 10, length.out = 200)

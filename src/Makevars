@@ -1,0 +1,8 @@
+# -O3 enables optimisations beyond the R default of -O2:
+#   - auto-vectorisation (-ftree-vectorize): the compiler emits SSE2/AVX
+#     instructions so 2-4 doubles are processed per clock in tight loops.
+#   - aggressive loop unrolling and instruction scheduling.
+#   - inter-procedural inlining of small helper functions.
+# This flag is safe for this package: the C kernels contain no undefined
+# behaviour that -O3 could miscompile.
+PKG_CFLAGS = -O3

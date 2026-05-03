@@ -104,8 +104,7 @@ deconvolute <- function(
 # Internal #####
 
 #' @noRd
-#' @inheritParams deconvolute
-#' @author 2024-2025 Tobias Schmidt: initial version.
+#' @author 2024-2026 Tobias Schmidt: initial version.
 deconvolute_spectra <- function(
     x,
     nfit=3, smit=2, smws=5, delta=6.4, npmax=0,
@@ -113,131 +112,64 @@ deconvolute_spectra <- function(
     use_rust=FALSE, verbose=TRUE, nworkers=1, # end of public args
     force=FALSE, full=TRUE
 ) {
-    sfr <- sfr %||% quantile(x$cs %||% x[[1]]$cs, c(0.9, 0.1))
-
-    # Configure logging
-    if (!verbose) local_options(toscutil.logf.file = nullfile())
 
     # Init locals
-    spectra <- as_spectra(x)
-    ns <- length(spectra)
-    nc2 <- ceiling(detectCores() / 2)
-    nw <- if (nworkers == "auto") min(nc2, ns) else nworkers
-    nw_str <- if (nw == 1) "1 worker" else sprintf("%d workers", nw)
-    ns_str <- if (ns == 1) "1 spectrum" else sprintf("%d spectra", ns)
-
+    if (!verbose) local_options(toscutil.logf.file = nullfile())
+    x <- as_spectra(x)
+    ns <- length(x)
+    nw <- min(half_cores(), ns, nworkers)
 
     # Attach grid-search results to each spectrum (only when npmax > 0)
-    if (npmax >= 1) {
-        spectra <- grid_deconvolute_spectra(
-            x=spectra, sfr=sfr, verbose=verbose, nworkers=nw,
-            use_rust=use_rust
-        )
-    }
+    if (npmax >= 1) x <- grid_deconvolute_spectra(
+        x=x, sfr=sfr, verbose=verbose, nworkers=nw, use_rust=use_rust
+    )
 
     # Deconvolute spectra
-    logf("Starting deconvolution of %s using %s", ns_str, nw_str)
+    logf("Starting deconvolution (spectra: %d, workers: %d)", ns, nw)
     starttime <- Sys.time()
-    decon_list <- mcmapply(
-        nw, deconvolute_spectrum, spectra,
-        MoreArgs = list(
-            nfit=nfit, smit=smit, smws=smws, delta=delta, npmax=npmax,
-            sfr=sfr, igrs=igrs,
-            use_rust=use_rust, verbose=verbose, # end of public args
-            force=force
-        )
-    )
+    args <- get_args(deconvolute_spectrum, ignore=c("x"))
+    decon_list <- mcmapply(nw, deconvolute_spectrum, x, MoreArgs = args)
     decons <- as_decons2(decon_list)
     duration <- format(round(Sys.time() - starttime, 3))
-    logf("Finished deconvolution of %s in %s", ns_str, duration)
+    logf("Finished deconvolution %s", duration)
     decons
 }
 
 #' @noRd
-#' @inheritParams deconvolute_spectra
-#' @author 2024-2025 Tobias Schmidt: initial version.
+#' @author 2024-2026 Tobias Schmidt: initial version.
 #' @examples
-#' x <- sap[[1]]
-#' nfit <- 3; smit <- 1; smws <- 3; delta <- 3; sfr <- c(3.2, -3.2)
-#' force <- FALSE; verbose <- FALSE
-#' use_rust <- FALSE; igrs <- list()
-#' decon <- deconvolute_spectrum(
-#'      x, nfit, smit, smws, delta, sfr,
-#'      force, verbose, use_rust, igrs
-#' )
-#'
+#' s <- deconvolute_spectrum(sap, smit=1, smws=3, delta=3, sfr=c(3.2,-3.2))
 #' x <- read_spectrum(metabodecon_file("urine_1"))
-#' x <- grid_deconvolute_spectrum(x, use_rust=TRUE)
-#' decon1 <- deconvolute_spectrum(
-#'      x, sfr=quantile(x$cs, c(0.9, 0.1)), use_rust=TRUE, npmax=1000
-#' )
+#' u <- grid_deconvolute_spectrum(x, use_rust=TRUE)
+#' d <- deconvolute_spectrum(x, npmax=1000)
 deconvolute_spectrum <- function(
-    x, nfit=3, smit=2, smws=5, delta=6.4, npmax=0, sfr=c(3.55, 3.35), igrs=list(),
+    x, nfit=3, smit=2, smws=5, delta=6.4, npmax=0,
+    sfr=NULL, igrs=list(),
     use_rust=FALSE, verbose=TRUE, # end of public args
     force=FALSE
 ) {
 
     # Init locals
     if (isFALSE(verbose)) local_options(toscutil.logf.file = nullfile())
+    sfr <- sfr %||% quantile(x$cs, c(0.9, 0.1))
     name <- get_name(x)
     backend <- if (use_rust >= 1) "Rust" else "R"
     suffix <- sprintf(" using %s backend", backend)
 
     # Pick best params from attached grid (when npmax > 0)
     if (npmax >= 1) {
-        if (is.null(x$grid)) stop(
-            "deconvolute_spectrum() requires x$grid when npmax >= 1. ",
-            "Call grid_deconvolute_spectra() first."
-        )
-        G <- x$grid
-        G <- G[G$np > 0, ]
-        # The Rust backend sometimes produces zero peaks if SFR and Delta are
-        # too small. We ignore these and select only from the valid results.
-        if (nrow(G) == 0) stop("All parameter sets produced zero peaks.")
-        sub <- G[G$np < npmax, ]
-        if (nrow(sub) == 0) {
-            ln1 <- "No parameter set found with np < %d."
-            ln2 <- "Using set with smallest np (%d) instead."
-            logf(paste(ln1, ln2), npmax, min(G$np))
-            best <- G[G$np == min(G$np), , drop=FALSE]
-        } else {
-            best <- sub[sub$ar == min(sub$ar), , drop=FALSE]
-        }
-        nfit <- best$nfit[1]
-        smit <- best$smit[1]
-        smws <- best$smws[1]
-        delta <- best$delta[1]
-        fmt <- "Best params for %s: nfit=%d, smit=%d, smws=%d, delta=%.2f"
-        logf(fmt, name, nfit, smit, smws, delta)
+        best <- pick_best_params(x, npmax, name)
+        nfit <- best$nfit; smit <- best$smit
+        smws <- best$smws; delta <- best$delta
     }
-    args <- get_args(deconvolute_spectrum, ignore = "x")
+    args <- get_args(deconvolute_spectrum, ignore=c("x", "verbose", "use_rust", "force"))
 
     # Deconvolute with given/optimal parameters
     logf("Starting deconvolution of %s%s", name, suffix)
     decon <- if (use_rust >= 1) {
-        decon2_from_rust(x, args, sfr, igrs, nfit, smit, smws, delta)
+        deconvolute_spectrum_rust(x, args, sfr, igrs, nfit, smit, smws, delta)
     } else {
-        si <- x$si
-        sfr_igr <- list(c(Inf, max(sfr)), c(min(sfr), -Inf))
-        igrs <- c(sfr_igr, igrs)
-        sm <- smooth_signals2(si, smit, smws)
-        peaks <- find_peaks2(sm)
-        peaks <- filter_peaks2(peaks, x$cs, sfr, delta, force, igrs)
-        lcpar <- fit_lorentz_curves2(x$cs, si, peaks, nfit)
-        sup <- lorentz_sup(x$cs, lcpar = lcpar)
-        sit <- data.frame(sm=sm, sup=sup)
-        mse_list <- list(
-            raw = mse(si, sup, normed = FALSE),
-            norm = mse(si, sup, normed = TRUE),
-            sm = mse(sit$sm, sup, normed = FALSE),
-            smnorm = mse(sit$sm, sup, normed = TRUE)
-        )
-        decon <- list(
-            cs=x$cs, si=si, meta=x$meta, args=args, sit=sit, peak=peaks,
-            lcpar=lcpar, mse=mse_list
-        )
-        class(decon) <- c("decon2", "spectrum")
-        decon
+        deconvolute_spectrum_r(x, args, sfr, igrs, nfit, smit, smws, delta, force)
     }
 
     # Cache and return
@@ -246,9 +178,66 @@ deconvolute_spectrum <- function(
 }
 
 #' @noRd
-#' @title Build a `decon2` object from a Rust-backend deconvolution.
+#' @title Pick best params from attached `deg` grid for `npmax`
+#' @description
+#' Selects the parameter row with smallest area ratio (`ar`) among rows with
+#' `np > 0` and `np < npmax`. Falls back to the row with the smallest `np`
+#' when no row satisfies `np < npmax`.
+#' @return A length-1 list with elements `nfit`, `smit`, `smws`, `delta`.
+#' @author 2024-2026 Tobias Schmidt: initial version.
+pick_best_params <- function(x, npmax, name) {
+    if (is.null(x$deg)) stop(
+        "deconvolute_spectrum() requires x$deg when npmax >= 1. ",
+        "Call grid_deconvolute_spectra() first."
+    )
+    G <- x$deg
+    G <- G[G$np > 0, ]
+    # The Rust backend sometimes produces zero peaks if SFR and Delta are
+    # too small. We ignore these and select only from the valid results.
+    if (nrow(G) == 0) stop("All parameter sets produced zero peaks.")
+    sub <- G[G$np < npmax, ]
+    if (nrow(sub) == 0) {
+        ln1 <- "No parameter set found with np < %d."
+        ln2 <- "Using set with smallest np (%d) instead."
+        logf(paste(ln1, ln2), npmax, min(G$np))
+        best <- G[G$np == min(G$np), , drop=FALSE]
+    } else {
+        best <- sub[sub$ar == min(sub$ar), , drop=FALSE]
+    }
+    fmt <- "Best params for %s: nfit=%d, smit=%d, smws=%d, delta=%.2f"
+    logf(fmt, name, best$nfit[1], best$smit[1], best$smws[1], best$delta[1])
+    list(
+        nfit=best$nfit[1], smit=best$smit[1],
+        smws=best$smws[1], delta=best$delta[1]
+    )
+}
+
+#' @noRd
+#' @title Build a `decon2` object using the R deconvolution backend.
+#' @author 2024-2026 Tobias Schmidt: initial version.
+deconvolute_spectrum_r <- function(
+    x, args, sfr, igrs, nfit, smit, smws, delta, force
+) {
+    si <- x$si
+    sfr_igr <- list(c(Inf, max(sfr)), c(min(sfr), -Inf))
+    igrs <- c(sfr_igr, igrs)
+    sm <- smooth_signals2(si, smit, smws)
+    peaks <- find_peaks2(sm)
+    peaks <- filter_peaks2(peaks, x$cs, sfr, delta, force, igrs)
+    lcpar <- fit_lorentz_curves2(x$cs, si, peaks, nfit)
+    sup <- lorentz_sup(x$cs, lcpar=lcpar)
+    sit <- data.frame(sm=sm, sup=sup)
+    decon <- list(cs=x$cs, si=si, meta=x$meta, args=args, sit=sit, peak=peaks, lcpar=lcpar)
+    class(decon) <- c("decon2", "spectrum")
+    decon
+}
+
+#' @noRd
+#' @title Build a `decon2` object using the Rust deconvolution backend.
 #' @author 2024-2025 Tobias Schmidt: initial version.
-decon2_from_rust <- function(x, args, sfr, igrs, nfit, smit, smws, delta) {
+deconvolute_spectrum_rust <- function(
+    x, args, sfr, igrs, nfit, smit, smws, delta
+) {
     mdrb_spectrum <- mdrb::Spectrum$new(x$cs, x$si, sfr)
     mdrb_deconvr <- mdrb::Deconvoluter$new()
     mdrb_deconvr$set_moving_average_smoother(smit, smws)
@@ -262,18 +251,10 @@ decon2_from_rust <- function(x, args, sfr, igrs, nfit, smit, smws, delta) {
     lcpar <- as.data.frame(mdrb_decon$lorentzians())[, c("x0", "A", "lambda")]
     sm <- smooth_signals2(si, smit, smws)        # Rust does not return sm
     sit <- data.frame(sm=sm, sup=sup)
-    mse_list <- list(
-        # Rust mdrb_decon$mse() deviates from mse() results, so we calculate
-        # ourselves until the Rust backend provides correct values.
-        raw = mse(si, sup, norm=FALSE),
-        norm = mse(si, sup, norm=TRUE),
-        sm = mse(sm, sup, norm=FALSE),
-        smnorm = mse(sm, sup, norm=TRUE)
-    )
     peak <- get_peak(lcpar$x0, cs)
     decon <- list(
         cs=cs, si=si, meta=x$meta, args=args, sit=sit, peak=peak,
-        lcpar=lcpar, mse=mse_list
+        lcpar=lcpar
     )
     class(decon) <- c("decon2", "spectrum")
     decon
@@ -285,25 +266,30 @@ decon2_from_rust <- function(x, args, sfr, igrs, nfit, smit, smws, delta) {
 #'
 #' @description
 #' For each spectrum in `x`, runs `grid_deconvolute_spectrum()` and attaches
-#' the resulting performance grid as element `$grid`. Idempotent: spectra
-#' that already carry a `$grid` element are left untouched. The enriched
+#' the resulting performance grid as element `$deg`. Idempotent: spectra
+#' that already carry a `$deg` element are left untouched. The enriched
 #' `spectra` object is returned so workers in `deconvolute_spectra()` can
 #' look up best parameters locally.
 #'
 #' @param deg
-#' Optional deconvolution-parameter grid (a data frame with columns `nfit`,
-#' `smit`, `smws`, `delta`; extra columns like `npmax`, `maxShift`,
-#' `maxCombine` are ignored). When supplied, only rows with `npmax > 0` are
-#' used. When `NULL`, a default cartesian product
+#' Deconvolution-parameter grid: a data frame with columns `nfit`, `smit`,
+#' `smws`, `delta`. When `NULL`, a default cartesian product
 #' (`smit=c(2,3), smws=c(3,5,7,9), delta=2:8, nfit=c(3,4,5)`) is used.
+#' May also be a model-fitting grid (`mog`) — i.e. a data frame that
+#' additionally has an `npmax` column — in which case only unique
+#' `(nfit, smit, smws, delta)` rows with `npmax > 0` are used.
 grid_deconvolute_spectra <- function(
     x, deg=NULL, sfr=NULL, igrs=list(), verbose=TRUE, nworkers=1,
     use_rust=FALSE
 ) {
-    sfr <- sfr %||% quantile(x[[1]]$cs, c(0.9, 0.1))
     if (isFALSE(verbose)) local_options(toscutil.logf.file = nullfile())
+    if (!is.null(deg) && "npmax" %in% names(deg)) {
+        cols <- c("nfit", "smit", "smws", "delta")
+        deg <- unique(deg[deg$npmax > 0, cols, drop=FALSE])
+        rownames(deg) <- NULL
+    }
 
-    seen <- sapply(x, function(s) !is.null(s$grid))
+    seen <- sapply(x, function(s) !is.null(s$deg))
     logf("Reusing grids for %d/%d spectra", sum(seen), length(x))
     if (all(seen)) return(invisible(x))
 
@@ -312,8 +298,7 @@ grid_deconvolute_spectra <- function(
     nw <- min(nworkers, length(idx))
     enriched <- mcmapply(
         nw, grid_deconvolute_spectrum, x=x[idx],
-        MoreArgs = list(deg=deg, sfr=sfr, igrs=igrs, verbose=verbose,
-                        use_rust=use_rust)
+        MoreArgs = list(deg=deg, sfr=sfr, igrs=igrs, verbose=verbose, use_rust=use_rust)
     )
     for (k in seq_along(idx)) x[[idx[k]]] <- enriched[[k]]
     invisible(x)
@@ -326,15 +311,12 @@ grid_deconvolute_spectra <- function(
 #' @inheritParams deconvolute_spectrum
 #'
 #' @param deg
-#' Optional deconvolution-parameter grid. See `grid_deconvolute_spectra()`
-#' for details.
+#' Deconvolution-parameter grid. See `grid_deconvolute_spectra()` for details.
 #'
 #' @return
-#' The input spectrum with a `$grid` element attached: a data frame with
-#' columns `smit`, `smws`, `delta`, `nfit`, `ar` and `np`. `smit`, `smws`,
-#' `delta` and `nfit` are the parameters used for deconvolution, `ar` is the
-#' area ratio (residual-area/spectra-area) and `np` is the number of peaks in
-#' the deconvolution result. Idempotent: if `x$grid` is already set, `x` is
+#' The input spectrum with a `$deg` element attached: `deg` augmented with
+#' columns `ar` (residual-area / spectra-area) and `np` (number of peaks in
+#' the deconvolution result). Idempotent: if `x$deg` is already set, `x` is
 #' returned unchanged.
 #'
 #' @examples
@@ -344,53 +326,33 @@ grid_deconvolute_spectra <- function(
 #' xRust <- grid_deconvolute_spectrum(x, use_rust=TRUE)
 #'
 grid_deconvolute_spectrum <- function(
-    x, deg=NULL, sfr=NULL, igrs=list(), verbose=TRUE, use_rust=FALSE
+    x,
+    deg=expand.grid2(nfit=5, smit=2, smws=c(3,5,7,9), delta=2:8),
+    sfr=NULL, igrs=list(), verbose=TRUE, use_rust=FALSE
 ) {
-    if (!is.null(x$grid)) return(x)
+    if (!is.null(x$deg)) return(x)
     if (!verbose) local_options(toscutil.logf.file = nullfile())
-    sfr <- sfr %||% quantile(x$cs %||% x[[1]]$cs, c(0.9, 0.1))
 
-    grid <- deg_to_grid(deg)
-    specname <- get_name(x)
-    logf("Grid deconvoluting %s", specname)
-
-    pnames <- c("smit", "smws", "delta", "nfit")
-    default_args <- as.list(formals(deconvolute_spectrum))
-    call_args <- list(x=x, sfr=sfr, igrs=igrs, verbose=FALSE,
-                       use_rust=use_rust, npmax=0)
-    args <- modifyList(default_args, call_args)
-
-    for (i in seq_len(nrow(grid))) {
-        logf("Grid search iteration %d/%d", i, nrow(grid))
-        args[pnames] <- grid[i, pnames]
-        d <- do.call(deconvolute_spectrum, args)
-        grid[i, "ar"] <- sum(abs(d$sit$sup - d$si)) / sum(abs(d$si))
-        grid[i, "np"] <- nrow(d$lcpar)
-    }
-
-    logf("Finished grid deconvolution of %s", specname)
-    x$grid <- grid
-    x
-}
-
-# Build a (smit, smws, delta, nfit) grid from a `deg` data frame or use the
-# default cartesian product when `deg` is NULL. Used by
-# grid_deconvolute_spectrum().
-deg_to_grid <- function(deg) {
     cols <- c("smit", "smws", "delta", "nfit")
-    if (is.null(deg)) {
-        return(expand.grid(
-            smit=c(2,3), smws=c(3,5,7,9), delta=2:8, nfit=c(3,4,5)
-        ))
+    stopifnot(all(cols %in% colnames(deg)))
+    deg$ar <- NA_real_; deg$np <- NA_integer_
+    ds_args <- modifyList(
+        as.list(formals(deconvolute_spectrum)),
+        list(x=x, sfr=sfr, igrs=igrs, verbose=FALSE, use_rust=use_rust, npmax=0)
+    )
+
+    logf("Grid deconvoluting %s", specname <- get_name(x))
+    for (i in seq_len(nrow(deg))) {
+        logf("Grid search iteration %d/%d", i, nrow(deg))
+        ds_args[cols] <- deg[i, cols]
+        d <- do.call(deconvolute_spectrum, ds_args)
+        deg[i, "ar"] <- sum(abs(d$sit$sup - d$si)) / sum(abs(d$si))
+        deg[i, "np"] <- nrow(d$lcpar)
     }
-    if (!is.data.frame(deg) || !all(cols %in% names(deg))) {
-        stop("deg must be a data frame with columns ", toString(cols))
-    }
-    if ("npmax" %in% names(deg)) deg <- deg[deg$npmax > 0, , drop=FALSE]
-    g <- unique(deg[, cols, drop=FALSE])
-    if (nrow(g) == 0) stop("deg yields no rows with npmax > 0")
-    rownames(g) <- NULL
-    g
+    logf("Finished grid deconvolution of %s", specname)
+
+    x$deg <- deg
+    x
 }
 
 # Helpers for deconvolute_spectrum #####
@@ -452,21 +414,9 @@ smooth_signals2 <- function(y, reps = 2, k = 5) {
     y
 }
 
-find_peaks2 <- function(y, use_c=FALSE) {
+find_peaks2 <- function(y) {
     logf("Starting peak selection")
-    P <- if (use_c) {
-        .Call(find_peaks_c, as.double(y))
-    } else {
-        d <- calc_second_derivative(y)
-        pc <- get_peak_centers_fast(d)
-        rb <- get_right_borders_fast(d, pc)
-        lb <- get_left_borders_fast(d, pc)
-        sc <- get_peak_scores_fast(d, pc, lb, rb)
-        P <- data.frame(left = lb, center = pc, right = rb, score = sc)
-        P <- P[!is.na(P$left) & !is.na(P$right), ]
-        rownames(P) <- NULL
-        P
-    }
+    P <- .Call(find_peaks_c, as.double(y))
     logf("Detected %d peaks", nrow(P))
     P
 }
@@ -601,96 +551,6 @@ fit_lorentz_curves2 <- function(cs, si, peaks, nfit = 3) {
     data.frame(x0 = maxp, A = A, lambda = lambda)
 }
 
-# Helpers for find_peak #####
-
-#' @noRd
-#' @author 2024-2025 Tobias Schmidt: initial version.
-calc_second_derivative <- function(y) {
-    n <- length(y)
-    x <- c(NA, y[-n]) # x[i] == y[i-1]
-    z <- c(y[-1], NA) # z[i] == y[i+1]
-    d <- x + z - 2 * y
-    d
-}
-
-get_peak_centers_fast <- function(d) {
-    dl <- c(NA, d[-length(d)])
-    dr <- c(d[-1], NA)
-    pc <- which(d < 0 & d <= dl & d < dr)
-    pc
-}
-
-#' @noRd
-#' @param d Vector of second derivative (of the smoothed signal intensities).
-#' @param pc Peak center indices.
-#' @author 2025 Tobias Schmidt: initial version.
-get_right_borders_fast <- function(d, pc) {
-    # Example Inputs:
-    # d <- c(-2, -4, -2, 1, 2, 1, -1, 1, -2, -1) # Second Derivative
-    # pc <- c(2, 7, 9) # Corresponding Peak Center Indices
-
-    dl <- c(NA, d[-length(d)])
-    # Second Derivative shifted left by 1 position. Example:
-    # dl == c(NA, -2, -4, -2, 1, 2, 1, -1, 1, -2)
-
-    dr <- c(d[-1], NA)
-    # Second Derivative shifted right by 1 position. Example:
-    # dr == c(-4, -2, 1, 2, 1, -1, 1, -2, -1, NA)
-
-    is_right_root <- (dr >= 0) & (d < 0)
-    is_local_maximum <- (dl < d) & (dr <= d)
-    isrbc <- is_right_root | is_local_maximum
-    isrbc[is.na(isrbc)] <- FALSE
-    # Is Right Border Candidate? Vector of booleans describing whether a certain
-    # position fulfills the criteria to be a right border. Example:
-    # isrbc == c(F, F, TRUE, F, TRUE, F, TRUE, TRUE, F, F)
-
-    rbc <- c(which(isrbc), NA)
-    # Right Border Candidates. Example:
-    # rbc == c(3, 5, 7, 8, NA)
-
-    rbci <- cumsum(isrbc) + 1
-    # Right Border Candidate Indices. I.e., for a peak at position i, rbci[i]
-    # gives the position of the nearest right border candidate in rbc. Example:
-    #
-    # rbci == c(1, 1, 2, 2, 3, 3, 4, 5, 5, 5)
-    #
-    # I.e., the first two positions (1:2) have their nearest right border
-    # candidate at rbc[1] (which points to position 3), the next two positions
-    # (3:4) have their nearest right border candidate at rbc[2] (== 5) and the
-    # next two positions (5:6) have their nearest right border candidate at
-    # rbc[3] (== 7). The next position (7) has its nearest right border
-    # candidate at rbc[4] (== 8) and the last three positions have their nearest
-    # right border candidate at rbc[5], which is NA, as there is no right border
-    # candidate after position 8.
-
-    rbc[rbci[pc]] # Right Borders.
-}
-
-get_left_borders_fast <- function(d, pc) {
-    nd <- length(d)
-    pcrev <- rev(length(d) - pc + 1)
-    drev <- rev(d)
-    lbrev <- get_right_borders_fast(drev, pcrev)
-    lb <- rev(nd - lbrev + 1)
-    lb
-}
-
-get_peak_scores_fast <- function(d, pc, lb, rb) {
-    # Calculate interval scores as minimum of left-to-center and center-to-right
-    # interval sums. Use cumsum for maximum speed. Prepend a zero so we can
-    # calculate interval sums as cumsum[pc+1]-cumsum[lb] instead of
-    # cumsum[pc]-cumsum[lb-1]. This way we don't need to handle the lb==1 case
-    # separately. Set scores to zero if lb or rb is NA.
-    a <- abs(d)
-    cumsum0 <- c(0, cumsum(replace(a, is.na(a), 0)))
-    sum_lj <- cumsum0[pc + 1] - cumsum0[lb]
-    sum_jr <- cumsum0[rb + 1] - cumsum0[pc]
-    score <- pmin(sum_lj, sum_jr)
-    score[is.na(score)] <- 0
-    score
-}
-
 # General helpers #####
 
 #' @noRd
@@ -764,8 +624,12 @@ lorentz_sup <- function(
     }
     if (is.null(Al)) Al <- abs(A * lambda)
     if (is.null(l2)) l2 <- lambda^2
-    .Call(lorentz_sup_c, as.double(x), as.double(x0),
-          as.double(Al), as.double(l2))
+    if (length(x0) != length(Al) || length(x0) != length(l2)) {
+        stop("x0, Al, and l2 must have the same length.", call. = FALSE)
+    }
+    .Call(
+        lorentz_sup_c, as.double(x), as.double(x0), as.double(Al), as.double(l2)
+    )
 }
 
 #' @noRd
@@ -788,72 +652,5 @@ lorentz_int <- function(x0, A, lambda, lcpar = NULL, limits = NULL) {
         a <- min(limits)
         b <- max(limits)
         A * (atan((b - x0) / lambda) - atan((a - x0) / lambda))
-    }
-}
-
-#' @noRd
-#' @author
-#' 2020-2021 Martina Haeckl: Wrote initial version as part of MetaboDecon1D.\cr
-#' 2024-2025 Tobias Schmidt: Extracted and refactored corresponding code from
-#' MetaboDecon1D.
-mse <- function(y, yhat, normed = FALSE) {
-    if (normed) {
-        mean(((y / sum(y)) - (yhat / sum(yhat)))^2)
-    } else {
-        mean((y - yhat)^2)
-    }
-}
-
-#' @noRd
-#' @description
-#' Before version 1.2 of 'metabodecon', the deconvolution functions
-#' `generate_lorentz_curves()` and `MetaboDecon1D()` wrote their output
-#' partially as txt files to their input folder. The txt files were named
-#' "SPEC_NAME parameter.txt" and "SPEC_NAME approximated_spectrum.txt". Since
-#' version 1.2 these txt files are no longer created by default, to prevent
-#' accidental modifications of the input folders. However, to stay backwards
-#' compatible, functions that used to read "SPEC_NAME parameter.txt" and
-#' "SPEC_NAME approximated_spectrum.txt" still accept them as input (e.g.
-#' `gen_feat_mat()`). I.e., in order to test this functionality, we still need a
-#' way to create the corresponding txt files (which is no longer done by
-#' `generate_lorentz_curves()`). That's the purpose of this function: it takes
-#' the output of `generate_lorentz_curves()` as input and creates the (now
-#' deprecated) "SPEC_NAME parameter.txt" and "SPEC_NAME
-#' approximated_spectrum.txt" in folder `outdir`.
-#' @author 2024-2025 Tobias Schmidt: initial version.
-write_parameters_txt <- function(decon, outdir, verbose = FALSE) {
-    name <- decon$filename
-    w_new <- decon$x_0
-    lambda_new <- decon$lambda
-    A_new <- decon$A
-    noise_threshold <- rep(NA, length(A_new))
-    pardf <- data.frame(rbind(w_new, lambda_new, A_new, noise_threshold))
-    supdf <- data.frame(t(decon$spectrum_superposition))
-    parfile <- file.path(outdir, paste(name, "parameters.txt"))
-    supfile <- file.path(outdir, paste(name, "approximated_spectrum.txt"))
-    if (verbose) cat(sprintf("Creating: %s\n", parfile))
-    utils::write.table(pardf, parfile, sep = ",", col.names = FALSE, append = FALSE)
-    if (verbose) cat(sprintf("Creating: %s\n", parfile))
-    utils::write.table(supdf, supfile, sep = ",", col.names = FALSE, append = FALSE)
-}
-
-#' @noRd
-#' @author 2024-2025 Tobias Schmidt: initial version.
-store_as_rds <- function(decons, make_rds, data_path) {
-    if (is.character(make_rds)) {
-        cat("Saving results as", make_rds, "\n")
-        saveRDS(decons, make_rds)
-    } else if (isTRUE(make_rds)) {
-        rdspath <- file.path(data_path, "spectrum_data.rds")
-        if (interactive()) {
-            yes <- get_yn_input(sprintf("Save results as '%s'?", rdspath))
-            if (yes) saveRDS(decons, rdspath)
-        } else {
-            logf(
-                "Skipping RDS save: confirmation required but not in",
-                "interactive mode. For details see",
-                "`help('generate_lorentz_curves')`."
-            )
-        }
     }
 }

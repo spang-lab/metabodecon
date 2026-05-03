@@ -9,7 +9,7 @@ test_that("combine_peaks merges neighbouring compatible columns", {
         c(0.04, 0.00, 0.00, 0.04, 0.00)
     )
 
-    obj <- metabodecon:::combine_peaks(M, range = 1)
+    obj <- metabodecon:::combine_peaks(M, maxCombine=1)
     expect_equal(obj[, 3], c(0, 0, 0, 0, 0))
     expect_equal(obj[, 4], c(0.11, 0.12, 0.30, 0.07, 0.04))
     expect_equal(sum(colSums(obj != 0) > 0), 4)
@@ -23,7 +23,7 @@ test_that("combine_peaks with range zero keeps columns and normalizes NAs", {
         c(NA, 2, 0)
     )
 
-    obj <- metabodecon:::combine_peaks(M, range = 0)
+    obj <- metabodecon:::combine_peaks(M, maxCombine=0)
     exp_long <- rbind(
         c(1, 0, 0),
         c(0, 0, 0),

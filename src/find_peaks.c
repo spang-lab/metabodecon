@@ -97,8 +97,8 @@ SEXP find_peaks_c(SEXP y_in) {
         double d_n = (i < n - 1) ? d[i + 1] : NA_REAL;
 
         int is_lbc =
-            (!ISNAN(di) && !ISNAN(d_p) && di < 0.0 && d_p >= 0.0) ||   /* (a) */
-            (!ISNAN(di) && !ISNAN(d_p) && !ISNAN(d_n)                   /* (b) */
+            (!ISNAN(di) && !ISNAN(d_p) && di < 0.0 && d_p >= 0.0) ||
+            (!ISNAN(di) && !ISNAN(d_p) && !ISNAN(d_n)
              && di > d_n && di >= d_p);
 
         int is_pcc =
@@ -106,18 +106,18 @@ SEXP find_peaks_c(SEXP y_in) {
             di < 0.0 && di <= d_p && di < d_n;
 
         int is_rbc =
-            (!ISNAN(di) && !ISNAN(d_n) && di < 0.0 && d_n >= 0.0) ||   /* (a) */
-            (!ISNAN(di) && !ISNAN(d_p) && !ISNAN(d_n)                   /* (b) */
+            (!ISNAN(di) && !ISNAN(d_n) && di < 0.0 && d_n >= 0.0) ||
+            (!ISNAN(di) && !ISNAN(d_p) && !ISNAN(d_n)
              && d_p < di && d_n <= di);
 
-        if (state == 0) {                        /* FREE */
+        if (state == 0) {
             if (is_lbc) { pending_lb = i; state = 1; }
 
-        } else if (state == 1) {                 /* HAVE_LB */
+        } else if (state == 1) {
             if (is_pcc)      { pending_pc = i; state = 2; }
-            else if (is_lbc) { pending_lb = i; }          /* update lb */
+            else if (is_lbc) { pending_lb = i; }
 
-        } else {                                 /* HAVE_PC */
+        } else {
             if (is_rbc) {
                 emit_peak(pending_lb, pending_pc, i,
                           cs, lb_buf, pc_buf, rb_buf, sc_buf, &npc);
