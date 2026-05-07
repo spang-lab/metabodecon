@@ -144,13 +144,22 @@ fit_mdm <- function(
     ns <- length(x)
     preds <- matrix(NA_real_, nrow=ns, ncol=nr)
     logv("Starting grid search (%d combinations, %d spectra)", nr, ns)
+    iw <- max(4L, nchar(as.character(nr)))
+    hdr_fmt <- paste0(
+        "%-", iw, "s  %-5s  %-4s  %-4s  %-4s  %-5s  %-5s  %-4s  ",
+        "%-5s  %-5s  %-4s"
+    )
+    row_fmt <- paste0(
+        "%-", iw, "d  %-5d  %-4d  %-4d  %-4d  %-5.1f  %-5d  %-4d  ",
+        "%-5.3f  %-5.3f  %-4s"
+    )
+    logv(hdr_fmt, "i", "npmax", "nfit", "smit", "smws", "del",
+         "shift", "comb", "acc", "auc", "best")
     foldid <- get_foldid(y=y, nfolds=nfolds, seed=seed)
     last_dkey <- NULL; last_akey <- NULL
     best_mdm <- NULL;  best_auc <- -Inf
-    row_fmt <- "[%d/%d] npmax=%d nfit=%d smit=%d smws=%d delta=%g maxShift=%d maxCombine=%g"
     for (i in seq_len(nr)) {
         r <- mog[i, , drop=FALSE]
-        logv(row_fmt, i, nr, r$npmax, r$nfit, r$smit, r$smws, r$delta, r$maxShift, r$maxCombine)
         dkey <- list(r$npmax, r$nfit, r$smit, r$smws, r$delta)
         if (!identical(dkey, last_dkey)) {
             d <- deconvolute_spectra(
@@ -170,8 +179,9 @@ fit_mdm <- function(
             mog$prarpx[i] <- mean(prps)
         }
         if (any(nps == 0)) {
-            logv("[%d/%d] %d spectra produced zero peaks; skipping", i, nr, sum(nps == 0))
             mog$acc[i] <- 0; mog$auc[i] <- 0
+            logv(row_fmt, i, r$npmax, r$nfit, r$smit, r$smws, r$delta,
+                 r$maxShift, r$maxCombine, 0, 0, "skip")
             next
         }
 
@@ -198,9 +208,9 @@ fit_mdm <- function(
         mog$acc[i] <- mean(pred == y)
         mog$auc[i] <- AUC(y, prob)
         preds[, i] <- prob
-        logv("[%d/%d] acc=%.2f%% auc=%.4f", i, nr, mog$acc[i] * 100, mog$auc[i])
 
-        if (!is.na(mog$auc[i]) && mog$auc[i] > best_auc) {
+        is_best <- !is.na(mog$auc[i]) && mog$auc[i] > best_auc
+        if (is_best) {
             best_auc <- mog$auc[i]
             params <- list(
                 sfr=sfr, igrs=igrs, use_rust=use_rust, npmax=r$npmax,
@@ -209,13 +219,16 @@ fit_mdm <- function(
             )
             best_mdm <- structure(list(model=cvfit, ref=ref, params=params), class="mdm")
         }
+        logv(row_fmt, i, r$npmax, r$nfit, r$smit, r$smws, r$delta,
+             r$maxShift, r$maxCombine, mog$acc[i], mog$auc[i],
+             if (is_best) "yes" else "")
     }
 
     best_mdm$preds <- preds
     best_mdm$mog <- mog
     ibest <- which.max(mog$auc)
-    fmt <- "Best [%d/%d]: acc=%.2f%% auc=%.4f"
-    logv(fmt, ibest, nr, mog$acc[ibest] * 100, mog$auc[ibest])
+    logv("Best [%d/%d]: acc=%.2f%% auc=%.4f",
+         ibest, nr, mog$acc[ibest] * 100, mog$auc[ibest])
     best_mdm
 }
 
