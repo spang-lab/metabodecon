@@ -369,8 +369,8 @@ plot_deconvolution_metrics <- function() {
     NP <- NP[, ord]
     # hm <- function(M, file, title) {
     #     Z <- as.matrix(M)
-    #     col <- grDevices::colorRampPalette(c("#FFF7BC", "#225EA8"))(100)
-    #     grDevices::pdf(file, 11, 7)
+    #     col <- colorRampPalette(c("#FFF7BC", "#225EA8"))(100)
+    #     pdf(file, 11, 7)
     #     ht <- ComplexHeatmap::Heatmap(
     #         Z,
     #         name = title,
@@ -382,7 +382,7 @@ plot_deconvolution_metrics <- function() {
     #         column_names_rot = 90
     #     )
     #     ComplexHeatmap::draw(ht, heatmap_legend_side = "right")
-    #     grDevices::dev.off()
+    #     dev.off()
     # }
     # hm(AR, "AR_heatmap.pdf", "Area Ratio")
     # hm(NP, "NP_heatmap.pdf", "Number of Peaks")
@@ -424,8 +424,8 @@ plot_deconvolution_metrics_R <- function() {
     NP <- NP[, ord]
     # hm <- function(M, file, title) {
     #     Z <- as.matrix(M)
-    #     col <- grDevices::colorRampPalette(c("#FFF7BC", "#225EA8"))(100)
-    #     grDevices::pdf(file, 11, 7)
+    #     col <- colorRampPalette(c("#FFF7BC", "#225EA8"))(100)
+    #     pdf(file, 11, 7)
     #     ht <- ComplexHeatmap::Heatmap(
     #         Z,
     #         name = title,
@@ -437,7 +437,7 @@ plot_deconvolution_metrics_R <- function() {
     #         column_names_rot = 90
     #     )
     #     ComplexHeatmap::draw(ht, heatmap_legend_side = "right")
-    #     grDevices::dev.off()
+    #     dev.off()
     # }
     write.csv(AR, "AR_R.csv")
     write.csv(NP, "NP_R.csv")

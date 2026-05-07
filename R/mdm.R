@@ -84,7 +84,9 @@
 #' `model` (best [glmnet::cv.glmnet()]), `ref` (reference alignment spectrum),
 #' `params` (all settings needed to reproduce predictions: chosen grid row
 #' plus non-grid arguments such as `sfr`, `igrs`, `use_rust` and `peakPos`)
-#' and `mog` (input grid augmented with `acc`/`auc` columns).
+#' and `mog` (input grid augmented with `acc`/`auc`/`np`/`ar`/`prarpx`
+#' columns) and `preds` (ns x nr matrix of per-sample inner-CV probabilities,
+#' one column per mog row in the same row order as `mog`).
 #'
 #' [metabodecon::fit_bm()] returns an object of class `bm` with elements
 #' `model` and `params`.
@@ -118,8 +120,13 @@ fit_mdm <- function(
     )
     mog <- mog[ord, , drop=FALSE]
     rownames(mog) <- NULL
-    mog$acc <- NA_real_
-    mog$auc <- NA_real_
+    mog$acc    <- NA_real_
+    mog$auc    <- NA_real_
+    mog$np     <- NA_real_
+    mog$ar     <- NA_real_
+    has_simpar <- !is.null(x[[1]]$meta$simpar)
+    if (has_simpar) mog$prarpx <- NA_real_
+    preds <- matrix(NA_real_, nrow=ns, ncol=nr)
 
     # Pre-attach per-spectrum `$deg` tables when any row uses npmax > 0.
     if (any(mog$npmax > 0)) {
@@ -150,7 +157,14 @@ fit_mdm <- function(
             last_dkey <- dkey
             last_akey <- NULL
         }
-        nps <- vapply(d, function(o) nrow(o$lcpar), integer(1))
+        nps <- vapply(d, function(x) nrow(x$lcpar), integer(1))
+        mog$np[i] <- mean(nps)
+        ars <- vapply(d, function(o) sum(abs(o$sit$sup - o$si)) / sum(abs(o$si)), numeric(1))
+        mog$ar[i] <- mean(ars)
+        if (has_simpar) {
+            prps <- vapply(d, function(o) calc_prarp(o)$prarpx, numeric(1))
+            mog$prarpx[i] <- mean(prps)
+        }
         if (any(nps == 0)) {
             logv("[%d/%d] %d spectra produced zero peaks; skipping", i, nr, sum(nps == 0))
             mog$acc[i] <- 0; mog$auc[i] <- 0
@@ -179,6 +193,7 @@ fit_mdm <- function(
         pred <- factor(ifelse(prob > 0.5, lvs[2], lvs[1]), levels=lvs)
         mog$acc[i] <- mean(pred == y)
         mog$auc[i] <- AUC(y, prob)
+        preds[, i] <- prob
         logv("[%d/%d] acc=%.2f%% auc=%.4f", i, nr, mog$acc[i] * 100, mog$auc[i])
 
         if (!is.na(mog$auc[i]) && mog$auc[i] > best_auc) {
@@ -192,6 +207,7 @@ fit_mdm <- function(
         }
     }
 
+    best_mdm$preds <- preds
     best_mdm$mog <- mog
     ibest <- which.max(mog$auc)
     fmt <- "Best [%d/%d]: acc=%.2f%% auc=%.4f"

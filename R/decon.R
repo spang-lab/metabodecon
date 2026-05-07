@@ -279,10 +279,8 @@ deconvolute_spectrum_rust <- function(
 #' additionally has an `npmax` column — in which case only unique
 #' `(nfit, smit, smws, delta)` rows with `npmax > 0` are used.
 grid_deconvolute_spectra <- function(
-    x,
-    deg=expand.grid2(nfit=5, smit=2, smws=c(3,5,7,9), delta=2:8),
-    sfr=NULL, igrs=list(), verbose=TRUE, nworkers=1,
-    use_rust=FALSE
+    x, deg=expand.grid(nfit=5, smit=2, smws=c(3,5,7,9), delta=2:8),
+    sfr=NULL, igrs=list(), verbose=TRUE, nworkers=1, use_rust=FALSE
 ) {
     if (isFALSE(verbose)) local_options(toscutil.logf.file = nullfile())
     if (!is.null(deg) && "npmax" %in% names(deg)) {
@@ -329,9 +327,12 @@ grid_deconvolute_spectra <- function(
 #'
 grid_deconvolute_spectrum <- function(
     x,
-    deg=expand.grid2(nfit=5, smit=2, smws=c(3,5,7,9), delta=2:8),
+    deg=NULL,
     sfr=NULL, igrs=list(), verbose=TRUE, use_rust=FALSE
 ) {
+    if (is.null(deg)) deg <- expand.grid2(
+        nfit=5, smit=2, smws=c(3,5,7,9), delta=2:8
+    )
     if (!is.null(x$deg)) return(x)
     if (!verbose) local_options(toscutil.logf.file = nullfile())
 

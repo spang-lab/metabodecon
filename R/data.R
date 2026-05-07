@@ -404,7 +404,7 @@ cache_example_datasets <- function(persistent = NULL,
 #' @noRd
 #' @author 2024-2025 Tobias Schmidt: initial version.
 extract_example_datasets <- function(path = datadir("example_datasets.zip")) {
-    utils::unzip(zipfile = path, exdir = dirname(path))
+    unzip(zipfile = path, exdir = dirname(path))
 }
 
 #' @noRd
@@ -438,7 +438,7 @@ download_example_datasets_zip <- function(path,
         file.copy(copyfrom, path, overwrite = TRUE)
     } else {
         if (!silent) message(sprintf("Downloading %s as %s", url, path))
-        utils::download.file(url, path, quiet = TRUE)
+        download.file(url, path, quiet = TRUE)
     }
     if (!is.null(zip_size) && isTRUE(file.size(path) != zip_size)) {
         msg <- "Downloaded zip at %s has size %d instead of expected %d"

@@ -29,7 +29,7 @@ ftp_list <- function(url) {
 #' @param dest Path to the local destination directory.
 #' @param recursive Logical indicating whether to recurse into subdirectories.
 #' @param overwrite Logical. If `FALSE`, existing non-empty files are skipped.
-#' @param quiet Logical passed to [utils::download.file()].
+#' @param quiet Logical passed to [download.file()].
 #' @param retries Integer number of retries for each file transfer.
 #' @param verbose Logical. If `TRUE`, prints progress messages while traversing
 #' and downloading.
@@ -124,7 +124,7 @@ ftp_download <- function(url,
 #' @param dest Path to the local destination file.
 #' @param overwrite Logical. If `FALSE`, existing non-empty destination files
 #' are kept and no new download is attempted.
-#' @param quiet Logical passed to [utils::download.file()].
+#' @param quiet Logical passed to [download.file()].
 #' @param retries Integer number of retries if the transfer fails.
 #' @param verbose Logical. If `TRUE`, prints skip messages for pre-existing
 #' destination files.
@@ -149,7 +149,7 @@ ftp_download_one <- function(url,
     dir.create(dirname(dest), recursive = TRUE, showWarnings = FALSE)
     for (j in seq_len(retries)) {
         status <- tryCatch(
-            suppressWarnings(utils::download.file(
+            suppressWarnings(download.file(
                 url = url,
                 destfile = dest,
                 quiet = quiet,

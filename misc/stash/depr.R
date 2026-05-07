@@ -871,23 +871,23 @@ plot_triplets <- function(deconv_result, x_range = c(), y_range = c(), out_dir =
             if (is.null(x_range)) {
                 filename <- paste(name, "_peak_triplets.png", sep = "")
                 # Save plot as png
-                grDevices::png(file = filename, width = 825, height = 525)
+                png(file = filename, width = 825, height = 525)
                 plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = rev(range(spectrum_x_ppm)), ylim = y_range)
                 graphics::points(spectrum_x_ppm[index_peaks_triplets], spectrum_y[index_peaks_triplets], col = "red", cex = 1.3)
                 graphics::points(spectrum_x_ppm[index_right_position], spectrum_y[index_right_position], col = "green", cex = 1.3)
                 graphics::points(spectrum_x_ppm[index_left_position], spectrum_y[index_left_position], col = "blue", cex = 1.3)
                 graphics::legend("topright", legend = c("x_left", "x_middle", "x_right"), col = c("green", "red", "blue"), pch = 1, bty = "n", cex = 1.3)
-                grDevices::dev.off()
+                dev.off()
             } else {
                 filename <- paste(name, "_peak_triplets.png", sep = "")
                 # Save plot as png
-                grDevices::png(file = filename, width = 825, height = 525)
+                png(file = filename, width = 825, height = 525)
                 plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = x_range, ylim = y_range)
                 graphics::points(spectrum_x_ppm[index_peaks_triplets], spectrum_y[index_peaks_triplets], col = "red", cex = 1.3)
                 graphics::points(spectrum_x_ppm[index_right_position], spectrum_y[index_right_position], col = "green", cex = 1.3)
                 graphics::points(spectrum_x_ppm[index_left_position], spectrum_y[index_left_position], col = "blue", cex = 1.3)
                 graphics::legend("topright", legend = c("x_left", "x_middle", "x_right"), col = c("green", "red", "blue"), pch = 1, bty = "n", cex = 1.3)
-                grDevices::dev.off()
+                dev.off()
             }
         } else {
             for (l in 1:number_of_files) {
@@ -905,23 +905,23 @@ plot_triplets <- function(deconv_result, x_range = c(), y_range = c(), out_dir =
                 if (is.null(x_range)) {
                     filename <- paste(name, "_peak_triplets.png", sep = "")
                     # Save plot as png
-                    grDevices::png(file = filename, width = 825, height = 525)
+                    png(file = filename, width = 825, height = 525)
                     plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = rev(range(spectrum_x_ppm)), ylim = y_range)
                     graphics::points(spectrum_x_ppm[index_peaks_triplets], spectrum_y[index_peaks_triplets], col = "red", cex = 1.3)
                     graphics::points(spectrum_x_ppm[index_right_position], spectrum_y[index_right_position], col = "green", cex = 1.3)
                     graphics::points(spectrum_x_ppm[index_left_position], spectrum_y[index_left_position], col = "blue", cex = 1.3)
                     graphics::legend("topright", legend = c("x_left", "x_middle", "x_right"), col = c("green", "red", "blue"), pch = 1, bty = "n", cex = 1.3)
-                    grDevices::dev.off()
+                    dev.off()
                 } else {
                     filename <- paste(name, "_peak_triplets.png", sep = "")
                     # Save plot as png
-                    grDevices::png(file = filename, width = 825, height = 525)
+                    png(file = filename, width = 825, height = 525)
                     plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = x_range, ylim = y_range)
                     graphics::points(spectrum_x_ppm[index_peaks_triplets], spectrum_y[index_peaks_triplets], col = "red", cex = 1.3)
                     graphics::points(spectrum_x_ppm[index_right_position], spectrum_y[index_right_position], col = "green", cex = 1.3)
                     graphics::points(spectrum_x_ppm[index_left_position], spectrum_y[index_left_position], col = "blue", cex = 1.3)
                     graphics::legend("topright", legend = c("x_left", "x_middle", "x_right"), col = c("green", "red", "blue"), pch = 1, bty = "n", cex = 1.3)
-                    grDevices::dev.off()
+                    dev.off()
                 }
             }
         }
@@ -939,23 +939,23 @@ plot_triplets <- function(deconv_result, x_range = c(), y_range = c(), out_dir =
         if (is.null(x_range)) {
             filename <- paste(name, "_peak_triplets.png", sep = "")
             # Save plot as png
-            grDevices::png(file = filename, width = 825, height = 525)
+            png(file = filename, width = 825, height = 525)
             plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = rev(range(spectrum_x_ppm)), ylim = y_range)
             graphics::points(spectrum_x_ppm[index_peaks_triplets], spectrum_y[index_peaks_triplets], col = "red", cex = 1.3)
             graphics::points(spectrum_x_ppm[index_right_position], spectrum_y[index_right_position], col = "green", cex = 1.3)
             graphics::points(spectrum_x_ppm[index_left_position], spectrum_y[index_left_position], col = "blue", cex = 1.3)
             graphics::legend("topright", legend = c("x_left", "x_middle", "x_right"), col = c("green", "red", "blue"), pch = 1, bty = "n", cex = 1.3)
-            grDevices::dev.off()
+            dev.off()
         } else {
             filename <- paste(name, "_peak_triplets.png", sep = "")
             # Save plot as png
-            grDevices::png(file = filename, width = 825, height = 525)
+            png(file = filename, width = 825, height = 525)
             plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = x_range, ylim = y_range)
             graphics::points(spectrum_x_ppm[index_peaks_triplets], spectrum_y[index_peaks_triplets], col = "red", cex = 1.3)
             graphics::points(spectrum_x_ppm[index_right_position], spectrum_y[index_right_position], col = "green", cex = 1.3)
             graphics::points(spectrum_x_ppm[index_left_position], spectrum_y[index_left_position], col = "blue", cex = 1.3)
             graphics::legend("topright", legend = c("x_left", "x_middle", "x_right"), col = c("green", "red", "blue"), pch = 1, bty = "n", cex = 1.3)
-            grDevices::dev.off()
+            dev.off()
         }
     }
 }
@@ -1053,23 +1053,23 @@ plot_lorentz_curves_save_as_png <- function(deconv_result, x_range = c(), y_rang
             if (is.null(x_range)) {
                 filename <- paste(name, "_lorentz_curves.png", sep = "")
                 # Save plot as png
-                grDevices::png(file = filename, width = 825, height = 525)
+                png(file = filename, width = 825, height = 525)
                 plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = rev(range(spectrum_x_ppm)), ylim = y_range)
                 for (i in 1:dim(lorentz_curves_initial)[1]) {
                     graphics::lines(spectrum_x_ppm, lorentz_curves_initial[i, ], col = "red")
                 }
                 graphics::legend("topright", legend = c("Original spectrum", "Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
-                grDevices::dev.off()
+                dev.off()
             } else {
                 filename <- paste(name, "_lorentz_curves.png", sep = "")
                 # Save plot as png
-                grDevices::png(file = filename, width = 825, height = 525)
+                png(file = filename, width = 825, height = 525)
                 plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = x_range, ylim = y_range)
                 for (i in 1:dim(lorentz_curves_initial)[1]) {
                     graphics::lines(spectrum_x_ppm, lorentz_curves_initial[i, ], col = "red")
                 }
                 graphics::legend("topright", legend = c("Original spectrum", "Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
-                grDevices::dev.off()
+                dev.off()
             }
         } else {
             # Calculate Lorentz curves
@@ -1089,23 +1089,23 @@ plot_lorentz_curves_save_as_png <- function(deconv_result, x_range = c(), y_rang
                 if (is.null(x_range)) {
                     filename <- paste(name, "_lorentz_curves.png", sep = "")
                     # Save plot as png
-                    grDevices::png(file = filename, width = 825, height = 525)
+                    png(file = filename, width = 825, height = 525)
                     plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = rev(range(spectrum_x_ppm)), ylim = y_range)
                     for (i in 1:length(filtered_peaks)) {
                         graphics::lines(spectrum_x_ppm, lorentz_curves_initial[i, ], col = "red")
                     }
                     graphics::legend("topright", legend = c("Original spectrum", "Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
-                    grDevices::dev.off()
+                    dev.off()
                 } else {
                     filename <- paste(name, "_lorentz_curves.png", sep = "")
                     # Save plot as png
-                    grDevices::png(file = filename, width = 825, height = 525)
+                    png(file = filename, width = 825, height = 525)
                     plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = x_range, ylim = y_range)
                     for (i in 1:length(filtered_peaks)) {
                         graphics::lines(spectrum_x_ppm, lorentz_curves_initial[i, ], col = "red")
                     }
                     graphics::legend("topright", legend = c("Original spectrum", "Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
-                    grDevices::dev.off()
+                    dev.off()
                 }
             }
         }
@@ -1125,23 +1125,23 @@ plot_lorentz_curves_save_as_png <- function(deconv_result, x_range = c(), y_rang
         if (is.null(x_range)) {
             filename <- paste(name, "_lorentz_curves.png", sep = "")
             # Save plot as png
-            grDevices::png(file = filename, width = 825, height = 525)
+            png(file = filename, width = 825, height = 525)
             plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = rev(range(spectrum_x_ppm)), ylim = y_range)
             for (i in 1:length(filtered_peaks)) {
                 graphics::lines(spectrum_x_ppm, lorentz_curves_initial[i, ], col = "red")
             }
             graphics::legend("topright", legend = c("Original spectrum", "Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
-            grDevices::dev.off()
+            dev.off()
         } else {
             filename <- paste(name, "_lorentz_curves.png", sep = "")
             # Save plot as png
-            grDevices::png(file = filename, width = 825, height = 525)
+            png(file = filename, width = 825, height = 525)
             plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = x_range, ylim = y_range)
             for (i in 1:length(filtered_peaks)) {
                 graphics::lines(spectrum_x_ppm, lorentz_curves_initial[i, ], col = "red")
             }
             graphics::legend("topright", legend = c("Original spectrum", "Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
-            grDevices::dev.off()
+            dev.off()
         }
     }
 }
@@ -1233,23 +1233,23 @@ plot_spectrum_superposition_save_as_png <- function(deconv_result,
             if (is.null(x_range)) {
                 filename <- paste(name, "_sum_lorentz_curves.png", sep = "")
                 # Save plot as png
-                grDevices::png(file = filename, width = 825, height = 525)
+                png(file = filename, width = 825, height = 525)
                 plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = rev(range(spectrum_x_ppm)), ylim = y_range)
                 graphics::lines(spectrum_x_ppm, spectrum_approx, col = "red")
                 graphics::legend("topright", legend = c("Original spectrum", "Sum of Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
                 text <- paste("MSE_Normed = ", mse, sep = "")
                 graphics::mtext(text, side = 3)
-                grDevices::dev.off()
+                dev.off()
             } else {
                 filename <- paste(name, "_sum_lorentz_curves.png", sep = "")
                 # Save plot as png
-                grDevices::png(file = filename, width = 825, height = 525)
+                png(file = filename, width = 825, height = 525)
                 plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = x_range, ylim = y_range)
                 graphics::lines(spectrum_x_ppm, spectrum_approx, col = "red")
                 graphics::legend("topright", legend = c("Original spectrum", "Sum of Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
                 text <- paste("MSE_Normed = ", mse, sep = "")
                 graphics::mtext(text, side = 3)
-                grDevices::dev.off()
+                dev.off()
             }
         } else {
             for (l in 1:number_of_files) {
@@ -1267,23 +1267,23 @@ plot_spectrum_superposition_save_as_png <- function(deconv_result,
                 if (is.null(x_range)) {
                     filename <- paste(name, "_sum_lorentz_curves.png", sep = "")
                     # Save plot as png
-                    grDevices::png(file = filename, width = 825, height = 525)
+                    png(file = filename, width = 825, height = 525)
                     plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = rev(range(spectrum_x_ppm)), ylim = y_range)
                     graphics::lines(spectrum_x_ppm, spectrum_approx, col = "red")
                     graphics::legend("topright", legend = c("Original spectrum", "Sum of Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
                     text <- paste("MSE_Normed = ", mse, sep = "")
                     graphics::mtext(text, side = 3)
-                    grDevices::dev.off()
+                    dev.off()
                 } else {
                     filename <- paste(name, "_sum_lorentz_curves.png", sep = "")
                     # Save plot as png
-                    grDevices::png(file = filename, width = 825, height = 525)
+                    png(file = filename, width = 825, height = 525)
                     plot(spectrum_x_ppm, spectrum_y, type = "l", main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]", cex = 1.3, xlim = x_range, ylim = y_range)
                     graphics::lines(spectrum_x_ppm, spectrum_approx, col = "red")
                     graphics::legend("topright", legend = c("Original spectrum", "Sum of Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
                     text <- paste("MSE_Normed = ", mse, sep = "")
                     graphics::mtext(text, side = 3)
-                    grDevices::dev.off()
+                    dev.off()
                 }
             }
         }
@@ -1297,7 +1297,7 @@ plot_spectrum_superposition_save_as_png <- function(deconv_result,
         x_range <- if (is.null(x_range)) rev(range(spectrum_x_ppm)) else x_range
         message(paste("Plot superposition of", name))
         filename <- paste(name, "_sum_lorentz_curves.png", sep = "")
-        grDevices::png(file = filename, width = 825, height = 525)
+        png(file = filename, width = 825, height = 525)
         plot(
             spectrum_x_ppm, spectrum_y,
             main = name, xlab = "[ppm]", ylab = "Intensity [a.u.]",
@@ -1309,7 +1309,7 @@ plot_spectrum_superposition_save_as_png <- function(deconv_result,
         graphics::legend("topright", legend = c("Original spectrum", "Sum of Lorentz curves"), col = c("black", "red"), lty = 1, bty = "n", cex = 1.3)
         text <- paste("MSE_Normed = ", mse, sep = "")
         graphics::mtext(text, side = 3)
-        grDevices::dev.off()
+        dev.off()
     }
 }
 
@@ -2392,9 +2392,9 @@ deconvolution <- function(filepath,
     }
     if (store_results) {
         message(sprintf("Writing %s", norm_path(name_info_txt)))
-        utils::write.table(spectrum_info, name_info_txt, sep = ",", col.names = FALSE, append = FALSE)
+        write.table(spectrum_info, name_info_txt, sep = ",", col.names = FALSE, append = FALSE)
         message(sprintf("Writing %s", norm_path(name_output_txt)))
-        utils::write.table(spectrum_output, name_output_txt, sep = ",", col.names = FALSE, append = FALSE)
+        write.table(spectrum_output, name_output_txt, sep = ",", col.names = FALSE, append = FALSE)
     } else {
         message("Skipping saving of results.")
     }

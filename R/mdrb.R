@@ -141,7 +141,7 @@ check_mdrb_deps <- function(verbose = FALSE) {
 #' TRUE.
 #'
 #' @param ...
-#' Additional arguments to pass to [utils::install.packages()] when attempting
+#' Additional arguments to pass to [install.packages()] when attempting
 #' installation of mdrb.
 #'
 #' @return NULL. Called for side effect of installing the Rust backend.

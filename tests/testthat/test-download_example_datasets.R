@@ -79,8 +79,8 @@ test_that("example datasets v1.1.0 and v1.6.3 differ only by aki dataset", {
 
     download_example_datasets_zip(path = xds_zip_old, url = xds_old$url, zip_size = xds_old$zip_size, silent = TRUE)
     download_example_datasets_zip(path = xds_zip_new, url = xds_new$url, zip_size = xds_new$zip_size, silent = TRUE)
-    utils::unzip(xds_zip_old, exdir = dst_dir_old)
-    utils::unzip(xds_zip_new, exdir = dst_dir_new)
+    unzip(xds_zip_old, exdir = dst_dir_old)
+    unzip(xds_zip_new, exdir = dst_dir_new)
 
     old_files <- list.files(xds_dir_old, full.names = FALSE, recursive = TRUE)
     new_files <- list.files(xds_dir_new, full.names = FALSE, recursive = TRUE)

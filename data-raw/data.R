@@ -319,7 +319,7 @@ update_example_datasets <- function() {
     zip <- file.path(misc, "example_datasets.zip")
     if (file.exists(zip)) unlink(zip)
     logf("Creating %s", zip)
-    withr::with_dir(misc, utils::zip(zip, "example_datasets", "-rq9X"))
+    withr::with_dir(misc, zip(zip, "example_datasets", "-rq9X"))
     logf("Done")
     files <- dir(src, recursive = TRUE, full.names = TRUE, include.dirs = FALSE)
     sizes <- file.info(files)$size

@@ -11,12 +11,15 @@
 
 - All roxygen comments should start with a tag, in particular title and
   description should be formatted as `#' @title ...` and `#' @description ...`.
-- Character limit is 80. Prefer short variable names like `x` and `y` to achieve
-  that. If it's not clear from the function docs what a variable means, use a
-  comment to describe it upon first use.
-- Fill lines up to ~80 chars to minimize vertical space. Prefer single-line
-  calls over multi-line when they fit. Going slightly over 80 (up to ~90) is
-  tolerable if it avoids splitting a call across 3 lines.
+- Soft Character limit is 80.
+  Hard limit is 100.
+  Prefer short variable names like `x` and `y` to achieve that.
+	If it's not clear from the function docs what a variable means,
+	use a comment to describe it upon first use.
+- Fill lines up to ~80 chars to minimize vertical space.
+  Prefer single-line calls over multi-line when they fit.
+	Going slightly over 80 (up to ~100) is tolerable if it avoids splitting
+	a call across multiple lines lines.
 - Prefer the use of helper variables instead of function nesting to reduce line
   length and improve readability. E.g. `x <- f(a); y <- g(x)` instead of `y <-
   g(f(a))`. Function nesting is ok if everything still fits in 80 chars and the
@@ -29,6 +32,8 @@
 - Always use fully qualified names for functions from other packages, e.g.
   `ggplot2::ggplot()`. Exceptions are functions from R's standard library like
   `sum()`, `mean()`, etc.
+- Do NOT use spaces around `=` when passing arguments to functions.
+  Good: `foo(bar=2)`. Bad: `foo(bar = 2)`.
 
 ## Pseudocode mode for vignettes
 

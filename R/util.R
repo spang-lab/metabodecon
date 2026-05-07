@@ -38,7 +38,7 @@
 #' get_started()
 aaa_Get_Started <- function(open_browser = interactive()) {
     url <- "https://spang-lab.github.io/metabodecon/articles/Get_Started.html"
-    if (open_browser) utils::browseURL(url)
+    if (open_browser) browseURL(url)
     url
 }
 
@@ -589,7 +589,7 @@ esc <- list(
 #' @noRd
 #' @author 2024-2025 Tobias Schmidt: initial version.
 capture.output2 <- function(..., collapse = "\n", trim = FALSE) {
-    x <- utils::capture.output(...)
+    x <- capture.output(...)
     if (trim) {
         x <- sapply(x, trimws)
     }
