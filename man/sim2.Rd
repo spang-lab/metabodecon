@@ -5,18 +5,24 @@
 \alias{sim2}
 \title{The Sim2 Classification Dataset}
 \format{
-A \code{spectra} object consisting of 36 \code{spectrum} objects, where each spectrum
+A \code{spectra} object consisting of 100 \code{spectrum} objects, where each spectrum
 contains 2048 datapoints ranging from 3.59 to 3.28 ppm. The per-spectrum
 group labels are attached as \code{attr(sim2, "group")}, a named factor with
 levels \code{A} and \code{B}. For details about \code{spectrum} and \code{spectra} objects see
 \link{metabodecon-classes}.
+
+Each spectrum's \code{meta$simpar} carries the standard fields (\code{x0}, \code{A},
+\code{lambda}, \code{noise}) plus three sim2-specific fields: \code{base_x0} (the 25
+reference peak positions, identical across spectra), \code{dx0} (per-peak
+jitter in ppm) and \code{gx0} (scalar global ppm shift). They satisfy
+\code{x0[k] = base_x0[k] + dx0[k] + gx0}.
 }
 \usage{
 sim2
 }
 \description{
 A simulated two-group classification dataset for demonstrating
-\code{\link[=fit_mdm]{fit_mdm()}} and \code{\link[=benchmark]{benchmark()}}. It contains 36
+\code{\link[=fit_mdm]{fit_mdm()}} and \code{\link[=benchmark]{benchmark()}}. It contains 100
 simulated 1D NMR spectra
 split evenly into groups \code{A} and \code{B}, where 5 out of 25 peaks per spectrum
 differ between groups by 10\% in area.
@@ -29,8 +35,8 @@ which itself is derived from the Blood reference dataset (see
 \itemize{
 \item 25 base peaks per spectrum with positions drawn uniformly in
 \verb{[3.37, 3.52]} ppm.
-\item Per-spectrum jitter of peak positions plus a small global ppm shift to
-mimic chemical shift variation between samples.
+\item Per-peak jitter (sd 0.00030 ppm) plus a per-spectrum global ppm shift
+(sd 0.00060 ppm) to mimic chemical shift variation between samples.
 \item Base areas drawn from a log-normal distribution centered around \code{2500}
 (in ppm-area units) and varied per spectrum by \verb{+/-30\%}.
 \item Base half-widths drawn uniformly in \verb{[0.0009, 0.0013]} ppm and varied

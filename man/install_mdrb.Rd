@@ -10,7 +10,7 @@ install_mdrb(ask = TRUE, ...)
 \item{ask}{Whether to ask for confirmation before attempting installation. Default is
 TRUE.}
 
-\item{...}{Additional arguments to pass to \code{\link[utils:install.packages]{utils::install.packages()}} when attempting
+\item{...}{Additional arguments to pass to \code{\link[=install.packages]{install.packages()}} when attempting
 installation of mdrb.}
 }
 \value{

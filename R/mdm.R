@@ -65,6 +65,10 @@
 #' @param x Spectra object. May already carry per-spectrum `$deg` tables.
 #' @param y Factor vector with class labels for each spectrum.
 #' @param mog Model-fitting grid as returned by [metabodecon::get_mog()].
+#' @param deg Deconvolution-parameter grid forwarded to
+#'   [metabodecon::grid_deconvolute_spectra()] when any row of `mog` has
+#'   `npmax > 0`. When `NULL` (default), the default grid built into
+#'   [metabodecon::grid_deconvolute_spectra()] is used.
 #' @param sfr Signal-free region. See [metabodecon::deconvolute()].
 #' @param use_rust Use the Rust backend?
 #' @param nworkers Number of workers for deconvolution and alignment.
@@ -104,7 +108,7 @@
 #'   bm <- benchmark(spectra, y, fun="fit_mdm", k=5, mog=get_mog("default"))
 #' }
 fit_mdm <- function(
-    x, y, mog=get_mog("default"),
+    x, y, mog=get_mog("default"), deg=NULL,
     sfr=NULL, igrs=list(), use_rust=0.5, nworkers=1, verbosity=2,
     seed=1, nfolds=10, check=TRUE
 ) {
@@ -126,12 +130,11 @@ fit_mdm <- function(
     mog$ar     <- NA_real_
     has_simpar <- !is.null(x[[1]]$meta$simpar)
     if (has_simpar) mog$prarpx <- NA_real_
-    preds <- matrix(NA_real_, nrow=ns, ncol=nr)
 
     # Pre-attach per-spectrum `$deg` tables when any row uses npmax > 0.
     if (any(mog$npmax > 0)) {
         x <- grid_deconvolute_spectra(
-            x=x, deg=mog, sfr=sfr, igrs=igrs,
+            x=x, deg=deg, sfr=sfr, igrs=igrs,
             verbose=verbosity >= 2,
             nworkers=min(nworkers, length(x)), use_rust=use_rust
         )
@@ -139,6 +142,7 @@ fit_mdm <- function(
 
     nr <- nrow(mog)
     ns <- length(x)
+    preds <- matrix(NA_real_, nrow=ns, ncol=nr)
     logv("Starting grid search (%d combinations, %d spectra)", nr, ns)
     foldid <- get_foldid(y=y, nfolds=nfolds, seed=seed)
     last_dkey <- NULL; last_akey <- NULL
@@ -260,8 +264,7 @@ fit_bm <- function(
 #' @export
 #' @rdname mdm
 benchmark <- function(
-    x, y, ..., fun="fit_mdm",
-    k=5, seed=1, verbosity=2
+    x, y, ..., fun="fit_mdm", k=5, seed=1, verbosity=2
 ) {
     stopifnot(
         is_spectra(x), is.factor(y), length(y) == length(x),
@@ -285,7 +288,7 @@ benchmark <- function(
     # One-time grid attach when fitting mdm with npmax > 0.
     if (fun == "fit_mdm" && !is.null(dots$mog) && any(dots$mog$npmax > 0)) {
         x <- grid_deconvolute_spectra(
-            x=x, deg=dots$mog, sfr=dots$sfr,
+            x=x, deg=dots$deg, sfr=dots$sfr,
             igrs=dots$igrs %||% list(),
             verbose=verbosity >= 2,
             nworkers=dots$nworkers %||% 1L,

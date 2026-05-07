@@ -87,17 +87,23 @@ update_sim <- function(nworkers = 1) {
 #' @noRd
 #' @author 2026 Tobias Schmidt: initial version.
 #' @description
-#' Builds the `sim2` classification dataset: 36 simulated 1D NMR spectra split
-#' into two groups (A and B), where five out of ~25 peaks per spectrum differ
+#' Builds the `sim2` classification dataset: 100 simulated 1D NMR spectra split
+#' into two groups (A and B), where five out of 25 peaks per spectrum differ
 #' systematically between the groups by 10% in area. Peak parameter
 #' distributions (number of peaks, areas, half-widths, noise) were chosen to
 #' match the values recovered by deconvoluting the [metabodecon::sim] dataset
 #' (which itself is derived from the Blood reference dataset; see
 #' [metabodecon::sim]). The result is a `spectra` object with the per-spectrum
 #' group labels attached as `attr(., "group")`.
+#'
+#' Each spectrum's `meta$simpar` carries the usual fields (`x0`, `A`, `lambda`,
+#' `noise`) plus `base_x0` (the 25 reference peak positions, identical across
+#' spectra), `dx0` (per-peak jitter in ppm) and `gx0` (scalar global ppm shift).
+#' These satisfy `x0[k] = base_x0[k] + dx0[k] + gx0` and let downstream code
+#' compute the maximum pairwise peak shift across the dataset.
 make_sim2 <- function() {
     set.seed(42)
-    n <- 36   # number of spectra
+    n <- 100  # number of spectra
     npk <- 25 # number of peaks
     cs <- seq(from = 3.59, length.out = 2048, by = -0.00015)
     base_x0 <- sort(stats::runif(npk, 3.37, 3.52))
@@ -107,16 +113,21 @@ make_sim2 <- function() {
     diff_AB <- 1:5 # peaks differing between A and B
     spectra <- vector("list", n)
     for (i in seq_len(n)) {
-        x0 <- base_x0 + stats::rnorm(npk, sd = 0.00030) # within-group jitter
-        x0 <- x0 + stats::rnorm(1, sd = 0.00060) # global ppm shift
+        dx0 <- stats::rnorm(npk, sd = 0.00030) # within-group per-peak jitter
+        gx0 <- stats::rnorm(1, sd = 0.00060)   # per-spectrum global ppm shift
+        x0 <- base_x0 + dx0 + gx0
         A <- base_A * stats::runif(npk, 0.7, 1.3)
         lam <- base_lam * stats::runif(npk, 0.9, 1.1)
         if (group[i] == "A") A[diff_AB] <- A[diff_AB] * 1.1
-        spectra[[i]] <- simulate_spectrum(
+        spec <- simulate_spectrum(
             name = sprintf("sim2_%03d", i), cs = cs,
-            x0 = sort(x0), A = A, lambda = lam,
+            x0 = x0, A = A, lambda = lam,
             noise = stats::rnorm(length(cs), sd = 2200)
         )
+        spec$meta$simpar$base_x0 <- base_x0
+        spec$meta$simpar$dx0 <- dx0
+        spec$meta$simpar$gx0 <- gx0
+        spectra[[i]] <- spec
     }
     names(spectra) <- vapply(spectra, function(s) s$meta$name, character(1))
     class(spectra) <- "spectra"

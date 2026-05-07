@@ -1,4 +1,4 @@
-# Copilot Instructions for MetaboDecon
+# Instructions for MetaboDecon
 
 ## Workspace Conventions
 

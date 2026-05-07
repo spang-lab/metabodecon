@@ -12,6 +12,7 @@ fit_mdm(
   x,
   y,
   mog = get_mog("default"),
+  deg = NULL,
   sfr = NULL,
   igrs = list(),
   use_rust = 0.5,
@@ -44,6 +45,11 @@ benchmark(x, y, ..., fun = "fit_mdm", k = 5, seed = 1, verbosity = 2)
 
 \item{mog}{Model-fitting grid as returned by \code{\link[=get_mog]{get_mog()}}.}
 
+\item{deg}{Deconvolution-parameter grid forwarded to
+\code{\link[=grid_deconvolute_spectra]{grid_deconvolute_spectra()}} when any row of \code{mog} has
+\code{npmax > 0}. When \code{NULL} (default), the default grid built into
+\code{\link[=grid_deconvolute_spectra]{grid_deconvolute_spectra()}} is used.}
+
 \item{sfr}{Signal-free region. See \code{\link[=deconvolute]{deconvolute()}}.}
 
 \item{igrs}{Ignore regions passed to \code{fun}.}
@@ -75,7 +81,9 @@ benchmark(x, y, ..., fun = "fit_mdm", k = 5, seed = 1, verbosity = 2)
 \code{model} (best \code{\link[glmnet:cv.glmnet]{glmnet::cv.glmnet()}}), \code{ref} (reference alignment spectrum),
 \code{params} (all settings needed to reproduce predictions: chosen grid row
 plus non-grid arguments such as \code{sfr}, \code{igrs}, \code{use_rust} and \code{peakPos})
-and \code{mog} (input grid augmented with \code{acc}/\code{auc} columns).
+and \code{mog} (input grid augmented with \code{acc}/\code{auc}/\code{np}/\code{ar}/\code{prarpx}
+columns) and \code{preds} (ns x nr matrix of per-sample inner-CV probabilities,
+one column per mog row in the same row order as \code{mog}).
 
 \code{\link[=fit_bm]{fit_bm()}} returns an object of class \code{bm} with elements
 \code{model} and \code{params}.

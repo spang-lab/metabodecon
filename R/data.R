@@ -554,17 +554,23 @@ sim2_docs <- NULL # To get a symbol in the outline
 #'
 #' @description
 #' A simulated two-group classification dataset for demonstrating
-#' [metabodecon::fit_mdm()] and [metabodecon::benchmark()]. It contains 36
+#' [metabodecon::fit_mdm()] and [metabodecon::benchmark()]. It contains 100
 #' simulated 1D NMR spectra
 #' split evenly into groups `A` and `B`, where 5 out of 25 peaks per spectrum
 #' differ between groups by 10% in area.
 #'
 #' @format
-#' A `spectra` object consisting of 36 `spectrum` objects, where each spectrum
+#' A `spectra` object consisting of 100 `spectrum` objects, where each spectrum
 #' contains 2048 datapoints ranging from 3.59 to 3.28 ppm. The per-spectrum
 #' group labels are attached as `attr(sim2, "group")`, a named factor with
 #' levels `A` and `B`. For details about `spectrum` and `spectra` objects see
 #' [metabodecon::metabodecon-classes].
+#'
+#' Each spectrum's `meta$simpar` carries the standard fields (`x0`, `A`,
+#' `lambda`, `noise`) plus three sim2-specific fields: `base_x0` (the 25
+#' reference peak positions, identical across spectra), `dx0` (per-peak
+#' jitter in ppm) and `gx0` (scalar global ppm shift). They satisfy
+#' `x0[k] = base_x0[k] + dx0[k] + gx0`.
 #'
 #' @details
 #' Peak parameters (positions, areas, half-widths and noise) were chosen to
@@ -573,8 +579,8 @@ sim2_docs <- NULL # To get a symbol in the outline
 #' [metabodecon::sim]). Concretely:
 #' - 25 base peaks per spectrum with positions drawn uniformly in
 #'   `[3.37, 3.52]` ppm.
-#' - Per-spectrum jitter of peak positions plus a small global ppm shift to
-#'   mimic chemical shift variation between samples.
+#' - Per-peak jitter (sd 0.00030 ppm) plus a per-spectrum global ppm shift
+#'   (sd 0.00060 ppm) to mimic chemical shift variation between samples.
 #' - Base areas drawn from a log-normal distribution centered around `2500`
 #'   (in ppm-area units) and varied per spectrum by `+/-30%`.
 #' - Base half-widths drawn uniformly in `[0.0009, 0.0013]` ppm and varied
