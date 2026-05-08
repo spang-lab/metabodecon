@@ -20,6 +20,7 @@ fit_mdm(
   verbosity = 2,
   seed = 1,
   nfolds = 10,
+  details = FALSE,
   check = TRUE
 )
 
@@ -58,11 +59,17 @@ benchmark(x, y, ..., fun = "fit_mdm", k = 5, seed = 1, verbosity = 2)
 
 \item{nworkers}{Number of workers for deconvolution and alignment.}
 
-\item{verbosity}{Verbosity level.}
+\item{verbosity}{Verbosity level. \verb{>= 3} prints per-row alignment shift
+summaries (max and mean datapoints shifted across spectra) for debugging.}
 
 \item{seed}{Random seed for fold assignments.}
 
 \item{nfolds}{Number of folds for the inner \code{\link[glmnet:cv.glmnet]{glmnet::cv.glmnet()}} call.}
+
+\item{details}{Compute per-row decon-quality metrics (\code{np}, \code{ar},
+\code{np_correct}, \code{prarpx})? Defaults to \code{FALSE} because computing them on
+every grid row can be expensive. \code{np_correct} and \code{prarpx} require
+ground-truth simulation parameters (\code{x$meta$simpar}).}
 
 \item{check}{Validate inputs at function entry?}
 
@@ -81,9 +88,11 @@ benchmark(x, y, ..., fun = "fit_mdm", k = 5, seed = 1, verbosity = 2)
 \code{model} (best \code{\link[glmnet:cv.glmnet]{glmnet::cv.glmnet()}}), \code{ref} (reference alignment spectrum),
 \code{params} (all settings needed to reproduce predictions: chosen grid row
 plus non-grid arguments such as \code{sfr}, \code{igrs}, \code{use_rust} and \code{peakPos})
-and \code{mog} (input grid augmented with \code{acc}/\code{auc}/\code{np}/\code{ar}/\code{prarpx}
-columns) and \code{preds} (ns x nr matrix of per-sample inner-CV probabilities,
-one column per mog row in the same row order as \code{mog}).
+and \code{mog} (input grid augmented with \code{acc}/\code{auc} columns; with
+\code{details=TRUE}, also \code{np}/\code{ar} and — when ground truth is available —
+\code{np_correct}/\code{prarpx}) and \code{preds} (ns x nr matrix of per-sample
+inner-CV probabilities, one column per mog row in the same row order
+as \code{mog}).
 
 \code{\link[=fit_bm]{fit_bm()}} returns an object of class \code{bm} with elements
 \code{model} and \code{params}.

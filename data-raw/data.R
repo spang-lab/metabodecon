@@ -114,9 +114,9 @@ make_sim2 <- function() {
     spectra <- vector("list", n)
     for (i in seq_len(n)) {
         dx0 <- stats::rnorm(npk, sd = 0.00030) # within-group per-peak jitter
-        gx0 <- stats::rnorm(1, sd = 0.00060)   # per-spectrum global ppm shift
+        gx0 <- stats::rnorm(1, sd = 0.00240)   # per-spectrum global ppm shift
         x0 <- base_x0 + dx0 + gx0
-        A <- base_A * stats::runif(npk, 0.7, 1.3)
+        A <- base_A * stats::runif(npk, 0.4, 1.6)
         lam <- base_lam * stats::runif(npk, 0.9, 1.1)
         if (group[i] == "A") A[diff_AB] <- A[diff_AB] * 1.1
         spec <- simulate_spectrum(

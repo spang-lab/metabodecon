@@ -92,6 +92,48 @@ test_that("built-in backend matches speaq backend", {
     expect_equal(al_builtin, al_speaq)
 })
 
+test_that("built-in backend matches speaq backend on sim2 across maxShift", {
+
+    # Verifies that the underlying CluPA / FFT shift search is bit-equivalent
+    # to speaq for every maxShift used in the supervised parameter grid,
+    # including maxShift = 0 (which speaq's `findShiftStepFFT` documents to
+    # mean "no upper bound", resetting it to the segment length M). If this
+    # test passes, the per-spectrum integer shifts of >= 5 datapoints that
+    # we observe with maxShift = 0 are speaq's intended behavior, not a bug
+    # in our replacement.
+
+    skip_if_speaq_deps_missing()
+    skip_if_slow_tests_disabled()
+
+    # Two sim2 spectra are sufficient: the alignment is per-spectrum and
+    # sim2's per-peak jitter is what drives non-trivial shifts here.
+    s <- sim2[1:2]
+    d <- deconvolute(
+        s, sfr = NULL, smit = 2, smws = 3, delta = 1.6,
+        nfit = 10, npmax = 0, verbose = FALSE
+    )
+    for (ms in c(0, 3, 5, 10, 50)) {
+        al_builtin <- align_decons(
+            d, maxShift = ms, verbose = FALSE, use_speaq = FALSE
+        )
+        al_speaq <- align_decons(
+            d, maxShift = ms, verbose = FALSE, use_speaq = TRUE
+        )
+        for (i in seq_along(al_builtin)) {
+            expect_equal(
+                al_builtin[[i]]$lcpar$pcial,
+                al_speaq[[i]]$lcpar$pcial,
+                info = sprintf("maxShift = %d, spectrum %d", ms, i)
+            )
+            expect_equal(
+                al_builtin[[i]]$lcpar$x0al,
+                al_speaq[[i]]$lcpar$x0al,
+                info = sprintf("maxShift = %d, spectrum %d", ms, i)
+            )
+        }
+    }
+})
+
 test_that("align with full=FALSE omits supal", {
     skip_if_speaq_deps_missing()
     decons_h <- decons

@@ -115,6 +115,171 @@ plot_spectra <- function(obj,
 
 #' @export
 #'
+#' @title Plot Spectra Heatmap
+#'
+#' @description
+#' Plot a set of spectra as a heatmap. Each row corresponds to one spectrum,
+#' each column to a chemical-shift datapoint, and the signal intensity is
+#' color-coded.
+#'
+#' If the spectra were simulated (i.e. carry a `simpar` element in
+#' `meta`), the true peaks are highlighted with thick rectangles spanning
+#' `x0 +- lambda`. If the spectra have additionally been deconvoluted, the
+#' rectangles are colored according to whether each peak was correctly
+#' identified (green), missed (yellow) or wrongly identified (red, drawn at
+#' the position of the deconvoluted peak).
+#'
+#' @param obj
+#' An object of type `spectrum`, `spectra`, `decon2`, `decons2`, `align` or
+#' `aligns`. For details see [metabodecon::metabodecon-classes].
+#'
+#' @param ...
+#' Additional arguments passed to [as_spectra()].
+#'
+#' @param foc_rgn
+#' Numeric vector of length 2 specifying the focus region in ppm
+#' (e.g. `c(3.55, 3.35)`). If NULL (default), the full spectrum is shown.
+#'
+#' @param what
+#' Which signal to plot: `"si"` (raw, default), `"sup"` (superposition of
+#' Lorentz curves) or `"supal"` (aligned superposition).
+#'
+#' @param cols
+#' Character vector of colors used as intensity color palette. Defaults to
+#' `hcl.colors(64, "YlOrRd", rev = TRUE)`.
+#'
+#' @param tol
+#' Numeric tolerance in ppm used to match deconvoluted peaks to true peaks.
+#'
+#' @param tp_col,corr_col,wrong_col,miss_col
+#' Border colors for true (un-deconvoluted), correctly identified, wrongly
+#' identified and missed peaks.
+#'
+#' @param border_lwd
+#' Line width used for the peak border rectangles.
+#'
+#' @param xlab,ylab
+#' Axis labels.
+#'
+#' @param mar
+#' Numeric vector of length 4 specifying the plot margins. Passed to [par()].
+#'
+#' @param lgd
+#' Logical or list. If TRUE, a legend is drawn at "topright" with `cex = 0.8`.
+#' If a list, its elements are passed to [legend()] to override position, size,
+#' etc. Set `show = FALSE` (or pass `lgd = FALSE`) to hide.
+#'
+#' @return
+#' NULL. Called for side effect of plotting.
+#'
+#' @author 2024-2026 Tobias Schmidt: initial version.
+#'
+#' @examples
+#' obj <- deconvolute(sim[1:4], sfr = c(3.55, 3.35))
+#' spectra_heatmap(obj)
+#' spectra_heatmap(obj, foc_rgn = c(3.55, 3.35))
+spectra_heatmap <- function(obj,
+                            ...,
+                            foc_rgn = NULL,
+                            what = c("si", "sup", "supal"),
+                            cols = NULL,
+                            tol = 0.001,
+                            tp_col = "black",
+                            corr_col = "green",
+                            wrong_col = "red",
+                            miss_col = "yellow",
+                            border_lwd = 2,
+                            xlab = "Chemical Shift [ppm]",
+                            ylab = "Spectrum",
+                            mar = c(4.1, 4.1, 1.1, 0.1),
+                            lgd = list()) {
+    what <- match.arg(what)
+    objs <- as_spectra(obj, ...)
+    n <- length(objs)
+    cs <- objs[[1]]$cs
+    cols <- cols %||% hcl.colors(64, "YlOrRd", rev=TRUE)
+    sis <- lapply(objs, function(x) {
+        switch(what,
+            supal = x$sit$supal %||% x$sit$sup %||% x$si,
+            sup   = x$sit$sup %||% x$si,
+            si    = x$si
+        )
+    })
+    Z <- do.call(rbind, sis)
+
+    if (!is.null(foc_rgn)) {
+        keep <- cs >= min(foc_rgn) & cs <= max(foc_rgn)
+        cs <- cs[keep]
+        Z <- Z[, keep, drop=FALSE]
+    }
+
+    # image() requires increasing x; reverse if needed and use xlim to keep
+    # NMR convention of decreasing chemical shift along the x-axis.
+    if (length(cs) > 1 && cs[1] > cs[length(cs)]) {
+        cs <- rev(cs)
+        Z <- Z[, ncol(Z):1, drop=FALSE]
+    }
+
+    local_par(mar=mar)
+    image(x=cs, y=seq_len(n), z=t(Z), col=cols,
+          xlim=c(max(cs), min(cs)),
+          xlab=xlab, ylab=ylab, axes=FALSE)
+    axis(1)
+    axis(2, at=seq_len(n), labels=get_names(objs), las=1)
+    box()
+
+    cs_lim <- range(cs)
+    has_any_sim <- FALSE
+    has_any_dec <- FALSE
+    for (i in seq_len(n)) {
+        simpar <- objs[[i]]$meta$simpar
+        lcpar <- objs[[i]]$lcpar
+        has_sim <- !is.null(simpar) && length(simpar$x0) > 0
+        has_dec <- !is.null(lcpar) && nrow(lcpar) > 0
+        if (has_sim) has_any_sim <- TRUE
+        if (has_dec) has_any_dec <- TRUE
+        if (has_sim) {
+            for (j in seq_along(simpar$x0)) {
+                draw_peak_box(simpar$x0[j], simpar$lambda[j], i,
+                              border=tp_col, lwd=border_lwd, cs_lim=cs_lim)
+            }
+        }
+        if (has_sim && has_dec) {
+            cls <- classify_peaks(simpar$x0, lcpar$x0, tol)
+            for (j in cls$tp) draw_peak_box(
+                lcpar$x0[j], lcpar$lambda[j], i,
+                border=corr_col, lwd=border_lwd, cs_lim=cs_lim, inset=0.12
+            )
+            for (j in cls$miss) draw_peak_box(
+                simpar$x0[j], simpar$lambda[j], i,
+                border=miss_col, lwd=border_lwd, cs_lim=cs_lim, inset=0.12
+            )
+            for (j in cls$fp) draw_peak_box(
+                lcpar$x0[j], lcpar$lambda[j], i,
+                border=wrong_col, lwd=border_lwd, cs_lim=cs_lim
+            )
+        }
+    }
+
+    lgd <- combine(list(show=TRUE, x="topright", cex=0.8, bg="white"), lgd)
+    if (isTRUE(lgd$show) && (has_any_sim || has_any_dec)) {
+        lgd$show <- NULL
+        labs <- character(0); col_lgd <- character(0)
+        if (has_any_sim && !has_any_dec) {
+            labs <- c(labs, "True Peak"); col_lgd <- c(col_lgd, tp_col)
+        }
+        if (has_any_sim && has_any_dec) {
+            labs <- c(labs, "True Peak", "Correct", "Missed", "Wrong")
+            col_lgd <- c(col_lgd, tp_col, corr_col, miss_col, wrong_col)
+        }
+        do.call(legend,
+            c(list(legend=labs, col=col_lgd, lty=1, lwd=border_lwd), lgd))
+    }
+    invisible(NULL)
+}
+
+#' @export
+#'
 #' @title Plot Spectrum
 #'
 #' @description
@@ -1381,6 +1546,44 @@ draw_prarp_pts <- function(cs, si, trpar, lcpar, tp_pts, fp_pts, miss_pts) {
     draw_points(tp_x, tp_y, ensure_filled_tri(tp_pts))
     draw_points(fp_x, fp_y, ensure_filled_tri(fp_pts))
     draw_points(miss_x, miss_y, ensure_filled_tri(miss_pts))
+}
+
+#' @noRd
+#' @title Draw a Peak Bounding Box
+#' @description
+#' Draws a rectangle for one peak in row `i` of a spectra heatmap. The box
+#' spans `x0 +- lam` horizontally and one row vertically (optionally inset).
+#' @author 2024-2026 Tobias Schmidt: initial version.
+draw_peak_box <- function(x0, lam, i, border, lwd, cs_lim, inset = 0) {
+    xl <- max(x0 - lam, min(cs_lim))
+    xr <- min(x0 + lam, max(cs_lim))
+    if (xl >= xr) return()
+    rect(xleft=xl, xright=xr,
+         ybottom=i - 0.5 + inset, ytop=i + 0.5 - inset,
+         border=border, lwd=lwd)
+}
+
+#' @noRd
+#' @title Classify Deconvoluted Peaks
+#' @description
+#' Matches deconvoluted peak positions `x0_f` against true peak positions
+#' `x0_t` using nearest-neighbor matching with tolerance `tol`. Returns the
+#' indices of true positives (in `x0_f`), false positives (in `x0_f`) and
+#' missed peaks (in `x0_t`).
+#' @author 2024-2026 Tobias Schmidt: initial version.
+classify_peaks <- function(x0_t, x0_f, tol = 0.001) {
+    if (length(x0_t) == 0 || length(x0_f) == 0) {
+        return(list(tp=integer(0),
+                    fp=seq_along(x0_f),
+                    miss=seq_along(x0_t)))
+    }
+    f_dist <- vapply(x0_f, function(x) min(abs(x0_t - x)), 0)
+    t_dist <- vapply(x0_t, function(x) min(abs(x0_f - x)), 0)
+    list(
+        tp   = which(f_dist <  tol),
+        fp   = which(f_dist >= tol),
+        miss = which(t_dist >= tol)
+    )
 }
 
 #' @noRd

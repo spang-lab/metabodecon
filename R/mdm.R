@@ -72,9 +72,14 @@
 #' @param sfr Signal-free region. See [metabodecon::deconvolute()].
 #' @param use_rust Use the Rust backend?
 #' @param nworkers Number of workers for deconvolution and alignment.
-#' @param verbosity Verbosity level.
+#' @param verbosity Verbosity level. `>= 3` prints per-row alignment shift
+#'   summaries (max and mean datapoints shifted across spectra) for debugging.
 #' @param seed Random seed for fold assignments.
 #' @param nfolds Number of folds for the inner [glmnet::cv.glmnet()] call.
+#' @param details Compute per-row decon-quality metrics (`np`, `ar`,
+#'   `np_correct`, `prarpx`)? Defaults to `FALSE` because computing them on
+#'   every grid row can be expensive. `np_correct` and `prarpx` require
+#'   ground-truth simulation parameters (`x$meta$simpar`).
 #' @param check Validate inputs at function entry?
 #' @param igrs Ignore regions passed to `fun`.
 #' @param nbin Number of bins in the non-ignored part of the ppm range.
@@ -88,9 +93,11 @@
 #' `model` (best [glmnet::cv.glmnet()]), `ref` (reference alignment spectrum),
 #' `params` (all settings needed to reproduce predictions: chosen grid row
 #' plus non-grid arguments such as `sfr`, `igrs`, `use_rust` and `peakPos`)
-#' and `mog` (input grid augmented with `acc`/`auc`/`np`/`ar`/`prarpx`
-#' columns) and `preds` (ns x nr matrix of per-sample inner-CV probabilities,
-#' one column per mog row in the same row order as `mog`).
+#' and `mog` (input grid augmented with `acc`/`auc` columns; with
+#' `details=TRUE`, also `np`/`ar` and — when ground truth is available —
+#' `np_correct`/`prarpx`) and `preds` (ns x nr matrix of per-sample
+#' inner-CV probabilities, one column per mog row in the same row order
+#' as `mog`).
 #'
 #' [metabodecon::fit_bm()] returns an object of class `bm` with elements
 #' `model` and `params`.
@@ -110,26 +117,31 @@
 fit_mdm <- function(
     x, y, mog=get_mog("default"), deg=NULL,
     sfr=NULL, igrs=list(), use_rust=0.5, nworkers=1, verbosity=2,
-    seed=1, nfolds=10, check=TRUE
+    seed=1, nfolds=10, details=FALSE, check=TRUE
 ) {
+
     if (check) check_mdm_args(
         x=x, y=y, mog=mog, sfr=sfr, igrs=igrs,
         use_rust=use_rust, nworkers=nworkers, verbosity=verbosity,
         seed=seed, nfolds=nfolds
     )
+    stopifnot(is_bool(details, 1))
 
     # Sort rows so identical decon/align tuples cluster.
-    ord <- with(
-        mog, order(npmax, nfit, smit, smws, delta, maxShift, maxCombine)
-    )
+    ord <- with(mog, order(npmax, nfit, smit, smws, delta, maxShift, maxCombine))
     mog <- mog[ord, , drop=FALSE]
     rownames(mog) <- NULL
-    mog$acc    <- NA_real_
-    mog$auc    <- NA_real_
-    mog$np     <- NA_real_
-    mog$ar     <- NA_real_
+    mog$acc <- NA_real_
+    mog$auc <- NA_real_
     has_simpar <- !is.null(x[[1]]$meta$simpar)
-    if (has_simpar) mog$prarpx <- NA_real_
+    if (details) {
+        mog$np <- NA_real_
+        mog$ar <- NA_real_
+        if (has_simpar) {
+            mog$np_correct <- NA_real_
+            mog$prarpx <- NA_real_
+        }
+    }
 
     # Pre-attach per-spectrum `$deg` tables when any row uses npmax > 0.
     if (any(mog$npmax > 0)) {
@@ -145,16 +157,12 @@ fit_mdm <- function(
     preds <- matrix(NA_real_, nrow=ns, ncol=nr)
     logv("Starting grid search (%d combinations, %d spectra)", nr, ns)
     iw <- max(4L, nchar(as.character(nr)))
-    hdr_fmt <- paste0(
-        "%-", iw, "s  %-5s  %-4s  %-4s  %-4s  %-5s  %-5s  %-4s  ",
-        "%-5s  %-5s  %-4s"
-    )
-    row_fmt <- paste0(
-        "%-", iw, "d  %-5d  %-4d  %-4d  %-4d  %-5.1f  %-5d  %-4d  ",
-        "%-5.3f  %-5.3f  %-4s"
-    )
-    logv(hdr_fmt, "i", "npmax", "nfit", "smit", "smws", "del",
-         "shift", "comb", "acc", "auc", "best")
+    extra_hdr <- if (details && has_simpar) "  %-5s  %-5s  %-5s  %-6s" else if (details) "  %-5s  %-5s" else ""
+    extra_row <- if (details && has_simpar) "  %-5.1f  %-5.3f  %-5.1f  %-6.3f" else if (details) "  %-5.1f  %-5.3f" else ""
+    hdr_fmt <- paste0("%-", iw, "s  %-5s  %-4s  %-4s  %-4s  %-5s  %-5s  %-4s  %-5s  %-5s", extra_hdr, "  %-4s")
+    row_fmt <- paste0("%-", iw, "d  %-5d  %-4d  %-4d  %-4d  %-5.1f  %-5d  %-4d  %-5.3f  %-5.3f", extra_row, "  %-4s")
+    extra_hdr_lbls <- if (details && has_simpar) list("np", "ar", "npc", "prarpx") else if (details) list("np", "ar") else list()
+    do.call(logv, c(list(hdr_fmt, "i", "npmax", "nfit", "smit", "smws", "del", "shift", "comb", "acc", "auc"), extra_hdr_lbls, list("best")))
     foldid <- get_foldid(y=y, nfolds=nfolds, seed=seed)
     last_dkey <- NULL; last_akey <- NULL
     best_mdm <- NULL;  best_auc <- -Inf
@@ -171,17 +179,25 @@ fit_mdm <- function(
             last_akey <- NULL
         }
         nps <- vapply(d, function(x) nrow(x$lcpar), integer(1))
-        mog$np[i] <- mean(nps)
-        ars <- vapply(d, function(o) sum(abs(o$sit$sup - o$si)) / sum(abs(o$si)), numeric(1))
-        mog$ar[i] <- mean(ars)
-        if (has_simpar) {
-            prps <- vapply(d, function(o) calc_prarp(o)$prarpx, numeric(1))
-            mog$prarpx[i] <- mean(prps)
+        if (details) {
+            mog$np[i] <- mean(nps)
+            ars <- vapply(d, function(o)
+                sum(abs(o$sit$sup - o$si)) / sum(abs(o$si)), numeric(1))
+            mog$ar[i] <- mean(ars)
+            if (has_simpar) {
+                pr <- lapply(d, function(o) calc_prarp(o))
+                mog$np_correct[i] <- mean(vapply(pr,
+                    function(p) p$np_correct, numeric(1)))
+                mog$prarpx[i] <- mean(vapply(pr,
+                    function(p) p$prarpx, numeric(1)))
+            }
         }
+        extra_row_vals <- if (details && has_simpar) list(mog$np[i], mog$ar[i], mog$np_correct[i], mog$prarpx[i]) else if (details) list(mog$np[i], mog$ar[i]) else list()
         if (any(nps == 0)) {
             mog$acc[i] <- 0; mog$auc[i] <- 0
-            logv(row_fmt, i, r$npmax, r$nfit, r$smit, r$smws, r$delta,
-                 r$maxShift, r$maxCombine, 0, 0, "skip")
+            do.call(logv, c(list(row_fmt, i, r$npmax, r$nfit, r$smit,
+                r$smws, r$delta, r$maxShift, r$maxCombine, 0, 0),
+                extra_row_vals, list("skip")))
             next
         }
 
@@ -192,6 +208,7 @@ fit_mdm <- function(
                 nworkers=nworkers, full=FALSE
             )
             last_akey <- akey
+            if (verbosity >= 3) log_align_shifts(d, a, r$maxShift)
         }
 
         ref <- find_ref(a)
@@ -219,16 +236,16 @@ fit_mdm <- function(
             )
             best_mdm <- structure(list(model=cvfit, ref=ref, params=params), class="mdm")
         }
-        logv(row_fmt, i, r$npmax, r$nfit, r$smit, r$smws, r$delta,
-             r$maxShift, r$maxCombine, mog$acc[i], mog$auc[i],
-             if (is_best) "yes" else "")
+        do.call(logv, c(list(row_fmt, i, r$npmax, r$nfit, r$smit,
+            r$smws, r$delta, r$maxShift, r$maxCombine,
+            mog$acc[i], mog$auc[i]), extra_row_vals,
+            list(if (is_best) "yes" else "")))
     }
 
     best_mdm$preds <- preds
     best_mdm$mog <- mog
     ibest <- which.max(mog$auc)
-    logv("Best [%d/%d]: acc=%.2f%% auc=%.4f",
-         ibest, nr, mog$acc[ibest] * 100, mog$auc[ibest])
+    logv("Best [%d/%d]: acc=%.2f%% auc=%.4f", ibest, nr, mog$acc[ibest] * 100, mog$auc[ibest])
     best_mdm
 }
 
@@ -241,8 +258,8 @@ get_mog <- function(conf="default") {
         smws = switch(conf, dynamic=0, static=c(3,5,7,9), 5),
         delta = switch(conf, dynamic=0, static=c(1.6, 3.2, 4.8, 6.4, 8.0), 6.4),
         npmax = switch(conf, dynamic=seq(400,1600,200), 0),
-        maxShift = switch(conf, default=50, c(50,100,150,200,250)),
-        maxCombine = switch(conf, default=5, c(5,10,20,30,40,50))
+        maxShift = switch(conf, default=50, 2^(1:8)),
+        maxCombine = switch(conf, default=5, 2^(1:4))
     )
     ord <- order(g$npmax, g$nfit, g$smit, g$smws, g$delta, g$maxShift, g$maxCombine)
     g <- g[ord, , drop=FALSE]
@@ -301,7 +318,9 @@ benchmark <- function(
     # One-time grid attach when fitting mdm with npmax > 0.
     if (fun == "fit_mdm" && !is.null(dots$mog) && any(dots$mog$npmax > 0)) {
         x <- grid_deconvolute_spectra(
-            x=x, deg=dots$deg, sfr=dots$sfr,
+            x=x,
+            deg=dots$deg,
+            sfr=dots$sfr,
             igrs=dots$igrs %||% list(),
             verbose=verbosity >= 2,
             nworkers=dots$nworkers %||% 1L,
@@ -312,14 +331,10 @@ benchmark <- function(
     # Forward verbosity-1 to the fitter (overrides any user-passed value).
     dots$verbosity <- max(0L, verbosity - 1L)
 
-    te_list <- get_test_ids(
-        nfolds=k, nsamples=length(x), seed=seed, y=y
-    )
+    te_list <- get_test_ids(nfolds=k, nsamples=length(x), seed=seed, y=y)
     models <- vector("list", k)
     fold_preds <- vector("list", k)
-    perf <- data.frame(
-        fold=integer(0), acc=numeric(0), auc=numeric(0)
-    )
+    perf <- data.frame(fold=integer(0), acc=numeric(0), auc=numeric(0))
 
     logv("Running %d-fold outer CV with fun=%s", k, fun)
     for (i in seq_along(te_list)) {
@@ -328,10 +343,7 @@ benchmark <- function(
         logv("[fold %d/%d] fitting", i, k)
         m <- do.call(fitter, c(list(x=x[tr], y=y[tr]), dots))
         p <- pred_fn(m, x[te], type="all")
-        fp <- data.frame(
-            fold=i, true=y[te], link=p$link,
-            prob=p$prob, pred=p$class
-        )
+        fp <- data.frame(fold=i, true=y[te], link=p$link, prob=p$prob, pred=p$class)
         fold_preds[[i]] <- fp
         acc <- mean(fp$pred == fp$true, na.rm=TRUE)
         auc <- AUC(fp$true, fp$prob)
@@ -343,10 +355,7 @@ benchmark <- function(
     preds <- do.call(rbind, fold_preds)
     overall_acc <- mean(preds$true == preds$pred, na.rm=TRUE)
     overall_auc <- AUC(preds$true, preds$prob)
-    logv(
-        "Overall: acc=%.2f%% auc=%.4f",
-        overall_acc * 100, overall_auc
-    )
+    logv("Overall: acc=%.2f%% auc=%.4f", overall_acc * 100, overall_auc)
     list(
         models=models,
         predictions=preds,
@@ -356,6 +365,26 @@ benchmark <- function(
 }
 
 # Helpers #####
+
+# Summarize the absolute datapoint shifts that the alignment applied across
+# spectra. Used at verbosity >= 3 to verify that `maxShift` is actually
+# constraining the alignment (and to diagnose cases where it appears to have
+# no effect — e.g. when simulated peak shifts are smaller than `maxShift`).
+log_align_shifts <- function(decons, aligns, maxShift) {
+    abs_shifts <- unlist(lapply(seq_along(aligns), function(j) {
+        pre  <- decons[[j]]$lcpar$x0
+        post <- aligns[[j]]$lcpar$x0al
+        m <- min(length(pre), length(post))
+        cs <- aligns[[j]]$cs
+        # convert ppm shift to datapoint shift (cs is monotone)
+        round(abs(post[seq_len(m)] - pre[seq_len(m)]) / abs(diff(cs))[1])
+    }))
+    if (length(abs_shifts) == 0) return(invisible(NULL))
+    logv(
+        "  align: maxShift=%d  observed shifts: max=%d mean=%.2f  ",
+        as.integer(maxShift), max(abs_shifts), mean(abs_shifts)
+    )
+}
 
 as_binary01 <- function(y) {
     lvs <- sort(unique(y))

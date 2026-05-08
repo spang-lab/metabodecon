@@ -580,9 +580,9 @@ sim2_docs <- NULL # To get a symbol in the outline
 #' - 25 base peaks per spectrum with positions drawn uniformly in
 #'   `[3.37, 3.52]` ppm.
 #' - Per-peak jitter (sd 0.00030 ppm) plus a per-spectrum global ppm shift
-#'   (sd 0.00060 ppm) to mimic chemical shift variation between samples.
+#'   (sd 0.00240 ppm) to mimic chemical shift variation between samples.
 #' - Base areas drawn from a log-normal distribution centered around `2500`
-#'   (in ppm-area units) and varied per spectrum by `+/-30%`.
+#'   (in ppm-area units) and varied per spectrum by `+/-60%`.
 #' - Base half-widths drawn uniformly in `[0.0009, 0.0013]` ppm and varied
 #'   per spectrum by `+/-10%`.
 #' - Gaussian noise with standard deviation `2200`.
