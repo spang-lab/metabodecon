@@ -1,0 +1,454 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\hypersetup{
+  pdftitle={Metabodecon Models},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+\urlstyle{same} % disable monospaced font for URLs
+\usepackage[margin=1in]{geometry}
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.77,0.63,0.00}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{longtable,booktabs}
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{fontspec}
+\usepackage{etoolbox}
+\usepackage{fvextra}
+\usepackage{needspace}
+\definecolor{shadecolor}{RGB}{232,232,232}
+\fvset{breaklines=true,breakanywhere=true}
+\BeforeBeginEnvironment{Shaded}{\Needspace{10\baselineskip}}
+\BeforeBeginEnvironment{Shaded}{\vspace{0.5em}}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines=true,breakanywhere=true,commandchars=\\\{\}}
+\RecustomVerbatimEnvironment{verbatim}{Verbatim}{breaklines=true,breakanywhere=true}
+
+\title{Metabodecon Models}
+\author{}
+\date{\vspace{-2.5em}}
+
+\begin{document}
+\maketitle
+
+This article demonstrates how to use \texttt{fit\_mdm()} and
+\texttt{benchmark()} to build, tune and evaluate classification models
+on deconvoluted NMR spectra. We use the simulated \texttt{sim2} dataset
+shipped with the package, split it into training and test sets, run a
+small grid search to find good preprocessing parameters, and then
+evaluate on held-out data.
+
+\hypertarget{load-spectra}{%
+\section{Load spectra}\label{load-spectra}}
+
+\texttt{sim2} contains 100 simulated 1D NMR spectra split evenly into
+groups \texttt{A} and \texttt{B}. Five out of 25 peaks per spectrum
+differ between groups by 10\% in area. The group labels are attached as
+an attribute. For details on how the dataset was constructed, see
+\texttt{?sim2}.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{library}\NormalTok{(metabodecon)}
+\KeywordTok{data}\NormalTok{(sim2)}
+\NormalTok{spectra \textless{}{-}}\StringTok{ }\NormalTok{sim2}
+\NormalTok{group \textless{}{-}}\StringTok{ }\KeywordTok{attr}\NormalTok{(sim2, }\StringTok{"group"}\NormalTok{)}
+\NormalTok{n \textless{}{-}}\StringTok{ }\KeywordTok{length}\NormalTok{(spectra)}
+\end{Highlighting}
+\end{Shaded}
+
+The following figure shows four spectra from each group overlaid on top
+of each other. The subtle area differences are hard to spot visually.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{idx\_A \textless{}{-}}\StringTok{ }\KeywordTok{which}\NormalTok{(group }\OperatorTok{==}\StringTok{ "A"}\NormalTok{)[}\DecValTok{1}\OperatorTok{:}\DecValTok{4}\NormalTok{]}
+\NormalTok{idx\_B \textless{}{-}}\StringTok{ }\KeywordTok{which}\NormalTok{(group }\OperatorTok{==}\StringTok{ "B"}\NormalTok{)[}\DecValTok{1}\OperatorTok{:}\DecValTok{4}\NormalTok{]}
+\KeywordTok{plot\_spectra}\NormalTok{(spectra[}\KeywordTok{c}\NormalTok{(idx\_A, idx\_B)])}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics[width=1\linewidth]{MDM_files/figure-latex/plot-simulated-1}
+
+\hypertarget{traintest-split}{%
+\section{Train/test split}\label{traintest-split}}
+
+We use two thirds of the data for training and one third for testing.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{set.seed}\NormalTok{(}\DecValTok{1}\NormalTok{)}
+\NormalTok{n\_train \textless{}{-}}\StringTok{ }\KeywordTok{round}\NormalTok{(}\DecValTok{2} \OperatorTok{/}\StringTok{ }\DecValTok{3} \OperatorTok{*}\StringTok{ }\NormalTok{n)}
+\NormalTok{train\_idx \textless{}{-}}\StringTok{ }\KeywordTok{sort}\NormalTok{(}\KeywordTok{sample}\NormalTok{(n, n\_train))}
+\NormalTok{test\_idx \textless{}{-}}\StringTok{ }\KeywordTok{setdiff}\NormalTok{(}\KeywordTok{seq\_len}\NormalTok{(n), train\_idx)}
+
+\NormalTok{spectra\_tr \textless{}{-}}\StringTok{ }\NormalTok{spectra[train\_idx]}
+\NormalTok{spectra\_te \textless{}{-}}\StringTok{ }\NormalTok{spectra[test\_idx]}
+\KeywordTok{class}\NormalTok{(spectra\_tr) \textless{}{-}}\StringTok{ "spectra"}
+\KeywordTok{class}\NormalTok{(spectra\_te) \textless{}{-}}\StringTok{ "spectra"}
+\NormalTok{y\_tr \textless{}{-}}\StringTok{ }\NormalTok{group[train\_idx]}
+\NormalTok{y\_te \textless{}{-}}\StringTok{ }\NormalTok{group[test\_idx]}
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{fit-a-single-model}{%
+\section{Fit a single model}\label{fit-a-single-model}}
+
+\texttt{fit\_mdm()} deconvolutes the spectra, aligns them, builds a
+feature matrix and fits a lasso model via \texttt{cv.glmnet()}. The
+model fitting grid (\texttt{mog}) controls the preprocessing parameters
+explored. With a single-row grid, \texttt{fit\_mdm()} fits one model:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{mog\_default \textless{}{-}}\StringTok{ }\KeywordTok{data.frame}\NormalTok{(}
+    \DataTypeTok{nfit =} \DecValTok{3}\NormalTok{, }\DataTypeTok{smit =} \DecValTok{2}\NormalTok{, }\DataTypeTok{smws =} \DecValTok{5}\NormalTok{, }\DataTypeTok{delta =} \FloatTok{6.4}\NormalTok{, }\DataTypeTok{npmax =} \DecValTok{0}\NormalTok{,}
+    \DataTypeTok{maxShift =} \DecValTok{100}\NormalTok{, }\DataTypeTok{maxCombine =} \DecValTok{30}
+\NormalTok{)}
+\NormalTok{mdm\_default \textless{}{-}}\StringTok{ }\KeywordTok{fit\_mdm}\NormalTok{(}
+\NormalTok{    spectra\_tr, y\_tr, }\DataTypeTok{mog =}\NormalTok{ mog\_default, }\DataTypeTok{verbosity =} \DecValTok{0}
+\NormalTok{)}
+\KeywordTok{print}\NormalTok{(mdm\_default)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## metabodecon model (mdm)
+##   npmax:         0
+##   nfit:          3
+##   smit:          2
+##   smws:          5
+##   delta:         6.4
+##   maxShift:      100
+##   maxCombine:    30
+##   grid rows:     1
+\end{verbatim}
+
+\hypertarget{tune-preprocessing-via-grid-search}{%
+\section{Tune preprocessing via grid
+search}\label{tune-preprocessing-via-grid-search}}
+
+A multi-row \texttt{mog} makes \texttt{fit\_mdm()} evaluate a grid of
+preprocessing parameter combinations. For each row it builds the feature
+matrix, runs \texttt{cv.glmnet()} with a fixed fold assignment, and
+records the held-out accuracy and AUC at \texttt{lambda.min}. We use a
+deliberately small grid here to keep vignette build time short:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{mog \textless{}{-}}\StringTok{ }\KeywordTok{expand.grid}\NormalTok{(}
+    \DataTypeTok{smit =} \DecValTok{2}\NormalTok{, }\DataTypeTok{smws =} \KeywordTok{c}\NormalTok{(}\DecValTok{3}\NormalTok{, }\DecValTok{5}\NormalTok{), }\DataTypeTok{delta =} \KeywordTok{c}\NormalTok{(}\DecValTok{4}\NormalTok{, }\DecValTok{6}\NormalTok{), }\DataTypeTok{nfit =} \DecValTok{5}\NormalTok{, }\DataTypeTok{npmax =} \DecValTok{0}\NormalTok{,}
+    \DataTypeTok{maxShift =} \DecValTok{100}\NormalTok{, }\DataTypeTok{maxCombine =} \DecValTok{30}\NormalTok{,}
+    \DataTypeTok{stringsAsFactors =} \OtherTok{FALSE}
+\NormalTok{)}
+\NormalTok{mdm\_tuned \textless{}{-}}\StringTok{ }\KeywordTok{fit\_mdm}\NormalTok{(}
+\NormalTok{    spectra\_tr, y\_tr, }\DataTypeTok{mog =}\NormalTok{ mog, }\DataTypeTok{nfolds =} \DecValTok{5}\NormalTok{, }\DataTypeTok{verbosity =} \DecValTok{0}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+The performance grid shows how each parameter combination scored:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{pg \textless{}{-}}\StringTok{ }\NormalTok{mdm\_tuned}\OperatorTok{$}\NormalTok{mog}
+\NormalTok{pg \textless{}{-}}\StringTok{ }\NormalTok{pg[}\KeywordTok{order}\NormalTok{(}\OperatorTok{{-}}\NormalTok{pg}\OperatorTok{$}\NormalTok{auc), ]}
+\NormalTok{knitr}\OperatorTok{::}\KeywordTok{kable}\NormalTok{(}
+    \KeywordTok{head}\NormalTok{(pg, }\DecValTok{10}\NormalTok{),}
+    \DataTypeTok{digits =} \KeywordTok{c}\NormalTok{(}\DecValTok{0}\NormalTok{, }\DecValTok{0}\NormalTok{, }\DecValTok{0}\NormalTok{, }\DecValTok{0}\NormalTok{, }\DecValTok{0}\NormalTok{, }\DecValTok{0}\NormalTok{, }\DecValTok{0}\NormalTok{, }\DecValTok{3}\NormalTok{, }\DecValTok{4}\NormalTok{),}
+    \DataTypeTok{row.names =} \OtherTok{FALSE}\NormalTok{,}
+    \DataTypeTok{caption =} \StringTok{"Top 10 parameter combinations by AUC."}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{longtable}[]{@{}rrrrrrrrr@{}}
+\caption{Top 10 parameter combinations by AUC.}\tabularnewline
+\toprule
+smit & smws & delta & nfit & npmax & maxShift & maxCombine & acc &
+auc\tabularnewline
+\midrule
+\endfirsthead
+\toprule
+smit & smws & delta & nfit & npmax & maxShift & maxCombine & acc &
+auc\tabularnewline
+\midrule
+\endhead
+2 & 5 & 4 & 5 & 0 & 100 & 30 & 0.776 & 0.8824\tabularnewline
+2 & 3 & 6 & 5 & 0 & 100 & 30 & 0.701 & 0.7166\tabularnewline
+2 & 5 & 6 & 5 & 0 & 100 & 30 & 0.672 & 0.6916\tabularnewline
+2 & 3 & 4 & 5 & 0 & 100 & 30 & 0.567 & 0.5793\tabularnewline
+\bottomrule
+\end{longtable}
+
+\hypertarget{compare-deconvolution-results}{%
+\section{Compare deconvolution
+results}\label{compare-deconvolution-results}}
+
+Let us compare the deconvolution of the first training spectrum using
+the default parameters and the best parameters found by the grid search:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Deconvolute first two training spectra with default and tuned parameters}
+\NormalTok{pair \textless{}{-}}\StringTok{ }\NormalTok{spectra\_tr[}\DecValTok{1}\OperatorTok{:}\DecValTok{2}\NormalTok{]}
+\KeywordTok{class}\NormalTok{(pair) \textless{}{-}}\StringTok{ "spectra"}
+
+\NormalTok{d\_default \textless{}{-}}\StringTok{ }\KeywordTok{deconvolute}\NormalTok{(}
+\NormalTok{    pair, }\DataTypeTok{nfit =} \DecValTok{3}\NormalTok{, }\DataTypeTok{smit =} \DecValTok{2}\NormalTok{, }\DataTypeTok{smws =} \DecValTok{5}\NormalTok{, }\DataTypeTok{delta =} \DecValTok{4}\NormalTok{, }\DataTypeTok{npmax =} \DecValTok{0}\NormalTok{, }\DataTypeTok{verbose =} \OtherTok{FALSE}
+\NormalTok{)}
+
+\NormalTok{m \textless{}{-}}\StringTok{ }\NormalTok{mdm\_tuned}\OperatorTok{$}\NormalTok{params}
+\NormalTok{d\_tuned \textless{}{-}}\StringTok{ }\KeywordTok{deconvolute}\NormalTok{(}
+\NormalTok{    pair, }\DataTypeTok{nfit =}\NormalTok{ m}\OperatorTok{$}\NormalTok{nfit, }\DataTypeTok{smit =}\NormalTok{ m}\OperatorTok{$}\NormalTok{smit, }\DataTypeTok{smws =}\NormalTok{ m}\OperatorTok{$}\NormalTok{smws,}
+    \DataTypeTok{delta =}\NormalTok{ m}\OperatorTok{$}\NormalTok{delta, }\DataTypeTok{npmax =}\NormalTok{ m}\OperatorTok{$}\NormalTok{npmax, }\DataTypeTok{verbose =} \OtherTok{FALSE}
+\NormalTok{)}
+
+\KeywordTok{par}\NormalTok{(}\DataTypeTok{mfrow =} \KeywordTok{c}\NormalTok{(}\DecValTok{1}\NormalTok{, }\DecValTok{2}\NormalTok{), }\DataTypeTok{mar =} \KeywordTok{c}\NormalTok{(}\DecValTok{4}\NormalTok{, }\DecValTok{4}\NormalTok{, }\DecValTok{2}\NormalTok{, }\DecValTok{1}\NormalTok{))}
+\KeywordTok{plot\_spectrum}\NormalTok{(d\_default[[}\DecValTok{1}\NormalTok{]], }\DataTypeTok{main =} \StringTok{"Default params"}\NormalTok{)}
+\KeywordTok{plot\_spectrum}\NormalTok{(d\_tuned[[}\DecValTok{1}\NormalTok{]], }\DataTypeTok{main =} \StringTok{"Tuned params"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics[width=1\linewidth]{MDM_files/figure-latex/compare-decon-1}
+
+\hypertarget{inspect-lasso-features}{%
+\section{Inspect lasso features}\label{inspect-lasso-features}}
+
+The non-zero coefficients of the lasso model reveal which chemical shift
+positions are most important for distinguishing the two groups:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{cf \textless{}{-}}\StringTok{ }\KeywordTok{coef}\NormalTok{(mdm\_tuned)}
+\NormalTok{cf\_nz \textless{}{-}}\StringTok{ }\NormalTok{cf[cf[, }\DecValTok{1}\NormalTok{] }\OperatorTok{!=}\StringTok{ }\DecValTok{0}\NormalTok{, , drop =}\StringTok{ }\OtherTok{FALSE}\NormalTok{]}
+\NormalTok{knitr}\OperatorTok{::}\KeywordTok{kable}\NormalTok{(}
+    \KeywordTok{data.frame}\NormalTok{(}
+        \DataTypeTok{feature =} \KeywordTok{rownames}\NormalTok{(cf\_nz),}
+        \DataTypeTok{coefficient =} \KeywordTok{round}\NormalTok{(cf\_nz[, }\DecValTok{1}\NormalTok{], }\DecValTok{4}\NormalTok{)}
+\NormalTok{    ),}
+    \DataTypeTok{row.names =} \OtherTok{FALSE}\NormalTok{,}
+    \DataTypeTok{caption =} \StringTok{"Non{-}zero lasso coefficients at lambda.min."}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{longtable}[]{@{}lr@{}}
+\caption{Non-zero lasso coefficients at lambda.min.}\tabularnewline
+\toprule
+feature & coefficient\tabularnewline
+\midrule
+\endfirsthead
+\toprule
+feature & coefficient\tabularnewline
+\midrule
+\endhead
+(Intercept) & 9.9722\tabularnewline
+3.5492 & 1.1205\tabularnewline
+3.52415 & 0.0571\tabularnewline
+3.5231 & 0.0001\tabularnewline
+3.5156 & 0.0002\tabularnewline
+3.46535 & 0.0001\tabularnewline
+3.4535 & 0.0000\tabularnewline
+3.44075 & -0.0006\tabularnewline
+3.43295 & -0.0155\tabularnewline
+3.4196 & 0.0005\tabularnewline
+3.3998 & 0.0015\tabularnewline
+3.3902 & 0.0000\tabularnewline
+3.38735 & 0.0000\tabularnewline
+3.3818 & -0.0004\tabularnewline
+\bottomrule
+\end{longtable}
+
+\hypertarget{predict-test-samples}{%
+\section{Predict test samples}\label{predict-test-samples}}
+
+We use \texttt{predict.mdm()} to classify the held-out test spectra.
+This internally deconvolutes and aligns them against the reference
+spectrum stored in the model:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{preds \textless{}{-}}\StringTok{ }\KeywordTok{predict}\NormalTok{(mdm\_tuned, spectra\_te, }\DataTypeTok{type =} \StringTok{"all"}\NormalTok{, }\DataTypeTok{verbosity =} \DecValTok{0}\NormalTok{)}
+\NormalTok{results \textless{}{-}}\StringTok{ }\KeywordTok{data.frame}\NormalTok{(}
+    \DataTypeTok{sample =} \KeywordTok{get\_names}\NormalTok{(spectra\_te),}
+    \DataTypeTok{true =}\NormalTok{ y\_te,}
+    \DataTypeTok{predicted =}\NormalTok{ preds}\OperatorTok{$}\NormalTok{class,}
+    \DataTypeTok{prob\_B =} \KeywordTok{round}\NormalTok{(preds}\OperatorTok{$}\NormalTok{prob, }\DecValTok{3}\NormalTok{)}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{acc \textless{}{-}}\StringTok{ }\KeywordTok{mean}\NormalTok{(preds}\OperatorTok{$}\NormalTok{class }\OperatorTok{==}\StringTok{ }\NormalTok{y\_te)}
+\NormalTok{auc \textless{}{-}}\StringTok{ }\NormalTok{metabodecon}\OperatorTok{:::}\KeywordTok{AUC}\NormalTok{(y\_te, preds}\OperatorTok{$}\NormalTok{prob)}
+\KeywordTok{cat}\NormalTok{(}\KeywordTok{sprintf}\NormalTok{(}\StringTok{"Test accuracy: \%.1f\%\%}\CharTok{\textbackslash{}n}\StringTok{"}\NormalTok{, acc }\OperatorTok{*}\StringTok{ }\DecValTok{100}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Test accuracy: 72.7%
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{cat}\NormalTok{(}\KeywordTok{sprintf}\NormalTok{(}\StringTok{"Test AUC:      \%.4f}\CharTok{\textbackslash{}n}\StringTok{"}\NormalTok{, auc))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Test AUC:      0.8824
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{knitr}\OperatorTok{::}\KeywordTok{kable}\NormalTok{(}
+    \KeywordTok{table}\NormalTok{(}\DataTypeTok{True =}\NormalTok{ y\_te, }\DataTypeTok{Predicted =}\NormalTok{ preds}\OperatorTok{$}\NormalTok{class),}
+    \DataTypeTok{caption =} \StringTok{"Confusion matrix on test set."}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{longtable}[]{@{}lrr@{}}
+\caption{Confusion matrix on test set.}\tabularnewline
+\toprule
+& A & B\tabularnewline
+\midrule
+\endfirsthead
+\toprule
+& A & B\tabularnewline
+\midrule
+\endhead
+A & 15 & 1\tabularnewline
+B & 8 & 9\tabularnewline
+\bottomrule
+\end{longtable}
+
+\hypertarget{benchmark-with-nested-cross-validation}{%
+\section{Benchmark with nested
+cross-validation}\label{benchmark-with-nested-cross-validation}}
+
+To obtain an unbiased estimate of end-to-end predictive performance,
+\texttt{benchmark()} wraps \texttt{fit\_mdm()} in an outer
+cross-validation loop. The outer held-out fold is never seen during
+preprocessing or model fitting, so the resulting accuracy and AUC are
+honest estimates.
+
+A typical call looks like this:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{bm \textless{}{-}}\StringTok{ }\KeywordTok{benchmark}\NormalTok{(}
+\NormalTok{    spectra\_tr, y\_tr,}
+    \DataTypeTok{fun =} \StringTok{"fit\_mdm"}\NormalTok{, }\DataTypeTok{k =} \DecValTok{3}\NormalTok{, }\DataTypeTok{nworkers =} \DecValTok{4}\NormalTok{,}
+    \DataTypeTok{mog =}\NormalTok{ mog, }\DataTypeTok{nfolds =} \DecValTok{5}
+\NormalTok{)}
+\CommentTok{\# bm$predictions contains per{-}sample held{-}out predictions}
+\CommentTok{\# bm$models contains the fit\_mdm model for each outer fold}
+\KeywordTok{cat}\NormalTok{(}\KeywordTok{sprintf}\NormalTok{(}
+    \StringTok{"Nested CV accuracy: \%.1f\%\%}\CharTok{\textbackslash{}n}\StringTok{"}\NormalTok{,}
+    \KeywordTok{mean}\NormalTok{(bm}\OperatorTok{$}\NormalTok{predictions}\OperatorTok{$}\NormalTok{true }\OperatorTok{==}\StringTok{ }\NormalTok{bm}\OperatorTok{$}\NormalTok{predictions}\OperatorTok{$}\NormalTok{pred) }\OperatorTok{*}\StringTok{ }\DecValTok{100}
+\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+Note that \texttt{benchmark()} is computationally expensive because it
+runs the full grid search for each outer fold. It is therefore not
+executed in this vignette.
+
+\end{document}

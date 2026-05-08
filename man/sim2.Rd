@@ -36,9 +36,9 @@ which itself is derived from the Blood reference dataset (see
 \item 25 base peaks per spectrum with positions drawn uniformly in
 \verb{[3.37, 3.52]} ppm.
 \item Per-peak jitter (sd 0.00030 ppm) plus a per-spectrum global ppm shift
-(sd 0.00060 ppm) to mimic chemical shift variation between samples.
+(sd 0.00240 ppm) to mimic chemical shift variation between samples.
 \item Base areas drawn from a log-normal distribution centered around \code{2500}
-(in ppm-area units) and varied per spectrum by \verb{+/-30\%}.
+(in ppm-area units) and varied per spectrum by \verb{+/-60\%}.
 \item Base half-widths drawn uniformly in \verb{[0.0009, 0.0013]} ppm and varied
 per spectrum by \verb{+/-10\%}.
 \item Gaussian noise with standard deviation \code{2200}.

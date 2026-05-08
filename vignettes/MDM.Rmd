@@ -37,7 +37,7 @@ and then evaluate on held-out data.
 
 # Load spectra
 
-`sim2` contains 36 simulated 1D NMR spectra split evenly into groups `A` and
+`sim2` contains 100 simulated 1D NMR spectra split evenly into groups `A` and
 `B`. Five out of 25 peaks per spectrum differ between groups by 10% in area.
 The group labels are attached as an attribute. For details on how the dataset
 was constructed, see `?sim2`.
