@@ -15,12 +15,14 @@ fit_mdm(
   deg = NULL,
   sfr = NULL,
   igrs = list(),
-  use_rust = 0.5,
+  use_rust = 0,
   nworkers = 1,
-  verbosity = 2,
+  verbosity = 1,
   seed = 1,
   nfolds = 10,
-  check = TRUE
+  check = TRUE,
+  model = "lasso.min",
+  extractor = si_mat
 )
 
 get_mog(conf = "default")
@@ -36,7 +38,7 @@ fit_bm(
   check = TRUE
 )
 
-benchmark(x, y, ..., fun = "fit_mdm", k = 5, seed = 1, verbosity = 2)
+benchmark(x, y, ..., fun = "fit_mdm", k = 10, seed = 1, verbosity = 2)
 }
 \arguments{
 \item{x}{Spectra object. May already carry per-spectrum \verb{$deg} tables.}
@@ -66,6 +68,16 @@ benchmark(x, y, ..., fun = "fit_mdm", k = 5, seed = 1, verbosity = 2)
 
 \item{check}{Validate inputs at function entry?}
 
+\item{model}{Inner model type. \code{"lasso.min"} fits an L1-penalised logistic
+regression via \code{\link[glmnet:cv.glmnet]{glmnet::cv.glmnet()}} and evaluates at \code{lambda.min}.
+\code{"ranger500"} fits a probability random forest with 500 trees via
+\code{\link[ranger:ranger]{ranger::ranger()}}; OOB predictions are used for grid evaluation.}
+
+\item{extractor}{Function used to build the feature matrix from aligned
+deconvolutions. Must accept \verb{(a, maxCombine, peakPos, igrs)} and return
+a numeric matrix with all \code{cs} columns. Defaults to
+\code{\link[=si_mat]{si_mat()}}.}
+
 \item{conf}{Character string selecting a predefined \code{mog} configuration.}
 
 \item{nbin}{Number of bins in the non-ignored part of the ppm range.}
@@ -78,10 +90,11 @@ benchmark(x, y, ..., fun = "fit_mdm", k = 5, seed = 1, verbosity = 2)
 }
 \value{
 \code{\link[=fit_mdm]{fit_mdm()}} returns an object of class \code{mdm} with elements
-\code{model} (best \code{\link[glmnet:cv.glmnet]{glmnet::cv.glmnet()}}), \code{ref} (reference alignment spectrum),
-\code{params} (all settings needed to reproduce predictions: chosen grid row
-plus non-grid arguments such as \code{sfr}, \code{igrs}, \code{use_rust} and \code{peakPos})
-and \code{mog} (input grid augmented with \code{acc}/\code{auc} columns).
+\code{model} (best fitted model: \code{\link[glmnet:cv.glmnet]{glmnet::cv.glmnet()}} or \code{\link[ranger:ranger]{ranger::ranger()}}),
+\code{ref} (reference alignment spectrum), \code{params} (all settings needed to
+reproduce predictions: chosen grid row plus non-grid arguments such as
+\code{sfr}, \code{igrs}, \code{use_rust}, \code{model}, \code{lvs} and \code{peakPos}) and \code{mog} (input
+grid augmented with \code{acc}/\code{auc} columns).
 
 \code{\link[=fit_bm]{fit_bm()}} returns an object of class \code{bm} with elements
 \code{model} and \code{params}.
@@ -105,11 +118,14 @@ ways over the next few weeks.}
 Utilities for fitting, tuning and benchmarking 'metabodecon models' (mdm)
 and 'binning models' (bm).
 
-A mdm is essentially a \code{\link[glmnet:cv.glmnet]{glmnet::cv.glmnet()}} lasso model, fitted on a
-feature matrix obtained by deconvoluting and aligning spectra and snapping
-their peaks to a shared reference. Deconvolution parameters
-(\code{npmax}/\code{nfit}/\code{smit}/\code{smws}/\code{delta}), alignment parameter \code{maxShift} and
-peak-combining parameter \code{maxCombine} are tunable hyperparameters.
+A mdm is a classification model fitted on a feature matrix obtained by
+deconvoluting and aligning spectra and snapping their peaks to a shared
+reference. The inner model is controlled by the \code{model} argument: either an
+L1-penalised logistic regression (\code{\link[glmnet:cv.glmnet]{glmnet::cv.glmnet()}}, \code{"lasso.min"}) or
+a probability random forest (\code{\link[ranger:ranger]{ranger::ranger()}}, \code{"ranger500"}).
+Deconvolution parameters (\code{npmax}/\code{nfit}/\code{smit}/\code{smws}/\code{delta}), alignment
+parameter \code{maxShift} and peak-combining parameter \code{maxCombine} are tunable
+hyperparameters.
 
 A bm is a lasso model fitted on a binned-intensity feature matrix and
 serves as a simple baseline for comparison against \code{mdm} models.

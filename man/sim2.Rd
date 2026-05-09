@@ -12,10 +12,15 @@ levels \code{A} and \code{B}. For details about \code{spectrum} and \code{spectr
 \link{metabodecon-classes}.
 
 Each spectrum's \code{meta$simpar} carries the standard fields (\code{x0}, \code{A},
-\code{lambda}, \code{noise}) plus three sim2-specific fields: \code{base_x0} (the 25
+\code{lambda}, \code{noise}) plus four sim2-specific fields: \code{base_x0} (the 25
 reference peak positions, identical across spectra), \code{dx0} (per-peak
-jitter in ppm) and \code{gx0} (scalar global ppm shift). They satisfy
-\code{x0[k] = base_x0[k] + dx0[k] + gx0}.
+jitter in ppm), \code{gx0} (scalar global ppm shift), and \code{diff_AB} (integer
+indices into \code{base_x0} of the peaks that differ between groups). They
+satisfy \code{x0[k] = base_x0[k] + dx0[k] + gx0}.
+
+\code{attr(sim2, "true_x0")} is a numeric vector with the post-alignment ppm
+positions of the discriminating peaks (one per \code{diff_AB} index), useful
+for highlighting them on plots of aligned feature matrices.
 }
 \usage{
 sim2
@@ -43,7 +48,8 @@ which itself is derived from the Blood reference dataset (see
 per spectrum by \verb{+/-10\%}.
 \item Gaussian noise with standard deviation \code{2200}.
 \item In group \code{A}, the first five base peaks have their areas multiplied by
-\code{1.1}, creating a subtle but learnable group difference.
+\code{1.1}, creating a subtle but learnable group difference. The exact
+indices are stored in \code{simpar$diff_AB}.
 }
 }
 \keyword{datasets}

@@ -7,7 +7,9 @@
 get_si_mat(x, drop_zero = FALSE, maxCombine = 0, peakPos = NULL)
 }
 \arguments{
-\item{x}{An object of type \code{aligns}.}
+\item{x}{An object of type \code{decons2} or \code{aligns}. For \code{aligns}, the aligned
+peak positions are used; for \code{decons2}, the deconvoluted peak positions
+are used.}
 
 \item{drop_zero}{Drop columns where all values are zero?}
 

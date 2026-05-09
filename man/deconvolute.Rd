@@ -2,6 +2,7 @@
 % Please edit documentation in R/decon.R
 \name{deconvolute}
 \alias{deconvolute}
+\alias{get_deg}
 \title{Deconvolute one or more NMR spectra}
 \usage{
 deconvolute(
@@ -17,6 +18,8 @@ deconvolute(
   verbose = TRUE,
   nworkers = 1
 )
+
+get_deg(conf = "default")
 }
 \arguments{
 \item{x}{A \code{spectrum} or \code{spectra} object as described in \link{metabodecon-classes}.}
@@ -63,13 +66,22 @@ deconvolution process.}
 \item{nworkers}{Number of workers to use for parallel processing. If
 \code{"auto"}, the number of workers will be determined automatically. If a number
 greater than 1, it will be limited to the number of spectra.}
+
+\item{conf}{Character string selecting a configuration. Currently only
+\code{"default"} is supported.}
 }
 \value{
 A 'decon2' object as described in \link{metabodecon-classes}.
+
+A data frame with columns \code{nfit}, \code{smit}, \code{smws}, \code{delta}.
 }
 \description{
 Deconvolutes NMR spectra by modeling each detected signal within
 a spectrum as Lorentz Curve.
+
+Returns the default grid of \verb{(nfit, smit, smws, delta)} combinations used
+by \code{\link[=deconvolute]{deconvolute()}} when \code{npmax >= 1}. Useful as the \code{deg}
+argument to \code{\link[=fit_mdm]{fit_mdm()}}.
 }
 \details{
 First, an automated curvature based signal selection is performed. Each
@@ -86,6 +98,7 @@ decon <- deconvolute(spectrum)
 spectra_dir <- metabodecon_file("sim_subset")
 spectra <- read_spectra(spectra_dir)
 decons <- deconvolute(spectra, sfr = c(3.55,3.35))
+get_deg()
 }
 \author{
 2024-2025 Tobias Schmidt: initial version.

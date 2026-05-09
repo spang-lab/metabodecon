@@ -4,10 +4,12 @@
 \alias{si_mat}
 \title{Signal Integral Matrix}
 \usage{
-si_mat(x, drop_zero = FALSE, maxCombine = 0, peakPos = NULL)
+si_mat(x, drop_zero = FALSE, maxCombine = 0, peakPos = NULL, igrs = list())
 }
 \arguments{
-\item{x}{An object of type \code{aligns}.}
+\item{x}{An object of type \code{decons2} or \code{aligns}. For \code{aligns}, the aligned
+peak positions are used; for \code{decons2}, the deconvoluted peak positions
+are used.}
 
 \item{drop_zero}{Drop columns where all values are zero?}
 
@@ -16,6 +18,10 @@ si_mat(x, drop_zero = FALSE, maxCombine = 0, peakPos = NULL)
 \item{peakPos}{Integer vector of column indices in the \code{cs} grid to snap
 peaks to. Used to align new spectra to the same features as a reference
 matrix (see 'Details').}
+
+\item{igrs}{List of length-2 numeric vectors \code{c(left, right)} (in ppm) of
+ignore-regions. Columns whose chemical shift falls inside any region are
+zeroed out. Use \code{list()} to disable.}
 }
 \value{
 A matrix with spectra in rows and chemical shifts as colnames.

@@ -17,11 +17,14 @@
 #' Utilities for fitting, tuning and benchmarking 'metabodecon models' (mdm)
 #' and 'binning models' (bm).
 #'
-#' A mdm is essentially a [glmnet::cv.glmnet()] lasso model, fitted on a
-#' feature matrix obtained by deconvoluting and aligning spectra and snapping
-#' their peaks to a shared reference. Deconvolution parameters
-#' (`npmax`/`nfit`/`smit`/`smws`/`delta`), alignment parameter `maxShift` and
-#' peak-combining parameter `maxCombine` are tunable hyperparameters.
+#' A mdm is a classification model fitted on a feature matrix obtained by
+#' deconvoluting and aligning spectra and snapping their peaks to a shared
+#' reference. The inner model is controlled by the `model` argument: either an
+#' L1-penalised logistic regression ([glmnet::cv.glmnet()], `"lasso.min"`) or
+#' a probability random forest ([ranger::ranger()], `"ranger500"`).
+#' Deconvolution parameters (`npmax`/`nfit`/`smit`/`smws`/`delta`), alignment
+#' parameter `maxShift` and peak-combining parameter `maxCombine` are tunable
+#' hyperparameters.
 #'
 #' A bm is a lasso model fitted on a binned-intensity feature matrix and
 #' serves as a simple baseline for comparison against `mdm` models.
@@ -76,6 +79,14 @@
 #' @param seed Random seed for fold assignments.
 #' @param nfolds Number of folds for the inner [glmnet::cv.glmnet()] call.
 #' @param check Validate inputs at function entry?
+#' @param model Inner model type. `"lasso.min"` fits an L1-penalised logistic
+#'   regression via [glmnet::cv.glmnet()] and evaluates at `lambda.min`.
+#'   `"ranger500"` fits a probability random forest with 500 trees via
+#'   [ranger::ranger()]; OOB predictions are used for grid evaluation.
+#' @param extractor Function used to build the feature matrix from aligned
+#'   deconvolutions. Must accept `(a, maxCombine, peakPos, igrs)` and return
+#'   a numeric matrix with all `cs` columns. Defaults to
+#'   [metabodecon::si_mat()].
 #' @param igrs Ignore regions passed to `fun`.
 #' @param nbin Number of bins in the non-ignored part of the ppm range.
 #' @param fun Name of fitter function. Either "fit_mdm" or "fit_bm"`.
@@ -85,10 +96,11 @@
 #'
 #' @return
 #' [metabodecon::fit_mdm()] returns an object of class `mdm` with elements
-#' `model` (best [glmnet::cv.glmnet()]), `ref` (reference alignment spectrum),
-#' `params` (all settings needed to reproduce predictions: chosen grid row
-#' plus non-grid arguments such as `sfr`, `igrs`, `use_rust` and `peakPos`)
-#' and `mog` (input grid augmented with `acc`/`auc` columns).
+#' `model` (best fitted model: [glmnet::cv.glmnet()] or [ranger::ranger()]),
+#' `ref` (reference alignment spectrum), `params` (all settings needed to
+#' reproduce predictions: chosen grid row plus non-grid arguments such as
+#' `sfr`, `igrs`, `use_rust`, `model`, `lvs` and `peakPos`) and `mog` (input
+#' grid augmented with `acc`/`auc` columns).
 #'
 #' [metabodecon::fit_bm()] returns an object of class `bm` with elements
 #' `model` and `params`.
@@ -107,14 +119,16 @@
 #' }
 fit_mdm <- function(
     x, y, mog=get_mog("default"), deg=NULL,
-    sfr=NULL, igrs=list(), use_rust=0.5, nworkers=1, verbosity=2,
-    seed=1, nfolds=10, check=TRUE
+    sfr=NULL, igrs=list(), use_rust=0, nworkers=1, verbosity=1,
+    seed=1, nfolds=10, check=TRUE, model="lasso.min",
+    extractor=si_mat
 ) {
     if (check) check_mdm_args(
         x=x, y=y, mog=mog, sfr=sfr, igrs=igrs,
         use_rust=use_rust, nworkers=nworkers, verbosity=verbosity,
-        seed=seed, nfolds=nfolds
+        seed=seed, nfolds=nfolds, model=model
     )
+    lvs <- levels(y)
 
     # Sort rows so identical decon/align tuples cluster.
     ord <- with(mog, order(npmax, nfit, smit, smws, delta, maxShift, maxCombine))
@@ -166,41 +180,38 @@ fit_mdm <- function(
         }
 
         ref <- find_ref(a)
-        mat <- si_mat(a, maxCombine=r$maxCombine)
+        mat <- extractor(a, maxCombine=r$maxCombine, igrs=igrs)
         peakPos <- which(colSums(mat != 0) > 0)
-        X <- mat[, peakPos, drop=FALSE]
-
-        cvfit <- glmnet::cv.glmnet(X, y, family="binomial", alpha=1, foldid=foldid, keep=TRUE)
-        li <- which(cvfit$lambda == cvfit$lambda.min)
-        link <- cvfit$fit.preval[, li]
-        prob <- 1 / (1 + exp(-link))
-        lvs <- levels(y)
-        pred <- factor(ifelse(prob > 0.5, lvs[2], lvs[1]), levels=lvs)
-        mog$acc[i] <- acc <- mean(pred == y)
-        mog$auc[i] <- auc <- AUC(y, prob)
-        is_best <- !is.na(auc) && auc > best_auc
+        fit <- mdm_fit_inner(
+            model, mat[, peakPos, drop=FALSE], y, lvs, foldid, seed
+        )
+        mog$acc[i] <- fit$acc; mog$auc[i] <- fit$auc
+        is_best <- !is.na(fit$auc) && fit$auc > best_auc
         sym <- if (is_best) "<-- BEST" else ""
         logv(
             "[%d/%d] p=%d f=%d i=%d w=%d d=%g S=%d C=%g acc=%.2f%% auc=%.4f %s",
             i, nr, r$npmax, r$nfit, r$smit, r$smws, r$delta,
-            r$maxShift, r$maxCombine, acc * 100, auc, sym
+            r$maxShift, r$maxCombine, fit$acc * 100, fit$auc, sym
         )
 
         if (is_best) {
-            best_auc <- mog$auc[i]
+            best_auc <- fit$auc
             params <- list(
+                model=model, lvs=lvs, extractor=extractor,
                 sfr=sfr, igrs=igrs, use_rust=use_rust, npmax=r$npmax,
                 nfit=r$nfit, smit=r$smit, smws=r$smws, delta=r$delta,
-                maxShift=r$maxShift, maxCombine=r$maxCombine, peakPos=peakPos
+                maxShift=r$maxShift, maxCombine=r$maxCombine,
+                peakPos=peakPos
             )
-            best_mdm <- structure(list(model=cvfit, ref=ref, params=params), class="mdm")
+            best_mdm <- structure(
+                list(model=fit$model, ref=ref, params=params), class="mdm"
+            )
         }
     }
 
     best_mdm$mog <- mog
     ibest <- which.max(mog$auc)
-    fmt <- "Best [%d/%d]: acc=%.2f%% auc=%.4f"
-    logv(fmt, ibest, nr, mog$acc[ibest] * 100, mog$auc[ibest])
+    logv("Best [%d/%d]: acc=%.2f%% auc=%.4f", ibest, nr, mog$acc[ibest]*100, mog$auc[ibest])
     best_mdm
 }
 
@@ -370,7 +381,7 @@ AUC <- function(y, yhat) {
 check_mdm_args <- function(
     x, y, mog,
     sfr=NULL, igrs=list(), use_rust=NULL, nworkers=NULL,
-    verbosity=NULL, seed=NULL, nfolds=NULL
+    verbosity=NULL, seed=NULL, nfolds=NULL, model=NULL
 ) {
     cols <- c(
         "nfit", "smit", "smws", "delta", "npmax",
@@ -391,6 +402,12 @@ check_mdm_args <- function(
         is_int_or_null(seed, 1),
         is.null(nfolds) || (is_int(nfolds, 1) && nfolds >= 2)
     )
+    if (!is.null(model)) {
+        ok <- c("lasso.min", "ranger500")
+        if (!model %in% ok) stop(
+            "`model` must be one of: ", paste(ok, collapse=", "), call.=FALSE
+        )
+    }
     if (!is.null(names(y)) && !identical(get_names(x), names(y))) {
         stop(
             "Names of `x` and `y` must match and be in the same order.",
@@ -419,6 +436,35 @@ check_bm_args <- function(x, y, igrs, nbin, seed, nfolds, verbosity) {
         stop("`y` must contain exactly 2 non-empty classes.", call.=FALSE)
     }
     invisible(NULL)
+}
+
+mdm_eval <- function(y, prob, lvs) {
+    pred <- factor(ifelse(prob > 0.5, lvs[2], lvs[1]), levels=lvs)
+    list(acc=mean(pred == y), auc=AUC(y, prob))
+}
+
+mdm_lasso <- function(X, y, foldid, lvs) {
+    requireNamespace("glmnet", quietly=TRUE)
+    cvfit <- glmnet::cv.glmnet(X, y, family="binomial", alpha=1,
+                               foldid=foldid, keep=TRUE)
+    li <- which(cvfit$lambda == cvfit$lambda.min)
+    prob <- 1 / (1 + exp(-cvfit$fit.preval[, li]))
+    perf <- mdm_eval(y, prob, lvs)
+    list(model=cvfit, prob=prob, acc=perf$acc, auc=perf$auc)
+}
+
+mdm_ranger <- function(X, y, lvs, seed) {
+    requireNamespace("ranger", quietly=TRUE)
+    rf <- ranger::ranger(x=X, y=y, probability=TRUE, num.trees=500, seed=seed)
+    prob <- rf$predictions[, lvs[2]]
+    perf <- mdm_eval(y, prob, lvs)
+    list(model=rf, prob=prob, acc=perf$acc, auc=perf$auc)
+}
+
+mdm_fit_inner <- function(model, X, y, lvs, foldid, seed) {
+    if (model == "lasso.min") return(mdm_lasso(X, y, foldid, lvs))
+    if (model == "ranger500") return(mdm_ranger(X, y, lvs, seed))
+    stop("Unknown model: ", model, call.=FALSE)
 }
 
 # Bin a spectra object into `nbin` equal-width bins distributed across the
@@ -614,21 +660,34 @@ predict.mdm <- function(
             x=decons, maxShift=m$maxShift, verbose=verbosity >= 2,
             nworkers=nworkers, ref=object$ref, full=FALSE
         )
-        Xn <- si_mat(als, maxCombine=m$maxCombine, peakPos=m$peakPos)
+        extractor <- m$extractor %||% si_mat
+        Xn <- extractor(
+            als, maxCombine=m$maxCombine, peakPos=m$peakPos,
+            igrs=m$igrs %||% list()
+        )
         Xn <- Xn[, m$peakPos, drop=FALSE]
     } else {
         Xn <- as.matrix(newdata)
     }
-    logv("Predicting with s=%s", as.character(s))
-    requireNamespace("glmnet", quietly=TRUE)
-    score <- as.numeric(predict(object$model, newx=Xn, s=s, type="link"))
-    prob <- as.numeric(predict(object$model, newx=Xn, s=s, type="response"))
-    pred <- predict(object$model, newx=Xn, s=s, type="class")[, 1]
-    lvs <- object$model$glmnet.fit$classnames
-    pred <- factor(pred, levels=lvs)
-    if (type == "all") {
-        return(data.frame(link=score, prob=prob, class=pred))
+    mod <- m$model %||% "lasso.min"
+    lvs <- m$lvs %||% object$model$glmnet.fit$classnames
+    logv("Predicting with model=%s", mod)
+    if (mod == "ranger500") {
+        requireNamespace("ranger", quietly=TRUE)
+        colnames(Xn) <- object$model$forest$independent.variable.names
+        probs_mat <- predict(object$model, data=Xn,
+                             num.threads=nworkers)$predictions
+        prob <- probs_mat[, lvs[2]]
+        pred <- factor(ifelse(prob > 0.5, lvs[2], lvs[1]), levels=lvs)
+        score <- log(prob / (1 - prob))
+    } else {
+        requireNamespace("glmnet", quietly=TRUE)
+        score <- as.numeric(predict(object$model, newx=Xn, s=s, type="link"))
+        prob <- as.numeric(predict(object$model, newx=Xn, s=s, type="response"))
+        pred <- predict(object$model, newx=Xn, s=s, type="class")[, 1]
+        pred <- factor(pred, levels=lvs)
     }
+    if (type == "all") return(data.frame(link=score, prob=prob, class=pred))
     if (type == "class") return(pred)
     if (type == "prob") return(prob)
     if (type == "link") return(score)
@@ -640,7 +699,7 @@ predict.mdm <- function(
 print.mdm <- function(x, ...) {
     stopifnot(inherits(x, "mdm"), is.list(x$params))
     pp <- c(
-        "npmax", "nfit", "smit", "smws", "delta",
+        "model", "npmax", "nfit", "smit", "smws", "delta",
         "maxShift", "maxCombine"
     )
     cat("metabodecon model (mdm)\n")
@@ -660,6 +719,8 @@ print.mdm <- function(x, ...) {
 #' @rdname mdm_methods
 coef.mdm <- function(object, ...) {
     stopifnot(inherits(object, "mdm"), !is.null(object$model))
+    mod <- object$params$model %||% "lasso.min"
+    if (mod == "ranger500") return(object$model$variable.importance)
     stats::coef(object$model, s="lambda.min", ...)
 }
 
@@ -667,6 +728,12 @@ coef.mdm <- function(object, ...) {
 #' @rdname mdm_methods
 plot.mdm <- function(x, ...) {
     stopifnot(inherits(x, "mdm"), !is.null(x$model))
+    mod <- x$params$model %||% "lasso.min"
+    if (mod == "ranger500") {
+        vi <- sort(x$model$variable.importance, decreasing=TRUE)
+        graphics::barplot(vi, las=2, ...)
+        return(invisible(NULL))
+    }
     graphics::plot(x$model, ...)
     invisible(NULL)
 }
@@ -676,7 +743,7 @@ plot.mdm <- function(x, ...) {
 summary.mdm <- function(object, ...) {
     stopifnot(inherits(object, "mdm"), is.list(object$params))
     pp <- c(
-        "npmax", "nfit", "smit", "smws", "delta",
+        "model", "npmax", "nfit", "smit", "smws", "delta",
         "maxShift", "maxCombine"
     )
     out <- object$params[pp]

@@ -24,8 +24,8 @@ vignette: >
 
 ```{r set-defaults, echo=FALSE, results=FALSE, message=FALSE}
 knitr::opts_chunk$set(
-    fig.dim = c(5, 5), fig.show = "hold", out.width = "100%",
-    echo = TRUE, message = FALSE, warning = FALSE
+    fig.dim=c(5, 5), fig.show="hold", out.width="50%",
+    echo=TRUE, message=FALSE, warning=FALSE
 )
 ```
 
@@ -44,55 +44,211 @@ was constructed, see `?sim2`.
 
 ```{r load-spectra}
 library(metabodecon)
-data(sim2)
-spectra <- sim2
-group <- attr(sim2, "group")
-n <- length(spectra)
+x <- sim2
+y <- attr(sim2, "group")
+n <- length(x)
 ```
 
 The following figure shows four spectra from each group overlaid on top of each
 other. The subtle area differences are hard to spot visually.
 
-```{r plot-simulated, fig.dim = c(6, 4), out.width = "100%"}
-idx_A <- which(group == "A")[1:4]
-idx_B <- which(group == "B")[1:4]
-plot_spectra(spectra[c(idx_A, idx_B)])
+```{r plot-simulated}
+a4 <- which(y == "A")[1:4]
+b4 <- which(y == "B")[1:4]
+ab <- c(a4, b4)
+plot_spectra(x[ab])
+heat_spectra(x[ab])
 ```
 
 # Train/test split
 
-We use two thirds of the data for training and one third for testing.
+We use one half of the data for training and one half for testing.
 
 ```{r split}
 set.seed(1)
-n_train <- round(2 / 3 * n)
-train_idx <- sort(sample(n, n_train))
-test_idx <- setdiff(seq_len(n), train_idx)
-
-spectra_tr <- spectra[train_idx]
-spectra_te <- spectra[test_idx]
-class(spectra_tr) <- "spectra"
-class(spectra_te) <- "spectra"
-y_tr <- group[train_idx]
-y_te <- group[test_idx]
+n_train <- round(0.5 * n)
+tr <- sort(sample(n, n_train))
+te <- setdiff(seq_len(n), tr)
 ```
 
-# Fit a single model
+# Fit a model manually, step by step
 
-`fit_mdm()` deconvolutes the spectra, aligns them, builds a feature matrix and
-fits a lasso model via `cv.glmnet()`. The model fitting grid (`mog`) controls
-the preprocessing parameters explored. With a single-row grid, `fit_mdm()`
-fits one model:
+To go from raw spectra to a fitted classifier we need three preprocessing
+stages plus the model fit itself:
+
+1. **Deconvolution** -- represent each spectrum as a list of Lorentzian peaks.
+2. **Alignment** -- shift peaks so corresponding peaks across spectra share the
+   same chemical-shift index. One spectrum is picked as the *reference* and
+   all others are aligned to it.
+3. **Feature matrix construction** -- collapse the aligned peak lists into one
+   row per spectrum, optionally merging peaks within `maxCombine` indices.
+4. **Model fit** -- here, an L1-penalized logistic regression via
+   `cv.glmnet()`.
+
+`fit_mdm()` performs all four steps for every row of a parameter grid and
+returns the best model. Below we do them by hand for one parameter set so we
+can inspect each intermediate state.
+
+We pick a small group-balanced subset (4+4 spectra) just for plotting; the
+model itself is trained on all of `x[tr]`.
+
+```{r fit-manually-prep}
+a4tr <- which(y[tr] == "A")[1:4]
+b4tr <- which(y[tr] == "B")[1:4]
+abtr <- c(a4tr, b4tr)
+yab <- y[tr][abtr]
+true_x0 <- attr(sim2, "true_x0")  # post-alignment ppm of discriminating peaks
+```
+
+## Step 1: Deconvolute
+
+```{r fit-manually-decon}
+decons <- deconvolute(x[tr], nfit=10, smit=2, smws=5, delta=10, npmax=0, verbose=FALSE)
+plot_spectra(decons[abtr])
+heat_spectra(decons[abtr], y=yab)
+```
+
+## Step 2: Align
+
+`align_decons()` calls `find_ref()` internally to pick the spectrum whose
+peaks are closest to all others. We extract that reference now -- we need it
+later to align the *test* spectra to the same coordinate system.
+
+```{r fit-manually-align}
+aligns <- align_decons(decons, maxShift=50, verbose=FALSE)
+ref <- find_ref(decons)
+plot_spectra(aligns[abtr])
+heat_spectra(aligns[abtr], y=yab)
+```
+
+## Step 3: Build the feature matrix
+
+`si_mat()` turns each aligned peak list into a row of a peak-area matrix.
+Columns are aligned chemical-shift indices, optionally merged within
+`maxCombine` indices of each other. `peakPos` records which columns are
+actually populated -- these are the features the model will see.
+
+```{r fit-manually-simat}
+mat <- si_mat(aligns, maxCombine=10)
+peakPos <- which(colSums(mat != 0) > 0)
+X <- mat[, peakPos, drop=FALSE]
+dim(X)
+heat_spectra(X, y=y[tr], true_x0=true_x0)
+heat_spectra(X, y=y[tr], true_x0=true_x0, scale_cols=TRUE)
+```
+
+The standardized view (`scale_cols=TRUE`) makes the group structure of the
+discriminating peaks more visible: columns near `true_x0` show consistent
+sign differences between A (top) and B (bottom).
+
+## Step 4: Fit the lasso
+
+```{r fit-manually-glmnet}
+foldid <- metabodecon:::get_foldid(y=y[tr], nfolds=5, seed=1)
+cvfit <- glmnet::cv.glmnet(X, y[tr], family="binomial", alpha=1,
+                           foldid=foldid, keep=TRUE)
+plot(cvfit)
+```
+
+The non-zero coefficients at `lambda.min` are the chemical-shift columns the
+model relies on. Let us highlight them in the feature heatmap:
+
+```{r fit-manually-picked}
+cf <- as.matrix(coef(cvfit, s="lambda.min"))
+picked <- rownames(cf)[cf[, 1] != 0]
+picked <- setdiff(picked, "(Intercept)")
+picked_idx <- match(picked, colnames(X))
+heat_spectra(X[, picked_idx, drop=FALSE], y=y[tr], true_x0=true_x0)
+heat_spectra(X[, picked_idx, drop=FALSE], y=y[tr], true_x0=true_x0,
+             scale_cols=TRUE)
+```
+
+## Equivalent one-shot call
+
+The exact same model can be fit with one `fit_mdm()` call:
 
 ```{r fit-default}
-mog_default <- data.frame(
-    nfit = 3, smit = 2, smws = 5, delta = 6.4, npmax = 0,
-    maxShift = 100, maxCombine = 30
-)
-mdm_default <- fit_mdm(
-    spectra_tr, y_tr, mog = mog_default, verbosity = 0
-)
-print(mdm_default)
+gd <- data.frame(nfit=10, smit=2, smws=5, delta=10, npmax=0,
+                 maxShift=50, maxCombine=5)
+md <- fit_mdm(x[tr], y[tr], mog=gd, verbosity=0, nworkers=1, nfolds=5)
+print(md)
+```
+
+# Predict held-out spectra manually
+
+`predict.mdm()` mirrors the four training steps for new data, but reuses the
+training-time reference and `peakPos` so the test feature matrix has the
+**same columns** as the training one.
+
+## Step 1: Deconvolute the test spectra
+
+```{r predict-manually-decon}
+decons_te <- deconvolute(x[te], nfit=10, smit=2, smws=5, delta=10,
+                         npmax=0, verbose=FALSE)
+```
+
+## Step 2: Align to the training reference
+
+```{r predict-manually-align}
+aligns_te <- align_decons(decons_te, maxShift=50, ref=ref, verbose=FALSE)
+```
+
+## Step 3: Build feature matrix using training `peakPos`
+
+`si_mat(..., peakPos=peakPos)` ensures the test matrix has columns at the
+training-time chemical-shift indices, then we restrict to the `peakPos`
+subset to match `X`.
+
+```{r predict-manually-simat}
+mat_te <- si_mat(aligns_te, maxCombine=10, peakPos=peakPos)
+Xte <- mat_te[, peakPos, drop=FALSE]
+stopifnot(identical(colnames(Xte), colnames(X)))
+heat_spectra(Xte, y=y[te], true_x0=true_x0, scale_cols=TRUE)
+```
+
+## Step 4: Apply the trained model
+
+```{r predict-manually-glmnet}
+prob_te <- as.numeric(predict(cvfit, newx=Xte, s="lambda.min", type="response"))
+pred_te <- factor(ifelse(prob_te > 0.5, levels(y)[2], levels(y)[1]),
+                  levels=levels(y))
+acc_manual <- mean(pred_te == y[te])
+auc_manual <- metabodecon:::AUC(y[te], prob_te)
+cat(sprintf("Manual test acc: %.1f%%, AUC: %.3f\n", acc_manual * 100, auc_manual))
+```
+
+# Compare with a random forest
+
+The feature matrix contains many zeros, which represent peaks that were not
+detected in a given spectrum -- semantically closer to "missing" than to
+"low intensity". Tree-based models handle this naturally: a single split at
+`x>0` separates absent from present, and further splits on the present
+subset capture intensity differences. Random forests also have built-in
+regularization via tree depth and ensembling, so they need almost no tuning.
+
+We fit a `ranger` random forest on the same `X`/`Xte` matrices used above:
+
+```{r ranger-fit, eval=requireNamespace("ranger", quietly=TRUE)}
+rf <- ranger::ranger(x=X, y=y[tr], probability=TRUE, num.trees=500, seed=1)
+prob_rf <- predict(rf, data=Xte)$predictions[, levels(y)[2]]
+pred_rf <- factor(ifelse(prob_rf > 0.5, levels(y)[2], levels(y)[1]), levels=levels(y))
+acc_rf <- mean(pred_rf == y[te])
+auc_rf <- metabodecon:::AUC(y[te], prob_rf)
+cat(sprintf("RF test acc: %.1f%%, AUC: %.3f\n", acc_rf * 100, auc_rf))
+```
+
+The equivalent one-shot call using `fit_mdm()` with `model="ranger500"` runs
+the same OOB-evaluated random forest over any preprocessing grid:
+
+```{r ranger-fitmdm, eval=requireNamespace("ranger", quietly=TRUE)}
+gd <- data.frame(nfit=10, smit=2, smws=5, delta=10, npmax=0,
+                 maxShift=50, maxCombine=5)
+md_rf <- fit_mdm(x[tr], y[tr], mog=gd, model="ranger500",
+                 verbosity=0, nworkers=1, nfolds=5)
+preds_rf <- predict(md_rf, x[te], type="all", verbosity=0)
+acc_rf2 <- mean(preds_rf$class == y[te])
+auc_rf2 <- metabodecon:::AUC(y[te], preds_rf$prob)
+cat(sprintf("RF (fit_mdm) test acc: %.1f%%, AUC: %.3f\n", acc_rf2*100, auc_rf2))
 ```
 
 # Tune preprocessing via grid search
@@ -104,52 +260,32 @@ with a fixed fold assignment, and records the held-out accuracy and AUC at
 time short:
 
 ```{r tune-mdm}
-mog <- expand.grid(
-    smit = 2, smws = c(3, 5), delta = c(4, 6), nfit = 5, npmax = 0,
-    maxShift = 100, maxCombine = 30,
-    stringsAsFactors = FALSE
-)
-mdm_tuned <- fit_mdm(
-    spectra_tr, y_tr, mog = mog, nfolds = 5, verbosity = 0
-)
+gs <- expand.grid(smit=1:2, smws=c(3,5), delta=c(3.2,6.4), nfit=5, npmax=0, maxShift=50, maxCombine=5)
+mt <- fit_mdm(x=x[tr], y=y[tr], mog=gs, nfolds=5, verbosity=1, nworkers=5)
 ```
 
 The performance grid shows how each parameter combination scored:
 
 ```{r mog-results}
-pg <- mdm_tuned$mog
-pg <- pg[order(-pg$auc), ]
-knitr::kable(
-    head(pg, 10),
-    digits = c(0, 0, 0, 0, 0, 0, 0, 3, 4),
-    row.names = FALSE,
-    caption = "Top 10 parameter combinations by AUC."
-)
+G <- mt$mog
+G <- G[order(-G$auc),]
+cap <- "AUC per Parameter Combination. Higher is better."
+knitr::kable(x=head(G,10), row.names=FALSE, caption=cap)
 ```
 
 # Compare deconvolution results
 
-Let us compare the deconvolution of the first training spectrum using the default
-parameters and the best parameters found by the grid search:
+Let us compare the deconvolution of the first training spectrum using the worst
+and the best parameters found by the grid search:
 
-```{r compare-decon, fig.dim = c(6, 4), out.width = "100%"}
+```{r compare-decon}
 # Deconvolute first two training spectra with default and tuned parameters
-pair <- spectra_tr[1:2]
-class(pair) <- "spectra"
-
-d_default <- deconvolute(
-    pair, nfit = 3, smit = 2, smws = 5, delta = 4, npmax = 0, verbose = FALSE
-)
-
-m <- mdm_tuned$params
-d_tuned <- deconvolute(
-    pair, nfit = m$nfit, smit = m$smit, smws = m$smws,
-    delta = m$delta, npmax = m$npmax, verbose = FALSE
-)
-
-par(mfrow = c(1, 2), mar = c(4, 4, 2, 1))
-plot_spectrum(d_default[[1]], main = "Default params")
-plot_spectrum(d_tuned[[1]], main = "Tuned params")
+w <- G[nrow(G),]
+b <- G[1, ]
+dw <- deconvolute(x[tr[1:2]], nfit=w$nfit, smit=w$smit, smws=w$smws, delta=w$delta, npmax=w$npmax, verbose=FALSE)
+db <- deconvolute(x[tr[1:2]], nfit=b$nfit, smit=b$smit, smws=b$smws, delta=b$delta, npmax=b$npmax, verbose=FALSE)
+plot_spectrum(db[[1]], main="Best params", foc_frac=0:1, lgd=FALSE)
+plot_spectrum(dw[[1]], main="Worst params", foc_frac=0:1)
 ```
 
 # Inspect lasso features
@@ -158,15 +294,12 @@ The non-zero coefficients of the lasso model reveal which chemical shift
 positions are most important for distinguishing the two groups:
 
 ```{r coefs}
-cf <- coef(mdm_tuned)
-cf_nz <- cf[cf[, 1] != 0, , drop = FALSE]
+cf <- coef(mt)
+nz <- cf[cf[, 1] != 0, , drop=FALSE]
 knitr::kable(
-    data.frame(
-        feature = rownames(cf_nz),
-        coefficient = round(cf_nz[, 1], 4)
-    ),
-    row.names = FALSE,
-    caption = "Non-zero lasso coefficients at lambda.min."
+    data.frame(feature=rownames(nz), coefficient=round(nz[, 1], 4)),
+    row.names=FALSE,
+    caption="Non-zero lasso coefficients at lambda.min."
 )
 ```
 
@@ -176,47 +309,39 @@ We use `predict.mdm()` to classify the held-out test spectra. This internally
 deconvolutes and aligns them against the reference spectrum stored in the model:
 
 ```{r predict-test}
-preds <- predict(mdm_tuned, spectra_te, type = "all", verbosity = 0)
+preds <- predict(mt, x[te], type="all", verbosity=0)
 results <- data.frame(
-    sample = get_names(spectra_te),
-    true = y_te,
-    predicted = preds$class,
-    prob_B = round(preds$prob, 3)
+    sample=get_names(x[te]),
+    true=y[te],
+    predicted=preds$class,
+    prob_B=round(preds$prob, 3)
 )
 ```
 
 ```{r confusion-matrix}
-acc <- mean(preds$class == y_te)
-auc <- metabodecon:::AUC(y_te, preds$prob)
-cat(sprintf("Test accuracy: %.1f%%\n", acc * 100))
-cat(sprintf("Test AUC:      %.4f\n", auc))
-knitr::kable(
-    table(True = y_te, Predicted = preds$class),
-    caption = "Confusion matrix on test set."
-)
+cap <- "Confusion matrix on test set."
+acc <- mean(preds$class == y[te])
+auc <- metabodecon:::AUC(y[te], preds$prob)
+knitr::kable(table(True=y[te], Pred=preds$class), caption=cap)
+cat(sprintf("\nTest Acc: %.1f%%\n", acc * 100))
+cat(sprintf("Test AUC: %.1f%%\n", auc * 100))
+cat(sprintf("nA/nA+nB: %.1f%%\n", sum(y[te] == "A") / length(te) * 100))
 ```
 
 # Benchmark with nested cross-validation
 
-To obtain an unbiased estimate of end-to-end predictive performance,
-`benchmark()` wraps `fit_mdm()` in an outer cross-validation loop. The outer
+If you do not have enough samples for a train/test split, you can use
+`benchmark()` instead. It wraps `fit_mdm()` in an outer cross-validation loop
+so that every sample is used for both training and evaluation. The outer
 held-out fold is never seen during preprocessing or model fitting, so the
 resulting accuracy and AUC are honest estimates.
 
 A typical call looks like this:
 
-```{r benchmark-code, eval = FALSE}
-bm <- benchmark(
-    spectra_tr, y_tr,
-    fun = "fit_mdm", k = 3, nworkers = 4,
-    mog = mog, nfolds = 5
-)
-# bm$predictions contains per-sample held-out predictions
-# bm$models contains the fit_mdm model for each outer fold
-cat(sprintf(
-    "Nested CV accuracy: %.1f%%\n",
-    mean(bm$predictions$true == bm$predictions$pred) * 100
-))
+```{r benchmark-code, eval=FALSE}
+bm <- benchmark(x, y, fun="fit_mdm", mog=mog)
+acc <- mean(bm$predictions$true == bm$predictions$pred) * 100
+cat(sprintf("Nested CV accuracy: %.1f%%\n", acc))
 ```
 
 Note that `benchmark()` is computationally expensive because it runs the full

@@ -5,24 +5,21 @@
 \title{Plot Spectra}
 \usage{
 plot_spectra(
-  obj,
-  ...,
+  x,
   foc_rgn = NULL,
-  what = c("si", "sup", "supal"),
+  what = NULL,
   sfy = 1e+06,
   cols = NULL,
   names = NULL,
   xlab = "Chemical Shift [ppm]",
   ylab = paste("Signal Intensity [au] /", sfy),
   mar = c(4.1, 4.1, 1.1, 0.1),
-  lgd = list()
+  lgd = TRUE
 )
 }
 \arguments{
-\item{obj}{An object of type \code{decons0}, \code{decons1} or \code{decons2}. For details see
+\item{x}{An object of type \code{decons0}, \code{decons1} or \code{decons2}. For details see
 \link{metabodecon-classes}.}
-
-\item{...}{Additional arguments passed to the conversion function.}
 
 \item{foc_rgn}{Numeric vector of length 2 specifying the focus region in ppm
 (e.g. \code{c(3.55, 3.35)}). If NULL (default), the full spectrum is shown.}
@@ -44,8 +41,7 @@ fallback to \code{"sup"} then \code{"si"}), \code{"sup"} (superposition) or \cod
 
 \item{lgd}{Logical or list. If TRUE, a legend is drawn at "topright" with
 \code{cex = 0.8}. If a list, its elements are passed to \code{\link[=legend]{legend()}} to
-override position, size, etc. Set \code{show = FALSE} inside the list
-(or pass \code{lgd = FALSE}) to hide.}
+override position, size, etc. Pass \code{lgd = FALSE} to hide.}
 }
 \value{
 A plot of the deconvoluted spectra.
@@ -54,8 +50,8 @@ A plot of the deconvoluted spectra.
 Plot a set of deconvoluted spectra.
 }
 \examples{
-obj <- deconvolute(sim[1:4], sfr = c(3.55, 3.35))
-plot_spectra(obj)
+x <- deconvolute(sim[1:4], sfr = c(3.55, 3.35))
+plot_spectra(x)
 }
 \seealso{
 \code{\link[=plot_spectrum]{plot_spectrum()}} for a much more sophisticated plotting routine

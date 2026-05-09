@@ -101,6 +101,27 @@ deconvolute <- function(
     if (length(decons2) == 1) decons2[[1]] else decons2
 }
 
+#' @export
+#' @rdname deconvolute
+#'
+#' @title Default deconvolution-parameter grid
+#'
+#' @description
+#' Returns the default grid of `(nfit, smit, smws, delta)` combinations used
+#' by [metabodecon::deconvolute()] when `npmax >= 1`. Useful as the `deg`
+#' argument to [metabodecon::fit_mdm()].
+#'
+#' @param conf Character string selecting a configuration. Currently only
+#'   `"default"` is supported.
+#'
+#' @return A data frame with columns `nfit`, `smit`, `smws`, `delta`.
+#'
+#' @examples
+#' get_deg()
+get_deg <- function(conf="default") {
+    expand.grid2(nfit=5, smit=2, smws=c(3,5,7,9), delta=2:8)
+}
+
 # Internal #####
 
 #' @noRd

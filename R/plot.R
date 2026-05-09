@@ -7,12 +7,9 @@
 #' @description
 #' Plot a set of deconvoluted spectra.
 #'
-#' @param obj
+#' @param x
 #' An object of type `decons0`, `decons1` or `decons2`. For details see
 #' [metabodecon::metabodecon-classes].
-#'
-#' @param ...
-#' Additional arguments passed to the conversion function.
 #'
 #' @param foc_rgn
 #' Numeric vector of length 2 specifying the focus region in ppm
@@ -43,8 +40,7 @@
 #' @param lgd
 #' Logical or list. If TRUE, a legend is drawn at "topright" with
 #' `cex = 0.8`. If a list, its elements are passed to [legend()] to
-#' override position, size, etc. Set `show = FALSE` inside the list
-#' (or pass `lgd = FALSE`) to hide.
+#' override position, size, etc. Pass `lgd = FALSE` to hide.
 #'
 #' @return
 #' A plot of the deconvoluted spectra.
@@ -56,33 +52,29 @@
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
 #' @examples
-#' obj <- deconvolute(sim[1:4], sfr = c(3.55, 3.35))
-#' plot_spectra(obj)
-plot_spectra <- function(obj,
-                         ...,
-                         foc_rgn = NULL,
-                         what = c("si", "sup", "supal"),
-                         sfy = 1e6,
-                         cols = NULL,
-                         names = NULL,
-                         xlab = "Chemical Shift [ppm]",
-                         ylab = paste("Signal Intensity [au] /", sfy),
-                         mar = c(4.1, 4.1, 1.1, 0.1),
-                         lgd = list()) {
-    what <- match.arg(what)
-    objs <- as_spectra(obj)
-    n <- length(objs)
-    css <- lapply(objs, function(x) x$cs)
-    sis <- lapply(objs, function(x) {
-        y <- switch(what,
-            supal = x$sit$supal %||% x$sit$sup %||% x$si,
-            sup   = x$sit$sup %||% x$si,
-            si    = x$si
-        )
-        y / sfy
-    })
-
-    # Subset to focus region
+#' x <- deconvolute(sim[1:4], sfr = c(3.55, 3.35))
+#' plot_spectra(x)
+plot_spectra <- function(
+    x,
+    foc_rgn=NULL,
+    what=NULL, # "si", "sup", "supal",
+    sfy=1e6,
+    cols=NULL,
+    names=NULL,
+    xlab="Chemical Shift [ppm]",
+    ylab=paste("Signal Intensity [au] /", sfy),
+    mar=c(4.1, 4.1, 1.1, 0.1),
+    lgd=TRUE
+) {
+    n <- length(x)
+    css <- lapply(x, function(s) s$cs)
+    what <- what %||% {
+        if (inherits(x, "aligns")) "supal" else
+        if (inherits(x, "decons")) "sup" else
+        if (inherits(x, "spectra"))"si" else
+        stop("Unsupported object class: ", class(x))
+    }
+    sis <- lapply(x, function(s) switch(what, supal=s$sit$supal, sup=s$sit$sup, si=s$si))
     if (!is.null(foc_rgn)) {
         lo <- min(foc_rgn); hi <- max(foc_rgn)
         for (i in seq_len(n)) {
@@ -91,25 +83,14 @@ plot_spectra <- function(obj,
             sis[[i]] <- sis[[i]][keep]
         }
     }
-
-    cs_min <- min(vapply(css, min, 0))
-    cs_max <- max(vapply(css, max, 0))
-    si_min <- 0
-    si_max <- max(vapply(sis, max, 0))
+    cs_min <- min(vapply(css, min, 0)); cs_max <- max(vapply(css, max, 0))
+    si_min <- 0; si_max <- max(vapply(sis, max, 0))
     cols <- cols %||% rainbow(n)
-    names <- names %||% get_names(objs)
-
-    local_par(mar = mar)
-    plot(NA, type = "n", xlab = xlab, ylab = ylab,
-        xlim = c(cs_max, cs_min), ylim = c(si_min, si_max))
-    for (i in seq_len(n)) {
-        lines(x = css[[i]], y = sis[[i]], col = cols[i])
-    }
-    lgd <- combine(list(show = TRUE, x = "topright", cex = 0.8), lgd)
-    if (isTRUE(lgd$show)) {
-        lgd$show <- NULL
-        do.call(legend, c(list(legend = names, col = cols, lty = 1), lgd))
-    }
+    names <- names %||% get_names(x)
+    local_par(mar=mar)
+    plot(NA, type="n", xlab=xlab, ylab=ylab, xlim=c(cs_max, cs_min), ylim=c(si_min, si_max))
+    for (i in seq_len(n)) lines(x=css[[i]], y=sis[[i]], col=cols[i])
+    if (lgd) legend(x="topright", legend=names, col=cols, lty=1)
     invisible(NULL)
 }
 
@@ -129,45 +110,77 @@ plot_spectra <- function(obj,
 #' identified (green), missed (yellow) or wrongly identified (red, drawn at
 #' the position of the deconvoluted peak).
 #'
-#' @param obj
+#' @param objs
 #' An object of type `spectrum`, `spectra`, `decon2`, `decons2`, `align` or
-#' `aligns`. For details see [metabodecon::metabodecon-classes].
-#'
-#' @param ...
-#' Additional arguments passed to [as_spectra()].
+#' `aligns`, OR a numeric matrix with chemical-shift values as `colnames`
+#' (rows are spectra). To plot a feature matrix derived from peak areas, use
+#' [metabodecon::si_mat()] and pass the result.
 #'
 #' @param foc_rgn
 #' Numeric vector of length 2 specifying the focus region in ppm
 #' (e.g. `c(3.55, 3.35)`). If NULL (default), the full spectrum is shown.
 #'
 #' @param what
-#' Which signal to plot: `"si"` (raw, default), `"sup"` (superposition of
-#' Lorentz curves) or `"supal"` (aligned superposition).
+#' Which signal to plot: `"si"` (raw), `"sup"` (superposition of Lorentz
+#' curves) or `"supal"` (aligned superposition). Defaults to a sensible
+#' choice based on the input class. Ignored when `objs` is a matrix.
 #'
 #' @param cols
 #' Character vector of colors used as intensity color palette. Defaults to
 #' `hcl.colors(64, "YlOrRd", rev = TRUE)`.
-#'
-#' @param tol
-#' Numeric tolerance in ppm used to match deconvoluted peaks to true peaks.
-#'
-#' @param tp_col,corr_col,wrong_col,miss_col
-#' Border colors for true (un-deconvoluted), correctly identified, wrongly
-#' identified and missed peaks.
-#'
-#' @param border_lwd
-#' Line width used for the peak border rectangles.
 #'
 #' @param xlab,ylab
 #' Axis labels.
 #'
 #' @param mar
 #' Numeric vector of length 4 specifying the plot margins. Passed to [par()].
+#' The right margin is overridden at runtime to fit the spectra names.
 #'
-#' @param lgd
-#' Logical or list. If TRUE, a legend is drawn at "topright" with `cex = 0.8`.
-#' If a list, its elements are passed to [legend()] to override position, size,
-#' etc. Set `show = FALSE` (or pass `lgd = FALSE`) to hide.
+#' @param y
+#' Optional vector of class labels (one per spectrum). If provided, the
+#' spectra names are colored according to the class.
+#'
+#' @param y_cols
+#' Character vector of colors used to color the spectra names by class.
+#' Defaults to `rainbow(nlevels(as.factor(y)))`. Ignored if `y` is `NULL`.
+#'
+#' @param true_x0
+#' Optional numeric vector of true peak positions (in ppm). If supplied, the
+#' x-axis tick labels of columns within `true_tol` ppm of any `true_x0` are
+#' drawn in `true_col`. Useful to highlight known discriminating features in
+#' a sparse feature matrix from [metabodecon::si_mat()].
+#'
+#' @param true_col
+#' Color used for x-axis labels of columns close to a `true_x0` value.
+#'
+#' @param true_tol
+#' Numeric tolerance in ppm for matching columns to `true_x0`. Defaults to
+#' half the median column spacing.
+#'
+#' @param cex_names
+#' Character expansion factor for the spectrum name labels drawn on the
+#' right side of the heatmap. Defaults to `0.8`.
+#'
+#' @param xaxis_side
+#' On which side to draw the x-axis: `1` (bottom, default) or `3` (top).
+#'
+#' @param col_scores
+#' Optional numeric vector of length `ncol(Z)` (after `foc_rgn` filtering)
+#' giving a per-column score (e.g. lasso coefficients or feature
+#' importances). When supplied, columns are sorted by `col_scores` (ascending)
+#' and the score is appended in brackets to each x-axis label.
+#'
+#' @param col_sep
+#' Vertical column separators. `NULL` (default) draws a separator at the
+#' sign change of `col_scores` if given, otherwise none. `FALSE` disables
+#' separators entirely. An integer vector draws separators *after* the given
+#' (post-sort) column indices.
+#'
+#' @param row_sep
+#' Horizontal row separators. `NULL` (default) draws separators at class
+#' changes when `y` is given, otherwise none. `FALSE` disables separators
+#' entirely. An integer vector draws separators *after* the given row
+#' indices.
 #'
 #' @return
 #' NULL. Called for side effect of plotting.
@@ -176,106 +189,197 @@ plot_spectra <- function(obj,
 #'
 #' @examples
 #' obj <- deconvolute(sim[1:4], sfr = c(3.55, 3.35))
-#' spectra_heatmap(obj)
-#' spectra_heatmap(obj, foc_rgn = c(3.55, 3.35))
-spectra_heatmap <- function(obj,
-                            ...,
-                            foc_rgn = NULL,
-                            what = c("si", "sup", "supal"),
-                            cols = NULL,
-                            tol = 0.001,
-                            tp_col = "black",
-                            corr_col = "green",
-                            wrong_col = "red",
-                            miss_col = "yellow",
-                            border_lwd = 2,
-                            xlab = "Chemical Shift [ppm]",
-                            ylab = "Spectrum",
-                            mar = c(4.1, 4.1, 1.1, 0.1),
-                            lgd = list()) {
-    what <- match.arg(what)
-    objs <- as_spectra(obj, ...)
-    n <- length(objs)
-    cs <- objs[[1]]$cs
-    cols <- cols %||% hcl.colors(64, "YlOrRd", rev=TRUE)
-    sis <- lapply(objs, function(x) {
-        switch(what,
-            supal = x$sit$supal %||% x$sit$sup %||% x$si,
-            sup   = x$sit$sup %||% x$si,
-            si    = x$si
-        )
-    })
-    Z <- do.call(rbind, sis)
+#' heat_spectra(obj)
+#' heat_spectra(obj, foc_rgn = c(3.55, 3.35))
+heat_spectra <- function(
+    objs,
+    foc_rgn = NULL,
+    what = NULL,
+    cols = NULL,
+    xlab = "Chemical Shift [ppm]",
+    ylab = "Spectrum",
+    mar = c(4.1, 2.1, 1.1, 0.5),
+    y = NULL,
+    y_cols = NULL,
+    true_x0 = NULL,
+    true_col = "darkgreen",
+    true_tol = NULL,
+    scale_cols = FALSE,
+    cex_names = 0.8,
+    xaxis_side = 1,
+    col_scores = NULL,
+    col_sep = NULL,
+    row_sep = NULL
+) {
+    stopifnot(xaxis_side %in% c(1, 3))
+    Z <- as_heatmap_matrix(objs, what)
+    cs <- as.numeric(colnames(Z))
+    nms <- rownames(Z) %||% paste0("row", seq_len(nrow(Z)))
+    n <- nrow(Z)
+    if (scale_cols) {
+        # Standardize each column to mean 0, sd 1. Constant columns (sd=0)
+        # are set to 0 to avoid NaNs.
+        Z <- scale(Z)
+        Z[is.nan(Z)] <- 0
+        attr(Z, "scaled:center") <- NULL
+        attr(Z, "scaled:scale") <- NULL
+        # Diverging palette centered at 0 with symmetric limits.
+        cols <- cols %||% hcl.colors(64, "Blue-Red 3")
+    } else {
+        # First color is white so 0 entries appear as background.
+        cols <- cols %||% c("white", hcl.colors(63, "YlOrRd", rev=TRUE))
+    }
+
+    name_cols <- rep("black", n)
+    if (!is.null(y)) {
+        yf <- as.factor(y)
+        y_cols <- y_cols %||% rainbow(nlevels(yf))
+        name_cols <- y_cols[as.integer(yf)]
+    }
 
     if (!is.null(foc_rgn)) {
         keep <- cs >= min(foc_rgn) & cs <= max(foc_rgn)
         cs <- cs[keep]
         Z <- Z[, keep, drop=FALSE]
+        if (!is.null(col_scores)) col_scores <- col_scores[keep]
     }
 
-    # image() requires increasing x; reverse if needed and use xlim to keep
-    # NMR convention of decreasing chemical shift along the x-axis.
-    if (length(cs) > 1 && cs[1] > cs[length(cs)]) {
+    # Reorder columns by col_scores. Skip the NMR-axis reversal in this
+    # case so that the score-based ordering is preserved on the x-axis.
+    sorted <- !is.null(col_scores)
+    if (sorted) {
+        stopifnot(length(col_scores) == ncol(Z))
+        ord <- order(col_scores)
+        Z <- Z[, ord, drop=FALSE]
+        cs <- cs[ord]
+        col_scores <- col_scores[ord]
+    } else if (length(cs) > 1 && cs[1] > cs[length(cs)]) {
+        # image() requires increasing x; reverse if needed and use xlim to
+        # keep NMR convention of decreasing chemical shift along the x-axis.
         cs <- rev(cs)
         Z <- Z[, ncol(Z):1, drop=FALSE]
     }
 
-    local_par(mar=mar)
-    image(x=cs, y=seq_len(n), z=t(Z), col=cols,
-          xlim=c(max(cs), min(cs)),
-          xlab=xlab, ylab=ylab, axes=FALSE)
-    axis(1)
-    axis(2, at=seq_len(n), labels=get_names(objs), las=1)
+    # Resolve auto defaults for separators. NULL = auto, FALSE = off,
+    # integer vector = manual positions (drawn AFTER those indices).
+    if (is.null(col_sep) && sorted) {
+        col_sep <- which(diff(sign(col_scores)) != 0)
+    }
+    if (isFALSE(col_sep)) col_sep <- integer(0)
+    if (is.null(row_sep) && !is.null(y)) {
+        row_sep <- which(as.integer(as.factor(y))[-length(y)] !=
+                         as.integer(as.factor(y))[-1])
+    }
+    if (isFALSE(row_sep)) row_sep <- integer(0)
+
+    # Auto-size right margin to fit longest spectrum name (in inches).
+    cw <- par("cin")[1]                    # char width in inches at cex=1
+    right_in <- cw * max(nchar(nms)) * 0.8 + 0.15
+    mai <- mar * par("csi")                # convert lines -> inches
+    mai[4] <- right_in
+    local_par(mai=mai)
+    # When cs is unevenly spaced (e.g. peak-area feature matrix or sorted
+    # by col_scores), draw equal-width columns by indexing on column
+    # position; otherwise use ppm coords for a true spectrum-like x-axis.
+    dx <- if (length(cs) > 1) diff(cs) else 0
+    uniform <- !sorted && length(cs) > 1 &&
+        (max(dx) - min(dx)) < 1e-6 * max(abs(dx))
+    # For diverging palette, center the color scale at 0 with symmetric zlim.
+    zlim <- if (scale_cols) c(-1, 1) * max(abs(Z), na.rm=TRUE) else range(Z, na.rm=TRUE)
+    # Suppress image()'s default xlab so we can place it on top when
+    # xaxis_side = 3.
+    if (uniform) {
+        image(x=cs, y=seq_len(n), z=t(Z), col=cols, zlim=zlim,
+              xlim=c(max(cs), min(cs)), xlab="", ylab="", axes=FALSE)
+        # Map column index k to its ppm coordinate for separator lines.
+        col_sep_x <- if (length(col_sep)) {
+            (cs[col_sep] + cs[col_sep + 1]) / 2
+        } else numeric(0)
+    } else {
+        xs <- seq_along(cs)
+        image(x=xs, y=seq_len(n), z=t(Z), col=cols, zlim=zlim,
+              xlim=c(max(xs) + 0.5, min(xs) - 0.5),
+              xlab="", ylab="", axes=FALSE)
+        col_sep_x <- col_sep + 0.5
+    }
+    mtext(ylab, side=2, line=0.5)
+    mtext(xlab, side=xaxis_side, line=mar[xaxis_side] - 1.1)
     box()
-
-    cs_lim <- range(cs)
-    has_any_sim <- FALSE
-    has_any_dec <- FALSE
+    # Separators use the box's color and line width by default.
+    if (length(col_sep_x)) {
+        abline(v=col_sep_x, col=par("fg"), lwd=par("lwd"), xpd=FALSE)
+    }
+    if (length(row_sep)) {
+        abline(h=row_sep + 0.5, col=par("fg"), lwd=par("lwd"), xpd=FALSE)
+    }
     for (i in seq_len(n)) {
-        simpar <- objs[[i]]$meta$simpar
-        lcpar <- objs[[i]]$lcpar
-        has_sim <- !is.null(simpar) && length(simpar$x0) > 0
-        has_dec <- !is.null(lcpar) && nrow(lcpar) > 0
-        if (has_sim) has_any_sim <- TRUE
-        if (has_dec) has_any_dec <- TRUE
-        if (has_sim) {
-            for (j in seq_along(simpar$x0)) {
-                draw_peak_box(simpar$x0[j], simpar$lambda[j], i,
-                              border=tp_col, lwd=border_lwd, cs_lim=cs_lim)
-            }
-        }
-        if (has_sim && has_dec) {
-            cls <- classify_peaks(simpar$x0, lcpar$x0, tol)
-            for (j in cls$tp) draw_peak_box(
-                lcpar$x0[j], lcpar$lambda[j], i,
-                border=corr_col, lwd=border_lwd, cs_lim=cs_lim, inset=0.12
-            )
-            for (j in cls$miss) draw_peak_box(
-                simpar$x0[j], simpar$lambda[j], i,
-                border=miss_col, lwd=border_lwd, cs_lim=cs_lim, inset=0.12
-            )
-            for (j in cls$fp) draw_peak_box(
-                lcpar$x0[j], lcpar$lambda[j], i,
-                border=wrong_col, lwd=border_lwd, cs_lim=cs_lim
-            )
-        }
+        mtext(nms[i], side=4, at=i, las=1, line=0.2, cex=cex_names,
+              col=name_cols[i], adj=0)
     }
-
-    lgd <- combine(list(show=TRUE, x="topright", cex=0.8, bg="white"), lgd)
-    if (isTRUE(lgd$show) && (has_any_sim || has_any_dec)) {
-        lgd$show <- NULL
-        labs <- character(0); col_lgd <- character(0)
-        if (has_any_sim && !has_any_dec) {
-            labs <- c(labs, "True Peak"); col_lgd <- c(col_lgd, tp_col)
-        }
-        if (has_any_sim && has_any_dec) {
-            labs <- c(labs, "True Peak", "Correct", "Missed", "Wrong")
-            col_lgd <- c(col_lgd, tp_col, corr_col, miss_col, wrong_col)
-        }
-        do.call(legend,
-            c(list(legend=labs, col=col_lgd, lty=1, lwd=border_lwd), lgd))
-    }
+    draw_heatmap_xaxis(cs, true_x0, true_col, true_tol, uniform,
+                       side=xaxis_side, col_scores=col_scores)
     invisible(NULL)
+}
+
+# Draw the x-axis. For uniformly spaced cs, use the default axis. For
+# unevenly spaced cs (e.g. dropped-zero peak-area matrix), label every
+# column vertically with the full ppm value at smaller cex. If `true_x0`
+# is given, color tick labels of the single nearest column per true_x0.
+# If `col_scores` is given, append the score in brackets to each label.
+draw_heatmap_xaxis <- function(cs, true_x0=NULL, true_col="red", tol=NULL,
+                               uniform=TRUE, side=1, col_scores=NULL) {
+    if (length(cs) < 2) { axis(side); return(invisible()) }
+    if (uniform && is.null(true_x0) && is.null(col_scores)) {
+        axis(side); return(invisible())
+    }
+    # One column per true_x0: the closest one (optionally within `tol`).
+    is_true <- rep(FALSE, length(cs))
+    if (!is.null(true_x0)) {
+        nearest <- vapply(true_x0, function(p) which.min(abs(cs - p)), integer(1))
+        if (!is.null(tol)) {
+            ok <- abs(cs[nearest] - true_x0) <= tol
+            nearest <- nearest[ok]
+        }
+        is_true[nearest] <- TRUE
+    }
+    labs <- sprintf("%.4f", cs)
+    if (!is.null(col_scores)) {
+        labs <- sprintf("%s (%+.3g)", labs, col_scores)
+    }
+    at <- if (uniform) cs else seq_along(cs)
+    cex <- if (uniform) 1 else 0.6
+    las <- if (uniform) 0 else 2
+    axis(side, at=at, labels=FALSE)
+    label_cols <- ifelse(is_true, true_col, par("col.axis"))
+    line <- if (side == 3) -0.3 else -0.3
+    for (k in seq_along(at)) {
+        axis(side, at=at[k], labels=labs[k], las=las, cex.axis=cex,
+             col.axis=label_cols[k], tick=FALSE, line=line)
+    }
+}
+
+# Convert a heatmap input to a numeric matrix with ppm `colnames` and
+# spectrum names as `rownames`.
+as_heatmap_matrix <- function(objs, what=NULL) {
+    if (is.matrix(objs)) {
+        if (anyNA(suppressWarnings(as.numeric(colnames(objs))))) {
+            stop("Matrix colnames must be numeric ppm values.")
+        }
+        return(objs)
+    }
+    what <- what %||% {
+        if (inherits(objs, "aligns")) "supal" else
+        if (inherits(objs, "decons")) "sup" else
+        if (inherits(objs, "spectra")) "si" else
+        stop("Unsupported object class: ", paste(class(objs), collapse="/"))
+    }
+    sis <- lapply(objs, function(s) {
+        switch(what, supal=s$sit$supal, sup=s$sit$sup, si=s$si)
+    })
+    Z <- do.call(rbind, sis)
+    colnames(Z) <- objs[[1]]$cs
+    rownames(Z) <- get_names(objs)
+    Z
 }
 
 #' @export

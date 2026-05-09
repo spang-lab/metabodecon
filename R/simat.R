@@ -46,11 +46,16 @@
 #' si4 = c(0, 0, 0, 3, 0, 0, 0, 0, 3)
 #' si5 = c(0, 0, 0, 2, 0, 0, 0, 0, 3)
 #'
-#' @param x An object of type `aligns`.
+#' @param x An object of type `decons2` or `aligns`. For `aligns`, the aligned
+#'   peak positions are used; for `decons2`, the deconvoluted peak positions
+#'   are used.
 #' @param maxCombine How many adjacent columns to consider for merging.
 #' @param peakPos Integer vector of column indices in the `cs` grid to snap
 #'   peaks to. Used to align new spectra to the same features as a reference
 #'   matrix (see 'Details').
+#' @param igrs List of length-2 numeric vectors `c(left, right)` (in ppm) of
+#'   ignore-regions. Columns whose chemical shift falls inside any region are
+#'   zeroed out. Use `list()` to disable.
 #' @param drop_zero Drop columns where all values are zero?
 #'
 #' @return A matrix with spectra in rows and chemical shifts as colnames.
@@ -68,26 +73,30 @@
 #'     pp <- which(colSums(Xc != 0) > 0)
 #'     Xn <- si_mat(aligns, maxCombine = 20, peakPos = pp)
 #' }
-si_mat <- function(x, drop_zero=FALSE, maxCombine=0, peakPos=NULL) {
-    stopifnot(inherits(x, "aligns"))
+si_mat <- function(x, drop_zero=FALSE, maxCombine=0, peakPos=NULL,
+                   igrs=list()) {
+    stopifnot(inherits(x, "decons2"))
     cs <- x[[1]]$cs
     ns <- length(x)
     nc <- length(cs)
+    get_idx <- function(vals) {
+        idx <- match(vals, cs)
+        if (anyNA(idx)) idx <- round(convert_pos(vals, cs, seq_along(cs)))
+        pmin(nc, pmax(1L, as.integer(idx)))
+    }
+    # Use aligned peak centers when available, else raw deconvolution centers.
+    pos <- lapply(x, function(xi) xi$lcpar$x0al %||% xi$lcpar$x0)
     if (maxCombine == 0) {
-        mat <- t(sapply(x, function(xi) {
+        mat <- t(sapply(seq_len(ns), function(s) {
             al <- numeric(nc)
-            al[xi$lcpar$pcial] <- xi$lcpar$A * base::pi
+            idx <- x[[s]]$lcpar$pcial %||% get_idx(pos[[s]])
+            al[idx] <- x[[s]]$lcpar$A * base::pi
             al
         }))
     } else {
-        get_idx <- function(vals) {
-            idx <- match(vals, cs)
-            if (anyNA(idx)) idx <- round(convert_pos(vals, cs, seq_along(cs)))
-            pmin(nc, pmax(1L, as.integer(idx)))
-        }
         mat <- matrix(0, nrow = ns, ncol = nc)
         for (s in seq_len(ns)) {
-            pidx <- get_idx(x[[s]]$lcpar$x0al)
+            pidx <- get_idx(pos[[s]])
             A <- x[[s]]$lcpar$A
             for (p in seq_along(pidx)) {
                 mat[s, pidx[p]] <- mat[s, pidx[p]] + A[p] * base::pi
@@ -98,6 +107,11 @@ si_mat <- function(x, drop_zero=FALSE, maxCombine=0, peakPos=NULL) {
         } else {
             mat <- snap_to_peakPos(mat, peakPos, maxCombine)
         }
+    }
+    if (length(igrs) > 0) {
+        ig_mask <- logical(nc)
+        for (r in igrs) ig_mask <- ig_mask | (cs >= min(r) & cs <= max(r))
+        if (any(ig_mask)) mat[, ig_mask] <- 0
     }
     colnames(mat) <- cs
     rownames(mat) <- get_names(x)

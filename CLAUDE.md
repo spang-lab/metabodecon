@@ -34,6 +34,10 @@
   `sum()`, `mean()`, etc.
 - Do NOT use spaces around `=` when passing arguments to functions.
   Good: `foo(bar=2)`. Bad: `foo(bar = 2)`.
+- Always use fully qualified function names inside roxygen2 docs,
+  even when referring to package internal functions (i.e., write
+  `[metabodecon::deconvolute()]` instead of just
+  `[deconvolute()]`)
 
 ## Pseudocode mode for vignettes
 
