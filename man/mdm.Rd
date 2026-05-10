@@ -4,13 +4,22 @@
 \alias{mdm}
 \alias{fit_mdm}
 \alias{get_mog}
-\alias{fit_bm}
 \alias{benchmark}
+\alias{identity2}
+\alias{fit_lasso}
+\alias{predict_lasso}
+\alias{fit_ranger500}
+\alias{predict_ranger500}
 \title{Metabodecon Models}
 \usage{
 fit_mdm(
   x,
   y,
+  feat_mat = peak_mat,
+  fit = fit_lasso,
+  predict = predict_lasso,
+  decon_fun = deconvolute,
+  align_fun = "clupa",
   mog = get_mog("default"),
   deg = NULL,
   sfr = NULL,
@@ -20,30 +29,67 @@ fit_mdm(
   verbosity = 1,
   seed = 1,
   nfolds = 10,
-  check = TRUE,
-  model = "lasso.min",
-  extractor = si_mat
+  check = TRUE
 )
 
 get_mog(conf = "default")
 
-fit_bm(
+benchmark(
   x,
   y,
+  feat_mat = peak_mat,
+  fit = fit_lasso,
+  predict = predict_lasso,
+  decon_fun = deconvolute,
+  align_fun = "clupa",
+  mog = get_mog("default"),
+  deg = NULL,
+  sfr = NULL,
   igrs = list(),
-  nbin = 1000,
+  use_rust = 0,
+  nworkers = 1,
+  verbosity = 2,
   seed = 1,
   nfolds = 10,
-  verbosity = 2,
-  check = TRUE
+  check = TRUE,
+  k = 3
 )
 
-benchmark(x, y, ..., fun = "fit_mdm", k = 10, seed = 1, verbosity = 2)
+identity2(x, ...)
+
+fit_lasso(X, y, foldid, lvs, seed = 1)
+
+predict_lasso(model, newx, lvs)
+
+fit_ranger500(X, y, foldid, lvs, seed = 1)
+
+predict_ranger500(model, newx, lvs)
 }
 \arguments{
-\item{x}{Spectra object. May already carry per-spectrum \verb{$deg} tables.}
+\item{x}{Spectra object.}
 
-\item{y}{Factor vector with class labels for each spectrum.}
+\item{y}{Factor with two levels.}
+
+\item{feat_mat}{Feature-matrix function. See \emph{Pluggable interfaces}.}
+
+\item{fit}{Inner-model fitter. See \emph{Pluggable interfaces}.}
+
+\item{predict}{Inner-model predictor paired with \code{fit}. See \emph{Pluggable
+interfaces}.}
+
+\item{decon_fun}{Deconvolution function. Must accept the parameter
+vocabulary used by \code{\link[=deconvolute]{deconvolute()}} (i.e. \code{x}, \code{sfr},
+\code{igrs}, \code{use_rust}, \code{nfit}, \code{smit}, \code{smws}, \code{delta}, \code{npmax},
+\code{nworkers}, \code{verbose}). Pass \code{\link[=identity2]{identity2()}} to skip
+deconvolution and feed the raw spectra into the next stage.}
+
+\item{align_fun}{Name of the alignment function to call after
+deconvolution. Must be a function in the \code{metabodecon} namespace with
+signature \code{f(x, ref, maxShift, verbose, nworkers, full, ...)}.
+Built-in choices: \code{"clupa"} (default, CluPA hierarchical-clustering
+peak alignment), \code{"vopa"} (vote-based peak alignment, faster),
+\code{"glopa"} (single global integer shift via FFT cross-correlation),
+\code{"identity_align"} (no alignment).}
 
 \item{mog}{Model-fitting grid as returned by \code{\link[=get_mog]{get_mog()}}.}
 
@@ -54,7 +100,7 @@ benchmark(x, y, ..., fun = "fit_mdm", k = 10, seed = 1, verbosity = 2)
 
 \item{sfr}{Signal-free region. See \code{\link[=deconvolute]{deconvolute()}}.}
 
-\item{igrs}{Ignore regions passed to \code{fun}.}
+\item{igrs}{Ignore regions in ppm.}
 
 \item{use_rust}{Use the Rust backend?}
 
@@ -62,42 +108,37 @@ benchmark(x, y, ..., fun = "fit_mdm", k = 10, seed = 1, verbosity = 2)
 
 \item{verbosity}{Verbosity level.}
 
-\item{seed}{Random seed for fold assignments.}
+\item{seed}{Random seed for ranger.}
 
-\item{nfolds}{Number of folds for the inner \code{\link[glmnet:cv.glmnet]{glmnet::cv.glmnet()}} call.}
+\item{nfolds}{Number of folds for the inner CV used by \code{fit}.}
 
 \item{check}{Validate inputs at function entry?}
 
-\item{model}{Inner model type. \code{"lasso.min"} fits an L1-penalised logistic
-regression via \code{\link[glmnet:cv.glmnet]{glmnet::cv.glmnet()}} and evaluates at \code{lambda.min}.
-\code{"ranger500"} fits a probability random forest with 500 trees via
-\code{\link[ranger:ranger]{ranger::ranger()}}; OOB predictions are used for grid evaluation.}
-
-\item{extractor}{Function used to build the feature matrix from aligned
-deconvolutions. Must accept \verb{(a, maxCombine, peakPos, igrs)} and return
-a numeric matrix with all \code{cs} columns. Defaults to
-\code{\link[=si_mat]{si_mat()}}.}
-
 \item{conf}{Character string selecting a predefined \code{mog} configuration.}
 
-\item{nbin}{Number of bins in the non-ignored part of the ppm range.}
-
-\item{...}{Extra arguments forwarded to \code{fun}.}
-
-\item{fun}{Name of fitter function. Either "fit_mdm" or "fit_bm"`.}
-
 \item{k}{Number of outer folds for \code{\link[=benchmark]{benchmark()}}.}
+
+\item{X}{Numeric feature matrix.}
+
+\item{foldid}{Unused; accepted for interface compatibility.}
+
+\item{lvs}{Character vector with \code{levels(y)}.}
+
+\item{model}{Object returned by \code{\link[=fit_lasso]{fit_lasso()}}.}
+
+\item{newx}{Numeric feature matrix.}
+
+\item{maxCombine}{Bin width / peak-merging tolerance for
+\code{peak_mat()} / \code{si_mat()} / \code{bin()}.}
 }
 \value{
 \code{\link[=fit_mdm]{fit_mdm()}} returns an object of class \code{mdm} with elements
-\code{model} (best fitted model: \code{\link[glmnet:cv.glmnet]{glmnet::cv.glmnet()}} or \code{\link[ranger:ranger]{ranger::ranger()}}),
-\code{ref} (reference alignment spectrum), \code{params} (all settings needed to
-reproduce predictions: chosen grid row plus non-grid arguments such as
-\code{sfr}, \code{igrs}, \code{use_rust}, \code{model}, \code{lvs} and \code{peakPos}) and \code{mog} (input
-grid augmented with \code{acc}/\code{auc} columns).
-
-\code{\link[=fit_bm]{fit_bm()}} returns an object of class \code{bm} with elements
-\code{model} and \code{params}.
+\code{model} (best fitted backend model), \code{ref} (reference alignment
+spectrum, \code{NULL} when \code{align_fun="identity_align"}), \code{params}
+(everything needed to reproduce predictions: chosen grid row,
+\code{feat_mat}, \code{predict}, \code{lvs}, \code{peakPos}, \code{sfr}, \code{igrs}, \code{use_rust},
+\code{decon_fun}, \code{align_fun}) and \code{mog} (input grid augmented with
+\code{acc}/\code{auc} columns).
 
 \code{\link[=benchmark]{benchmark()}} returns a list with elements:
 \itemize{
@@ -107,6 +148,10 @@ grid augmented with \code{acc}/\code{auc} columns).
 \item \code{performance}: data frame with per-fold \code{acc} and \code{auc}.
 \item \code{overall}: list with pooled \code{acc} and \code{auc}.
 }
+
+\code{x}, unchanged.
+
+\code{list(model, prob)} as described in \code{\link[=fit_mdm]{fit_mdm()}}.
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
@@ -115,61 +160,102 @@ grid augmented with \code{acc}/\code{auc} columns).
 production. Their API is very likely to change in non-backwards-compatible
 ways over the next few weeks.}
 
-Utilities for fitting, tuning and benchmarking 'metabodecon models' (mdm)
-and 'binning models' (bm).
+Utilities for fitting, tuning and benchmarking 'metabodecon models' (mdm).
 
-A mdm is a classification model fitted on a feature matrix obtained by
-deconvoluting and aligning spectra and snapping their peaks to a shared
-reference. The inner model is controlled by the \code{model} argument: either an
-L1-penalised logistic regression (\code{\link[glmnet:cv.glmnet]{glmnet::cv.glmnet()}}, \code{"lasso.min"}) or
-a probability random forest (\code{\link[ranger:ranger]{ranger::ranger()}}, \code{"ranger500"}).
-Deconvolution parameters (\code{npmax}/\code{nfit}/\code{smit}/\code{smws}/\code{delta}), alignment
-parameter \code{maxShift} and peak-combining parameter \code{maxCombine} are tunable
-hyperparameters.
+An \code{mdm} is a binary classification model fitted on a feature matrix
+built from NMR spectra by the following pipeline:
 
-A bm is a lasso model fitted on a binned-intensity feature matrix and
-serves as a simple baseline for comparison against \code{mdm} models.
+\preformatted{
+  x  --deconvolute-->  decons  --align-->  aligns  --feat_mat-->  X
+  X, y  --fit-->  model
+}
 
-\code{\link[=fit_mdm]{fit_mdm()}} iterates over the rows of a 'model fitting grid'
-(\code{mog}) — see \code{\link[=get_mog]{get_mog()}} — and for each row deconvolutes,
-aligns, builds the feature matrix and fits a \code{\link[glmnet:cv.glmnet]{glmnet::cv.glmnet()}} model.
-Held-out accuracy and AUC at \code{lambda.min} are recorded for each row. The
-best model and the augmented grid are returned. A single-row \code{mog}
-degenerates to fitting one model.
+The deconvolution and alignment stages are pluggable: pass
+\code{decon_fun=identity2} and/or \code{align_fun="identity_align"} to skip
+them and fit baselines that operate directly on raw spectra (e.g. a
+binning model). The \code{feat_mat}, \code{fit} and \code{predict} stages are
+pluggable functions as well.
 
-\code{\link[=fit_bm]{fit_bm()}} fits a single binning-based lasso model.
+\code{\link[=fit_mdm]{fit_mdm()}} iterates over the rows of a 'model fitting
+grid' (\code{mog}) — see \code{\link[=get_mog]{get_mog()}} — and for each row applies
+the pipeline and records held-out accuracy and AUC. The best model and
+the augmented grid are returned. A single-row \code{mog} degenerates to
+fitting one model.
 
-\code{\link[=benchmark]{benchmark()}} runs an outer k-fold cross-validation over any
-fitter function (\code{fit_mdm}, \code{fit_bm}, ...) to estimate end-to-end
-predictive performance, and returns per-fold models, predictions and
-performance metrics.
+\code{\link[=benchmark]{benchmark()}} runs an outer k-fold cross-validation over
+\code{\link[=fit_mdm]{fit_mdm()}} to estimate end-to-end predictive performance.
+
+No-op replacement for the \code{decon_fun} argument of
+\code{\link[=fit_mdm]{fit_mdm()}} / \code{\link[=benchmark]{benchmark()}}. Returns its first
+argument unchanged and ignores all other arguments. Use this to skip
+the deconvolution stage of the pipeline (e.g. for binning baselines).
+
+Fits an L1-penalised binomial logistic regression via
+\code{\link[glmnet:cv.glmnet]{glmnet::cv.glmnet()}} and returns held-out probabilities at
+\code{lambda.min} for use as grid scoring input.
+
+Companion of \code{\link[=fit_lasso]{fit_lasso()}}. Returns a \code{data.frame} with
+\code{link}, \code{prob} and \code{class} columns at \code{lambda.min}.
+
+Fits a probability random forest with 500 trees via
+\code{\link[ranger:ranger]{ranger::ranger()}} and returns OOB probabilities for grid scoring.
+
+Companion of \code{\link[=fit_ranger500]{fit_ranger500()}}.
 }
 \details{
+\subsection{Pluggable interfaces}{
+
+The \code{feat_mat}, \code{fit} and \code{predict} functions speak a fixed parameter
+vocabulary. Replacements must accept the listed arguments (extras via
+\code{...}).
+
+\describe{
+\item{\code{feat_mat(x, maxCombine, peakPos, igrs, ...)}}{Returns a
+numeric matrix with one row per spectrum.}
+\item{\code{fit(X, y, foldid, lvs, seed)}}{Returns
+\code{list(model, prob)} where \code{model} is any object understood by
+the paired \code{predict} function and \code{prob} is a numeric vector
+of held-out positive-class probabilities (length \code{nrow(X)})
+used for grid scoring.}
+\item{\code{predict(model, newx, lvs)}}{Returns a \code{data.frame} with three
+columns: \code{link} (numeric log-odds-like score), \code{prob} (numeric
+in \verb{[0, 1]}, P(class == \code{lvs[2]})) and \code{class} (factor with the
+given levels). Must call \code{requireNamespace("<backend>")} so it
+works after a fresh-session \code{readRDS()}.}
+}
+
+Built-in implementations: \code{\link[=peak_mat]{peak_mat()}},
+\code{\link[=si_mat]{si_mat()}}, \code{\link[=bin]{bin()}},
+\code{\link[=fit_lasso]{fit_lasso()}} / \code{\link[=predict_lasso]{predict_lasso()}} and
+\code{\link[=fit_ranger500]{fit_ranger500()}} / \code{\link[=predict_ranger500]{predict_ranger500()}}.
+}
+
 \subsection{Caching within \code{fit_mdm}}{
 
-Rows of \code{mog} are sorted by \verb{(npmax, nfit, smit, smws, delta, maxShift, maxCombine)} so identical decon-tuples and align-tuples cluster. Inside
-the loop, the most recent deconvolution and alignment are kept and reused
-whenever the relevant subset of parameters is unchanged.
+Rows of \code{mog} are sorted by \verb{(npmax, nfit, smit, smws, delta, maxShift, maxCombine)} so identical decon-tuples and align-tuples cluster.
+Inside the loop, the most recent deconvolution and alignment are kept
+and reused whenever the relevant subset of parameters is unchanged.
 }
 
 \subsection{Grid-search results carried by spectra}{
 
-When any row of \code{mog} has \code{npmax > 0}, \code{\link[=fit_mdm]{fit_mdm()}} calls
+When any row of \code{mog} has \code{npmax > 0} and \code{decon_fun} is not
+\code{\link[=identity2]{identity2()}}, \code{\link[=fit_mdm]{fit_mdm()}} calls
 \code{\link[=grid_deconvolute_spectra]{grid_deconvolute_spectra()}} once up front to attach a
-\verb{$deg} element to each spectrum. The enriched spectra are reused across
-rows and outer folds. \code{\link[=benchmark]{benchmark()}} does the same up-front
-attachment for \code{fun = "fit_mdm"}.
+\verb{$deg} element to each spectrum. The enriched spectra are reused
+across rows and outer folds. \code{\link[=benchmark]{benchmark()}} does the same
+up-front attachment.
 }
 
 \subsection{Parallelism}{
 
 \code{\link[=benchmark]{benchmark()}} runs outer folds sequentially and delegates
-all parallelism to the inner fitter via \code{nworkers} (\code{fit_mdm}).
+all parallelism to the inner fitter via \code{nworkers}.
 }
 }
 \examples{
 \dontrun{
   m <- fit_mdm(spectra, y, mog=get_mog("default"))
-  bm <- benchmark(spectra, y, fun="fit_mdm", k=5, mog=get_mog("default"))
+  bm <- benchmark(spectra, y, k=5, mog=get_mog("default"))
 }
 }

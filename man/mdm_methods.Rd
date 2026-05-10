@@ -8,14 +8,12 @@
 \alias{plot.mdm}
 \alias{summary.mdm}
 \alias{print.summary.mdm}
-\alias{predict.bm}
 \title{S3 methods for mdm objects}
 \usage{
 \method{predict}{mdm}(
   object,
   newdata,
   type = c("all", "prob", "class", "link"),
-  s = "lambda.min",
   nworkers = 1,
   verbosity = 1,
   ...
@@ -30,14 +28,6 @@
 \method{summary}{mdm}(object, ...)
 
 \method{print}{summary.mdm}(x, ...)
-
-\method{predict}{bm}(
-  object,
-  newdata,
-  type = c("all", "prob", "class", "link"),
-  s = "lambda.min",
-  ...
-)
 }
 \arguments{
 \item{object, x}{A fitted \code{mdm} object (for \code{predict}, \code{coef}, \code{summary}, \code{print} and \code{plot})
@@ -47,13 +37,13 @@ or a \code{summary.mdm} object (for \code{print.summary.mdm}).}
 
 \item{type}{Prediction type, one of \code{"all"}, \code{"prob"}, \code{"class"}, \code{"link"}.}
 
-\item{s}{Regularization value for lasso predictions.}
-
 \item{nworkers}{Number of workers to deconvolute and align \code{newdata}.}
 
 \item{verbosity}{Integer verbosity level.}
 
 \item{...}{Passed to underlying methods where applicable.}
+
+\item{s}{Regularization value for lasso predictions.}
 }
 \value{
 \itemize{

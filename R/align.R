@@ -47,67 +47,193 @@ align <- function(x, ref=NULL, maxShift=50, verbose=TRUE, nworkers=1) {
         is_int(maxShift,1), is_bool(verbose,1), is_int(nworkers,1),
         is.null(ref) || inherits(ref, "decon2")
     )
-    align_decons(x, ref, maxShift, verbose, nworkers)
+    clupa(x, ref, maxShift, verbose, nworkers)
 }
 
 # Internal #####
 
-align_decons <- function(
+# CluPA: hierarchical-clustering peak alignment (recursive FFT shifts on
+# spectrum sub-segments, see Beirnaert et al. 2018, Vu et al. 2011).
+clupa <- function(
     x, ref=NULL, maxShift=50, verbose=TRUE, nworkers=1,
     full=TRUE, use_speaq=FALSE
 ) {
-
-    # Validate consistent number of data points across spectra
     ndps <- vapply(x, function(s) length(s$cs), integer(1))
-    if (length(unique(ndps)) > 1) {
-        stop("All spectra must have the same number of data points.")
-    }
-
-    # Do alignments
+    if (length(unique(ndps)) > 1) stop("All spectra must have the same number of data points.")
     ref <- ref %||% find_ref(x)
-    aligns <- mcmapply(
-        nworkers, align_decon, x,
-        MoreArgs = list(ref, maxShift, full=full, use_speaq=use_speaq)
-    )
+    aligns <- mcmapply(nworkers, align_decon, x,
+        MoreArgs=list(ref, maxShift, full=full, use_speaq=use_speaq, method="clupa"))
     class(aligns) <- c("aligns", "decons2", "spectra")
     aligns
 }
 
-align_decon <- function(x, ref, maxShift, full=TRUE, use_speaq=FALSE) {
+# VoPA: vote-based peak alignment. Estimates one global integer DP shift
+# per spectrum from a weighted vote over pairwise peak matches, then
+# refines per-peak shifts via interpolation (see align_decon, method="shift").
+vopa <- function(
+    x, ref=NULL, maxShift=50, verbose=TRUE, nworkers=1, full=TRUE
+) {
+    ndps <- vapply(x, function(s) length(s$cs), integer(1))
+    if (length(unique(ndps)) > 1) stop("All spectra must have the same number of data points.")
+    ref <- ref %||% find_ref(x)
+    aligns <- mcmapply(nworkers, align_decon, x,
+        MoreArgs=list(ref, maxShift, full=full, use_speaq=FALSE, method="shift"))
+    class(aligns) <- c("aligns", "decons2", "spectra")
+    aligns
+}
 
-    # Init Helpers
+# GloPA: global peak alignment. Per spectrum, find the single integer DP
+# shift in [-maxShift, maxShift] that maximises FFT cross-correlation of
+# the raw signal intensities against the reference, then apply it to all
+# peak centers. No per-peak refinement.
+glopa <- function(
+    x, ref=NULL, maxShift=50, verbose=TRUE, nworkers=1, full=TRUE
+) {
+    ndps <- vapply(x, function(s) length(s$cs), integer(1))
+    if (length(unique(ndps)) > 1) stop("All spectra must have the same number of data points.")
+    ref <- ref %||% find_ref(x)
+    aligns <- mcmapply(nworkers, glopa_one, x,
+        MoreArgs=list(ref=ref, maxShift=maxShift, full=full))
+    class(aligns) <- c("aligns", "decons2", "spectra")
+    aligns
+}
+
+glopa_one <- function(x, ref, maxShift, full=TRUE) {
+    sig_ref <- ref$si %||% ref$sit$sup
+    sig_tar <- x$si %||% x$sit$sup
+    adj <- fft_shift(sig_ref, sig_tar, maxShift=maxShift)
     pci_x <- round(convert_pos(x$lcpar$x0, x$cs, seq_along(x$cs)))
-    pci_ref <- round(convert_pos(ref$lcpar$x0, ref$cs, seq_along(ref$cs)))
-    np_x <- length(pci_x)
-    np_ref <- length(pci_ref)
-    np_tot <- np_ref + np_x
-
-    # Do 'Cluster Based Peak Alignment' (CluPA)
-    obj <- hclust_align(
-        refSpec = ref$sit$sup,
-        tarSpec = x$sit$sup,
-        peakList = c(pci_ref, pci_x),
-        peakLabel = c(rep(1, np_ref), rep(0, np_x)),
-        startP = 1,
-        endP = length(x$sit$sup),
-        maxShift = maxShift,
-        use_speaq = use_speaq
-    )
-    if(length(obj$peakList) != np_tot) stop("Lost peaks during alignment")
-
-    # Prepare return object: pcial = integer index, x0al = aligned ppm
-    pcial <- obj$peakList[(np_ref+1):np_tot]
+    pcial <- pmin(length(x$cs), pmax(1L, pci_x - adj$stepAdj))
     x$lcpar$x0al <- x$cs[pcial]
     x$lcpar$pcial <- pcial
     if (full) x$sit$supal <- lorentz_sup(x$cs, x$lcpar$x0al, x$lcpar$A, x$lcpar$lambda)
     class(x) <- c("align", "decon2", "spectrum")
+    x
+}
 
+identity_align <- function(x, ...) x
+
+align_decon <- function(x, ref, maxShift, full=TRUE, use_speaq=FALSE, method="clupa") {
+
+    pci_x <- round(convert_pos(x$lcpar$x0, x$cs, seq_along(x$cs)))
+    pci_ref <- round(convert_pos(ref$lcpar$x0, ref$cs, seq_along(ref$cs)))
+
+    if (method == "clupa") {
+        np_x <- length(pci_x); np_ref <- length(pci_ref)
+        obj <- hclust_align(
+            refSpec=ref$sit$sup, tarSpec=x$sit$sup,
+            peakList=c(pci_ref, pci_x),
+            peakLabel=c(rep(1, np_ref), rep(0, np_x)),
+            startP=1, endP=length(x$sit$sup),
+            maxShift=maxShift, use_speaq=use_speaq
+        )
+        if (length(obj$peakList) != np_ref + np_x) stop("Lost peaks during alignment")
+        pcial <- obj$peakList[(np_ref + 1):(np_ref + np_x)]
+    } else {
+        lam_x <- abs(round(convert_width(x$lcpar$lambda, x$cs, seq_along(x$cs))))
+        lam_ref <- abs(round(convert_width(ref$lcpar$lambda, ref$cs, seq_along(ref$cs))))
+        ref_pd <- list(x0=pci_ref, lambda=pmax(lam_ref, 1),
+                       A=abs(ref$lcpar$A), n=length(ref$cs))
+        tar_pd <- list(x0=pci_x, lambda=pmax(lam_x, 1),
+                       A=abs(x$lcpar$A), n=length(x$cs))
+        shift0 <- estimate_peak_shift(ref_pd, tar_pd, maxShift)
+        m <- match_peak_pairs(ref_pd, tar_pd, shift=shift0)
+        if (length(m$idx_tar) < 3) {
+            pcial <- pmin(length(x$cs), pmax(1L, round(pci_x - shift0)))
+        } else {
+            shift <- interp_shift(x=pci_x[m$idx_tar], shift=m$delta,
+                weight=m$weight, xout=pci_x, maxShift=maxShift, fallback=shift0)
+            pcial <- pmin(length(x$cs), pmax(1L, round(pci_x - shift)))
+        }
+    }
+
+    x$lcpar$x0al <- x$cs[pcial]
+    x$lcpar$pcial <- pcial
+    if (full) x$sit$supal <- lorentz_sup(x$cs, x$lcpar$x0al, x$lcpar$A, x$lcpar$lambda)
+    class(x) <- c("align", "decon2", "spectrum")
     x
 }
 
 find_ref <- function(x) {
     pci <- lapply(x, function(s) round(convert_pos(s$lcpar$x0, s$cs, seq_along(s$cs))))
     x[[find_ref_ind(pci)$refInd]]
+}
+
+# Shift alignment helpers #####
+
+weighted_mean <- function(x, w) sum(x * w) / sum(w)
+
+weighted_median <- function(x, w) {
+    ord <- order(x); x <- x[ord]; w <- w[ord]
+    x[which(cumsum(w) >= sum(w) / 2)[1]]
+}
+
+# Estimates a global integer DP shift from ref to tar by a weighted vote
+# over all pairwise peak matches within maxShift.
+estimate_peak_shift <- function(ref_pd, tar_pd, maxShift=50) {
+    rx <- ref_pd$x0; tx <- tar_pd$x0
+    rA <- pmax(abs(ref_pd$A), .Machine$double.eps)
+    tA <- pmax(abs(tar_pd$A), .Machine$double.eps)
+    rl <- pmax(ref_pd$lambda, 1); tl <- pmax(tar_pd$lambda, 1)
+    scores <- numeric(2 * maxShift + 1)
+    bins <- seq.int(-maxShift, maxShift)
+    for (i in seq_along(tx)) {
+        j1 <- max(1L, findInterval(tx[i] - maxShift, rx) + 1L)
+        j2 <- min(length(rx), findInterval(tx[i] + maxShift, rx))
+        if (j1 > j2) next
+        idx <- j1:j2
+        delta <- tx[i] - rx[idx]
+        sim <- pmin(tl[i], rl[idx]) / pmax(tl[i], rl[idx])
+        w <- pmin(tA[i], rA[idx]) * sim
+        pos <- round(delta) + maxShift + 1L
+        for (k in seq_along(pos)) scores[pos[k]] <- scores[pos[k]] + w[k]
+    }
+    if (all(scores == 0)) return(0)
+    bins[which.max(scores)]
+}
+
+# Matches each tar peak to its nearest ref peak (after applying shift0).
+# Returns idx_tar, delta (tar - ref) and weight for each matched pair.
+match_peak_pairs <- function(ref_pd, tar_pd, shift=0, tol_mult=2) {
+    rx <- ref_pd$x0; tx <- tar_pd$x0; xadj <- tx - shift
+    idx <- findInterval(xadj, rx)
+    lo <- pmax(idx, 1L); hi <- pmin(idx + 1L, length(rx))
+    idx_ref <- lo; idx_ref[abs(xadj - rx[hi]) < abs(xadj - rx[lo])] <- hi[abs(xadj - rx[hi]) < abs(xadj - rx[lo])]
+    tl <- pmax(tar_pd$lambda, 1); rl <- pmax(ref_pd$lambda[idx_ref], 1)
+    keep <- abs(xadj - rx[idx_ref]) <= pmax(1, tol_mult * (tl + rl))
+    if (!any(keep)) return(list(idx_tar=integer(0), delta=numeric(0), weight=numeric(0)))
+    idx_tar <- which(keep); idx_ref <- idx_ref[keep]; rl <- rl[keep]
+    delta <- tx[idx_tar] - rx[idx_ref]
+    sim <- pmin(tl[keep], rl) / pmax(tl[keep], rl)
+    w <- pmin(abs(tar_pd$A[idx_tar]), abs(ref_pd$A[idx_ref])) * sim
+    ord <- order(abs(delta), -w)
+    idx_tar <- idx_tar[ord]; idx_ref <- idx_ref[ord]
+    delta <- delta[ord]; w <- w[ord]
+    ok <- !duplicated(idx_ref)
+    list(idx_tar=idx_tar[ok], delta=delta[ok],
+         weight=pmax(w[ok], .Machine$double.eps))
+}
+
+# Interpolates per-peak shifts at xout positions from sparse matched-peak
+# (x, shift, weight) triples. Groups peaks into up to 12 knots, fits a
+# piecewise-linear interpolant, and clamps to [-maxShift, maxShift].
+interp_shift <- function(x, shift, weight, xout, maxShift=50, fallback=0) {
+    n <- length(x)
+    if (n == 0) return(rep(fallback, length(xout)))
+    if (n == 1) return(rep(shift[1], length(xout)))
+    ord <- order(x); x <- x[ord]; shift <- shift[ord]; weight <- weight[ord]
+    ng <- min(12L, max(1L, floor(n / 4L)))
+    if (ng == 1L) return(rep(weighted_median(shift, weight), length(xout)))
+    grp <- cut(seq_len(n), breaks=ng, labels=FALSE)
+    knot_x <- vapply(split(seq_len(n), grp),
+                     function(i) weighted_mean(x[i], weight[i]), numeric(1))
+    knot_s <- vapply(split(seq_len(n), grp),
+                     function(i) weighted_median(shift[i], weight[i]), numeric(1))
+    if (length(knot_x) == 1) return(rep(knot_s[1], length(xout)))
+    y <- stats::approx(knot_x, knot_s, xout=xout, rule=2)$y
+    y <- pmin(maxShift, pmax(-maxShift, y))
+    y[!is.finite(y)] <- fallback
+    y
 }
 
 # Speaq #####

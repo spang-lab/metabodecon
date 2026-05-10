@@ -1,4 +1,4 @@
-# Minimal smoke tests for fit_mdm(), benchmark() and fit_bm().
+# Minimal smoke tests for fit_mdm() and benchmark().
 # Uses tiny simulated spectra to keep CI runtime short.
 
 set.seed(1)
@@ -45,7 +45,7 @@ testthat::test_that("fit_mdm returns mdm with attached mog", {
 
 testthat::test_that("benchmark returns predictions and performance", {
     res <- benchmark(
-        sp, y, mog = mog1(1), fun = "fit_mdm", k = 4,
+        sp, y, mog = mog1(1), k = 4,
         use_rust = 0.5, nworkers = 1, verbosity = 0,
         nfolds = 3
     )
@@ -64,12 +64,19 @@ testthat::test_that("get_mog produces required columns", {
     testthat::expect_true(all(cols %in% names(g)))
 })
 
-testthat::test_that("fit_bm returns bm object", {
-    m <- fit_bm(
-        sp, y, igrs = list(), nbin = 64,
+testthat::test_that("fit_mdm with bin/identity2 returns mdm object", {
+    mog_bm <- data.frame(
+        nfit = 0L, smit = 0L, smws = 0L, delta = 0,
+        npmax = 0L, maxShift = 0L, maxCombine = 64L
+    )
+    m <- fit_mdm(
+        sp, y,
+        feat_mat = bin, decon_fun = identity2,
+        align_fun = "identity_align",
+        mog = mog_bm, igrs = list(),
         nfolds = 3, verbosity = 0
     )
-    testthat::expect_s3_class(m, "bm")
+    testthat::expect_s3_class(m, "mdm")
     testthat::expect_true(!is.null(m$model))
-    testthat::expect_true("feat_names" %in% names(m$params))
+    testthat::expect_true("peakPos" %in% names(m$params))
 })

@@ -12,11 +12,12 @@ levels \code{A} and \code{B}. For details about \code{spectrum} and \code{spectr
 \link{metabodecon-classes}.
 
 Each spectrum's \code{meta$simpar} carries the standard fields (\code{x0}, \code{A},
-\code{lambda}, \code{noise}) plus four sim2-specific fields: \code{base_x0} (the 25
+\code{lambda}, \code{noise}) plus five sim2-specific fields: \code{base_x0} (the 25
 reference peak positions, identical across spectra), \code{dx0} (per-peak
-jitter in ppm), \code{gx0} (scalar global ppm shift), and \code{diff_AB} (integer
-indices into \code{base_x0} of the peaks that differ between groups). They
-satisfy \code{x0[k] = base_x0[k] + dx0[k] + gx0}.
+jitter in ppm), \code{gx0} (scalar global ppm shift), \code{diff_AB} (integer
+indices into \code{base_x0} of the peaks that differ between groups), and
+\code{ab_factors} (the multiplicative factors applied to those peaks in
+group A). They satisfy \code{x0[k] = base_x0[k] + dx0[k] + gx0}.
 
 \code{attr(sim2, "true_x0")} is a numeric vector with the post-alignment ppm
 positions of the discriminating peaks (one per \code{diff_AB} index), useful
@@ -28,9 +29,12 @@ sim2
 \description{
 A simulated two-group classification dataset for demonstrating
 \code{\link[=fit_mdm]{fit_mdm()}} and \code{\link[=benchmark]{benchmark()}}. It contains 100
-simulated 1D NMR spectra
-split evenly into groups \code{A} and \code{B}, where 5 out of 25 peaks per spectrum
-differ between groups by 10\% in area.
+simulated 1D NMR spectra split evenly into groups \code{A} and \code{B}, where 6
+out of 25 peaks per spectrum differ between the groups: in group \code{A},
+three peaks are scaled by \code{1.30}, \code{1.20}, \code{1.10} and three by \code{0.70},
+\code{0.80}, \code{0.90}. Group \code{B} is left unmodified. The first spectrum
+(\code{sim2_001}) is constructed without any global or per-peak ppm jitter so
+it can serve as a clean unshifted alignment reference.
 }
 \details{
 Peak parameters (positions, areas, half-widths and noise) were chosen to
@@ -47,9 +51,11 @@ which itself is derived from the Blood reference dataset (see
 \item Base half-widths drawn uniformly in \verb{[0.0009, 0.0013]} ppm and varied
 per spectrum by \verb{+/-10\%}.
 \item Gaussian noise with standard deviation \code{2200}.
-\item In group \code{A}, the first five base peaks have their areas multiplied by
-\code{1.1}, creating a subtle but learnable group difference. The exact
-indices are stored in \code{simpar$diff_AB}.
+\item In group \code{A}, six base peaks (indices \code{simpar$diff_AB}) have their
+areas multiplied by \code{c(1.30, 1.20, 1.10, 0.70, 0.80, 0.90)} (stored in
+\code{simpar$ab_factors}). Group \code{B} is left unmodified. Spectrum
+\code{sim2_001} is generated with \code{dx0 = 0} and \code{gx0 = 0} to provide a
+clean unshifted alignment reference.
 }
 }
 \keyword{datasets}

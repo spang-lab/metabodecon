@@ -73,8 +73,7 @@
 #'     pp <- which(colSums(Xc != 0) > 0)
 #'     Xn <- si_mat(aligns, maxCombine = 20, peakPos = pp)
 #' }
-si_mat <- function(x, drop_zero=FALSE, maxCombine=0, peakPos=NULL,
-                   igrs=list()) {
+si_mat <- function(x, drop_zero=FALSE, maxCombine=0, peakPos=NULL, igrs=list()) {
     stopifnot(inherits(x, "decons2"))
     cs <- x[[1]]$cs
     ns <- length(x)
@@ -123,17 +122,16 @@ si_mat <- function(x, drop_zero=FALSE, maxCombine=0, peakPos=NULL,
 #' @title Snap peaks to a fixed feature grid
 #'
 #' @description
-#' For each spectrum row of `mat`, move each non-zero entry to its closest
-#' `peakPos` column index, provided the distance is `<= maxCombine`. At most
-#' one peak per spectrum can land on a given `peakPos` column: when several
-#' peaks share the same closest target, the nearest one is shifted and the
-#' others stay at their original column.
+#' For each spectrum row of `mat`, every non-zero entry whose closest
+#' `peakPos` column is within `maxCombine` columns is added to that
+#' `peakPos` column in the output. Multiple peaks mapping to the same
+#' `peakPos` are summed (peaks no further than `maxCombine` from their
+#' nearest target are aggregated rather than competing for it). Peaks
+#' farther than `maxCombine` from any `peakPos` are dropped.
 #'
 #' Tie rules:
-#' - Peak equidistant between two `peakPos`: snap to the leftmost (lowest
-#'   column index).
-#' - Two peaks equidistant from the same `peakPos`: shift the left peak,
-#'   leave the right one in place.
+#' - Peak equidistant between two `peakPos`: maps to the leftmost
+#'   (lowest column index).
 #'
 #' @param mat Numeric matrix (spectra × cs grid) of raw peak areas.
 #' @param peakPos Integer vector of target column indices.
@@ -151,20 +149,18 @@ snap_to_peakPos <- function(mat, peakPos, maxCombine) {
     # bucket, which gives the leftmost-peakPos tie rule for free.
     mids <- (pp[-length(pp)] + pp[-1]) / 2
     for (s in seq_len(ns)) {
-        nz <- which(mat[s, ] != 0) # ascending: leftmost peak wins ties
+        nz <- which(mat[s, ] != 0)
         if (length(nz) == 0) next
-        # k[p] = index in pp of the closest target for peak nz[p]
         k <- findInterval(nz, mids, left.open = TRUE) + 1L
         d <- abs(nz - pp[k])
-        target <- nz
-        ok <- which(d <= maxCombine)
-        # Peaks with the same closest pp are contiguous in `ok` (both nz and
-        # pp are sorted), so a single linear sweep picks the run-wise winner.
-        for (kk in unique(k[ok])) {
-            grp <- ok[k[ok] == kk]
-            target[grp[which.min(d[grp])]] <- pp[kk]
-        }
-        out[cbind(s, target)] <- mat[s, nz]
+        ok <- d <= maxCombine
+        if (!any(ok)) next
+        # Sum all peaks within maxCombine of their closest peakPos into
+        # that peakPos column.
+        targets <- pp[k[ok]]
+        vals <- mat[s, nz[ok]]
+        agg <- tapply(vals, targets, sum)
+        out[s, as.integer(names(agg))] <- agg
     }
     out
 }
@@ -188,6 +184,115 @@ snap_to_peakPos <- function(mat, peakPos, maxCombine) {
 get_si_mat <- function(x, drop_zero = FALSE, maxCombine = 0, peakPos = NULL) {
     lifecycle::deprecate_warn("2.0.0", "get_si_mat()", "si_mat()")
     t(si_mat(x, drop_zero = drop_zero, maxCombine = maxCombine, peakPos = peakPos))
+}
+
+# peak_mat #####
+
+#' @export
+#' @title Peak-snapped feature matrix
+#'
+#' @description
+#' Builds a feature matrix by snapping each spectrum's aligned peak
+#' centers to the peak grid of a reference spectrum. When `peakPos` is
+#' `NULL`, the reference is chosen via [metabodecon::find_ref()] and its
+#' `lcpar$pcial` is used. Each peak is moved to its closest reference
+#' position within `maxCombine` columns; collisions are summed and peaks
+#' farther than `maxCombine` from any reference position are dropped.
+#'
+#' Equivalent to
+#' `si_mat(x, maxCombine=maxCombine, peakPos=peakPos, igrs=igrs)` with
+#' `peakPos` defaulted to the reference's `pcial`. Suitable as the
+#' `feat_mat` argument of [metabodecon::fit_mdm()] and the recommended
+#' default for the decon -> align -> classify pipeline.
+#'
+#' @param x An `aligns` object (or `decons2`).
+#' @param maxCombine Maximum allowed snap distance in chemical-shift
+#'   columns.
+#' @param peakPos Optional integer vector of column indices to snap peaks
+#'   to. Defaults to the reference spectrum's peak grid.
+#' @param igrs List of two-element ppm intervals to ignore.
+#'
+#' @return A numeric matrix with spectra in rows and chemical shifts as
+#'   colnames. Always has `length(x[[1]]$cs)` columns.
+#'
+#' @author 2024-2026 Tobias Schmidt: initial version.
+peak_mat <- function(x, maxCombine=20, peakPos=NULL, igrs=list()) {
+    stopifnot(inherits(x, "decons2"))
+    if (is.null(peakPos)) {
+        ref <- find_ref(x)
+        peakPos <- ref$lcpar$pcial
+    }
+    si_mat(x, maxCombine=maxCombine, peakPos=peakPos, igrs=igrs)
+}
+
+# bin #####
+
+#' @export
+#' @title Bin a spectra-like object into a feature matrix
+#' @description
+#' Bins the per-spectrum signal vector left-to-right into chunks of
+#' `maxCombine` chemical-shift columns and returns the per-bin sums as a
+#' feature matrix. Columns whose chemical-shift falls inside any `igrs`
+#' interval are removed before binning.
+#'
+#' Accepts three input types:
+#' \itemize{
+#'   \item `spectra`: uses `x[[i]]$si` directly.
+#'   \item `decons2`: uses `x[[i]]$sit$sup` (smoothed reconstruction).
+#'   \item `aligns`: builds a sparse vector from `lcpar$pcial` /
+#'         `lcpar$A * pi`, then bins.
+#' }
+#'
+#' Suitable as the `feat_mat` argument of [metabodecon::fit_mdm()].
+#'
+#' @param x A `spectra`, `decons2` or `aligns` object.
+#' @param maxCombine Bin width in chemical-shift columns.
+#' @param peakPos Ignored. Accepted for API compatibility with
+#'   [metabodecon::si_mat()].
+#' @param igrs List of two-element ppm intervals to ignore.
+#'
+#' @return A numeric matrix with one row per spectrum and one column per
+#'   bin.
+bin <- function(x, maxCombine=128, peakPos=NULL, igrs=list()) {
+    stopifnot(
+        inherits(x, "spectra") || inherits(x, "decons2") ||
+            inherits(x, "aligns"),
+        is_int(maxCombine, 1), maxCombine >= 1
+    )
+    cs <- x[[1]]$cs
+    nc <- length(cs)
+    ns <- length(x)
+    keep <- rep(TRUE, nc)
+    for (r in igrs) keep <- keep & !(cs >= min(r) & cs <= max(r))
+    kept <- which(keep)
+    if (length(kept) == 0) stop("All ppm range is ignored.", call.=FALSE)
+    grp <- ceiling(seq_along(kept) / maxCombine)
+    groups <- split(kept, grp)
+
+    # Build per-spectrum signal vectors of length `nc`.
+    Y <- matrix(0, nrow=ns, ncol=nc)
+    if (inherits(x, "aligns")) {
+        for (s in seq_len(ns)) {
+            idx <- x[[s]]$lcpar$pcial
+            if (length(idx) > 0) Y[s, idx] <- x[[s]]$lcpar$A * base::pi
+        }
+    } else if (inherits(x, "decons2")) {
+        for (s in seq_len(ns)) Y[s, ] <- x[[s]]$sit$sup
+    } else {
+        for (s in seq_len(ns)) Y[s, ] <- x[[s]]$si
+    }
+
+    nb <- length(groups)
+    out <- matrix(0, nrow=ns, ncol=nb)
+    centers <- numeric(nb)
+    for (j in seq_len(nb)) {
+        cols <- groups[[j]]
+        out[, j] <- rowSums(Y[, cols, drop=FALSE])
+        centers[j] <- mean(cs[cols])
+    }
+    colnames(out) <- sprintf("%.4f", centers)
+    rownames(out) <- get_names(x)
+    out
 }
 
 # Combine Peaks #####

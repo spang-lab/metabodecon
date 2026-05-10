@@ -18,9 +18,9 @@
   Added `tree_preview()` as a compact alias.
 * Added `fit_mdm()` for fitting lasso models on deconvoluted NMR spectra,
   with built-in cross-validated grid search over a preprocessing grid (`mog`).
-* Added `benchmark()` for nested-CV performance estimation; accepts any model
-  fitting function via the `fun` argument (e.g. `fun = "fit_mdm"`).
-* Added `fit_bm()` and `predict.bm()` for a binning-based baseline model.
+* Added `benchmark()` for nested-CV performance estimation over `fit_mdm()`.
+* Added `identity2()` no-op decon function for skipping deconvolution in
+  `fit_mdm()` (e.g. for binning baselines).
 * Added `get_mog()` for predefined model fitting grids.
 * Added S3 methods for `mdm` objects: `predict`, `print`, `coef`, `plot`,
   `summary`.

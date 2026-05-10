@@ -90,18 +90,23 @@ update_sim <- function(nworkers = 1) {
 #' @description
 #' Builds the `sim2` classification dataset: 100 simulated 1D NMR spectra split
 #' into two groups (A and B), where five out of 25 peaks per spectrum differ
-#' systematically between the groups by 10% in area. Peak parameter
-#' distributions (number of peaks, areas, half-widths, noise) were chosen to
-#' match the values recovered by deconvoluting the [metabodecon::sim] dataset
-#' (which itself is derived from the Blood reference dataset; see
-#' [metabodecon::sim]). The result is a `spectra` object with the per-spectrum
-#' group labels attached as `attr(., "group")`.
+#' systematically between the groups. In group A, three peaks are scaled by
+#' 1.24, 1.16, 1.08 and two peaks by 0.88, 0.80; group B is left
+#' unmodified. Peak parameter distributions (number of peaks, areas,
+#' half-widths, noise) were chosen to match the values recovered by
+#' deconvoluting the [metabodecon::sim] dataset (which itself is derived from
+#' the Blood reference dataset; see [metabodecon::sim]). The result is a
+#' `spectra` object with the per-spectrum group labels attached as
+#' `attr(., "group")`. The first spectrum (`sim2_001`) is constructed without
+#' any global or per-peak ppm jitter so it serves as a clean unshifted
+#' reference.
 #'
 #' Each spectrum's `meta$simpar` carries the usual fields (`x0`, `A`, `lambda`,
 #' `noise`) plus `base_x0` (the 25 reference peak positions, identical across
-#' spectra), `dx0` (per-peak jitter in ppm), `gx0` (scalar global ppm shift)
-#' and `diff_AB` (integer indices into `base_x0` of the peaks that differ
-#' between groups). These satisfy `x0[k] = base_x0[k] + dx0[k] + gx0`.
+#' spectra), `dx0` (per-peak jitter in ppm), `gx0` (scalar global ppm shift),
+#' `diff_AB` (integer indices into `base_x0` of the peaks that differ between
+#' groups) and `ab_factors` (the multiplicative factors applied to those peaks
+#' in group A). These satisfy `x0[k] = base_x0[k] + dx0[k] + gx0`.
 #'
 #' The dataset additionally carries `attr(sim2, "true_x0")`: a numeric vector
 #' giving the post-alignment ppm positions of the discriminating peaks,
@@ -117,16 +122,23 @@ make_sim2 <- function() {
     base_A <- stats::rlnorm(npk, meanlog = log(2500), sdlog = 1)
     base_lam <- stats::runif(npk, 0.0009, 0.0013)
     group <- factor(rep(c("A", "B"), each = n/2))
-    # Discriminating peaks spread across the full ppm range.
+    # Five discriminating peaks spread across the full ppm range.
     diff_AB <- round(seq(1, npk, length.out = 5))
+    ab_factors <- c(1.24, 1.16, 1.08, 0.88, 0.80)
     spectra <- vector("list", n)
     for (i in seq_len(n)) {
-        dx0 <- stats::rnorm(npk, sd = 0.00030) # within-group per-peak jitter
-        gx0 <- stats::rnorm(1, sd = 0.00240)   # per-spectrum global ppm shift
+        # Spectrum 1 is the clean unshifted reference: no ppm jitter at all.
+        if (i == 1) {
+            dx0 <- rep(0, npk)
+            gx0 <- 0
+        } else {
+            dx0 <- stats::rnorm(npk, sd = 0.00030)
+            gx0 <- stats::rnorm(1, sd = 0.00240)
+        }
         x0 <- base_x0 + dx0 + gx0
         A <- base_A * stats::runif(npk, 0.4, 1.6)
         lam <- base_lam * stats::runif(npk, 0.9, 1.1)
-        if (group[i] == "A") A[diff_AB] <- A[diff_AB] * 1.1
+        if (group[i] == "A") A[diff_AB] <- A[diff_AB] * ab_factors
         spec <- simulate_spectrum(
             name = sprintf("sim2_%03d", i), cs = cs,
             x0 = x0, A = A, lambda = lam,
@@ -136,6 +148,7 @@ make_sim2 <- function() {
         spec$meta$simpar$dx0 <- dx0
         spec$meta$simpar$gx0 <- gx0
         spec$meta$simpar$diff_AB <- diff_AB
+        spec$meta$simpar$ab_factors <- ab_factors
         spectra[[i]] <- spec
     }
     names(spectra) <- vapply(spectra, function(s) s$meta$name, character(1))

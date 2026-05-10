@@ -20,8 +20,16 @@ test_that("snap_to_peakPos snaps midpoint ties to the left reference", {
     expect_equal(obj, exp)
 })
 
-test_that("snap_to_peakPos keeps peaks farther than maxCombine in place", {
+test_that("snap_to_peakPos drops peaks farther than maxCombine", {
     M <- matrix(c(0, 0, 0, 0, 7, 0, 0, 0, 0), nrow=1)
     obj <- snap_to_peakPos(M, peakPos=c(3, 7), maxCombine=1)
-    expect_equal(obj, M)
+    exp <- matrix(0, nrow=1, ncol=ncol(M))
+    expect_equal(obj, exp)
+})
+
+test_that("snap_to_peakPos sums multiple peaks mapping to same peakPos", {
+    M <- matrix(c(0, 2, 0, 3, 0, 0, 0), nrow=1)
+    obj <- snap_to_peakPos(M, peakPos=c(3), maxCombine=2)
+    exp <- matrix(c(0, 0, 5, 0, 0, 0, 0), nrow=1)
+    expect_equal(obj, exp)
 })

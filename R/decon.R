@@ -360,6 +360,8 @@ grid_deconvolute_spectrum <- function(
     cols <- c("smit", "smws", "delta", "nfit")
     stopifnot(all(cols %in% colnames(deg)))
     deg$ar <- NA_real_; deg$np <- NA_integer_
+    truepar <- x$meta$simpar
+    if (!is.null(truepar)) deg$prarpx <- NA_real_
     ds_args <- modifyList(
         as.list(formals(deconvolute_spectrum)),
         list(x=x, sfr=sfr, igrs=igrs, verbose=FALSE, use_rust=use_rust, npmax=0)
@@ -372,6 +374,9 @@ grid_deconvolute_spectrum <- function(
         d <- do.call(deconvolute_spectrum, ds_args)
         deg[i, "ar"] <- sum(abs(d$sit$sup - d$si)) / sum(abs(d$si))
         deg[i, "np"] <- nrow(d$lcpar)
+        if (!is.null(truepar)) {
+            deg[i, "prarpx"] <- calc_prarp(d, truepar=truepar)$prarpx
+        }
     }
     logf("Finished grid deconvolution of %s", specname)
 

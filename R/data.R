@@ -555,9 +555,12 @@ sim2_docs <- NULL # To get a symbol in the outline
 #' @description
 #' A simulated two-group classification dataset for demonstrating
 #' [metabodecon::fit_mdm()] and [metabodecon::benchmark()]. It contains 100
-#' simulated 1D NMR spectra
-#' split evenly into groups `A` and `B`, where 5 out of 25 peaks per spectrum
-#' differ between groups by 10% in area.
+#' simulated 1D NMR spectra split evenly into groups `A` and `B`, where 6
+#' out of 25 peaks per spectrum differ between the groups: in group `A`,
+#' three peaks are scaled by `1.30`, `1.20`, `1.10` and three by `0.70`,
+#' `0.80`, `0.90`. Group `B` is left unmodified. The first spectrum
+#' (`sim2_001`) is constructed without any global or per-peak ppm jitter so
+#' it can serve as a clean unshifted alignment reference.
 #'
 #' @format
 #' A `spectra` object consisting of 100 `spectrum` objects, where each spectrum
@@ -567,11 +570,12 @@ sim2_docs <- NULL # To get a symbol in the outline
 #' [metabodecon::metabodecon-classes].
 #'
 #' Each spectrum's `meta$simpar` carries the standard fields (`x0`, `A`,
-#' `lambda`, `noise`) plus four sim2-specific fields: `base_x0` (the 25
+#' `lambda`, `noise`) plus five sim2-specific fields: `base_x0` (the 25
 #' reference peak positions, identical across spectra), `dx0` (per-peak
-#' jitter in ppm), `gx0` (scalar global ppm shift), and `diff_AB` (integer
-#' indices into `base_x0` of the peaks that differ between groups). They
-#' satisfy `x0[k] = base_x0[k] + dx0[k] + gx0`.
+#' jitter in ppm), `gx0` (scalar global ppm shift), `diff_AB` (integer
+#' indices into `base_x0` of the peaks that differ between groups), and
+#' `ab_factors` (the multiplicative factors applied to those peaks in
+#' group A). They satisfy `x0[k] = base_x0[k] + dx0[k] + gx0`.
 #'
 #' `attr(sim2, "true_x0")` is a numeric vector with the post-alignment ppm
 #' positions of the discriminating peaks (one per `diff_AB` index), useful
@@ -591,9 +595,11 @@ sim2_docs <- NULL # To get a symbol in the outline
 #' - Base half-widths drawn uniformly in `[0.0009, 0.0013]` ppm and varied
 #'   per spectrum by `+/-10%`.
 #' - Gaussian noise with standard deviation `2200`.
-#' - In group `A`, the first five base peaks have their areas multiplied by
-#'   `1.1`, creating a subtle but learnable group difference. The exact
-#'   indices are stored in `simpar$diff_AB`.
+#' - In group `A`, six base peaks (indices `simpar$diff_AB`) have their
+#'   areas multiplied by `c(1.30, 1.20, 1.10, 0.70, 0.80, 0.90)` (stored in
+#'   `simpar$ab_factors`). Group `B` is left unmodified. Spectrum
+#'   `sim2_001` is generated with `dx0 = 0` and `gx0 = 0` to provide a
+#'   clean unshifted alignment reference.
 #'
 "sim2" # To regenerate this dataset, see `data-raw/data.R`.
 
