@@ -20,15 +20,14 @@
 #' built from NMR spectra by the following pipeline:
 #'
 #' \preformatted{
-#'   x  --deconvolute-->  decons  --align-->  aligns  --feat_mat-->  X
-#'   X, y  --fit-->  model
+#'   x  --decon_fun-->  decons  --align_fun-->  aligns  --feat_fun-->  X
+#'   X, y  --fit_fun-->  model  --predict_fun-->  prob
 #' }
 #'
-#' The deconvolution and alignment stages are pluggable: pass
-#' `decon_fun=identity2` and/or `align_fun="identity_align"` to skip
-#' them and fit baselines that operate directly on raw spectra (e.g. a
-#' binning model). The `feat_mat`, `fit` and `predict` stages are
-#' pluggable functions as well.
+#' All five stages are pluggable: pass `decon_fun=identity2` and/or
+#' `align_fun=identity_align` to skip them and fit baselines that
+#' operate directly on raw spectra (e.g. a binning model). The
+#' `feat_fun`, `fit_fun` and `predict_fun` stages are pluggable as well.
 #'
 #' [metabodecon::fit_mdm()] iterates over the rows of a 'model fitting
 #' grid' (`mog`) — see [metabodecon::get_mog()] — and for each row applies
@@ -43,23 +42,24 @@
 #'
 #' ## Pluggable interfaces
 #'
-#' The `feat_mat`, `fit` and `predict` functions speak a fixed parameter
-#' vocabulary. Replacements must accept the listed arguments (extras via
-#' `...`).
+#' The `feat_fun`, `fit_fun` and `predict_fun` functions speak a fixed
+#' parameter vocabulary. Replacements must accept the listed arguments
+#' (extras via `...`).
 #'
 #' \describe{
-#'   \item{`feat_mat(x, maxCombine, peakPos, igrs, ...)`}{Returns a
+#'   \item{`feat_fun(x, maxCombine, peakPos, igrs, ...)`}{Returns a
 #'         numeric matrix with one row per spectrum.}
-#'   \item{`fit(X, y, foldid, lvs, seed)`}{Returns
+#'   \item{`fit_fun(X, y, foldid, lvs, seed)`}{Returns
 #'         `list(model, prob)` where `model` is any object understood by
-#'         the paired `predict` function and `prob` is a numeric vector
-#'         of held-out positive-class probabilities (length `nrow(X)`)
+#'         the paired `predict_fun` and `prob` is a numeric vector of
+#'         held-out positive-class probabilities (length `nrow(X)`)
 #'         used for grid scoring.}
-#'   \item{`predict(model, newx, lvs)`}{Returns a `data.frame` with three
-#'         columns: `link` (numeric log-odds-like score), `prob` (numeric
-#'         in `[0, 1]`, P(class == `lvs[2]`)) and `class` (factor with the
-#'         given levels). Must call `requireNamespace("<backend>")` so it
-#'         works after a fresh-session `readRDS()`.}
+#'   \item{`predict_fun(model, newx, lvs)`}{Returns a `data.frame` with
+#'         three columns: `link` (numeric log-odds-like score), `prob`
+#'         (numeric in `[0, 1]`, P(class == `lvs[2]`)) and `class`
+#'         (factor with the given levels). Must call
+#'         `requireNamespace("<backend>")` so it works after a
+#'         fresh-session `readRDS()`.}
 #' }
 #'
 #' Built-in implementations: [metabodecon::peak_mat()],
@@ -107,17 +107,17 @@
 #'   `igrs`, `use_rust`, `nfit`, `smit`, `smws`, `delta`, `npmax`,
 #'   `nworkers`, `verbose`). Pass [metabodecon::identity2()] to skip
 #'   deconvolution and feed the raw spectra into the next stage.
-#' @param align_fun Name of the alignment function to call after
-#'   deconvolution. Must be a function in the `metabodecon` namespace with
-#'   signature `f(x, ref, maxShift, verbose, nworkers, full, ...)`.
-#'   Built-in choices: `"clupa"` (default, CluPA hierarchical-clustering
-#'   peak alignment), `"vopa"` (vote-based peak alignment, faster),
-#'   `"glopa"` (single global integer shift via FFT cross-correlation),
-#'   `"identity_align"` (no alignment).
-#' @param feat_mat Feature-matrix function. See *Pluggable interfaces*.
-#' @param fit Inner-model fitter. See *Pluggable interfaces*.
-#' @param predict Inner-model predictor paired with `fit`. See *Pluggable
-#'   interfaces*.
+#' @param align_fun Alignment function called after deconvolution. Must
+#'   have signature `f(x, ref, maxShift, verbose, nworkers, full, ...)`.
+#'   Built-in choices: [metabodecon::clupa()] (default, CluPA
+#'   hierarchical-clustering peak alignment), [metabodecon::vopa()]
+#'   (vote-based peak alignment, faster), [metabodecon::glopa()] (single
+#'   global integer shift via FFT cross-correlation),
+#'   [metabodecon::identity_align()] (no alignment).
+#' @param feat_fun Feature-matrix function. See *Pluggable interfaces*.
+#' @param fit_fun Inner-model fitter. See *Pluggable interfaces*.
+#' @param predict_fun Inner-model predictor paired with `fit_fun`. See
+#'   *Pluggable interfaces*.
 #' @param igrs Ignore regions in ppm.
 #' @param maxCombine Bin width / peak-merging tolerance for
 #'   `peak_mat()` / `si_mat()` / `bin()`.
@@ -127,9 +127,9 @@
 #' @return
 #' [metabodecon::fit_mdm()] returns an object of class `mdm` with elements
 #' `model` (best fitted backend model), `ref` (reference alignment
-#' spectrum, `NULL` when `align_fun="identity_align"`), `params`
+#' spectrum, `NULL` when `align_fun=identity_align`), `params`
 #' (everything needed to reproduce predictions: chosen grid row,
-#' `feat_mat`, `predict`, `lvs`, `peakPos`, `sfr`, `igrs`, `use_rust`,
+#' `feat_fun`, `predict_fun`, `lvs`, `peakPos`, `sfr`, `igrs`, `use_rust`,
 #' `decon_fun`, `align_fun`) and `mog` (input grid augmented with
 #' `acc`/`auc` columns).
 #'
@@ -146,11 +146,11 @@
 #'   bm <- benchmark(spectra, y, k=5, mog=get_mog("default"))
 #' }
 fit_mdm <- function(x, y,
-    feat_mat=peak_mat,      fit=fit_lasso,      predict=predict_lasso,
-    decon_fun=deconvolute,  align_fun="clupa",  mog=get_mog("default"),
-    deg=NULL,               sfr=NULL,           igrs=list(),
-    use_rust=0,             nworkers=1,         verbosity=1,
-    seed=1,                 nfolds=10,          check=TRUE
+    feat_fun=peak_mat,      fit_fun=fit_lasso,    predict_fun=predict_lasso,
+    decon_fun=deconvolute,  align_fun=clupa,      mog=get_mog("default"),
+    deg=NULL,               sfr=NULL,             igrs=list(),
+    use_rust=0,             nworkers=1,           verbosity=1,
+    seed=1,                 nfolds=10,            check=TRUE
 ) {
     if (check) check_mdm_args(
         x=x, y=y, mog=mog, sfr=sfr, igrs=igrs,
@@ -158,8 +158,9 @@ fit_mdm <- function(x, y,
         seed=seed, nfolds=nfolds
     )
     stopifnot(
-        is.function(feat_mat), is.function(fit), is.function(predict),
-        is.function(decon_fun), is_str(align_fun)
+        is.function(feat_fun), is.function(fit_fun),
+        is.function(predict_fun), is.function(decon_fun),
+        is.function(align_fun)
     )
     skip_decon <- identical(decon_fun, identity2)
     lvs <- levels(y)
@@ -211,17 +212,15 @@ fit_mdm <- function(x, y,
 
         akey <- list(dkey, r$maxShift)
         if (!identical(akey, last_akey)) {
-            af <- get(align_fun, envir=asNamespace("metabodecon"),
-                      inherits=FALSE)
-            a <- af(x=d, ref=NULL, maxShift=r$maxShift,
+            a <- align_fun(x=d, ref=NULL, maxShift=r$maxShift,
                     verbose=verbosity >= 2, nworkers=nworkers, full=FALSE)
             last_akey <- akey
         }
 
         ref <- if (inherits(a, "aligns")) find_ref(a) else NULL
-        mat <- feat_mat(a, maxCombine=r$maxCombine, igrs=igrs)
+        mat <- feat_fun(a, maxCombine=r$maxCombine, igrs=igrs)
         peakPos <- which(colSums(mat != 0) > 0)
-        inner <- fit(mat[, peakPos, drop=FALSE], y, foldid=foldid,
+        inner <- fit_fun(mat[, peakPos, drop=FALSE], y, foldid=foldid,
                      lvs=lvs, seed=seed)
         perf <- mdm_eval(y, inner$prob, lvs)
         mog$acc[i] <- perf$acc; mog$auc[i] <- perf$auc
@@ -236,7 +235,7 @@ fit_mdm <- function(x, y,
         if (is_best) {
             best_auc <- perf$auc
             params <- list(
-                feat_mat=feat_mat, predict=predict, lvs=lvs,
+                feat_fun=feat_fun, predict_fun=predict_fun, lvs=lvs,
                 decon_fun=decon_fun, align_fun=align_fun,
                 sfr=sfr, igrs=igrs, use_rust=use_rust,
                 npmax=r$npmax, nfit=r$nfit, smit=r$smit, smws=r$smws,
@@ -262,10 +261,10 @@ get_mog <- function(conf="default") {
         nfit = switch(conf, dynamic=0, 5),
         smit = switch(conf, dynamic=0, 2),
         smws = switch(conf, dynamic=0, static=c(3,5,7,9), 5),
-        delta = switch(conf, dynamic=0, static=c(1.6, 3.2, 4.8, 6.4, 8.0), 6.4),
-        npmax = switch(conf, dynamic=seq(400,1600,200), 0),
+        delta = switch(conf, dynamic=0, static=(1:5)*1.6, 6.4),
+        npmax = switch(conf, dynamic=2^(6:11), 0),
         maxShift = switch(conf, default=50, 2^(1:8)),
-        maxCombine = switch(conf, default=5, 2^(1:5))
+        maxCombine = switch(conf, default=5, 2^(1:6))
     )
     ord <- order(g$npmax, g$nfit, g$smit, g$smws, g$delta, g$maxShift, g$maxCombine)
     g <- g[ord, , drop=FALSE]
@@ -276,11 +275,11 @@ get_mog <- function(conf="default") {
 #' @export
 #' @rdname mdm
 benchmark <- function(x, y,
-    feat_mat=peak_mat,      fit=fit_lasso,      predict=predict_lasso,
-    decon_fun=deconvolute,  align_fun="clupa",  mog=get_mog("default"),
-    deg=NULL,               sfr=NULL,           igrs=list(),
-    use_rust=0,             nworkers=1,         verbosity=2,
-    seed=1,                 nfolds=10,          check=TRUE,
+    feat_fun=peak_mat,      fit_fun=fit_lasso,    predict_fun=predict_lasso,
+    decon_fun=deconvolute,  align_fun=clupa,      mog=get_mog("default"),
+    deg=NULL,               sfr=NULL,             igrs=list(),
+    use_rust=0,             nworkers=1,           verbosity=2,
+    seed=1,                 nfolds=10,            check=TRUE,
     k=3
 ) {
     if (check) check_mdm_args(
@@ -289,8 +288,9 @@ benchmark <- function(x, y,
         seed=seed, nfolds=nfolds
     )
     stopifnot(
-        is.function(feat_mat), is.function(fit), is.function(predict),
-        is.function(decon_fun), is_str(align_fun),
+        is.function(feat_fun), is.function(fit_fun),
+        is.function(predict_fun), is.function(decon_fun),
+        is.function(align_fun),
         is_int(k, 1), k >= 2, k <= length(y)
     )
 
@@ -315,7 +315,7 @@ benchmark <- function(x, y,
         logv("[fold %d/%d] fitting", i, k)
         m <- fit_mdm(
             x=x[tr], y=y[tr],
-            feat_mat=feat_mat, fit=fit, predict=predict,
+            feat_fun=feat_fun, fit_fun=fit_fun, predict_fun=predict_fun,
             decon_fun=decon_fun, align_fun=align_fun, mog=mog,
             deg=deg, sfr=sfr, igrs=igrs,
             use_rust=use_rust, nworkers=nworkers, verbosity=inner_verb,
@@ -535,7 +535,7 @@ predict_lasso <- function(model, newx, lvs) {
 fit_ranger500 <- function(X, y, foldid, lvs, seed=1) {
     requireNamespace("ranger", quietly=TRUE)
     rf <- ranger::ranger(
-        x=X, y=y, probability=TRUE, num.trees=500, seed=seed
+        x=X, y=y, probability=TRUE, num.trees=1000, seed=seed
     )
     prob <- rf$predictions[, lvs[2]]
     list(model=structure(rf, class=c("ranger500", class(rf))), prob=prob)
@@ -661,11 +661,10 @@ predict.mdm <- function(
             npmax=p$npmax, nworkers=nworkers
         )
         logv("Aligning spectra with %d nworkers", nworkers)
-        af <- get(p$align_fun %||% "clupa",
-                  envir=asNamespace("metabodecon"), inherits=FALSE)
-        a <- af(x=d, ref=object$ref, maxShift=p$maxShift,
+        align_fun <- p$align_fun %||% clupa
+        a <- align_fun(x=d, ref=object$ref, maxShift=p$maxShift,
                 verbose=verbosity >= 2, nworkers=nworkers, full=FALSE)
-        Xn <- p$feat_mat(
+        Xn <- p$feat_fun(
             a, maxCombine=p$maxCombine, peakPos=p$peakPos,
             igrs=p$igrs %||% list()
         )
@@ -674,8 +673,8 @@ predict.mdm <- function(
         Xn <- as.matrix(newdata)
     }
 
-    logv("Predicting with stored predict() function")
-    out <- p$predict(object$model, Xn, lvs)
+    logv("Predicting with stored predict_fun")
+    out <- p$predict_fun(object$model, Xn, lvs)
     if (type == "all") return(out)
     if (type == "class") return(out$class)
     if (type == "prob") return(out$prob)

@@ -15,11 +15,11 @@
 fit_mdm(
   x,
   y,
-  feat_mat = peak_mat,
-  fit = fit_lasso,
-  predict = predict_lasso,
+  feat_fun = peak_mat,
+  fit_fun = fit_lasso,
+  predict_fun = predict_lasso,
   decon_fun = deconvolute,
-  align_fun = "clupa",
+  align_fun = clupa,
   mog = get_mog("default"),
   deg = NULL,
   sfr = NULL,
@@ -37,11 +37,11 @@ get_mog(conf = "default")
 benchmark(
   x,
   y,
-  feat_mat = peak_mat,
-  fit = fit_lasso,
-  predict = predict_lasso,
+  feat_fun = peak_mat,
+  fit_fun = fit_lasso,
+  predict_fun = predict_lasso,
   decon_fun = deconvolute,
-  align_fun = "clupa",
+  align_fun = clupa,
   mog = get_mog("default"),
   deg = NULL,
   sfr = NULL,
@@ -70,12 +70,12 @@ predict_ranger500(model, newx, lvs)
 
 \item{y}{Factor with two levels.}
 
-\item{feat_mat}{Feature-matrix function. See \emph{Pluggable interfaces}.}
+\item{feat_fun}{Feature-matrix function. See \emph{Pluggable interfaces}.}
 
-\item{fit}{Inner-model fitter. See \emph{Pluggable interfaces}.}
+\item{fit_fun}{Inner-model fitter. See \emph{Pluggable interfaces}.}
 
-\item{predict}{Inner-model predictor paired with \code{fit}. See \emph{Pluggable
-interfaces}.}
+\item{predict_fun}{Inner-model predictor paired with \code{fit_fun}. See
+\emph{Pluggable interfaces}.}
 
 \item{decon_fun}{Deconvolution function. Must accept the parameter
 vocabulary used by \code{\link[=deconvolute]{deconvolute()}} (i.e. \code{x}, \code{sfr},
@@ -83,13 +83,13 @@ vocabulary used by \code{\link[=deconvolute]{deconvolute()}} (i.e. \code{x}, \co
 \code{nworkers}, \code{verbose}). Pass \code{\link[=identity2]{identity2()}} to skip
 deconvolution and feed the raw spectra into the next stage.}
 
-\item{align_fun}{Name of the alignment function to call after
-deconvolution. Must be a function in the \code{metabodecon} namespace with
-signature \code{f(x, ref, maxShift, verbose, nworkers, full, ...)}.
-Built-in choices: \code{"clupa"} (default, CluPA hierarchical-clustering
-peak alignment), \code{"vopa"} (vote-based peak alignment, faster),
-\code{"glopa"} (single global integer shift via FFT cross-correlation),
-\code{"identity_align"} (no alignment).}
+\item{align_fun}{Alignment function called after deconvolution. Must
+have signature \code{f(x, ref, maxShift, verbose, nworkers, full, ...)}.
+Built-in choices: \code{\link[=clupa]{clupa()}} (default, CluPA
+hierarchical-clustering peak alignment), \code{\link[=vopa]{vopa()}}
+(vote-based peak alignment, faster), \code{\link[=glopa]{glopa()}} (single
+global integer shift via FFT cross-correlation),
+\code{\link[=identity_align]{identity_align()}} (no alignment).}
 
 \item{mog}{Model-fitting grid as returned by \code{\link[=get_mog]{get_mog()}}.}
 
@@ -134,9 +134,9 @@ peak alignment), \code{"vopa"} (vote-based peak alignment, faster),
 \value{
 \code{\link[=fit_mdm]{fit_mdm()}} returns an object of class \code{mdm} with elements
 \code{model} (best fitted backend model), \code{ref} (reference alignment
-spectrum, \code{NULL} when \code{align_fun="identity_align"}), \code{params}
+spectrum, \code{NULL} when \code{align_fun=identity_align}), \code{params}
 (everything needed to reproduce predictions: chosen grid row,
-\code{feat_mat}, \code{predict}, \code{lvs}, \code{peakPos}, \code{sfr}, \code{igrs}, \code{use_rust},
+\code{feat_fun}, \code{predict_fun}, \code{lvs}, \code{peakPos}, \code{sfr}, \code{igrs}, \code{use_rust},
 \code{decon_fun}, \code{align_fun}) and \code{mog} (input grid augmented with
 \code{acc}/\code{auc} columns).
 
@@ -166,15 +166,14 @@ An \code{mdm} is a binary classification model fitted on a feature matrix
 built from NMR spectra by the following pipeline:
 
 \preformatted{
-  x  --deconvolute-->  decons  --align-->  aligns  --feat_mat-->  X
-  X, y  --fit-->  model
+  x  --decon_fun-->  decons  --align_fun-->  aligns  --feat_fun-->  X
+  X, y  --fit_fun-->  model  --predict_fun-->  prob
 }
 
-The deconvolution and alignment stages are pluggable: pass
-\code{decon_fun=identity2} and/or \code{align_fun="identity_align"} to skip
-them and fit baselines that operate directly on raw spectra (e.g. a
-binning model). The \code{feat_mat}, \code{fit} and \code{predict} stages are
-pluggable functions as well.
+All five stages are pluggable: pass \code{decon_fun=identity2} and/or
+\code{align_fun=identity_align} to skip them and fit baselines that
+operate directly on raw spectra (e.g. a binning model). The
+\code{feat_fun}, \code{fit_fun} and \code{predict_fun} stages are pluggable as well.
 
 \code{\link[=fit_mdm]{fit_mdm()}} iterates over the rows of a 'model fitting
 grid' (\code{mog}) — see \code{\link[=get_mog]{get_mog()}} — and for each row applies
@@ -205,23 +204,24 @@ Companion of \code{\link[=fit_ranger500]{fit_ranger500()}}.
 \details{
 \subsection{Pluggable interfaces}{
 
-The \code{feat_mat}, \code{fit} and \code{predict} functions speak a fixed parameter
-vocabulary. Replacements must accept the listed arguments (extras via
-\code{...}).
+The \code{feat_fun}, \code{fit_fun} and \code{predict_fun} functions speak a fixed
+parameter vocabulary. Replacements must accept the listed arguments
+(extras via \code{...}).
 
 \describe{
-\item{\code{feat_mat(x, maxCombine, peakPos, igrs, ...)}}{Returns a
+\item{\code{feat_fun(x, maxCombine, peakPos, igrs, ...)}}{Returns a
 numeric matrix with one row per spectrum.}
-\item{\code{fit(X, y, foldid, lvs, seed)}}{Returns
+\item{\code{fit_fun(X, y, foldid, lvs, seed)}}{Returns
 \code{list(model, prob)} where \code{model} is any object understood by
-the paired \code{predict} function and \code{prob} is a numeric vector
-of held-out positive-class probabilities (length \code{nrow(X)})
+the paired \code{predict_fun} and \code{prob} is a numeric vector of
+held-out positive-class probabilities (length \code{nrow(X)})
 used for grid scoring.}
-\item{\code{predict(model, newx, lvs)}}{Returns a \code{data.frame} with three
-columns: \code{link} (numeric log-odds-like score), \code{prob} (numeric
-in \verb{[0, 1]}, P(class == \code{lvs[2]})) and \code{class} (factor with the
-given levels). Must call \code{requireNamespace("<backend>")} so it
-works after a fresh-session \code{readRDS()}.}
+\item{\code{predict_fun(model, newx, lvs)}}{Returns a \code{data.frame} with
+three columns: \code{link} (numeric log-odds-like score), \code{prob}
+(numeric in \verb{[0, 1]}, P(class == \code{lvs[2]})) and \code{class}
+(factor with the given levels). Must call
+\code{requireNamespace("<backend>")} so it works after a
+fresh-session \code{readRDS()}.}
 }
 
 Built-in implementations: \code{\link[=peak_mat]{peak_mat()}},

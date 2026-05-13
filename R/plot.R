@@ -25,6 +25,10 @@
 #' @param cols
 #' Character vector of colors, one per spectrum. Defaults to `rainbow(n)`.
 #'
+#' @param lty
+#' Line type(s), one per spectrum. Recycled if shorter than `n`. Defaults
+#' to `1` (solid) for all spectra.
+#'
 #' @param names
 #' Character vector of legend labels. Defaults to spectrum names.
 #'
@@ -60,6 +64,7 @@ plot_spectra <- function(
     what=NULL, # "si", "sup", "supal",
     sfy=1e6,
     cols=NULL,
+    lty=NULL,
     names=NULL,
     xlab="Chemical Shift [ppm]",
     ylab=paste("Signal Intensity [au] /", sfy),
@@ -86,11 +91,12 @@ plot_spectra <- function(
     cs_min <- min(vapply(css, min, 0)); cs_max <- max(vapply(css, max, 0))
     si_min <- 0; si_max <- max(vapply(sis, max, 0))
     cols <- cols %||% rainbow(n)
+    ltys <- rep_len(lty %||% 1L, n)
     names <- names %||% get_names(x)
     local_par(mar=mar)
     plot(NA, type="n", xlab=xlab, ylab=ylab, xlim=c(cs_max, cs_min), ylim=c(si_min, si_max))
-    for (i in seq_len(n)) lines(x=css[[i]], y=sis[[i]], col=cols[i])
-    if (lgd) legend(x="topright", legend=names, col=cols, lty=1)
+    for (i in seq_len(n)) lines(x=css[[i]], y=sis[[i]], col=cols[i], lty=ltys[i])
+    if (lgd) legend(x="topright", legend=names, col=cols, lty=ltys)
     invisible(NULL)
 }
 

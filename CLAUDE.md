@@ -96,6 +96,7 @@
 Functions for aligning deconvoluted spectra.
 
 - (exported) `align`: Aligns spectra data using the 'CluPA' algorithm from the 'speaq' package.
+- (exported) `clupa`, `vopa`, `glopa`, `identity_align`: Pluggable alignment backends accepted as `align_fun` by [metabodecon::fit_mdm()].
 - (internal) `get_ppm_range`: Returns the ppm range covered by spectra.
 - (internal) `gen_feat_mat`: Generates a feature matrix.
 - (internal) `speaq_align`: Aligns signals using the 'speaq' package.

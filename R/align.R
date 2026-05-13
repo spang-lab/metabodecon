@@ -25,7 +25,8 @@
 #' Maximum number of datapoints a peak center may be shifted during CluPA
 #' alignment. 50 is a suitable starting value for plasma spectra with a digital
 #' resolution of 128K. Increase for urine or other sample types with larger
-#' chemical-shift variation.
+#' chemical-shift variation. Use `maxShift = 0L` to skip alignment entirely:
+#' each peak's aligned center `x0al` is set equal to its fitted center `x0`.
 #'
 #' @param verbose
 #' Whether to print progress messages during alignment.
@@ -52,8 +53,43 @@ align <- function(x, ref=NULL, maxShift=50, verbose=TRUE, nworkers=1) {
 
 # Internal #####
 
-# CluPA: hierarchical-clustering peak alignment (recursive FFT shifts on
-# spectrum sub-segments, see Beirnaert et al. 2018, Vu et al. 2011).
+#' @export
+#' @name alignment_funs
+#' @rdname alignment_funs
+#'
+#' @title Alignment functions for fit_mdm
+#'
+#' @description
+#' Pluggable alignment backends accepted by the `align_fun` argument of
+#' [metabodecon::fit_mdm()] / [metabodecon::benchmark()].
+#'
+#' - [metabodecon::clupa()]: hierarchical-clustering peak alignment
+#'   (recursive FFT shifts on spectrum sub-segments,
+#'   Beirnaert et al. 2018, Vu et al. 2011). Default of
+#'   [metabodecon::align()].
+#' - [metabodecon::vopa()]: vote-based peak alignment. Estimates one
+#'   global integer DP shift per spectrum from a weighted vote over
+#'   pairwise peak matches, then refines per-peak shifts via
+#'   interpolation.
+#' - [metabodecon::glopa()]: global peak alignment. Per spectrum, find
+#'   the single integer DP shift in `[-maxShift, maxShift]` that
+#'   maximises FFT cross-correlation of the raw signal intensities
+#'   against the reference, then apply it to all peak centers.
+#' - [metabodecon::identity_align()]: no-op. Returns its first argument
+#'   unchanged.
+#'
+#' @param x A `decons2` or `aligns` object.
+#' @param ref Optional reference spectrum (`align` or `decon2`). When
+#'   `NULL`, chosen automatically.
+#' @param maxShift Maximum number of datapoints a peak center may be
+#'   shifted.
+#' @param verbose Print progress messages?
+#' @param nworkers Number of parallel workers.
+#' @param full If `TRUE` also recompute the aligned superposition.
+#' @param use_speaq Use `speaq::dohCluster` instead of the bundled
+#'   implementation. Only used by `clupa`.
+#' @param ... Ignored (`identity_align` only).
+#' @return An object of class `aligns`.
 clupa <- function(
     x, ref=NULL, maxShift=50, verbose=TRUE, nworkers=1,
     full=TRUE, use_speaq=FALSE
@@ -67,9 +103,8 @@ clupa <- function(
     aligns
 }
 
-# VoPA: vote-based peak alignment. Estimates one global integer DP shift
-# per spectrum from a weighted vote over pairwise peak matches, then
-# refines per-peak shifts via interpolation (see align_decon, method="shift").
+#' @export
+#' @rdname alignment_funs
 vopa <- function(
     x, ref=NULL, maxShift=50, verbose=TRUE, nworkers=1, full=TRUE
 ) {
@@ -82,10 +117,8 @@ vopa <- function(
     aligns
 }
 
-# GloPA: global peak alignment. Per spectrum, find the single integer DP
-# shift in [-maxShift, maxShift] that maximises FFT cross-correlation of
-# the raw signal intensities against the reference, then apply it to all
-# peak centers. No per-peak refinement.
+#' @export
+#' @rdname alignment_funs
 glopa <- function(
     x, ref=NULL, maxShift=50, verbose=TRUE, nworkers=1, full=TRUE
 ) {
@@ -99,6 +132,13 @@ glopa <- function(
 }
 
 glopa_one <- function(x, ref, maxShift, full=TRUE) {
+    if (maxShift == 0L) {
+        x$lcpar$x0al <- x$lcpar$x0
+        x$lcpar$pcial <- round(convert_pos(x$lcpar$x0, x$cs, seq_along(x$cs)))
+        if (full) x$sit$supal <- lorentz_sup(x$cs, x$lcpar$x0al, x$lcpar$A, x$lcpar$lambda)
+        class(x) <- c("align", "decon2", "spectrum")
+        return(x)
+    }
     sig_ref <- ref$si %||% ref$sit$sup
     sig_tar <- x$si %||% x$sit$sup
     adj <- fft_shift(sig_ref, sig_tar, maxShift=maxShift)
@@ -111,10 +151,18 @@ glopa_one <- function(x, ref, maxShift, full=TRUE) {
     x
 }
 
+#' @export
+#' @rdname alignment_funs
 identity_align <- function(x, ...) x
 
 align_decon <- function(x, ref, maxShift, full=TRUE, use_speaq=FALSE, method="clupa") {
-
+    if (maxShift == 0L) {
+        x$lcpar$x0al <- x$lcpar$x0
+        x$lcpar$pcial <- round(convert_pos(x$lcpar$x0, x$cs, seq_along(x$cs)))
+        if (full) x$sit$supal <- lorentz_sup(x$cs, x$lcpar$x0al, x$lcpar$A, x$lcpar$lambda)
+        class(x) <- c("align", "decon2", "spectrum")
+        return(x)
+    }
     pci_x <- round(convert_pos(x$lcpar$x0, x$cs, seq_along(x$cs)))
     pci_ref <- round(convert_pos(ref$lcpar$x0, ref$cs, seq_along(ref$cs)))
 

@@ -239,16 +239,17 @@ pick_best_params <- function(x, npmax, name) {
 deconvolute_spectrum_r <- function(
     x, args, sfr, igrs, nfit, smit, smws, delta, force
 ) {
+    cs <- x$cs
     si <- x$si
     sfr_igr <- list(c(Inf, max(sfr)), c(min(sfr), -Inf))
     igrs <- c(sfr_igr, igrs)
     sm <- smooth_signals2(si, smit, smws)
     peaks <- find_peaks2(sm)
-    peaks <- filter_peaks2(peaks, x$cs, sfr, delta, force, igrs)
-    lcpar <- fit_lorentz_curves2(x$cs, si, peaks, nfit)
-    sup <- lorentz_sup(x$cs, lcpar=lcpar)
+    peaks <- filter_peaks2(peaks, cs, sfr, delta, force, igrs)
+    lcpar <- fit_lorentz_curves2(cs, si, peaks, nfit)
+    sup <- lorentz_sup(cs, lcpar=lcpar)
     sit <- data.frame(sm=sm, sup=sup)
-    decon <- list(cs=x$cs, si=si, meta=x$meta, args=args, sit=sit, peak=peaks, lcpar=lcpar)
+    decon <- list(cs=cs, si=si, meta=x$meta, args=args, sit=sit, peak=peaks, lcpar=lcpar)
     class(decon) <- c("decon2", "spectrum")
     decon
 }
