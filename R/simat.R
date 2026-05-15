@@ -46,20 +46,30 @@
 #' si4 = c(0, 0, 0, 3, 0, 0, 0, 0, 3)
 #' si5 = c(0, 0, 0, 2, 0, 0, 0, 0, 3)
 #'
-#' @param x An object of type `decons2` or `aligns`. For `aligns`, the aligned
-#'   peak positions are used; for `decons2`, the deconvoluted peak positions
-#'   are used.
-#' @param maxCombine How many adjacent columns to consider for merging.
-#' @param peakPos Integer vector of column indices in the `cs` grid to snap
-#'   peaks to. Used to align new spectra to the same features as a reference
-#'   matrix (see 'Details').
-#' @param igrs List of length-2 numeric vectors `c(left, right)` (in ppm) of
-#'   ignore-regions. Columns whose chemical shift falls inside any region are
-#'   zeroed out. Use `list()` to disable.
-#' @param drop_zero Drop columns where all values are zero?
+#' @param x
+#' An object of type `decons2` or `aligns`. For `aligns`, the aligned
+#' peak positions are used; for `decons2`, the deconvoluted peak positions
+#' are used.
 #'
-#' @return A matrix with spectra in rows and chemical shifts as colnames.
-#'   Always has `length(x[[1]]$cs)` columns, regardless of `peakPos`.
+#' @param maxCombine
+#' How many adjacent columns to consider for merging.
+#'
+#' @param peakPos
+#' Integer vector of column indices in the `cs` grid to snap
+#' peaks to. Used to align new spectra to the same features as a reference
+#' matrix (see 'Details').
+#'
+#' @param igrs
+#' List of length-2 numeric vectors `c(left, right)` (in ppm) of
+#' ignore-regions. Columns whose chemical shift falls inside any region are
+#' zeroed out. Use `list()` to disable.
+#'
+#' @param drop_zero
+#' Drop columns where all values are zero?
+#'
+#' @return
+#' A matrix with spectra in rows and chemical shifts as colnames.
+#' Always has `length(x[[1]]$cs)` columns, regardless of `peakPos`.
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
@@ -118,53 +128,6 @@ si_mat <- function(x, drop_zero=FALSE, maxCombine=0, peakPos=NULL, igrs=list()) 
     mat
 }
 
-#' @noRd
-#' @title Snap peaks to a fixed feature grid
-#'
-#' @description
-#' For each spectrum row of `mat`, every non-zero entry whose closest
-#' `peakPos` column is within `maxCombine` columns is added to that
-#' `peakPos` column in the output. Multiple peaks mapping to the same
-#' `peakPos` are summed (peaks no further than `maxCombine` from their
-#' nearest target are aggregated rather than competing for it). Peaks
-#' farther than `maxCombine` from any `peakPos` are dropped.
-#'
-#' Tie rules:
-#' - Peak equidistant between two `peakPos`: maps to the leftmost
-#'   (lowest column index).
-#'
-#' @param mat Numeric matrix (spectra × cs grid) of raw peak areas.
-#' @param peakPos Integer vector of target column indices.
-#' @param maxCombine Maximum allowed snap distance in columns.
-#'
-#' @return A matrix with the same dimensions as `mat`.
-snap_to_peakPos <- function(mat, peakPos, maxCombine) {
-    ns <- nrow(mat)
-    nc <- ncol(mat)
-    pp <- sort(unique(pmin(nc, pmax(1L, as.integer(peakPos)))))
-    out <- matrix(0, nrow = ns, ncol = nc)
-    if (length(pp) == 0) return(out)
-    # Midpoints between consecutive pp form the bucket boundaries. With
-    # `left.open = TRUE`, peaks landing exactly on a midpoint go to the LEFT
-    # bucket, which gives the leftmost-peakPos tie rule for free.
-    mids <- (pp[-length(pp)] + pp[-1]) / 2
-    for (s in seq_len(ns)) {
-        nz <- which(mat[s, ] != 0)
-        if (length(nz) == 0) next
-        k <- findInterval(nz, mids, left.open = TRUE) + 1L
-        d <- abs(nz - pp[k])
-        ok <- d <= maxCombine
-        if (!any(ok)) next
-        # Sum all peaks within maxCombine of their closest peakPos into
-        # that peakPos column.
-        targets <- pp[k[ok]]
-        vals <- mat[s, nz[ok]]
-        agg <- tapply(vals, targets, sum)
-        out[s, as.integer(names(agg))] <- agg
-    }
-    out
-}
-
 #' @export
 #' @title Extract Matrix of aligned Signal Intensities
 #'
@@ -186,8 +149,6 @@ get_si_mat <- function(x, drop_zero = FALSE, maxCombine = 0, peakPos = NULL) {
     t(si_mat(x, drop_zero = drop_zero, maxCombine = maxCombine, peakPos = peakPos))
 }
 
-# peak_mat #####
-
 #' @export
 #' @title Peak-snapped feature matrix
 #'
@@ -205,15 +166,22 @@ get_si_mat <- function(x, drop_zero = FALSE, maxCombine = 0, peakPos = NULL) {
 #' `feat_mat` argument of [metabodecon::fit_mdm()] and the recommended
 #' default for the decon -> align -> classify pipeline.
 #'
-#' @param x An `aligns` object (or `decons2`).
-#' @param maxCombine Maximum allowed snap distance in chemical-shift
-#'   columns.
-#' @param peakPos Optional integer vector of column indices to snap peaks
-#'   to. Defaults to the reference spectrum's peak grid.
-#' @param igrs List of two-element ppm intervals to ignore.
+#' @param x
+#' An `aligns` object (or `decons2`).
 #'
-#' @return A numeric matrix with spectra in rows and chemical shifts as
-#'   colnames. Always has `length(x[[1]]$cs)` columns.
+#' @param maxCombine
+#' Maximum allowed snap distance in chemical-shift columns.
+#'
+#' @param peakPos
+#' Optional integer vector of column indices to snap peaks to.
+#' Defaults to the reference spectrum's peak grid.
+#'
+#' @param igrs
+#' List of two-element ppm intervals to ignore.
+#'
+#' @return
+#' A numeric matrix with spectra in rows and chemical shifts as
+#' colnames. Always has `length(x[[1]]$cs)` columns.
 #'
 #' @author 2024-2026 Tobias Schmidt: initial version.
 peak_mat <- function(x, maxCombine=20, peakPos=NULL, igrs=list()) {
@@ -224,8 +192,6 @@ peak_mat <- function(x, maxCombine=20, peakPos=NULL, igrs=list()) {
     }
     si_mat(x, maxCombine=maxCombine, peakPos=peakPos, igrs=igrs)
 }
-
-# bin #####
 
 #' @export
 #' @title Bin a spectra-like object into a feature matrix
@@ -470,4 +436,42 @@ combine_scores <- function(U, uu, j, nn, uj = NULL) {
     cc <- uu[nn]
     cc[overlaps > 0] <- 0
     unname(cc)
+}
+
+#' @noRd
+#' @title Snap peaks to a fixed feature grid
+#'
+#' @description
+#' For each spectrum row of `mat` and each `peakPos`, the single closest
+#' non-zero entry within `maxCombine` columns is moved to that `peakPos`
+#' column in the output. All other non-zero entries are dropped. When two
+#' peaks are equidistant from a `peakPos`, the leftmost one wins.
+#'
+#' @param mat Numeric matrix (spectra × cs grid) of raw peak areas.
+#' @param peakPos Integer vector of target column indices.
+#' @param maxCombine Maximum allowed snap distance in columns.
+#'
+#' @return A matrix with the same dimensions as `mat`.
+snap_to_peakPos <- function(mat, peakPos, maxCombine) {
+    ns <- nrow(mat)
+    nc <- ncol(mat)
+    pp <- sort(unique(pmin(nc, pmax(1L, as.integer(peakPos)))))
+    out <- matrix(0, nrow = ns, ncol = nc)
+    if (length(pp) == 0) return(out)
+    for (s in seq_len(ns)) {
+        nz <- which(mat[s, ] != 0)
+        if (length(nz) == 0) next
+        for (p in pp) {
+            d <- nz - p                    # signed distance
+            ad <- abs(d)
+            ok <- which(ad <= maxCombine)
+            if (length(ok) == 0) next
+            # Among candidates, pick leftmost of those with minimum distance.
+            min_d <- min(ad[ok])
+            candidates <- ok[ad[ok] == min_d]
+            winner <- candidates[which.min(nz[candidates])]
+            out[s, p] <- mat[s, nz[winner]]
+        }
+    }
+    out
 }

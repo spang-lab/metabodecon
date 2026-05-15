@@ -17,7 +17,8 @@ prepended to \code{x} internally and removed from the result. If \code{NULL}
 \item{maxShift}{Maximum number of datapoints a peak center may be shifted during CluPA
 alignment. 50 is a suitable starting value for plasma spectra with a digital
 resolution of 128K. Increase for urine or other sample types with larger
-chemical-shift variation.}
+chemical-shift variation. Use \code{maxShift = 0L} to skip alignment entirely:
+each peak's aligned center \code{x0al} is set equal to its fitted center \code{x0}.}
 
 \item{verbose}{Whether to print progress messages during alignment.}
 

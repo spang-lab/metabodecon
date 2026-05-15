@@ -5,6 +5,7 @@
 \alias{fit_mdm}
 \alias{get_mog}
 \alias{benchmark}
+\alias{bootstrap_mdm}
 \alias{identity2}
 \alias{fit_lasso}
 \alias{predict_lasso}
@@ -15,11 +16,11 @@
 fit_mdm(
   x,
   y,
+  decon_fun = deconvolute,
+  align_fun = clupa,
   feat_fun = peak_mat,
   fit_fun = fit_lasso,
   predict_fun = predict_lasso,
-  decon_fun = deconvolute,
-  align_fun = clupa,
   mog = get_mog("default"),
   deg = NULL,
   sfr = NULL,
@@ -55,6 +56,27 @@ benchmark(
   k = 3
 )
 
+bootstrap_mdm(
+  x,
+  y,
+  decon_fun = deconvolute,
+  align_fun = clupa,
+  feat_fun = peak_mat,
+  fit_fun = fit_lasso,
+  predict_fun = predict_lasso,
+  mog = get_mog("default"),
+  sfr = NULL,
+  igrs = list(),
+  use_rust = 0,
+  nworkers = 1,
+  verbosity = 1,
+  seed = 1,
+  nfolds = 5,
+  test_frac = 0.2,
+  max_rounds = 30,
+  se_thresh = 0.01
+)
+
 identity2(x, ...)
 
 fit_lasso(X, y, foldid, lvs, seed = 1)
@@ -70,13 +92,6 @@ predict_ranger500(model, newx, lvs)
 
 \item{y}{Factor with two levels.}
 
-\item{feat_fun}{Feature-matrix function. See \emph{Pluggable interfaces}.}
-
-\item{fit_fun}{Inner-model fitter. See \emph{Pluggable interfaces}.}
-
-\item{predict_fun}{Inner-model predictor paired with \code{fit_fun}. See
-\emph{Pluggable interfaces}.}
-
 \item{decon_fun}{Deconvolution function. Must accept the parameter
 vocabulary used by \code{\link[=deconvolute]{deconvolute()}} (i.e. \code{x}, \code{sfr},
 \code{igrs}, \code{use_rust}, \code{nfit}, \code{smit}, \code{smws}, \code{delta}, \code{npmax},
@@ -90,6 +105,13 @@ hierarchical-clustering peak alignment), \code{\link[=vopa]{vopa()}}
 (vote-based peak alignment, faster), \code{\link[=glopa]{glopa()}} (single
 global integer shift via FFT cross-correlation),
 \code{\link[=identity_align]{identity_align()}} (no alignment).}
+
+\item{feat_fun}{Feature-matrix function. See \emph{Pluggable interfaces}.}
+
+\item{fit_fun}{Inner-model fitter. See \emph{Pluggable interfaces}.}
+
+\item{predict_fun}{Inner-model predictor paired with \code{fit_fun}. See
+\emph{Pluggable interfaces}.}
 
 \item{mog}{Model-fitting grid as returned by \code{\link[=get_mog]{get_mog()}}.}
 
@@ -118,6 +140,15 @@ global integer shift via FFT cross-correlation),
 
 \item{k}{Number of outer folds for \code{\link[=benchmark]{benchmark()}}.}
 
+\item{test_frac}{Fraction of spectra to hold out as the test set per round.
+Actual count is \code{max(round(n * test_frac), 5)} so small datasets still
+have a usable test set.}
+
+\item{max_rounds}{Maximum number of bootstrap rounds.}
+
+\item{se_thresh}{Stop early when the SE of the best AUC (across completed
+rounds) falls below this. Set to \code{0} to always run \code{max_rounds} rounds.}
+
 \item{X}{Numeric feature matrix.}
 
 \item{foldid}{Unused; accepted for interface compatibility.}
@@ -130,6 +161,17 @@ global integer shift via FFT cross-correlation),
 
 \item{maxCombine}{Bin width / peak-merging tolerance for
 \code{peak_mat()} / \code{si_mat()} / \code{bin()}.}
+
+\item{x_tr}{Training spectra for \code{\link[=bootstrap_mdm_one]{bootstrap_mdm_one()}}.}
+
+\item{y_tr}{Training labels (factor) for \code{\link[=bootstrap_mdm_one]{bootstrap_mdm_one()}}.}
+
+\item{x_te}{Test spectra for \code{\link[=bootstrap_mdm_one]{bootstrap_mdm_one()}}.}
+
+\item{y_te}{Test labels (factor) for \code{\link[=bootstrap_mdm_one]{bootstrap_mdm_one()}}.}
+
+\item{row}{Single-row data frame (one row of \code{mog}) passed to
+\code{\link[=bootstrap_mdm_one]{bootstrap_mdm_one()}}.}
 }
 \value{
 \code{\link[=fit_mdm]{fit_mdm()}} returns an object of class \code{mdm} with elements
@@ -147,6 +189,18 @@ spectrum, \code{NULL} when \code{align_fun=identity_align}), \code{params}
 \code{pred}.
 \item \code{performance}: data frame with per-fold \code{acc} and \code{auc}.
 \item \code{overall}: list with pooled \code{acc} and \code{auc}.
+}
+
+\code{\link[=bootstrap_mdm_one]{bootstrap_mdm_one()}} returns a list with \code{prob} (named
+numeric vector of test-set class probabilities), \code{acc} and \code{auc}.
+
+\code{\link[=bootstrap_mdm]{bootstrap_mdm()}} returns a list with:
+\itemize{
+\item \code{best_row}: 1-row data frame, the \code{mog} row with the highest mean AUC.
+\item \code{mog}: grid augmented with mean \code{acc}, \code{auc} and \code{auc_se} columns.
+\item \code{probs}: list of length \code{nrow(mog)}; each element is a list of
+per-round probability vectors (named by test-sample name).
+\item \code{acc_mat}, \code{auc_mat}: numeric matrices (rounds × \code{nrow(mog)}).
 }
 
 \code{x}, unchanged.
@@ -257,5 +311,7 @@ all parallelism to the inner fitter via \code{nworkers}.
 \dontrun{
   m <- fit_mdm(spectra, y, mog=get_mog("default"))
   bm <- benchmark(spectra, y, k=5, mog=get_mog("default"))
+  bs <- bootstrap_mdm(spectra, y, mog=get_mog("default"), max_rounds=5)
 }
+
 }

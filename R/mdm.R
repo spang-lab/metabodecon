@@ -123,6 +123,18 @@
 #'   `peak_mat()` / `si_mat()` / `bin()`.
 #' @param k Number of outer folds for [metabodecon::benchmark()].
 #' @param conf Character string selecting a predefined `mog` configuration.
+#' @param x_tr Training spectra for [metabodecon::bootstrap_mdm_one()].
+#' @param y_tr Training labels (factor) for [metabodecon::bootstrap_mdm_one()].
+#' @param x_te Test spectra for [metabodecon::bootstrap_mdm_one()].
+#' @param y_te Test labels (factor) for [metabodecon::bootstrap_mdm_one()].
+#' @param row Single-row data frame (one row of `mog`) passed to
+#'   [metabodecon::bootstrap_mdm_one()].
+#' @param test_frac Fraction of spectra to hold out as the test set per round.
+#'   Actual count is `max(round(n * test_frac), 5)` so small datasets still
+#'   have a usable test set.
+#' @param max_rounds Maximum number of bootstrap rounds.
+#' @param se_thresh Stop early when the SE of the best AUC (across completed
+#'   rounds) falls below this. Set to `0` to always run `max_rounds` rounds.
 #'
 #' @return
 #' [metabodecon::fit_mdm()] returns an object of class `mdm` with elements
@@ -140,17 +152,29 @@
 #' - `performance`: data frame with per-fold `acc` and `auc`.
 #' - `overall`: list with pooled `acc` and `auc`.
 #'
+#' [metabodecon::bootstrap_mdm_one()] returns a list with `prob` (named
+#' numeric vector of test-set class probabilities), `acc` and `auc`.
+#'
+#' [metabodecon::bootstrap_mdm()] returns a list with:
+#' - `best_row`: 1-row data frame, the `mog` row with the highest mean AUC.
+#' - `mog`: grid augmented with mean `acc`, `auc` and `auc_se` columns.
+#' - `probs`: list of length `nrow(mog)`; each element is a list of
+#'   per-round probability vectors (named by test-sample name).
+#' - `acc_mat`, `auc_mat`: numeric matrices (rounds × `nrow(mog)`).
+#'
 #' @examples
 #' \dontrun{
 #'   m <- fit_mdm(spectra, y, mog=get_mog("default"))
 #'   bm <- benchmark(spectra, y, k=5, mog=get_mog("default"))
+#'   bs <- bootstrap_mdm(spectra, y, mog=get_mog("default"), max_rounds=5)
 #' }
+#'
 fit_mdm <- function(x, y,
-    feat_fun=peak_mat,      fit_fun=fit_lasso,    predict_fun=predict_lasso,
-    decon_fun=deconvolute,  align_fun=clupa,      mog=get_mog("default"),
-    deg=NULL,               sfr=NULL,             igrs=list(),
-    use_rust=0,             nworkers=1,           verbosity=1,
-    seed=1,                 nfolds=10,            check=TRUE
+    decon_fun=deconvolute, align_fun=clupa,           feat_fun=peak_mat,
+    fit_fun=fit_lasso,     predict_fun=predict_lasso, mog=get_mog("default"),
+    deg=NULL,              sfr=NULL,                  igrs=list(),
+    use_rust=0,            nworkers=1,                verbosity=1,
+    seed=1,                nfolds=10,                 check=TRUE
 ) {
     if (check) check_mdm_args(
         x=x, y=y, mog=mog, sfr=sfr, igrs=igrs,
@@ -163,6 +187,7 @@ fit_mdm <- function(x, y,
         is.function(align_fun)
     )
     skip_decon <- identical(decon_fun, identity2)
+    decon_fn <- if (identical(decon_fun, deconvolute)) deconvolute_spectra else decon_fun
     lvs <- levels(y)
 
     # Sort rows so identical decon/align tuples cluster.
@@ -191,7 +216,7 @@ fit_mdm <- function(x, y,
         r <- mog[i, , drop=FALSE]
         dkey <- list(r$npmax, r$nfit, r$smit, r$smws, r$delta)
         if (!identical(dkey, last_dkey)) {
-            d <- decon_fun(
+            d <- decon_fn(
                 x=x, sfr=sfr, igrs=igrs, verbose=verbosity >= 2,
                 use_rust=use_rust, nfit=r$nfit, smit=r$smit, smws=r$smws,
                 delta=r$delta, npmax=r$npmax, nworkers=nworkers
@@ -220,10 +245,10 @@ fit_mdm <- function(x, y,
         ref <- if (inherits(a, "aligns")) find_ref(a) else NULL
         mat <- feat_fun(a, maxCombine=r$maxCombine, igrs=igrs)
         peakPos <- which(colSums(mat != 0) > 0)
-        inner <- fit_fun(mat[, peakPos, drop=FALSE], y, foldid=foldid,
-                     lvs=lvs, seed=seed)
+        inner <- fit_fun(mat[, peakPos, drop=FALSE], y, foldid=foldid, lvs=lvs, seed=seed)
         perf <- mdm_eval(y, inner$prob, lvs)
-        mog$acc[i] <- perf$acc; mog$auc[i] <- perf$auc
+        mog$acc[i] <- perf$acc
+        mog$auc[i] <- perf$auc
         is_best <- !is.na(perf$auc) && perf$auc > best_auc
         sym <- if (is_best) "<-- BEST" else ""
         logv(
@@ -321,8 +346,7 @@ benchmark <- function(x, y,
             use_rust=use_rust, nworkers=nworkers, verbosity=inner_verb,
             seed=seed, nfolds=nfolds, check=FALSE
         )
-        p <- stats::predict(m, x[te], type="all",
-                            nworkers=nworkers, verbosity=inner_verb)
+        p <- stats::predict(m, x[te], type="all", nworkers=nworkers, verbosity=inner_verb)
         fp <- data.frame(fold=i, true=y[te], link=p$link, prob=p$prob, pred=p$class)
         fold_preds[[i]] <- fp
         acc <- mean(fp$pred == fp$true, na.rm=TRUE)
@@ -342,6 +366,144 @@ benchmark <- function(x, y,
         performance=perf,
         overall=list(acc=overall_acc, auc=overall_auc)
     )
+}
+
+# Experimental #####
+
+#' @export
+#' @rdname mdm
+bootstrap_mdm <- function(
+    x, y,
+    decon_fun=deconvolute, align_fun=clupa,            feat_fun=peak_mat,
+    fit_fun=fit_lasso,     predict_fun=predict_lasso,  mog=get_mog("default"),
+    sfr=NULL,              igrs=list(),                use_rust=0,
+    nworkers=1,            verbosity=1,                seed=1,
+    nfolds=5,              test_frac=0.2,              max_rounds=30,
+    se_thresh=0.01
+) {
+
+    ns <- length(x); nr <- nrow(mog)
+    nfolds_split <- ceiling(1 / test_frac)
+    skip_decon <- identical(decon_fun, identity2)
+    decon_fn <- if (identical(decon_fun, deconvolute)) deconvolute_spectra else decon_fun
+    lvs <- levels(y); vb <- verbosity >= 2
+    has_zero <- function(d) {
+        inherits(d, "decons2") &&
+            any(vapply(d, function(o) nrow(o$lcpar) == 0L, logical(1)))
+    }
+    ord <- with(mog, order(npmax, nfit, smit, smws, delta, maxShift, maxCombine))
+    mog <- mog[ord, , drop=FALSE]; rownames(mog) <- NULL
+    if (!skip_decon && any(mog$npmax > 0)) {
+        x <- grid_deconvolute_spectra(
+            x=x, deg=NULL, sfr=sfr, igrs=igrs,
+            verbose=vb, nworkers=nworkers, use_rust=use_rust
+        )
+    }
+
+    acc_mat <- matrix(NA_real_, nrow=0, ncol=nr)
+    auc_mat <- matrix(NA_real_, nrow=0, ncol=nr)
+    probs <- vector("list", nr)
+    rnd <- 0L; se <- Inf
+
+    while (rnd < max_rounds && se > se_thresh) {
+        rnd <- rnd + 1L
+        te <- get_test_ids(nfolds=nfolds_split, nsamples=ns, seed=seed + rnd, y=y)[[1]]
+        tr <- setdiff(seq_len(ns), te)
+        x_tr <- x[tr]; y_tr <- y[tr]; x_te <- x[te]; y_te <- y[te]
+        nf <- min(nfolds, min(table(y_tr)))
+        logv("[bootstrap %d] %d train / %d test", rnd, length(tr), length(te))
+
+        last_dkey <- NULL; last_akey <- NULL
+        d_tr <- NULL; d_te <- NULL; a_tr <- NULL; a_te <- NULL; ref <- NULL
+        cur_means_auc <- if (nrow(auc_mat) == 0) rep(-Inf, nr) else {
+            m <- colMeans(auc_mat, na.rm=TRUE); ifelse(is.nan(m), -Inf, m)
+        }
+        rnd_acc <- rep(NA_real_, nr); rnd_auc <- rep(NA_real_, nr)
+
+        for (i in seq_len(nr)) {
+            r <- mog[i, , drop=FALSE]
+
+            dkey <- list(r$npmax, r$nfit, r$smit, r$smws, r$delta)
+            if (!identical(dkey, last_dkey)) {
+                if (skip_decon) {
+                    d_tr <- x_tr; d_te <- x_te
+                } else {
+                    d_tr <- decon_fn(
+                        x=x_tr, sfr=sfr, igrs=igrs, verbose=vb, use_rust=use_rust,
+                        nfit=r$nfit, smit=r$smit, smws=r$smws,
+                        delta=r$delta, npmax=r$npmax, nworkers=nworkers
+                    )
+                    d_te <- decon_fn(
+                        x=x_te, sfr=sfr, igrs=igrs, verbose=vb, use_rust=use_rust,
+                        nfit=r$nfit, smit=r$smit, smws=r$smws,
+                        delta=r$delta, npmax=r$npmax, nworkers=nworkers
+                    )
+                }
+                last_dkey <- dkey; last_akey <- NULL
+                if (has_zero(d_tr) || has_zero(d_te)) {
+                    logv("[%d|%d/%d] zero peaks; skipping dkey group", rnd, i, nr)
+                    d_tr <- NULL
+                }
+            }
+            if (is.null(d_tr)) next
+
+            akey <- list(dkey, r$maxShift)
+            if (!identical(akey, last_akey)) {
+                a_tr <- align_fun(x=d_tr, ref=NULL, maxShift=r$maxShift, verbose=vb, nworkers=nworkers, full=FALSE)
+                ref <- if (inherits(a_tr, "aligns")) find_ref(a_tr) else NULL
+                a_te <- align_fun(x=d_te, ref=ref, maxShift=r$maxShift, verbose=vb, nworkers=nworkers, full=FALSE)
+                last_akey <- akey
+            }
+
+            X_tr_full <- feat_fun(a_tr, maxCombine=r$maxCombine, igrs=igrs)
+            peakPos <- which(colSums(X_tr_full != 0) > 0)
+            X_tr <- X_tr_full[, peakPos, drop=FALSE]
+            X_te <- feat_fun(a_te, maxCombine=r$maxCombine, peakPos=peakPos, igrs=igrs)[, peakPos, drop=FALSE]
+            foldid <- get_foldid(y_tr, nfolds=nf, seed=seed + rnd)
+            inner <- fit_fun(X_tr, y_tr, foldid=foldid, lvs=lvs, seed=seed + rnd)
+            p <- predict_fun(inner$model, X_te, lvs)
+            prob <- stats::setNames(p$prob, get_names(x_te))
+            perf <- mdm_eval(y_te, prob, lvs)
+            rnd_acc[i] <- perf$acc; rnd_auc[i] <- perf$auc
+            probs[[i]] <- c(probs[[i]], list(prob))
+
+            all_acc <- c(if (nrow(acc_mat) > 0) acc_mat[, i], perf$acc)
+            all_auc <- c(if (nrow(auc_mat) > 0) auc_mat[, i], perf$auc)
+            n <- sum(!is.na(all_auc))
+            m_acc <- mean(all_acc, na.rm=TRUE); m_auc <- mean(all_auc, na.rm=TRUE)
+            se_acc <- if (n >= 2) stats::sd(all_acc, na.rm=TRUE) / sqrt(n) else NA_real_
+            se_auc <- if (n >= 2) stats::sd(all_auc, na.rm=TRUE) / sqrt(n) else NA_real_
+            cur_means_auc[i] <- m_auc
+            is_best <- !is.na(m_auc) && m_auc >= max(cur_means_auc, na.rm=TRUE)
+            acc_s <- if (is.na(se_acc)) sprintf("%.2f%%", m_acc * 100) else sprintf("%.2f%% +- %.2f%%", m_acc * 100, se_acc * 100)
+            auc_s <- if (is.na(se_auc)) sprintf("%.4f", m_auc) else sprintf("%.4f +- %.4f", m_auc, se_auc)
+            logv("[%d|%d/%d] p=%d f=%d i=%d w=%d d=%g S=%d C=%g acc=%s auc=%s%s",
+                 rnd, i, nr, r$npmax, r$nfit, r$smit, r$smws, r$delta,
+                 r$maxShift, r$maxCombine, acc_s, auc_s,
+                 if (is_best) " <-- BEST" else "")
+        }
+        acc_mat <- rbind(acc_mat, rnd_acc)
+        auc_mat <- rbind(auc_mat, rnd_auc)
+
+        if (rnd >= 3) {
+            mean_aucs <- colMeans(auc_mat, na.rm=TRUE)
+            bi <- which.max(mean_aucs)
+            valid <- sum(!is.na(auc_mat[, bi]))
+            if (valid >= 2) se <- stats::sd(auc_mat[, bi], na.rm=TRUE) / sqrt(valid)
+        }
+    }
+
+    mean_accs <- colMeans(acc_mat, na.rm=TRUE)
+    mean_aucs <- colMeans(auc_mat, na.rm=TRUE)
+    auc_ses <- apply(auc_mat, 2, function(v) {
+        n <- sum(!is.na(v))
+        if (n < 2) NA_real_ else stats::sd(v, na.rm=TRUE) / sqrt(n)
+    })
+    bi <- which.max(mean_aucs)
+    mog$acc <- mean_accs; mog$auc <- mean_aucs; mog$auc_se <- auc_ses
+    logv("Best [%d/%d]: acc=%.2f%% auc=%.4f se=%.4f",
+         bi, nr, mean_accs[bi] * 100, mean_aucs[bi], auc_ses[bi])
+    list(best=mog[bi, ], mog=mog, probs=probs, acc_mat=acc_mat, auc_mat=auc_mat)
 }
 
 # Helpers #####

@@ -9,11 +9,10 @@ peak_mat(x, maxCombine = 20, peakPos = NULL, igrs = list())
 \arguments{
 \item{x}{An \code{aligns} object (or \code{decons2}).}
 
-\item{maxCombine}{Maximum allowed snap distance in chemical-shift
-columns.}
+\item{maxCombine}{Maximum allowed snap distance in chemical-shift columns.}
 
-\item{peakPos}{Optional integer vector of column indices to snap peaks
-to. Defaults to the reference spectrum's peak grid.}
+\item{peakPos}{Optional integer vector of column indices to snap peaks to.
+Defaults to the reference spectrum's peak grid.}
 
 \item{igrs}{List of two-element ppm intervals to ignore.}
 }

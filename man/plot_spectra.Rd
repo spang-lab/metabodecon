@@ -10,6 +10,7 @@ plot_spectra(
   what = NULL,
   sfy = 1e+06,
   cols = NULL,
+  lty = NULL,
   names = NULL,
   xlab = "Chemical Shift [ppm]",
   ylab = paste("Signal Intensity [au] /", sfy),
@@ -30,6 +31,9 @@ fallback to \code{"sup"} then \code{"si"}), \code{"sup"} (superposition) or \cod
 \item{sfy}{Scaling factor for the y-axis.}
 
 \item{cols}{Character vector of colors, one per spectrum. Defaults to \code{rainbow(n)}.}
+
+\item{lty}{Line type(s), one per spectrum. Recycled if shorter than \code{n}. Defaults
+to \code{1} (solid) for all spectra.}
 
 \item{names}{Character vector of legend labels. Defaults to spectrum names.}
 

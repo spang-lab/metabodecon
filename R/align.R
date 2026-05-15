@@ -51,8 +51,6 @@ align <- function(x, ref=NULL, maxShift=50, verbose=TRUE, nworkers=1) {
     clupa(x, ref, maxShift, verbose, nworkers)
 }
 
-# Internal #####
-
 #' @export
 #' @name alignment_funs
 #' @rdname alignment_funs
@@ -97,8 +95,10 @@ clupa <- function(
     ndps <- vapply(x, function(s) length(s$cs), integer(1))
     if (length(unique(ndps)) > 1) stop("All spectra must have the same number of data points.")
     ref <- ref %||% find_ref(x)
-    aligns <- mcmapply(nworkers, align_decon, x,
-        MoreArgs=list(ref, maxShift, full=full, use_speaq=use_speaq, method="clupa"))
+    aligns <- mcmapply(
+        nworkers, align_decon, x,
+        MoreArgs=list(ref, maxShift, full=full, use_speaq=use_speaq, method="clupa")
+    )
     class(aligns) <- c("aligns", "decons2", "spectra")
     aligns
 }
@@ -154,6 +154,8 @@ glopa_one <- function(x, ref, maxShift, full=TRUE) {
 #' @export
 #' @rdname alignment_funs
 identity_align <- function(x, ...) x
+
+# Internal #####
 
 align_decon <- function(x, ref, maxShift, full=TRUE, use_speaq=FALSE, method="clupa") {
     if (maxShift == 0L) {
