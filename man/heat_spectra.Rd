@@ -22,7 +22,14 @@ heat_spectra(
   xaxis_side = 1,
   col_scores = NULL,
   col_sep = NULL,
-  row_sep = NULL
+  row_sep = NULL,
+  main = NULL,
+  names = NULL,
+  ref = NULL,
+  ref_col = "red",
+  ref_lwd = NULL,
+  sparse = FALSE,
+  xaxt = "s"
 )
 }
 \arguments{
@@ -81,6 +88,29 @@ separators entirely. An integer vector draws separators \emph{after} the given
 changes when \code{y} is given, otherwise none. \code{FALSE} disables separators
 entirely. An integer vector draws separators \emph{after} the given row
 indices.}
+
+\item{main}{Optional plot title. Drawn via \code{\link[graphics:title]{graphics::title()}}.}
+
+\item{names}{Controls per-spectrum names drawn on the right side. \code{NULL} (default)
+or \code{TRUE} uses the spectrum names. \code{FALSE} hides them and shrinks the
+right margin accordingly. A character vector overrides the labels.}
+
+\item{ref}{Integer row index (1-based) of a reference spectrum to highlight with
+a rectangle, or \code{NULL} (default) for no highlight.}
+
+\item{ref_col}{Color of the reference-row rectangle. Defaults to \code{"red"}.}
+
+\item{ref_lwd}{Line width of the reference-row rectangle. Defaults to \code{par("lwd")}.}
+
+\item{sparse}{If \code{TRUE}, render the heatmap as a sparse peak matrix: all cells are
+zero except at the columns where a peak center sits (picked from
+\code{lcpar$pcisn} / \code{lcpar$pcial} / \code{lcpar$pcide}, in that priority).
+The value at a peak column is the Lorentzian peak height \code{A / lambda};
+collisions on the same column are summed. Ignored when \code{objs} is a
+matrix.}
+
+\item{xaxt}{Character. \code{"s"} (default) draws the x-axis normally; \code{"n"}
+suppresses x-axis ticks, tick labels and \code{xlab}.}
 }
 \value{
 NULL. Called for side effect of plotting.

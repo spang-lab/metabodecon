@@ -15,7 +15,10 @@ plot_spectra(
   xlab = "Chemical Shift [ppm]",
   ylab = paste("Signal Intensity [au] /", sfy),
   mar = c(4.1, 4.1, 1.1, 0.1),
-  lgd = TRUE
+  lgd = TRUE,
+  main = NULL,
+  xaxt = "s",
+  yaxt = "s"
 )
 }
 \arguments{
@@ -46,6 +49,11 @@ to \code{1} (solid) for all spectra.}
 \item{lgd}{Logical or list. If TRUE, a legend is drawn at "topright" with
 \code{cex = 0.8}. If a list, its elements are passed to \code{\link[=legend]{legend()}} to
 override position, size, etc. Pass \code{lgd = FALSE} to hide.}
+
+\item{main}{Optional plot title. Drawn via \code{\link[graphics:title]{graphics::title()}}.}
+
+\item{xaxt, yaxt}{Character. \code{"s"} (default) draws the axis normally; \code{"n"}
+suppresses axis ticks and tick labels. Passed to \code{\link[=plot]{plot()}}.}
 }
 \value{
 A plot of the deconvoluted spectra.

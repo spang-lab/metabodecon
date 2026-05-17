@@ -46,6 +46,13 @@
 #' `cex = 0.8`. If a list, its elements are passed to [legend()] to
 #' override position, size, etc. Pass `lgd = FALSE` to hide.
 #'
+#' @param main
+#' Optional plot title. Drawn via [graphics::title()].
+#'
+#' @param xaxt,yaxt
+#' Character. `"s"` (default) draws the axis normally; `"n"`
+#' suppresses axis ticks and tick labels. Passed to [plot()].
+#'
 #' @return
 #' A plot of the deconvoluted spectra.
 #'
@@ -69,7 +76,10 @@ plot_spectra <- function(
     xlab="Chemical Shift [ppm]",
     ylab=paste("Signal Intensity [au] /", sfy),
     mar=c(4.1, 4.1, 1.1, 0.1),
-    lgd=TRUE
+    lgd=TRUE,
+    main=NULL,
+    xaxt="s",
+    yaxt="s"
 ) {
     n <- length(x)
     what <- what %||% {
@@ -98,9 +108,17 @@ plot_spectra <- function(
     ltys <- rep_len(lty %||% 1L, n)
     names <- names %||% get_names(x)
     local_par(mar=mar)
-    plot(NA, type="n", xlab=xlab, ylab=ylab, xlim=c(cs_max, cs_min), ylim=c(si_min, si_max))
+    # When y-axis ticks are suppressed there are no tick labels to clash
+    # with, so draw the ylab close to the axis (mirrors heat_spectra
+    # `mtext(ylab, side=2, line=0.5)`). Otherwise let plot() place it at
+    # the default position so tick labels stay readable.
+    plot_ylab <- if (yaxt == "n") "" else ylab
+    plot(NA, type="n", xlab=xlab, ylab=plot_ylab, xlim=c(cs_max, cs_min),
+         ylim=c(si_min, si_max), xaxt=xaxt, yaxt=yaxt)
+    if (yaxt == "n" && nzchar(ylab)) mtext(ylab, side=2, line=0.5)
     for (i in seq_len(n)) lines(x=css[[i]], y=sis[[i]], col=cols[i], lty=ltys[i])
     if (lgd) legend(x="topright", legend=names, col=cols, lty=ltys)
+    if (!is.null(main)) title(main=main)
     invisible(NULL)
 }
 
@@ -174,6 +192,10 @@ plot_spectra <- function(
 #' @param xaxis_side
 #' On which side to draw the x-axis: `1` (bottom, default) or `3` (top).
 #'
+#' @param xaxt
+#' Character. `"s"` (default) draws the x-axis normally; `"n"`
+#' suppresses x-axis ticks, tick labels and `xlab`.
+#'
 #' @param col_scores
 #' Optional numeric vector of length `ncol(Z)` (after `foc_rgn` filtering)
 #' giving a per-column score (e.g. lasso coefficients or feature
@@ -191,6 +213,32 @@ plot_spectra <- function(
 #' changes when `y` is given, otherwise none. `FALSE` disables separators
 #' entirely. An integer vector draws separators *after* the given row
 #' indices.
+#'
+#' @param main
+#' Optional plot title. Drawn via [graphics::title()].
+#'
+#' @param names
+#' Controls per-spectrum names drawn on the right side. `NULL` (default)
+#' or `TRUE` uses the spectrum names. `FALSE` hides them and shrinks the
+#' right margin accordingly. A character vector overrides the labels.
+#'
+#' @param ref
+#' Integer row index (1-based) of a reference spectrum to highlight with
+#' a rectangle, or `NULL` (default) for no highlight.
+#'
+#' @param ref_col
+#' Color of the reference-row rectangle. Defaults to `"red"`.
+#'
+#' @param ref_lwd
+#' Line width of the reference-row rectangle. Defaults to `par("lwd")`.
+#'
+#' @param sparse
+#' If `TRUE`, render the heatmap as a sparse peak matrix: all cells are
+#' zero except at the columns where a peak center sits (picked from
+#' `lcpar$pcisn` / `lcpar$pcial` / `lcpar$pcide`, in that priority).
+#' The value at a peak column is the Lorentzian peak height `A / lambda`;
+#' collisions on the same column are summed. Ignored when `objs` is a
+#' matrix.
 #'
 #' @return
 #' NULL. Called for side effect of plotting.
@@ -219,13 +267,25 @@ heat_spectra <- function(
     xaxis_side = 1,
     col_scores = NULL,
     col_sep = NULL,
-    row_sep = NULL
+    row_sep = NULL,
+    main = NULL,
+    names = NULL,
+    ref = NULL,
+    ref_col = "red",
+    ref_lwd = NULL,
+    sparse = FALSE,
+    xaxt = "s"
 ) {
     stopifnot(xaxis_side %in% c(1, 3))
-    Z <- as_heatmap_matrix(objs, what)
+    Z <- if (sparse) sparse_peak_matrix(objs) else as_heatmap_matrix(objs, what)
     cs <- as.numeric(colnames(Z))
-    nms <- rownames(Z) %||% paste0("row", seq_len(nrow(Z)))
     n <- nrow(Z)
+    # `names` controls per-row labels on the right: NULL/TRUE = spectrum
+    # names, FALSE = none, character vector = override.
+    show_names <- !isFALSE(names)
+    nms <- if (!show_names) character(0)
+        else if (is.character(names)) names
+        else rownames(Z) %||% paste0("row", seq_len(n))
     if (scale_cols) {
         # Standardize each column to mean 0, sd 1. Constant columns (sd=0)
         # are set to 0 to avoid NaNs.
@@ -283,10 +343,11 @@ heat_spectra <- function(
     if (isFALSE(row_sep)) row_sep <- integer(0)
 
     # Auto-size right margin to fit longest spectrum name (in inches).
-    cw <- par("cin")[1]                    # char width in inches at cex=1
-    right_in <- cw * max(nchar(nms)) * 0.8 + 0.15
     mai <- mar * par("csi")                # convert lines -> inches
-    mai[4] <- right_in
+    if (show_names && length(nms)) {
+        cw <- par("cin")[1]                # char width in inches at cex=1
+        mai[4] <- cw * max(nchar(nms)) * 0.8 + 0.15
+    }
     local_par(mai=mai)
     # When cs is unevenly spaced (e.g. peak-area feature matrix or sorted
     # by col_scores), draw equal-width columns by indexing on column
@@ -313,7 +374,9 @@ heat_spectra <- function(
         col_sep_x <- col_sep + 0.5
     }
     mtext(ylab, side=2, line=0.5)
-    mtext(xlab, side=xaxis_side, line=mar[xaxis_side] - 1.1)
+    if (xaxt != "n") {
+        mtext(xlab, side=xaxis_side, line=mar[xaxis_side] - 1.1)
+    }
     box()
     # Separators use the box's color and line width by default.
     if (length(col_sep_x)) {
@@ -322,12 +385,22 @@ heat_spectra <- function(
     if (length(row_sep)) {
         abline(h=row_sep + 0.5, col=par("fg"), lwd=par("lwd"), xpd=FALSE)
     }
-    for (i in seq_len(n)) {
-        mtext(nms[i], side=4, at=i, las=1, line=0.2, cex=cex_names,
-              col=name_cols[i], adj=0)
+    if (show_names && length(nms)) {
+        for (i in seq_len(n)) {
+            mtext(nms[i], side=4, at=i, las=1, line=0.2, cex=cex_names,
+                  col=name_cols[i], adj=0)
+        }
     }
-    draw_heatmap_xaxis(cs, true_x0, true_col, true_tol, uniform,
-                       side=xaxis_side, col_scores=col_scores)
+    if (!is.null(ref)) {
+        stopifnot(is_int(ref, 1), ref >= 1, ref <= n)
+        rect(par("usr")[1], ref - 0.5, par("usr")[2], ref + 0.5,
+             border=ref_col, lwd=ref_lwd %||% par("lwd"), xpd=FALSE)
+    }
+    if (xaxt != "n") {
+        draw_heatmap_xaxis(cs, true_x0, true_col, true_tol, uniform,
+                           side=xaxis_side, col_scores=col_scores)
+    }
+    if (!is.null(main)) title(main=main)
     invisible(NULL)
 }
 
@@ -366,6 +439,30 @@ draw_heatmap_xaxis <- function(cs, true_x0=NULL, true_col="red", tol=NULL,
         axis(side, at=at[k], labels=labs[k], las=las, cex.axis=cex,
              col.axis=label_cols[k], tick=FALSE, line=line)
     }
+}
+
+# Build a sparse peak matrix from a `decons2` / `aligns` object: zero
+# everywhere except at each peak's `lcpar_idx()` column, where the value
+# is the Lorentzian peak height `A / lambda`. Collisions on the same
+# column are summed. Used by `heat_spectra(sparse=TRUE)`.
+sparse_peak_matrix <- function(objs) {
+    stopifnot(inherits(objs, "decons2") || inherits(objs, "aligns"))
+    cs <- objs[[1]]$cssh %||% objs[[1]]$cs
+    ns <- length(objs); nc <- length(cs)
+    mat <- matrix(0, nrow=ns, ncol=nc)
+    for (s in seq_len(ns)) {
+        lp <- objs[[s]]$lcpar
+        if (nrow(lp) == 0L) next
+        idx <- lcpar_idx(lp, cs)
+        h <- lp$A / lp$lambda
+        for (p in seq_along(idx)) {
+            if (is.na(idx[p])) next
+            mat[s, idx[p]] <- mat[s, idx[p]] + h[p]
+        }
+    }
+    colnames(mat) <- cs
+    rownames(mat) <- get_names(objs)
+    mat
 }
 
 # Convert a heatmap input to a numeric matrix with ppm `colnames` and
