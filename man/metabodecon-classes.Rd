@@ -114,10 +114,14 @@ A \code{decon2} object additionally has:
 (superposition of aligned Lorentz curves, added by \code{align()}).
 \item \code{peak}: Data frame of peak triplets with columns \code{center}, \code{left},
 \code{right}: integer indices into \code{cs}.
-\item \code{lcpar}: Data frame of Lorentz-curve parameters with columns \code{A}
-(amplitude), \code{lambda} (half-width), \code{x0} (center, in \code{cs} units), and
-\code{x0al}/\code{pcial} (aligned center and integer index into \code{cs}, added by
-\code{align()}).
+\item \code{lcpar}: Data frame of Lorentz-curve parameters. Always carries
+\code{x0} (center in ppm), \code{A} (amplitude), \code{lambda} (half-width) and
+\code{pcide} (integer column index into \code{cssh} for \code{x0}). After
+\code{\link[=clupa]{clupa()}} also \code{x0al} / \code{pcial} (post-CluPA center
+and cssh index). After \code{\link[=snap_to_ref]{snap_to_ref()}} also \code{x0sn}
+/ \code{pcisn} (post-RefPA center and cssh index, with \code{NA} for peaks
+snapped beyond \code{maxCombine}). \code{A} and \code{lambda} are preserved
+through every stage.
 }
 }
 
@@ -127,8 +131,10 @@ A \code{decon2} object additionally has:
 An \code{align} object has the same fields as \code{decon2}, but with the alignment
 slots populated:
 \itemize{
-\item \code{lcpar$x0al}: Peak Centers after Alignment in ppm
-\item \code{lcpar$pcial}: Peak Centers after Alignment in datapoint indices
+\item \code{lcpar$x0al}: Peak Centers after CluPA alignment in ppm
+\item \code{lcpar$pcial}: Peak Centers after CluPA alignment as \code{cssh} indices
+\item \code{lcpar$x0sn}: Peak Centers after RefPA snap in ppm (NA when snapped out)
+\item \code{lcpar$pcisn}: Peak Centers after RefPA snap as \code{cssh} indices (NA when snapped out)
 \item \code{sit$supal}: Signal Intensities of the superposition of aligned Lorentz curves
 }
 }

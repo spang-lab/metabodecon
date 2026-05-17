@@ -3,10 +3,10 @@
 \name{alignment_funs}
 \alias{alignment_funs}
 \alias{clupa}
-\alias{vopa}
-\alias{glopa}
 \alias{identity_align}
-\title{Alignment functions for fit_mdm}
+\alias{snap_to_ref}
+\alias{combine_peaks}
+\title{Alignment building blocks}
 \usage{
 clupa(
   x,
@@ -15,23 +15,23 @@ clupa(
   verbose = TRUE,
   nworkers = 1,
   full = TRUE,
-  use_speaq = FALSE
+  use_speaq = FALSE,
+  supsh = "lorentz"
 )
 
-vopa(x, ref = NULL, maxShift = 50, verbose = TRUE, nworkers = 1, full = TRUE)
-
-glopa(x, ref = NULL, maxShift = 50, verbose = TRUE, nworkers = 1, full = TRUE)
-
 identity_align(x, ...)
+
+snap_to_ref(x, ref = NULL, maxCombine = 20, ...)
+
+combine_peaks(x, ref = NULL, maxCombine = 20, ...)
 }
 \arguments{
 \item{x}{A \code{decons2} or \code{aligns} object.}
 
 \item{ref}{Optional reference spectrum (\code{align} or \code{decon2}). When
-\code{NULL}, chosen automatically.}
+\code{NULL}, chosen by \code{\link[=find_ref]{find_ref()}}.}
 
-\item{maxShift}{Maximum number of datapoints a peak center may be
-shifted.}
+\item{maxShift}{Maximum CluPA shift in datapoints.}
 
 \item{verbose}{Print progress messages?}
 
@@ -39,31 +39,46 @@ shifted.}
 
 \item{full}{If \code{TRUE} also recompute the aligned superposition.}
 
-\item{use_speaq}{Use \code{speaq::dohCluster} instead of the bundled
-implementation. Only used by \code{clupa}.}
+\item{use_speaq}{Use \code{speaq::dohCluster} (CluPA only).}
 
-\item{...}{Ignored (\code{identity_align} only).}
+\item{...}{Ignored.}
+
+\item{maxCombine}{Maximum RefPA snap distance in datapoints.}
 }
 \value{
 An object of class \code{aligns}.
 }
 \description{
-Pluggable alignment backends accepted by the \code{align_fun} argument of
-\code{\link[=fit_mdm]{fit_mdm()}} / \code{\link[=benchmark]{benchmark()}}.
+Pluggable alignment stages used by \code{\link[=align]{align()}} and the
+\code{align_fun} argument of \code{\link[=fit_mdm]{fit_mdm()}} /
+\code{\link[=benchmark]{benchmark()}}.
 \itemize{
-\item \code{\link[=clupa]{clupa()}}: hierarchical-clustering peak alignment
-(recursive FFT shifts on spectrum sub-segments,
-Beirnaert et al. 2018, Vu et al. 2011). Default of
-\code{\link[=align]{align()}}.
-\item \code{\link[=vopa]{vopa()}}: vote-based peak alignment. Estimates one
-global integer DP shift per spectrum from a weighted vote over
-pairwise peak matches, then refines per-peak shifts via
-interpolation.
-\item \code{\link[=glopa]{glopa()}}: global peak alignment. Per spectrum, find
-the single integer DP shift in \verb{[-maxShift, maxShift]} that
-maximises FFT cross-correlation of the raw signal intensities
-against the reference, then apply it to all peak centers.
-\item \code{\link[=identity_align]{identity_align()}}: no-op. Returns its first argument
-unchanged.
+\item \code{\link[=clupa]{clupa()}}: \strong{CluPA} — hierarchical-clustering peak
+alignment (recursive FFT segment shifts, Beirnaert et al. 2018, Vu
+et al. 2011).
+\item \code{\link[=snap_to_ref]{snap_to_ref()}}: \strong{RefPA} — reference-based peak
+alignment: snap each peak to the nearest reference column within
+\code{maxCombine}.
+\item \code{\link[=identity_align]{identity_align()}}: no-op. Returns its argument unchanged.
 }
+
+\code{\link[=snap_to_ref]{snap_to_ref()}} applies the RefPA step on its own: for
+each peak in each spectrum, finds the nearest reference column on
+\code{cssh} and records that column as \code{pcisn} (and its ppm value as
+\code{x0sn}). Peaks farther than \code{maxCombine} columns from every
+reference column get \code{pcisn = NA} / \code{x0sn = NA}. Original \code{x0},
+\code{x0al}, \code{A}, \code{lambda}, \code{pcide} and \code{pcial} are preserved — RefPA
+only \emph{adds} the snapped fields. Collisions on the same \code{pcisn}
+column are not merged here; \code{\link[=si_mat]{si_mat()}} sums their
+areas when rasterising the feature matrix. \code{sit$supal} is cleared
+because the post-snap superposition would need recomputing.
+
+\code{\link[=combine_peaks]{combine_peaks()}} is an alternative post-CluPA fine
+tuner that, unlike \code{snap_to_ref}, does not require the target
+columns to come from a reference spectrum: it greedily merges
+neighbouring \code{cssh} columns whose non-zero rows do not collide,
+within a window of \code{maxCombine}. Operates on the cross-spectrum
+peak-area matrix built from \code{lcpar$pcial} / \code{lcpar$A}; sets
+\code{lcpar$pcisn} / \code{lcpar$x0sn} per peak from the discovered column
+mapping. No peaks are dropped. \code{sit$supal} is cleared.
 }

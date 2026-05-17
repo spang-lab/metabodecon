@@ -2,42 +2,74 @@
 % Please edit documentation in R/align.R
 \name{align}
 \alias{align}
-\title{Align Spectra}
+\title{Align deconvoluted spectra}
 \usage{
-align(x, ref = NULL, maxShift = 50, verbose = TRUE, nworkers = 1)
+align(
+  x,
+  ref = NULL,
+  maxShift = 50,
+  maxCombine = 0,
+  verbose = TRUE,
+  nworkers = 1,
+  full = TRUE,
+  use_speaq = FALSE,
+  supsh = "lorentz"
+)
 }
 \arguments{
-\item{x}{An object of type \code{decons2} or \code{aligns}, as described in \link{metabodecon-classes}.}
+\item{x}{A \code{decons2} (or \code{aligns}) object.}
 
-\item{ref}{Optional reference spectrum of type \code{align} or \code{decon2}. When supplied,
-all spectra in \code{x} are aligned towards this reference. The reference is
-prepended to \code{x} internally and removed from the result. If \code{NULL}
-(default), the reference is chosen automatically.}
+\item{ref}{Optional reference spectrum (\code{align} or \code{decon2}). When
+\code{NULL} (default) the reference is chosen by \code{\link[=find_ref]{find_ref()}}.}
 
-\item{maxShift}{Maximum number of datapoints a peak center may be shifted during CluPA
-alignment. 50 is a suitable starting value for plasma spectra with a digital
-resolution of 128K. Increase for urine or other sample types with larger
-chemical-shift variation. Use \code{maxShift = 0L} to skip alignment entirely:
-each peak's aligned center \code{x0al} is set equal to its fitted center \code{x0}.}
+\item{maxShift}{Maximum number of datapoints a peak center may be
+shifted by CluPA. \code{maxShift = 0L} skips CluPA (sets \code{x0al = x0}).}
 
-\item{verbose}{Whether to print progress messages during alignment.}
+\item{maxCombine}{Maximum snap distance for RefPA in chemical-shift
+columns. \code{maxCombine = 0L} skips RefPA (no snapping). A negative
+value is treated as \code{maxShift}.}
 
-\item{nworkers}{Number of parallel workers. Default is 1 (no parallelism).}
+\item{verbose}{Print progress messages?}
+
+\item{nworkers}{Number of parallel workers.}
+
+\item{full}{If \code{TRUE} also recompute the aligned superposition during
+CluPA. RefPA always drops \code{sit$supal} (the post-snap peak list is
+no longer Lorentz-compatible).}
+
+\item{use_speaq}{Use \code{speaq::dohCluster} instead of the bundled CluPA
+implementation.}
 }
 \value{
-An object of type \code{aligns} as described in \link{metabodecon-classes}.
+An object of class \code{aligns}.
 }
 \description{
-Align signals across  a  list  of  deconvoluted  spectra  using  the  'CluPA'
-algorithm from the 'speaq' package, described  in  Beirnaert  et  al.  (2018)
-\url{doi:10.1371/journal.pcbi.1006018}     and     Vu     et      al.      (2011)
-\url{doi:10.1186/1471-2105-12-405} plus the additional peak combination described
-in \code{\link[=combine_peaks]{combine_peaks()}}.
+Aligns peaks across a set of deconvoluted spectra by chaining two
+stages:
+\enumerate{
+\item \strong{CluPA} (\code{\link[=clupa]{clupa()}}) shifts peak centers
+continuously toward a reference using hierarchical-clustering FFT
+segment shifts (Beirnaert et al. 2018, Vu et al. 2011). Adds
+\code{x0al} and \code{pcial} (post-CluPA center and cssh column index) to
+each peak; original \code{x0}, \code{A}, \code{lambda}, \code{pcide} are preserved.
+\item \strong{RefPA} (\code{\link[=snap_to_ref]{snap_to_ref()}}) records, for each peak,
+the nearest reference column on \code{cssh} within \code{maxCombine} as
+\code{pcisn} / \code{x0sn}. Peaks farther than \code{maxCombine} from every
+reference column get \code{pcisn = NA} / \code{x0sn = NA}. No peaks are
+dropped and amplitudes are not summed here — collisions on the
+same \code{pcisn} are aggregated downstream by \code{\link[=si_mat]{si_mat()}}.
+}
+
+RefPA collapses the continuous peak grid produced by CluPA into the
+reference's discrete peak grid, which is what downstream feature
+extraction (e.g. \code{\link[=peak_mat]{peak_mat()}}) expects.
 }
 \examples{
-decons <- deconvolute(sim[1:2], sfr = c(3.55, 3.35))
-aligned <- align(decons)
+\dontrun{
+  decons <- deconvolute(sim[1:5], sfr=c(3.55, 3.35))
+  aligned <- align(decons, maxShift=50, maxCombine=20)
+}
 }
 \author{
-2024-2025 Tobias Schmidt: initial version.
+2024-2026 Tobias Schmidt: initial version.
 }

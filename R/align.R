@@ -3,287 +3,443 @@
 
 #' @export
 #'
-#' @title Align Spectra
+#' @title Align deconvoluted spectra
 #'
 #' @description
-#' Align signals across  a  list  of  deconvoluted  spectra  using  the  'CluPA'
-#' algorithm from the 'speaq' package, described  in  Beirnaert  et  al.  (2018)
-#' <doi:10.1371/journal.pcbi.1006018>     and     Vu     et      al.      (2011)
-#' <doi:10.1186/1471-2105-12-405> plus the additional peak combination described
-#' in [metabodecon::combine_peaks()].
+#' Aligns peaks across a set of deconvoluted spectra by chaining two
+#' stages:
 #'
-#' @param x
-#' An object of type `decons2` or `aligns`, as described in [metabodecon::metabodecon-classes].
+#' 1. **CluPA** ([metabodecon::clupa()]) shifts peak centers
+#'    continuously toward a reference using hierarchical-clustering FFT
+#'    segment shifts (Beirnaert et al. 2018, Vu et al. 2011). Adds
+#'    `x0al` and `pcial` (post-CluPA center and cssh column index) to
+#'    each peak; original `x0`, `A`, `lambda`, `pcide` are preserved.
+#' 2. **RefPA** ([metabodecon::snap_to_ref()]) records, for each peak,
+#'    the nearest reference column on `cssh` within `maxCombine` as
+#'    `pcisn` / `x0sn`. Peaks farther than `maxCombine` from every
+#'    reference column get `pcisn = NA` / `x0sn = NA`. No peaks are
+#'    dropped and amplitudes are not summed here — collisions on the
+#'    same `pcisn` are aggregated downstream by [metabodecon::si_mat()].
 #'
+#' RefPA collapses the continuous peak grid produced by CluPA into the
+#' reference's discrete peak grid, which is what downstream feature
+#' extraction (e.g. [metabodecon::peak_mat()]) expects.
+#'
+#' @param x A `decons2` (or `aligns`) object.
 #' @param ref
-#' Optional reference spectrum of type `align` or `decon2`. When supplied,
-#' all spectra in `x` are aligned towards this reference. The reference is
-#' prepended to `x` internally and removed from the result. If `NULL`
-#' (default), the reference is chosen automatically.
-#'
+#' Optional reference spectrum (`align` or `decon2`). When
+#' `NULL` (default) the reference is chosen by [metabodecon::find_ref()].
 #' @param maxShift
-#' Maximum number of datapoints a peak center may be shifted during CluPA
-#' alignment. 50 is a suitable starting value for plasma spectra with a digital
-#' resolution of 128K. Increase for urine or other sample types with larger
-#' chemical-shift variation. Use `maxShift = 0L` to skip alignment entirely:
-#' each peak's aligned center `x0al` is set equal to its fitted center `x0`.
-#'
+#' Maximum number of datapoints a peak center may be
+#' shifted by CluPA. `maxShift = 0L` skips CluPA (sets `x0al = x0`).
+#' @param maxCombine
+#' Maximum snap distance for RefPA in chemical-shift
+#' columns. `maxCombine = 0L` skips RefPA (no snapping). A negative
+#' value is treated as `maxShift`.
 #' @param verbose
-#' Whether to print progress messages during alignment.
-#'
+#' Print progress messages?
 #' @param nworkers
-#' Number of parallel workers. Default is 1 (no parallelism).
+#' Number of parallel workers.
+#' @param full
+#' If `TRUE` also recompute the aligned superposition during
+#' CluPA. RefPA always drops `sit$supal` (the post-snap peak list is
+#' no longer Lorentz-compatible).
+#' @param use_speaq
+#' Use `speaq::dohCluster` instead of the bundled CluPA
+#' implementation.
 #'
-#' @return
-#' An object of type `aligns` as described in [metabodecon::metabodecon-classes].
+#' @return An object of class `aligns`.
 #'
-#' @author 2024-2025 Tobias Schmidt: initial version.
+#' @author 2024-2026 Tobias Schmidt: initial version.
 #'
 #' @examples
-#' decons <- deconvolute(sim[1:2], sfr = c(3.55, 3.35))
-#' aligned <- align(decons)
-align <- function(x, ref=NULL, maxShift=50, verbose=TRUE, nworkers=1) {
+#' \dontrun{
+#'   decons <- deconvolute(sim[1:5], sfr=c(3.55, 3.35))
+#'   aligned <- align(decons, maxShift=50, maxCombine=20)
+#' }
+align <- function(x, ref=NULL, maxShift=50, maxCombine=0,
+                  verbose=TRUE, nworkers=1, full=TRUE, use_speaq=FALSE,
+                  supsh="lorentz") {
     stopifnot(
         inherits(x, "decons2"),
-        is_int(maxShift,1), is_bool(verbose,1), is_int(nworkers,1),
+        is_int(maxShift, 1), maxShift >= 0,
+        is_int(maxCombine, 1),
+        is_bool(verbose, 1), is_int(nworkers, 1),
         is.null(ref) || inherits(ref, "decon2")
     )
-    clupa(x, ref, maxShift, verbose, nworkers)
+    if (maxCombine < 0L) maxCombine <- as.integer(maxShift)
+    a <- clupa(x, ref=ref, maxShift=maxShift, verbose=verbose,
+               nworkers=nworkers, full=full, use_speaq=use_speaq,
+               supsh=supsh)
+    if (maxCombine > 0L) a <- snap_to_ref(a, ref=ref, maxCombine=maxCombine)
+    a
 }
 
 #' @export
 #' @name alignment_funs
 #' @rdname alignment_funs
 #'
-#' @title Alignment functions for fit_mdm
+#' @title Alignment building blocks
 #'
 #' @description
-#' Pluggable alignment backends accepted by the `align_fun` argument of
-#' [metabodecon::fit_mdm()] / [metabodecon::benchmark()].
+#' Pluggable alignment stages used by [metabodecon::align()] and the
+#' `align_fun` argument of [metabodecon::fit_mdm()] /
+#' [metabodecon::benchmark()].
 #'
-#' - [metabodecon::clupa()]: hierarchical-clustering peak alignment
-#'   (recursive FFT shifts on spectrum sub-segments,
-#'   Beirnaert et al. 2018, Vu et al. 2011). Default of
-#'   [metabodecon::align()].
-#' - [metabodecon::vopa()]: vote-based peak alignment. Estimates one
-#'   global integer DP shift per spectrum from a weighted vote over
-#'   pairwise peak matches, then refines per-peak shifts via
-#'   interpolation.
-#' - [metabodecon::glopa()]: global peak alignment. Per spectrum, find
-#'   the single integer DP shift in `[-maxShift, maxShift]` that
-#'   maximises FFT cross-correlation of the raw signal intensities
-#'   against the reference, then apply it to all peak centers.
-#' - [metabodecon::identity_align()]: no-op. Returns its first argument
-#'   unchanged.
+#' - [metabodecon::clupa()]: **CluPA** — hierarchical-clustering peak
+#'   alignment (recursive FFT segment shifts, Beirnaert et al. 2018, Vu
+#'   et al. 2011).
+#' - [metabodecon::snap_to_ref()]: **RefPA** — reference-based peak
+#'   alignment: snap each peak to the nearest reference column within
+#'   `maxCombine`.
+#' - [metabodecon::identity_align()]: no-op. Returns its argument unchanged.
 #'
 #' @param x A `decons2` or `aligns` object.
 #' @param ref Optional reference spectrum (`align` or `decon2`). When
-#'   `NULL`, chosen automatically.
-#' @param maxShift Maximum number of datapoints a peak center may be
-#'   shifted.
+#'   `NULL`, chosen by [metabodecon::find_ref()].
+#' @param maxShift Maximum CluPA shift in datapoints.
+#' @param maxCombine Maximum RefPA snap distance in datapoints.
 #' @param verbose Print progress messages?
 #' @param nworkers Number of parallel workers.
 #' @param full If `TRUE` also recompute the aligned superposition.
-#' @param use_speaq Use `speaq::dohCluster` instead of the bundled
-#'   implementation. Only used by `clupa`.
-#' @param ... Ignored (`identity_align` only).
+#' @param use_speaq Use `speaq::dohCluster` (CluPA only).
+#' @param ... Ignored.
 #' @return An object of class `aligns`.
 clupa <- function(
     x, ref=NULL, maxShift=50, verbose=TRUE, nworkers=1,
-    full=TRUE, use_speaq=FALSE
+    full=TRUE, use_speaq=FALSE, supsh="lorentz"
 ) {
-    ndps <- vapply(x, function(s) length(s$cs), integer(1))
-    if (length(unique(ndps)) > 1) stop("All spectra must have the same number of data points.")
+    supsh <- match.arg(supsh, c("lorentz", "sparse"))
+    x <- ensure_cssh(x)
+    x <- ensure_supsh(x, supsh=supsh)
+    if (!is.null(ref) && is.null(ref$cssh)) ref$cssh <- x[[1]]$cssh
+    if (!is.null(ref) && is.null(ref$sit$supsh)) {
+        ref$sit$supsh <- make_supsh(ref$cssh, ref$lcpar, supsh)
+    }
+    if (maxShift == 0L) return(noshift_align(x, full=full))
     ref <- ref %||% find_ref(x)
     aligns <- mcmapply(
         nworkers, align_decon, x,
-        MoreArgs=list(ref, maxShift, full=full, use_speaq=use_speaq, method="clupa")
+        MoreArgs=list(ref, maxShift, full=full, use_speaq=use_speaq)
     )
     class(aligns) <- c("aligns", "decons2", "spectra")
     aligns
 }
 
-#' @export
-#' @rdname alignment_funs
-vopa <- function(
-    x, ref=NULL, maxShift=50, verbose=TRUE, nworkers=1, full=TRUE
-) {
-    ndps <- vapply(x, function(s) length(s$cs), integer(1))
-    if (length(unique(ndps)) > 1) stop("All spectra must have the same number of data points.")
-    ref <- ref %||% find_ref(x)
-    aligns <- mcmapply(nworkers, align_decon, x,
-        MoreArgs=list(ref, maxShift, full=full, use_speaq=FALSE, method="shift"))
-    class(aligns) <- c("aligns", "decons2", "spectra")
-    aligns
-}
-
-#' @export
-#' @rdname alignment_funs
-glopa <- function(
-    x, ref=NULL, maxShift=50, verbose=TRUE, nworkers=1, full=TRUE
-) {
-    ndps <- vapply(x, function(s) length(s$cs), integer(1))
-    if (length(unique(ndps)) > 1) stop("All spectra must have the same number of data points.")
-    ref <- ref %||% find_ref(x)
-    aligns <- mcmapply(nworkers, glopa_one, x,
-        MoreArgs=list(ref=ref, maxShift=maxShift, full=full))
-    class(aligns) <- c("aligns", "decons2", "spectra")
-    aligns
-}
-
-glopa_one <- function(x, ref, maxShift, full=TRUE) {
-    if (maxShift == 0L) {
-        x$lcpar$x0al <- x$lcpar$x0
-        x$lcpar$pcial <- round(convert_pos(x$lcpar$x0, x$cs, seq_along(x$cs)))
-        if (full) x$sit$supal <- lorentz_sup(x$cs, x$lcpar$x0al, x$lcpar$A, x$lcpar$lambda)
-        class(x) <- c("align", "decon2", "spectrum")
+# Make sure every spectrum in `x` carries a shared cssh grid. If none
+# is present, derive one from the input `cs` ranges. If some carry
+# cssh, require all to agree (otherwise alignment indices wouldn't be
+# comparable). Does NOT compute sit$supsh — see ensure_supsh().
+ensure_cssh <- function(x) {
+    have_cssh <- vapply(x, function(s) !is.null(s$cssh), logical(1))
+    if (!all(have_cssh)) {
+        cssh <- make_cssh(x)
+        for (i in seq_along(x)) x[[i]]$cssh <- cssh
         return(x)
     }
-    sig_ref <- ref$si %||% ref$sit$sup
-    sig_tar <- x$si %||% x$sit$sup
-    adj <- fft_shift(sig_ref, sig_tar, maxShift=maxShift)
-    pci_x <- round(convert_pos(x$lcpar$x0, x$cs, seq_along(x$cs)))
-    pcial <- pmin(length(x$cs), pmax(1L, pci_x - adj$stepAdj))
-    x$lcpar$x0al <- x$cs[pcial]
-    x$lcpar$pcial <- pcial
-    if (full) x$sit$supal <- lorentz_sup(x$cs, x$lcpar$x0al, x$lcpar$A, x$lcpar$lambda)
-    class(x) <- c("align", "decon2", "spectrum")
+    cssh <- x[[1]]$cssh
+    for (i in seq_along(x)) {
+        if (!isTRUE(all.equal(x[[i]]$cssh, cssh))) {
+            stop("Spectra carry different cssh; alignment requires a shared grid.")
+        }
+    }
     x
+}
+
+# Compute the shared-grid input vector sit$supsh for CluPA. Two modes:
+#
+#   "lorentz" (default): full Lorentz superposition evaluated at cssh.
+#     Smooth, expensive: O(length(cssh) * npeaks).
+#
+#   "sparse": delta comb — zeros everywhere except at the cssh column
+#     nearest each peak center, which carries the peak area A. Cheap:
+#     O(npeaks). Lets speaq's FFT cross-correlator align directly on
+#     amplitude-weighted peak positions.
+#
+# Only fills in sit$supsh when it is missing. Callers that want to
+# *switch* the cached mode must clear sit$supsh first (or re-run
+# deconvolute_spectra with the desired `supsh=`). Assumes
+# ensure_cssh() has already run.
+ensure_supsh <- function(x, supsh="lorentz") {
+    supsh <- match.arg(supsh, c("lorentz", "sparse"))
+    for (i in seq_along(x)) {
+        if (is.null(x[[i]]$sit$supsh)) {
+            x[[i]]$sit$supsh <- make_supsh(x[[i]]$cssh, x[[i]]$lcpar, supsh)
+        }
+    }
+    x
+}
+
+# Build the sit$supsh vector from a peak list. Branches on `supsh`
+# mode; see ensure_supsh() for semantics. Shared between
+# deconvolute_spectrum_{r,rust}() and ensure_supsh().
+make_supsh <- function(cssh, lcpar, supsh="lorentz") {
+    supsh <- match.arg(supsh, c("lorentz", "sparse"))
+    if (supsh == "lorentz") return(lorentz_sup(cssh, lcpar=lcpar))
+    out <- numeric(length(cssh))
+    if (nrow(lcpar) == 0L) return(out)
+    idx <- round(convert_pos(lcpar$x0, cssh, seq_along(cssh)))
+    idx <- pmin(pmax(as.integer(idx), 1L), length(cssh))
+    s <- tapply(as.numeric(lcpar$A), idx, sum)
+    out[as.integer(names(s))] <- s
+    out
+}
+
+# Integer cssh-column index for each value in `vals`. Clamped to
+# [1, length(cssh)]. Used to build pcide / pcial / pcisn from the
+# corresponding x0 / x0al / x0sn vectors.
+pci_on_cssh <- function(vals, cssh) {
+    idx <- round(convert_pos(vals, cssh, seq_along(cssh)))
+    pmin(pmax(as.integer(idx), 1L), length(cssh))
 }
 
 #' @export
 #' @rdname alignment_funs
 identity_align <- function(x, ...) x
 
-# Internal #####
-
-align_decon <- function(x, ref, maxShift, full=TRUE, use_speaq=FALSE, method="clupa") {
-    if (maxShift == 0L) {
-        x$lcpar$x0al <- x$lcpar$x0
-        x$lcpar$pcial <- round(convert_pos(x$lcpar$x0, x$cs, seq_along(x$cs)))
-        if (full) x$sit$supal <- lorentz_sup(x$cs, x$lcpar$x0al, x$lcpar$A, x$lcpar$lambda)
-        class(x) <- c("align", "decon2", "spectrum")
-        return(x)
+#' @export
+#' @rdname alignment_funs
+#'
+#' @description
+#' [metabodecon::snap_to_ref()] applies the RefPA step on its own: for
+#' each peak in each spectrum, finds the nearest reference column on
+#' `cssh` and records that column as `pcisn` (and its ppm value as
+#' `x0sn`). Peaks farther than `maxCombine` columns from every
+#' reference column get `pcisn = NA` / `x0sn = NA`. Original `x0`,
+#' `x0al`, `A`, `lambda`, `pcide` and `pcial` are preserved — RefPA
+#' only *adds* the snapped fields. Collisions on the same `pcisn`
+#' column are not merged here; [metabodecon::si_mat()] sums their
+#' areas when rasterising the feature matrix. `sit$supal` is cleared
+#' because the post-snap superposition would need recomputing.
+#'
+#' [metabodecon::combine_peaks()] is an alternative post-CluPA fine
+#' tuner that, unlike `snap_to_ref`, does not require the target
+#' columns to come from a reference spectrum: it greedily merges
+#' neighbouring `cssh` columns whose non-zero rows do not collide,
+#' within a window of `maxCombine`. Operates on the cross-spectrum
+#' peak-area matrix built from `lcpar$pcial` / `lcpar$A`; sets
+#' `lcpar$pcisn` / `lcpar$x0sn` per peak from the discovered column
+#' mapping. No peaks are dropped. `sit$supal` is cleared.
+snap_to_ref <- function(x, ref=NULL, maxCombine=20, ...) {
+    stopifnot(inherits(x, "decons2"), is_int(maxCombine, 1), maxCombine >= 0)
+    if (maxCombine == 0L) return(x)
+    x <- ensure_cssh(x)
+    if (!is.null(ref) && is.null(ref$cssh)) ref$cssh <- x[[1]]$cssh
+    ref <- ref %||% find_ref(x)
+    if (is.null(ref$lcpar$pcial)) {
+        ref$lcpar$pcial <- pci_on_cssh(ref$lcpar$x0, ref$cssh)
     }
-    pci_x <- round(convert_pos(x$lcpar$x0, x$cs, seq_along(x$cs)))
-    pci_ref <- round(convert_pos(ref$lcpar$x0, ref$cs, seq_along(ref$cs)))
+    cssh <- x[[1]]$cssh
+    nc <- length(cssh)
+    pp <- sort(unique(as.integer(ref$lcpar$pcial)))
+    pp <- pp[pp >= 1L & pp <= nc]
+    for (s in seq_along(x)) {
+        x[[s]]$lcpar <- snap_lcpar(x[[s]]$lcpar, pp, maxCombine, cssh)
+        x[[s]]$sit$supal <- NULL
+        class(x[[s]]) <- c("align", "decon2", "spectrum")
+    }
+    class(x) <- c("aligns", "decons2", "spectra")
+    x
+}
 
-    if (method == "clupa") {
-        np_x <- length(pci_x); np_ref <- length(pci_ref)
-        obj <- hclust_align(
-            refSpec=ref$sit$sup, tarSpec=x$sit$sup,
-            peakList=c(pci_ref, pci_x),
-            peakLabel=c(rep(1, np_ref), rep(0, np_x)),
-            startP=1, endP=length(x$sit$sup),
-            maxShift=maxShift, use_speaq=use_speaq
-        )
-        if (length(obj$peakList) != np_ref + np_x) stop("Lost peaks during alignment")
-        pcial <- obj$peakList[(np_ref + 1):(np_ref + np_x)]
-    } else {
-        lam_x <- abs(round(convert_width(x$lcpar$lambda, x$cs, seq_along(x$cs))))
-        lam_ref <- abs(round(convert_width(ref$lcpar$lambda, ref$cs, seq_along(ref$cs))))
-        ref_pd <- list(x0=pci_ref, lambda=pmax(lam_ref, 1),
-                       A=abs(ref$lcpar$A), n=length(ref$cs))
-        tar_pd <- list(x0=pci_x, lambda=pmax(lam_x, 1),
-                       A=abs(x$lcpar$A), n=length(x$cs))
-        shift0 <- estimate_peak_shift(ref_pd, tar_pd, maxShift)
-        m <- match_peak_pairs(ref_pd, tar_pd, shift=shift0)
-        if (length(m$idx_tar) < 3) {
-            pcial <- pmin(length(x$cs), pmax(1L, round(pci_x - shift0)))
+# Per-spectrum peak-list snap: add `pcisn` (nearest reference column
+# index on cssh) and `x0sn` (= cssh[pcisn]) to each row of `lcpar`,
+# keeping all original columns. Peaks farther than `maxCombine` from
+# every reference column get pcisn = NA / x0sn = NA. Amplitudes are
+# NOT summed here; collisions on the same pcisn are aggregated by
+# si_mat() at rasterisation time.
+snap_lcpar <- function(lcpar, pp, maxCombine, cssh) {
+    n <- nrow(lcpar)
+    lcpar$pcisn <- rep(NA_integer_, n)
+    lcpar$x0sn  <- rep(NA_real_,    n)
+    if (n == 0L || length(pp) == 0L) return(lcpar)
+    pcial <- as.integer(lcpar$pcial)
+    # For each peak, find nearest reference column (within maxCombine).
+    idx <- findInterval(pcial, pp)
+    lo <- pmax(idx, 1L); hi <- pmin(idx + 1L, length(pp))
+    dlo <- abs(pcial - pp[lo]); dhi <- abs(pcial - pp[hi])
+    nearest <- ifelse(dlo <= dhi, pp[lo], pp[hi])
+    dist <- pmin(dlo, dhi)
+    keep <- dist <= maxCombine
+    lcpar$pcisn[keep] <- as.integer(nearest[keep])
+    lcpar$x0sn[keep]  <- cssh[nearest[keep]]
+    lcpar
+}
+
+#' @export
+#' @rdname alignment_funs
+combine_peaks <- function(x, ref=NULL, maxCombine=20, ...) {
+    stopifnot(inherits(x, "decons2"), is_int(maxCombine, 1), maxCombine >= 0)
+    if (maxCombine == 0L) return(x)
+    x <- ensure_cssh(x)
+    cssh <- x[[1]]$cssh
+    nc <- length(cssh)
+    ns <- length(x)
+    # Build cross-spectrum peak-area matrix (rows = spectra, cols = cssh)
+    # from each spectrum's pcial / A. Collisions on the same column are
+    # summed, mirroring how si_mat rasterizes downstream.
+    M <- matrix(0, nrow=ns, ncol=nc)
+    for (s in seq_len(ns)) {
+        lcpar <- x[[s]]$lcpar
+        n <- nrow(lcpar)
+        if (n == 0L) next
+        if (is.null(lcpar$pcial)) {
+            lcpar$pcial <- pci_on_cssh(lcpar$x0, cssh)
+            x[[s]]$lcpar <- lcpar
+        }
+        pcial <- as.integer(lcpar$pcial)
+        A <- as.numeric(lcpar$A)
+        # tapply -> faster than a per-peak loop when many peaks land
+        # on the same column.
+        keep <- pcial >= 1L & pcial <= nc
+        if (!any(keep)) next
+        s_by_col <- tapply(A[keep], pcial[keep], sum)
+        M[s, as.integer(names(s_by_col))] <- s_by_col
+    }
+    map <- combine_peaks_mat(M, maxCombine)$map
+    for (s in seq_len(ns)) {
+        lcpar <- x[[s]]$lcpar
+        n <- nrow(lcpar)
+        if (n == 0L) {
+            lcpar$pcisn <- integer(0)
+            lcpar$x0sn  <- numeric(0)
         } else {
-            shift <- interp_shift(x=pci_x[m$idx_tar], shift=m$delta,
-                weight=m$weight, xout=pci_x, maxShift=maxShift, fallback=shift0)
-            pcial <- pmin(length(x$cs), pmax(1L, round(pci_x - shift)))
+            pcial <- as.integer(lcpar$pcial)
+            ok <- pcial >= 1L & pcial <= nc
+            pcisn <- rep(NA_integer_, n)
+            x0sn  <- rep(NA_real_, n)
+            pcisn[ok] <- map[pcial[ok]]
+            x0sn[ok]  <- cssh[pcisn[ok]]
+            lcpar$pcisn <- pcisn
+            lcpar$x0sn  <- x0sn
+        }
+        x[[s]]$lcpar <- lcpar
+        x[[s]]$sit$supal <- NULL
+        class(x[[s]]) <- c("align", "decon2", "spectrum")
+    }
+    class(x) <- c("aligns", "decons2", "spectra")
+    x
+}
+
+# Greedy column-merge on the cross-spectrum peak-area matrix `M`.
+# Two columns may merge only if no row has non-zero entries in both
+# (no collision). Within each pass we pick the most "beneficial"
+# neighbour (column with the most non-zero entries) within
+# `maxCombine` columns. Returns the merged matrix together with a
+# per-column destination map: `map[c]` is the column that the original
+# column `c` ended up in.
+#
+# 2021-2024 Wolfram Gronwald: initial version.
+# 2024-2025 Tobias Schmidt: refactored initial version.
+combine_peaks_mat <- function(M, maxCombine=5, lower_bound=1) {
+    U <- M != 0
+    uu <- colSums(U)
+    nc <- ncol(M)
+    map <- seq_len(nc)
+    if (nrow(M) <= lower_bound) return(list(M=M, map=map))
+    for (i in (nrow(M) - 1):lower_bound) {
+        for (j in which(uu == i)) {
+            if (uu[j] == 0) next
+            nn <- seq(max(1, j - maxCombine), min(nc, j + maxCombine))
+            nn <- nn[nn != j]
+            if (length(nn) == 0) next
+            mj <- M[, j]; uj <- U[, j]
+            repeat {
+                nn <- nn[uu[nn] > 0]
+                if (length(nn) == 0) break
+                cc <- combine_scores(U, uu, j, nn, uj=uj)
+                if (max(cc) == 0) break
+                n <- nn[which.max(cc)]
+                mj <- mj + M[, n]
+                uj <- uj | U[, n]
+                uu[j] <- uu[j] + uu[n]
+                M[, n] <- 0; U[, n] <- FALSE
+                uu[n] <- 0
+                map[map == n] <- j
+                nn <- nn[nn != n]
+                if (length(nn) == 0) break
+            }
+            M[, j] <- mj; U[, j] <- uj
         }
     }
+    list(M=M, map=map)
+}
 
-    x$lcpar$x0al <- x$cs[pcial]
+# Combine score for each neighbour `nn` of column `j`: how many
+# non-zero rows the neighbour contributes, or 0 if it collides with
+# `j` (i.e. some row is non-zero in both). `U`, `uu`, `uj` are the
+# precomputed non-zero mask / per-column counts / column-`j` mask
+# (passed in so the caller can update them in place between calls).
+combine_scores <- function(U, uu, j, nn, uj=NULL) {
+    nn <- nn[nn >= 1 & nn <= ncol(U)]
+    if (length(nn) == 0) return(numeric(0))
+    if (is.null(uj)) uj <- U[, j]
+    overlaps <- .colSums(U[, nn, drop=FALSE] & uj, nrow(U), length(nn))
+    cc <- uu[nn]
+    cc[overlaps > 0] <- 0
+    unname(cc)
+}
+
+# Internal #####
+
+# No-op CluPA: set x0al = x0 (no shift) for every spectrum and return
+# an aligns object. Used by clupa() when maxShift = 0 so the value is a
+# valid grid-search point alongside positive shifts.
+noshift_align <- function(x, full=TRUE) {
+    aligns <- lapply(x, noshift_one, full=full)
+    class(aligns) <- c("aligns", "decons2", "spectra")
+    aligns
+}
+
+noshift_one <- function(x, full=TRUE) {
+    cssh <- x$cssh
+    if (is.null(x$lcpar$pcide)) x$lcpar$pcide <- pci_on_cssh(x$lcpar$x0, cssh)
+    x$lcpar$x0al <- x$lcpar$x0
+    x$lcpar$pcial <- x$lcpar$pcide
+    if (full) x$sit$supal <- lorentz_sup(cssh, x$lcpar$x0al, x$lcpar$A, x$lcpar$lambda)
+    class(x) <- c("align", "decon2", "spectrum")
+    x
+}
+
+align_decon <- function(x, ref, maxShift, full=TRUE, use_speaq=FALSE) {
+    cssh <- x$cssh
+    pci_x <- lcpar_pci(x$lcpar, cssh)
+    pci_ref <- lcpar_pci(ref$lcpar, cssh)
+    np_x <- length(pci_x); np_ref <- length(pci_ref)
+    obj <- hclust_align(
+        refSpec=ref$sit$supsh, tarSpec=x$sit$supsh,
+        peakList=c(pci_ref, pci_x),
+        peakLabel=c(rep(1, np_ref), rep(0, np_x)),
+        startP=1, endP=length(x$sit$supsh),
+        maxShift=maxShift, use_speaq=use_speaq
+    )
+    if (length(obj$peakList) != np_ref + np_x) stop("Lost peaks during alignment")
+    pcial <- obj$peakList[(np_ref + 1):(np_ref + np_x)]
+    x$lcpar$x0al <- cssh[pcial]
     x$lcpar$pcial <- pcial
-    if (full) x$sit$supal <- lorentz_sup(x$cs, x$lcpar$x0al, x$lcpar$A, x$lcpar$lambda)
+    if (full) x$sit$supal <- lorentz_sup(cssh, x$lcpar$x0al, x$lcpar$A, x$lcpar$lambda)
     class(x) <- c("align", "decon2", "spectrum")
     x
 }
 
 find_ref <- function(x) {
-    pci <- lapply(x, function(s) round(convert_pos(s$lcpar$x0, s$cs, seq_along(s$cs))))
+    x <- ensure_cssh(x)
+    cssh <- x[[1]]$cssh
+    pci <- lapply(x, function(s) lcpar_pci(s$lcpar, cssh))
     x[[find_ref_ind(pci)$refInd]]
 }
 
-# Shift alignment helpers #####
-
-weighted_mean <- function(x, w) sum(x * w) / sum(w)
-
-weighted_median <- function(x, w) {
-    ord <- order(x); x <- x[ord]; w <- w[ord]
-    x[which(cumsum(w) >= sum(w) / 2)[1]]
-}
-
-# Estimates a global integer DP shift from ref to tar by a weighted vote
-# over all pairwise peak matches within maxShift.
-estimate_peak_shift <- function(ref_pd, tar_pd, maxShift=50) {
-    rx <- ref_pd$x0; tx <- tar_pd$x0
-    rA <- pmax(abs(ref_pd$A), .Machine$double.eps)
-    tA <- pmax(abs(tar_pd$A), .Machine$double.eps)
-    rl <- pmax(ref_pd$lambda, 1); tl <- pmax(tar_pd$lambda, 1)
-    scores <- numeric(2 * maxShift + 1)
-    bins <- seq.int(-maxShift, maxShift)
-    for (i in seq_along(tx)) {
-        j1 <- max(1L, findInterval(tx[i] - maxShift, rx) + 1L)
-        j2 <- min(length(rx), findInterval(tx[i] + maxShift, rx))
-        if (j1 > j2) next
-        idx <- j1:j2
-        delta <- tx[i] - rx[idx]
-        sim <- pmin(tl[i], rl[idx]) / pmax(tl[i], rl[idx])
-        w <- pmin(tA[i], rA[idx]) * sim
-        pos <- round(delta) + maxShift + 1L
-        for (k in seq_along(pos)) scores[pos[k]] <- scores[pos[k]] + w[k]
-    }
-    if (all(scores == 0)) return(0)
-    bins[which.max(scores)]
-}
-
-# Matches each tar peak to its nearest ref peak (after applying shift0).
-# Returns idx_tar, delta (tar - ref) and weight for each matched pair.
-match_peak_pairs <- function(ref_pd, tar_pd, shift=0, tol_mult=2) {
-    rx <- ref_pd$x0; tx <- tar_pd$x0; xadj <- tx - shift
-    idx <- findInterval(xadj, rx)
-    lo <- pmax(idx, 1L); hi <- pmin(idx + 1L, length(rx))
-    idx_ref <- lo; idx_ref[abs(xadj - rx[hi]) < abs(xadj - rx[lo])] <- hi[abs(xadj - rx[hi]) < abs(xadj - rx[lo])]
-    tl <- pmax(tar_pd$lambda, 1); rl <- pmax(ref_pd$lambda[idx_ref], 1)
-    keep <- abs(xadj - rx[idx_ref]) <= pmax(1, tol_mult * (tl + rl))
-    if (!any(keep)) return(list(idx_tar=integer(0), delta=numeric(0), weight=numeric(0)))
-    idx_tar <- which(keep); idx_ref <- idx_ref[keep]; rl <- rl[keep]
-    delta <- tx[idx_tar] - rx[idx_ref]
-    sim <- pmin(tl[keep], rl) / pmax(tl[keep], rl)
-    w <- pmin(abs(tar_pd$A[idx_tar]), abs(ref_pd$A[idx_ref])) * sim
-    ord <- order(abs(delta), -w)
-    idx_tar <- idx_tar[ord]; idx_ref <- idx_ref[ord]
-    delta <- delta[ord]; w <- w[ord]
-    ok <- !duplicated(idx_ref)
-    list(idx_tar=idx_tar[ok], delta=delta[ok],
-         weight=pmax(w[ok], .Machine$double.eps))
-}
-
-# Interpolates per-peak shifts at xout positions from sparse matched-peak
-# (x, shift, weight) triples. Groups peaks into up to 12 knots, fits a
-# piecewise-linear interpolant, and clamps to [-maxShift, maxShift].
-interp_shift <- function(x, shift, weight, xout, maxShift=50, fallback=0) {
-    n <- length(x)
-    if (n == 0) return(rep(fallback, length(xout)))
-    if (n == 1) return(rep(shift[1], length(xout)))
-    ord <- order(x); x <- x[ord]; shift <- shift[ord]; weight <- weight[ord]
-    ng <- min(12L, max(1L, floor(n / 4L)))
-    if (ng == 1L) return(rep(weighted_median(shift, weight), length(xout)))
-    grp <- cut(seq_len(n), breaks=ng, labels=FALSE)
-    knot_x <- vapply(split(seq_len(n), grp),
-                     function(i) weighted_mean(x[i], weight[i]), numeric(1))
-    knot_s <- vapply(split(seq_len(n), grp),
-                     function(i) weighted_median(shift[i], weight[i]), numeric(1))
-    if (length(knot_x) == 1) return(rep(knot_s[1], length(xout)))
-    y <- stats::approx(knot_x, knot_s, xout=xout, rule=2)$y
-    y <- pmin(maxShift, pmax(-maxShift, y))
-    y[!is.finite(y)] <- fallback
-    y
+# Datapoint indices on `cssh` for the peaks in `lcpar`. Prefers the
+# cached `pcide` (set at deconvolution time); otherwise computes from
+# `x0`; otherwise falls back to `pcial`. The latter two paths exist
+# only for backwards compatibility with objects saved before `pcide`
+# was added.
+lcpar_pci <- function(lcpar, cssh) {
+    pcide <- lcpar[["pcide"]]
+    if (!is.null(pcide)) return(as.integer(pcide))
+    x0 <- lcpar[["x0"]]
+    if (!is.null(x0)) return(pci_on_cssh(x0, cssh))
+    as.integer(lcpar[["pcial"]])
 }
 
 # Speaq #####

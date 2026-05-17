@@ -2,32 +2,25 @@
 % Please edit documentation in R/simat.R
 \name{get_si_mat}
 \alias{get_si_mat}
-\title{Extract Matrix of aligned Signal Intensities}
+\title{Extract matrix of aligned signal intensities}
 \usage{
-get_si_mat(x, drop_zero = FALSE, maxCombine = 0, peakPos = NULL)
+get_si_mat(x, drop_zero = FALSE)
 }
 \arguments{
-\item{x}{An object of type \code{decons2} or \code{aligns}. For \code{aligns}, the aligned
-peak positions are used; for \code{decons2}, the deconvoluted peak positions
-are used.}
+\item{x}{A \code{decons2} or \code{aligns} object.}
 
-\item{drop_zero}{Drop columns where all values are zero?}
-
-\item{maxCombine}{How many adjacent columns to consider for merging.}
-
-\item{peakPos}{Integer vector of column indices in the \code{cs} grid to snap
-peaks to. Used to align new spectra to the same features as a reference
-matrix (see 'Details').}
+\item{drop_zero}{Drop columns whose entries are all zero?}
 }
 \value{
-A numeric matrix with chemical shifts as rownames and spectrum names as
-colnames (the transpose of \code{\link[=si_mat]{si_mat()}}).
+A numeric matrix with chemical shifts as rownames and spectrum names
+as colnames (the transpose of \code{\link[=si_mat]{si_mat()}}).
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
 
-Deprecated in favour of \code{\link[=si_mat]{si_mat()}}, which returns the same data with
-spectra in rows and features (chemical shifts) in columns.
+Deprecated in favour of \code{\link[=si_mat]{si_mat()}}, which returns the
+same data with spectra in rows and features (chemical shifts) in
+columns.
 }
 \author{
 2024-2025 Tobias Schmidt: initial version.

@@ -72,13 +72,17 @@ plot_spectra <- function(
     lgd=TRUE
 ) {
     n <- length(x)
-    css <- lapply(x, function(s) s$cs)
     what <- what %||% {
         if (inherits(x, "aligns")) "supal" else
         if (inherits(x, "decons")) "sup" else
         if (inherits(x, "spectra"))"si" else
         stop("Unsupported object class: ", class(x))
     }
+    # Aligned superpositions live on the shared cssh grid; raw and
+    # un-aligned reconstructions live on each spectrum's own cs grid.
+    css <- lapply(x, function(s) {
+        if (what == "supal") s$cssh %||% s$cs else s$cs
+    })
     sis <- lapply(x, function(s) switch(what, supal=s$sit$supal, sup=s$sit$sup, si=s$si))
     if (!is.null(foc_rgn)) {
         lo <- min(foc_rgn); hi <- max(foc_rgn)
@@ -383,7 +387,12 @@ as_heatmap_matrix <- function(objs, what=NULL) {
         switch(what, supal=s$sit$supal, sup=s$sit$sup, si=s$si)
     })
     Z <- do.call(rbind, sis)
-    colnames(Z) <- objs[[1]]$cs
+    # Aligned superpositions are on the shared cssh grid.
+    colnames(Z) <- if (what == "supal") {
+        objs[[1]]$cssh %||% objs[[1]]$cs
+    } else {
+        objs[[1]]$cs
+    }
     rownames(Z) <- get_names(objs)
     Z
 }
@@ -823,7 +832,13 @@ draw_spectrum <- function(
     sm <- sm_all <- obj$sit$sm # NULL for spectrum objects (NS)
     d2 <- d2_all <- NULL
     sup <- sup_all <- obj$sit$sup # NS
-    supal <- supal_all <- obj$sit$supal # NULL for spectrum and decon objects (NSD)
+    # supal is stored on the shared cssh grid; recompute it on this
+    # spectrum's own cs so the overlay shares the panel's x-axis.
+    supal <- supal_all <- if (!is.null(obj$lcpar$x0al)) {
+        lorentz_sup(cs, obj$lcpar$x0al, obj$lcpar$A, obj$lcpar$lambda)
+    } else {
+        NULL
+    }
     if (!isFALSE(d2_line$show)) {
         if (is.null(sm_all)) warning("Smoothed SI is missing. Calculating second derivative from raw SI.")
         y <- sm_all %||% si_all
@@ -1575,7 +1590,7 @@ draw_arrows <- function(x0, x1, h, args = list()) {
         || length(x0) != length(x1)
         || length(x0) != length(h)) return()
     sf <- pop(args, "sf", default = 0.5)
-    keep <- abs(grconvertW(x1 - x0, from = "user", to = "inches")) > 0.001
+    keep <- abs(graphics::grconvertX(x1 - x0, from = "user", to = "inches")) > 0.001
     x0 <- x0[keep]
     x1 <- x1[keep]
     h <- h[keep]
@@ -1583,7 +1598,7 @@ draw_arrows <- function(x0, x1, h, args = list()) {
     args$x1 <- x1
     args$y0 <- h * sf
     args$y1 <- h * sf
-    args$length <- args$length %||% grconvertW(0.01, from = "npc", to = "inches")
+    args$length <- args$length %||% graphics::grconvertX(0.01, from = "npc", to = "inches")
     do.call(arrows, args)
 }
 

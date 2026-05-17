@@ -2,37 +2,29 @@
 % Please edit documentation in R/simat.R
 \name{peak_mat}
 \alias{peak_mat}
-\title{Peak-snapped feature matrix}
+\title{Peak feature matrix}
 \usage{
-peak_mat(x, maxCombine = 20, peakPos = NULL, igrs = list())
+peak_mat(x, igrs = list(), ...)
 }
 \arguments{
 \item{x}{An \code{aligns} object (or \code{decons2}).}
 
-\item{maxCombine}{Maximum allowed snap distance in chemical-shift columns.}
-
-\item{peakPos}{Optional integer vector of column indices to snap peaks to.
-Defaults to the reference spectrum's peak grid.}
-
 \item{igrs}{List of two-element ppm intervals to ignore.}
+
+\item{...}{Ignored. Accepted so \code{peak_mat} and \code{\link[=bin]{bin()}}
+share a single \code{feat_fun(x, maxCombine, igrs)} protocol;
+\code{peak_mat} ignores \code{maxCombine} because snapping happens upstream
+inside \code{\link[=align]{align()}}.}
 }
 \value{
 A numeric matrix with spectra in rows and chemical shifts as
-colnames. Always has \code{length(x[[1]]$cs)} columns.
+colnames.
 }
 \description{
-Builds a feature matrix by snapping each spectrum's aligned peak
-centers to the peak grid of a reference spectrum. When \code{peakPos} is
-\code{NULL}, the reference is chosen via \code{\link[=find_ref]{find_ref()}} and its
-\code{lcpar$pcial} is used. Each peak is moved to its closest reference
-position within \code{maxCombine} columns; collisions are summed and peaks
-farther than \code{maxCombine} from any reference position are dropped.
-
-Equivalent to
-\code{si_mat(x, maxCombine=maxCombine, peakPos=peakPos, igrs=igrs)} with
-\code{peakPos} defaulted to the reference's \code{pcial}. Suitable as the
-\code{feat_mat} argument of \code{\link[=fit_mdm]{fit_mdm()}} and the recommended
-default for the decon -> align -> classify pipeline.
+Thin wrapper around \code{\link[=si_mat]{si_mat()}} suitable as the
+\code{feat_fun} argument of \code{\link[=fit_mdm]{fit_mdm()}}. Equivalent to
+\code{si_mat(x, igrs=igrs)}; the snapping that used to live here has
+moved into \code{\link[=align]{align()}} (RefPA stage).
 }
 \author{
 2024-2026 Tobias Schmidt: initial version.

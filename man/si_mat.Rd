@@ -2,92 +2,44 @@
 % Please edit documentation in R/simat.R
 \name{si_mat}
 \alias{si_mat}
-\title{Signal Integral Matrix}
+\title{Signal-integral matrix}
 \usage{
-si_mat(x, drop_zero = FALSE, maxCombine = 0, peakPos = NULL, igrs = list())
+si_mat(x, drop_zero = FALSE, igrs = list())
 }
 \arguments{
-\item{x}{An object of type \code{decons2} or \code{aligns}. For \code{aligns}, the aligned
-peak positions are used; for \code{decons2}, the deconvoluted peak positions
-are used.}
+\item{x}{A \code{decons2} or \code{aligns} object.}
 
-\item{drop_zero}{Drop columns where all values are zero?}
+\item{drop_zero}{Drop columns whose entries are all zero?}
 
-\item{maxCombine}{How many adjacent columns to consider for merging.}
-
-\item{peakPos}{Integer vector of column indices in the \code{cs} grid to snap
-peaks to. Used to align new spectra to the same features as a reference
-matrix (see 'Details').}
-
-\item{igrs}{List of length-2 numeric vectors \code{c(left, right)} (in ppm) of
-ignore-regions. Columns whose chemical shift falls inside any region are
-zeroed out. Use \code{list()} to disable.}
+\item{igrs}{List of two-element ppm intervals to zero out before
+returning.}
 }
 \value{
-A matrix with spectra in rows and chemical shifts as colnames.
-Always has \code{length(x[[1]]$cs)} columns, regardless of \code{peakPos}.
+A numeric matrix with one row per spectrum and
+\code{length(x[[1]]$cs)} columns (the full cs grid). Column names are
+ppm values; row names are spectrum names.
 }
 \description{
-Extracts a peak-area matrix from aligned spectra. Rows are spectra,
-columns are chemical-shift positions (features).
-}
-\details{
-Rules:
-\enumerate{
-\item If \code{maxCombine==0} the peak areas are returned as is.
-\item If \code{maxCombine > 0 && length(peakPos) == 0} non-overlapping neighboring
-columns with \code{maxCombine} distance are merged first.
-\item If \code{maxCombine > 0 && length(peakPos) > 0} each peak is moved towards its
-closest \code{peakPos}, if it is within \code{maxCombine} distance. If multiple peaks
-have the same "closest peakPos", only the closest one is shifted.
-}
+Builds a per-spectrum peak-area matrix. Each row is a spectrum, each
+column is a chemical-shift datapoint. For each peak, the column is
+picked from \code{lcpar$pcisn} (post-snap) when available, else
+\code{lcpar$pcial} (post-CluPA), else \code{lcpar$pcide} (post-decon). Peaks
+with \code{pcisn = NA} (snapped beyond \code{maxCombine}) are skipped.
+Collisions on the same column have their \code{A * pi} summed.
 
-Example: assume the following Peak Area Matrix
-
-\if{html}{\out{<div class="sourceCode">}}\preformatted{    1  2  3  4  5  6  7  8  9
-}\if{html}{\out{</div>}}
-
-si1 = c(0, 0, 0, 2, 0, 0, 0, 4, 0) --> pcial=c(4,8),   A=c(2,4)
-si2 = c(0, 0, 3, 0, 0, 0, 0, 4, 0) --> pcial=c(3,8),   A=c(3,4)
-si3 = c(0, 0, 2, 4, 0, 0, 5, 0, 0) --> pcial=c(3,4,7), A=c(2,4,5)
-si4 = c(0, 0, 0, 0, 3, 0, 0, 0, 3) --> pcial=c(5,9),   A=c(3,3)
-si5 = c(0, 0, 0, 0, 2, 0, 0, 0, 3) --> pcial=c(5,9),   A=c(2,3)
-
-If we call \code{si_mat(x, maxCombine=0)}, the matrix is returned as is.
-
-If we call \code{si_mat(x, maxCombine=1)}, we get
-
-\if{html}{\out{<div class="sourceCode">}}\preformatted{    1  2  3  4  5  6  7  8  9
-}\if{html}{\out{</div>}}
-
-si1 = c(0, 0, 0, 2, 0, 0, 0, 4, 0)
-si2 = c(0, 0, 3, 0, 0, 0, 0, 4, 0)
-si3 = c(0, 0, 2, 4, 0, 0, 0, 5, 0)
-si4 = c(0, 0, 0, 3, 0, 0, 0, 3, 0)
-si5 = c(0, 0, 0, 2, 0, 0, 0, 3, 0)
-
-If we call \code{si_mat(x, maxCombine=1, peakPos=c(3,4,9))}, we get
-
-\if{html}{\out{<div class="sourceCode">}}\preformatted{    1  2  3  4  5  6  7  8  9
-}\if{html}{\out{</div>}}
-
-si1 = c(0, 0, 0, 2, 0, 0, 0, 0, 4)
-si2 = c(0, 0, 3, 0, 0, 0, 0, 0, 4)
-si3 = c(0, 0, 2, 4, 0, 0, 5, 0, 0)
-si4 = c(0, 0, 0, 3, 0, 0, 0, 0, 3)
-si5 = c(0, 0, 0, 2, 0, 0, 0, 0, 3)
+\code{si_mat()} is intentionally a dumb peak-list rasterizer: all
+alignment (continuous shift via CluPA) and snapping (RefPA) must
+have happened upstream — typically inside \code{\link[=align]{align()}}.
+To build a feature matrix where every spectrum shares the same
+column grid, run \code{align(x, maxShift, maxCombine)} first.
 }
 \examples{
-if (interactive()) {
-    decons <- deconvolute(sim[1:2], sfr = c(3.55, 3.35))
-    aligns <- align(decons)
-    X0 <- si_mat(aligns)
-    Xc <- si_mat(aligns, maxCombine = 20)
-    # Reuse the feature grid of Xc on new spectra:
-    pp <- which(colSums(Xc != 0) > 0)
-    Xn <- si_mat(aligns, maxCombine = 20, peakPos = pp)
+\dontrun{
+  decons <- deconvolute(sim[1:2], sfr=c(3.55, 3.35))
+  aligned <- align(decons, maxShift=50, maxCombine=20)
+  X <- si_mat(aligned)
 }
 }
 \author{
-2024-2025 Tobias Schmidt: initial version.
+2024-2026 Tobias Schmidt: initial version.
 }

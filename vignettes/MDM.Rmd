@@ -110,12 +110,12 @@ heat_spectra(decons[abtr], y=yab)
 
 ## Step 2: Align
 
-`align_decons()` calls `find_ref()` internally to pick the spectrum whose
+`clupa()` calls `find_ref()` internally to pick the spectrum whose
 peaks are closest to all others. We extract that reference now -- we need it
 later to align the *test* spectra to the same coordinate system.
 
 ```{r fit-manually-align}
-aligns <- align_decons(decons, maxShift=50, verbose=FALSE)
+aligns <- clupa(decons, maxShift=50, verbose=FALSE)
 ref <- find_ref(decons)
 plot_spectra(aligns[abtr])
 heat_spectra(aligns[abtr], y=yab)
@@ -145,8 +145,7 @@ sign differences between A (top) and B (bottom).
 
 ```{r fit-manually-glmnet}
 foldid <- metabodecon:::get_foldid(y=y[tr], nfolds=5, seed=1)
-cvfit <- glmnet::cv.glmnet(X, y[tr], family="binomial", alpha=1,
-                           foldid=foldid, keep=TRUE)
+cvfit <- glmnet::cv.glmnet(X, y[tr], family="binomial", alpha=1, foldid=foldid, keep=TRUE)
 plot(cvfit)
 ```
 
@@ -190,7 +189,7 @@ decons_te <- deconvolute(x[te], nfit=10, smit=2, smws=5, delta=10,
 ## Step 2: Align to the training reference
 
 ```{r predict-manually-align}
-aligns_te <- align_decons(decons_te, maxShift=50, ref=ref, verbose=FALSE)
+aligns_te <- clupa(decons_te, maxShift=50, ref=ref, verbose=FALSE)
 ```
 
 ## Step 3: Build feature matrix using training `peakPos`

@@ -71,8 +71,8 @@ testthat::test_that("fit_mdm with bin/identity2 returns mdm object", {
     )
     m <- fit_mdm(
         sp, y,
-        feat_mat = bin, decon_fun = identity2,
-        align_fun = "identity_align",
+        feat_fun = bin, decon_fun = identity2,
+        align_fun = identity_align,
         mog = mog_bm, igrs = list(),
         nfolds = 3, verbosity = 0
     )

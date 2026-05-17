@@ -698,8 +698,8 @@ creatinine_normalize <- function(spectra, cr = c(3.053, 3.011)) {
     for (i in seq_along(spectra)) {
         s <- spectra[[i]]
         idx <- which(s$cs >= cr[2] & s$cs <= cr[1])
-        ci <- sum(s$si[idx]) # creatinine intensity
-        spectra_normed[[i]]$si <- s$si / ci
+        ci <- sum(s$si[idx]) / 1e6 # scaled creatinine intensity
+        spectra_normed[[i]]$si <- (s$si / ci)
     }
     spectra_normed
 }

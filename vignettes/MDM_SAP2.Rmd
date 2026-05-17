@@ -96,13 +96,13 @@ heat_spectra(decons, y=y[tr])
 
 ## Step 2: Align
 
-`align_decons()` shifts peaks so corresponding peaks across spectra share the
+`clupa()` shifts peaks so corresponding peaks across spectra share the
 same chemical-shift index. The reference spectrum picked here is reused
 later when we predict on the test set. Because the per-spectrum global
 shift in `sap2` is small (sd ~4 datapoints), `maxShift=4` is enough.
 
 ```{r align}
-aligns <- align_decons(decons, maxShift=4, verbose=FALSE)
+aligns <- clupa(decons, maxShift=4, verbose=FALSE)
 ref <- find_ref(decons)
 plot_spectra(aligns)
 heat_spectra(aligns, y=y[tr])
@@ -157,7 +157,7 @@ reference and `peakPos`. Done manually:
 
 ```{r predict-manual}
 decons_te <- do.call(deconvolute, c(list(x=x[te], verbose=FALSE), dpar))
-aligns_te <- align_decons(decons_te, maxShift=4, ref=ref, verbose=FALSE)
+aligns_te <- clupa(decons_te, maxShift=4, ref=ref, verbose=FALSE)
 mat_te <- si_mat(aligns_te, maxCombine=2, peakPos=peakPos)
 Xte <- mat_te[, peakPos, drop=FALSE]
 heat_spectra(Xte, y=y[te], true_x0=true_x0, scale_cols=TRUE)

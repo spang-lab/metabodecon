@@ -91,7 +91,7 @@ update_sim <- function(nworkers = 1) {
 #' Builds the `sim2` classification dataset: 100 simulated 1D NMR spectra split
 #' into two groups (A and B), where five out of 25 peaks per spectrum differ
 #' systematically between the groups. In group A, three peaks are scaled by
-#' 1.24, 1.16, 1.08 and two peaks by 0.88, 0.80; group B is left
+#' 1.18, 1.12, 1.06 and two peaks by 0.91, 0.85; group B is left
 #' unmodified. Peak parameter distributions (number of peaks, areas,
 #' half-widths, noise) were chosen to match the values recovered by
 #' deconvoluting the [metabodecon::sim] dataset (which itself is derived from
@@ -124,7 +124,7 @@ make_sim2 <- function() {
     group <- factor(rep(c("A", "B"), each = n/2))
     # Five discriminating peaks spread across the full ppm range.
     diff_AB <- round(seq(1, npk, length.out = 5))
-    ab_factors <- c(1.24, 1.16, 1.08, 0.88, 0.80)
+    ab_factors <- c(1.18, 1.12, 1.06, 0.91, 0.85)
     spectra <- vector("list", n)
     for (i in seq_len(n)) {
         # Spectrum 1 is the clean unshifted reference: no ppm jitter at all.

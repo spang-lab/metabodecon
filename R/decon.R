@@ -131,8 +131,9 @@ deconvolute_spectra <- function(
     nfit=3, smit=2, smws=5, delta=6.4, npmax=0,
     sfr=NULL, igrs=list(),
     use_rust=FALSE, verbose=TRUE, nworkers=1, # end of public args
-    force=FALSE, full=TRUE
+    force=FALSE, full=TRUE, supsh="lorentz"
 ) {
+    supsh <- match.arg(supsh, c("lorentz", "sparse"))
 
     # Init locals
     if (!verbose) local_options(toscutil.logf.file = nullfile())
@@ -145,6 +146,14 @@ deconvolute_spectra <- function(
         x=x, sfr=sfr, verbose=verbose, nworkers=nw, use_rust=use_rust
     )
 
+    # Build shared cs grid (intersection of ppm ranges) and attach it
+    # to every spectrum. Per-spectrum deconvolution stays on the
+    # native `cs` grid; `cssh` is the grid the aligned superposition
+    # `sit$supsh` is evaluated on so CluPA can compare spectra fairly
+    # in ppm space.
+    cssh <- make_cssh(x)
+    for (i in seq_along(x)) x[[i]]$cssh <- cssh
+
     # Deconvolute spectra
     logf("Starting deconvolution (spectra: %d, workers: %d)", ns, nw)
     starttime <- Sys.time()
@@ -154,6 +163,28 @@ deconvolute_spectra <- function(
     duration <- format(round(Sys.time() - starttime, 3))
     logf("Finished deconvolution %s", duration)
     decons
+}
+
+# Build the shared chemical-shift grid used by alignment.
+#
+# Range: intersection of every input spectrum's `cs` range. A peak
+# fitted outside the intersection is excluded from the shared
+# superposition `sit$supsh` (its Lorentzian still evaluates, but
+# alignment only sees the part inside the intersection).
+#
+# Length: max(length(cs)) across input spectra. All inputs typically
+# share a length already (alignment downstream enforces it), but if
+# they differ, picking the max preserves the finest available
+# resolution. Spacing is uniform and decreasing to match `cs`.
+make_cssh <- function(x) {
+    mins <- vapply(x, function(s) min(s$cs), numeric(1))
+    maxs <- vapply(x, function(s) max(s$cs), numeric(1))
+    ns_pts <- vapply(x, function(s) length(s$cs), integer(1))
+    lo <- max(mins); hi <- min(maxs); n <- max(ns_pts)
+    if (lo >= hi) stop(
+        "Spectra cs ranges have empty intersection; cannot build cssh."
+    )
+    seq(hi, lo, length.out=n)
 }
 
 #' @noRd
@@ -167,8 +198,9 @@ deconvolute_spectrum <- function(
     x, nfit=3, smit=2, smws=5, delta=6.4, npmax=0,
     sfr=NULL, igrs=list(),
     use_rust=FALSE, verbose=TRUE, # end of public args
-    force=FALSE
+    force=FALSE, full=TRUE, supsh="lorentz"
 ) {
+    supsh <- match.arg(supsh, c("lorentz", "sparse"))
 
     # Init locals
     if (isFALSE(verbose)) local_options(toscutil.logf.file = nullfile())
@@ -188,9 +220,9 @@ deconvolute_spectrum <- function(
     # Deconvolute with given/optimal parameters
     logf("Starting deconvolution of %s%s", name, suffix)
     decon <- if (use_rust >= 1) {
-        deconvolute_spectrum_rust(x, args, sfr, igrs, nfit, smit, smws, delta)
+        deconvolute_spectrum_rust(x, args, sfr, igrs, nfit, smit, smws, delta, full, supsh)
     } else {
-        deconvolute_spectrum_r(x, args, sfr, igrs, nfit, smit, smws, delta, force)
+        deconvolute_spectrum_r(x, args, sfr, igrs, nfit, smit, smws, delta, force, full, supsh)
     }
 
     # Cache and return
@@ -237,9 +269,11 @@ pick_best_params <- function(x, npmax, name) {
 #' @title Build a `decon2` object using the R deconvolution backend.
 #' @author 2024-2026 Tobias Schmidt: initial version.
 deconvolute_spectrum_r <- function(
-    x, args, sfr, igrs, nfit, smit, smws, delta, force
+    x, args, sfr, igrs, nfit, smit, smws, delta, force, full=TRUE,
+    supsh="lorentz"
 ) {
     cs <- x$cs
+    cssh <- x$cssh %||% cs
     si <- x$si
     sfr_igr <- list(c(Inf, max(sfr)), c(min(sfr), -Inf))
     igrs <- c(sfr_igr, igrs)
@@ -247,9 +281,15 @@ deconvolute_spectrum_r <- function(
     peaks <- find_peaks2(sm)
     peaks <- filter_peaks2(peaks, cs, sfr, delta, force, igrs)
     lcpar <- fit_lorentz_curves2(cs, si, peaks, nfit)
-    sup <- lorentz_sup(cs, lcpar=lcpar)
-    sit <- data.frame(sm=sm, sup=sup)
-    decon <- list(cs=cs, si=si, meta=x$meta, args=args, sit=sit, peak=peaks, lcpar=lcpar)
+    lcpar$pcide <- pci_on_cssh(lcpar$x0, cssh)
+    supsh_vec <- make_supsh(cssh, lcpar, supsh)
+    sit <- if (full) {
+        data.frame(sm=sm, sup=lorentz_sup(cs, lcpar=lcpar), supsh=supsh_vec)
+    } else {
+        data.frame(sm=sm, supsh=supsh_vec)
+    }
+    decon <- list(cs=cs, cssh=cssh, si=si, meta=x$meta, args=args,
+                  sit=sit, peak=peaks, lcpar=lcpar)
     class(decon) <- c("decon2", "spectrum")
     decon
 }
@@ -258,7 +298,7 @@ deconvolute_spectrum_r <- function(
 #' @title Build a `decon2` object using the Rust deconvolution backend.
 #' @author 2024-2025 Tobias Schmidt: initial version.
 deconvolute_spectrum_rust <- function(
-    x, args, sfr, igrs, nfit, smit, smws, delta
+    x, args, sfr, igrs, nfit, smit, smws, delta, full=TRUE, supsh="lorentz"
 ) {
     mdrb_spectrum <- mdrb::Spectrum$new(x$cs, x$si, sfr)
     mdrb_deconvr <- mdrb::Deconvoluter$new()
@@ -268,14 +308,26 @@ deconvolute_spectrum_rust <- function(
     for (r in igrs) mdrb_deconvr$add_ignore_region(r[1], r[2])
     mdrb_decon <- mdrb_deconvr$deconvolute_spectrum(mdrb_spectrum)
     cs <- mdrb_spectrum$chemical_shifts()
+    cssh <- x$cssh %||% cs
     si <- mdrb_spectrum$intensities()
-    sup <- mdrb_decon$superposition_vec(cs)
     lcpar <- as.data.frame(mdrb_decon$lorentzians())[, c("x0", "A", "lambda")]
+    lcpar$pcide <- pci_on_cssh(lcpar$x0, cssh)
+    # supsh="lorentz" can use Rust's vectorised evaluator; "sparse" is
+    # cheaper to build directly from lcpar in R.
+    supsh_vec <- if (supsh == "lorentz") {
+        mdrb_decon$superposition_vec(cssh)
+    } else {
+        make_supsh(cssh, lcpar, supsh)
+    }
     sm <- smooth_signals2(si, smit, smws)        # Rust does not return sm
-    sit <- data.frame(sm=sm, sup=sup)
+    sit <- if (full) {
+        data.frame(sm=sm, sup=mdrb_decon$superposition_vec(cs), supsh=supsh_vec)
+    } else {
+        data.frame(sm=sm, supsh=supsh_vec)
+    }
     peak <- get_peak(lcpar$x0, cs)
     decon <- list(
-        cs=cs, si=si, meta=x$meta, args=args, sit=sit, peak=peak,
+        cs=cs, cssh=cssh, si=si, meta=x$meta, args=args, sit=sit, peak=peak,
         lcpar=lcpar
     )
     class(decon) <- c("decon2", "spectrum")

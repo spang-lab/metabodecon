@@ -40,21 +40,21 @@ test_that("align works", {
 
     # Check that the alignment worked, our expectations are:
     # 1. x0al     is shifted roughly 0.3 to the right compared to x0
-    # 2. pcial     indexes cs at the aligned peak centers (cs[pcial] == x0al)
-    # 3. sit$supal is the superposition of the aligned Lorentz curves
+    # 2. pcial    indexes cssh at the aligned peak centers (cssh[pcial] == x0al)
+    # 3. sit$supal is the superposition of the aligned Lorentz curves on cssh
     x0 <- aligns$sap_01_shifted$lcpar$x0
     x0al <- aligns$sap_01_shifted$lcpar$x0al
     shifts <- x0 - x0al
     expect_true(all(shifts > 0.2 & shifts < 0.4))
 
-    cs <- aligns$sap_01_shifted$cs
+    cssh <- aligns$sap_01_shifted$cssh
     pcial <- aligns$sap_01_shifted$lcpar$pcial
-    expect_equal(cs[pcial], x0al)
+    expect_equal(cssh[pcial], x0al)
 
     A <- aligns$sap_01_shifted$lcpar$A
     supal <- aligns$sap_01_shifted$sit$supal
     lambda <- aligns$sap_01_shifted$lcpar$lambda
-    expect_equal(supal, lorentz_sup(cs, x0al, A, lambda))
+    expect_equal(supal, lorentz_sup(cssh, x0al, A, lambda))
 })
 
 test_that("align gives same result for 1 vs multiple workers", {
@@ -87,20 +87,17 @@ test_that("built-in backend matches speaq backend", {
 
     skip_if_speaq_deps_missing()
 
-    al_builtin <- align_decons(decons, verbose = FALSE, use_speaq = FALSE)
-    al_speaq   <- align_decons(decons, verbose = FALSE, use_speaq = TRUE)
+    al_builtin <- clupa(decons, verbose = FALSE, use_speaq = FALSE)
+    al_speaq   <- clupa(decons, verbose = FALSE, use_speaq = TRUE)
     expect_equal(al_builtin, al_speaq)
 })
 
 test_that("built-in backend matches speaq backend on sim2 across maxShift", {
 
     # Verifies that the underlying CluPA / FFT shift search is bit-equivalent
-    # to speaq for every maxShift used in the supervised parameter grid,
-    # including maxShift = 0 (which speaq's `findShiftStepFFT` documents to
-    # mean "no upper bound", resetting it to the segment length M). If this
-    # test passes, the per-spectrum integer shifts of >= 5 datapoints that
-    # we observe with maxShift = 0 are speaq's intended behavior, not a bug
-    # in our replacement.
+    # to speaq for every positive maxShift used in the supervised parameter
+    # grid. maxShift = 0 is handled at the clupa() wrapper level (no shift;
+    # x0al = x0) and so does not exercise speaq, hence it is not in the loop.
 
     skip_if_speaq_deps_missing()
     skip_if_slow_tests_disabled()
@@ -112,11 +109,11 @@ test_that("built-in backend matches speaq backend on sim2 across maxShift", {
         s, sfr = NULL, smit = 2, smws = 3, delta = 1.6,
         nfit = 10, npmax = 0, verbose = FALSE
     )
-    for (ms in c(0, 3, 5, 10, 50)) {
-        al_builtin <- align_decons(
+    for (ms in c(3, 5, 10, 50)) {
+        al_builtin <- clupa(
             d, maxShift = ms, verbose = FALSE, use_speaq = FALSE
         )
-        al_speaq <- align_decons(
+        al_speaq <- clupa(
             d, maxShift = ms, verbose = FALSE, use_speaq = TRUE
         )
         for (i in seq_along(al_builtin)) {
@@ -134,16 +131,58 @@ test_that("built-in backend matches speaq backend on sim2 across maxShift", {
     }
 })
 
+test_that("maxShift = 0 short-circuits to a no-shift alignment", {
+
+    # clupa must treat maxShift = 0 as a no-op: x0al = x0, pcial set to the
+    # column nearest x0, returned as an `aligns` object. Lets mdm.R include
+    # 0 as a valid grid-search point alongside positive shifts.
+
+    skip_if_speaq_deps_missing()
+
+    al <- clupa(decons, maxShift = 0L, verbose = FALSE)
+    expect_s3_class(al, "aligns")
+    for (i in seq_along(al)) {
+        # No shift: aligned center equals the raw fitted center.
+        expect_equal(al[[i]]$lcpar$x0al, al[[i]]$lcpar$x0)
+        # pcial is the nearest cssh grid column for each (off-grid) x0.
+        cssh <- al[[i]]$cssh
+        nc <- length(cssh)
+        expected_pcial <- pmin(nc, pmax(
+            1L, round(metabodecon:::convert_pos(al[[i]]$lcpar$x0, cssh, seq_len(nc)))
+        ))
+        expect_equal(al[[i]]$lcpar$pcial, expected_pcial)
+    }
+})
+
+test_that("align() chains CluPA and RefPA when maxCombine > 0", {
+    skip_if_speaq_deps_missing()
+    a0  <- align(decons, maxShift = 50, maxCombine = 0,  verbose = FALSE)
+    a20 <- align(decons, maxShift = 50, maxCombine = 20, verbose = FALSE)
+    # Every non-NA snapped peak must sit on a reference column.
+    ref <- find_ref(a0)
+    pp <- ref$lcpar$pcial
+    for (i in seq_along(a20)) {
+        pcisn <- a20[[i]]$lcpar$pcisn
+        ok <- !is.na(pcisn)
+        expect_true(all(pcisn[ok] %in% pp))
+    }
+    # RefPA never drops rows; it only annotates with pcisn / x0sn.
+    expect_equal(
+        vapply(a20, function(s) nrow(s$lcpar), integer(1)),
+        vapply(a0,  function(s) nrow(s$lcpar), integer(1))
+    )
+})
+
 test_that("align with full=FALSE omits supal", {
     skip_if_speaq_deps_missing()
     decons_h <- decons
     attr(decons_h, "hash") <- rlang::hash(decons_h)
-    al_nofull <- align_decons(decons_h, verbose = FALSE, full = FALSE)
+    al_nofull <- clupa(decons_h, verbose = FALSE, full = FALSE)
     for (i in seq_along(al_nofull)) {
         expect_null(al_nofull[[i]]$sit$supal)
     }
     # full=TRUE (default) should include supal
-    al_full <- align_decons(decons_h, verbose = FALSE, full = TRUE)
+    al_full <- clupa(decons_h, verbose = FALSE, full = TRUE)
     for (i in seq_along(al_full)) {
         expect_false(is.null(al_full[[i]]$sit$supal))
     }
@@ -159,16 +198,15 @@ test_that("align with external ref returns only input spectra", {
     expect_equal(names(al_ref), names(decons))
 })
 
-test_that("align raises error for spectra with mismatched data-point counts", {
+test_that("align raises error for spectra with mismatched cssh grids", {
     skip_if_speaq_deps_missing()
-    # Build two decon2 objects with different cs lengths directly to bypass
-    # deconvolute() (which would itself fail on a degenerate sfr).
-    short <- decons[[1]]
-    long  <- decons[[1]]
-    long$cs <- c(long$cs, long$cs[length(long$cs)] - 0.001)
-    long$si <- c(long$si, 0)
-    long$sit <- rbind(long$sit, long$sit[nrow(long$sit), ])
-    mixed <- structure(list(short, long), class = c("decons2", "spectra"))
+    # Build two decon2 objects that already carry different cssh grids.
+    # ensure_cssh() must refuse to align them since cssh indices would
+    # not be comparable across spectra.
+    a <- decons[[1]]
+    b <- decons[[1]]
+    b$cssh <- b$cssh + 0.5
+    mixed <- structure(list(a, b), class = c("decons2", "spectra"))
     expect_error(align(mixed, verbose = FALSE))
 })
 

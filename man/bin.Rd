@@ -4,17 +4,16 @@
 \alias{bin}
 \title{Bin a spectra-like object into a feature matrix}
 \usage{
-bin(x, maxCombine = 128, peakPos = NULL, igrs = list())
+bin(x, maxCombine = 128, igrs = list(), ...)
 }
 \arguments{
 \item{x}{A \code{spectra}, \code{decons2} or \code{aligns} object.}
 
 \item{maxCombine}{Bin width in chemical-shift columns.}
 
-\item{peakPos}{Ignored. Accepted for API compatibility with
-\code{\link[=si_mat]{si_mat()}}.}
-
 \item{igrs}{List of two-element ppm intervals to ignore.}
+
+\item{...}{Ignored (protocol compatibility with peak_mat).}
 }
 \value{
 A numeric matrix with one row per spectrum and one column per
@@ -22,9 +21,9 @@ bin.
 }
 \description{
 Bins the per-spectrum signal vector left-to-right into chunks of
-\code{maxCombine} chemical-shift columns and returns the per-bin sums as a
-feature matrix. Columns whose chemical-shift falls inside any \code{igrs}
-interval are removed before binning.
+\code{maxCombine} chemical-shift columns and returns the per-bin sums as
+a feature matrix. Columns whose chemical-shift falls inside any
+\code{igrs} interval are removed before binning.
 
 Accepts three input types:
 \itemize{
@@ -34,5 +33,6 @@ Accepts three input types:
 \code{lcpar$A * pi}, then bins.
 }
 
-Suitable as the \code{feat_mat} argument of \code{\link[=fit_mdm]{fit_mdm()}}.
+Suitable as the \code{feat_fun} argument of \code{\link[=fit_mdm]{fit_mdm()}} for
+binning baselines.
 }

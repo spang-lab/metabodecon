@@ -1,11 +1,29 @@
 # Instructions for MetaboDecon
 
+## IMPORTANT
+
+- Never change any files outside the project or the global temp
+  directory without asking for permission first.
+
 ## Workspace Conventions
 
 - Use `./tmp` for temporary files (it is gitignored and Rbuildignored).
   Never write temp files outside the project directory.
 - If code changes must be tested with multiple workers, remind the user to
   reinstall the package before they run those tests.
+- **Installing the package**: always use
+  `R CMD INSTALL --no-lock --no-staged-install .`. The user runs radian
+  sessions that mmap the package's `.so` files, which makes plain
+  `R CMD INSTALL` fail with stale `00LOCK-metabodecon` directories
+  (NFS silly-renames the in-use shared library to a `.nfs*` file that
+  can't be removed). `--no-lock` skips the lock-dir step and
+  `--no-staged-install` writes directly to the final library path.
+  Both flags together avoid the stale-lock failure mode without
+  touching the user's running R sessions.
+- Never run `scripts/kill-nfs-lock.sh` (or `kill`/`pkill` against R
+  processes) just to clear a stale install lock. Doing so terminates
+  the user's radian sessions. The `--no-lock --no-staged-install`
+  approach above sidesteps the lock entirely.
 
 ## Coding Guidelines
 
@@ -93,25 +111,37 @@
 
 ### align.R
 
-Functions for aligning deconvoluted spectra.
+Functions for aligning deconvoluted spectra. The public alignment pipeline
+chains two stages — **CluPA** (continuous shifts) and **RefPA** (discrete
+snap to reference) — and [metabodecon::align()] runs both in one call.
 
-- (exported) `align`: Aligns spectra data using the 'CluPA' algorithm from the 'speaq' package.
-- (exported) `clupa`, `vopa`, `glopa`, `identity_align`: Pluggable alignment backends accepted as `align_fun` by [metabodecon::fit_mdm()].
-- (internal) `get_ppm_range`: Returns the ppm range covered by spectra.
-- (internal) `gen_feat_mat`: Generates a feature matrix.
-- (internal) `speaq_align`: Aligns signals using the 'speaq' package.
-- (internal) `combine_peaks`: Combines peaks across spectra.
-- (internal) `dohCluster`: Performs cluster-based peak alignment.
-- (private) `get_decon_params`: Extracts deconvolution parameters.
-- (private) `read_decon_params`: Reads deconvolution parameters from files.
-- (private) `check_decon_params`: Checks the validity of deconvolution parameters.
-- (private) `rm_zero_width_peaks`: Removes peaks with zero width.
-- (private) `is_decon_obj`: Checks if an object is a deconvolution object.
-- (private) `is_decon_list`: Checks if a list contains deconvolution objects.
-- (private) `get_peak_indices`: Retrieves peak indices from a deconvolution object.
-- (private) `get_sup_mat`: Constructs a signal intensity matrix.
+- (exported) `align(x, maxShift, maxCombine, ref=NULL, ...)`: chains
+  `clupa()` then `snap_to_ref()`. Returns an `aligns` object whose
+  per-spectrum `lcpar` has been collapsed onto the reference's peak grid.
+- (exported) `clupa(x, maxShift, ref=NULL, ...)`: **CluPA** —
+  hierarchical-clustering FFT segment shifts (Beirnaert et al. 2018, Vu et
+  al. 2011). Adds `x0al`, `pcial` to `lcpar`; keeps original peak count.
+- (exported) `snap_to_ref(x, maxCombine, ref=NULL)`: **RefPA** — snaps
+  each peak to the nearest reference column within `maxCombine`. Drops
+  peaks farther than `maxCombine`; multiple peaks landing on the same
+  column have their `A` summed. Modifies `lcpar` to keep only `pcial`,
+  `x0al`, `A`; clears `sit$supal` (the post-snap peak list is no longer
+  Lorentz-compatible).
+- (exported) `identity_align(x, ...)`: no-op; returns `x`.
+- (private) `noshift_align`, `noshift_one`: CluPA's `maxShift = 0`
+  fast-path (sets `x0al = x0`, `pcial = nearest cs column`).
+- (private) `align_decon`: CluPA per-spectrum kernel (FFT shift +
+  speaq-equivalent hclust).
+- (private) `snap_lcpar`: RefPA per-spectrum kernel.
+- (private) `find_ref`, `find_ref_ind`: pick the reference spectrum (the
+  one whose peaks have the smallest total distance to all others).
+- (private) `fft_shift`, `do_shift`, `hclust_align`, `pad_peaks`:
+  bundled CluPA implementation that mirrors `speaq::hClustAlign` and is
+  byte-equivalent to it; the speaq backend remains available via
+  `use_speaq = TRUE`.
 
-Internal means, the function is currently exported, but should no longer be used directly and will be removed or made private in the future.
+VOPA and GloPA were removed in 2.0.0 — the only built-in CluPA-stage
+backends are `clupa` and `identity_align`.
 
 ### class.R
 
@@ -322,8 +352,7 @@ Test live inside ./tests/testthat. The followings tests exist:
 1. `test-align.R`
 2. `test-as_decon.R`
 3. `test-cache_example_datasets.R`
-4. `test-combine_scores.R`
-5. `test-convert_sfr.R`
+4. `test-convert_sfr.R`
 6. `test-convert_spectrum.R`
 7. `test-convert_wsr.R`
 8. `test-datadir.R`
@@ -358,5 +387,6 @@ Test live inside ./tests/testthat. The followings tests exist:
 37. `test-read_procs_file.R`
 38. `test-read_spectrum.R`
 39. `test-smooth_signals2.R`
-40. `test-speaq_align.R`
-41. `test-vcomp.R`
+40. `test-snap_to_ref.R`
+41. `test-speaq_align.R`
+42. `test-vcomp.R`

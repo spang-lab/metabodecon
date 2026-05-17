@@ -93,18 +93,24 @@
 #'    (superposition of aligned Lorentz curves, added by `align()`).
 #' 3. `peak`: Data frame of peak triplets with columns `center`, `left`,
 #'    `right`: integer indices into `cs`.
-#' 4. `lcpar`: Data frame of Lorentz-curve parameters with columns `A`
-#'    (amplitude), `lambda` (half-width), `x0` (center, in `cs` units), and
-#'    `x0al`/`pcial` (aligned center and integer index into `cs`, added by
-#'    `align()`).
+#' 4. `lcpar`: Data frame of Lorentz-curve parameters. Always carries
+#'    `x0` (center in ppm), `A` (amplitude), `lambda` (half-width) and
+#'    `pcide` (integer column index into `cssh` for `x0`). After
+#'    [metabodecon::clupa()] also `x0al` / `pcial` (post-CluPA center
+#'    and cssh index). After [metabodecon::snap_to_ref()] also `x0sn`
+#'    / `pcisn` (post-RefPA center and cssh index, with `NA` for peaks
+#'    snapped beyond `maxCombine`). `A` and `lambda` are preserved
+#'    through every stage.
 #'
 #' @section Added by align():
 #'
 #' An `align` object has the same fields as `decon2`, but with the alignment
 #' slots populated:
 #'
-#' - `lcpar$x0al`: Peak Centers after Alignment in ppm
-#' - `lcpar$pcial`: Peak Centers after Alignment in datapoint indices
+#' - `lcpar$x0al`: Peak Centers after CluPA alignment in ppm
+#' - `lcpar$pcial`: Peak Centers after CluPA alignment as `cssh` indices
+#' - `lcpar$x0sn`: Peak Centers after RefPA snap in ppm (NA when snapped out)
+#' - `lcpar$pcisn`: Peak Centers after RefPA snap as `cssh` indices (NA when snapped out)
 #' - `sit$supal`: Signal Intensities of the superposition of aligned Lorentz curves
 #'
 #' @section Predicates:
@@ -320,4 +326,4 @@ set_names <- function(x, nams) {
     x
 }
 
-decon2_members <- c("cs", "si", "meta", "args", "sit", "peak", "lcpar")
+decon2_members <- c("cs", "cssh", "si", "meta", "args", "sit", "peak", "lcpar")
