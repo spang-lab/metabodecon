@@ -119,7 +119,7 @@ deconvolute <- function(
 #' @examples
 #' get_deg()
 get_deg <- function(conf="default") {
-    expand.grid2(nfit=5, smit=2, smws=c(3,5,7,9), delta=2:8)
+    expand.grid2(nfit=10, smit=1:3, smws=c(3,5,7,9), delta=(1:5)*1.6)
 }
 
 # Internal #####
@@ -347,13 +347,13 @@ deconvolute_spectrum_rust <- function(
 #'
 #' @param deg
 #' Deconvolution-parameter grid: a data frame with columns `nfit`, `smit`,
-#' `smws`, `delta`. When `NULL`, a default cartesian product
-#' (`smit=c(2,3), smws=c(3,5,7,9), delta=2:8, nfit=c(3,4,5)`) is used.
+#' `smws`, `delta`. The default is the 60-cell cartesian product
+#' `expand.grid(nfit=10, smit=1:3, smws=c(3,5,7,9), delta=(1:5)*1.6)`.
 #' May also be a model-fitting grid (`mog`) — i.e. a data frame that
 #' additionally has an `npmax` column — in which case only unique
 #' `(nfit, smit, smws, delta)` rows with `npmax > 0` are used.
 grid_deconvolute_spectra <- function(
-    x, deg=expand.grid(nfit=5, smit=2, smws=c(3,5,7,9), delta=2:8),
+    x, deg=expand.grid(nfit=10, smit=1:3, smws=c(3,5,7,9), delta=(1:5)*1.6),
     sfr=NULL, igrs=list(), verbose=TRUE, nworkers=1, use_rust=FALSE
 ) {
     if (isFALSE(verbose)) local_options(toscutil.logf.file = nullfile())
@@ -405,7 +405,7 @@ grid_deconvolute_spectrum <- function(
     sfr=NULL, igrs=list(), verbose=TRUE, use_rust=FALSE
 ) {
     if (is.null(deg)) deg <- expand.grid2(
-        nfit=5, smit=2, smws=c(3,5,7,9), delta=2:8
+        nfit=10, smit=1:3, smws=c(3,5,7,9), delta=(1:5)*1.6
     )
     if (!is.null(x$deg)) return(x)
     if (!verbose) local_options(toscutil.logf.file = nullfile())

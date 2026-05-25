@@ -1,3 +1,8 @@
+# metabodecon 2.0.0.1
+
+* Default `grid_deconvolute_spectrum()` / `grid_deconvolute_spectra()` grid
+  changed to `(nfit=10, smit=1:3, smws=c(3,5,7,9), delta=(1:5)*1.6)` (60 cells).
+
 # metabodecon 1.7.0
 
 * `deconvolute()` gained `npmax`, `igrs`, and `cachedir` parameters for limiting

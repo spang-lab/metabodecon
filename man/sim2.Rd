@@ -51,8 +51,8 @@ which itself is derived from the Blood reference dataset (see
 \item Base half-widths drawn uniformly in \verb{[0.0009, 0.0013]} ppm and varied
 per spectrum by \verb{+/-10\%}.
 \item Gaussian noise with standard deviation \code{2200}.
-\item In group \code{A}, six base peaks (indices \code{simpar$diff_AB}) have their
-areas multiplied by \code{c(1.30, 1.20, 1.10, 0.70, 0.80, 0.90)} (stored in
+\item In group \code{A}, five base peaks (indices \code{simpar$diff_AB}) have their
+areas multiplied by \code{c(1.18, 1.12, 1.06, 0.91, 0.85)} (stored in
 \code{simpar$ab_factors}). Group \code{B} is left unmodified. Spectrum
 \code{sim2_001} is generated with \code{dx0 = 0} and \code{gx0 = 0} to provide a
 clean unshifted alignment reference.
