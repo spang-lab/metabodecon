@@ -595,8 +595,8 @@ sim2_docs <- NULL # To get a symbol in the outline
 #' - Base half-widths drawn uniformly in `[0.0009, 0.0013]` ppm and varied
 #'   per spectrum by `+/-10%`.
 #' - Gaussian noise with standard deviation `2200`.
-#' - In group `A`, six base peaks (indices `simpar$diff_AB`) have their
-#'   areas multiplied by `c(1.30, 1.20, 1.10, 0.70, 0.80, 0.90)` (stored in
+#' - In group `A`, five base peaks (indices `simpar$diff_AB`) have their
+#'   areas multiplied by `c(1.18, 1.12, 1.06, 0.91, 0.85)` (stored in
 #'   `simpar$ab_factors`). Group `B` is left unmodified. Spectrum
 #'   `sim2_001` is generated with `dx0 = 0` and `gx0 = 0` to provide a
 #'   clean unshifted alignment reference.

@@ -4,6 +4,26 @@
 
 - Never change any files outside the project or the global temp
   directory without asking for permission first.
+- Never run `git commit` without an explicit instruction from
+  the user to do so. After implementing changes, leave them in
+  the working tree (or staged at most) so the user can review
+  and commit themselves. The same rule applies to `git push`,
+  `git tag`, `git reset --hard` and any other history-touching
+  operation: explicit user instruction is required.
+
+## Versioning
+
+- The v2.0.0 release of metabodecon has **not** yet shipped. The
+  `tobi` branch prepares the v2.0.1 release.
+- During this preparation phase the version in `DESCRIPTION` may be
+  bumped in increments of `2.0.0.x` (e.g. `2.0.0.1`, `2.0.0.2`, ...)
+  for intermediate working revisions. Bump the version whenever a
+  user-visible change ships, and add a one-line entry to `NEWS.md`.
+- Because v2 has not yet been released, **no backwards-compatibility
+  shims, deprecation warnings, or migration paths are required** while
+  working on any `2.0.0.x` revision or the `tobi` branch. Break
+  signatures, defaults, and behavior as needed and just update the
+  call sites.
 
 ## Workspace Conventions
 
