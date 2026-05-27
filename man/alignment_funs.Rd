@@ -6,6 +6,7 @@
 \alias{identity_align}
 \alias{snap_to_ref}
 \alias{combine_peaks}
+\alias{snap_nw}
 \title{Alignment building blocks}
 \usage{
 clupa(
@@ -24,12 +25,17 @@ identity_align(x, ...)
 snap_to_ref(x, ref = NULL, maxCombine = 20, ...)
 
 combine_peaks(x, ref = NULL, maxCombine = 20, ...)
+
+snap_nw(x, ref = NULL, gap_tol = 0.02, ...)
 }
 \arguments{
-\item{x}{A \code{decons2} or \code{aligns} object.}
+\item{x}{A \code{decons2} / \code{aligns} object.}
 
-\item{ref}{Optional reference spectrum (\code{align} or \code{decon2}). When
-\code{NULL}, chosen by \code{\link[=find_ref]{find_ref()}}.}
+\item{ref}{Reference. Either an \code{aligns}/\code{decons2} \emph{spectrum} with an
+\code{lcpar} element (in which case \code{lcpar$x0} is the alignment target), or
+the consensus list returned by \code{\link[=build_consensus]{build_consensus()}} (which
+carries the same \code{lcpar} shape). If \code{NULL}, picked via
+\code{\link[=find_ref]{find_ref()}} on \code{x}.}
 
 \item{maxShift}{Maximum CluPA shift in datapoints.}
 
@@ -41,12 +47,18 @@ combine_peaks(x, ref = NULL, maxCombine = 20, ...)
 
 \item{use_speaq}{Use \code{speaq::dohCluster} (CluPA only).}
 
-\item{...}{Ignored.}
+\item{...}{Ignored (signature compatibility with \code{snap_to_ref}).}
 
 \item{maxCombine}{Maximum RefPA snap distance in datapoints.}
+
+\item{gap_tol}{Numeric scalar. Matching tolerance in ppm. Default 0.02.}
 }
 \value{
 An object of class \code{aligns}.
+
+An \code{aligns} object with \code{pcisn} and \code{x0sn} set on each spectrum's
+\code{lcpar}. \code{sit$supal} is cleared (the snap output is no longer
+Lorentz-compatible until rebuilt downstream).
 }
 \description{
 Pluggable alignment stages used by \code{\link[=align]{align()}} and the
@@ -81,4 +93,25 @@ within a window of \code{maxCombine}. Operates on the cross-spectrum
 peak-area matrix built from \code{lcpar$pcial} / \code{lcpar$A}; sets
 \code{lcpar$pcisn} / \code{lcpar$x0sn} per peak from the discovered column
 mapping. No peaks are dropped. \code{sit$supal} is cleared.
+
+\code{\link[=snap_nw]{snap_nw()}} is a drop-in alternative to
+\code{\link[=snap_to_ref]{snap_to_ref()}} that aligns each spectrum's peak list to
+the reference's peak list by global pairwise Needleman-Wunsch on \code{x0}
+(chemical shift, ppm). For each spectrum, matched peaks inherit the
+reference's \code{cssh} column index as their \code{pcisn}; unmatched peaks get
+\code{pcisn = NA}. The match cost is \verb{|x0_spec - x0_ref|} and the gap cost is
+a constant \code{gap_tol} (ppm), so a match is rejected in favour of two gaps
+whenever its position difference exceeds \code{2 * gap_tol}.
+
+Unlike \code{\link[=snap_to_ref]{snap_to_ref()}}, which is a per-peak nearest-neighbour
+lookup (greedy, many-to-one), \code{snap_nw} enforces 1-to-1 pairing via the
+Needleman-Wunsch DP. This avoids the failure mode where two adjacent
+spectrum peaks both collapse onto a single reference column.
+
+The DP runs in C (\code{align_dp_c} in \code{src/align_dp.c}); the R wrapper
+builds the cost matrix via \link[base:outer]{base::outer} and dispatches one \code{.Call}
+per spectrum.
+}
+\author{
+2026 Tobias Schmidt: initial version.
 }

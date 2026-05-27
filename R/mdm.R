@@ -541,6 +541,266 @@ fit_mdm2 <- function(x, y,
 #' @export
 #' @rdname mdm
 #'
+#' @title Fit an mdm via deconvolution + Needleman-Wunsch consensus alignment
+#'
+#' @description
+#' `r lifecycle::badge("experimental")`
+#'
+#' Trains a probability classifier on aligned peak-area features using a
+#' deconvolute -> consensus-NW pipeline (no CluPA, no RefPA). Replaces
+#' [metabodecon::fit_mdm2()]'s `deconvolute + clupa + snap_to_ref` chain
+#' with a single pairwise Needleman-Wunsch snap to a class-aware
+#' **consensus reference** built from the training data, then fits an
+#' L1-regularised logistic regression via [glmnet::glmnet()].
+#'
+#' Hyperparameters (`gap_tol` for the NW tolerance and `lambda` for glmnet
+#' regularization) are selected jointly by repeated stratified k-fold CV on
+#' the training set: one glmnet call per `(gap_tol, fold)` returns the full
+#' lambda path, so the inner sweep is `length(gap_tol) * nrounds * nfolds`
+#' glmnet fits but `length(gap_tol) * nrounds * nfolds * length(lambda)`
+#' candidate predictions. The `(gap_tol, lambda)` pair with the highest
+#' mean validation accuracy is then refit on **all** training data; that
+#' model and the corresponding training-set consensus are returned in the
+#' mdm object.
+#'
+#' @param x A `spectra` object (raw chemical shifts + intensities).
+#' @param y Binary factor with two non-empty classes; length == `length(x)`.
+#' @param npmax Maximum number of peaks per spectrum during deconvolution.
+#' @param gap_tol Numeric vector of NW matching tolerances (ppm) to sweep
+#'   in the inner CV.
+#' @param nfolds,nrounds Stratified k-fold CV: `nrounds` repeats of
+#'   `nfolds`-fold CV. Default `nfolds=5, nrounds=3` (i.e. 15 inner splits).
+#' @param igrs List of two-element ppm intervals to ignore (passed through
+#'   to [metabodecon::deconvolute()] and [metabodecon::peak_mat()]).
+#' @param sfr Optional signal-free region.
+#' @param use_rust Forwarded to [metabodecon::deconvolute()].
+#' @param alpha glmnet alpha; default 1.0 (lasso).
+#' @param nlambda glmnet path length; default 100.
+#' @param deg Optional pre-attached deconvolution cache (the `$deg` slot
+#'   built by [metabodecon::grid_deconvolute_spectra()]).
+#' @param num.threads Forwarded to [glmnet::glmnet()]'s OpenMP / forks.
+#' @param seed Random seed (folds + glmnet).
+#' @param nworkers Parallel workers for deconvolution.
+#' @param verbosity 0/1/2.
+#' @param check Validate arguments at the top.
+#'
+#' @return An `mdm` object with components:
+#'   * `model`: the final `glmnet` fit on full training data at `gap_tol*`.
+#'   * `ref`: the consensus peak list (a `consensus` spectrum, used as the
+#'     alignment target at predict time).
+#'   * `params`: `kind="nw"`, `npmax`, `gap_tol`, `lambda`, `alpha`, `igrs`,
+#'     `sfr`, `peakPos`, plus the `decon_fun`/`feat_fun`/`predict_fun` triple
+#'     consumed by `predict.mdm`.
+#'   * `mog`: per-`(gap_tol, lambda)` grid with mean acc, AUC, and SEs
+#'     across the inner CV folds.
+#'   * `mog_best`: one-row summary of the chosen cell.
+#'
+fit_mdm3 <- function(x, y,
+    npmax=1000,
+    gap_tol=c(0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2),
+    nfolds=5L, nrounds=3L,
+    igrs=list(), sfr=NULL, use_rust=FALSE,
+    learner=c("glmnet", "ranger"),
+    alpha=1.0, nlambda=100L, num.trees=2000L, deg=NULL,
+    num.threads=1L, seed=1L,
+    nworkers=1L, verbosity=1L, check=TRUE
+) {
+    learner <- match.arg(learner)
+    pre_decon <- inherits(x, "decons2")
+    if (check) {
+        stopifnot(
+            pre_decon || is_spectra(x), is.factor(y), length(y) == length(x),
+            is_num(npmax, 1), npmax >= 0,
+            is_num(gap_tol), all(gap_tol > 0),
+            is_int(nfolds, 1), nfolds >= 2L, nfolds <= length(y),
+            is_int(nrounds, 1), nrounds >= 1L,
+            is_num_or_null(sfr, 2), is_list_of_nums(igrs, nv=2),
+            is_bool_or_num(use_rust),
+            is_num(alpha, 1), alpha >= 0, alpha <= 1,
+            is_int(nlambda, 1), nlambda >= 2L,
+            is_int(num.threads, 1), is_int(nworkers, 1),
+            is_int(verbosity, 1), is_int(seed, 1)
+        )
+        if (nlevels(y) != 2 || any(table(y) == 0)) {
+            stop("`y` must contain exactly 2 non-empty classes.", call.=FALSE)
+        }
+    }
+    if (learner == "glmnet") requireNamespace("glmnet", quietly=TRUE)
+    else requireNamespace("ranger", quietly=TRUE)
+    lvs <- levels(y); pos <- lvs[2]
+    ns <- length(x); ngt <- length(gap_tol)
+
+    # 1. Deconvolute once -- per-spectrum and label-blind, so reusable
+    #    across every inner-CV split. Skip if x already a decons2 (allows
+    #    the caller to pass a cached deconvolution from an outer CV harness).
+    if (pre_decon) {
+        d <- x
+    } else if (npmax > 0L) {
+        if (!is.null(deg)) for (i in seq_along(x)) x[[i]]$deg <- deg[[i]]
+        logv("fit_mdm3: deconvolute %d spectra (npmax=%d)", ns, npmax)
+        d <- deconvolute(
+            x=x, sfr=sfr, igrs=igrs, verbose=verbosity >= 2,
+            use_rust=use_rust, npmax=npmax, nworkers=nworkers
+        )
+    } else {
+        d <- as_decon2(x)
+    }
+
+    # 2. Inner CV: build per-fold scores per (gap_tol, lambda?) candidate.
+    #    glmnet: 1 fit per (gap_tol, fold) yields the full lambda path so the
+    #    score grid is 2D. ranger: 1 fit per (gap_tol, fold), one score per
+    #    cell, score grid is 1D (lambda column collapsed to length 1).
+    logv("fit_mdm3: inner CV (%d rounds * %d folds * %d gap_tol, learner=%s)",
+         nrounds, nfolds, ngt, learner)
+    nl_per_cell <- if (learner == "glmnet") nlambda else 1L
+    score_acc <- vector("list", ngt)
+    score_auc <- vector("list", ngt)
+    common_lambda <- vector("list", ngt)
+    for (k in seq_len(ngt)) {
+        score_acc[[k]] <- matrix(NA_real_, nrounds * nfolds, nl_per_cell)
+        score_auc[[k]] <- matrix(NA_real_, nrounds * nfolds, nl_per_cell)
+    }
+    for (r in seq_len(nrounds)) {
+        te_list <- get_test_ids(nfolds=nfolds, nsamples=ns, seed=seed + r - 1L, y=y)
+        for (f in seq_along(te_list)) {
+            te <- te_list[[f]]; tr <- setdiff(seq_len(ns), te)
+            tr_d <- d[tr]; y_tr <- y[tr]; y_te <- y[te]
+            for (k in seq_len(ngt)) {
+                gt <- gap_tol[k]
+                cons <- build_consensus(tr_d, y=y_tr, gap_tol=gt)
+                X_tr <- nw_feat_mat(tr_d,    cons, gt, igrs=igrs)
+                X_te <- nw_feat_mat(d[te],   cons, gt, igrs=igrs)
+                pp <- which(colSums(X_tr != 0) > 0)
+                if (length(pp) < 2L) next
+                X_tr <- X_tr[, pp, drop=FALSE]
+                X_te <- X_te[, pp, drop=FALSE]
+                row <- (r - 1L) * nfolds + f
+                if (learner == "glmnet") {
+                    fit <- glmnet::glmnet(X_tr, y_tr, family="binomial",
+                                          alpha=alpha, nlambda=nlambda,
+                                          standardize=TRUE)
+                    lp <- fit$lambda
+                    if (is.null(common_lambda[[k]]) ||
+                        length(lp) > length(common_lambda[[k]])) {
+                        common_lambda[[k]] <- lp
+                    }
+                    prob <- stats::predict(fit, newx=X_te, s=lp,
+                                            type="response")
+                    cls_acc <- vapply(seq_along(lp), function(j) {
+                        cls <- factor(ifelse(prob[, j] > 0.5, pos, lvs[1]),
+                                      levels=lvs)
+                        mean(cls == y_te)
+                    }, numeric(1))
+                    cls_auc <- vapply(seq_along(lp), function(j) {
+                        AUC(y_te, prob[, j])
+                    }, numeric(1))
+                    score_acc[[k]][row, seq_along(lp)] <- cls_acc
+                    score_auc[[k]][row, seq_along(lp)] <- cls_auc
+                    logv("  r=%d f=%d k=%d (gap_tol=%g)  best_lam_acc=%s",
+                         r, f, k, gt, fmt_pct(max(cls_acc, na.rm=TRUE)))
+                } else {
+                    rf <- ranger::ranger(x=X_tr, y=y_tr, probability=TRUE,
+                                         num.trees=num.trees, seed=seed,
+                                         num.threads=max(1L, nworkers))
+                    pm <- stats::predict(rf, data=X_te)$predictions
+                    prob <- pm[, pos]
+                    cls <- factor(ifelse(prob > 0.5, pos, lvs[1]), levels=lvs)
+                    score_acc[[k]][row, 1L] <- mean(cls == y_te)
+                    score_auc[[k]][row, 1L] <- AUC(y_te, prob)
+                    logv("  r=%d f=%d k=%d (gap_tol=%g)  acc=%s",
+                         r, f, k, gt, fmt_pct(score_acc[[k]][row, 1L]))
+                }
+            }
+        }
+    }
+
+    # 3. Aggregate per (gap_tol, lambda?) cell and pick the best one.
+    mog <- data.frame(
+        gap_tol=numeric(0), lambda=numeric(0), acc=numeric(0),
+        acc_se=numeric(0), auc=numeric(0), auc_se=numeric(0)
+    )
+    for (k in seq_len(ngt)) {
+        for (j in seq_len(ncol(score_acc[[k]]))) {
+            acc_j <- score_acc[[k]][, j]
+            auc_j <- score_auc[[k]][, j]
+            if (all(is.na(acc_j))) next
+            ok <- !is.na(acc_j)
+            mog <- rbind(mog, data.frame(
+                gap_tol=gap_tol[k],
+                lambda=if (learner == "glmnet")
+                           (common_lambda[[k]][j] %||% NA_real_)
+                       else NA_real_,
+                acc=mean(acc_j, na.rm=TRUE),
+                acc_se=stats::sd(acc_j[ok]) / sqrt(sum(ok)),
+                auc=mean(auc_j, na.rm=TRUE),
+                auc_se=stats::sd(auc_j[ok]) / sqrt(sum(ok))
+            ))
+        }
+    }
+    ord <- order(-mog$acc, -mog$auc, na.last=TRUE)
+    ibest <- ord[1]
+    best <- mog[ibest, , drop=FALSE]
+    logv("fit_mdm3: best gap_tol=%g lambda=%.4g acc=%s auc=%s",
+         best$gap_tol, best$lambda, fmt_pct(best$acc), fmt_pct(best$auc))
+
+    # 4. Refit on full training data at chosen gap_tol* (and lambda* for glmnet).
+    cons_full <- build_consensus(d, y=y, gap_tol=best$gap_tol)
+    X_full <- nw_feat_mat(d, cons_full, best$gap_tol, igrs=igrs)
+    pp_full <- which(colSums(X_full != 0) > 0)
+    X_full <- X_full[, pp_full, drop=FALSE]
+    if (learner == "glmnet") {
+        final_fit <- glmnet::glmnet(X_full, y, family="binomial",
+                                    alpha=alpha, lambda=best$lambda,
+                                    standardize=TRUE)
+        final_fit$lvs <- lvs
+        class(final_fit) <- c("glmnet_one", class(final_fit))
+        predict_fun <- predict_glmnet_one
+    } else {
+        final_fit <- ranger::ranger(x=X_full, y=y, probability=TRUE,
+                                    num.trees=num.trees, seed=seed,
+                                    num.threads=max(1L, nworkers))
+        final_fit$lvs <- lvs
+        class(final_fit) <- c("ranger500", class(final_fit))
+        predict_fun <- predict_ranger500
+    }
+
+    params <- list(
+        kind="nw", learner=learner,
+        feat_fun=peak_mat, predict_fun=predict_fun, lvs=lvs,
+        decon_fun=deconvolute,
+        sfr=sfr, igrs=igrs, use_rust=use_rust,
+        npmax=npmax, nfit=3, smit=2, smws=5, delta=6.4,
+        gap_tol=best$gap_tol, lambda=best$lambda, alpha=alpha,
+        num.trees=num.trees, peakPos=pp_full
+    )
+    structure(
+        list(model=final_fit, ref=cons_full, params=params,
+             mog=mog, mog_best=best),
+        class="mdm"
+    )
+}
+
+#' @noRd
+#' @title Build the snap-to-consensus feature matrix
+#' @description Internal helper: snap_nw + peak_mat in one shot.
+nw_feat_mat <- function(d, cons, gap_tol, igrs=list()) {
+    a <- snap_nw(d, ref=cons, gap_tol=gap_tol)
+    peak_mat(a, igrs=igrs)
+}
+
+#' @noRd
+#' @title glmnet predictor for fit_mdm3
+#' @description Companion of fit_mdm3's stored model.
+predict_glmnet_one <- function(model, newx) {
+    requireNamespace("glmnet", quietly=TRUE)
+    as.numeric(stats::predict(model, newx=newx, s=model$lambda,
+                               type="response"))
+}
+
+
+#' @export
+#' @rdname mdm
+#'
 #' @title Repeated k-fold CV benchmark of fit_mdm2
 #'
 #' @description
@@ -1352,18 +1612,25 @@ predict.mdm <- function(
             nfit=p$nfit, smit=p$smit, smws=p$smws, delta=p$delta,
             npmax=p$npmax, nworkers=nworkers
         )
-        logv("Aligning spectra with %d nworkers", nworkers)
-        align_fun <- p$align_fun %||% clupa
-        a <- align_fun(x=d, ref=object$ref, maxShift=p$maxShift,
-                verbose=verbosity >= 2, nworkers=nworkers, full=FALSE)
-        # Prediction always uses snap_to_ref: the training peakPos was
-        # locked in once the model was fit, so new spectra must be
-        # snapped to those exact reference columns regardless of which
-        # post-align method was used during discovery.
-        if (inherits(a, "aligns") && (p$maxCombine %||% 0L) > 0L) {
-            a <- snap_to_ref(a, ref=object$ref, maxCombine=p$maxCombine)
+        if (identical(p$kind, "nw")) {
+            # fit_mdm3: single pairwise NW snap to stored consensus.
+            logv("NW-aligning %d spectra to stored consensus", length(newdata))
+            a <- snap_nw(d, ref=object$ref, gap_tol=p$gap_tol)
+            Xn <- p$feat_fun(a, igrs=p$igrs %||% list())
+        } else {
+            logv("Aligning spectra with %d nworkers", nworkers)
+            align_fun <- p$align_fun %||% clupa
+            a <- align_fun(x=d, ref=object$ref, maxShift=p$maxShift,
+                    verbose=verbosity >= 2, nworkers=nworkers, full=FALSE)
+            # Prediction always uses snap_to_ref: the training peakPos was
+            # locked in once the model was fit, so new spectra must be
+            # snapped to those exact reference columns regardless of which
+            # post-align method was used during discovery.
+            if (inherits(a, "aligns") && (p$maxCombine %||% 0L) > 0L) {
+                a <- snap_to_ref(a, ref=object$ref, maxCombine=p$maxCombine)
+            }
+            Xn <- p$feat_fun(a, maxCombine=p$maxCombine, igrs=p$igrs %||% list())
         }
-        Xn <- p$feat_fun(a, maxCombine=p$maxCombine, igrs=p$igrs %||% list())
         Xn <- Xn[, p$peakPos, drop=FALSE]
     } else {
         Xn <- as.matrix(newdata)

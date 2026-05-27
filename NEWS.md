@@ -1,3 +1,26 @@
+# metabodecon 2.0.0.3
+
+* New `snap_nw()` and `build_consensus()` alignment helpers.
+  `snap_nw` is a Needleman-Wunsch drop-in for `snap_to_ref`; the
+  pairwise DP runs in C (`src/align_dp.c`). `build_consensus` builds
+  a class-aware consensus peak list from training spectra so future
+  spectra can be aligned to a single fixed reference at predict time.
+* New `fit_mdm3()`: `deconvolute -> consensus-NW -> glmnet` pipeline
+  with internal repeated k-fold CV for joint (gap_tol, lambda)
+  hyperparameter selection. Saves the entire CluPA stage relative to
+  `fit_mdm2()`.
+
+# metabodecon 2.0.0.2
+
+* `sim2` regenerated with three discriminating peaks (factors
+  `(1.25, 1.25, 1/1.25)`) instead of five, per-peak ppm jitter sd
+  raised to 4 datapoints (~0.00060 ppm) and global ppm shift sd
+  lowered to 8 datapoints (~0.00120 ppm). RNG seed changed from 42
+  to 15 (chosen so that the supervised grid search on the
+  training half places the three discriminating peaks in the top
+  10 ranger features by permutation importance).
+  `attr(sim2, "true_x0")` is now a 3-vector.
+
 # metabodecon 2.0.0.1
 
 * Default `grid_deconvolute_spectrum()` / `grid_deconvolute_spectra()` grid

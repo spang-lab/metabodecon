@@ -707,3 +707,194 @@ pad_peaks <- function(peaks, n) {
         c(peaks, rep(peaks[1L], n - length(peaks)))
     }
 }
+
+# Needleman-Wunsch alignment #####
+
+#' @export
+#' @rdname alignment_funs
+#'
+#' @title Pairwise Needleman-Wunsch snap of peak lists onto a reference
+#'
+#' @description
+#' [metabodecon::snap_nw()] is a drop-in alternative to
+#' [metabodecon::snap_to_ref()] that aligns each spectrum's peak list to
+#' the reference's peak list by global pairwise Needleman-Wunsch on `x0`
+#' (chemical shift, ppm). For each spectrum, matched peaks inherit the
+#' reference's `cssh` column index as their `pcisn`; unmatched peaks get
+#' `pcisn = NA`. The match cost is `|x0_spec - x0_ref|` and the gap cost is
+#' a constant `gap_tol` (ppm), so a match is rejected in favour of two gaps
+#' whenever its position difference exceeds `2 * gap_tol`.
+#'
+#' Unlike [metabodecon::snap_to_ref()], which is a per-peak nearest-neighbour
+#' lookup (greedy, many-to-one), `snap_nw` enforces 1-to-1 pairing via the
+#' Needleman-Wunsch DP. This avoids the failure mode where two adjacent
+#' spectrum peaks both collapse onto a single reference column.
+#'
+#' The DP runs in C (`align_dp_c` in `src/align_dp.c`); the R wrapper
+#' builds the cost matrix via [base::outer] and dispatches one `.Call`
+#' per spectrum.
+#'
+#' @param x A `decons2` / `aligns` object.
+#' @param ref Reference. Either an `aligns`/`decons2` *spectrum* with an
+#'   `lcpar` element (in which case `lcpar$x0` is the alignment target), or
+#'   the consensus list returned by [metabodecon::build_consensus()] (which
+#'   carries the same `lcpar` shape). If `NULL`, picked via
+#'   [metabodecon::find_ref()] on `x`.
+#' @param gap_tol Numeric scalar. Matching tolerance in ppm. Default 0.02.
+#' @param ... Ignored (signature compatibility with `snap_to_ref`).
+#'
+#' @return An `aligns` object with `pcisn` and `x0sn` set on each spectrum's
+#'   `lcpar`. `sit$supal` is cleared (the snap output is no longer
+#'   Lorentz-compatible until rebuilt downstream).
+#'
+#' @author 2026 Tobias Schmidt: initial version.
+snap_nw <- function(x, ref=NULL, gap_tol=0.02, ...) {
+    stopifnot(inherits(x, "decons2"), is_num(gap_tol, 1), gap_tol >= 0)
+    if (gap_tol == 0) return(x)
+    x <- ensure_cssh(x)
+    if (!is.null(ref) && is.null(ref$cssh)) ref$cssh <- x[[1]]$cssh
+    ref <- ref %||% find_ref(x)
+    if (is.null(ref$lcpar$pcide)) {
+        ref$lcpar$pcide <- pci_on_cssh(ref$lcpar$x0, ref$cssh)
+    }
+    cssh <- x[[1]]$cssh
+    ro   <- order(ref$lcpar$x0)
+    rx0  <- as.numeric(ref$lcpar$x0[ro])
+    rcol <- as.integer(ref$lcpar$pcide[ro])
+    for (s in seq_along(x)) {
+        x[[s]]$lcpar <- snap_nw_lcpar(x[[s]]$lcpar, rx0, rcol, cssh, gap_tol)
+        x[[s]]$sit$supal <- NULL
+        class(x[[s]]) <- c("align", "decon2", "spectrum")
+    }
+    class(x) <- c("aligns", "decons2", "spectra")
+    x
+}
+
+# Per-spectrum NW snap: returns lcpar with pcisn / x0sn columns added.
+snap_nw_lcpar <- function(lcpar, rx0, rcol, cssh, gap_tol) {
+    n <- nrow(lcpar)
+    lcpar$pcisn <- rep(NA_integer_, n)
+    lcpar$x0sn  <- rep(NA_real_,    n)
+    if (n == 0L || length(rcol) == 0L) return(lcpar)
+    o   <- order(lcpar$x0)
+    sx0 <- as.numeric(lcpar$x0[o])
+    M   <- abs(outer(sx0, rx0, "-"))
+    storage.mode(M) <- "double"
+    gp  <- rep_len(as.double(gap_tol), length(sx0))
+    gq  <- rep_len(as.double(gap_tol), length(rx0))
+    ans <- .Call(align_dp_c, M, gp, gq)
+    al  <- ans$alignment
+    mt  <- !is.na(al[, 1]) & !is.na(al[, 2])
+    if (any(mt)) {
+        si <- o[al[mt, 1]]
+        ci <- rcol[al[mt, 2]]
+        lcpar$pcisn[si] <- ci
+        lcpar$x0sn[si]  <- cssh[ci]
+    }
+    lcpar
+}
+
+#' @export
+#'
+#' @title Build a consensus peak-list reference for NW snapping
+#'
+#' @description
+#' Constructs a single consensus peak list to be used as the alignment
+#' target by [metabodecon::snap_nw()]. The consensus represents the union
+#' of training-set peak positions, deduplicated within `gap_tol` ppm so
+#' near-coincident peaks collapse to a single column.
+#'
+#' When `y` is supplied, the consensus is class-aware: one
+#' [metabodecon::find_ref()] is picked per level of `y`, the per-class
+#' references are merged into a seed consensus (so class-specific peaks
+#' are present from the start), and every training spectrum is then
+#' NW-snapped to this seed; their `x0` values contribute additional
+#' consensus positions wherever they did not match the seed. The final
+#' consensus is again deduplicated within `gap_tol`.
+#'
+#' The returned object is shaped like an aligned spectrum
+#' (`list(cssh, lcpar, ...)`) so it can be passed directly as `ref` to
+#' [metabodecon::snap_nw()] at prediction time.
+#'
+#' @param x A `decons2` object (training deconvolutions).
+#' @param y Optional factor of class labels (length == `length(x)`). If
+#'   supplied, the seed consensus is built per-class.
+#' @param gap_tol Numeric scalar. Tolerance in ppm for both the per-spectrum
+#'   NW snap and for deduplicating consensus positions. Default 0.02.
+#'
+#' @return A list with components `cssh`, `lcpar` (data frame with `x0`,
+#'   `A`, `lambda`, `pcide`), plus the class attributes
+#'   `c("consensus", "align", "decon2", "spectrum")` so it behaves like a
+#'   single-spectrum reference for downstream code.
+#'
+#' @author 2026 Tobias Schmidt: initial version.
+build_consensus <- function(x, y=NULL, gap_tol=0.02) {
+    stopifnot(inherits(x, "decons2"), is_num(gap_tol, 1), gap_tol > 0)
+    x <- ensure_cssh(x)
+    cssh <- x[[1]]$cssh
+    if (is.null(y)) {
+        seed <- find_ref(x)
+    } else {
+        stopifnot(is.factor(y), length(y) == length(x))
+        lvs <- levels(y)
+        reps <- lapply(lvs, function(lv) {
+            ix <- which(y == lv)
+            if (length(ix) == 0L) return(NULL)
+            find_ref(x[ix])
+        })
+        reps <- reps[!vapply(reps, is.null, logical(1))]
+        # Merge the per-class references into the seed consensus.
+        seed_x0  <- unlist(lapply(reps, function(r) r$lcpar$x0))
+        seed_A   <- unlist(lapply(reps, function(r) r$lcpar$A))
+        seed_lam <- unlist(lapply(reps, function(r) r$lcpar$lambda))
+        seed_lcpar <- data.frame(x0=seed_x0, A=seed_A, lambda=seed_lam)
+        seed_lcpar <- dedupe_peaks(seed_lcpar, gap_tol)
+        seed <- list(cssh=cssh, lcpar=seed_lcpar)
+    }
+    if (is.null(seed$lcpar$pcide)) {
+        seed$lcpar$pcide <- pci_on_cssh(seed$lcpar$x0, cssh)
+    }
+
+    # Now extend the seed with any training peaks that didn't match it.
+    snapped <- snap_nw(x, ref=seed, gap_tol=gap_tol)
+    extra_x0  <- c(); extra_A <- c(); extra_lam <- c()
+    for (s in seq_along(snapped)) {
+        lc <- snapped[[s]]$lcpar
+        un <- is.na(lc$pcisn)
+        if (any(un)) {
+            extra_x0  <- c(extra_x0,  lc$x0[un])
+            extra_A   <- c(extra_A,   lc$A[un])
+            extra_lam <- c(extra_lam, lc$lambda[un])
+        }
+    }
+    full_lcpar <- data.frame(
+        x0=c(seed$lcpar$x0, extra_x0),
+        A=c(seed$lcpar$A,   extra_A),
+        lambda=c(seed$lcpar$lambda, extra_lam)
+    )
+    full_lcpar <- dedupe_peaks(full_lcpar, gap_tol)
+    full_lcpar$pcide <- pci_on_cssh(full_lcpar$x0, cssh)
+    structure(
+        list(cssh=cssh, lcpar=full_lcpar),
+        class=c("consensus", "align", "decon2", "spectrum")
+    )
+}
+
+# Deduplicate a peak list: peaks within `gap_tol` ppm of each other are
+# collapsed into a single peak whose x0 / A / lambda are amplitude-weighted
+# means of the cluster.
+dedupe_peaks <- function(lcpar, gap_tol) {
+    n <- nrow(lcpar)
+    if (n == 0L) return(lcpar)
+    o <- order(lcpar$x0)
+    x0 <- lcpar$x0[o]; A <- lcpar$A[o]; lam <- lcpar$lambda[o]
+    # Cluster by consecutive-gap threshold.
+    g <- c(0, cumsum(diff(x0) > gap_tol))
+    keep_x0  <- vapply(split(seq_len(n), g), function(i) {
+        w <- A[i]; if (sum(w) <= 0) mean(x0[i]) else stats::weighted.mean(x0[i], w)
+    }, numeric(1))
+    keep_A   <- vapply(split(seq_len(n), g), function(i) mean(A[i]),   numeric(1))
+    keep_lam <- vapply(split(seq_len(n), g), function(i) mean(lam[i]), numeric(1))
+    data.frame(x0=as.numeric(keep_x0), A=as.numeric(keep_A),
+               lambda=as.numeric(keep_lam))
+}

@@ -555,12 +555,12 @@ sim2_docs <- NULL # To get a symbol in the outline
 #' @description
 #' A simulated two-group classification dataset for demonstrating
 #' [metabodecon::fit_mdm()] and [metabodecon::benchmark()]. It contains 100
-#' simulated 1D NMR spectra split evenly into groups `A` and `B`, where 6
+#' simulated 1D NMR spectra split evenly into groups `A` and `B`, where 3
 #' out of 25 peaks per spectrum differ between the groups: in group `A`,
-#' three peaks are scaled by `1.30`, `1.20`, `1.10` and three by `0.70`,
-#' `0.80`, `0.90`. Group `B` is left unmodified. The first spectrum
-#' (`sim2_001`) is constructed without any global or per-peak ppm jitter so
-#' it can serve as a clean unshifted alignment reference.
+#' two peaks are scaled by `1.25` and one peak by `1/1.25` (\eqn{\approx
+#' 0.80}). Group `B` is left unmodified. The first spectrum (`sim2_001`)
+#' is constructed without any global or per-peak ppm jitter so it can
+#' serve as a clean unshifted alignment reference.
 #'
 #' @format
 #' A `spectra` object consisting of 100 `spectrum` objects, where each spectrum
@@ -587,16 +587,18 @@ sim2_docs <- NULL # To get a symbol in the outline
 #' which itself is derived from the Blood reference dataset (see
 #' [metabodecon::sim]). Concretely:
 #' - 25 base peaks per spectrum with positions drawn uniformly in
-#'   `[3.37, 3.52]` ppm.
-#' - Per-peak jitter (sd 0.00030 ppm) plus a per-spectrum global ppm shift
-#'   (sd 0.00240 ppm) to mimic chemical shift variation between samples.
+#'   `[3.37, 3.52]` ppm. The reference-grid step is `0.00015 ppm/dp`.
+#' - Per-peak jitter with standard deviation 4 datapoints
+#'   (\eqn{\approx 0.00060} ppm) plus a per-spectrum global ppm shift
+#'   with standard deviation 8 datapoints (\eqn{\approx 0.00120} ppm)
+#'   to mimic chemical shift variation between samples.
 #' - Base areas drawn from a log-normal distribution centered around `2500`
 #'   (in ppm-area units) and varied per spectrum by `+/-60%`.
 #' - Base half-widths drawn uniformly in `[0.0009, 0.0013]` ppm and varied
 #'   per spectrum by `+/-10%`.
 #' - Gaussian noise with standard deviation `2200`.
-#' - In group `A`, five base peaks (indices `simpar$diff_AB`) have their
-#'   areas multiplied by `c(1.18, 1.12, 1.06, 0.91, 0.85)` (stored in
+#' - In group `A`, three base peaks (indices `simpar$diff_AB`) have their
+#'   areas multiplied by `c(1.25, 1.25, 1/1.25)` (stored in
 #'   `simpar$ab_factors`). Group `B` is left unmodified. Spectrum
 #'   `sim2_001` is generated with `dx0 = 0` and `gx0 = 0` to provide a
 #'   clean unshifted alignment reference.

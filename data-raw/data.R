@@ -88,18 +88,21 @@ update_sim <- function(nworkers = 1) {
 #' @noRd
 #' @author 2026 Tobias Schmidt: initial version.
 #' @description
-#' Builds the `sim2` classification dataset: 100 simulated 1D NMR spectra split
-#' into two groups (A and B), where five out of 25 peaks per spectrum differ
-#' systematically between the groups. In group A, three peaks are scaled by
-#' 1.18, 1.12, 1.06 and two peaks by 0.91, 0.85; group B is left
-#' unmodified. Peak parameter distributions (number of peaks, areas,
-#' half-widths, noise) were chosen to match the values recovered by
-#' deconvoluting the [metabodecon::sim] dataset (which itself is derived from
-#' the Blood reference dataset; see [metabodecon::sim]). The result is a
-#' `spectra` object with the per-spectrum group labels attached as
-#' `attr(., "group")`. The first spectrum (`sim2_001`) is constructed without
-#' any global or per-peak ppm jitter so it serves as a clean unshifted
-#' reference.
+#' Builds the `sim2` classification dataset: 100 simulated 1D NMR spectra
+#' split into two groups (A and B), where three out of 25 peaks per spectrum
+#' differ systematically between the groups. In group A, two peaks are
+#' scaled by 1.25 and one peak by 1/1.25 (\eqn{\approx 0.80}); group B is
+#' left unmodified. Per-peak ppm jitter has standard deviation 4 reference-
+#' grid datapoints (\eqn{\approx 0.00060} ppm); the global ppm shift has
+#' standard deviation 8 datapoints (\eqn{\approx 0.00120} ppm). Peak
+#' parameter distributions (number of peaks, areas, half-widths, noise)
+#' were chosen to match the values recovered by deconvoluting the
+#' [metabodecon::sim] dataset (which itself is derived from the Blood
+#' reference dataset; see [metabodecon::sim]). The result is a `spectra`
+#' object with the per-spectrum group labels attached as
+#' `attr(., "group")`. The first spectrum (`sim2_001`) is constructed
+#' without any global or per-peak ppm jitter so it serves as a clean
+#' unshifted reference.
 #'
 #' Each spectrum's `meta$simpar` carries the usual fields (`x0`, `A`, `lambda`,
 #' `noise`) plus `base_x0` (the 25 reference peak positions, identical across
@@ -114,17 +117,20 @@ update_sim <- function(nworkers = 1) {
 #' aligned peak centers nearest to `base_x0[diff_AB]` in the reference
 #' spectrum picked by [metabodecon::align()].
 make_sim2 <- function() {
-    set.seed(42)
+    set.seed(15)
     n <- 100  # number of spectra
     npk <- 25 # number of peaks
     cs <- seq(from = 3.59, length.out = 2048, by = -0.00015)
+    # Reference-grid step in ppm (1 datapoint).
+    dp <- 0.00015
     base_x0 <- sort(stats::runif(npk, 3.37, 3.52))
     base_A <- stats::rlnorm(npk, meanlog = log(2500), sdlog = 1)
     base_lam <- stats::runif(npk, 0.0009, 0.0013)
     group <- factor(rep(c("A", "B"), each = n/2))
-    # Five discriminating peaks spread across the full ppm range.
-    diff_AB <- round(seq(1, npk, length.out = 5))
-    ab_factors <- c(1.18, 1.12, 1.06, 0.91, 0.85)
+    # Three discriminating peaks spread across the full ppm range, two
+    # scaled up by 1.25 and one scaled down by 1/1.25 in group A.
+    diff_AB <- round(seq(1, npk, length.out = 3))
+    ab_factors <- c(1.25, 1.25, 1 / 1.25)
     spectra <- vector("list", n)
     for (i in seq_len(n)) {
         # Spectrum 1 is the clean unshifted reference: no ppm jitter at all.
@@ -132,8 +138,9 @@ make_sim2 <- function() {
             dx0 <- rep(0, npk)
             gx0 <- 0
         } else {
-            dx0 <- stats::rnorm(npk, sd = 0.00030)
-            gx0 <- stats::rnorm(1, sd = 0.00240)
+            # Per-peak jitter sd = 4 datapoints; global ppm shift sd = 8 dp.
+            dx0 <- stats::rnorm(npk, sd = 4 * dp)
+            gx0 <- stats::rnorm(1,   sd = 8 * dp)
         }
         x0 <- base_x0 + dx0 + gx0
         A <- base_A * stats::runif(npk, 0.4, 1.6)

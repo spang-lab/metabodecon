@@ -29,12 +29,12 @@ sim2
 \description{
 A simulated two-group classification dataset for demonstrating
 \code{\link[=fit_mdm]{fit_mdm()}} and \code{\link[=benchmark]{benchmark()}}. It contains 100
-simulated 1D NMR spectra split evenly into groups \code{A} and \code{B}, where 6
+simulated 1D NMR spectra split evenly into groups \code{A} and \code{B}, where 3
 out of 25 peaks per spectrum differ between the groups: in group \code{A},
-three peaks are scaled by \code{1.30}, \code{1.20}, \code{1.10} and three by \code{0.70},
-\code{0.80}, \code{0.90}. Group \code{B} is left unmodified. The first spectrum
-(\code{sim2_001}) is constructed without any global or per-peak ppm jitter so
-it can serve as a clean unshifted alignment reference.
+two peaks are scaled by \code{1.25} and one peak by \code{1/1.25} (\eqn{\approx
+0.80}). Group \code{B} is left unmodified. The first spectrum (\code{sim2_001})
+is constructed without any global or per-peak ppm jitter so it can
+serve as a clean unshifted alignment reference.
 }
 \details{
 Peak parameters (positions, areas, half-widths and noise) were chosen to
@@ -43,16 +43,18 @@ which itself is derived from the Blood reference dataset (see
 \link{sim}). Concretely:
 \itemize{
 \item 25 base peaks per spectrum with positions drawn uniformly in
-\verb{[3.37, 3.52]} ppm.
-\item Per-peak jitter (sd 0.00030 ppm) plus a per-spectrum global ppm shift
-(sd 0.00240 ppm) to mimic chemical shift variation between samples.
+\verb{[3.37, 3.52]} ppm. The reference-grid step is \verb{0.00015 ppm/dp}.
+\item Per-peak jitter with standard deviation 4 datapoints
+(\eqn{\approx 0.00060} ppm) plus a per-spectrum global ppm shift
+with standard deviation 8 datapoints (\eqn{\approx 0.00120} ppm)
+to mimic chemical shift variation between samples.
 \item Base areas drawn from a log-normal distribution centered around \code{2500}
 (in ppm-area units) and varied per spectrum by \verb{+/-60\%}.
 \item Base half-widths drawn uniformly in \verb{[0.0009, 0.0013]} ppm and varied
 per spectrum by \verb{+/-10\%}.
 \item Gaussian noise with standard deviation \code{2200}.
-\item In group \code{A}, five base peaks (indices \code{simpar$diff_AB}) have their
-areas multiplied by \code{c(1.18, 1.12, 1.06, 0.91, 0.85)} (stored in
+\item In group \code{A}, three base peaks (indices \code{simpar$diff_AB}) have their
+areas multiplied by \code{c(1.25, 1.25, 1/1.25)} (stored in
 \code{simpar$ab_factors}). Group \code{B} is left unmodified. Spectrum
 \code{sim2_001} is generated with \code{dx0 = 0} and \code{gx0 = 0} to provide a
 clean unshifted alignment reference.

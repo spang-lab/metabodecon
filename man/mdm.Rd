@@ -4,6 +4,7 @@
 \alias{mdm}
 \alias{fit_mdm}
 \alias{fit_mdm2}
+\alias{fit_mdm3}
 \alias{benchmark2}
 \alias{get_mog}
 \alias{benchmark}
@@ -55,6 +56,28 @@ fit_mdm2(
   check = TRUE,
   supsh = "lorentz",
   post_align = c("snap_to_ref", "combine_peaks")
+)
+
+fit_mdm3(
+  x,
+  y,
+  npmax = 1000,
+  gap_tol = c(0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2),
+  nfolds = 5L,
+  nrounds = 3L,
+  igrs = list(),
+  sfr = NULL,
+  use_rust = FALSE,
+  learner = c("glmnet", "ranger"),
+  alpha = 1,
+  nlambda = 100L,
+  num.trees = 2000L,
+  deg = NULL,
+  num.threads = 1L,
+  seed = 1L,
+  nworkers = 1L,
+  verbosity = 1L,
+  check = TRUE
 )
 
 benchmark2(
@@ -151,7 +174,7 @@ fit_ranger500(X, y, seed = 1, nworkers = 1L)
 predict_ranger500(model, newx)
 }
 \arguments{
-\item{x}{Spectra object.}
+\item{x}{A \code{spectra} object (raw chemical shifts + intensities).}
 
 \item{y}{Factor with two levels.}
 
@@ -178,31 +201,32 @@ global integer shift via FFT cross-correlation),
 
 \item{mog}{Model-fitting grid as returned by \code{\link[=get_mog]{get_mog()}}.}
 
-\item{deg}{Deconvolution-parameter grid forwarded to
-\code{\link[=grid_deconvolute_spectra]{grid_deconvolute_spectra()}} when any row of \code{mog} has
-\code{npmax > 0}. When \code{NULL} (default), the default grid built into
-\code{\link[=grid_deconvolute_spectra]{grid_deconvolute_spectra()}} is used.}
+\item{deg}{Optional pre-attached deconvolution cache (the \verb{$deg} slot
+built by \code{\link[=grid_deconvolute_spectra]{grid_deconvolute_spectra()}}).}
 
-\item{sfr}{Signal-free region. See \code{\link[=deconvolute]{deconvolute()}}.}
+\item{sfr}{Optional signal-free region.}
 
-\item{igrs}{Ignore regions in ppm.}
+\item{igrs}{List of two-element ppm intervals to ignore (passed through
+to \code{\link[=deconvolute]{deconvolute()}} and \code{\link[=peak_mat]{peak_mat()}}).}
 
-\item{use_rust}{Use the Rust backend?}
+\item{use_rust}{Forwarded to \code{\link[=deconvolute]{deconvolute()}}.}
 
 \item{nworkers}{Forwarded to \code{ranger::ranger(num.threads=...)} for
 per-tree parallelism.}
 
-\item{verbosity}{Verbosity level.}
+\item{verbosity}{0/1/2.}
 
 \item{seed}{Random seed for ranger.}
 
 \item{nfolds}{Number of folds for the inner CV used by \code{fit}.}
 
-\item{check}{Validate inputs at function entry?}
+\item{check}{Validate arguments at the top.}
 
 \item{nrounds}{For \code{\link[=fit_mdm]{fit_mdm()}}: number of outer-CV rounds
 (each round is a fresh stratified \code{nfolds}-fold split). Also used by
 \code{\link[=cv_mdm]{cv_mdm()}} as the number of repeated \code{kfold}-fold CVs.}
+
+\item{npmax}{Maximum number of peaks per spectrum during deconvolution.}
 
 \item{maxCombine}{Bin width / peak-merging tolerance for
 \code{peak_mat()} / \code{si_mat()} / \code{bin()}.}
@@ -211,6 +235,15 @@ per-tree parallelism.}
 gives a well-converged OOB error for typical mdm sample sizes.
 Doubling \code{num.trees} and confirming the OOB AUC does not move
 beyond its standard error is a cheap convergence check.}
+
+\item{gap_tol}{Numeric vector of NW matching tolerances (ppm) to sweep
+in the inner CV.}
+
+\item{alpha}{glmnet alpha; default 1.0 (lasso).}
+
+\item{nlambda}{glmnet path length; default 100.}
+
+\item{num.threads}{Forwarded to \code{\link[glmnet:glmnet]{glmnet::glmnet()}}'s OpenMP / forks.}
 
 \item{conf}{Character string selecting a predefined \code{mog} configuration.}
 
@@ -243,6 +276,9 @@ rounds) falls below this. Set to \code{0} to always run \code{max_rounds} rounds
 
 \item{row}{Single-row data frame (one row of \code{mog}) passed to
 \code{\link[=bootstrap_mdm_one]{bootstrap_mdm_one()}}.}
+
+\item{nfolds, nrounds}{Stratified k-fold CV: \code{nrounds} repeats of
+\code{nfolds}-fold CV. Default \verb{nfolds=5, nrounds=3} (i.e. 15 inner splits).}
 }
 \value{
 \code{\link[=fit_mdm]{fit_mdm()}} returns an object of class \code{mdm} with elements
@@ -289,6 +325,19 @@ k-fold partition.
 An object of class \code{mdm} with the same shape as
 \code{\link[=fit_mdm]{fit_mdm()}}. \code{mog$acc_se} and \code{mog$auc_se} are \code{NA}
 because OOB produces a single point estimate per grid row.
+
+An \code{mdm} object with components:
+\itemize{
+\item \code{model}: the final \code{glmnet} fit on full training data at \verb{gap_tol*}.
+\item \code{ref}: the consensus peak list (a \code{consensus} spectrum, used as the
+alignment target at predict time).
+\item \code{params}: \code{kind="nw"}, \code{npmax}, \code{gap_tol}, \code{lambda}, \code{alpha}, \code{igrs},
+\code{sfr}, \code{peakPos}, plus the \code{decon_fun}/\code{feat_fun}/\code{predict_fun} triple
+consumed by \code{predict.mdm}.
+\item \code{mog}: per-\verb{(gap_tol, lambda)} grid with mean acc, AUC, and SEs
+across the inner CV folds.
+\item \code{mog_best}: one-row summary of the chosen cell.
+}
 
 A list with elements:
 \itemize{
@@ -363,6 +412,25 @@ Any \strong{negative} value in \code{maxCombine} acts as an on/off switch: it is
 replaced row-wise by that row's \code{maxShift}. Pass \code{maxCombine=-1} to
 tie peak-snapping width to the alignment tolerance and collapse the
 grid from a 2D to a 1D sweep over \code{maxShift}.
+
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+
+Trains a probability classifier on aligned peak-area features using a
+deconvolute -> consensus-NW pipeline (no CluPA, no RefPA). Replaces
+\code{\link[=fit_mdm2]{fit_mdm2()}}'s \code{deconvolute + clupa + snap_to_ref} chain
+with a single pairwise Needleman-Wunsch snap to a class-aware
+\strong{consensus reference} built from the training data, then fits an
+L1-regularised logistic regression via \code{\link[glmnet:glmnet]{glmnet::glmnet()}}.
+
+Hyperparameters (\code{gap_tol} for the NW tolerance and \code{lambda} for glmnet
+regularization) are selected jointly by repeated stratified k-fold CV on
+the training set: one glmnet call per \verb{(gap_tol, fold)} returns the full
+lambda path, so the inner sweep is \code{length(gap_tol) * nrounds * nfolds}
+glmnet fits but \code{length(gap_tol) * nrounds * nfolds * length(lambda)}
+candidate predictions. The \verb{(gap_tol, lambda)} pair with the highest
+mean validation accuracy is then refit on \strong{all} training data; that
+model and the corresponding training-set consensus are returned in the
+mdm object.
 
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 
