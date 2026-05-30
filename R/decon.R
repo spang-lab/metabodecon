@@ -83,7 +83,7 @@ deconvolute <- function(
     stopifnot(
         inherits(x, "spectrum") || inherits(x, "spectra"), is_int(nfit, 1),
         is_int_or_null(smit, 1),   is_int_or_null(smws, 1),
-        is_num_or_null(delta, 1),  is_int(npmax, 1),
+        is_num_or_null(delta, 1),  is_npmax(npmax),
         is_num_or_null(sfr, 2),    is_list_of_nums(igrs, nv=2),
         is_bool_or_num(use_rust),  is_int(nworkers, 1),
         is_bool(verbose, 1)
@@ -124,6 +124,58 @@ get_deg <- function(conf="default") {
 
 # Internal #####
 
+# Validate `npmax`: an integer scalar (0 = "no grid pick", >=1 = "best
+# row of $deg with np < npmax") or one of the strings "auto"
+# (median-Kneedle elbow over all spectra, resolved inside
+# deconvolute_spectra) and "intrinsic" (per-spectrum Kneedle elbow,
+# resolved inside deconvolute_spectrum).
+is_npmax <- function(x) {
+    is_int(x, 1) || (is.character(x) && length(x) == 1L &&
+                       x %in% c("auto", "intrinsic"))
+}
+
+# Whether the current `npmax` value needs `$deg` attached to every
+# spectrum before deconvolution can proceed. True for any positive
+# integer (pick_best_params reads $deg), "auto" (find_npmax_elbow
+# reads $deg), or "intrinsic" (find_npmax_elbow_one reads $deg).
+npmax_needs_deg <- function(npmax) {
+    if (is.character(npmax)) return(npmax %in% c("auto", "intrinsic"))
+    isTRUE(npmax >= 1)
+}
+
+# Per-spectrum npmax elbow from the (np, cum-min ar) frontier of `s$deg`.
+# Same Kneedle-on-cum-min-frontier idea as `mdp::find_ellbow` but returns
+# only the np at the knee. `s$deg` must be populated upstream (typically
+# by grid_deconvolute_spectra()).
+find_npmax_elbow_one <- function(s) {
+    d <- s$deg
+    if (is.null(d) || nrow(d) == 0L) return(NA_integer_)
+    by_np <- split(seq_len(nrow(d)), d$np)
+    idx <- vapply(by_np, function(ii) ii[which.min(d$ar[ii])], integer(1))
+    f <- d[idx, , drop=FALSE]
+    f <- f[order(f$np), , drop=FALSE]
+    f$cum_ar <- cummin(f$ar)
+    np_rng <- diff(range(f$np))
+    ar_rng <- diff(range(f$cum_ar))
+    if (np_rng == 0 || ar_rng == 0) return(as.integer(f$np[1]))
+    nn <- (f$np - min(f$np)) / np_rng
+    yn <- (f$cum_ar - min(f$cum_ar)) / ar_rng
+    k <- which.max((1 - nn) - yn)
+    as.integer(f$np[k])
+}
+
+# Aggregate per-spectrum elbows into a single npmax via the median.
+# Requires every `x[[i]]` to carry a non-empty `$deg` grid.
+find_npmax_elbow <- function(x) {
+    picks <- vapply(x, find_npmax_elbow_one, integer(1))
+    picks <- picks[!is.na(picks)]
+    if (length(picks) == 0L) {
+        stop("find_npmax_elbow: no spectra have a $deg grid; ",
+             "call grid_deconvolute_spectra() first.", call.=FALSE)
+    }
+    as.integer(stats::median(picks))
+}
+
 #' @noRd
 #' @author 2024-2026 Tobias Schmidt: initial version.
 deconvolute_spectra <- function(
@@ -140,10 +192,23 @@ deconvolute_spectra <- function(
     ns <- length(x)
     nw <- min(half_cores(), ns, nworkers)
 
-    # Attach grid-search results to each spectrum (only when npmax > 0)
-    if (npmax >= 1) x <- grid_deconvolute_spectra(
+    # Attach grid-search results to each spectrum when any npmax mode
+    # needs them: positive fixed npmax (pick_best_params reads $deg),
+    # "auto" (median elbow reads $deg), or "intrinsic" (per-spectrum
+    # elbow reads $deg).
+    if (npmax_needs_deg(npmax)) x <- grid_deconvolute_spectra(
         x=x, sfr=sfr, verbose=verbose, nworkers=nw, use_rust=use_rust
     )
+    # "auto" resolves to a single integer (median Kneedle elbow across
+    # all input spectra) and is broadcast to every spectrum, so the
+    # downstream per-spectrum work sees a plain integer. "intrinsic"
+    # is passed through and resolved per-spectrum inside
+    # deconvolute_spectrum().
+    if (identical(npmax, "auto")) {
+        npmax <- find_npmax_elbow(x)
+        logf("npmax='auto' resolved to %d (median elbow over %d spectra)",
+             npmax, ns)
+    }
 
     # Deconvolute spectra. The shared chemical-shift grid (`cssh`) and
     # per-spectrum supsh used by alignment are not built here: a shared
@@ -179,6 +244,20 @@ deconvolute_spectrum <- function(
     name <- get_name(x)
     backend <- if (use_rust >= 1) "Rust" else "R"
     suffix <- sprintf(" using %s backend", backend)
+
+    # "intrinsic" -> this spectrum's own Kneedle elbow on `x$deg`.
+    # `find_npmax_elbow_one` returns NA if $deg is missing or empty;
+    # fall through to npmax=0 ("no grid pick") in that case so
+    # pick_best_params is not called without a $deg cache.
+    if (identical(npmax, "intrinsic")) {
+        npmax <- find_npmax_elbow_one(x)
+        if (is.na(npmax)) {
+            stop("deconvolute_spectrum(npmax='intrinsic') requires ",
+                 "x$deg. Call grid_deconvolute_spectra() first.",
+                 call.=FALSE)
+        }
+        logf("npmax='intrinsic' resolved to %d for %s", npmax, name)
+    }
 
     # Pick best params from attached grid (when npmax > 0)
     if (npmax >= 1) {

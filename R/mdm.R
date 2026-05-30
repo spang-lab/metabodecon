@@ -82,14 +82,19 @@
 #' Inside the loop, the most recent deconvolution and alignment are kept
 #' and reused whenever the relevant subset of parameters is unchanged.
 #'
-#' ## "auto" sentinels
+#' ## Automatic selection sentinels
 #'
-#' `npmax`, `maxShift` and `maxCombine` cells may be `NA` to request
-#' automatic selection:
+#' Several `mog` cells accept sentinels that ask the pipeline to pick
+#' the value itself:
 #' \itemize{
-#'   \item `npmax=NA` ("auto") — resolved once via
-#'         [metabodecon::find_npmax_elbow()] on the pre-attached `$deg`
-#'         cache (median per-spectrum Kneedle elbow).
+#'   \item `npmax="auto"` — resolved inside `decon_fun` (see
+#'         [metabodecon::deconvolute()]) to a single integer: the
+#'         median per-spectrum Kneedle elbow on the `$deg` cache.
+#'         The same value is used for every spectrum.
+#'   \item `npmax="intrinsic"` — resolved inside `decon_fun` per
+#'         spectrum: each spectrum's own Kneedle elbow. Different
+#'         spectra get different `npmax` values, so the deconvolution
+#'         is fully parameter-free at the cohort level.
 #'   \item `maxShift=NA` ("auto") — resolved per-`npmax` via
 #'         `find_maxShift_dip()` (sweep CluPA shifts at powers of 2 and
 #'         stop one step before the alignment-correlation dip). Requires
@@ -101,11 +106,12 @@
 #'
 #' ## Grid-search results carried by spectra
 #'
-#' When any row of `mog` has `npmax > 0` (or `NA`), [metabodecon::fit_mdm()]
-#' calls [metabodecon::grid_deconvolute_spectra()] once up front to
-#' attach a `$deg` element to each spectrum. The enriched spectra are
-#' reused across rows and outer folds. [metabodecon::benchmark()] does
-#' the same up-front attachment.
+#' When any row of `mog` needs the `$deg` cache (positive `npmax`,
+#' `"auto"` or `"intrinsic"`), [metabodecon::fit_mdm()] calls
+#' [metabodecon::grid_deconvolute_spectra()] once up front to attach a
+#' `$deg` element to each spectrum. The enriched spectra are reused
+#' across rows and outer folds. [metabodecon::benchmark()] does the
+#' same up-front attachment.
 #'
 #' ## Parallelism
 #'
@@ -198,21 +204,17 @@ fit_mdm <- function(x, y,
     neg <- !is.na(mog$maxCombine) & mog$maxCombine < 0
     mog$maxCombine[neg] <- mog$maxShift[neg]
 
-    # Pre-attach per-spectrum `$deg` tables when any row uses npmax > 0
-    # or "auto" (NA).
-    if (!skip_decon && any(is.na(mog$npmax) | mog$npmax > 0)) {
+    # Pre-attach per-spectrum `$deg` tables when any row's npmax needs
+    # them (positive integer, "auto", or "intrinsic"). `decon_fun` does
+    # the same check internally and `grid_deconvolute_spectra` is
+    # idempotent, so this just avoids redundant attaches across grid
+    # rows.
+    if (!skip_decon && any(vapply(mog$npmax, npmax_needs_deg, logical(1)))) {
         x <- grid_deconvolute_spectra(
             x=x, deg=deg, sfr=sfr, igrs=igrs,
             verbose=verbosity >= 2,
             nworkers=min(nworkers, length(x)), use_rust=use_rust
         )
-    }
-    # Resolve npmax="auto" -> median per-spectrum elbow.
-    if (any(is.na(mog$npmax))) {
-        auto_np <- find_npmax_elbow(x)
-        logv("auto-pick npmax=%d (median elbow over %d spectra)",
-             auto_np, length(x))
-        mog$npmax[is.na(mog$npmax)] <- auto_np
     }
 
     nr <- nrow(mog); ns <- length(x)
@@ -370,7 +372,7 @@ benchmark <- function(x, y,
 
     # One-time grid attach when any row of mog uses npmax > 0 or NA.
     if (!identical(decon_fun, identity2) &&
-        any(is.na(mog$npmax) | mog$npmax > 0)) {
+        any(vapply(mog$npmax, npmax_needs_deg, logical(1)))) {
         x <- grid_deconvolute_spectra(
             x=x, deg=deg, sfr=sfr, igrs=igrs,
             verbose=verbosity >= 2, nworkers=nworkers, use_rust=use_rust
@@ -655,9 +657,11 @@ predict_ranger <- function(model, newx) {
 # Helpers #####
 
 # Ensure `mog` has every column fit_mdm expects, filling in
-# deconvolute() / snap_to_ref() defaults for missing ones. Also coerces
-# "auto" strings in npmax/maxShift/maxCombine to NA so the downstream
-# sentinel handling is uniform.
+# deconvolute() / snap_to_ref() defaults for missing ones. `maxShift`
+# / `maxCombine` accept the sentinel `"auto"` (parsed to NA so the
+# downstream auto-resolution branches fire). `npmax` accepts integer,
+# `"auto"` and `"intrinsic"` — both string values are passed through
+# unchanged to `decon_fun`, which handles the resolution.
 normalize_mog <- function(mog) {
     stopifnot(is.data.frame(mog), nrow(mog) >= 1L)
     fill <- list(
@@ -667,9 +671,23 @@ normalize_mog <- function(mog) {
     for (nm in names(fill)) {
         if (is.null(mog[[nm]])) mog[[nm]] <- fill[[nm]]
     }
-    for (nm in c("npmax", "maxShift", "maxCombine")) {
+    for (nm in c("maxShift", "maxCombine")) {
         v <- mog[[nm]]
         if (is.character(v)) mog[[nm]] <- parse_int_with_auto(v, nm)
+    }
+    if (is.character(mog$npmax)) {
+        ok <- mog$npmax %in% c("auto", "intrinsic") |
+              !is.na(suppressWarnings(as.integer(mog$npmax)))
+        if (!all(ok)) stop(
+            "npmax entries must be non-negative integers, ",
+            "'auto', or 'intrinsic'.", call.=FALSE
+        )
+        # If no rows use a string mode, coerce the whole column to
+        # integer for cheaper downstream comparisons; otherwise leave
+        # it character and pass each row's value through to decon_fun.
+        if (!any(mog$npmax %in% c("auto", "intrinsic"))) {
+            mog$npmax <- as.integer(mog$npmax)
+        }
     }
     mog
 }
@@ -692,38 +710,9 @@ parse_int_with_auto <- function(x, name) {
     as.integer(x)
 }
 
-# Per-spectrum npmax elbow from the (np, cum-min ar) frontier of `s$deg`.
-# Same Kneedle-on-cum-min-frontier idea as `mdp::find_ellbow` but returns
-# only the np at the knee. `s$deg` must be populated upstream (typically
-# by grid_deconvolute_spectra()).
-find_npmax_elbow_one <- function(s) {
-    d <- s$deg
-    if (is.null(d) || nrow(d) == 0L) return(NA_integer_)
-    by_np <- split(seq_len(nrow(d)), d$np)
-    idx <- vapply(by_np, function(ii) ii[which.min(d$ar[ii])], integer(1))
-    f <- d[idx, , drop=FALSE]
-    f <- f[order(f$np), , drop=FALSE]
-    f$cum_ar <- cummin(f$ar)
-    np_rng <- diff(range(f$np))
-    ar_rng <- diff(range(f$cum_ar))
-    if (np_rng == 0 || ar_rng == 0) return(as.integer(f$np[1]))
-    nn <- (f$np - min(f$np)) / np_rng
-    yn <- (f$cum_ar - min(f$cum_ar)) / ar_rng
-    k <- which.max((1 - nn) - yn)
-    as.integer(f$np[k])
-}
-
-# Aggregate per-spectrum elbows into a single npmax via the median.
-# Requires every `x[[i]]` to carry a non-empty `$deg` grid.
-find_npmax_elbow <- function(x) {
-    picks <- vapply(x, find_npmax_elbow_one, integer(1))
-    picks <- picks[!is.na(picks)]
-    if (length(picks) == 0L) {
-        stop("find_npmax_elbow: no spectra have a $deg grid; ",
-             "call grid_deconvolute_spectra() first.", call.=FALSE)
-    }
-    as.integer(stats::median(picks))
-}
+# `find_npmax_elbow` / `find_npmax_elbow_one` live in R/decon.R since
+# they back the `npmax="auto"` / `npmax="intrinsic"` resolution inside
+# `deconvolute_spectra` / `deconvolute_spectrum`.
 
 # Adaptive maxShift selection by dip detection. Sweeps maxShift through
 # {1, 2, 4, 8, ...}, runs CluPA at each step, computes the average
