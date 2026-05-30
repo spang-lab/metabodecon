@@ -42,14 +42,12 @@ or a \code{summary.mdm} object (for \code{print.summary.mdm}).}
 \item{verbosity}{Integer verbosity level.}
 
 \item{...}{Passed to underlying methods where applicable.}
-
-\item{s}{Regularization value for lasso predictions.}
 }
 \value{
 \itemize{
 \item \code{predict}: numeric vector of probabilities, classes, and/or link scores.
 \item \code{print}: invisibly returns \code{x}.
-\item \code{coef}: coefficient object from \code{glmnet}.
+\item \code{coef}: coefficient object from \code{glmnet} (or ranger importance).
 \item \code{plot}: invisibly returns \code{NULL}.
 \item \code{summary}: object of class \code{summary.mdm}.
 \item \code{print.summary.mdm}: invisibly returns \code{x}.
@@ -66,37 +64,17 @@ S3 methods for objects of class \code{mdm} and \code{summary.mdm}.
 
 \code{predict.mdm()} predicts probabilities, classes, link scores, or all
 three from an \code{mdm} object. When \code{newdata} is a spectra object, the
-spectra are deconvoluted, aligned and snapped to the reference stored in
-the model before prediction. When \code{newdata} is a numeric matrix, it is
-used directly as the feature matrix.
+spectra are deconvoluted, aligned and snapped to the references
+stored in the model before prediction. When \code{newdata} is a numeric
+matrix, it is used directly as the feature matrix.
 
 \code{print.mdm()} prints a compact model summary.
 
-\code{coef.mdm()} returns lasso coefficients.
+\code{coef.mdm()} returns lasso coefficients (or ranger importance).
 
-\code{plot.mdm()} plots the lasso path.
+\code{plot.mdm()} plots the lasso path (or ranger importance bars).
 
 \code{summary.mdm()} builds a compact summary list.
 
 \code{print.summary.mdm()} prints formatted output for \code{summary.mdm} objects.
-}
-\examples{
-m <- structure(
-  list(
-    model=NULL,
-    ref=NULL,
-    params=list(npmax=1000, nfit=3, smit=2, smws=5,
-                delta=6.4, maxShift=100, maxCombine=50)
-  ),
-  class="mdm"
-)
-print(m)
-summary(m)
-
-\dontrun{
-  m <- fit_mdm(spectra, y, mog=get_mog("default"), sfr=c(11, -2))
-  predict(m, test_spectra, type="prob")
-  coef(m)
-  plot(m)
-}
 }

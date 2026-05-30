@@ -23,15 +23,25 @@ test_that("align works", {
 
     skip_if_speaq_deps_missing()
 
-    aligns <- align(decons, verbose = FALSE)
+    # Use supsh="lorentz" because the synthetic 0.3 ppm offset is far
+    # outside any peak's width; the new sparse-support shapes (triangle
+    # / rectangle / sparse) deliberately have no draw-in distance past
+    # their own width, so they cannot detect a shift this large. A
+    # realistic NMR drift is <0.05 ppm; see the triangle-mode test
+    # below for that regime.
+    aligns <- align(decons, verbose = FALSE, supsh = "lorentz")
 
     # Check structure of returned object. Strategy: add all fields to the
     # decons object that we expect [align()] to add. At the end the objects
-    # should be equal.
+    # should be equal. clupa() owns cssh / sit$supsh / lcpar$pcide, so the
+    # post-align fixture has to copy those across as well.
     decons_copy <- decons
     for (i in seq_along(aligns)) {
+        decons_copy[[i]]$cssh         <- aligns[[i]]$cssh
+        decons_copy[[i]]$sit$supsh    <- aligns[[i]]$sit$supsh
         decons_copy[[i]]$sit$supal    <- aligns[[i]]$sit$supal
-        decons_copy[[i]]$lcpar$x0al  <- aligns[[i]]$lcpar$x0al
+        decons_copy[[i]]$lcpar$pcide  <- aligns[[i]]$lcpar$pcide
+        decons_copy[[i]]$lcpar$x0al   <- aligns[[i]]$lcpar$x0al
         decons_copy[[i]]$lcpar$pcial  <- aligns[[i]]$lcpar$pcial
         class(decons_copy[[i]]) <- c("align", "decon2", "spectrum")
     }
@@ -205,7 +215,8 @@ test_that("align raises error for spectra with mismatched cssh grids", {
     # not be comparable across spectra.
     a <- decons[[1]]
     b <- decons[[1]]
-    b$cssh <- b$cssh + 0.5
+    a$cssh <- a$cs
+    b$cssh <- a$cs + 0.5
     mixed <- structure(list(a, b), class = c("decons2", "spectra"))
     expect_error(align(mixed, verbose = FALSE))
 })

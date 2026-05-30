@@ -11,13 +11,16 @@
 \usage{
 clupa(
   x,
+  y = NULL,
   ref = NULL,
   maxShift = 50,
   verbose = TRUE,
   nworkers = 1,
   full = TRUE,
   use_speaq = FALSE,
-  supsh = "lorentz"
+  supsh = "triangle",
+  shift_method = "auto",
+  gap_tol = NULL
 )
 
 identity_align(x, ...)
@@ -26,7 +29,7 @@ snap_to_ref(x, ref = NULL, maxCombine = 20, ...)
 
 combine_peaks(x, ref = NULL, maxCombine = 20, ...)
 
-snap_nw(x, ref = NULL, gap_tol = 0.02, ...)
+snap_nw(x, ref = NULL, gap_tol = 0.02, pos_field = "x0", w_A = 0, ...)
 }
 \arguments{
 \item{x}{A \code{decons2} / \code{aligns} object.}
@@ -47,11 +50,19 @@ carries the same \code{lcpar} shape). If \code{NULL}, picked via
 
 \item{use_speaq}{Use \code{speaq::dohCluster} (CluPA only).}
 
+\item{gap_tol}{Numeric scalar. Matching tolerance in ppm. Default 0.02.}
+
 \item{...}{Ignored (signature compatibility with \code{snap_to_ref}).}
 
 \item{maxCombine}{Maximum RefPA snap distance in datapoints.}
 
-\item{gap_tol}{Numeric scalar. Matching tolerance in ppm. Default 0.02.}
+\item{pos_field}{Which \code{lcpar} column on \code{x} to use as the peak position
+for alignment. \code{"x0"} (default) is the raw deconvolution position;
+\code{"x0al"} is the post-CluPA aligned position. The reference is always
+matched against on its \code{lcpar$x0}, so callers building a reference
+from aligned data should store the aligned positions in its \code{x0}
+column (which is what \code{\link[=build_consensus]{build_consensus()}} does when
+given \code{pos_field="x0al"}).}
 }
 \value{
 An object of class \code{aligns}.

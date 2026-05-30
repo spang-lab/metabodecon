@@ -1,3 +1,65 @@
+# metabodecon 2.0.0.6
+
+* Renamed `fit_ranger500()` / `predict_ranger500()` to `fit_ranger()` /
+  `predict_ranger()`; default `num.trees` bumped from 1000 to 5000 so
+  OOB acc/AUC is well-converged out of the box for typical mdm sample
+  sizes. Dropped the synthetic `ranger500` / `lasso` subclasses — the
+  `coef()` / `plot()` dispatch in [predict.mdm] now reads the native
+  `ranger` / `cv.glmnet` classes.
+* `fit_lasso()` now averages per-lambda OOF performance across reps
+  *before* picking the optimum (was: averaged each rep's own
+  `lambda.min` performance), and exposes the chosen `lambda*` via
+  `model$lambda.min` so [metabodecon::predict_lasso()] consumes it
+  unchanged. All reps share a single lambda path discovered by rep 1.
+  Stable lambda pick → faster convergence of the reported acc/AUC.
+* Unified `fit_mdm()` around a `fit_fun(X, y) -> list(model, acc, auc)`
+  contract: each learner now owns its own generalization-score estimate
+  (OOB for `fit_ranger500()`, repeated `cv.glmnet` OOF for
+  `fit_lasso()`). The flattened-CV scaffolding inside `fit_mdm` is gone;
+  the pipeline collapses to `decon -> align -> snap -> feat -> fit`
+  with all five stages pluggable. `snap_fun` is now an explicit stage
+  (`snap_to_ref()` default, plus `combine_peaks()`, new
+  `snap_nw_blind()` for Needleman-Wunsch with a label-blind consensus,
+  and new `identity_snap()`). `fit_mdm2()`, `fit_mdm3()`, `fit_mdm4()`,
+  `benchmark2()`, `bootstrap_mdm()` and `cv_mdm()` are removed; their
+  use cases are covered by combinations of `fit_mdm()`'s pluggable
+  stages and `benchmark()`.
+
+# metabodecon 2.0.0.5
+
+* `clupa()` now owns the shared `cssh` grid and per-spectrum `supsh`
+  rather than `deconvolute()`. `decon2` objects no longer carry `cssh`
+  or `sit$supsh`; both are attached on demand when alignment starts.
+* New supsh shapes: `"triangle"` (default) and `"rectangle"` — narrow
+  bounded-support shapes that are 10-80x faster than the Lorentzian
+  on a 128k-point grid and that fix the FFT cross-correlator's
+  tail-spillover sensitivity. `"lorentz"` and `"sparse"` remain
+  available for backwards compatibility / coarse drift.
+* `clupa()` rebuilds the supsh from the (shifted) peak list after
+  each FFT shift instead of sliding the old vector and edge-padding
+  the vacated columns. Controlled via the new `shift_method=` arg
+  (default `"auto"` picks rebuild for sparse shapes, slide for
+  lorentz). Speaq-backend byte-equivalence no longer holds for
+  recompute mode (use `shift_method="slide"` to restore parity).
+* `clupa()` / `align()` gain a `y=` argument for class-aware
+  alignment: when supplied, the reference is a CluPA-aligned
+  consensus built from one representative per class via
+  `build_clupa_consensus()` (new private helper), so peaks present
+  in only one class still have a matching reference column.
+
+# metabodecon 2.0.0.4
+
+* New `fit_mdm4()`: `deconvolute -> clupa -> snap_nw -> learner` pipeline,
+  with joint inner-CV selection of `(maxShift, gap_tol, lambda)` and
+  consensus reference built from CluPA-aligned positions. Replaces
+  `fit_mdm2`'s `snap_to_ref` post-stage with the 1-to-1 NW snap. Both
+  `glmnet` and `ranger` learners supported.
+* `snap_nw()` and `build_consensus()` gain a `pos_field` argument so
+  they can operate on `x0al` (post-CluPA aligned positions) instead of
+  raw `x0`.
+* `predict.mdm()` gains a `kind="clupa_nw"` branch that re-runs CluPA +
+  consensus NW snap on new spectra at predict time.
+
 # metabodecon 2.0.0.3
 
 * New `snap_nw()` and `build_consensus()` alignment helpers.

@@ -3,18 +3,15 @@
 \name{mdm}
 \alias{mdm}
 \alias{fit_mdm}
-\alias{fit_mdm2}
-\alias{fit_mdm3}
-\alias{benchmark2}
 \alias{get_mog}
 \alias{benchmark}
-\alias{bootstrap_mdm}
-\alias{cv_mdm}
 \alias{identity2}
+\alias{identity_snap}
+\alias{snap_nw_blind}
 \alias{fit_lasso}
 \alias{predict_lasso}
-\alias{fit_ranger500}
-\alias{predict_ranger500}
+\alias{fit_ranger}
+\alias{predict_ranger}
 \title{Metabodecon Models}
 \usage{
 fit_mdm(
@@ -22,6 +19,7 @@ fit_mdm(
   y,
   decon_fun = deconvolute,
   align_fun = clupa,
+  snap_fun = snap_to_ref,
   feat_fun = peak_mat,
   fit_fun = fit_lasso,
   predict_fun = predict_lasso,
@@ -33,71 +31,7 @@ fit_mdm(
   nworkers = 1,
   verbosity = 1,
   seed = 1,
-  nfolds = 5,
-  check = TRUE,
-  nrounds = 5
-)
-
-fit_mdm2(
-  x,
-  y,
-  npmax = 1000,
-  maxShift = 2^(1:8),
-  maxCombine = 0,
-  deg = NULL,
-  sfr = NULL,
-  igrs = list(),
-  use_rust = FALSE,
-  use_speaq = FALSE,
-  num.trees = 5000,
-  nworkers = 1,
-  verbosity = 1,
-  seed = 1,
-  check = TRUE,
-  supsh = "lorentz",
-  post_align = c("snap_to_ref", "combine_peaks")
-)
-
-fit_mdm3(
-  x,
-  y,
-  npmax = 1000,
-  gap_tol = c(0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2),
-  nfolds = 5L,
-  nrounds = 3L,
-  igrs = list(),
-  sfr = NULL,
-  use_rust = FALSE,
-  learner = c("glmnet", "ranger"),
-  alpha = 1,
-  nlambda = 100L,
-  num.trees = 2000L,
-  deg = NULL,
-  num.threads = 1L,
-  seed = 1L,
-  nworkers = 1L,
-  verbosity = 1L,
   check = TRUE
-)
-
-benchmark2(
-  x,
-  y,
-  npmax = 1000,
-  maxShift = 2^(1:8),
-  maxCombine = 0,
-  deg = NULL,
-  sfr = NULL,
-  igrs = list(),
-  use_rust = FALSE,
-  use_speaq = FALSE,
-  num.trees = 5000,
-  nworkers = 1,
-  verbosity = 1,
-  seeds = 1:10,
-  nfolds = 10,
-  check = TRUE,
-  supsh = "lorentz"
 )
 
 get_mog(conf = "default")
@@ -105,11 +39,12 @@ get_mog(conf = "default")
 benchmark(
   x,
   y,
+  decon_fun = deconvolute,
+  align_fun = clupa,
+  snap_fun = snap_to_ref,
   feat_fun = peak_mat,
   fit_fun = fit_lasso,
   predict_fun = predict_lasso,
-  decon_fun = deconvolute,
-  align_fun = clupa,
   mog = get_mog("default"),
   deg = NULL,
   sfr = NULL,
@@ -118,182 +53,90 @@ benchmark(
   nworkers = 1,
   verbosity = 2,
   seed = 1,
-  nfolds = 5,
-  check = TRUE,
   k = 3,
-  nrounds = 5
-)
-
-bootstrap_mdm(
-  x,
-  y,
-  decon_fun = deconvolute,
-  align_fun = clupa,
-  feat_fun = peak_mat,
-  fit_fun = fit_lasso,
-  predict_fun = predict_lasso,
-  mog = get_mog("default"),
-  sfr = NULL,
-  igrs = list(),
-  use_rust = 0,
-  nworkers = 1,
-  verbosity = 1,
-  seed = 1,
-  test_frac = 0.2,
-  max_rounds = 30,
-  se_thresh = 0.01
-)
-
-cv_mdm(
-  x,
-  y,
-  decon_fun = deconvolute,
-  align_fun = clupa,
-  feat_fun = peak_mat,
-  fit_fun = fit_lasso,
-  predict_fun = predict_lasso,
-  mog = get_mog("default"),
-  sfr = NULL,
-  igrs = list(),
-  use_rust = 0,
-  nworkers = 1,
-  verbosity = 1,
-  seed = 1,
-  nrounds = 1,
-  kfold = 10
+  check = TRUE
 )
 
 identity2(x, ...)
 
-fit_lasso(X, y, seed = 1, nworkers = 1L)
+identity_snap(x, ref = NULL, maxCombine = 0L, ...)
+
+snap_nw_blind(x, ref = NULL, maxCombine = 20, w_A = 0, ...)
+
+fit_lasso(X, y, seed = 1, nworkers = 1L, nreps = 5L)
 
 predict_lasso(model, newx)
 
-fit_ranger500(X, y, seed = 1, nworkers = 1L)
+fit_ranger(X, y, seed = 1, nworkers = 1L, num.trees = 5000L)
 
-predict_ranger500(model, newx)
+predict_ranger(model, newx)
 }
 \arguments{
-\item{x}{A \code{spectra} object (raw chemical shifts + intensities).}
+\item{x}{A \code{decons2} / \code{aligns} object.}
 
 \item{y}{Factor with two levels.}
 
-\item{decon_fun}{Deconvolution function. Must accept the parameter
-vocabulary used by \code{\link[=deconvolute]{deconvolute()}} (i.e. \code{x}, \code{sfr},
-\code{igrs}, \code{use_rust}, \code{nfit}, \code{smit}, \code{smws}, \code{delta}, \code{npmax},
-\code{nworkers}, \code{verbose}). Pass \code{\link[=identity2]{identity2()}} to skip
-deconvolution and feed the raw spectra into the next stage.}
+\item{decon_fun, align_fun, snap_fun, feat_fun, fit_fun, predict_fun}{See \emph{Pluggable interfaces}.}
 
-\item{align_fun}{Alignment function called after deconvolution. Must
-have signature \code{f(x, ref, maxShift, verbose, nworkers, full, ...)}.
-Built-in choices: \code{\link[=clupa]{clupa()}} (default, CluPA
-hierarchical-clustering peak alignment), \code{\link[=vopa]{vopa()}}
-(vote-based peak alignment, faster), \code{\link[=glopa]{glopa()}} (single
-global integer shift via FFT cross-correlation),
-\code{\link[=identity_align]{identity_align()}} (no alignment).}
+\item{mog}{Model-fitting grid as returned by \code{\link[=get_mog]{get_mog()}}.
+Missing columns are filled in with \code{\link[=deconvolute]{deconvolute()}} and
+\code{\link[=snap_to_ref]{snap_to_ref()}} defaults.}
 
-\item{feat_fun}{Feature-matrix function. See \emph{Pluggable interfaces}.}
+\item{deg}{Deconvolution-parameter grid forwarded to
+\code{\link[=grid_deconvolute_spectra]{grid_deconvolute_spectra()}} when any row of \code{mog} has
+\code{npmax > 0} (or \code{NA}). When \code{NULL} (default), the default grid built
+into \code{\link[=grid_deconvolute_spectra]{grid_deconvolute_spectra()}} is used.}
 
-\item{fit_fun}{Inner-model fitter. See \emph{Pluggable interfaces}.}
+\item{sfr}{Signal-free region. See \code{\link[=deconvolute]{deconvolute()}}.}
 
-\item{predict_fun}{Inner-model predictor paired with \code{fit_fun}. See
-\emph{Pluggable interfaces}.}
+\item{igrs}{Ignore regions in ppm.}
 
-\item{mog}{Model-fitting grid as returned by \code{\link[=get_mog]{get_mog()}}.}
-
-\item{deg}{Optional pre-attached deconvolution cache (the \verb{$deg} slot
-built by \code{\link[=grid_deconvolute_spectra]{grid_deconvolute_spectra()}}).}
-
-\item{sfr}{Optional signal-free region.}
-
-\item{igrs}{List of two-element ppm intervals to ignore (passed through
-to \code{\link[=deconvolute]{deconvolute()}} and \code{\link[=peak_mat]{peak_mat()}}).}
-
-\item{use_rust}{Forwarded to \code{\link[=deconvolute]{deconvolute()}}.}
+\item{use_rust}{Use the Rust backend?}
 
 \item{nworkers}{Forwarded to \code{ranger::ranger(num.threads=...)} for
 per-tree parallelism.}
 
-\item{verbosity}{0/1/2.}
+\item{verbosity}{Verbosity level.}
 
 \item{seed}{Random seed for ranger.}
 
-\item{nfolds}{Number of folds for the inner CV used by \code{fit}.}
-
-\item{check}{Validate arguments at the top.}
-
-\item{nrounds}{For \code{\link[=fit_mdm]{fit_mdm()}}: number of outer-CV rounds
-(each round is a fresh stratified \code{nfolds}-fold split). Also used by
-\code{\link[=cv_mdm]{cv_mdm()}} as the number of repeated \code{kfold}-fold CVs.}
-
-\item{npmax}{Maximum number of peaks per spectrum during deconvolution.}
-
-\item{maxCombine}{Bin width / peak-merging tolerance for
-\code{peak_mat()} / \code{si_mat()} / \code{bin()}.}
-
-\item{num.trees}{Number of ranger trees. Defaults to \code{5000}, which
-gives a well-converged OOB error for typical mdm sample sizes.
-Doubling \code{num.trees} and confirming the OOB AUC does not move
-beyond its standard error is a cheap convergence check.}
-
-\item{gap_tol}{Numeric vector of NW matching tolerances (ppm) to sweep
-in the inner CV.}
-
-\item{alpha}{glmnet alpha; default 1.0 (lasso).}
-
-\item{nlambda}{glmnet path length; default 100.}
-
-\item{num.threads}{Forwarded to \code{\link[glmnet:glmnet]{glmnet::glmnet()}}'s OpenMP / forks.}
+\item{check}{Validate inputs at function entry?}
 
 \item{conf}{Character string selecting a predefined \code{mog} configuration.}
 
 \item{k}{Number of outer folds for \code{\link[=benchmark]{benchmark()}}.}
 
-\item{test_frac}{Fraction of spectra to hold out as the test set per round.
-Actual count is \code{max(round(n * test_frac), 5)} so small datasets still
-have a usable test set.}
+\item{...}{Ignored (signature compatibility).}
 
-\item{max_rounds}{Maximum number of bootstrap rounds.}
+\item{ref}{Optional pre-built consensus (used at predict time). When
+\code{NULL}, \code{\link[=build_consensus]{build_consensus()}} is called on \code{x} with
+\code{y=NULL}.}
 
-\item{se_thresh}{Stop early when the SE of the best AUC (across completed
-rounds) falls below this. Set to \code{0} to always run \code{max_rounds} rounds.}
-
-\item{kfold}{Number of folds per CV for \code{\link[=cv_mdm]{cv_mdm()}}.}
+\item{maxCombine}{Snap window in shared-grid columns. Translated to
+\code{gap_tol = maxCombine * median(diff(cssh))} (in ppm).}
 
 \item{X}{Numeric feature matrix.}
 
-\item{model}{Object returned by \code{\link[=fit_ranger500]{fit_ranger500()}}.}
+\item{nreps}{Number of \code{cv.glmnet} repetitions used to estimate the
+reported acc/AUC. Default 5.}
+
+\item{model}{Object returned in the \code{model} slot of
+\code{\link[=fit_ranger]{fit_ranger()}}.}
 
 \item{newx}{Numeric feature matrix.}
 
-\item{x_tr}{Training spectra for \code{\link[=bootstrap_mdm_one]{bootstrap_mdm_one()}}.}
-
-\item{y_tr}{Training labels (factor) for \code{\link[=bootstrap_mdm_one]{bootstrap_mdm_one()}}.}
-
-\item{x_te}{Test spectra for \code{\link[=bootstrap_mdm_one]{bootstrap_mdm_one()}}.}
-
-\item{y_te}{Test labels (factor) for \code{\link[=bootstrap_mdm_one]{bootstrap_mdm_one()}}.}
-
-\item{row}{Single-row data frame (one row of \code{mog}) passed to
-\code{\link[=bootstrap_mdm_one]{bootstrap_mdm_one()}}.}
-
-\item{nfolds, nrounds}{Stratified k-fold CV: \code{nrounds} repeats of
-\code{nfolds}-fold CV. Default \verb{nfolds=5, nrounds=3} (i.e. 15 inner splits).}
+\item{num.trees}{Number of ranger trees. Default 5000.}
 }
 \value{
 \code{\link[=fit_mdm]{fit_mdm()}} returns an object of class \code{mdm} with elements
-\code{model} (best fitted backend model, refit on the full data), \code{ref}
-(reference alignment spectrum, \code{NULL} when \code{align_fun=identity_align}),
-\code{params} (everything needed to reproduce predictions: chosen grid row,
-\code{feat_fun}, \code{predict_fun}, \code{lvs}, \code{peakPos}, \code{sfr}, \code{igrs}, \code{use_rust},
-\code{decon_fun}, \code{align_fun}) and \code{mog} (input grid augmented with \code{acc},
-\code{acc_se}, \code{auc} and \code{auc_se} columns). Per-row scoring uses \code{nrounds}
-repeats of \code{nfolds}-fold outer CV, with deconvolution and alignment
-reused across folds (mild over-optimism vs. a full \code{cv_mdm()}
-re-decon/re-align per fold, but much faster); \code{acc}/\code{auc} are means
-of the per-fold acc/AUC over all \code{nrounds * nfolds} folds, and the
-\verb{_se} columns are the across-folds SE of that mean (\code{NA} when
-\code{nrounds * nfolds < 2}).
+\code{model} (best fitted backend model, refit on the full data by the
+chosen \code{fit_fun}), \code{ref} (a list \code{list(align, snap)} carrying the
+references needed to replay the pipeline at prediction time; \code{NULL}
+when \code{align_fun=identity_align}), \code{params} (everything needed to
+reproduce predictions: chosen grid row, the pluggable functions,
+\code{lvs}, \code{peakPos}, \code{sfr}, \code{igrs}, \code{use_rust}, \code{snap_kind}, \code{snap_arg}),
+and \code{mog} (input grid augmented with \code{acc}, \code{acc_se}, \code{auc} and
+\code{auc_se} columns reported by \code{fit_fun}).
 
 \code{\link[=benchmark]{benchmark()}} returns a list with elements:
 \itemize{
@@ -304,61 +147,24 @@ of the per-fold acc/AUC over all \code{nrounds * nfolds} folds, and the
 \item \code{overall}: list with pooled \code{acc} and \code{auc}.
 }
 
-\code{\link[=bootstrap_mdm_one]{bootstrap_mdm_one()}} returns a list with \code{prob} (named
-numeric vector of test-set class probabilities), \code{acc} and \code{auc}.
-
-\code{\link[=bootstrap_mdm]{bootstrap_mdm()}} returns a list with:
-\itemize{
-\item \code{best_row}: 1-row data frame, the \code{mog} row with the highest mean AUC.
-\item \code{mog}: grid augmented with mean \code{acc}, \code{auc} and \code{auc_se} columns.
-\item \code{probs}: list of length \code{nrow(mog)}; each element is a list of
-per-round probability vectors (named by test-sample name).
-\item \code{acc_mat}, \code{auc_mat}: numeric matrices (rounds × \code{nrow(mog)}).
-}
-
-\code{\link[=cv_mdm]{cv_mdm()}} returns the same shape as
-\code{\link[=bootstrap_mdm]{bootstrap_mdm()}}, with rows of \code{acc_mat}/\code{auc_mat}
-corresponding to the \code{nrounds} repeated k-fold CVs and each per-row
-AUC/acc computed from the pooled out-of-fold predictions of one
-k-fold partition.
-
-An object of class \code{mdm} with the same shape as
-\code{\link[=fit_mdm]{fit_mdm()}}. \code{mog$acc_se} and \code{mog$auc_se} are \code{NA}
-because OOB produces a single point estimate per grid row.
-
-An \code{mdm} object with components:
-\itemize{
-\item \code{model}: the final \code{glmnet} fit on full training data at \verb{gap_tol*}.
-\item \code{ref}: the consensus peak list (a \code{consensus} spectrum, used as the
-alignment target at predict time).
-\item \code{params}: \code{kind="nw"}, \code{npmax}, \code{gap_tol}, \code{lambda}, \code{alpha}, \code{igrs},
-\code{sfr}, \code{peakPos}, plus the \code{decon_fun}/\code{feat_fun}/\code{predict_fun} triple
-consumed by \code{predict.mdm}.
-\item \code{mog}: per-\verb{(gap_tol, lambda)} grid with mean acc, AUC, and SEs
-across the inner CV folds.
-\item \code{mog_best}: one-row summary of the chosen cell.
-}
-
-A list with elements:
-\itemize{
-\item \code{acc_mean}, \code{acc_se}, \code{auc_mean}, \code{auc_se}: overall point
-estimates and standard errors.
-\item \code{round_acc}, \code{round_auc}: length-\code{length(seeds)} per-round means.
-\item \code{round_acc_sd}, \code{round_auc_sd}: length-\code{length(seeds)} within-round SDs.
-\item \code{fold_acc}, \code{fold_auc}: \verb{length(seeds) × nfolds} matrices.
-\item \code{predictions}: data frame with \code{round}, \code{seed}, \code{fold}, \code{true},
-\code{prob}, \code{pred}.
-\item \code{seeds}, \code{nfolds}: echo of the inputs.
-}
+\code{x}, unchanged.
 
 \code{x}, unchanged.
 
-A \code{cv.glmnet} object (sub-classed \code{lasso}).
+An \code{aligns} object with \code{pcisn} / \code{x0sn} populated, plus
+the attributes \code{snap_kind="nw"}, \verb{snap_arg=<gap_tol>} and
+\verb{ref=<consensus>}.
+
+A list with \code{model} (a \code{cv.glmnet} object whose \code{lambda.min}
+has been overwritten with the AUC-maximizing \verb{lambda*}), \code{acc},
+\code{auc}, \code{acc_se}, \code{auc_se}.
 
 Numeric vector of length \code{nrow(newx)}.
 
-A \code{ranger} object (sub-classed \code{ranger500}). The trained
-levels of \code{y} are stored on the object for prediction-time use.
+A list with \code{model} (a \code{ranger} object with the trained
+levels stashed on \code{model$lvs} for the predict path), \code{acc}, \code{auc}.
+\code{acc_se} and \code{auc_se} are \code{NA} because OOB produces a single point
+estimate.
 
 Numeric vector of length \code{nrow(newx)}.
 }
@@ -369,129 +175,118 @@ Numeric vector of length \code{nrow(newx)}.
 production. Their API is very likely to change in non-backwards-compatible
 ways over the next few weeks.}
 
-Utilities for fitting, tuning and benchmarking 'metabodecon models' (mdm).
+Utilities for fitting and benchmarking 'metabodecon models' (mdm).
 
 An \code{mdm} is a binary classification model fitted on a feature matrix
 built from NMR spectra by the following pipeline:
 
 \preformatted{
-  x  --decon_fun-->  decons  --align_fun-->  aligns  --feat_fun-->  X
-  X, y  --fit_fun-->  model  --predict_fun-->  prob
+  x  --decon_fun-->  d  --align_fun-->  a  --snap_fun-->  s
+  s  --feat_fun-->  X  --fit_fun-->  (model, acc, auc)
 }
 
-All five stages are pluggable: pass \code{decon_fun=identity2} and/or
-\code{align_fun=identity_align} to skip them and fit baselines that
-operate directly on raw spectra (e.g. a binning model). The
-\code{feat_fun}, \code{fit_fun} and \code{predict_fun} stages are pluggable as well.
+All five stages are pluggable. The \code{fit_fun} is responsible for
+returning \strong{both} a trained model and a stable estimate of the
+model's generalization performance — OOB for \code{\link[=fit_ranger]{fit_ranger()}},
+repeated \code{cv.glmnet} OOF for \code{\link[=fit_lasso]{fit_lasso()}}. That single
+contract removes the outer-CV machinery from \code{fit_mdm} itself:
+\code{fit_mdm} only sweeps preprocessing rows in \code{mog} and keeps the row
+with the highest reported AUC.
 
-\code{\link[=fit_mdm]{fit_mdm()}} iterates over the rows of a 'model fitting
-grid' (\code{mog}) — see \code{\link[=get_mog]{get_mog()}} — and for each row applies
-the pipeline and records held-out accuracy and AUC. The best model and
-the augmented grid are returned. A single-row \code{mog} degenerates to
-fitting one model.
+Pass \code{decon_fun=identity2}, \code{align_fun=identity_align} and/or
+\code{snap_fun=identity_snap} to skip those stages and fit baselines (e.g.
+a binning model) directly on raw spectra.
 
-\code{\link[=benchmark]{benchmark()}} runs an outer k-fold cross-validation over
-\code{\link[=fit_mdm]{fit_mdm()}} to estimate end-to-end predictive performance.
-
-\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
-
-Streamlined variant of \code{\link[=fit_mdm]{fit_mdm()}} for ranger
-probability forests. Replaces the \code{nrounds * nfolds} outer CV with
-ranger's out-of-bag (OOB) error, which is an unbiased estimate of
-generalization error and converges as \code{num.trees} grows.
-Deconvolution and alignment are cached across grid rows in the same
-way as \code{\link[=fit_mdm]{fit_mdm()}}. Selects the best row by OOB
-accuracy at the 0.5 threshold (AUC breaks ties).
-
-The grid is built internally as the full cross product of \code{npmax},
-\code{maxShift} and \code{maxCombine}. Deconvolution uses the defaults of
-\code{\link[=deconvolute]{deconvolute()}} (\verb{nfit=3, smit=2, smws=5, delta=6.4});
-alignment is always \code{\link[=clupa]{clupa()}}.
-
-Any \strong{negative} value in \code{maxCombine} acts as an on/off switch: it is
-replaced row-wise by that row's \code{maxShift}. Pass \code{maxCombine=-1} to
-tie peak-snapping width to the alignment tolerance and collapse the
-grid from a 2D to a 1D sweep over \code{maxShift}.
-
-\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
-
-Trains a probability classifier on aligned peak-area features using a
-deconvolute -> consensus-NW pipeline (no CluPA, no RefPA). Replaces
-\code{\link[=fit_mdm2]{fit_mdm2()}}'s \code{deconvolute + clupa + snap_to_ref} chain
-with a single pairwise Needleman-Wunsch snap to a class-aware
-\strong{consensus reference} built from the training data, then fits an
-L1-regularised logistic regression via \code{\link[glmnet:glmnet]{glmnet::glmnet()}}.
-
-Hyperparameters (\code{gap_tol} for the NW tolerance and \code{lambda} for glmnet
-regularization) are selected jointly by repeated stratified k-fold CV on
-the training set: one glmnet call per \verb{(gap_tol, fold)} returns the full
-lambda path, so the inner sweep is \code{length(gap_tol) * nrounds * nfolds}
-glmnet fits but \code{length(gap_tol) * nrounds * nfolds * length(lambda)}
-candidate predictions. The \verb{(gap_tol, lambda)} pair with the highest
-mean validation accuracy is then refit on \strong{all} training data; that
-model and the corresponding training-set consensus are returned in the
-mdm object.
-
-\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
-
-Slim outer-CV harness hardwired to \code{\link[=fit_mdm2]{fit_mdm2()}} (ranger
-\itemize{
-\item clupa + peak_mat snapping). Runs one round of stratified
-\code{nfolds}-fold CV per entry of \code{seeds}: in every fold a fresh
-\code{fit_mdm2()} is trained on the train ids and scored on the held-out
-ids via \code{\link[stats:predict]{stats::predict()}} on the returned \code{mdm}. Spectra are
-deconvoluted once up front so every fold reuses the same \verb{$deg}
-cache.
-}
-
-Per-round mean and SD are taken across the \code{nfolds} per-fold values.
-Overall mean and SE are taken across the \code{length(seeds)} per-round
-means (\code{SE = sd(round_means) / sqrt(length(seeds))}).
+\code{\link[=benchmark]{benchmark()}} wraps \code{\link[=fit_mdm]{fit_mdm()}} in an outer
+k-fold cross-validation to estimate end-to-end predictive performance
+on held-out spectra.
 
 No-op replacement for the \code{decon_fun} argument of
-\code{\link[=fit_mdm]{fit_mdm()}} / \code{\link[=benchmark]{benchmark()}}. Returns its first
-argument unchanged and ignores all other arguments. Use this to skip
-the deconvolution stage of the pipeline (e.g. for binning baselines).
+\code{\link[=fit_mdm]{fit_mdm()}} / \code{\link[=benchmark]{benchmark()}}. Returns its
+first argument unchanged and ignores all other arguments. Use this to
+skip the deconvolution stage of the pipeline (e.g. for binning
+baselines).
 
-Fits an L1-penalised binomial logistic regression via
-\code{\link[glmnet:cv.glmnet]{glmnet::cv.glmnet()}} with hardcoded internal \code{nfolds=10}. Returns the
-fitted \code{cv.glmnet} object directly.
+No-op replacement for the \code{snap_fun} argument of
+\code{\link[=fit_mdm]{fit_mdm()}}. Returns its first argument unchanged so the
+feature-matrix stage operates on whatever the alignment stage
+produced (without an extra snap-to-reference step).
+
+Thin wrapper around \code{\link[=build_consensus]{build_consensus()}} +
+\code{\link[=snap_nw]{snap_nw()}} that drops into the \code{snap_fun} slot of
+\code{\link[=fit_mdm]{fit_mdm()}}. The consensus is built label-blind
+(\code{y = NULL}) so cross-method comparisons (NW vs.
+\code{\link[=snap_to_ref]{snap_to_ref()}}) and the OOB / repeated-CV scores
+reported by \code{fit_fun} stay honest.
+
+The \code{maxCombine} window (in shared-grid columns) is translated into a
+ppm \code{gap_tol} via the median spacing of \code{x[[1]]$cssh}. The translated
+\code{gap_tol} is stashed on \code{attr(out, "snap_arg")} so \link{predict.mdm} can
+replay the same NW snap at prediction time, and the consensus is
+stashed on \code{attr(out, "ref")} for the same purpose. \code{attr(out, "snap_kind") = "nw"} tells \link{predict.mdm} which branch to take.
+
+Fits an L1-penalised binomial logistic regression via repeated
+\code{\link[glmnet:cv.glmnet]{glmnet::cv.glmnet()}} (default \code{nreps=5}, internal \code{nfolds=10},
+\code{keep=TRUE}). All reps share the lambda path discovered by the first
+rep so per-rep out-of-fold (OOF) predictions are directly comparable
+lambda-by-lambda. For each lambda the per-rep OOF accuracy and AUC
+are averaged across reps; the lambda that maximizes the averaged AUC
+(\verb{lambda*}) is the one reported (and the one used at predict time).
+This averages the per-lambda performance curve \emph{before} optimizing
+over lambda, so the chosen lambda is stable across reps and the
+reported acc/AUC reflects model variance rather than the noise of
+lambda-pick instability across reps. \code{acc_se} / \code{auc_se} are the SE
+across reps at \verb{lambda*}. The model object is the last rep's
+\code{cv.glmnet}; its \code{lambda.min} is overwritten with \verb{lambda*} so
+\code{\link[=predict_lasso]{predict_lasso()}} picks the right lambda by default.
 
 Companion of \code{\link[=fit_lasso]{fit_lasso()}}. Returns the positive-class
 probability at \code{lambda.min} for each row of \code{newx}.
 
-Fits a probability random forest with 1000 trees via
-\code{\link[ranger:ranger]{ranger::ranger()}}. Returns the fitted ranger object.
+Fits a probability random forest with \code{num.trees} trees via
+\code{\link[ranger:ranger]{ranger::ranger()}} and reads off the OOB acc/AUC for the positive
+class. OOB is an unbiased estimate of generalization performance and
+converges as \code{num.trees} grows. The default \code{num.trees=5000} is
+chosen high enough that OOB acc/AUC has converged for the sample
+sizes mdm typically targets (50-500); a cheap convergence check is to
+double \code{num.trees} and confirm OOB AUC does not move beyond its
+standard error.
 
-Companion of \code{\link[=fit_ranger500]{fit_ranger500()}}. Returns the positive-class
+Companion of \code{\link[=fit_ranger]{fit_ranger()}}. Returns the positive-class
 probability for each row of \code{newx}.
 }
 \details{
 \subsection{Pluggable interfaces}{
 
-The \code{feat_fun}, \code{fit_fun} and \code{predict_fun} functions speak a fixed
-parameter vocabulary. Replacements must accept the listed arguments
-(extras via \code{...}).
+\code{decon_fun}, \code{align_fun}, \code{snap_fun}, \code{feat_fun}, \code{fit_fun} and
+\code{predict_fun} speak a fixed parameter vocabulary. Replacements must
+accept the listed arguments (extras via \code{...}).
 
 \describe{
-\item{\code{feat_fun(x, maxCombine, peakPos, igrs, ...)}}{Returns a
-numeric matrix with one row per spectrum.}
-\item{\code{fit_fun(X, y, seed, nworkers)}}{Trains and returns a model.
-\code{y} is a factor with the two class levels (positive class is
-\code{levels(y)[2]}). \code{nworkers} requests intra-fit parallelism
-(e.g. \code{ranger}'s \code{num.threads}, \code{cv.glmnet}'s parallel CV);
-implementations may ignore it. Must call
-\code{requireNamespace("<backend>")} so it works after a fresh
-\code{readRDS()}.}
+\item{\code{decon_fun(x, sfr, igrs, verbose, use_rust, nfit, smit, smws, delta, npmax, nworkers)}}{Returns a \code{decons2} object.
+\code{\link[=deconvolute]{deconvolute()}} (default), \code{\link[=identity2]{identity2()}}.}
+\item{\code{align_fun(x, ref, maxShift, verbose, nworkers, full, ...)}}{Returns
+an \code{aligns} (or pass-through). \code{\link[=clupa]{clupa()}} (default),
+\code{\link[=identity_align]{identity_align()}}.}
+\item{\code{snap_fun(x, ref=NULL, maxCombine, ...)}}{Returns an \code{aligns}
+with the per-peak \code{pcisn} / \code{x0sn} columns populated.
+\code{\link[=snap_to_ref]{snap_to_ref()}} (default),
+\code{\link[=combine_peaks]{combine_peaks()}}, \code{\link[=snap_nw_blind]{snap_nw_blind()}},
+\code{\link[=identity_snap]{identity_snap()}}.}
+\item{\code{feat_fun(x, maxCombine, igrs, ...)}}{Returns a numeric matrix
+with one row per spectrum. \code{\link[=peak_mat]{peak_mat()}} (default),
+\code{\link[=si_mat]{si_mat()}}, \code{\link[=bin]{bin()}}.}
+\item{\code{fit_fun(X, y, seed, nworkers)}}{Returns a list with elements
+\code{model} (trained backend object), \code{acc} and \code{auc} (scalar
+generalization estimates in \verb{[0, 1]}), and optionally \code{acc_se}
+/ \code{auc_se}. Must call \code{requireNamespace("<backend>")} so it
+works after a fresh \code{readRDS()}. Built-ins:
+\code{\link[=fit_lasso]{fit_lasso()}}, \code{\link[=fit_ranger]{fit_ranger()}}.}
 \item{\code{predict_fun(model, newx)}}{Returns a numeric vector of
-positive-class probabilities, one per row of \code{newx}. Must
-also call \code{requireNamespace("<backend>")}.}
+positive-class probabilities. Must call
+\code{requireNamespace("<backend>")}. Built-ins:
+\code{\link[=predict_lasso]{predict_lasso()}}, \code{\link[=predict_ranger]{predict_ranger()}}.}
 }
-
-Built-in implementations: \code{\link[=peak_mat]{peak_mat()}},
-\code{\link[=si_mat]{si_mat()}}, \code{\link[=bin]{bin()}},
-\code{\link[=fit_lasso]{fit_lasso()}} / \code{\link[=predict_lasso]{predict_lasso()}} and
-\code{\link[=fit_ranger500]{fit_ranger500()}} / \code{\link[=predict_ranger500]{predict_ranger500()}}.
 }
 
 \subsection{Caching within \code{fit_mdm}}{
@@ -501,14 +296,31 @@ Inside the loop, the most recent deconvolution and alignment are kept
 and reused whenever the relevant subset of parameters is unchanged.
 }
 
+\subsection{"auto" sentinels}{
+
+\code{npmax}, \code{maxShift} and \code{maxCombine} cells may be \code{NA} to request
+automatic selection:
+\itemize{
+\item \code{npmax=NA} ("auto") — resolved once via
+\code{\link[=find_npmax_elbow]{find_npmax_elbow()}} on the pre-attached \verb{$deg}
+cache (median per-spectrum Kneedle elbow).
+\item \code{maxShift=NA} ("auto") — resolved per-\code{npmax} via
+\code{find_maxShift_dip()} (sweep CluPA shifts at powers of 2 and
+stop one step before the alignment-correlation dip). Requires
+\code{align_fun=clupa}.
+\item \code{maxCombine=NA} ("auto") — set to the row's resolved \code{maxShift}.
+}
+A negative \code{maxCombine} is also treated as a switch and replaced by
+the row's \code{maxShift}.
+}
+
 \subsection{Grid-search results carried by spectra}{
 
-When any row of \code{mog} has \code{npmax > 0} and \code{decon_fun} is not
-\code{\link[=identity2]{identity2()}}, \code{\link[=fit_mdm]{fit_mdm()}} calls
-\code{\link[=grid_deconvolute_spectra]{grid_deconvolute_spectra()}} once up front to attach a
-\verb{$deg} element to each spectrum. The enriched spectra are reused
-across rows and outer folds. \code{\link[=benchmark]{benchmark()}} does the same
-up-front attachment.
+When any row of \code{mog} has \code{npmax > 0} (or \code{NA}), \code{\link[=fit_mdm]{fit_mdm()}}
+calls \code{\link[=grid_deconvolute_spectra]{grid_deconvolute_spectra()}} once up front to
+attach a \verb{$deg} element to each spectrum. The enriched spectra are
+reused across rows and outer folds. \code{\link[=benchmark]{benchmark()}} does
+the same up-front attachment.
 }
 
 \subsection{Parallelism}{
@@ -521,8 +333,10 @@ all parallelism to the inner fitter via \code{nworkers}.
 \dontrun{
   m <- fit_mdm(spectra, y, mog=get_mog("default"))
   bm <- benchmark(spectra, y, k=5, mog=get_mog("default"))
-  bs <- bootstrap_mdm(spectra, y, mog=get_mog("default"), max_rounds=5)
-  cv <- cv_mdm(spectra, y, mog=get_mog("default"), nrounds=1, kfold=10)
+  mrf <- fit_mdm(spectra, y, fit_fun=fit_ranger,
+                 predict_fun=predict_ranger)
+  mnw <- fit_mdm(spectra, y, snap_fun=snap_nw_blind,
+                 fit_fun=fit_ranger, predict_fun=predict_ranger)
 }
 
 }

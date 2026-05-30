@@ -4,16 +4,21 @@
 \alias{build_consensus}
 \title{Build a consensus peak-list reference for NW snapping}
 \usage{
-build_consensus(x, y = NULL, gap_tol = 0.02)
+build_consensus(x, y = NULL, gap_tol = 0.02, pos_field = "x0")
 }
 \arguments{
-\item{x}{A \code{decons2} object (training deconvolutions).}
+\item{x}{A \code{decons2} (or \code{aligns}) object.}
 
 \item{y}{Optional factor of class labels (length == \code{length(x)}). If
 supplied, the seed consensus is built per-class.}
 
 \item{gap_tol}{Numeric scalar. Tolerance in ppm for both the per-spectrum
 NW snap and for deduplicating consensus positions. Default 0.02.}
+
+\item{pos_field}{Which \code{lcpar} column to use as the peak position.
+\code{"x0"} (default) for raw deconvolution positions; \code{"x0al"} to build
+the consensus from CluPA-aligned positions (then the consensus lives
+in aligned space and should be snapped against using \code{pos_field="x0al"}).}
 }
 \value{
 A list with components \code{cssh}, \code{lcpar} (data frame with \code{x0},

@@ -6,6 +6,7 @@
 \usage{
 align(
   x,
+  y = NULL,
   ref = NULL,
   maxShift = 50,
   maxCombine = 0,
@@ -13,7 +14,9 @@ align(
   nworkers = 1,
   full = TRUE,
   use_speaq = FALSE,
-  supsh = "lorentz"
+  supsh = "triangle",
+  shift_method = "auto",
+  gap_tol = NULL
 )
 }
 \arguments{

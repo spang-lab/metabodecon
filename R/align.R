@@ -57,20 +57,21 @@
 #'   decons <- deconvolute(sim[1:5], sfr=c(3.55, 3.35))
 #'   aligned <- align(decons, maxShift=50, maxCombine=20)
 #' }
-align <- function(x, ref=NULL, maxShift=50, maxCombine=0,
+align <- function(x, y=NULL, ref=NULL, maxShift=50, maxCombine=0,
                   verbose=TRUE, nworkers=1, full=TRUE, use_speaq=FALSE,
-                  supsh="lorentz") {
+                  supsh="triangle", shift_method="auto", gap_tol=NULL) {
     stopifnot(
         inherits(x, "decons2"),
         is_int(maxShift, 1), maxShift >= 0,
         is_int(maxCombine, 1),
         is_bool(verbose, 1), is_int(nworkers, 1),
-        is.null(ref) || inherits(ref, "decon2")
+        is.null(ref) || inherits(ref, "decon2"),
+        is.null(y) || (is.factor(y) && length(y) == length(x))
     )
     if (maxCombine < 0L) maxCombine <- as.integer(maxShift)
-    a <- clupa(x, ref=ref, maxShift=maxShift, verbose=verbose,
+    a <- clupa(x, y=y, ref=ref, maxShift=maxShift, verbose=verbose,
                nworkers=nworkers, full=full, use_speaq=use_speaq,
-               supsh=supsh)
+               supsh=supsh, shift_method=shift_method, gap_tol=gap_tol)
     if (maxCombine > 0L) a <- snap_to_ref(a, ref=ref, maxCombine=maxCombine)
     a
 }
@@ -106,28 +107,121 @@ align <- function(x, ref=NULL, maxShift=50, maxCombine=0,
 #' @param ... Ignored.
 #' @return An object of class `aligns`.
 clupa <- function(
-    x, ref=NULL, maxShift=50, verbose=TRUE, nworkers=1,
-    full=TRUE, use_speaq=FALSE, supsh="lorentz"
+    x, y=NULL, ref=NULL, maxShift=50, verbose=TRUE, nworkers=1,
+    full=TRUE, use_speaq=FALSE, supsh="triangle", shift_method="auto",
+    gap_tol=NULL
 ) {
-    supsh <- match.arg(supsh, c("lorentz", "sparse"))
+    supsh <- match.arg(supsh, c("triangle", "rectangle", "lorentz", "sparse"))
+    shift_method <- match.arg(shift_method, c("auto", "recompute", "slide"))
+    sm <- resolve_shift_method(shift_method, supsh)
     x <- ensure_cssh(x)
     x <- ensure_supsh(x, supsh=supsh)
     if (!is.null(ref) && is.null(ref$cssh)) ref$cssh <- x[[1]]$cssh
+    if (!is.null(ref) && is.null(ref$lcpar$pcide)) {
+        ref$lcpar$pcide <- pci_on_cssh(ref$lcpar$x0, ref$cssh)
+    }
     if (!is.null(ref) && is.null(ref$sit$supsh)) {
         ref$sit$supsh <- make_supsh(ref$cssh, ref$lcpar, supsh)
     }
     if (maxShift == 0L) return(noshift_align(x, full=full))
-    ref <- ref %||% find_ref(x)
+    if (is.null(ref)) {
+        ref <- if (is.null(y)) find_ref(x) else build_clupa_consensus(
+            x, y, maxShift=maxShift, supsh=supsh, shift_method=sm,
+            use_speaq=use_speaq, gap_tol=gap_tol
+        )
+    }
     aligns <- mcmapply(
         nworkers, align_decon, x,
-        MoreArgs=list(ref, maxShift, full=full, use_speaq=use_speaq)
+        MoreArgs=list(ref, maxShift, full=full, use_speaq=use_speaq,
+                      supsh=supsh, shift_method=sm)
     )
     class(aligns) <- c("aligns", "decons2", "spectra")
     aligns
 }
 
-# Make sure every spectrum in `x` carries a shared cssh grid. If none
-# is present, derive one from the input `cs` ranges. If some carry
+# Build a CluPA-aligned class consensus reference.
+#
+# 1) Pick one representative per class via find_ref().
+# 2) Run a 2-pass clupa() over the K representatives so their peak
+#    lists are on a common scale before union.
+# 3) Union all aligned peak lists, then collapse near-coincident peaks
+#    within `gap_tol` ppm via dedupe_peaks() (amplitude-weighted x0,
+#    arithmetic-mean A / lambda).
+# 4) Return a `consensus` object shaped like an aligned spectrum so
+#    align_decon can use it as a reference (carries cssh, lcpar with
+#    pcide, sit$supsh).
+#
+# Compared to picking a single class-A spectrum as the reference,
+# this guarantees that peaks present only in class B still have a
+# matching column on the reference grid — so class-distinguishing
+# peaks are no longer silently snapped to whichever class-A column
+# happens to be nearest.
+build_clupa_consensus <- function(x, y, maxShift, supsh, shift_method,
+                                  use_speaq, gap_tol=NULL) {
+    stopifnot(is.factor(y), length(y) == length(x))
+    # Anchor every per-class subset on the same cssh so the inner clupa
+    # call sees a single consistent grid. clupa() already does this
+    # before delegating here, but a direct caller (e.g. paper-repo
+    # benchmark code) may have skipped it.
+    x <- ensure_cssh(x)
+    cssh <- x[[1]]$cssh
+    if (is.null(gap_tol)) gap_tol <- 2 * abs(cssh[2] - cssh[1])
+
+    # Pick one rep per class. Empty classes are skipped silently.
+    lvs <- levels(y)
+    reps <- lapply(lvs, function(lv) {
+        ix <- which(y == lv); if (length(ix) == 0L) NULL else find_ref(x[ix])
+    })
+    reps <- reps[!vapply(reps, is.null, logical(1))]
+    if (length(reps) <= 1L) {
+        # 0 or 1 class with members: fall back to a single rep.
+        return(if (length(reps) == 1L) reps[[1]] else find_ref(x))
+    }
+
+    # Align the reps to one of themselves (find_ref picks). Use the
+    # same supsh / shift_method / use_speaq as the outer call so the
+    # consensus is built on the same correlation geometry CluPA will
+    # ultimately use.
+    class(reps) <- c("decons2", "spectra")
+    reps_al <- clupa(reps, maxShift=maxShift, verbose=FALSE, nworkers=1,
+                     full=FALSE, use_speaq=use_speaq,
+                     supsh=supsh, shift_method=shift_method)
+
+    # Union of aligned peak lists. Use x0al when available (aligned
+    # position), x0 otherwise (the chosen reference inside reps_al).
+    pos_of <- function(s) {
+        p <- s$lcpar$x0al
+        if (is.null(p)) p <- s$lcpar$x0
+        as.numeric(p)
+    }
+    union_lcpar <- data.frame(
+        x0     = unlist(lapply(reps_al, pos_of)),
+        A      = unlist(lapply(reps_al, function(s) as.numeric(s$lcpar$A))),
+        lambda = unlist(lapply(reps_al, function(s) as.numeric(s$lcpar$lambda)))
+    )
+    union_lcpar <- dedupe_peaks(union_lcpar, gap_tol)
+    union_lcpar$pcide <- pci_on_cssh(union_lcpar$x0, cssh)
+
+    sit <- list(supsh=make_supsh(cssh, union_lcpar, supsh))
+    structure(
+        list(cssh=cssh, lcpar=union_lcpar, sit=sit),
+        class=c("consensus", "align", "decon2", "spectrum")
+    )
+}
+
+# Pick the concrete shift method when `auto` is requested. The
+# peakList-driven rebuild beats slide-and-pad correctness-wise for any
+# shape, but is asymptotically slower than slide for lorentz (which
+# touches every column anyway). Sparse shapes (triangle / rectangle /
+# sparse) are *cheaper* to rebuild than to slide, so auto picks them.
+resolve_shift_method <- function(method, supsh) {
+    if (method != "auto") return(method)
+    if (supsh == "lorentz") "slide" else "recompute"
+}
+
+# Make sure every spectrum in `x` carries a shared cssh grid and a
+# cached cssh-column index `lcpar$pcide` for each peak. If no spectrum
+# carries cssh, derive one from the input `cs` ranges. If some carry
 # cssh, require all to agree (otherwise alignment indices wouldn't be
 # comparable). Does NOT compute sit$supsh — see ensure_supsh().
 ensure_cssh <- function(x) {
@@ -135,21 +229,58 @@ ensure_cssh <- function(x) {
     if (!all(have_cssh)) {
         cssh <- make_cssh(x)
         for (i in seq_along(x)) x[[i]]$cssh <- cssh
-        return(x)
+    } else {
+        cssh <- x[[1]]$cssh
+        for (i in seq_along(x)) {
+            if (!isTRUE(all.equal(x[[i]]$cssh, cssh))) {
+                stop(
+                    "Spectra carry different cssh; alignment requires a shared grid."
+                )
+            }
+        }
     }
-    cssh <- x[[1]]$cssh
     for (i in seq_along(x)) {
-        if (!isTRUE(all.equal(x[[i]]$cssh, cssh))) {
-            stop("Spectra carry different cssh; alignment requires a shared grid.")
+        if (is.null(x[[i]]$lcpar$pcide)) {
+            x[[i]]$lcpar$pcide <- pci_on_cssh(x[[i]]$lcpar$x0, cssh)
         }
     }
     x
 }
 
-# Compute the shared-grid input vector sit$supsh for CluPA. Two modes:
+# Build the shared chemical-shift grid used by alignment.
 #
-#   "lorentz" (default): full Lorentz superposition evaluated at cssh.
-#     Smooth, expensive: O(length(cssh) * npeaks).
+# Range: intersection of every input spectrum's `cs` range. A peak
+# fitted outside the intersection is excluded from the shared
+# superposition `sit$supsh` (its Lorentzian still evaluates, but
+# alignment only sees the part inside the intersection).
+#
+# Length: max(length(cs)) across input spectra. All inputs typically
+# share a length already (alignment downstream enforces it), but if
+# they differ, picking the max preserves the finest available
+# resolution. Spacing is uniform and decreasing to match `cs`.
+make_cssh <- function(x) {
+    mins <- vapply(x, function(s) min(s$cs), numeric(1))
+    maxs <- vapply(x, function(s) max(s$cs), numeric(1))
+    ns_pts <- vapply(x, function(s) length(s$cs), integer(1))
+    lo <- max(mins); hi <- min(maxs); n <- max(ns_pts)
+    if (lo >= hi) stop(
+        "Spectra cs ranges have empty intersection; cannot build cssh."
+    )
+    seq(hi, lo, length.out=n)
+}
+
+# Compute the shared-grid input vector sit$supsh for CluPA. Four modes:
+#
+#   "triangle" (default): narrow isoceles triangle per peak, full-width
+#     = lambda, peak height = A. Round-first semantics — supsh peak
+#     position is byte-equal to the integer peakList index passed into
+#     hclust_align(). Cheap: O(npeaks * w_dp).
+#
+#   "rectangle": constant A on [c - hw, c + hw] per peak, zero outside.
+#     Fastest. Discontinuous edges; can ring under FFT.
+#
+#   "lorentz": full Lorentz superposition evaluated at cssh. Smooth,
+#     expensive: O(length(cssh) * npeaks).
 #
 #   "sparse": delta comb — zeros everywhere except at the cssh column
 #     nearest each peak center, which carries the peak area A. Cheap:
@@ -157,11 +288,10 @@ ensure_cssh <- function(x) {
 #     amplitude-weighted peak positions.
 #
 # Only fills in sit$supsh when it is missing. Callers that want to
-# *switch* the cached mode must clear sit$supsh first (or re-run
-# deconvolute_spectra with the desired `supsh=`). Assumes
+# *switch* the cached mode must clear sit$supsh first. Assumes
 # ensure_cssh() has already run.
-ensure_supsh <- function(x, supsh="lorentz") {
-    supsh <- match.arg(supsh, c("lorentz", "sparse"))
+ensure_supsh <- function(x, supsh="triangle") {
+    supsh <- match.arg(supsh, c("triangle", "rectangle", "lorentz", "sparse"))
     for (i in seq_along(x)) {
         if (is.null(x[[i]]$sit$supsh)) {
             x[[i]]$sit$supsh <- make_supsh(x[[i]]$cssh, x[[i]]$lcpar, supsh)
@@ -171,18 +301,55 @@ ensure_supsh <- function(x, supsh="lorentz") {
 }
 
 # Build the sit$supsh vector from a peak list. Branches on `supsh`
-# mode; see ensure_supsh() for semantics. Shared between
-# deconvolute_spectrum_{r,rust}() and ensure_supsh().
-make_supsh <- function(cssh, lcpar, supsh="lorentz") {
-    supsh <- match.arg(supsh, c("lorentz", "sparse"))
-    if (supsh == "lorentz") return(lorentz_sup(cssh, lcpar=lcpar))
+# mode; see ensure_supsh() for semantics. Shared between clupa()'s
+# ensure_supsh() entry point and build_clupa_consensus().
+make_supsh <- function(cssh, lcpar, supsh="triangle") {
+    supsh <- match.arg(supsh, c("triangle", "rectangle", "lorentz", "sparse"))
+    if (supsh == "triangle")  return(triangle_sup(cssh, lcpar))
+    if (supsh == "rectangle") return(rect_sup(cssh, lcpar))
+    if (supsh == "lorentz")   return(lorentz_sup(cssh, lcpar=lcpar))
+    # sparse
     out <- numeric(length(cssh))
     if (nrow(lcpar) == 0L) return(out)
-    idx <- round(convert_pos(lcpar$x0, cssh, seq_along(cssh)))
-    idx <- pmin(pmax(as.integer(idx), 1L), length(cssh))
+    idx <- pci_on_cssh(lcpar$x0, cssh)
     s <- tapply(as.numeric(lcpar$A), idx, sum)
     out[as.integer(names(s))] <- s
     out
+}
+
+# Narrow-triangle superposition on `cssh`. Each peak contributes a
+# symmetric triangle centered on the nearest cssh column to `x0`, with
+# full base width = `lambda` (in datapoints) and peak height = `A`.
+# Returns a numeric vector of length `length(cssh)`.
+triangle_sup <- function(cssh, lcpar) {
+    n <- length(cssh)
+    if (nrow(lcpar) == 0L) return(numeric(n))
+    pc <- pci_on_cssh(lcpar$x0, cssh)
+    hw <- lambda_to_hw_dp(lcpar$lambda, cssh)
+    A  <- as.numeric(lcpar$A)
+    .Call(triangle_sup_c, as.integer(pc), as.integer(hw), A, n)
+}
+
+# Rectangle superposition on `cssh`. Each peak contributes a constant
+# `A` over the cssh columns within `lambda/2` datapoints of the nearest
+# cssh column to `x0`.
+rect_sup <- function(cssh, lcpar) {
+    n <- length(cssh)
+    if (nrow(lcpar) == 0L) return(numeric(n))
+    pc <- pci_on_cssh(lcpar$x0, cssh)
+    hw <- lambda_to_hw_dp(lcpar$lambda, cssh)
+    A  <- as.numeric(lcpar$A)
+    .Call(rect_sup_c, as.integer(pc), as.integer(hw), A, n)
+}
+
+# Convert a vector of per-peak lambdas (ppm) into integer half-widths
+# in cssh datapoints. Floor 1 — even a sub-datapoint lambda gets a
+# single column on each side so the supsh peak is always >=3 columns
+# wide (which keeps the FFT cross-correlator's job well-conditioned).
+lambda_to_hw_dp <- function(lambda, cssh) {
+    n <- length(cssh)
+    w_dp <- abs(convert_width(abs(as.numeric(lambda)), cssh, seq_len(n)))
+    pmax(1L, as.integer(round(w_dp / 2)))
 }
 
 # Integer cssh-column index for each value in `vals`. Clamped to
@@ -401,17 +568,27 @@ noshift_one <- function(x, full=TRUE) {
     x
 }
 
-align_decon <- function(x, ref, maxShift, full=TRUE, use_speaq=FALSE) {
+align_decon <- function(x, ref, maxShift, full=TRUE, use_speaq=FALSE,
+                        supsh="triangle", shift_method="slide") {
     cssh <- x$cssh
     pci_x <- lcpar_pci(x$lcpar, cssh)
     pci_ref <- lcpar_pci(ref$lcpar, cssh)
     np_x <- length(pci_x); np_ref <- length(pci_ref)
+    # `orig_idx` mirrors `peakList`: 0 for ref entries, 1..np_x for the
+    # target peak's row in x$lcpar. Threaded through hclust_align so a
+    # rebuild_tar call can look up the original A / lambda for each
+    # surviving target peak after any shift.
+    orig_idx <- c(integer(np_ref), seq_len(np_x))
+    rebuild_tar <- if (use_speaq || shift_method == "slide") NULL else
+        make_rebuild_tar(x$lcpar, cssh, supsh)
     obj <- hclust_align(
         refSpec=ref$sit$supsh, tarSpec=x$sit$supsh,
         peakList=c(pci_ref, pci_x),
         peakLabel=c(rep(1, np_ref), rep(0, np_x)),
+        orig_idx=orig_idx,
         startP=1, endP=length(x$sit$supsh),
-        maxShift=maxShift, use_speaq=use_speaq
+        maxShift=maxShift, use_speaq=use_speaq,
+        shift_method=shift_method, rebuild_tar=rebuild_tar
     )
     if (length(obj$peakList) != np_ref + np_x) stop("Lost peaks during alignment")
     pcial <- obj$peakList[(np_ref + 1):(np_ref + np_x)]
@@ -420,6 +597,29 @@ align_decon <- function(x, ref, maxShift, full=TRUE, use_speaq=FALSE) {
     if (full) x$sit$supal <- lorentz_sup(cssh, x$lcpar$x0al, x$lcpar$A, x$lcpar$lambda)
     class(x) <- c("align", "decon2", "spectrum")
     x
+}
+
+# Closure factory used by align_decon under shift_method="recompute".
+# Returns a function rebuild_tar(orig_tar_idx, new_pcis) that yields
+# the full-length supsh vector reconstructed from the original A /
+# lambda (looked up by orig index) placed at the *current* integer
+# positions on `cssh`. The shape mode (`supsh`) is captured.
+#
+# Caller writes the relevant slice of the returned vector back into
+# `tarSpec`; the unused parts cost nothing for sparse shapes (their
+# support is zero outside each peak's small window).
+make_rebuild_tar <- function(lcpar_full, cssh, supsh) {
+    A_all   <- as.numeric(lcpar_full$A)
+    lam_all <- as.numeric(lcpar_full$lambda)
+    function(tar_orig, tar_pcis) {
+        if (length(tar_orig) == 0L) return(numeric(length(cssh)))
+        lc <- data.frame(
+            x0=cssh[tar_pcis],
+            A=A_all[tar_orig],
+            lambda=lam_all[tar_orig]
+        )
+        make_supsh(cssh, lc, supsh)
+    }
 }
 
 find_ref <- function(x) {
@@ -590,7 +790,9 @@ do_shift <- function(seg, step) {
 #'
 #' @author 2025 Tobias Schmidt: initial version.
 hclust_align <- function(
-    refSpec, tarSpec, peakList, peakLabel, startP, endP, maxShift, use_speaq = FALSE
+    refSpec, tarSpec, peakList, peakLabel, startP, endP, maxShift,
+    use_speaq = FALSE, orig_idx = NULL,
+    shift_method = "slide", rebuild_tar = NULL
 ) {
 
     if (use_speaq) return(
@@ -601,6 +803,9 @@ hclust_align <- function(
         )
     )
 
+    if (is.null(orig_idx)) orig_idx <- integer(length(peakList))
+    do_rebuild <- shift_method == "recompute" && !is.null(rebuild_tar)
+
     minPk <- min(peakList)
     maxPk <- max(peakList)
 
@@ -610,7 +815,9 @@ hclust_align <- function(
     endCheckP <- maxPk + which.min(tarSpec[(maxPk + 1L):endP])
     if (is.na(endCheckP) || endCheckP > length(tarSpec)) endCheckP <- endP
 
-    if ((endCheckP - startCheckP) < 2L) return(list(tarSpec = tarSpec, peakList = peakList))
+    if ((endCheckP - startCheckP) < 2L) {
+        return(list(tarSpec = tarSpec, peakList = peakList))
+    }
 
     # FFT cross-correlation to find the best shift
     adj <- fft_shift(
@@ -625,14 +832,27 @@ hclust_align <- function(
         ok <- (adj$stepAdj < 0 && adj$stepAdj + minPk >= startCheckP) ||
               (adj$stepAdj > 0 && adj$stepAdj + maxPk <= endCheckP)
         if (ok) {
-            seg <- tarSpec[startCheckP:endCheckP]
-            tarSpec[startCheckP:endCheckP] <- do_shift(seg, adj$stepAdj)
             tar_idx <- which(peakLabel == 0L)
             peakList[tar_idx] <- peakList[tar_idx] + adj$stepAdj
             lost <- which(peakList <= 0L | peakList > length(tarSpec))
             if (length(lost) > 0L) {
                 peakList <- peakList[-lost]
                 peakLabel <- peakLabel[-lost]
+                orig_idx <- orig_idx[-lost]
+            }
+            if (do_rebuild) {
+                # Peak-list-driven rebuild: derive the supsh from
+                # current peak positions instead of sliding the old
+                # vector and edge-padding the vacated columns. Write
+                # the slice into tarSpec[startP:endP] — HC partitions
+                # peaks into disjoint position clusters, so this
+                # recursion's segment never overlaps a sibling's.
+                tar_now <- which(peakLabel == 0L)
+                new_full <- rebuild_tar(orig_idx[tar_now], peakList[tar_now])
+                tarSpec[startP:endP] <- new_full[startP:endP]
+            } else {
+                seg <- tarSpec[startCheckP:endCheckP]
+                tarSpec[startCheckP:endCheckP] <- do_shift(seg, adj$stepAdj)
             }
         }
     }
@@ -654,9 +874,11 @@ hclust_align <- function(
 
     sub1 <- peakList[left_set]
     lab1 <- peakLabel[left_set]
+    sid1 <- orig_idx[left_set]
     id1 <- left_set
     sub2 <- peakList[right_set]
     lab2 <- peakLabel[right_set]
+    sid2 <- orig_idx[right_set]
     id2 <- right_set
 
     max1 <- max(sub1)
@@ -673,9 +895,11 @@ hclust_align <- function(
         right_set <- tmp_set
         sub1 <- peakList[left_set]
         lab1 <- peakLabel[left_set]
+        sid1 <- orig_idx[left_set]
         id1 <- left_set
         sub2 <- peakList[right_set]
         lab2 <- peakLabel[right_set]
+        sid2 <- orig_idx[right_set]
         id2 <- right_set
         max1 <- max(sub1); min2 <- min(sub2)
         endP1 <- max1 + which.min(tarSpec[(max1 + 1L):(min2 - 1L)])
@@ -683,12 +907,18 @@ hclust_align <- function(
         startP2 <- endP1 + 1L
     }
     if (length(unique(lab1)) > 1L) {
-        res <- hclust_align(refSpec, tarSpec, sub1, lab1, startP, endP1, maxShift)
+        res <- hclust_align(refSpec, tarSpec, sub1, lab1, startP, endP1,
+                            maxShift, orig_idx=sid1,
+                            shift_method=shift_method,
+                            rebuild_tar=rebuild_tar)
         tarSpec <- res$tarSpec
         peakList[id1] <- pad_peaks(res$peakList, length(id1))
     }
     if (length(unique(lab2)) > 1L) {
-        res <- hclust_align(refSpec, tarSpec, sub2, lab2, startP2, endP, maxShift)
+        res <- hclust_align(refSpec, tarSpec, sub2, lab2, startP2, endP,
+                            maxShift, orig_idx=sid2,
+                            shift_method=shift_method,
+                            rebuild_tar=rebuild_tar)
         tarSpec <- res$tarSpec
         peakList[id2] <- pad_peaks(res$peakList, length(id2))
     }
@@ -741,6 +971,13 @@ pad_peaks <- function(peaks, n) {
 #'   carries the same `lcpar` shape). If `NULL`, picked via
 #'   [metabodecon::find_ref()] on `x`.
 #' @param gap_tol Numeric scalar. Matching tolerance in ppm. Default 0.02.
+#' @param pos_field Which `lcpar` column on `x` to use as the peak position
+#'   for alignment. `"x0"` (default) is the raw deconvolution position;
+#'   `"x0al"` is the post-CluPA aligned position. The reference is always
+#'   matched against on its `lcpar$x0`, so callers building a reference
+#'   from aligned data should store the aligned positions in its `x0`
+#'   column (which is what [metabodecon::build_consensus()] does when
+#'   given `pos_field="x0al"`).
 #' @param ... Ignored (signature compatibility with `snap_to_ref`).
 #'
 #' @return An `aligns` object with `pcisn` and `x0sn` set on each spectrum's
@@ -748,8 +985,9 @@ pad_peaks <- function(peaks, n) {
 #'   Lorentz-compatible until rebuilt downstream).
 #'
 #' @author 2026 Tobias Schmidt: initial version.
-snap_nw <- function(x, ref=NULL, gap_tol=0.02, ...) {
-    stopifnot(inherits(x, "decons2"), is_num(gap_tol, 1), gap_tol >= 0)
+snap_nw <- function(x, ref=NULL, gap_tol=0.02, pos_field="x0", w_A=0, ...) {
+    stopifnot(inherits(x, "decons2"), is_num(gap_tol, 1), gap_tol >= 0,
+              is_num(w_A, 1), w_A >= 0)
     if (gap_tol == 0) return(x)
     x <- ensure_cssh(x)
     if (!is.null(ref) && is.null(ref$cssh)) ref$cssh <- x[[1]]$cssh
@@ -761,8 +999,10 @@ snap_nw <- function(x, ref=NULL, gap_tol=0.02, ...) {
     ro   <- order(ref$lcpar$x0)
     rx0  <- as.numeric(ref$lcpar$x0[ro])
     rcol <- as.integer(ref$lcpar$pcide[ro])
+    rA   <- if (w_A > 0) normalize_A(as.numeric(ref$lcpar$A[ro])) else NULL
     for (s in seq_along(x)) {
-        x[[s]]$lcpar <- snap_nw_lcpar(x[[s]]$lcpar, rx0, rcol, cssh, gap_tol)
+        x[[s]]$lcpar <- snap_nw_lcpar(x[[s]]$lcpar, rx0, rcol, cssh, gap_tol,
+                                       pos_field=pos_field, w_A=w_A, rA=rA)
         x[[s]]$sit$supal <- NULL
         class(x[[s]]) <- c("align", "decon2", "spectrum")
     }
@@ -770,15 +1010,41 @@ snap_nw <- function(x, ref=NULL, gap_tol=0.02, ...) {
     x
 }
 
+# Per-spectrum amplitude normalization: divide by median of the
+# strictly-positive entries so the resulting vector has typical magnitude
+# 1, scale-invariant across spectra of different total intensity. Used to
+# put target and reference amplitudes on a comparable scale before
+# computing log-ratio cost terms.
+normalize_A <- function(A) {
+    if (length(A) == 0L) return(A)
+    pos <- A[A > 0]
+    if (length(pos) == 0L) return(A)
+    A / stats::median(pos)
+}
+
 # Per-spectrum NW snap: returns lcpar with pcisn / x0sn columns added.
-snap_nw_lcpar <- function(lcpar, rx0, rcol, cssh, gap_tol) {
+# When `w_A > 0` the cost matrix mixes in a log-ratio amplitude term:
+#   M = |Δx0| + w_A * gap_tol * |log(A_t / A_r)|
+# so the gap-vs-match decision favors pairings of similarly-sized peaks.
+# Both A vectors are pre-normalized to unit median so the ratio is
+# scale-invariant across spectra.
+snap_nw_lcpar <- function(lcpar, rx0, rcol, cssh, gap_tol, pos_field="x0",
+                           w_A=0, rA=NULL) {
     n <- nrow(lcpar)
     lcpar$pcisn <- rep(NA_integer_, n)
     lcpar$x0sn  <- rep(NA_real_,    n)
     if (n == 0L || length(rcol) == 0L) return(lcpar)
-    o   <- order(lcpar$x0)
-    sx0 <- as.numeric(lcpar$x0[o])
+    pos <- lcpar[[pos_field]] %||% lcpar$x0
+    o   <- order(pos)
+    sx0 <- as.numeric(pos[o])
     M   <- abs(outer(sx0, rx0, "-"))
+    if (w_A > 0 && !is.null(rA) && !is.null(lcpar$A)) {
+        sA <- normalize_A(as.numeric(lcpar$A[o]))
+        eps <- 1e-12
+        ratio <- outer(pmax(sA, eps), pmax(rA, eps), "/")
+        M_amp <- abs(log(ratio))
+        M <- M + w_A * gap_tol * M_amp
+    }
     storage.mode(M) <- "double"
     gp  <- rep_len(as.double(gap_tol), length(sx0))
     gq  <- rep_len(as.double(gap_tol), length(rx0))
@@ -816,11 +1082,15 @@ snap_nw_lcpar <- function(lcpar, rx0, rcol, cssh, gap_tol) {
 #' (`list(cssh, lcpar, ...)`) so it can be passed directly as `ref` to
 #' [metabodecon::snap_nw()] at prediction time.
 #'
-#' @param x A `decons2` object (training deconvolutions).
+#' @param x A `decons2` (or `aligns`) object.
 #' @param y Optional factor of class labels (length == `length(x)`). If
 #'   supplied, the seed consensus is built per-class.
 #' @param gap_tol Numeric scalar. Tolerance in ppm for both the per-spectrum
 #'   NW snap and for deduplicating consensus positions. Default 0.02.
+#' @param pos_field Which `lcpar` column to use as the peak position.
+#'   `"x0"` (default) for raw deconvolution positions; `"x0al"` to build
+#'   the consensus from CluPA-aligned positions (then the consensus lives
+#'   in aligned space and should be snapped against using `pos_field="x0al"`).
 #'
 #' @return A list with components `cssh`, `lcpar` (data frame with `x0`,
 #'   `A`, `lambda`, `pcide`), plus the class attributes
@@ -828,22 +1098,35 @@ snap_nw_lcpar <- function(lcpar, rx0, rcol, cssh, gap_tol) {
 #'   single-spectrum reference for downstream code.
 #'
 #' @author 2026 Tobias Schmidt: initial version.
-build_consensus <- function(x, y=NULL, gap_tol=0.02) {
+build_consensus <- function(x, y=NULL, gap_tol=0.02, pos_field="x0") {
     stopifnot(inherits(x, "decons2"), is_num(gap_tol, 1), gap_tol > 0)
     x <- ensure_cssh(x)
     cssh <- x[[1]]$cssh
+
+    # Pull positions / A / lambda from the chosen field. find_ref always
+    # operates on raw x0 via pcide; for pos_field != "x0" we temporarily
+    # swap pos_field into x0 before the find_ref pick (and snap call below).
+    swap_field <- function(xx, fld) {
+        if (fld == "x0") return(xx)
+        for (s in seq_along(xx)) {
+            lc <- xx[[s]]$lcpar
+            xx[[s]]$lcpar$x0 <- lc[[fld]] %||% lc$x0
+        }
+        xx
+    }
+    x_pos <- swap_field(x, pos_field)
+
     if (is.null(y)) {
-        seed <- find_ref(x)
+        seed <- find_ref(x_pos)
     } else {
-        stopifnot(is.factor(y), length(y) == length(x))
+        stopifnot(is.factor(y), length(y) == length(x_pos))
         lvs <- levels(y)
         reps <- lapply(lvs, function(lv) {
             ix <- which(y == lv)
             if (length(ix) == 0L) return(NULL)
-            find_ref(x[ix])
+            find_ref(x_pos[ix])
         })
         reps <- reps[!vapply(reps, is.null, logical(1))]
-        # Merge the per-class references into the seed consensus.
         seed_x0  <- unlist(lapply(reps, function(r) r$lcpar$x0))
         seed_A   <- unlist(lapply(reps, function(r) r$lcpar$A))
         seed_lam <- unlist(lapply(reps, function(r) r$lcpar$lambda))
@@ -855,8 +1138,9 @@ build_consensus <- function(x, y=NULL, gap_tol=0.02) {
         seed$lcpar$pcide <- pci_on_cssh(seed$lcpar$x0, cssh)
     }
 
-    # Now extend the seed with any training peaks that didn't match it.
-    snapped <- snap_nw(x, ref=seed, gap_tol=gap_tol)
+    # Now extend the seed with any training peaks that didn't match it. We
+    # snap on the same pos_field used to build the seed.
+    snapped <- snap_nw(x_pos, ref=seed, gap_tol=gap_tol)
     extra_x0  <- c(); extra_A <- c(); extra_lam <- c()
     for (s in seq_along(snapped)) {
         lc <- snapped[[s]]$lcpar

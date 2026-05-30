@@ -34,8 +34,7 @@ mog1 <- function(rows = 1) {
 testthat::test_that("fit_mdm returns mdm with attached mog", {
     m <- fit_mdm(
         sp, y, mog = mog1(2),
-        use_rust = 0.5, nworkers = 1, verbosity = 0,
-        nfolds = 3
+        use_rust = 0.5, nworkers = 1, verbosity = 0
     )
     testthat::expect_s3_class(m, "mdm")
     testthat::expect_true(is.data.frame(m$mog))
@@ -46,8 +45,7 @@ testthat::test_that("fit_mdm returns mdm with attached mog", {
 testthat::test_that("benchmark returns predictions and performance", {
     res <- benchmark(
         sp, y, mog = mog1(1), k = 4,
-        use_rust = 0.5, nworkers = 1, verbosity = 0,
-        nfolds = 3
+        use_rust = 0.5, nworkers = 1, verbosity = 0
     )
     testthat::expect_true(is.data.frame(res$predictions))
     testthat::expect_true("true" %in% names(res$predictions))
@@ -72,11 +70,41 @@ testthat::test_that("fit_mdm with bin/identity2 returns mdm object", {
     m <- fit_mdm(
         sp, y,
         feat_fun = bin, decon_fun = identity2,
-        align_fun = identity_align,
+        align_fun = identity_align, snap_fun = identity_snap,
         mog = mog_bm, igrs = list(),
-        nfolds = 3, verbosity = 0
+        verbosity = 0
     )
     testthat::expect_s3_class(m, "mdm")
     testthat::expect_true(!is.null(m$model))
     testthat::expect_true("peakPos" %in% names(m$params))
+})
+
+testthat::test_that("fit_mdm with fit_ranger returns mdm with OOB scores", {
+    testthat::skip_if_not_installed("ranger")
+    m <- fit_mdm(
+        sp, y, mog = mog1(1),
+        fit_fun = fit_ranger, predict_fun = predict_ranger,
+        use_rust = 0.5, nworkers = 1, verbosity = 0
+    )
+    testthat::expect_s3_class(m, "mdm")
+    testthat::expect_true(inherits(m$model, "ranger"))
+    testthat::expect_true(is.finite(m$mog$acc[1]))
+    testthat::expect_true(is.finite(m$mog$auc[1]))
+    p <- stats::predict(m, sp[1:4], type = "prob", verbosity = 0)
+    testthat::expect_length(p, 4L)
+})
+
+testthat::test_that("fit_mdm with snap_nw_blind predicts on held-out spectra", {
+    m <- fit_mdm(
+        sp, y, mog = mog1(1),
+        snap_fun = snap_nw_blind,
+        fit_fun = fit_ranger, predict_fun = predict_ranger,
+        use_rust = 0.5, nworkers = 1, verbosity = 0
+    )
+    testthat::expect_s3_class(m, "mdm")
+    testthat::expect_identical(m$params$snap_kind, "nw")
+    testthat::expect_true(!is.null(m$ref$snap))
+    p <- stats::predict(m, sp[1:4], type = "prob", verbosity = 0)
+    testthat::expect_length(p, 4L)
+    testthat::expect_true(all(is.finite(p)))
 })

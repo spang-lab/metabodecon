@@ -326,4 +326,4 @@ set_names <- function(x, nams) {
     x
 }
 
-decon2_members <- c("cs", "cssh", "si", "meta", "args", "sit", "peak", "lcpar")
+decon2_members <- c("cs", "si", "meta", "args", "sit", "peak", "lcpar")
