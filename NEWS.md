@@ -1,3 +1,55 @@
+# metabodecon 2.0.0.18
+
+* **New helper `harmonize_grid()`**: pre-aligns a corpus of spectra
+  onto a single shared chemical-shift grid by integer-datapoint
+  shifting. Each spectrum's `$si` is rolled by the integer offset
+  from the target grid (default: median first-ppm anchor) and
+  zero-padded on the vacated edge. Sub-datapoint residual is ~0.5 dp,
+  two orders of magnitude smaller than typical Lorentzian widths, so
+  the rounding error is invisible to downstream fits. On AKI (106
+  spectra, 131k points, up to 100 dp / 0.016 ppm calibration drift),
+  pre-harmonizing lifts the mean pairwise SI correlation from 0.42 to
+  0.67 (all datapoints) / 0.53 to 0.65 (metabolite-only region).
+  `read_aki_data()` / `cache_aki_data()` now call it automatically.
+
+* **`cssh` is gone.** The alignment pipeline previously carried an
+  auxiliary "shared grid" field `cssh` on each spectrum, populated by
+  `clupa()` and read by `snap_to_ref()` / `si_mat()` / `peak_mat()` /
+  `bin()`. With `harmonize_grid()` running upstream, every spectrum's
+  own `$cs` IS the shared grid, so `cssh` was a redundant alias.
+  Removed entirely: `ensure_cssh()`, `make_cssh()`, `pci_on_cssh()`,
+  `bind_to_cssh()`. Replaced by `ensure_shared_cs()` (assertion only)
+  and `pci_on_cs()`. `clupa()`, `snap_to_ref()`, `combine_peaks()`,
+  `snap_nw()`, `build_consensus()`, `build_clupa_consensus()` now
+  refuse to run when input spectra disagree on `$cs` — pre-call
+  `harmonize_grid()` if your corpus isn't pre-aligned.
+
+* **`supsh` is gone.** CluPA always uses the Lorentz superposition
+  (`$sit$sup`) already attached at deconvolution time as the FFT
+  input — this is the speaq-equivalent shape and matches v1.7.0's
+  `get_sup_mat(decons2)` input to `dohCluster`. The experimental
+  `supsh="triangle"` / `"rectangle"` / `"sparse"` / `"eiffel"` knob
+  and the `shift_method` knob (slide vs. recompute) were removed.
+  The bundled `hclust_align` remains byte-equivalent to
+  `speaq::hClustAlign` (see `tests/testthat/test-speaq.R`).
+
+# metabodecon 2.0.0.17
+
+* `clupa()` now defaults to `supsh="lorentz"` (was `"triangle"`),
+  restoring the historical speaq-CluPA input shape — the full Lorentz
+  superposition evaluated on `cssh`. `align()` follows. The bundled
+  `hclust_align` implementation remains byte-equivalent to
+  `speaq::hClustAlign` (`use_speaq=FALSE` default; flip to `TRUE` for
+  the actual speaq backend). `"triangle"` / `"rectangle"` / `"sparse"`
+  / `"eiffel"` are still selectable as experimental shapes.
+* The shared alignment grid `cssh` is now defined as `ref$cs` exactly,
+  so the reference's own peak indices are its native integer positions
+  (no convert_pos round-trip). `find_ref()` no longer constructs a
+  shared `cssh` upfront — it compares candidate references in ppm
+  space directly, since `find_ref_ind` only needs pairwise distances.
+  `make_cssh()` has been removed; `ensure_cssh()` falls back to
+  `x[[1]]$cs` for standalone callers that bypass `clupa()`.
+
 # metabodecon 2.0.0.16
 
 * **Breaking pick rule**: both `fit_mdm()` (grid winner) and

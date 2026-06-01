@@ -127,7 +127,7 @@ cache. See \emph{Automatic selection sentinels}.}
 or vector. \code{-1} means auto. Default \code{-1}.}
 
 \item{maxCombine}{Snap window in shared-grid columns. Translated to
-\code{gap_tol = maxCombine * median(diff(cssh))} (in ppm).}
+\code{gap_tol = maxCombine * median(diff(cs))} (in ppm).}
 
 \item{deg}{Deconvolution-parameter grid forwarded to
 \code{\link[=grid_deconvolute_spectra]{grid_deconvolute_spectra()}}. When \code{NULL} (default),
@@ -196,8 +196,8 @@ An \code{aligns} object with \code{pcisn} / \code{x0sn} populated and
 \code{attr(., "ref")} set to the consensus used.
 
 A list with \code{model} (a \code{cv.glmnet} object whose \code{lambda.min}
-has been overwritten with the AUC-maximizing \verb{lambda*}), \code{acc},
-\code{auc}, \code{acc_se}, \code{auc_se}.
+has been overwritten with the ACC-maximizing (AUC-tiebroken)
+\verb{lambda*}), \code{acc}, \code{auc}, \code{acc_se}, \code{auc_se}.
 
 Numeric vector of length \code{nrow(newx)}.
 
@@ -219,7 +219,8 @@ Fit and benchmark binary classification models built on NMR spectra
 through a pluggable five-stage pipeline (deconvolute, align, snap,
 featurize, fit). \code{\link[=fit_mdm]{fit_mdm()}} runs the pipeline once, or
 iterates over the cartesian product of \code{npmax}/\code{maxShift}/\code{maxCombine}
-when any is a vector and returns the highest-\code{auc} row.
+when any is a vector and returns the row with the highest \code{acc}
+(ties broken by \code{auc}).
 \code{\link[=benchmark]{benchmark()}} wraps \code{\link[=fit_mdm]{fit_mdm()}} in outer
 k-fold cross-validation to estimate end-to-end performance on
 held-out spectra.
@@ -243,7 +244,7 @@ Thin wrapper around \code{\link[=build_consensus]{build_consensus()}} +
 reported by \code{fit_fun} stay honest.
 
 The \code{maxCombine} window (in shared-grid columns) is translated into a
-ppm \code{gap_tol} via the median spacing of \code{x[[1]]$cssh}. The translation
+ppm \code{gap_tol} via the median spacing of \code{x[[1]]$cs}. The translation
 is deterministic, so \link{predict.mdm} just re-derives \code{gap_tol} from the
 stored \code{maxCombine}. The consensus used at training time is stashed
 on \code{attr(out, "ref")} and replayed at predict time.
@@ -253,15 +254,16 @@ Fits an L1-penalised binomial logistic regression via repeated
 \code{keep=TRUE}). All reps share the lambda path discovered by the first
 rep so per-rep out-of-fold (OOF) predictions are directly comparable
 lambda-by-lambda. For each lambda the per-rep OOF accuracy and AUC
-are averaged across reps; the lambda that maximizes the averaged AUC
-(\verb{lambda*}) is the one reported (and the one used at predict time).
-This averages the per-lambda performance curve \emph{before} optimizing
-over lambda, so the chosen lambda is stable across reps and the
-reported acc/AUC reflects model variance rather than the noise of
-lambda-pick instability across reps. \code{acc_se} / \code{auc_se} are the SE
-across reps at \verb{lambda*}. The model object is the last rep's
-\code{cv.glmnet}; its \code{lambda.min} is overwritten with \verb{lambda*} so
-\code{\link[=predict_lasso]{predict_lasso()}} picks the right lambda by default.
+are averaged across reps; the lambda that maximizes the averaged
+accuracy (with averaged AUC as tiebreaker) is reported as
+\verb{lambda*} and used at predict time. Averaging the per-lambda
+performance curve \emph{before} optimizing over lambda keeps \verb{lambda*}
+stable across reps and the reported acc/AUC reflects model
+variance rather than the noise of lambda-pick instability across
+reps. \code{acc_se} / \code{auc_se} are the SE across reps at \verb{lambda*}. The
+model object is the last rep's \code{cv.glmnet}; its \code{lambda.min} is
+overwritten with \verb{lambda*} so \code{\link[=predict_lasso]{predict_lasso()}} picks
+the right lambda by default.
 
 Companion of \code{\link[=fit_lasso]{fit_lasso()}}. Returns the positive-class
 probability at \code{lambda.min} for each row of \code{newx}.
@@ -353,7 +355,7 @@ parallelism is delegated to \code{fit_fun} via \code{nworkers}.
 
   # (c) Final model trained on the full sim2 dataset across the
   # same grid; `$mog` carries the per-row (acc, auc) heatmap and
-  # the AUC-best row is auto-selected.
+  # the ACC-best row (ties broken by AUC) is auto-selected.
   fm <- fit_mdm(
       x, y,
       fit_fun=fit_ranger, predict_fun=predict_ranger,

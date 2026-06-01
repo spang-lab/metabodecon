@@ -211,22 +211,44 @@ snap to reference) — and [metabodecon::align()] runs both in one call.
   `clupa()` then `snap_to_ref()`. Returns an `aligns` object whose
   per-spectrum `lcpar` has been collapsed onto the reference's peak grid.
 - (exported) `clupa(x, maxShift, ref=NULL, ...)`: **CluPA** —
-  hierarchical-clustering FFT segment shifts (Beirnaert et al. 2018, Vu et
-  al. 2011). Adds `x0al`, `pcial` to `lcpar`; keeps original peak count.
-- (exported) `snap_to_ref(x, maxCombine, ref=NULL)`: **RefPA** — snaps
-  each peak to the nearest reference column within `maxCombine`. Drops
-  peaks farther than `maxCombine`; multiple peaks landing on the same
-  column have their `A` summed. Modifies `lcpar` to keep only `pcial`,
-  `x0al`, `A`; clears `sit$supal` (the post-snap peak list is no longer
-  Lorentz-compatible).
+  hierarchical-clustering FFT segment shifts (Beirnaert et al. 2018,
+  Vu et al. 2011). FFT input is the Lorentz superposition `$sit$sup`
+  already attached at deconvolution time (= speaq-equivalent shape,
+  matches v1.7.0's `get_sup_mat(decons2)` → `dohCluster` input).
+  Requires every spectrum in `x` to share the same `$cs` grid — call
+  `harmonize_grid(x)` upstream if your corpus is from different
+  acquisitions. Adds `x0al`, `pcial` to `lcpar`; keeps original peak
+  count.
+- (exported) `snap_to_ref(x, maxCombine, ref=NULL)`: **RefPA** — for
+  every peak, records the nearest reference column on the shared `cs`
+  grid (within `maxCombine`) as `pcisn` / `x0sn`. Peaks farther than
+  `maxCombine` get `pcisn = NA` / `x0sn = NA`. Original `x0`, `x0al`,
+  `A`, `lambda`, `pcide`, `pcial` are all preserved — `snap_to_ref`
+  only *adds* fields. No peaks are dropped here and amplitudes are
+  not summed; [metabodecon::si_mat()] / [metabodecon::peak_mat()]
+  skip `pcisn = NA` peaks and sum collisions on the same `pcisn`
+  column at rasterisation time. Clears `sit$supal` (the post-snap
+  peak list is no longer Lorentz-compatible).
 - (exported) `identity_align(x, ...)`: no-op; returns `x`.
+- (private) `ensure_shared_cs`: assertion-only helper used by every
+  alignment / snap entry point. Stops with an actionable message if
+  inputs don't share a grid; remedy is to call `harmonize_grid()`.
+- (private) `ensure_align_aux`: per-spectrum kernel that backfills
+  `lcpar$pcide` and `sit$sup` from `x$cs` if missing.
 - (private) `noshift_align`, `noshift_one`: CluPA's `maxShift = 0`
   fast-path (sets `x0al = x0`, `pcial = nearest cs column`).
 - (private) `align_decon`: CluPA per-spectrum kernel (FFT shift +
-  speaq-equivalent hclust).
+  speaq-equivalent hclust). Reads `x$cs` and `x$sit$sup`; writes
+  `x0al = cs[pcial]` and `pcial` as integer indices into `x$cs`.
 - (private) `snap_lcpar`: RefPA per-spectrum kernel.
-- (private) `find_ref`, `find_ref_ind`: pick the reference spectrum (the
-  one whose peaks have the smallest total distance to all others).
+- (private) `find_ref`, `find_ref_ind`: pick the reference spectrum by
+  minimising the sum, over every target peak in every other spectrum,
+  of the ppm distance to the nearest peak in the candidate reference.
+  Grid-free (compares `x0` values in ppm directly). **Bias:** the sum
+  is over target peaks only, so candidates with dense peak lists
+  (incl. noise peaks) are favoured. Mirrors `speaq::findRef` semantics.
+- (private) `pci_on_cs`: integer column index for a vector of ppm
+  values via `round(convert_pos(...))`, clamped to `[1, length(cs)]`.
 - (private) `fft_shift`, `do_shift`, `hclust_align`, `pad_peaks`:
   bundled CluPA implementation that mirrors `speaq::hClustAlign` and is
   byte-equivalent to it; the speaq backend remains available via

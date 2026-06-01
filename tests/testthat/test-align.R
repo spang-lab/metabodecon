@@ -23,22 +23,15 @@ test_that("align works", {
 
     skip_if_speaq_deps_missing()
 
-    # Use supsh="lorentz" because the synthetic 0.3 ppm offset is far
-    # outside any peak's width; the new sparse-support shapes (triangle
-    # / rectangle / sparse) deliberately have no draw-in distance past
-    # their own width, so they cannot detect a shift this large. A
-    # realistic NMR drift is <0.05 ppm; see the triangle-mode test
-    # below for that regime.
-    aligns <- align(decons, verbose = FALSE, supsh = "lorentz")
+    aligns <- align(decons, verbose = FALSE)
 
     # Check structure of returned object. Strategy: add all fields to the
-    # decons object that we expect [align()] to add. At the end the objects
-    # should be equal. clupa() owns cssh / sit$supsh / lcpar$pcide, so the
-    # post-align fixture has to copy those across as well.
+    # decons object that we expect [align()] to add. At the end the
+    # objects should be equal. clupa() adds lcpar$pcide (decon column
+    # index) and sit$supal (post-CluPA Lorentz reconstruction) plus the
+    # CluPA-specific lcpar$x0al / $pcial.
     decons_copy <- decons
     for (i in seq_along(aligns)) {
-        decons_copy[[i]]$cssh         <- aligns[[i]]$cssh
-        decons_copy[[i]]$sit$supsh    <- aligns[[i]]$sit$supsh
         decons_copy[[i]]$sit$supal    <- aligns[[i]]$sit$supal
         decons_copy[[i]]$lcpar$pcide  <- aligns[[i]]$lcpar$pcide
         decons_copy[[i]]$lcpar$x0al   <- aligns[[i]]$lcpar$x0al
@@ -51,21 +44,22 @@ test_that("align works", {
 
     # Check that the alignment worked, our expectations are:
     # 1. x0al     is shifted roughly 0.3 to the right compared to x0
-    # 2. pcial    indexes cssh at the aligned peak centers (cssh[pcial] == x0al)
-    # 3. sit$supal is the superposition of the aligned Lorentz curves on cssh
+    # 2. pcial    indexes the shared cs at the aligned peak centers
+    #             (cs[pcial] == x0al)
+    # 3. sit$supal is the superposition of the aligned Lorentz curves
     x0 <- aligns$sap_01_shifted$lcpar$x0
     x0al <- aligns$sap_01_shifted$lcpar$x0al
     shifts <- x0 - x0al
     expect_true(all(shifts > 0.2 & shifts < 0.4))
 
-    cssh <- aligns$sap_01_shifted$cssh
+    cs <- aligns$sap_01_shifted$cs
     pcial <- aligns$sap_01_shifted$lcpar$pcial
-    expect_equal(cssh[pcial], x0al)
+    expect_equal(cs[pcial], x0al)
 
     A <- aligns$sap_01_shifted$lcpar$A
     supal <- aligns$sap_01_shifted$sit$supal
     lambda <- aligns$sap_01_shifted$lcpar$lambda
-    expect_equal(supal, lorentz_sup(cssh, x0al, A, lambda))
+    expect_equal(supal, lorentz_sup(cs, x0al, A, lambda))
 })
 
 test_that("align gives same result for 1 vs multiple workers", {
@@ -155,11 +149,11 @@ test_that("maxShift = 0 short-circuits to a no-shift alignment", {
     for (i in seq_along(al)) {
         # No shift: aligned center equals the raw fitted center.
         expect_equal(al[[i]]$lcpar$x0al, al[[i]]$lcpar$x0)
-        # pcial is the nearest cssh grid column for each (off-grid) x0.
-        cssh <- al[[i]]$cssh
-        nc <- length(cssh)
+        # pcial is the nearest shared-grid column for each (off-grid) x0.
+        cs <- al[[i]]$cs
+        nc <- length(cs)
         expected_pcial <- pmin(nc, pmax(
-            1L, round(metabodecon:::convert_pos(al[[i]]$lcpar$x0, cssh, seq_len(nc)))
+            1L, round(metabodecon:::convert_pos(al[[i]]$lcpar$x0, cs, seq_len(nc)))
         ))
         expect_equal(al[[i]]$lcpar$pcial, expected_pcial)
     }
@@ -208,19 +202,5 @@ test_that("align with external ref returns only input spectra", {
     expect_equal(length(al_ref), length(decons))
     expect_equal(names(al_ref), names(decons))
 })
-
-test_that("align raises error for spectra with mismatched cssh grids", {
-    skip_if_speaq_deps_missing()
-    # Build two decon2 objects that already carry different cssh grids.
-    # ensure_cssh() must refuse to align them since cssh indices would
-    # not be comparable across spectra.
-    a <- decons[[1]]
-    b <- decons[[1]]
-    a$cssh <- a$cs
-    b$cssh <- a$cs + 0.5
-    mixed <- structure(list(a, b), class = c("decons2", "spectra"))
-    expect_error(align(mixed, verbose = FALSE))
-})
-
 
 skip_if_slow_tests_disabled()

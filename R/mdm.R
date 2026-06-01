@@ -423,7 +423,7 @@ identity_snap <- function(x, ref=NULL, maxCombine=0L, ...) x
 #' reported by `fit_fun` stay honest.
 #'
 #' The `maxCombine` window (in shared-grid columns) is translated into a
-#' ppm `gap_tol` via the median spacing of `x[[1]]$cssh`. The translation
+#' ppm `gap_tol` via the median spacing of `x[[1]]$cs`. The translation
 #' is deterministic, so [predict.mdm] just re-derives `gap_tol` from the
 #' stored `maxCombine`. The consensus used at training time is stashed
 #' on `attr(out, "ref")` and replayed at predict time.
@@ -433,7 +433,7 @@ identity_snap <- function(x, ref=NULL, maxCombine=0L, ...) x
 #'   `NULL`, [metabodecon::build_consensus()] is called on `x` with
 #'   `y=NULL`.
 #' @param maxCombine Snap window in shared-grid columns. Translated to
-#'   `gap_tol = maxCombine * median(diff(cssh))` (in ppm).
+#'   `gap_tol = maxCombine * median(diff(cs))` (in ppm).
 #' @param ... Ignored (signature compatibility).
 #'
 #' @return An `aligns` object with `pcisn` / `x0sn` populated and
@@ -441,9 +441,8 @@ identity_snap <- function(x, ref=NULL, maxCombine=0L, ...) x
 #'
 snap_nw_blind <- function(x, ref=NULL, maxCombine=20, w_A=0, ...) {
     stopifnot(inherits(x, "decons2"))
-    x <- ensure_cssh(x)
-    cssh <- x[[1]]$cssh
-    spacing <- abs(stats::median(diff(cssh)))
+    cs <- ensure_shared_cs(x)
+    spacing <- abs(stats::median(diff(cs)))
     gap_tol <- max(spacing, as.numeric(maxCombine) * spacing)
     pos_field <- if (!is.null(x[[1]]$lcpar$x0al)) "x0al" else "x0"
     if (is.null(ref)) {

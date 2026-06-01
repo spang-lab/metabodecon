@@ -18,8 +18,6 @@ clupa(
   nworkers = 1,
   full = TRUE,
   use_speaq = FALSE,
-  supsh = "triangle",
-  shift_method = "auto",
   gap_tol = NULL
 )
 
@@ -48,7 +46,7 @@ carries the same \code{lcpar} shape). If \code{NULL}, picked via
 
 \item{full}{If \code{TRUE} also recompute the aligned superposition.}
 
-\item{use_speaq}{Use \code{speaq::dohCluster} (CluPA only).}
+\item{use_speaq}{Use \code{speaq::hClustAlign} (CluPA only).}
 
 \item{gap_tol}{Numeric scalar. Matching tolerance in ppm. Default 0.02.}
 
@@ -78,28 +76,33 @@ Pluggable alignment stages used by \code{\link[=align]{align()}} and the
 \itemize{
 \item \code{\link[=clupa]{clupa()}}: \strong{CluPA} — hierarchical-clustering peak
 alignment (recursive FFT segment shifts, Beirnaert et al. 2018, Vu
-et al. 2011).
+et al. 2011). Operates on the Lorentz reconstruction \code{sit$sup}
+already attached to each spectrum by deconvolution.
 \item \code{\link[=snap_to_ref]{snap_to_ref()}}: \strong{RefPA} — reference-based peak
 alignment: snap each peak to the nearest reference column within
 \code{maxCombine}.
 \item \code{\link[=identity_align]{identity_align()}}: no-op. Returns its argument unchanged.
 }
 
+All these functions require every input spectrum to share the same
+\verb{$cs} grid; an explicit \code{stop()} is raised otherwise. Call
+\code{\link[=harmonize_grid]{harmonize_grid()}} upstream to enforce that invariant.
+
 \code{\link[=snap_to_ref]{snap_to_ref()}} applies the RefPA step on its own: for
 each peak in each spectrum, finds the nearest reference column on
-\code{cssh} and records that column as \code{pcisn} (and its ppm value as
-\code{x0sn}). Peaks farther than \code{maxCombine} columns from every
-reference column get \code{pcisn = NA} / \code{x0sn = NA}. Original \code{x0},
-\code{x0al}, \code{A}, \code{lambda}, \code{pcide} and \code{pcial} are preserved — RefPA
-only \emph{adds} the snapped fields. Collisions on the same \code{pcisn}
-column are not merged here; \code{\link[=si_mat]{si_mat()}} sums their
-areas when rasterising the feature matrix. \code{sit$supal} is cleared
-because the post-snap superposition would need recomputing.
+the shared \code{cs} grid and records that column as \code{pcisn} (and its
+ppm value as \code{x0sn}). Peaks farther than \code{maxCombine} columns from
+every reference column get \code{pcisn = NA} / \code{x0sn = NA}. Original
+\code{x0}, \code{x0al}, \code{A}, \code{lambda}, \code{pcide} and \code{pcial} are preserved —
+RefPA only \emph{adds} the snapped fields. Collisions on the same
+\code{pcisn} column are not merged here; \code{\link[=si_mat]{si_mat()}} sums
+their areas when rasterising the feature matrix. \code{sit$supal} is
+cleared because the post-snap superposition would need recomputing.
 
 \code{\link[=combine_peaks]{combine_peaks()}} is an alternative post-CluPA fine
 tuner that, unlike \code{snap_to_ref}, does not require the target
 columns to come from a reference spectrum: it greedily merges
-neighbouring \code{cssh} columns whose non-zero rows do not collide,
+neighbouring \code{cs} columns whose non-zero rows do not collide,
 within a window of \code{maxCombine}. Operates on the cross-spectrum
 peak-area matrix built from \code{lcpar$pcial} / \code{lcpar$A}; sets
 \code{lcpar$pcisn} / \code{lcpar$x0sn} per peak from the discovered column
@@ -109,7 +112,7 @@ mapping. No peaks are dropped. \code{sit$supal} is cleared.
 \code{\link[=snap_to_ref]{snap_to_ref()}} that aligns each spectrum's peak list to
 the reference's peak list by global pairwise Needleman-Wunsch on \code{x0}
 (chemical shift, ppm). For each spectrum, matched peaks inherit the
-reference's \code{cssh} column index as their \code{pcisn}; unmatched peaks get
+reference's \code{cs} column index as their \code{pcisn}; unmatched peaks get
 \code{pcisn = NA}. The match cost is \verb{|x0_spec - x0_ref|} and the gap cost is
 a constant \code{gap_tol} (ppm), so a match is rejected in favour of two gaps
 whenever its position difference exceeds \code{2 * gap_tol}.

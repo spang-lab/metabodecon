@@ -95,10 +95,10 @@
 #'    `right`: integer indices into `cs`.
 #' 4. `lcpar`: Data frame of Lorentz-curve parameters. Always carries
 #'    `x0` (center in ppm), `A` (amplitude), `lambda` (half-width) and
-#'    `pcide` (integer column index into `cssh` for `x0`). After
+#'    `pcide` (integer column index into `cs` for `x0`). After
 #'    [metabodecon::clupa()] also `x0al` / `pcial` (post-CluPA center
-#'    and cssh index). After [metabodecon::snap_to_ref()] also `x0sn`
-#'    / `pcisn` (post-RefPA center and cssh index, with `NA` for peaks
+#'    and cs index). After [metabodecon::snap_to_ref()] also `x0sn`
+#'    / `pcisn` (post-RefPA center and cs index, with `NA` for peaks
 #'    snapped beyond `maxCombine`). `A` and `lambda` are preserved
 #'    through every stage.
 #'
@@ -108,9 +108,9 @@
 #' slots populated:
 #'
 #' - `lcpar$x0al`: Peak Centers after CluPA alignment in ppm
-#' - `lcpar$pcial`: Peak Centers after CluPA alignment as `cssh` indices
+#' - `lcpar$pcial`: Peak Centers after CluPA alignment as `cs` indices
 #' - `lcpar$x0sn`: Peak Centers after RefPA snap in ppm (NA when snapped out)
-#' - `lcpar$pcisn`: Peak Centers after RefPA snap as `cssh` indices (NA when snapped out)
+#' - `lcpar$pcisn`: Peak Centers after RefPA snap as `cs` indices (NA when snapped out)
 #' - `sit$supal`: Signal Intensities of the superposition of aligned Lorentz curves
 #'
 #' @section Predicates:

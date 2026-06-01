@@ -14,8 +14,6 @@ align(
   nworkers = 1,
   full = TRUE,
   use_speaq = FALSE,
-  supsh = "triangle",
-  shift_method = "auto",
   gap_tol = NULL
 )
 }
@@ -40,8 +38,9 @@ value is treated as \code{maxShift}.}
 CluPA. RefPA always drops \code{sit$supal} (the post-snap peak list is
 no longer Lorentz-compatible).}
 
-\item{use_speaq}{Use \code{speaq::dohCluster} instead of the bundled CluPA
-implementation.}
+\item{use_speaq}{Use \code{speaq::hClustAlign} instead of the bundled CluPA
+implementation. Defaults to \code{FALSE}; the bundled implementation is
+byte-equivalent to the speaq one (see \code{tests/testthat/test-speaq.R}).}
 }
 \value{
 An object of class \code{aligns}.
@@ -53,19 +52,20 @@ stages:
 \item \strong{CluPA} (\code{\link[=clupa]{clupa()}}) shifts peak centers
 continuously toward a reference using hierarchical-clustering FFT
 segment shifts (Beirnaert et al. 2018, Vu et al. 2011). Adds
-\code{x0al} and \code{pcial} (post-CluPA center and cssh column index) to
-each peak; original \code{x0}, \code{A}, \code{lambda}, \code{pcide} are preserved.
+\code{x0al} and \code{pcial} (post-CluPA center and column index) to each
+peak; original \code{x0}, \code{A}, \code{lambda}, \code{pcide} are preserved.
 \item \strong{RefPA} (\code{\link[=snap_to_ref]{snap_to_ref()}}) records, for each peak,
-the nearest reference column on \code{cssh} within \code{maxCombine} as
-\code{pcisn} / \code{x0sn}. Peaks farther than \code{maxCombine} from every
-reference column get \code{pcisn = NA} / \code{x0sn = NA}. No peaks are
-dropped and amplitudes are not summed here — collisions on the
-same \code{pcisn} are aggregated downstream by \code{\link[=si_mat]{si_mat()}}.
+the nearest reference column within \code{maxCombine} as \code{pcisn} /
+\code{x0sn}. Peaks farther than \code{maxCombine} from every reference
+column get \code{pcisn = NA} / \code{x0sn = NA}. No peaks are dropped and
+amplitudes are not summed here — collisions on the same \code{pcisn}
+are aggregated downstream by \code{\link[=si_mat]{si_mat()}}.
 }
 
-RefPA collapses the continuous peak grid produced by CluPA into the
-reference's discrete peak grid, which is what downstream feature
-extraction (e.g. \code{\link[=peak_mat]{peak_mat()}}) expects.
+All spectra in \code{x} must already live on the same chemical-shift
+grid (identical \verb{$cs} vector across spectra). Call
+\code{\link[=harmonize_grid]{harmonize_grid()}} upstream if your inputs come from
+different acquisitions with slight calibration offsets.
 }
 \examples{
 \dontrun{

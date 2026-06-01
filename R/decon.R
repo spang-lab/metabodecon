@@ -208,10 +208,10 @@ deconvolute_spectra <- function(
              npmax, ns)
     }
 
-    # Deconvolute spectra. The shared chemical-shift grid (`cssh`) and
-    # per-spectrum supsh used by alignment are not built here: a shared
-    # grid is a property of *a collection being aligned* (clupa) rather
-    # than of a single deconvolution, so clupa() owns that construction.
+    # Deconvolute spectra. Spectra are expected to already share a
+    # common `cs` grid upstream (typically via metabodecon::harmonize_grid()
+    # in the data-loading step). The alignment stage (clupa) asserts
+    # that invariant explicitly.
     logf("Starting deconvolution (spectra: %d, workers: %d)", ns, nw)
     starttime <- Sys.time()
     args <- get_args(deconvolute_spectrum, ignore=c("x"))

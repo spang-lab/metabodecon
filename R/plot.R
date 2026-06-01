@@ -88,11 +88,10 @@ plot_spectra <- function(
         if (inherits(x, "spectra"))"si" else
         stop("Unsupported object class: ", class(x))
     }
-    # Aligned superpositions live on the shared cssh grid; raw and
-    # un-aligned reconstructions live on each spectrum's own cs grid.
-    css <- lapply(x, function(s) {
-        if (what == "supal") s$cssh %||% s$cs else s$cs
-    })
+    # Every spectrum's $cs is the canonical grid (post-harmonize_grid,
+    # alignment asserts grid equality). Aligned reconstructions live
+    # on the same grid, so $cs covers both raw and aligned paths.
+    css <- lapply(x, function(s) s$cs)
     sis <- lapply(x, function(s) switch(what, supal=s$sit$supal, sup=s$sit$sup, si=s$si))
     if (!is.null(foc_rgn)) {
         lo <- min(foc_rgn); hi <- max(foc_rgn)
@@ -447,7 +446,7 @@ draw_heatmap_xaxis <- function(cs, true_x0=NULL, true_col="red", tol=NULL,
 # column are summed. Used by `heat_spectra(sparse=TRUE)`.
 sparse_peak_matrix <- function(objs) {
     stopifnot(inherits(objs, "decons2") || inherits(objs, "aligns"))
-    cs <- objs[[1]]$cssh %||% objs[[1]]$cs
+    cs <- objs[[1]]$cs
     ns <- length(objs); nc <- length(cs)
     mat <- matrix(0, nrow=ns, ncol=nc)
     for (s in seq_len(ns)) {
@@ -484,12 +483,8 @@ as_heatmap_matrix <- function(objs, what=NULL) {
         switch(what, supal=s$sit$supal, sup=s$sit$sup, si=s$si)
     })
     Z <- do.call(rbind, sis)
-    # Aligned superpositions are on the shared cssh grid.
-    colnames(Z) <- if (what == "supal") {
-        objs[[1]]$cssh %||% objs[[1]]$cs
-    } else {
-        objs[[1]]$cs
-    }
+    # All paths share the same $cs grid post-harmonize_grid.
+    colnames(Z) <- objs[[1]]$cs
     rownames(Z) <- get_names(objs)
     Z
 }
@@ -929,8 +924,10 @@ draw_spectrum <- function(
     sm <- sm_all <- obj$sit$sm # NULL for spectrum objects (NS)
     d2 <- d2_all <- NULL
     sup <- sup_all <- obj$sit$sup # NS
-    # supal is stored on the shared cssh grid; recompute it on this
-    # spectrum's own cs so the overlay shares the panel's x-axis.
+    # supal is on the same grid as obj$cs (all spectra share the
+    # harmonized grid after the alignment stage). Recompute from
+    # peak parameters so the overlay is always evaluated on this
+    # panel's x-axis, regardless of any post-snap supal caching.
     supal <- supal_all <- if (!is.null(obj$lcpar$x0al)) {
         lorentz_sup(cs, obj$lcpar$x0al, obj$lcpar$A, obj$lcpar$lambda)
     } else {

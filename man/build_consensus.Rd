@@ -21,7 +21,7 @@ the consensus from CluPA-aligned positions (then the consensus lives
 in aligned space and should be snapped against using \code{pos_field="x0al"}).}
 }
 \value{
-A list with components \code{cssh}, \code{lcpar} (data frame with \code{x0},
+A list with components \code{cs}, \code{lcpar} (data frame with \code{x0},
 \code{A}, \code{lambda}, \code{pcide}), plus the class attributes
 \code{c("consensus", "align", "decon2", "spectrum")} so it behaves like a
 single-spectrum reference for downstream code.
@@ -41,7 +41,7 @@ consensus positions wherever they did not match the seed. The final
 consensus is again deduplicated within \code{gap_tol}.
 
 The returned object is shaped like an aligned spectrum
-(\code{list(cssh, lcpar, ...)}) so it can be passed directly as \code{ref} to
+(\code{list(cs, lcpar, ...)}) so it can be passed directly as \code{ref} to
 \code{\link[=snap_nw]{snap_nw()}} at prediction time.
 }
 \author{

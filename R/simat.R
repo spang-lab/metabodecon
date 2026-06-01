@@ -38,10 +38,10 @@
 si_mat <- function(x, drop_zero=FALSE, igrs=list(), peakPos=NULL, ...) {
     stopifnot(inherits(x, "decons2"))
     feat_mode <- !missing(peakPos)
-    # Use the shared chemical-shift grid (cssh) so peaks at the same
-    # ppm in different spectra land in the same column even when the
-    # input spectra had different cs ranges.
-    cs <- x[[1]]$cssh %||% x[[1]]$cs
+    # Every spectrum shares the same $cs (enforced upstream by
+    # harmonize_grid + the grid-equality assertion inside clupa /
+    # snap_to_ref), so the first spectrum's $cs is canonical.
+    cs <- x[[1]]$cs
     ns <- length(x)
     nc <- length(cs)
     mat <- matrix(0, nrow=ns, ncol=nc)
@@ -74,11 +74,11 @@ si_mat <- function(x, drop_zero=FALSE, igrs=list(), peakPos=NULL, ...) {
 }
 
 # Pick the most-aligned peak-column index for each peak in `lcpar`.
-# Returns integer indices into `cs` (typically a cssh grid), with NA
-# for peaks that were snapped out (beyond `maxCombine`). Priority:
-# `pcisn` (post-RefPA) > `pcial` (post-CluPA) > `pcide` (post-decon).
-# Falls back to deriving the index from `x0al`/`x0` for legacy objects
-# that pre-date the pci* fields.
+# Returns integer indices into the shared `cs` grid, with NA for peaks
+# that were snapped out (beyond `maxCombine`). Priority: `pcisn`
+# (post-RefPA) > `pcial` (post-CluPA) > `pcide` (post-decon). Falls
+# back to deriving the index from `x0al`/`x0` for legacy objects that
+# pre-date the pci* fields.
 lcpar_idx <- function(lcpar, cs) {
     pcisn <- lcpar[["pcisn"]]
     if (!is.null(pcisn)) return(as.integer(pcisn))
@@ -171,10 +171,10 @@ bin <- function(x, maxCombine=128, igrs=list(), peakPos=NULL, ...) {
             inherits(x, "aligns"),
         is_int(maxCombine, 1), maxCombine >= 1
     )
-    # `aligns` carries `pcial` on the shared cssh grid; raw spectra and
-    # un-aligned decons2 still live on per-spectrum `cs` (and the legacy
-    # assumption that `x[[1]]$cs` is representative).
-    cs <- if (inherits(x, "aligns")) x[[1]]$cssh %||% x[[1]]$cs else x[[1]]$cs
+    # Every spectrum in `x` shares $cs (harmonize_grid + grid-equality
+    # assertion inside the alignment stages). `aligns` carries `pcial`
+    # as integer indices into that shared grid.
+    cs <- x[[1]]$cs
     nc <- length(cs)
     ns <- length(x)
     keep <- rep(TRUE, nc)

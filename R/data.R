@@ -698,6 +698,7 @@ read_aki_data <- function(deg = NULL, use_rust = FALSE) {
     spectra_raw <- metabodecon::read_spectra(aki_path)
     stopifnot(all.equal(names(spectra_raw), meta$sid))
     spectra <- creatinine_normalize(spectra_raw)
+    spectra <- metabodecon::harmonize_grid(spectra)
     list(spectra = spectra, meta = meta)
 }
 
@@ -715,6 +716,7 @@ cache_aki_data <- function(deg = NULL, use_rust = FALSE,
     spectra_raw <- metabodecon::read_spectra(aki_path)
     stopifnot(all.equal(names(spectra_raw), meta$sid))
     spectra <- creatinine_normalize(spectra_raw)
+    spectra <- metabodecon::harmonize_grid(spectra)
     args <- list(spectra, sfr=NULL, igrs=list(), verbose=verbose,
                  nworkers=nworkers, use_rust=use_rust)
     if (!is.null(deg)) args$deg <- deg

@@ -15,7 +15,7 @@ make_aligns <- function(cs, peaks_list, areas_list, lambdas_list=NULL) {
             pcide=pcial, x0al=x0, pcial=pcial
         )
         structure(list(
-            cs=cs, cssh=cs,
+            cs=cs,
             lcpar=lcpar,
             sit=list(),
             meta=list(name=sprintf("spec_%d", i))
