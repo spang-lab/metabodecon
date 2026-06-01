@@ -46,6 +46,7 @@ test_that("align works", {
         class(decons_copy[[i]]) <- c("align", "decon2", "spectrum")
     }
     class(decons_copy) <- c("aligns", "decons2", "spectra")
+    attr(decons_copy, "ref") <- attr(aligns, "ref")
     expect_equal(object = aligns, expected = decons_copy)
 
     # Check that the alignment worked, our expectations are:

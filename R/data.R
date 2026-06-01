@@ -680,18 +680,64 @@ read_aki_metadata <- function(aki_path) {
     meta
 }
 
-read_aki_data <- function() {
-    # Read in data
+read_aki_data <- function(deg = NULL, use_rust = FALSE) {
+    # Prefer enriched cache so $deg-dependent code (fit_mdm, benchmark)
+    # skips the slow grid_deconvolute_spectra step. The (deg, backend)
+    # pair determines the cache filename — see `aki_cache_path()`.
+    cache_path <- aki_cache_path(deg, use_rust)
+    if (file.exists(cache_path)) return(readRDS(cache_path))
+    warning(
+        cache_path, " not found; rebuilding from disk. ",
+        "Call `cache_aki_data(deg, use_rust)` to materialize the ",
+        "enriched cache and speed up future `read_aki_data()` calls.",
+        call. = FALSE
+    )
     aki_path <- datadir("example_datasets/bruker/aki")
     if (!dir.exists(aki_path)) metabodecon::download_example_datasets()
     meta <- read_aki_metadata(aki_path)
     spectra_raw <- metabodecon::read_spectra(aki_path)
     stopifnot(all.equal(names(spectra_raw), meta$sid))
-
-    # Normalize spectra
     spectra <- creatinine_normalize(spectra_raw)
-
     list(spectra = spectra, meta = meta)
+}
+
+# Build the enriched aki cache used by `read_aki_data()`. Loads the raw
+# aki dataset, runs `grid_deconvolute_spectra()` so every spectrum
+# carries a `$deg` table, and writes the resulting list to a
+# (deg, backend)-specific path under `datadir("temp")`. One-time setup:
+# subsequent calls to `read_aki_data(deg, use_rust)` with matching args
+# return the cached object directly.
+cache_aki_data <- function(deg = NULL, use_rust = FALSE,
+                            nworkers = 1, verbose = TRUE) {
+    aki_path <- datadir("example_datasets/bruker/aki")
+    if (!dir.exists(aki_path)) metabodecon::download_example_datasets()
+    meta <- read_aki_metadata(aki_path)
+    spectra_raw <- metabodecon::read_spectra(aki_path)
+    stopifnot(all.equal(names(spectra_raw), meta$sid))
+    spectra <- creatinine_normalize(spectra_raw)
+    args <- list(spectra, sfr=NULL, igrs=list(), verbose=verbose,
+                 nworkers=nworkers, use_rust=use_rust)
+    if (!is.null(deg)) args$deg <- deg
+    spectra <- do.call(grid_deconvolute_spectra, args)
+    out_path <- aki_cache_path(deg, use_rust)
+    mkdirs(dirname(out_path))
+    saveRDS(list(spectra = spectra, meta = meta), out_path)
+    invisible(out_path)
+}
+
+# Canonical path for the enriched aki cache. The filename encodes both
+# the backend (`R` vs `rust`) and a short hash of `deg` so that caches
+# built with different parameter grids or backends coexist instead of
+# silently overwriting each other. `deg=NULL` is canonicalized to
+# grid_deconvolute_spectra()'s default before hashing so passing NULL
+# and the default explicitly hit the same cache file.
+aki_cache_path <- function(deg = NULL, use_rust = FALSE) {
+    if (is.null(deg)) deg <- eval(formals(grid_deconvolute_spectra)$deg)
+    deg_hash <- substr(digest::digest(deg, algo = "md5"), 1, 8)
+    backend <- if (isTRUE(use_rust) || (is.numeric(use_rust) && use_rust >= 1))
+        "rust" else "R"
+    fname <- sprintf("aki_%s_deg%s.rds", backend, deg_hash)
+    file.path(datadir("temp", warn = FALSE), fname)
 }
 
 creatinine_normalize <- function(spectra, cr = c(3.053, 3.011)) {

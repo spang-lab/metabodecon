@@ -14,410 +14,375 @@
 #' production. Their API is very likely to change in non-backwards-compatible
 #' ways over the next few weeks.**
 #'
-#' Utilities for fitting and benchmarking 'metabodecon models' (mdm).
-#'
-#' An `mdm` is a binary classification model fitted on a feature matrix
-#' built from NMR spectra by the following pipeline:
-#'
-#' \preformatted{
-#'   x  --decon_fun-->  d  --align_fun-->  a  --snap_fun-->  s
-#'   s  --feat_fun-->  X  --fit_fun-->  (model, acc, auc)
-#' }
-#'
-#' All five stages are pluggable. The `fit_fun` is responsible for
-#' returning **both** a trained model and a stable estimate of the
-#' model's generalization performance — OOB for [metabodecon::fit_ranger()],
-#' repeated `cv.glmnet` OOF for [metabodecon::fit_lasso()]. That single
-#' contract removes the outer-CV machinery from `fit_mdm` itself:
-#' `fit_mdm` only sweeps preprocessing rows in `mog` and keeps the row
-#' with the highest reported AUC.
-#'
-#' Pass `decon_fun=identity2`, `align_fun=identity_align` and/or
-#' `snap_fun=identity_snap` to skip those stages and fit baselines (e.g.
-#' a binning model) directly on raw spectra.
-#'
-#' [metabodecon::benchmark()] wraps [metabodecon::fit_mdm()] in an outer
-#' k-fold cross-validation to estimate end-to-end predictive performance
-#' on held-out spectra.
-#'
-#' @details
-#'
-#' ## Pluggable interfaces
-#'
-#' `decon_fun`, `align_fun`, `snap_fun`, `feat_fun`, `fit_fun` and
-#' `predict_fun` speak a fixed parameter vocabulary. Replacements must
-#' accept the listed arguments (extras via `...`).
-#'
-#' \describe{
-#'   \item{`decon_fun(x, sfr, igrs, verbose, use_rust, nfit, smit, smws,
-#'         delta, npmax, nworkers)`}{Returns a `decons2` object.
-#'         [metabodecon::deconvolute()] (default), [metabodecon::identity2()].}
-#'   \item{`align_fun(x, ref, maxShift, verbose, nworkers, full, ...)`}{Returns
-#'         an `aligns` (or pass-through). [metabodecon::clupa()] (default),
-#'         [metabodecon::identity_align()].}
-#'   \item{`snap_fun(x, ref=NULL, maxCombine, ...)`}{Returns an `aligns`
-#'         with the per-peak `pcisn` / `x0sn` columns populated.
-#'         [metabodecon::snap_to_ref()] (default),
-#'         [metabodecon::combine_peaks()], [metabodecon::snap_nw_blind()],
-#'         [metabodecon::identity_snap()].}
-#'   \item{`feat_fun(x, maxCombine, igrs, ...)`}{Returns a numeric matrix
-#'         with one row per spectrum. [metabodecon::peak_mat()] (default),
-#'         [metabodecon::si_mat()], [metabodecon::bin()].}
-#'   \item{`fit_fun(X, y, seed, nworkers)`}{Returns a list with elements
-#'         `model` (trained backend object), `acc` and `auc` (scalar
-#'         generalization estimates in `[0, 1]`), and optionally `acc_se`
-#'         / `auc_se`. Must call `requireNamespace("<backend>")` so it
-#'         works after a fresh `readRDS()`. Built-ins:
-#'         [metabodecon::fit_lasso()], [metabodecon::fit_ranger()].}
-#'   \item{`predict_fun(model, newx)`}{Returns a numeric vector of
-#'         positive-class probabilities. Must call
-#'         `requireNamespace("<backend>")`. Built-ins:
-#'         [metabodecon::predict_lasso()], [metabodecon::predict_ranger()].}
-#' }
-#'
-#' ## Caching within `fit_mdm`
-#'
-#' Rows of `mog` are sorted by `(npmax, nfit, smit, smws, delta, maxShift,
-#' maxCombine)` so identical decon-tuples and align-tuples cluster.
-#' Inside the loop, the most recent deconvolution and alignment are kept
-#' and reused whenever the relevant subset of parameters is unchanged.
-#'
-#' ## Automatic selection sentinels
-#'
-#' Several `mog` cells accept sentinels that ask the pipeline to pick
-#' the value itself:
-#' \itemize{
-#'   \item `npmax="auto"` — resolved inside `decon_fun` (see
-#'         [metabodecon::deconvolute()]) to a single integer: the
-#'         median per-spectrum Kneedle elbow on the `$deg` cache.
-#'         The same value is used for every spectrum.
-#'   \item `npmax="intrinsic"` — resolved inside `decon_fun` per
-#'         spectrum: each spectrum's own Kneedle elbow. Different
-#'         spectra get different `npmax` values, so the deconvolution
-#'         is fully parameter-free at the cohort level.
-#'   \item `maxShift=NA` ("auto") — resolved per-`npmax` via
-#'         `find_maxShift_dip()` (sweep CluPA shifts at powers of 2 and
-#'         stop one step before the alignment-correlation dip). Requires
-#'         `align_fun=clupa`.
-#'   \item `maxCombine=NA` ("auto") — set to the row's resolved `maxShift`.
-#' }
-#' A negative `maxCombine` is also treated as a switch and replaced by
-#' the row's `maxShift`.
-#'
-#' ## Grid-search results carried by spectra
-#'
-#' When any row of `mog` needs the `$deg` cache (positive `npmax`,
-#' `"auto"` or `"intrinsic"`), [metabodecon::fit_mdm()] calls
-#' [metabodecon::grid_deconvolute_spectra()] once up front to attach a
-#' `$deg` element to each spectrum. The enriched spectra are reused
-#' across rows and outer folds. [metabodecon::benchmark()] does the
-#' same up-front attachment.
-#'
-#' ## Parallelism
-#'
-#' [metabodecon::benchmark()] runs outer folds sequentially and delegates
-#' all parallelism to the inner fitter via `nworkers`.
+#' Fit and benchmark binary classification models built on NMR spectra
+#' through a pluggable five-stage pipeline (deconvolute, align, snap,
+#' featurize, fit). [metabodecon::fit_mdm()] runs the pipeline once, or
+#' iterates over the cartesian product of `npmax`/`maxShift`/`maxCombine`
+#' when any is a vector and returns the row with the highest `acc`
+#' (ties broken by `auc`).
+#' [metabodecon::benchmark()] wraps [metabodecon::fit_mdm()] in outer
+#' k-fold cross-validation to estimate end-to-end performance on
+#' held-out spectra.
 #'
 #' @param x Spectra object.
 #' @param y Factor vector with class labels for each spectrum.
-#' @param mog Model-fitting grid as returned by [metabodecon::get_mog()].
-#'   Missing columns are filled in with [metabodecon::deconvolute()] and
-#'   [metabodecon::snap_to_ref()] defaults.
+#' @param decon_fun Function
+#'   `(x, sfr, igrs, verbose, use_rust, npmax, nworkers) -> decons2`.
+#'   Built-ins: [metabodecon::deconvolute()] (default),
+#'   [metabodecon::identity2()]. The underlying
+#'   `(nfit, smit, smws, delta)` tuple is no longer a `fit_mdm()`
+#'   argument — it is picked from each spectrum's `$deg` cache via
+#'   `npmax`.
+#' @param align_fun Function
+#'   `(x, ref, maxShift, verbose, nworkers, full, ...) -> aligns`
+#'   (or pass-through). Built-ins: [metabodecon::clupa()] (default),
+#'   [metabodecon::identity_align()].
+#' @param snap_fun Function `(x, ref=NULL, maxCombine, ...) -> aligns`
+#'   with the per-peak `pcisn` / `x0sn` columns populated. Built-ins:
+#'   [metabodecon::snap_to_ref()] (default),
+#'   [metabodecon::combine_peaks()], [metabodecon::snap_nw_blind()],
+#'   [metabodecon::identity_snap()]. Pass `identity2` / `identity_align`
+#'   / `identity_snap` to skip a stage and fit baselines (e.g. a binning
+#'   model) directly on raw spectra.
+#' @param feat_fun Function
+#'   `(x, maxCombine, igrs, peakPos=NULL, ...) -> matrix` with one row
+#'   per spectrum. With `peakPos=NULL` (training), filters all-zero
+#'   columns and attaches the kept indices on `attr(., "peakPos")`;
+#'   with `peakPos=<int>` (predict), subsets to those columns.
+#'   Built-ins: [metabodecon::peak_mat()] (default),
+#'   [metabodecon::si_mat()], [metabodecon::bin()].
+#' @param fit_fun Function
+#'   `(X, y, seed, nworkers) -> list(model, acc, auc, acc_se, auc_se)`.
+#'   The acc/auc scalars are generalization estimates in `[0, 1]`; use
+#'   `NA_real_` for SEs when the backend produces a single point estimate.
+#'   Must call `requireNamespace("<backend>")` so it works after a fresh
+#'   `readRDS()`. Built-ins: [metabodecon::fit_lasso()] (default,
+#'   repeated `cv.glmnet` OOF), [metabodecon::fit_ranger()] (OOB).
+#' @param predict_fun Function `(model, newx) -> numeric` of
+#'   positive-class probabilities. Must call
+#'   `requireNamespace("<backend>")`. Built-ins:
+#'   [metabodecon::predict_lasso()], [metabodecon::predict_ranger()].
+#' @param npmax Max peaks per spectrum. Integer in `{-2, -1, 0, 1,
+#'   ...}`, scalar or vector. Drives selection of the underlying
+#'   `(nfit, smit, smws, delta)` row from each spectrum's `$deg`
+#'   cache. See *Automatic selection sentinels*.
+#' @param maxShift Max CluPA shift in datapoints. Integer >= -1, scalar
+#'   or vector. `-1` means auto. Default `-1`.
+#' @param maxCombine RefPA snap window in datapoints. Integer, scalar
+#'   or vector. Default 10.
 #' @param deg Deconvolution-parameter grid forwarded to
-#'   [metabodecon::grid_deconvolute_spectra()] when any row of `mog` has
-#'   `npmax > 0` (or `NA`). When `NULL` (default), the default grid built
-#'   into [metabodecon::grid_deconvolute_spectra()] is used.
+#'   [metabodecon::grid_deconvolute_spectra()]. When `NULL` (default),
+#'   the default grid built into
+#'   [metabodecon::grid_deconvolute_spectra()] is used.
 #' @param sfr Signal-free region. See [metabodecon::deconvolute()].
+#' @param igrs Ignore regions in ppm.
 #' @param use_rust Use the Rust backend?
-#' @param nworkers Number of workers for deconvolution, alignment and the
-#'   inner fitter.
+#' @param nworkers Number of workers for deconvolution, alignment and
+#'   the inner fitter.
 #' @param verbosity Verbosity level.
 #' @param seed Random seed. Forwarded to `fit_fun`; also used for
 #'   stratified fold assignment inside [metabodecon::benchmark()].
-#' @param check Validate inputs at function entry?
-#' @param decon_fun,align_fun,snap_fun,feat_fun,fit_fun,predict_fun
-#'   See *Pluggable interfaces*.
-#' @param igrs Ignore regions in ppm.
 #' @param k Number of outer folds for [metabodecon::benchmark()].
-#' @param conf Character string selecting a predefined `mog` configuration.
+#' @param check Validate inputs at function entry?
+#'
+#' @details
+#'
+#' ## Pipeline
+#'
+#' ```
+#' d <- decon_fun(x, npmax, ...)
+#' a <- align_fun(d, maxShift, ...)
+#' s <- snap_fun(a, maxCombine, ...)
+#' X <- feat_fun(s, maxCombine, ...)
+#' m <- fit_fun(X, y, ...)
+#' ```
+#'
+#' ## Automatic selection sentinels
+#'
+#' - `npmax = -1` (default) — median per-spectrum Kneedle elbow on `$deg`.
+#' - `npmax = -2` — each spectrum's own Kneedle elbow ("intrinsic");
+#'   parameter-free at the cohort level.
+#' - `maxShift = -1` (default) — sweep CluPA shifts at powers of 2 and
+#'   stop one step before the alignment-correlation dip. Requires a
+#'   CluPA-compatible `align_fun` (must populate `sit$supal`).
+#'
+#' ## Caching and parallelism
+#'
+#' Grid rows are sorted by `(npmax, maxShift, maxCombine)` so the most
+#' recent deconvolution and alignment are reused across rows.
+#' [metabodecon::fit_mdm()] runs an idempotent
+#' [metabodecon::grid_deconvolute_spectra()] up front to attach `$deg`
+#' to each spectrum (pre-enriched spectra skip the slow step).
+#' [metabodecon::benchmark()] runs outer folds sequentially; all
+#' parallelism is delegated to `fit_fun` via `nworkers`.
 #'
 #' @return
-#' [metabodecon::fit_mdm()] returns an object of class `mdm` with elements
-#' `model` (best fitted backend model, refit on the full data by the
-#' chosen `fit_fun`), `ref` (a list `list(align, snap)` carrying the
-#' references needed to replay the pipeline at prediction time; `NULL`
-#' when `align_fun=identity_align`), `params` (everything needed to
-#' reproduce predictions: chosen grid row, the pluggable functions,
-#' `lvs`, `peakPos`, `sfr`, `igrs`, `use_rust`, `snap_kind`, `snap_arg`),
-#' and `mog` (input grid augmented with `acc`, `acc_se`, `auc` and
-#' `auc_se` columns reported by `fit_fun`).
+#' [metabodecon::fit_mdm()] returns an object of class `mdm` with
+#' elements `model` (trained backend model of the best grid row),
+#' `ref` (a list `list(align, snap)` for prediction-time replay —
+#' both elements are `attr(., "ref")` of the corresponding stage
+#' output), `params` (resolved scalar pipeline parameters of the best
+#' row plus the pluggable functions, `lvs`, `peakPos`, `sfr`, `igrs`,
+#' `use_rust`), the scalar performance of the best row (`acc`, `auc`,
+#' `acc_se`, `auc_se`), and `mog` (the augmented grid with per-row
+#' `acc`, `auc`, `acc_se`, `auc_se`).
 #'
 #' [metabodecon::benchmark()] returns a list with elements:
+#'
 #' - `models`: list of fitted models, one per outer fold.
-#' - `predictions`: data frame with columns `fold`, `true`, `link`, `prob`,
-#'   `pred`.
+#' - `predictions`: data frame with columns `fold`, `true`, `link`,
+#'   `prob`, `pred`.
 #' - `performance`: data frame with per-fold `acc` and `auc`.
 #' - `overall`: list with pooled `acc` and `auc`.
 #'
 #' @examples
 #' \dontrun{
-#'   m <- fit_mdm(spectra, y, mog=get_mog("default"))
-#'   bm <- benchmark(spectra, y, k=5, mog=get_mog("default"))
-#'   mrf <- fit_mdm(spectra, y, fit_fun=fit_ranger,
-#'                  predict_fun=predict_ranger)
-#'   mnw <- fit_mdm(spectra, y, snap_fun=snap_nw_blind,
-#'                  fit_fun=fit_ranger, predict_fun=predict_ranger)
+#'   # Original examples on a private AKI dataset.
+#'   aki <- read_aki_data()
+#'   x <- aki$spectra
+#'   y <- aki$meta$type; names(y) <- aki$meta$sid
+#'   m <- fit_mdm(x, y)
+#'   bm <- benchmark(x, y, k=5)
+#'   mrf <- fit_mdm(x, y, fit_fun=fit_ranger, predict_fun=predict_ranger)
+#'   mnw <- fit_mdm(
+#'       x, y, snap_fun=snap_nw_blind,
+#'       fit_fun=fit_ranger, predict_fun=predict_ranger
+#'   )
+#'
+#'   # The 3.4-real-perf benchmarks reproduced on the public sim2
+#'   # dataset. Still slow (deconvolution + grid search across outer
+#'   # folds), but much quicker than the AKI version above.
+#'   x <- sim2
+#'   y <- attr(sim2, "group")
+#'
+#'   # (a) Binning baseline: ranger on raw spectra binned to fixed
+#'   # ppm columns (no deconvolution, no alignment, no snap). The
+#'   # `maxCombine` sweep selects the bin width (in datapoints).
+#'   bm_bin <- benchmark(
+#'       x, y,
+#'       decon_fun=identity2, align_fun=identity_align,
+#'       snap_fun=identity_snap, feat_fun=bin,
+#'       fit_fun=fit_ranger, predict_fun=predict_ranger,
+#'       maxCombine=c(5L, 10L, 20L, 40L), k=5L, nworkers=4L
+#'   )
+#'
+#'   # (b) Full metabodecon pipeline (deconvolute -> CluPA -> RefPA
+#'   # -> peak_mat -> ranger), sweeping (maxShift, maxCombine).
+#'   bm_mdm <- benchmark(
+#'       x, y,
+#'       fit_fun=fit_ranger, predict_fun=predict_ranger,
+#'       npmax=25L, maxShift=c(0L, 1L, 2L, 4L, 8L, 16L),
+#'       maxCombine=c(0L, 1L, 2L, 4L, 8L), k=5L, nworkers=4L
+#'   )
+#'
+#'   # (c) Final model trained on the full sim2 dataset across the
+#'   # same grid; `$mog` carries the per-row (acc, auc) heatmap and
+#'   # the ACC-best row (ties broken by AUC) is auto-selected.
+#'   fm <- fit_mdm(
+#'       x, y,
+#'       fit_fun=fit_ranger, predict_fun=predict_ranger,
+#'       npmax=25L, maxShift=c(0L, 1L, 2L, 4L, 8L, 16L),
+#'       maxCombine=c(0L, 1L, 2L, 4L, 8L), nworkers=4L
+#'   )
 #' }
 #'
-fit_mdm <- function(x, y,
-    decon_fun=deconvolute, align_fun=clupa,           snap_fun=snap_to_ref,
-    feat_fun=peak_mat,     fit_fun=fit_lasso,         predict_fun=predict_lasso,
-    mog=get_mog("default"),
-    deg=NULL,              sfr=NULL,                  igrs=list(),
-    use_rust=0,            nworkers=1,                verbosity=1,
-    seed=1,                check=TRUE
+fit_mdm <- function(
+    x, y,
+    decon_fun=deconvolute_spectra, align_fun=clupa, snap_fun=snap_to_ref,
+    feat_fun=peak_mat, fit_fun=fit_lasso, predict_fun=predict_lasso,
+    npmax=-1L, maxShift=-1L, maxCombine=10L,
+    deg=NULL, sfr=NULL, igrs=list(), use_rust=0, nworkers=1,
+    verbosity=1, seed=1, check=TRUE
 ) {
-    stopifnot(
-        is.function(decon_fun), is.function(align_fun),
-        is.function(snap_fun),  is.function(feat_fun),
-        is.function(fit_fun),   is.function(predict_fun)
-    )
-    mog <- normalize_mog(mog)
-    if (check) check_mdm_args(
-        x=x, y=y, mog=mog, sfr=sfr, igrs=igrs,
-        use_rust=use_rust, nworkers=nworkers, verbosity=verbosity,
-        seed=seed
-    )
-    skip_decon <- identical(decon_fun, identity2)
-    decon_fn <- if (identical(decon_fun, deconvolute)) deconvolute_spectra else decon_fun
+
     lvs <- levels(y)
+    verbose <- verbosity >= 2L
+    x <- grid_deconvolute_spectra(x, deg, sfr, igrs, verbose, nworkers, use_rust)
+    npmax[npmax == -1L] <- find_npmax_elbow(x)
+    g <- get_mog(npmax, maxShift, maxCombine)
+    nr <- nrow(g)
+    ns <- length(x)
+    last_np <- -99L
+    last_ms <- -99L;
+    d <- NULL
+    a <- NULL
+    # Grid winner is picked by accuracy with AUC as tiebreaker (matches
+    # the rest of the pipeline; ranger's probability output sometimes
+    # squeezes toward 0.5 on small samples, making AUC-only picks
+    # land on cells with mediocre headline accuracy).
+    best_acc <- -Inf
+    best_auc <- -Inf
+    best_i <- NA_integer_
+    best_model <- NULL
+    best_pp <- NULL
+    best_refs <- NULL
 
-    # Sort rows so identical decon/align tuples cluster.
-    ord <- with(mog, order(npmax, nfit, smit, smws, delta, maxShift, maxCombine,
-                            na.last=TRUE))
-    mog <- mog[ord, , drop=FALSE]
-    rownames(mog) <- NULL
-    mog$acc <- NA_real_; mog$auc <- NA_real_
-    mog$acc_se <- NA_real_; mog$auc_se <- NA_real_
-
-    # Negative maxCombine acts as a switch (NA-safe).
-    neg <- !is.na(mog$maxCombine) & mog$maxCombine < 0
-    mog$maxCombine[neg] <- mog$maxShift[neg]
-
-    # Pre-attach per-spectrum `$deg` tables when any row's npmax needs
-    # them (positive integer, "auto", or "intrinsic"). `decon_fun` does
-    # the same check internally and `grid_deconvolute_spectra` is
-    # idempotent, so this just avoids redundant attaches across grid
-    # rows.
-    if (!skip_decon && any(vapply(mog$npmax, npmax_needs_deg, logical(1)))) {
-        x <- grid_deconvolute_spectra(
-            x=x, deg=deg, sfr=sfr, igrs=igrs,
-            verbose=verbosity >= 2,
-            nworkers=min(nworkers, length(x)), use_rust=use_rust
-        )
-    }
-
-    nr <- nrow(mog); ns <- length(x)
-    logv("Starting grid search (%d combinations, %d spectra)", nr, ns)
-    last_dkey <- NULL; last_akey <- NULL
-    d <- NULL; a_aligned <- NULL
-    best_mdm <- NULL; best_auc <- -Inf
-    auto_picks <- list()  # cache: npmax -> auto-selected maxShift
+    logv("Grid search (%d rows, %d spectra)", nr, ns)
+    perf_cols <- c("acc", "auc", "acc_se", "auc_se")
     for (i in seq_len(nr)) {
-        r <- mog[i, , drop=FALSE]
-        dkey <- list(r$npmax, r$nfit, r$smit, r$smws, r$delta)
-        if (!identical(dkey, last_dkey)) {
-            if (skip_decon) {
-                d <- x
-            } else {
-                d <- decon_fn(
-                    x=x, sfr=sfr, igrs=igrs, verbose=verbosity >= 2,
-                    use_rust=use_rust, nfit=r$nfit, smit=r$smit, smws=r$smws,
-                    delta=r$delta, npmax=r$npmax, nworkers=nworkers
-                )
-            }
-            if (has_zero_peaks(d)) {
-                logv("[c=%d/%d] zero peaks; skipping dkey group", i, nr)
-                mog$acc[i] <- 0; mog$auc[i] <- 0
-                last_dkey <- dkey; last_akey <- NULL
-                next
-            }
-            last_dkey <- dkey; last_akey <- NULL
-        }
-
-        # Resolve maxShift="auto" rows. Cached per npmax.
-        if (is.na(r$maxShift)) {
-            if (!identical(align_fun, clupa)) stop(
-                "maxShift='auto' is only supported with align_fun=clupa.",
-                call.=FALSE
+        np <- g$npmax[i]
+        ms <- g$maxShift[i]
+        mc <- g$maxCombine[i]
+        if (np != last_np) {
+            d <- decon_fun(
+                x=x, sfr=sfr, igrs=igrs, verbose=verbose,
+                use_rust=use_rust, npmax=np, nworkers=nworkers
             )
-            ck <- as.character(r$npmax)
-            if (is.null(auto_picks[[ck]])) {
-                pr <- find_maxShift_dip(d, nworkers=nworkers,
-                                        verbose=verbosity >= 2)
-                auto_picks[[ck]] <- pr$pick
-                logv("auto-pick maxShift=%d for npmax=%d (ks=[%s] stopped=%s)",
-                     pr$pick, r$npmax,
-                     paste(pr$ks, collapse=","), pr$stopped)
-            }
-            r$maxShift <- auto_picks[[ck]]
-            mog$maxShift[i] <- r$maxShift
-            last_akey <- NULL
+            last_np <- np
+            last_ms <- -99L
         }
-        if (is.na(r$maxCombine)) {
-            r$maxCombine <- r$maxShift
-            mog$maxCombine[i] <- r$maxCombine
+        if (ms == -1L) {
+            ms <- find_maxShift_dip(d, align_fun=align_fun, nworkers=nworkers, verbose=verbose)
+            g$maxShift[g$npmax == np & g$maxShift == -1L] <- ms
         }
-
-        akey <- list(dkey, r$maxShift)
-        if (!identical(akey, last_akey)) {
-            a_aligned <- align_fun(x=d, ref=NULL, maxShift=r$maxShift,
-                                    verbose=verbosity >= 2,
-                                    nworkers=nworkers, full=FALSE)
-            last_akey <- akey
+        if (ms != last_ms) {
+            a <- align_fun(
+                x=d, ref=NULL, maxShift=ms, verbose=verbose,
+                nworkers=nworkers, full=FALSE
+            )
+            last_ms <- ms
         }
+        s <- snap_fun(a, ref=NULL, maxCombine=mc, igrs=igrs)
+        X <- feat_fun(s, maxCombine=mc, igrs=igrs, peakPos=NULL)
+        r <- fit_fun(X, y, seed=seed, nworkers=nworkers)
+        g[i, perf_cols] <- r[perf_cols]
 
-        a_snap <- snap_fun(a_aligned, ref=NULL, maxCombine=r$maxCombine,
-                            igrs=igrs)
-
-        # Extract refs to store for predict-time replay.
-        snap_kind <- attr(a_snap, "snap_kind") %||% "ref"
-        snap_arg  <- attr(a_snap, "snap_arg")  %||% r$maxCombine
-        snap_ref  <- attr(a_snap, "ref")
-        align_ref <- if (inherits(a_aligned, "aligns")) find_ref(a_aligned) else NULL
-        snap_ref  <- snap_ref %||% align_ref
-        refs <- if (is.null(align_ref) && is.null(snap_ref)) NULL
-                else list(align=align_ref, snap=snap_ref)
-
-        X_full <- feat_fun(a_snap, maxCombine=r$maxCombine, igrs=igrs)
-        pp <- which(colSums(X_full != 0) > 0)
-        if (length(pp) == 0L) next
-        X <- X_full[, pp, drop=FALSE]
-        res <- fit_fun(X, y, seed=seed, nworkers=nworkers)
-        mog$acc[i] <- res$acc; mog$auc[i] <- res$auc
-        mog$acc_se[i] <- res$acc_se %||% NA_real_
-        mog$auc_se[i] <- res$auc_se %||% NA_real_
-
-        is_best <- !is.na(res$auc) && res$auc > best_auc
+        is_best <- !is.na(r$acc) && !is.na(r$auc) && (
+            r$acc > best_acc || (r$acc == best_acc && r$auc > best_auc)
+        )
         sym <- if (is_best) " <-- BEST" else ""
-        logv("c=%d/%d p=%d S=%d C=%g acc=%s auc=%s%s",
-             i, nr, r$npmax, r$maxShift, r$maxCombine,
-             fmt_pct_se(res$acc, mog$acc_se[i]),
-             fmt_pct_se(res$auc, mog$auc_se[i]), sym)
-        if (!is_best) next
-        best_auc <- res$auc
-        params <- list(
-            feat_fun=feat_fun, fit_fun=fit_fun, predict_fun=predict_fun,
-            decon_fun=decon_fun, align_fun=align_fun, snap_fun=snap_fun,
-            lvs=lvs, snap_kind=snap_kind, snap_arg=snap_arg,
-            sfr=sfr, igrs=igrs, use_rust=use_rust,
-            npmax=r$npmax, nfit=r$nfit, smit=r$smit, smws=r$smws,
-            delta=r$delta, maxShift=r$maxShift, maxCombine=r$maxCombine,
-            peakPos=pp
-        )
-        best_mdm <- structure(
-            list(model=res$model, ref=refs, params=params), class="mdm"
-        )
+        fmt <- "[%d/%d] np=%d S=%d C=%d acc=%s auc=%s%s"
+        logv(fmt, i, nr, np, ms, mc, r$acc, r$auc, sym)
+        if (is_best) {
+            best_acc <- r$acc
+            best_auc <- r$auc
+            best_i <- i
+            best_model <- r$model
+            best_pp <- attr(X, "peakPos")
+            best_refs <- list(align=attr(a, "ref"), snap=attr(s, "ref"))
+        }
     }
-
-    best_mdm$mog <- mog
-    ibest <- which.max(mog$auc)
-    logv(
-        "Best c=%d/%d: acc=%s auc=%s", ibest, nr,
-        fmt_pct_se(mog$acc[ibest], mog$acc_se[ibest]),
-        fmt_pct_se(mog$auc[ibest], mog$auc_se[ibest])
+    if (is.na(best_i)) stop("No grid row produced a model.", call.=FALSE)
+    params <- list(
+        feat_fun=feat_fun, fit_fun=fit_fun, predict_fun=predict_fun,
+        decon_fun=decon_fun, align_fun=align_fun, snap_fun=snap_fun,
+        lvs=lvs, sfr=sfr, igrs=igrs, use_rust=use_rust,
+        npmax=g$npmax[best_i], maxShift=g$maxShift[best_i],
+        maxCombine=g$maxCombine[best_i], peakPos=best_pp
     )
-    best_mdm
+    ret <- list(
+        model=best_model, ref=best_refs, params=params, acc=g$acc[best_i],
+        auc=g$auc[best_i], acc_se=g$acc_se[best_i], auc_se=g$auc_se[best_i], mog=g
+    )
+    structure(ret, class="mdm")
 }
 
 #' @export
 #' @rdname mdm
-get_mog <- function(conf="default") {
-    g <- expand.grid2(
-        nfit = switch(conf, dynamic=0, 5),
-        smit = switch(conf, dynamic=0, 2),
-        smws = switch(conf, dynamic=0, static=c(3,5,7,9), 5),
-        delta = switch(conf, dynamic=0, static=(1:5)*1.6, 6.4),
-        npmax = switch(conf, dynamic=2^(6:11), 0),
-        maxShift = switch(conf, default=50, 2^(1:8)),
-        maxCombine = switch(conf, default=5, 2^(1:6))
-    )
-    ord <- order(g$npmax, g$nfit, g$smit, g$smws, g$delta, g$maxShift, g$maxCombine)
-    g <- g[ord, , drop=FALSE]
-    rownames(g) <- NULL
-    g
-}
-
-#' @export
-#' @rdname mdm
-benchmark <- function(x, y,
-    decon_fun=deconvolute, align_fun=clupa,           snap_fun=snap_to_ref,
-    feat_fun=peak_mat,     fit_fun=fit_lasso,         predict_fun=predict_lasso,
-    mog=get_mog("default"),
-    deg=NULL,              sfr=NULL,                  igrs=list(),
-    use_rust=0,            nworkers=1,                verbosity=2,
-    seed=1,                k=3,                       check=TRUE
+benchmark <- function(
+    x, y,
+    decon_fun=deconvolute,  align_fun=clupa,    snap_fun=snap_to_ref,
+    feat_fun=peak_mat,      fit_fun=fit_lasso,  predict_fun=predict_lasso,
+    npmax=-1L,              maxShift=-1L,       maxCombine=10L,
+    deg=NULL,               sfr=NULL,           igrs=list(),
+    use_rust=0,             nworkers=1,         verbosity=2,
+    seed=1,                 k=3,                check=TRUE
 ) {
     stopifnot(
         is.function(decon_fun), is.function(align_fun),
         is.function(snap_fun),  is.function(feat_fun),
         is.function(fit_fun),   is.function(predict_fun),
-        is_int(k, 1), k >= 2, k <= length(y)
+        is_int(k, 1), k >= 2, k <= length(y),
+        is_int(npmax),    all(npmax    >= -2L),
+        is_int(maxShift), all(maxShift >= -1L),
+        is_int(maxCombine), all(maxCombine >= 0L)
     )
-    mog <- normalize_mog(mog)
     if (check) check_mdm_args(
-        x=x, y=y, mog=mog, sfr=sfr, igrs=igrs,
-        use_rust=use_rust, nworkers=nworkers, verbosity=verbosity, seed=seed
+        x=x, y=y, sfr=sfr, igrs=igrs, use_rust=use_rust,
+        nworkers=nworkers, verbosity=verbosity, seed=seed
     )
 
-    # One-time grid attach when any row of mog uses npmax > 0 or NA.
-    if (!identical(decon_fun, identity2) &&
-        any(vapply(mog$npmax, npmax_needs_deg, logical(1)))) {
+    # One-time grid attach so each per-fold fit_mdm() sees pre-enriched
+    # spectra and skips this step.
+    if (!identical(decon_fun, identity2)) {
         x <- grid_deconvolute_spectra(
             x=x, deg=deg, sfr=sfr, igrs=igrs,
             verbose=verbosity >= 2, nworkers=nworkers, use_rust=use_rust
         )
     }
 
-    inner_v <- max(0L, verbosity - 1L)
+    # Inner fit_mdm / predict run silently by default — the per-fold result
+    # line below is the only log emission per fold. Bumping outer verbosity
+    # to 3 lets the user re-enable the fit_mdm grid-search output for
+    # debugging.
+    inner_v <- max(0L, verbosity - 2L)
+    # `te_list` has length k * length(seed). Each test-id vector carries
+    # `seed` / `fold` attributes (see get_test_ids). For a scalar `seed`
+    # the attributes are unset and we fall back to (seed, fold=i).
     te_list <- get_test_ids(nfolds=k, nsamples=length(x), seed=seed, y=y)
-    models <- vector("list", k)
-    fold_preds <- vector("list", k)
-    perf <- data.frame(fold=integer(0), acc=numeric(0), auc=numeric(0))
-    logv("Running %d-fold outer CV with fit_mdm", k)
+    nf <- length(te_list)
+    models <- vector("list", nf)
+    fold_preds <- vector("list", nf)
+    perf <- data.frame(seed=integer(0), fold=integer(0),
+                       acc=numeric(0), auc=numeric(0))
+    if (length(seed) > 1L) {
+        logv("Running %d-fold outer CV x %d seeds with fit_mdm",
+             k, length(seed))
+    } else {
+        logv("Running %d-fold outer CV with fit_mdm", k)
+    }
     for (i in seq_along(te_list)) {
         te <- te_list[[i]]
+        s <- attr(te, "seed") %||% seed
+        f <- attr(te, "fold") %||% i
         tr <- setdiff(seq_along(x), te)
-        logv("[fold %d/%d] fitting", i, k)
         m <- fit_mdm(
             x=x[tr], y=y[tr],
             decon_fun=decon_fun, align_fun=align_fun, snap_fun=snap_fun,
             feat_fun=feat_fun, fit_fun=fit_fun, predict_fun=predict_fun,
-            mog=mog, deg=deg, sfr=sfr, igrs=igrs,
+            npmax=npmax, maxShift=maxShift, maxCombine=maxCombine,
+            deg=deg, sfr=sfr, igrs=igrs,
             use_rust=use_rust, nworkers=nworkers, verbosity=inner_v,
-            seed=seed, check=FALSE
+            seed=s, check=FALSE
         )
-        p <- stats::predict(m, x[te], type="all", nworkers=nworkers,
-                            verbosity=inner_v)
-        fp <- data.frame(fold=i, true=y[te], link=p$link, prob=p$prob,
-                         pred=p$class)
+        p <- stats::predict(m, x[te], type="all", nworkers=nworkers, verbosity=inner_v)
+        fp <- data.frame(seed=s, fold=f, true=y[te], link=p$link,
+                         prob=p$prob, pred=p$class)
         fold_preds[[i]] <- fp
         acc <- mean(fp$pred == fp$true, na.rm=TRUE)
         auc <- AUC(fp$true, fp$prob)
-        perf <- rbind(perf, data.frame(fold=i, acc=acc, auc=auc))
-        logv("[fold %d/%d] acc=%.2f%% auc=%.4f", i, k, acc * 100, auc)
+        perf <- rbind(perf, data.frame(seed=s, fold=f, acc=acc, auc=auc))
+        if (length(seed) > 1L) {
+            fmt <- "[seed %d, fold %d/%d] acc=%.3f auc=%.3f | mean acc=%.3f auc=%.3f"
+            logv(fmt, s, f, k, acc, auc, mean(perf$acc), mean(perf$auc))
+        } else {
+            fmt <- "[fold %d/%d] acc=%.3f auc=%.3f | mean acc=%.3f auc=%.3f"
+            logv(fmt, f, k, acc, auc, mean(perf$acc), mean(perf$auc))
+        }
         models[[i]] <- m
     }
 
     preds <- do.call(rbind, fold_preds)
     overall_acc <- mean(preds$true == preds$pred, na.rm=TRUE)
     overall_auc <- AUC(preds$true, preds$prob)
-    logv("Overall: acc=%.2f%% auc=%.4f", overall_acc * 100, overall_auc)
+    logv("Overall: acc=%.3f auc=%.3f", overall_acc, overall_auc)
+    # When seeds were swept, also expose per-seed mean ± sd so callers
+    # can report repeated-CV stability without re-aggregating from `perf`.
+    overall <- list(acc=overall_acc, auc=overall_auc)
+    if (length(seed) > 1L) {
+        per_seed <- stats::aggregate(
+            cbind(acc, auc) ~ seed, data=perf, FUN=mean
+        )
+        overall$acc_seed_mean <- mean(per_seed$acc)
+        overall$acc_seed_sd   <- stats::sd(per_seed$acc)
+        overall$auc_seed_mean <- mean(per_seed$auc)
+        overall$auc_seed_sd   <- stats::sd(per_seed$auc)
+    }
     list(
         models=models,
         predictions=preds,
         performance=perf,
-        overall=list(acc=overall_acc, auc=overall_auc)
+        overall=overall
     )
 }
 
@@ -458,11 +423,10 @@ identity_snap <- function(x, ref=NULL, maxCombine=0L, ...) x
 #' reported by `fit_fun` stay honest.
 #'
 #' The `maxCombine` window (in shared-grid columns) is translated into a
-#' ppm `gap_tol` via the median spacing of `x[[1]]$cssh`. The translated
-#' `gap_tol` is stashed on `attr(out, "snap_arg")` so [predict.mdm] can
-#' replay the same NW snap at prediction time, and the consensus is
-#' stashed on `attr(out, "ref")` for the same purpose. `attr(out,
-#' "snap_kind") = "nw"` tells [predict.mdm] which branch to take.
+#' ppm `gap_tol` via the median spacing of `x[[1]]$cssh`. The translation
+#' is deterministic, so [predict.mdm] just re-derives `gap_tol` from the
+#' stored `maxCombine`. The consensus used at training time is stashed
+#' on `attr(out, "ref")` and replayed at predict time.
 #'
 #' @param x A `decons2` / `aligns` object.
 #' @param ref Optional pre-built consensus (used at predict time). When
@@ -472,9 +436,8 @@ identity_snap <- function(x, ref=NULL, maxCombine=0L, ...) x
 #'   `gap_tol = maxCombine * median(diff(cssh))` (in ppm).
 #' @param ... Ignored (signature compatibility).
 #'
-#' @return An `aligns` object with `pcisn` / `x0sn` populated, plus
-#'   the attributes `snap_kind="nw"`, `snap_arg=<gap_tol>` and
-#'   `ref=<consensus>`.
+#' @return An `aligns` object with `pcisn` / `x0sn` populated and
+#'   `attr(., "ref")` set to the consensus used.
 #'
 snap_nw_blind <- function(x, ref=NULL, maxCombine=20, w_A=0, ...) {
     stopifnot(inherits(x, "decons2"))
@@ -484,13 +447,14 @@ snap_nw_blind <- function(x, ref=NULL, maxCombine=20, w_A=0, ...) {
     gap_tol <- max(spacing, as.numeric(maxCombine) * spacing)
     pos_field <- if (!is.null(x[[1]]$lcpar$x0al)) "x0al" else "x0"
     if (is.null(ref)) {
-        ref <- build_consensus(x, y=NULL, gap_tol=gap_tol, pos_field=pos_field)
+        ref <- build_consensus(
+            x, y=NULL, gap_tol=gap_tol, pos_field=pos_field
+        )
     }
-    out <- snap_nw(x, ref=ref, gap_tol=gap_tol, pos_field=pos_field, w_A=w_A)
-    attr(out, "snap_kind") <- "nw"
-    attr(out, "snap_arg")  <- gap_tol
-    attr(out, "ref")       <- ref
-    attr(out, "w_A")       <- w_A
+    out <- snap_nw(
+        x, ref=ref, gap_tol=gap_tol, pos_field=pos_field, w_A=w_A
+    )
+    attr(out, "ref") <- ref
     out
 }
 
@@ -503,15 +467,16 @@ snap_nw_blind <- function(x, ref=NULL, maxCombine=20, w_A=0, ...) {
 #' `keep=TRUE`). All reps share the lambda path discovered by the first
 #' rep so per-rep out-of-fold (OOF) predictions are directly comparable
 #' lambda-by-lambda. For each lambda the per-rep OOF accuracy and AUC
-#' are averaged across reps; the lambda that maximizes the averaged AUC
-#' (`lambda*`) is the one reported (and the one used at predict time).
-#' This averages the per-lambda performance curve *before* optimizing
-#' over lambda, so the chosen lambda is stable across reps and the
-#' reported acc/AUC reflects model variance rather than the noise of
-#' lambda-pick instability across reps. `acc_se` / `auc_se` are the SE
-#' across reps at `lambda*`. The model object is the last rep's
-#' `cv.glmnet`; its `lambda.min` is overwritten with `lambda*` so
-#' [metabodecon::predict_lasso()] picks the right lambda by default.
+#' are averaged across reps; the lambda that maximizes the averaged
+#' accuracy (with averaged AUC as tiebreaker) is reported as
+#' `lambda*` and used at predict time. Averaging the per-lambda
+#' performance curve *before* optimizing over lambda keeps `lambda*`
+#' stable across reps and the reported acc/AUC reflects model
+#' variance rather than the noise of lambda-pick instability across
+#' reps. `acc_se` / `auc_se` are the SE across reps at `lambda*`. The
+#' model object is the last rep's `cv.glmnet`; its `lambda.min` is
+#' overwritten with `lambda*` so [metabodecon::predict_lasso()] picks
+#' the right lambda by default.
 #' @param X Numeric feature matrix.
 #' @param y Factor with two levels.
 #' @param seed Random seed for the first rep's inner-CV fold assignment;
@@ -522,8 +487,8 @@ snap_nw_blind <- function(x, ref=NULL, maxCombine=20, w_A=0, ...) {
 #' @param nreps Number of `cv.glmnet` repetitions used to estimate the
 #'   reported acc/AUC. Default 5.
 #' @return A list with `model` (a `cv.glmnet` object whose `lambda.min`
-#'   has been overwritten with the AUC-maximizing `lambda*`), `acc`,
-#'   `auc`, `acc_se`, `auc_se`.
+#'   has been overwritten with the ACC-maximizing (AUC-tiebroken)
+#'   `lambda*`), `acc`, `auc`, `acc_se`, `auc_se`.
 fit_lasso <- function(X, y, seed=1, nworkers=1L, nreps=5L) {
     requireNamespace("glmnet", quietly=TRUE)
     stopifnot(is_int(nreps, 1), nreps >= 1L)
@@ -562,11 +527,13 @@ fit_lasso <- function(X, y, seed=1, nworkers=1L, nreps=5L) {
     }
     mean_acc <- colMeans(acc_mat, na.rm=TRUE)
     mean_auc <- colMeans(auc_mat, na.rm=TRUE)
-    # Pick lambda* by averaged AUC; ties broken by larger lambda
-    # (which.max returns the first index → smallest lambda in cv.glmnet's
-    # decreasing path; flipping the search keeps the more regularized
-    # solution among ties, matching cv.glmnet's lambda.1se sensibility).
-    j_star <- which.max(rev(mean_auc))
+    # Pick lambda* by averaged accuracy with AUC as tiebreaker. Search
+    # from the largest-lambda end (cv.glmnet's path is decreasing, so
+    # `rev()` puts the largest lambda first; `which.max` then breaks
+    # remaining ties toward the more-regularized end, matching
+    # cv.glmnet's lambda.1se sensibility).
+    score <- mean_acc * 1e6 + mean_auc
+    j_star <- which.max(rev(score))
     j_star <- nl - j_star + 1L
     chosen_lambda <- lambda_path[j_star]
     final_model <- cvs[[nreps]]
@@ -575,10 +542,8 @@ fit_lasso <- function(X, y, seed=1, nworkers=1L, nreps=5L) {
         model = final_model,
         acc = mean_acc[j_star],
         auc = mean_auc[j_star],
-        acc_se = if (nreps >= 2L)
-            stats::sd(acc_mat[, j_star], na.rm=TRUE) / sqrt(nreps) else NA_real_,
-        auc_se = if (nreps >= 2L)
-            stats::sd(auc_mat[, j_star], na.rm=TRUE) / sqrt(nreps) else NA_real_
+        acc_se = if (nreps >= 2L) stats::sd(acc_mat[, j_star], na.rm=TRUE) / sqrt(nreps) else NA_real_,
+        auc_se = if (nreps >= 2L) stats::sd(auc_mat[, j_star], na.rm=TRUE) / sqrt(nreps) else NA_real_
     )
 }
 
@@ -623,8 +588,10 @@ fit_ranger <- function(X, y, seed=1, nworkers=1L, num.trees=5000L) {
     requireNamespace("ranger", quietly=TRUE)
     stopifnot(is_int(num.trees, 1), num.trees >= 1L)
     lvs <- levels(y)
-    rf <- ranger::ranger(x=X, y=y, probability=TRUE, num.trees=num.trees,
-                          seed=seed, num.threads=max(1L, nworkers))
+    rf <- ranger::ranger(
+        x=X, y=y, probability=TRUE, num.trees=num.trees,
+        seed=seed, num.threads=max(1L, nworkers)
+    )
     rf$lvs <- lvs
     oob <- rf$predictions[, lvs[2]]
     ok <- is.finite(oob)
@@ -643,8 +610,7 @@ fit_ranger <- function(X, y, seed=1, nworkers=1L, num.trees=5000L) {
 #' @description
 #' Companion of [metabodecon::fit_ranger()]. Returns the positive-class
 #' probability for each row of `newx`.
-#' @param model Object returned in the `model` slot of
-#'   [metabodecon::fit_ranger()].
+#' @param model Object returned in the `model` slot of [metabodecon::fit_ranger()].
 #' @param newx Numeric feature matrix.
 #' @return Numeric vector of length `nrow(newx)`.
 predict_ranger <- function(model, newx) {
@@ -656,91 +622,46 @@ predict_ranger <- function(model, newx) {
 
 # Helpers #####
 
-# Ensure `mog` has every column fit_mdm expects, filling in
-# deconvolute() / snap_to_ref() defaults for missing ones. `maxShift`
-# / `maxCombine` accept the sentinel `"auto"` (parsed to NA so the
-# downstream auto-resolution branches fire). `npmax` accepts integer,
-# `"auto"` and `"intrinsic"` — both string values are passed through
-# unchanged to `decon_fun`, which handles the resolution.
-normalize_mog <- function(mog) {
-    stopifnot(is.data.frame(mog), nrow(mog) >= 1L)
-    fill <- list(
-        nfit=3L, smit=2L, smws=5L, delta=6.4,
-        npmax=0L, maxShift=50L, maxCombine=20L
+get_mog <- function(npmax, maxShift, maxCombine) {
+    g <- expand.grid(
+        npmax=as.integer(npmax), maxShift=as.integer(maxShift),
+        maxCombine=as.integer(maxCombine),
+        KEEP.OUT.ATTRS=FALSE, stringsAsFactors=FALSE
     )
-    for (nm in names(fill)) {
-        if (is.null(mog[[nm]])) mog[[nm]] <- fill[[nm]]
-    }
-    for (nm in c("maxShift", "maxCombine")) {
-        v <- mog[[nm]]
-        if (is.character(v)) mog[[nm]] <- parse_int_with_auto(v, nm)
-    }
-    if (is.character(mog$npmax)) {
-        ok <- mog$npmax %in% c("auto", "intrinsic") |
-              !is.na(suppressWarnings(as.integer(mog$npmax)))
-        if (!all(ok)) stop(
-            "npmax entries must be non-negative integers, ",
-            "'auto', or 'intrinsic'.", call.=FALSE
-        )
-        # If no rows use a string mode, coerce the whole column to
-        # integer for cheaper downstream comparisons; otherwise leave
-        # it character and pass each row's value through to decon_fun.
-        if (!any(mog$npmax %in% c("auto", "intrinsic"))) {
-            mog$npmax <- as.integer(mog$npmax)
-        }
-    }
-    mog
-}
-
-# Convert an integer-valued argument that may contain the string "auto"
-# into an integer vector with NA marking the "auto" entries. Numeric
-# input is coerced to integer. Anything else triggers an error.
-parse_int_with_auto <- function(x, name) {
-    if (is.character(x)) {
-        ok <- x == "auto" | !is.na(suppressWarnings(as.integer(x)))
-        if (!all(ok)) {
-            stop(sprintf(
-                "%s entries must be non-negative integers or 'auto'.", name
-            ), call.=FALSE)
-        }
-        out <- suppressWarnings(as.integer(x))
-        out[x == "auto"] <- NA_integer_
-        return(out)
-    }
-    as.integer(x)
+    g <- g[order(g$npmax, g$maxShift, g$maxCombine), , drop=FALSE]
+    rownames(g) <- NULL
+    g$acc <- NA_real_; g$auc <- NA_real_
+    g$acc_se <- NA_real_; g$auc_se <- NA_real_
+    g
 }
 
 # `find_npmax_elbow` / `find_npmax_elbow_one` live in R/decon.R since
-# they back the `npmax="auto"` / `npmax="intrinsic"` resolution inside
-# `deconvolute_spectra` / `deconvolute_spectrum`.
+# they back the `npmax = -1` (auto) / `npmax = -2` (intrinsic)
+# resolution inside `deconvolute_spectra` / `deconvolute_spectrum`.
 
 # Adaptive maxShift selection by dip detection. Sweeps maxShift through
 # {1, 2, 4, 8, ...}, runs CluPA at each step, computes the average
 # pairwise Pearson correlation of the aligned superpositions
 # (`sit$supal`), and stops the FIRST time the correlation decreases
 # compared to the previous step. Returns the maxShift from the step
-# *before* the dip (the last one that was still improving). If no dip is
-# seen by `max_cap`, returns `max_cap`. Always uses [metabodecon::clupa()]
-# because the dip metric reads `sit$supal`.
-find_maxShift_dip <- function(d, max_cap=512L, nworkers=1, verbose=FALSE) {
+# *before* the dip (the last one that was still improving). If no dip
+# is seen by `max_cap`, returns `max_cap`. Requires a CluPA-compatible
+# `align_fun` (writes `sit$supal`); defaults to [metabodecon::clupa()].
+find_maxShift_dip <- function(d, align_fun=clupa, max_cap=512L,
+                              nworkers=1, verbose=FALSE) {
     avg_pearson <- function(a) {
         M <- do.call(cbind, lapply(a, function(s) s$sit$supal))
         C <- stats::cor(M)
         mean(C[upper.tri(C)])
     }
-    ks <- integer(0); ps <- numeric(0); ms <- 1L
+    p_prev <- NA_real_; ms <- 1L
     repeat {
-        a <- clupa(x=d, ref=NULL, maxShift=as.integer(ms),
-                   verbose=verbose, nworkers=nworkers, full=TRUE)
+        a <- align_fun(x=d, ref=NULL, maxShift=ms,
+                       verbose=verbose, nworkers=nworkers, full=TRUE)
         p <- avg_pearson(a)
-        ks <- c(ks, ms); ps <- c(ps, p)
-        if (length(ps) >= 2L && p < ps[length(ps) - 1L]) {
-            return(list(pick=ks[length(ks) - 1L], ks=ks, ps=ps,
-                        stopped="dip"))
-        }
-        if (ms >= max_cap)
-            return(list(pick=ms, ks=ks, ps=ps, stopped="cap"))
-        ms <- ms * 2L
+        if (!is.na(p_prev) && p < p_prev) return(as.integer(ms %/% 2L))
+        if (ms >= max_cap) return(as.integer(ms))
+        p_prev <- p; ms <- ms * 2L
     }
 }
 
@@ -757,6 +678,23 @@ as_binary01 <- function(y) {
 }
 
 get_test_ids <- function(nfolds=5, nsamples, seed=1, y=NULL) {
+    # Vectorize over seed: returns a flat length(seed)*nfolds list of
+    # test-id vectors, each carrying the originating `seed` as an
+    # attribute so callers (e.g. `benchmark`) can stamp it back onto
+    # per-fold output rows. `(seed, fold)` ordering is seed-major: all
+    # `nfolds` folds of seed[1] first, then seed[2], etc.
+    if (length(seed) > 1L) {
+        out <- vector("list", length(seed) * nfolds)
+        for (si in seq_along(seed)) {
+            sub <- get_test_ids(nfolds=nfolds, nsamples=nsamples, seed=seed[si], y=y)
+            for (i in seq_len(nfolds)) {
+                attr(sub[[i]], "seed") <- seed[si]
+                attr(sub[[i]], "fold") <- i
+            }
+            out[((si - 1L) * nfolds + 1L):(si * nfolds)] <- sub
+        }
+        return(out)
+    }
     set.seed(seed)
     if (is.null(y)) {
         ids <- sample(seq_len(nsamples))
@@ -805,25 +743,20 @@ AUC <- function(y, yhat) {
 }
 
 check_mdm_args <- function(
-    x, y, mog,
+    x, y,
     sfr=NULL, igrs=list(), use_rust=NULL, nworkers=NULL,
     verbosity=NULL, seed=NULL
 ) {
-    cols <- c("nfit", "smit", "smws", "delta", "npmax",
-              "maxShift", "maxCombine")
     stopifnot(
         is_spectra(x),
         is.factor(y),
         length(y) == length(x),
-        is.data.frame(mog),
-        nrow(mog) >= 1,
-        all(cols %in% names(mog)),
         is_num_or_null(sfr, 2),
         is_list_of_nums(igrs, nv=2),
         is_bool_or_num(use_rust),
         is_int_or_null(nworkers, 1),
         is_int_or_null(verbosity, 1),
-        is_int_or_null(seed, 1)
+        is.null(seed) || is_int(seed)
     )
     if (!is.null(names(y)) && !identical(get_names(x), names(y))) {
         stop(
@@ -937,7 +870,6 @@ predict.mdm <- function(
         d <- decon_fun(
             x=newdata, sfr=p$sfr, igrs=p$igrs %||% list(),
             verbose=verbosity >= 2, use_rust=p$use_rust,
-            nfit=p$nfit, smit=p$smit, smws=p$smws, delta=p$delta,
             npmax=p$npmax, nworkers=nworkers
         )
         align_fun <- p$align_fun %||% clupa
@@ -945,18 +877,14 @@ predict.mdm <- function(
             x=d, ref=object$ref$align, maxShift=p$maxShift,
             verbose=verbosity >= 2, nworkers=nworkers, full=FALSE
         )
-        if (identical(p$snap_kind, "nw")) {
-            pos_field <- if (!is.null(a_aligned[[1]]$lcpar$x0al)) "x0al" else "x0"
-            a <- snap_nw(a_aligned, ref=object$ref$snap,
-                          gap_tol=p$snap_arg, pos_field=pos_field)
-        } else if (inherits(a_aligned, "aligns") && (p$maxCombine %||% 0L) > 0L) {
-            a <- snap_to_ref(a_aligned, ref=object$ref$snap,
-                              maxCombine=p$maxCombine)
-        } else {
-            a <- a_aligned
-        }
-        Xn <- p$feat_fun(a, maxCombine=p$maxCombine, igrs=p$igrs %||% list())
-        Xn <- Xn[, p$peakPos, drop=FALSE]
+        a <- p$snap_fun(
+            a_aligned, ref=object$ref$snap,
+            maxCombine=p$maxCombine, igrs=p$igrs %||% list()
+        )
+        Xn <- p$feat_fun(
+            a, maxCombine=p$maxCombine,
+            igrs=p$igrs %||% list(), peakPos=p$peakPos
+        )
     } else {
         Xn <- as.matrix(newdata)
     }
@@ -978,8 +906,7 @@ predict.mdm <- function(
 #' @rdname mdm_methods
 print.mdm <- function(x, ...) {
     stopifnot(inherits(x, "mdm"), is.list(x$params))
-    pp <- c("npmax", "nfit", "smit", "smws", "delta",
-            "maxShift", "maxCombine", "snap_kind")
+    pp <- c("npmax", "maxShift", "maxCombine")
     cat("metabodecon model (mdm)\n")
     cat("  ", formatC("model:", width=-15), paste(class(x$model), collapse=", "),
         "\n", sep="")
@@ -989,8 +916,11 @@ print.mdm <- function(x, ...) {
         lab <- formatC(paste0(nm, ":"), width=-15)
         cat("  ", lab, v, "\n", sep="")
     }
-    if (!is.null(x$mog)) {
-        cat("  grid rows:     ", nrow(x$mog), "\n", sep="")
+    if (!is.null(x$auc)) {
+        cat("  ", formatC("acc:", width=-15),
+            fmt_pct_se(x$acc, x$acc_se), "\n", sep="")
+        cat("  ", formatC("auc:", width=-15),
+            fmt_pct_se(x$auc, x$auc_se), "\n", sep="")
     }
     invisible(x)
 }
@@ -1022,12 +952,12 @@ plot.mdm <- function(x, ...) {
 #' @rdname mdm_methods
 summary.mdm <- function(object, ...) {
     stopifnot(inherits(object, "mdm"), is.list(object$params))
-    pp <- c("npmax", "nfit", "smit", "smws", "delta",
-            "maxShift", "maxCombine", "snap_kind")
+    pp <- c("npmax", "maxShift", "maxCombine")
     out <- object$params[pp]
     out$model <- paste(class(object$model), collapse=", ")
     out$n_peaks <- length(object$params$peakPos %||% integer(0))
-    out$grid_rows <- if (is.null(object$mog)) 0L else nrow(object$mog)
+    out$acc <- fmt_pct_se(object$acc, object$acc_se)
+    out$auc <- fmt_pct_se(object$auc, object$auc_se)
     class(out) <- "summary.mdm"
     out
 }

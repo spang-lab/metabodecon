@@ -4,7 +4,7 @@
 \alias{bin}
 \title{Bin a spectra-like object into a feature matrix}
 \usage{
-bin(x, maxCombine = 128, igrs = list(), ...)
+bin(x, maxCombine = 128, igrs = list(), peakPos = NULL, ...)
 }
 \arguments{
 \item{x}{A \code{spectra}, \code{decons2} or \code{aligns} object.}

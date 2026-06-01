@@ -4,7 +4,7 @@
 \alias{peak_mat}
 \title{Peak feature matrix}
 \usage{
-peak_mat(x, igrs = list(), ...)
+peak_mat(x, igrs = list(), peakPos = NULL, ...)
 }
 \arguments{
 \item{x}{An \code{aligns} object (or \code{decons2}).}

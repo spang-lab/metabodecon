@@ -4,7 +4,7 @@
 \alias{si_mat}
 \title{Signal-integral matrix}
 \usage{
-si_mat(x, drop_zero = FALSE, igrs = list())
+si_mat(x, drop_zero = FALSE, igrs = list(), peakPos = NULL, ...)
 }
 \arguments{
 \item{x}{A \code{decons2} or \code{aligns} object.}

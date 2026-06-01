@@ -1,3 +1,115 @@
+# metabodecon 2.0.0.16
+
+* **Breaking pick rule**: both `fit_mdm()` (grid winner) and
+  `fit_lasso()` (`lambda*`) now select by **accuracy with AUC as
+  tiebreaker**, replacing the AUC-only pick. This stabilises the
+  reported metric pair under ranger's near-0.5 probability
+  squeeze (small-sample OOB averaging shrinks predicted
+  probabilities toward 0.5, which can leave a high-AUC cell at a
+  low headline ACC). Existing callers see the same return shape;
+  only the selected row / lambda may change.
+
+# metabodecon 2.0.0.15
+
+* `benchmark()` now accepts a `seed` vector → repeated k-fold CV.
+  `get_test_ids()` returns a flat `length(seed) * nfolds` list with
+  per-element `seed` / `fold` attributes; `benchmark()` iterates the
+  flat list, stamps the originating seed onto `$performance` and
+  `$predictions`, and exposes per-seed mean ± sd of acc/auc on
+  `$overall$acc_seed_mean/sd` / `$overall$auc_seed_mean/sd`. Per-fold
+  log lines become `[seed S, fold F/k] ...` when seeds were swept.
+  Backwards compatible: scalar `seed` keeps the old shape.
+
+# metabodecon 2.0.0.14
+
+* `bin700()` is ~35x faster per spectrum. The per-range bin
+  aggregator now uses a `cumsum` + run-boundary diff instead of
+  `tapply`/`factor`; in profiling, `bin700` went from ~76% of a
+  10-fold bin-baseline `benchmark()` to a negligible share.
+
+# metabodecon 2.0.0.13
+
+* `benchmark()` now emits a single line per outer-CV fold of the form
+  `[fold i/k] acc=X.XXX auc=X.XXX | mean acc=X.XXX auc=X.XXX` (per-fold
+  + running mean, 3 decimals). The inner `fit_mdm()` / `predict.mdm()`
+  calls are silenced at the default `verbosity=2` — bump to
+  `verbosity=3` to see the grid-search output again.
+
+# metabodecon 2.0.0.12
+
+* `bin700()` now picks the per-peak reconstruction position in
+  `x0sn → x0al → x0` priority (falling back to the next column when
+  `x0sn` is `NA`, e.g. for peaks left unmatched by `snap_to_ref` beyond
+  `maxCombine`). This makes the bin baseline chainable across all
+  preprocessing combinations — `decon`, `decon+align`,
+  `decon+align+snap` — and lets a `snap_to_ref`-driven shift propagate
+  to the bin sums.
+
+# metabodecon 2.0.0.11
+
+* `bin700()` is now a `feat_fun`, not a `snap_fun`. It returns a
+  numeric matrix with one row per spectrum and 700 columns of bin
+  sums (no peakPos filtering — the bin layout is hardcoded). Per-
+  spectrum dispatch: raw spectra are binned from `$si`; deconvoluted
+  / aligned spectra are reconstructed via `lorentz_sup(cs, lcpar)`
+  (preferring `x0al`) and then binned. Lets snap and bin be chosen
+  independently: e.g. `decon=deconvolute, align=clupa,
+  snap=identity_snap, feat=bin700` runs the binning baseline on
+  CluPA-aligned reconstructions; `snap=snap_to_ref, feat=peak_mat`
+  remains the default mdm pipeline.
+
+# metabodecon 2.0.0.10
+
+* New `snap_fun` `bin700()` that discretizes each spectrum onto the
+  Zacharias 2013 700-bin grid (300 bins 6.5-9.5 ppm + 400 bins
+  0.5-4.5 ppm at 0.01 ppm width). Per-spectrum dispatch: raw spectra
+  are binned from `$si`; deconvoluted / aligned spectra are first
+  reconstructed via `lorentz_sup(cs, lcpar)` (using `x0al` when
+  present) and then binned. Lets a binning baseline drop into
+  `fit_mdm()` as `decon_fun=identity2, align_fun=identity_align,
+  snap_fun=bin700` and lets the same `bin700` be reused after a
+  CluPA-aligned deconvolution.
+
+# metabodecon 2.0.0.9
+
+* Tightened the `fit_fun` contract: `acc_se` / `auc_se` are now
+  required in the returned list (use `NA_real_` when the backend
+  produces a single point estimate, as `fit_ranger()` does).
+  `fit_mdm()` no longer falls back to `NA_real_` when they are
+  absent.
+
+# metabodecon 2.0.0.8
+
+* `fit_mdm()` / `benchmark()` replace the `mog` data-frame argument
+  and the `get_mog()` helper with three scalar-or-vector pipeline
+  parameters — `npmax`, `maxShift`, `maxCombine` (defaults `"auto"`,
+  `"auto"`, `10`). The underlying `(nfit, smit, smws, delta)` tuple
+  is always selected from each spectrum's `$deg` cache via `npmax`,
+  so it never appears in the public API. When any of the three is a
+  vector, `fit_mdm()` iterates over their cartesian product, reuses
+  the deconvolution across rows that share `npmax` and the alignment
+  across rows that share `(npmax, maxShift)`, and returns the `mdm`
+  with the highest `auc`. The returned object carries the best row's
+  scalar `acc` / `auc` / `acc_se` / `auc_se` directly and the full
+  per-row table on `$mog`. `npmax="auto"` is resolved up front so the
+  same integer is stored on the model for prediction-time replay.
+* `read_aki_data()` and the new `cache_aki_data()` helper materialize
+  an enriched AKI dataset whose spectra already carry their `$deg`
+  grids, so `fit_mdm()` / `benchmark()` skip the slow
+  `grid_deconvolute_spectra()` step. The cache filename encodes the
+  backend (`R` vs `rust`) and an MD5 digest of `deg`, so caches built
+  with different parameter grids or backends coexist.
+
+# metabodecon 2.0.0.7
+
+* `fit_mdm()` / `benchmark()` now accept `maxShift="auto"` with any
+  CluPA-compatible `align_fun` (was: strict `identical(align_fun, clupa)`,
+  which rejected thin wrappers like the paper's `clupa_speaq`). The auto
+  sweep in `find_maxShift_dip()` uses the caller's `align_fun` so the
+  picked maxShift comes from the same backend as the final alignment.
+* Fixed `sprintf` crash in `fit_mdm()`'s grid-row and auto-pick log lines
+  when `npmax` was a character (`"auto"` / `"intrinsic"`).
+
 # metabodecon 2.0.0.6
 
 * Renamed `fit_ranger500()` / `predict_ranger500()` to `fit_ranger()` /

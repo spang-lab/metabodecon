@@ -38,12 +38,17 @@ being filtered out. A peak is filtered if its score is below \eqn{\mu +
 peak score in the signal-free region (SFR), and \eqn{\sigma}{s} is the
 standard deviation of peak scores in the SFR. See 'Details'.}
 
-\item{npmax}{Integer. Maximum number of peaks allowed in the result. If
-\code{npmax >= 1}, the \code{nfit}, \code{smit}, \code{smws} and \code{delta} arguments are ignored
-and a grid search over predefined parameter combinations is performed
-instead. The combination with the smallest residual area ratio and fewer
-than \code{npmax} peaks is selected. Grid search results are cached to disk
-automatically.}
+\item{npmax}{Integer scalar in \verb{\{-2, -1, 0, 1, 2, ...\}} controlling
+how \verb{(nfit, smit, smws, delta)} are chosen. If \code{npmax >= 1}, those four
+arguments are ignored and a grid search over predefined parameter
+combinations is performed instead — the combination with the smallest
+residual area ratio and fewer than \code{npmax} peaks is selected. Grid
+search results are cached to disk automatically. \code{npmax = 0} (default)
+disables the grid search and uses the literal \verb{(nfit, smit, smws, delta)} arguments. \code{npmax = -1} is "auto": resolved up front to a
+single integer (the median per-spectrum Kneedle elbow on \verb{$deg}) and
+broadcast to every spectrum. \code{npmax = -2} is "intrinsic": resolved
+per spectrum to that spectrum's own Kneedle elbow, so different
+spectra get different \code{npmax} values.}
 
 \item{sfr}{Numeric vector with two entries: the ppm positions for the left
 and right border of the signal-free region of the spectrum. See 'Details'.}

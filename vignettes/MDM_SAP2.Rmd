@@ -173,11 +173,12 @@ cat(sprintf("Manual test acc: %.1f%%, AUC: %.3f\n", acc * 100, auc))
 # Equivalent one-shot call with `fit_mdm()`
 
 The same model can be fit with one `fit_mdm()` call. We pass the custom
-`sfr` directly and set the per-row preprocessing parameters via `mog`:
+`sfr` directly and the preprocessing scalars via `npmax`, `maxShift`,
+`maxCombine`:
 
 ```{r fitmdm}
-gd <- data.frame(nfit=3, smit=0, smws=3, delta=4, npmax=0, maxShift=4, maxCombine=2)
-md <- fit_mdm(x[tr], y[tr], mog=gd, sfr=c(3.58, 3.45), verbosity=0, nworkers=1)
+md <- fit_mdm(x[tr], y[tr], npmax=0L, maxShift=4L, maxCombine=2L,
+              sfr=c(3.58, 3.45), verbosity=0, nworkers=1)
 print(md)
 ```
 

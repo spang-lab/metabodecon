@@ -167,9 +167,8 @@ heat_spectra(X[, picked_idx, drop=FALSE], y=y[tr], true_x0=true_x0,
 The exact same model can be fit with one `fit_mdm()` call:
 
 ```{r fit-default}
-gd <- data.frame(nfit=10, smit=2, smws=5, delta=10, npmax=0,
-                 maxShift=50, maxCombine=5)
-md <- fit_mdm(x[tr], y[tr], mog=gd, verbosity=0, nworkers=1)
+md <- fit_mdm(x[tr], y[tr], npmax=0L, maxShift=50L, maxCombine=5L,
+              verbosity=0, nworkers=1)
 print(md)
 ```
 
@@ -240,9 +239,7 @@ The equivalent one-shot call uses `fit_mdm()` with `fit_fun=fit_ranger`
 to score grid rows on the random forest's OOB AUC:
 
 ```{r ranger-fitmdm, eval=requireNamespace("ranger", quietly=TRUE)}
-gd <- data.frame(nfit=10, smit=2, smws=5, delta=10, npmax=0,
-                 maxShift=50, maxCombine=5)
-md_rf <- fit_mdm(x[tr], y[tr], mog=gd,
+md_rf <- fit_mdm(x[tr], y[tr], npmax=0L, maxShift=50L, maxCombine=5L,
                  fit_fun=fit_ranger, predict_fun=predict_ranger,
                  verbosity=0, nworkers=1)
 preds_rf <- predict(md_rf, x[te], type="all", verbosity=0)
@@ -257,15 +254,17 @@ of the default `snap_to_ref()`.
 
 # Tune preprocessing via grid search
 
-A multi-row `mog` makes `fit_mdm()` evaluate a grid of preprocessing parameter
-combinations. For each row it builds the feature matrix, runs `cv.glmnet()`
-with a fixed fold assignment, and records the held-out accuracy and AUC at
-`lambda.min`. We use a deliberately small grid here to keep vignette build
-time short:
+Passing a vector for any of `npmax`, `maxShift`, or `maxCombine` makes
+`fit_mdm()` evaluate the cartesian product. For each row it builds the
+feature matrix, runs `cv.glmnet()` with a fixed fold assignment, and
+records the held-out accuracy and AUC at `lambda.min`. The
+deconvolution is reused across rows sharing the same `npmax`, and the
+alignment is reused across rows sharing the same `(npmax, maxShift)`.
 
 ```{r tune-mdm}
-gs <- expand.grid(smit=1:2, smws=c(3,5), delta=c(3.2,6.4), nfit=5, npmax=0, maxShift=50, maxCombine=5)
-mt <- fit_mdm(x=x[tr], y=y[tr], mog=gs, verbosity=1, nworkers=5)
+mt <- fit_mdm(x=x[tr], y=y[tr],
+              npmax=c(0L, 50L), maxShift=c(20L, 50L), maxCombine=c(5L, 10L),
+              verbosity=1, nworkers=5)
 ```
 
 The performance grid shows how each parameter combination scored:
@@ -343,7 +342,7 @@ resulting accuracy and AUC are honest estimates.
 A typical call looks like this:
 
 ```{r benchmark-code, eval=FALSE}
-bm <- benchmark(x, y, mog=mog)
+bm <- benchmark(x, y, npmax=0L, maxShift=50L, maxCombine=5L)
 acc <- mean(bm$predictions$true == bm$predictions$pred) * 100
 cat(sprintf("Nested CV accuracy: %.1f%%\n", acc))
 ```

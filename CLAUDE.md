@@ -77,6 +77,78 @@
   `[metabodecon::deconvolute()]` instead of just
   `[deconvolute()]`)
 
+### Multi-line formatting (function calls, `if/else`, loops): READ THIS
+
+This rule is **non-negotiable**. The user has flagged violations of it
+many times. Re-read this section before writing any R code.
+
+**Rule 1 — Prefer single lines.** If a call, `if`/`else` branch, or
+loop body fits within the project's character limit on one line, put
+it on one line. Only split if it doesn't fit.
+
+**Rule 2 — When you DO split, ALWAYS use this exact shape:**
+
+```r
+funcName(
+    arg1, arg2,
+    arg3, arg4
+)
+```
+
+- Opening `(` is the **last character** on the function-name line.
+  **Nothing else** follows it — no args, no comments, nothing.
+- Args sit on subsequent lines, **indented exactly 4 spaces** beyond
+  the start column of the call.
+- Closing `)` is **alone on its own line**, dedented to the call's
+  start column.
+
+**Rule 3 — Never use "trailing args after the open paren".** This
+style is **strictly forbidden**:
+
+```r
+# FORBIDDEN — args trailing after open paren, aligned to opening column:
+funcName(arg1, arg2,
+         arg3, arg4)
+
+# FORBIDDEN — first arg on same line as funcName, closing ) inline:
+funcName(arg1,
+    arg2, arg3)
+
+# FORBIDDEN — even if only one arg trails:
+img_cached("path/to/file.rds",
+           expensive_call(a, b, c))
+```
+
+If you find yourself aligning arguments under the open paren of the
+function name, **stop and reformat using Rule 2**.
+
+**Rule 4 — `if`/`else` follows the same shape.** Don't tail an `else`
+branch onto the closing `}` of the `if` body — give it its own block:
+
+```r
+# Good:
+v <- if (cond) {
+    do_a()
+    do_b()
+} else {
+    do_c()
+}
+
+# Forbidden — naked else expression after }:
+v <- if (cond) {
+    do_a()
+    do_b()
+} else do_c()
+```
+
+**Rule 5 — These rules apply recursively to nested calls.** If an
+inner call has to wrap, the inner call itself follows Rule 2 — open
+paren at end of line, args indented +4, closing paren on its own line.
+
+This rule overrides any aesthetic preference for vertical alignment.
+The user does not want column-aligned multi-line calls in this project.
+Ever.
+
 ## Pseudocode mode for vignettes
 
 - Definition: "pseudocode mode" means code examples are written primarily for

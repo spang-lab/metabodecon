@@ -23,28 +23,23 @@ for (i in seq_len(n)) {
 }
 class(sp) <- "spectra"
 
-mog1 <- function(rows = 1) {
-    data.frame(
-        nfit = 1, smit = 1, smws = 3, delta = if (rows == 1) 8 else c(6, 8),
-        npmax = 0, maxShift = 50, maxCombine = 20,
-        stringsAsFactors = FALSE
-    )
-}
-
-testthat::test_that("fit_mdm returns mdm with attached mog", {
+testthat::test_that("fit_mdm returns mdm with scalar perf and resolved params", {
     m <- fit_mdm(
-        sp, y, mog = mog1(2),
+        sp, y,
+        npmax=0L, maxShift=50L, maxCombine=20L,
         use_rust = 0.5, nworkers = 1, verbosity = 0
     )
     testthat::expect_s3_class(m, "mdm")
-    testthat::expect_true(is.data.frame(m$mog))
-    testthat::expect_equal(nrow(m$mog), 2)
-    testthat::expect_true(all(c("acc", "auc") %in% names(m$mog)))
+    testthat::expect_true(is.finite(m$acc))
+    testthat::expect_true(is.finite(m$auc))
+    testthat::expect_true(is.integer(m$params$maxShift) ||
+                          is.numeric(m$params$maxShift))
 })
 
 testthat::test_that("benchmark returns predictions and performance", {
     res <- benchmark(
-        sp, y, mog = mog1(1), k = 4,
+        sp, y,
+        npmax=0L, maxShift=50L, maxCombine=20L, k = 4,
         use_rust = 0.5, nworkers = 1, verbosity = 0
     )
     testthat::expect_true(is.data.frame(res$predictions))
@@ -54,24 +49,12 @@ testthat::test_that("benchmark returns predictions and performance", {
     testthat::expect_true(is.numeric(res$overall$acc))
 })
 
-testthat::test_that("get_mog produces required columns", {
-    g <- get_mog("default")
-    testthat::expect_true(is.data.frame(g))
-    cols <- c("nfit", "smit", "smws", "delta", "npmax",
-              "maxShift", "maxCombine")
-    testthat::expect_true(all(cols %in% names(g)))
-})
-
 testthat::test_that("fit_mdm with bin/identity2 returns mdm object", {
-    mog_bm <- data.frame(
-        nfit = 0L, smit = 0L, smws = 0L, delta = 0,
-        npmax = 0L, maxShift = 0L, maxCombine = 64L
-    )
     m <- fit_mdm(
         sp, y,
         feat_fun = bin, decon_fun = identity2,
         align_fun = identity_align, snap_fun = identity_snap,
-        mog = mog_bm, igrs = list(),
+        npmax=0L, maxShift=0L, maxCombine=64L, igrs = list(),
         verbosity = 0
     )
     testthat::expect_s3_class(m, "mdm")
@@ -82,27 +65,29 @@ testthat::test_that("fit_mdm with bin/identity2 returns mdm object", {
 testthat::test_that("fit_mdm with fit_ranger returns mdm with OOB scores", {
     testthat::skip_if_not_installed("ranger")
     m <- fit_mdm(
-        sp, y, mog = mog1(1),
+        sp, y,
+        npmax=0L, maxShift=50L, maxCombine=20L,
         fit_fun = fit_ranger, predict_fun = predict_ranger,
         use_rust = 0.5, nworkers = 1, verbosity = 0
     )
     testthat::expect_s3_class(m, "mdm")
     testthat::expect_true(inherits(m$model, "ranger"))
-    testthat::expect_true(is.finite(m$mog$acc[1]))
-    testthat::expect_true(is.finite(m$mog$auc[1]))
+    testthat::expect_true(is.finite(m$acc))
+    testthat::expect_true(is.finite(m$auc))
     p <- stats::predict(m, sp[1:4], type = "prob", verbosity = 0)
     testthat::expect_length(p, 4L)
 })
 
 testthat::test_that("fit_mdm with snap_nw_blind predicts on held-out spectra", {
     m <- fit_mdm(
-        sp, y, mog = mog1(1),
+        sp, y,
+        npmax=0L, maxShift=50L, maxCombine=20L,
         snap_fun = snap_nw_blind,
         fit_fun = fit_ranger, predict_fun = predict_ranger,
         use_rust = 0.5, nworkers = 1, verbosity = 0
     )
     testthat::expect_s3_class(m, "mdm")
-    testthat::expect_identical(m$params$snap_kind, "nw")
+    testthat::expect_identical(m$params$snap_fun, snap_nw_blind)
     testthat::expect_true(!is.null(m$ref$snap))
     p <- stats::predict(m, sp[1:4], type = "prob", verbosity = 0)
     testthat::expect_length(p, 4L)

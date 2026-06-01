@@ -111,32 +111,59 @@ clupa <- function(
     full=TRUE, use_speaq=FALSE, supsh="triangle", shift_method="auto",
     gap_tol=NULL
 ) {
-    supsh <- match.arg(supsh, c("triangle", "rectangle", "lorentz", "sparse"))
+    supsh <- match.arg(
+        supsh, c("triangle", "rectangle", "lorentz", "sparse", "eiffel")
+    )
     shift_method <- match.arg(shift_method, c("auto", "recompute", "slide"))
     sm <- resolve_shift_method(shift_method, supsh)
-    x <- ensure_cssh(x)
-    x <- ensure_supsh(x, supsh=supsh)
-    if (!is.null(ref) && is.null(ref$cssh)) ref$cssh <- x[[1]]$cssh
-    if (!is.null(ref) && is.null(ref$lcpar$pcide)) {
-        ref$lcpar$pcide <- pci_on_cssh(ref$lcpar$x0, ref$cssh)
-    }
-    if (!is.null(ref) && is.null(ref$sit$supsh)) {
-        ref$sit$supsh <- make_supsh(ref$cssh, ref$lcpar, supsh)
-    }
-    if (maxShift == 0L) return(noshift_align(x, full=full))
+
+    # 1) Resolve reference. The ref's grid drives the rest of the call.
     if (is.null(ref)) {
         ref <- if (is.null(y)) find_ref(x) else build_clupa_consensus(
             x, y, maxShift=maxShift, supsh=supsh, shift_method=sm,
             use_speaq=use_speaq, gap_tol=gap_tol
         )
     }
-    aligns <- mcmapply(
-        nworkers, align_decon, x,
-        MoreArgs=list(ref, maxShift, full=full, use_speaq=use_speaq,
-                      supsh=supsh, shift_method=sm)
+    cssh <- ref$cssh %||% ref$cs
+
+    # 2) Bind every spectrum to ref's cssh and compute sit$supsh in
+    #    parallel. After this, x[[i]]$cssh == cssh for all i.
+    x <- mcmapply(
+        nworkers, bind_to_cssh, x,
+        MoreArgs=list(cssh=cssh, supsh=supsh)
     )
+
+    # 3) Backfill ref so align_decon can read cssh / pcide / supsh.
+    if (is.null(ref$cssh)) ref$cssh <- cssh
+    if (is.null(ref$lcpar$pcide)) {
+        ref$lcpar$pcide <- pci_on_cssh(ref$lcpar$x0, cssh)
+    }
+    if (is.null(ref$sit$supsh)) {
+        ref$sit$supsh <- make_supsh(cssh, ref$lcpar, supsh)
+    }
+
+    # 4) Align (or short-circuit when no shift is requested).
+    aligns <- if (maxShift == 0L) {
+        noshift_align(x, full=full)
+    } else {
+        mcmapply(
+            nworkers, align_decon, x,
+            MoreArgs=list(ref, maxShift, full=full, use_speaq=use_speaq,
+                          supsh=supsh, shift_method=sm)
+        )
+    }
     class(aligns) <- c("aligns", "decons2", "spectra")
+    attr(aligns, "ref") <- ref
     aligns
+}
+
+# Stamp `cssh` onto a spectrum, recompute the per-peak cssh column
+# index `pcide`, and rebuild `sit$supsh` against the new grid.
+bind_to_cssh <- function(s, cssh, supsh) {
+    s$cssh <- cssh
+    s$lcpar$pcide <- pci_on_cssh(s$lcpar$x0, cssh)
+    s$sit$supsh <- make_supsh(cssh, s$lcpar, supsh)
+    s
 }
 
 # Build a CluPA-aligned class consensus reference.
@@ -291,7 +318,9 @@ make_cssh <- function(x) {
 # *switch* the cached mode must clear sit$supsh first. Assumes
 # ensure_cssh() has already run.
 ensure_supsh <- function(x, supsh="triangle") {
-    supsh <- match.arg(supsh, c("triangle", "rectangle", "lorentz", "sparse"))
+    supsh <- match.arg(
+        supsh, c("triangle", "rectangle", "lorentz", "sparse", "eiffel")
+    )
     for (i in seq_along(x)) {
         if (is.null(x[[i]]$sit$supsh)) {
             x[[i]]$sit$supsh <- make_supsh(x[[i]]$cssh, x[[i]]$lcpar, supsh)
@@ -304,10 +333,13 @@ ensure_supsh <- function(x, supsh="triangle") {
 # mode; see ensure_supsh() for semantics. Shared between clupa()'s
 # ensure_supsh() entry point and build_clupa_consensus().
 make_supsh <- function(cssh, lcpar, supsh="triangle") {
-    supsh <- match.arg(supsh, c("triangle", "rectangle", "lorentz", "sparse"))
+    supsh <- match.arg(
+        supsh, c("triangle", "rectangle", "lorentz", "sparse", "eiffel")
+    )
     if (supsh == "triangle")  return(triangle_sup(cssh, lcpar))
     if (supsh == "rectangle") return(rect_sup(cssh, lcpar))
     if (supsh == "lorentz")   return(lorentz_sup(cssh, lcpar=lcpar))
+    if (supsh == "eiffel")    return(eiffel_sup(cssh, lcpar))
     # sparse
     out <- numeric(length(cssh))
     if (nrow(lcpar) == 0L) return(out)
@@ -328,6 +360,31 @@ triangle_sup <- function(cssh, lcpar) {
     hw <- lambda_to_hw_dp(lcpar$lambda, cssh)
     A  <- as.numeric(lcpar$A)
     .Call(triangle_sup_c, as.integer(pc), as.integer(hw), A, n)
+}
+
+# Eiffel-tower superposition on `cssh`. Each peak contributes a wide
+# flat triangle (full base = 4 * lambda, apex height = 0.25 * A) PLUS
+# a single-column spike at the exact peak center of additional height
+# `A` (so the total amplitude at the center column is 1.25 * A). The
+# wide base extends the FFT cross-correlator's basin of attraction
+# (peaks now reach each other from up to 2 * lambda away vs. 0.5 *
+# lambda for plain triangle), while the spike snaps in once the
+# shift is within one column of the true center.
+eiffel_sup <- function(cssh, lcpar) {
+    n <- length(cssh)
+    if (nrow(lcpar) == 0L) return(numeric(n))
+    pc <- pci_on_cssh(lcpar$x0, cssh)
+    A <- as.numeric(lcpar$A)
+    hw_wide <- lambda_to_hw_dp(lcpar$lambda * 4, cssh)
+    out <- .Call(triangle_sup_c, as.integer(pc), as.integer(hw_wide),
+                 A * 0.25, n)
+    ok <- pc >= 1L & pc <= n
+    if (any(ok)) {
+        spike <- tapply(A[ok], pc[ok], sum)
+        out[as.integer(names(spike))] <-
+            out[as.integer(names(spike))] + spike
+    }
+    out
 }
 
 # Rectangle superposition on `cssh`. Each peak contributes a constant
@@ -406,6 +463,7 @@ snap_to_ref <- function(x, ref=NULL, maxCombine=20, ...) {
         class(x[[s]]) <- c("align", "decon2", "spectrum")
     }
     class(x) <- c("aligns", "decons2", "spectra")
+    attr(x, "ref") <- ref
     x
 }
 
