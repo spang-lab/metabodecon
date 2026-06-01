@@ -579,16 +579,24 @@ predict_lasso <- function(model, newx) {
 #' @param nworkers Forwarded to `ranger::ranger(num.threads=...)` for
 #'   per-tree parallelism.
 #' @param num.trees Number of ranger trees. Default 5000.
+#' @param importance Forwarded to `ranger::ranger(importance=...)`.
+#'   Default `"none"`. Set to `"permutation"` (or `"impurity"`) to
+#'   populate `model$variable.importance` at fit time and avoid a
+#'   redundant refit downstream; permutation importance roughly doubles
+#'   the per-tree training cost.
 #' @return A list with `model` (a `ranger` object with the trained
 #'   levels stashed on `model$lvs` for the predict path), `acc`, `auc`.
 #'   `acc_se` and `auc_se` are `NA` because OOB produces a single point
 #'   estimate.
-fit_ranger <- function(X, y, seed=1, nworkers=1L, num.trees=5000L) {
+fit_ranger <- function(
+    X, y, seed=1, nworkers=1L, num.trees=5000L, importance="none"
+) {
     requireNamespace("ranger", quietly=TRUE)
     stopifnot(is_int(num.trees, 1), num.trees >= 1L)
     lvs <- levels(y)
     rf <- ranger::ranger(
         x=X, y=y, probability=TRUE, num.trees=num.trees,
+        importance=importance,
         seed=seed, num.threads=max(1L, nworkers)
     )
     rf$lvs <- lvs

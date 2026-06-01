@@ -1,3 +1,10 @@
+# metabodecon 2.0.0.19
+
+* `fit_ranger()` gains an `importance` argument (default `"none"`)
+  forwarded to `ranger::ranger()`. Set to `"permutation"` at fit
+  time to populate `model$variable.importance` and skip a redundant
+  importance-only refit downstream.
+
 # metabodecon 2.0.0.18
 
 * **New helper `harmonize_grid()`**: pre-aligns a corpus of spectra
