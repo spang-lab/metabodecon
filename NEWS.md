@@ -1,3 +1,29 @@
+# metabodecon 2.0.1
+
+* **Slimmer `mdm` public API.** `mdm.R` now exports only `fit_mdm()` and
+  `benchmark()` (plus the `mdm` S3 methods). Both take a small set of
+  user-facing arguments; the classification backend is chosen with
+  `model = c("lasso", "ranger")` instead of by passing `fit_fun` /
+  `predict_fun`. The full pluggable pipeline (`decon_fun`, `align_fun`,
+  `snap_fun`, `feat_fun`, `fit_fun`, `predict_fun`) now lives in the
+  internal engines `metabodecon:::fit_mdm_internal()` /
+  `metabodecon:::benchmark_internal()`; extra engine arguments (`sfr`,
+  `igrs`, `deg`, ...) are still reachable through `...`. The helper
+  fitters/predictors (`fit_ranger`, `fit_lasso`, `predict_ranger`,
+  `predict_lasso`) and the pipeline no-ops (`identity2`, `identity_snap`,
+  `identity_align`) are no longer exported.
+
+* **Experimental alignment strategies made private.** The Needleman-Wunsch
+  snap family (`snap_nw()`, `snap_nw_blind()`, `build_consensus()`) and the
+  greedy column-merge snap (`combine_peaks()`) are no longer exported. They
+  are kept as private, experimental functions in `R/experimental.R` and
+  remain reachable via `metabodecon:::`.
+
+* **`get_si_mat()` removed.** Use [metabodecon::si_mat()] (spectra in rows,
+  chemical shifts in columns) or [metabodecon::peak_mat()] instead.
+
+* The `sap2` demo dataset and its `MDM_SAP2` vignette were removed.
+
 # metabodecon 2.0.0.19
 
 * `fit_ranger()` gains an `importance` argument (default `"none"`)

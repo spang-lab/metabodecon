@@ -1,6 +1,6 @@
 Package: metabodecon
 Title: Deconvolution and Alignment of 1d NMR Spectra
-Version: 2.0.0.19
+Version: 2.0.1
 Authors@R: c(
     person(given = "Tobias",
            family = "Schmidt",
@@ -42,7 +42,6 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Depends: R (>= 3.5.0)
 Imports:
-    data.table,
     mathjaxr,
     readJDX,
     speaq,
@@ -55,6 +54,7 @@ Suggests:
     devtools,
     diffobj,
     digest,
+    doParallel,
     e1071,
     glmnet,
     glue,
@@ -83,6 +83,7 @@ Suggests:
     vdiffr,
     waldo
 LazyData: true
+LazyDataCompression: xz
 Config/testthat/edition: 3
 Config/testthat/parallel: true
 Config/testthat/start-first:

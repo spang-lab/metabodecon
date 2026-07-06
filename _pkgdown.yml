@@ -14,64 +14,67 @@ articles:
       - Compatibility
 reference:
 - title: Deconvolution
-  desc: Functions to deconvolute a spectrum into its individual peaks.
+  desc: Functions to read and deconvolute spectra into their individual peaks.
   contents:
   - read_spectrum
   - read_spectra
+  - make_spectrum
+  - simulate_spectrum
+  - deconvolute
+- title: Alignment
+  desc: Functions to align multiple deconvoluted spectra.
+  contents:
+  - align
+  - alignment_funs
+  - harmonize_grid
+- title: Feature matrices and models
+  desc: Functions to turn aligned spectra into feature matrices and to fit and benchmark classification models.
+  contents:
+  - si_mat
+  - peak_mat
+  - bin
+  - bin700
+  - mdm
+  - mdm_methods
+- title: Plotting
+  desc: Functions to plot single and multiple spectra.
+  contents:
   - plot_spectrum
   - plot_spectra
   - draw_spectrum
-  - deconvolute
-  - decon_cachedir
-  - mdm
-  - mdm_methods
-- title: Alignment
-  desc: Functions to align multiple spectra.
+  - heat_spectra
+- title: Classes
+  desc: The spectrum and spectra classes and their methods.
   contents:
-  - align
-  - dohCluster
-  - gen_feat_mat
-  - get_ppm_range
-  - speaq_align
-  - get_si_mat
+  - metabodecon-classes
 - title: Datasets
-  desc: Functions to download and/or find example datasets.
+  desc: Bundled example datasets and functions to download and locate them.
   contents:
+  - sim
+  - sim2
+  - sap
   - datadir
   - datadir_persistent
   - datadir_temp
+  - tmpdir
   - download_example_datasets
   - metabodecon_file
-  - sim
-  - sap
-  - tmpdir
-- title: Utility
-  desc: Utility functions, e.g. for converting between units or for calculating y values for a given lorentz curve.
+- title: Rust backend
+  desc: Functions to install and check the optional Rust backend.
   contents:
-  - as_metabodecon_class
   - check_mdrb
-  - convert_pos
-  - convert_width
-  - evalwith
-  - get_names
-  - headtail
   - install_mdrb
-  - is_metabodecon_class
-  - make_spectrum
-  - print_methods
-  - simulate_spectrum
+- title: Utility
+  desc: Utility functions, e.g. for converting between units or testing.
+  contents:
+  - convert_pos
+  - width
   - transp
   - tree
-  - width
+  - headtail
+  - evalwith
   - aaa_Get_Started
 - title: Deprecated
-  desc: Deprecated functions. These functions should no longer be used. They will be retained for a short period of time to give users time to migrate to their replacement function, but will be removed in future releases of the package.
+  desc: Deprecated functions. They will be removed in a future release.
   contents:
   - get_data_dir # Superseded by `datadir()`
-  - MetaboDecon1D # supersed by `deconvolute()`
-  - calculate_lorentz_curves
-  - plot_lorentz_curves_save_as_png
-  - plot_spectrum_superposition_save_as_png
-  - plot_triplets
-  - generate_lorentz_curves # supersed by `deconvolute()`
-

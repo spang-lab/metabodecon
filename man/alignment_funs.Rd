@@ -3,10 +3,7 @@
 \name{alignment_funs}
 \alias{alignment_funs}
 \alias{clupa}
-\alias{identity_align}
 \alias{snap_to_ref}
-\alias{combine_peaks}
-\alias{snap_nw}
 \title{Alignment building blocks}
 \usage{
 clupa(
@@ -21,22 +18,16 @@ clupa(
   gap_tol = NULL
 )
 
-identity_align(x, ...)
-
 snap_to_ref(x, ref = NULL, maxCombine = 20, ...)
-
-combine_peaks(x, ref = NULL, maxCombine = 20, ...)
-
-snap_nw(x, ref = NULL, gap_tol = 0.02, pos_field = "x0", w_A = 0, ...)
 }
 \arguments{
-\item{x}{A \code{decons2} / \code{aligns} object.}
+\item{x}{A \code{decons2} or \code{aligns} object.}
 
-\item{ref}{Reference. Either an \code{aligns}/\code{decons2} \emph{spectrum} with an
-\code{lcpar} element (in which case \code{lcpar$x0} is the alignment target), or
-the consensus list returned by \code{\link[=build_consensus]{build_consensus()}} (which
-carries the same \code{lcpar} shape). If \code{NULL}, picked via
-\code{\link[=find_ref]{find_ref()}} on \code{x}.}
+\item{y}{Optional factor of class labels. Unused by the default
+pipeline; accepted for signature compatibility.}
+
+\item{ref}{Optional reference spectrum (\code{align} or \code{decon2}). When
+\code{NULL}, chosen internally.}
 
 \item{maxShift}{Maximum CluPA shift in datapoints.}
 
@@ -48,26 +39,15 @@ carries the same \code{lcpar} shape). If \code{NULL}, picked via
 
 \item{use_speaq}{Use \code{speaq::hClustAlign} (CluPA only).}
 
-\item{gap_tol}{Numeric scalar. Matching tolerance in ppm. Default 0.02.}
-
-\item{...}{Ignored (signature compatibility with \code{snap_to_ref}).}
+\item{gap_tol}{Optional gap tolerance in ppm; only consulted by
+experimental snap backends.}
 
 \item{maxCombine}{Maximum RefPA snap distance in datapoints.}
 
-\item{pos_field}{Which \code{lcpar} column on \code{x} to use as the peak position
-for alignment. \code{"x0"} (default) is the raw deconvolution position;
-\code{"x0al"} is the post-CluPA aligned position. The reference is always
-matched against on its \code{lcpar$x0}, so callers building a reference
-from aligned data should store the aligned positions in its \code{x0}
-column (which is what \code{\link[=build_consensus]{build_consensus()}} does when
-given \code{pos_field="x0al"}).}
+\item{...}{Ignored.}
 }
 \value{
 An object of class \code{aligns}.
-
-An \code{aligns} object with \code{pcisn} and \code{x0sn} set on each spectrum's
-\code{lcpar}. \code{sit$supal} is cleared (the snap output is no longer
-Lorentz-compatible until rebuilt downstream).
 }
 \description{
 Pluggable alignment stages used by \code{\link[=align]{align()}} and the
@@ -81,7 +61,6 @@ already attached to each spectrum by deconvolution.
 \item \code{\link[=snap_to_ref]{snap_to_ref()}}: \strong{RefPA} — reference-based peak
 alignment: snap each peak to the nearest reference column within
 \code{maxCombine}.
-\item \code{\link[=identity_align]{identity_align()}}: no-op. Returns its argument unchanged.
 }
 
 All these functions require every input spectrum to share the same
@@ -98,34 +77,4 @@ RefPA only \emph{adds} the snapped fields. Collisions on the same
 \code{pcisn} column are not merged here; \code{\link[=si_mat]{si_mat()}} sums
 their areas when rasterising the feature matrix. \code{sit$supal} is
 cleared because the post-snap superposition would need recomputing.
-
-\code{\link[=combine_peaks]{combine_peaks()}} is an alternative post-CluPA fine
-tuner that, unlike \code{snap_to_ref}, does not require the target
-columns to come from a reference spectrum: it greedily merges
-neighbouring \code{cs} columns whose non-zero rows do not collide,
-within a window of \code{maxCombine}. Operates on the cross-spectrum
-peak-area matrix built from \code{lcpar$pcial} / \code{lcpar$A}; sets
-\code{lcpar$pcisn} / \code{lcpar$x0sn} per peak from the discovered column
-mapping. No peaks are dropped. \code{sit$supal} is cleared.
-
-\code{\link[=snap_nw]{snap_nw()}} is a drop-in alternative to
-\code{\link[=snap_to_ref]{snap_to_ref()}} that aligns each spectrum's peak list to
-the reference's peak list by global pairwise Needleman-Wunsch on \code{x0}
-(chemical shift, ppm). For each spectrum, matched peaks inherit the
-reference's \code{cs} column index as their \code{pcisn}; unmatched peaks get
-\code{pcisn = NA}. The match cost is \verb{|x0_spec - x0_ref|} and the gap cost is
-a constant \code{gap_tol} (ppm), so a match is rejected in favour of two gaps
-whenever its position difference exceeds \code{2 * gap_tol}.
-
-Unlike \code{\link[=snap_to_ref]{snap_to_ref()}}, which is a per-peak nearest-neighbour
-lookup (greedy, many-to-one), \code{snap_nw} enforces 1-to-1 pairing via the
-Needleman-Wunsch DP. This avoids the failure mode where two adjacent
-spectrum peaks both collapse onto a single reference column.
-
-The DP runs in C (\code{align_dp_c} in \code{src/align_dp.c}); the R wrapper
-builds the cost matrix via \link[base:outer]{base::outer} and dispatches one \code{.Call}
-per spectrum.
-}
-\author{
-2026 Tobias Schmidt: initial version.
 }

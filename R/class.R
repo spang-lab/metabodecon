@@ -1,6 +1,6 @@
 
 #' @name metabodecon-classes
-#' @aliases spectrum spectra decon2 decons2 align aligns
+#' @aliases spectrum spectra decon2 decons2 aligns
 #' @aliases is_spectrum is_spectra as_spectra as_decon2 as_decons2 get_names
 #'
 #' @title Metabodecon Classes and Helpers

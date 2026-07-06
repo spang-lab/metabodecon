@@ -1,3 +1,2 @@
-# Same as Makevars (Linux/macOS). -O3 is supported by both GCC and
-# the LLVM-based toolchain bundled with Rtools on Windows.
-PKG_CFLAGS = -O3
+# Compiler flags are intentionally left at R's portable defaults.
+# See src/Makevars for details.

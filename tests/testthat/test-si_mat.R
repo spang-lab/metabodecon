@@ -1,4 +1,4 @@
-test_that("get_si_mat returns a matrix of the correct dimensions", {
+test_that("si_mat returns a matrix of the correct dimensions", {
 
     withr::local_output_sink(nullfile())
 
@@ -9,13 +9,14 @@ test_that("get_si_mat returns a matrix of the correct dimensions", {
 
     decons <- deconvolute(sim[1:2], sfr = c(3.55, 3.35))
     aligns <- align(decons)
-    suppressWarnings(si_mat <- get_si_mat(aligns))
-    expect_equal(dim(si_mat), c(2048, 2))
-    expect_equal(as.numeric(rownames(si_mat)), aligns[[1]]$cs)
-    expect_equal(colnames(si_mat), get_names(aligns))
+    mat <- si_mat(aligns)
+    # si_mat() returns spectra in rows, chemical shifts in columns.
+    expect_equal(dim(mat), c(2, 2048))
+    expect_equal(as.numeric(colnames(mat)), aligns[[1]]$cs)
+    expect_equal(rownames(mat), get_names(aligns))
 })
 
-test_that("get_si_mat drop_zero removes all-zero rows", {
+test_that("si_mat drop_zero removes all-zero columns", {
 
     withr::local_output_sink(nullfile())
 
@@ -25,13 +26,11 @@ test_that("get_si_mat drop_zero removes all-zero rows", {
 
     decons <- deconvolute(sim[1:2], sfr = c(3.55, 3.35))
     aligns <- align(decons)
-    suppressWarnings({
-        full <- get_si_mat(aligns)
-        compact <- get_si_mat(aligns, drop_zero = TRUE)
-    })
-    expect_lt(nrow(compact), nrow(full))
-    expect_true(all(rowSums(compact != 0) > 0))
-    expect_equal(compact, full[rowSums(full != 0) > 0, , drop = FALSE])
+    full <- si_mat(aligns)
+    compact <- si_mat(aligns, drop_zero = TRUE)
+    expect_lt(ncol(compact), ncol(full))
+    expect_true(all(colSums(compact != 0) > 0))
+    expect_equal(compact, full[, colSums(full != 0) > 0, drop = FALSE])
 })
 
 make_aligns_for_si_mat_test <- function(cs, peaks_list, areas_list) {

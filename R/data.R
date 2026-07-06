@@ -605,60 +605,6 @@ sim2_docs <- NULL # To get a symbol in the outline
 #'
 "sim2" # To regenerate this dataset, see `data-raw/data.R`.
 
-# Sap2 (Public) #####
-
-sap2_docs <- NULL # To get a symbol in the outline
-
-#' @title The Sap2 Mini Classification Dataset
-#'
-#' @description
-#' A small simulated two-group classification dataset, designed as a
-#' didactic counterpart to [metabodecon::sim2]. It contains 18 simulated 1D
-#' NMR spectra (128 datapoints each) split evenly into groups `A` and `B`,
-#' where 1 out of 4 peaks per spectrum differs between groups by 10% in
-#' area. The dataset is small enough that the full feature matrix produced
-#' by [metabodecon::si_mat()] can be displayed in its entirety, which makes
-#' it useful for visualizing the deconvolution / alignment / feature
-#' extraction pipeline end-to-end.
-#'
-#' @format
-#' A `spectra` object consisting of 18 `spectrum` objects, where each
-#' spectrum contains 128 datapoints ranging from 3.59 to 3.44 ppm. The
-#' per-spectrum group labels are attached as `attr(sap2, "group")`, a named
-#' factor with levels `A` and `B`. For details about `spectrum` and
-#' `spectra` objects see [metabodecon::metabodecon-classes].
-#'
-#' Each spectrum's `meta$simpar` carries the standard fields (`x0`, `A`,
-#' `lambda`, `noise`) plus four sap2-specific fields: `base_x0` (the 4
-#' reference peak positions, identical across spectra), `dx0` (per-peak
-#' jitter in ppm), `gx0` (scalar global ppm shift), and `diff_AB` (integer
-#' index into `base_x0` of the peak that differs between groups). They
-#' satisfy `x0[k] = base_x0[k] + dx0[k] + gx0`.
-#'
-#' `attr(sap2, "true_x0")` is a numeric vector with the post-alignment ppm
-#' positions of the discriminating peak.
-#'
-#' @details
-#' Peak shape sampling matches [metabodecon::sim2] at ~6-9 datapoints per
-#' half-width, so deconvolution behaves analogously to sim2. The
-#' ppm/datapoint resolution is coarser (`0.0012 ppm/dp` vs. `0.00015
-#' ppm/dp` in sim2) so that 4 well-separated peaks fit into 128
-#' datapoints. Concretely:
-#' - 4 base peaks per spectrum at positions `c(3.555, 3.525, 3.495, 3.465)`
-#'   ppm, leaving signal-free regions of ~29 dp on the left and ~22 dp on
-#'   the right edge for noise estimation.
-#' - Per-peak jitter (sd `0.0012` ppm, ~1 dp) plus a per-spectrum global
-#'   ppm shift (sd `0.0048` ppm, ~4 dp) so alignment is visibly necessary.
-#' - Base areas drawn from a log-normal distribution centered around `2500`
-#'   (in ppm-area units) and varied per spectrum by `+/-60%`.
-#' - Base half-widths drawn uniformly in `[0.0072, 0.0108]` ppm and varied
-#'   per spectrum by `+/-10%`.
-#' - Gaussian noise with standard deviation `1500`.
-#' - In group `A`, the second base peak has its area multiplied by `1.1`.
-#'   The exact index is stored in `simpar$diff_AB`.
-#'
-"sap2" # To regenerate this dataset, see `data-raw/data.R`.
-
 # AKI #####
 
 read_aki_metadata <- function(aki_path) {

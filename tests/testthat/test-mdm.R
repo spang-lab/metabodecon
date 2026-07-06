@@ -49,11 +49,12 @@ testthat::test_that("benchmark returns predictions and performance", {
     testthat::expect_true(is.numeric(res$overall$acc))
 })
 
-testthat::test_that("fit_mdm with bin/identity2 returns mdm object", {
-    m <- fit_mdm(
+testthat::test_that("fit_mdm_internal with bin/identity2 returns mdm object", {
+    m <- metabodecon:::fit_mdm_internal(
         sp, y,
-        feat_fun = bin, decon_fun = identity2,
-        align_fun = identity_align, snap_fun = identity_snap,
+        feat_fun = bin, decon_fun = metabodecon:::identity2,
+        align_fun = metabodecon:::identity_align,
+        snap_fun = metabodecon:::identity_snap,
         npmax=0L, maxShift=0L, maxCombine=64L, igrs = list(),
         verbosity = 0
     )
@@ -62,12 +63,11 @@ testthat::test_that("fit_mdm with bin/identity2 returns mdm object", {
     testthat::expect_true("peakPos" %in% names(m$params))
 })
 
-testthat::test_that("fit_mdm with fit_ranger returns mdm with OOB scores", {
+testthat::test_that("fit_mdm with model='ranger' returns mdm with OOB scores", {
     testthat::skip_if_not_installed("ranger")
     m <- fit_mdm(
-        sp, y,
+        sp, y, model = "ranger",
         npmax=0L, maxShift=50L, maxCombine=20L,
-        fit_fun = fit_ranger, predict_fun = predict_ranger,
         use_rust = 0.5, nworkers = 1, verbosity = 0
     )
     testthat::expect_s3_class(m, "mdm")
@@ -78,12 +78,15 @@ testthat::test_that("fit_mdm with fit_ranger returns mdm with OOB scores", {
     testthat::expect_length(p, 4L)
 })
 
-testthat::test_that("fit_mdm with snap_nw_blind predicts on held-out spectra", {
-    m <- fit_mdm(
+testthat::test_that("fit_mdm_internal with snap_nw_blind predicts on held-out spectra", {
+    testthat::skip_if_not_installed("ranger")
+    snap_nw_blind <- metabodecon:::snap_nw_blind
+    m <- metabodecon:::fit_mdm_internal(
         sp, y,
         npmax=0L, maxShift=50L, maxCombine=20L,
         snap_fun = snap_nw_blind,
-        fit_fun = fit_ranger, predict_fun = predict_ranger,
+        fit_fun = metabodecon:::fit_ranger,
+        predict_fun = metabodecon:::predict_ranger,
         use_rust = 0.5, nworkers = 1, verbosity = 0
     )
     testthat::expect_s3_class(m, "mdm")

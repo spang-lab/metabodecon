@@ -20,8 +20,11 @@ align(
 \arguments{
 \item{x}{A \code{decons2} (or \code{aligns}) object.}
 
+\item{y}{Optional factor of class labels (length \code{length(x)}). Unused by the
+default pipeline; accepted for signature compatibility.}
+
 \item{ref}{Optional reference spectrum (\code{align} or \code{decon2}). When
-\code{NULL} (default) the reference is chosen by \code{\link[=find_ref]{find_ref()}}.}
+\code{NULL} (default) the reference is chosen internally.}
 
 \item{maxShift}{Maximum number of datapoints a peak center may be
 shifted by CluPA. \code{maxShift = 0L} skips CluPA (sets \code{x0al = x0}).}
@@ -41,6 +44,9 @@ no longer Lorentz-compatible).}
 \item{use_speaq}{Use \code{speaq::hClustAlign} instead of the bundled CluPA
 implementation. Defaults to \code{FALSE}; the bundled implementation is
 byte-equivalent to the speaq one (see \code{tests/testthat/test-speaq.R}).}
+
+\item{gap_tol}{Optional gap tolerance in ppm. \code{NULL} (default) uses the standard
+CluPA + RefPA pipeline; only consulted by experimental snap backends.}
 }
 \value{
 An object of class \code{aligns}.

@@ -27,9 +27,12 @@
 #' different acquisitions with slight calibration offsets.
 #'
 #' @param x A `decons2` (or `aligns`) object.
+#' @param y
+#' Optional factor of class labels (length `length(x)`). Unused by the
+#' default pipeline; accepted for signature compatibility.
 #' @param ref
 #' Optional reference spectrum (`align` or `decon2`). When
-#' `NULL` (default) the reference is chosen by [metabodecon::find_ref()].
+#' `NULL` (default) the reference is chosen internally.
 #' @param maxShift
 #' Maximum number of datapoints a peak center may be
 #' shifted by CluPA. `maxShift = 0L` skips CluPA (sets `x0al = x0`).
@@ -49,6 +52,9 @@
 #' Use `speaq::hClustAlign` instead of the bundled CluPA
 #' implementation. Defaults to `FALSE`; the bundled implementation is
 #' byte-equivalent to the speaq one (see `tests/testthat/test-speaq.R`).
+#' @param gap_tol
+#' Optional gap tolerance in ppm. `NULL` (default) uses the standard
+#' CluPA + RefPA pipeline; only consulted by experimental snap backends.
 #'
 #' @return An object of class `aligns`.
 #'
@@ -98,21 +104,24 @@ align <- function(x, y=NULL, ref=NULL, maxShift=50, maxCombine=0,
 #' - [metabodecon::snap_to_ref()]: **RefPA** — reference-based peak
 #'   alignment: snap each peak to the nearest reference column within
 #'   `maxCombine`.
-#' - [metabodecon::identity_align()]: no-op. Returns its argument unchanged.
 #'
 #' All these functions require every input spectrum to share the same
 #' `$cs` grid; an explicit `stop()` is raised otherwise. Call
 #' [metabodecon::harmonize_grid()] upstream to enforce that invariant.
 #'
 #' @param x A `decons2` or `aligns` object.
+#' @param y Optional factor of class labels. Unused by the default
+#'   pipeline; accepted for signature compatibility.
 #' @param ref Optional reference spectrum (`align` or `decon2`). When
-#'   `NULL`, chosen by [metabodecon::find_ref()].
+#'   `NULL`, chosen internally.
 #' @param maxShift Maximum CluPA shift in datapoints.
 #' @param maxCombine Maximum RefPA snap distance in datapoints.
 #' @param verbose Print progress messages?
 #' @param nworkers Number of parallel workers.
 #' @param full If `TRUE` also recompute the aligned superposition.
 #' @param use_speaq Use `speaq::hClustAlign` (CluPA only).
+#' @param gap_tol Optional gap tolerance in ppm; only consulted by
+#'   experimental snap backends.
 #' @param ... Ignored.
 #' @return An object of class `aligns`.
 clupa <- function(
@@ -248,8 +257,8 @@ pci_on_cs <- function(vals, cs) {
     pmin(pmax(as.integer(idx), 1L), length(cs))
 }
 
-#' @export
-#' @rdname alignment_funs
+#' @noRd
+#' @title Identity alignment function (no-op)
 identity_align <- function(x, ...) x
 
 #' @export
@@ -266,15 +275,6 @@ identity_align <- function(x, ...) x
 #' `pcisn` column are not merged here; [metabodecon::si_mat()] sums
 #' their areas when rasterising the feature matrix. `sit$supal` is
 #' cleared because the post-snap superposition would need recomputing.
-#'
-#' [metabodecon::combine_peaks()] is an alternative post-CluPA fine
-#' tuner that, unlike `snap_to_ref`, does not require the target
-#' columns to come from a reference spectrum: it greedily merges
-#' neighbouring `cs` columns whose non-zero rows do not collide,
-#' within a window of `maxCombine`. Operates on the cross-spectrum
-#' peak-area matrix built from `lcpar$pcial` / `lcpar$A`; sets
-#' `lcpar$pcisn` / `lcpar$x0sn` per peak from the discovered column
-#' mapping. No peaks are dropped. `sit$supal` is cleared.
 snap_to_ref <- function(x, ref=NULL, maxCombine=20, ...) {
     stopifnot(inherits(x, "decons2"), is_int(maxCombine, 1), maxCombine >= 0)
     if (maxCombine == 0L) return(x)
@@ -317,109 +317,6 @@ snap_lcpar <- function(lcpar, pp, maxCombine, cs) {
     lcpar$pcisn[keep] <- as.integer(nearest[keep])
     lcpar$x0sn[keep]  <- cs[nearest[keep]]
     lcpar
-}
-
-#' @export
-#' @rdname alignment_funs
-combine_peaks <- function(x, ref=NULL, maxCombine=20, ...) {
-    stopifnot(inherits(x, "decons2"), is_int(maxCombine, 1), maxCombine >= 0)
-    if (maxCombine == 0L) return(x)
-    cs <- ensure_shared_cs(x)
-    nc <- length(cs)
-    ns <- length(x)
-    M <- matrix(0, nrow=ns, ncol=nc)
-    for (s in seq_len(ns)) {
-        lcpar <- x[[s]]$lcpar
-        n <- nrow(lcpar)
-        if (n == 0L) next
-        if (is.null(lcpar$pcial)) {
-            lcpar$pcial <- pci_on_cs(lcpar$x0, cs)
-            x[[s]]$lcpar <- lcpar
-        }
-        pcial <- as.integer(lcpar$pcial)
-        A <- as.numeric(lcpar$A)
-        keep <- pcial >= 1L & pcial <= nc
-        if (!any(keep)) next
-        s_by_col <- tapply(A[keep], pcial[keep], sum)
-        M[s, as.integer(names(s_by_col))] <- s_by_col
-    }
-    map <- combine_peaks_mat(M, maxCombine)$map
-    for (s in seq_len(ns)) {
-        lcpar <- x[[s]]$lcpar
-        n <- nrow(lcpar)
-        if (n == 0L) {
-            lcpar$pcisn <- integer(0)
-            lcpar$x0sn  <- numeric(0)
-        } else {
-            pcial <- as.integer(lcpar$pcial)
-            ok <- pcial >= 1L & pcial <= nc
-            pcisn <- rep(NA_integer_, n)
-            x0sn  <- rep(NA_real_, n)
-            pcisn[ok] <- map[pcial[ok]]
-            x0sn[ok]  <- cs[pcisn[ok]]
-            lcpar$pcisn <- pcisn
-            lcpar$x0sn  <- x0sn
-        }
-        x[[s]]$lcpar <- lcpar
-        x[[s]]$sit$supal <- NULL
-        class(x[[s]]) <- c("align", "decon2", "spectrum")
-    }
-    class(x) <- c("aligns", "decons2", "spectra")
-    x
-}
-
-# Greedy column-merge on the cross-spectrum peak-area matrix `M`.
-# Two columns may merge only if no row has non-zero entries in both
-# (no collision). Within each pass we pick the most "beneficial"
-# neighbour (column with the most non-zero entries) within
-# `maxCombine` columns. Returns the merged matrix together with a
-# per-column destination map: `map[c]` is the column that the original
-# column `c` ended up in.
-#
-# 2021-2024 Wolfram Gronwald: initial version.
-# 2024-2025 Tobias Schmidt: refactored initial version.
-combine_peaks_mat <- function(M, maxCombine=5, lower_bound=1) {
-    U <- M != 0
-    uu <- colSums(U)
-    nc <- ncol(M)
-    map <- seq_len(nc)
-    if (nrow(M) <= lower_bound) return(list(M=M, map=map))
-    for (i in (nrow(M) - 1):lower_bound) {
-        for (j in which(uu == i)) {
-            if (uu[j] == 0) next
-            nn <- seq(max(1, j - maxCombine), min(nc, j + maxCombine))
-            nn <- nn[nn != j]
-            if (length(nn) == 0) next
-            mj <- M[, j]; uj <- U[, j]
-            repeat {
-                nn <- nn[uu[nn] > 0]
-                if (length(nn) == 0) break
-                cc <- combine_scores(U, uu, j, nn, uj=uj)
-                if (max(cc) == 0) break
-                n <- nn[which.max(cc)]
-                mj <- mj + M[, n]
-                uj <- uj | U[, n]
-                uu[j] <- uu[j] + uu[n]
-                M[, n] <- 0; U[, n] <- FALSE
-                uu[n] <- 0
-                map[map == n] <- j
-                nn <- nn[nn != n]
-                if (length(nn) == 0) break
-            }
-            M[, j] <- mj; U[, j] <- uj
-        }
-    }
-    list(M=M, map=map)
-}
-
-combine_scores <- function(U, uu, j, nn, uj=NULL) {
-    nn <- nn[nn >= 1 & nn <= ncol(U)]
-    if (length(nn) == 0) return(numeric(0))
-    if (is.null(uj)) uj <- U[, j]
-    overlaps <- .colSums(U[, nn, drop=FALSE] & uj, nrow(U), length(nn))
-    cc <- uu[nn]
-    cc[overlaps > 0] <- 0
-    unname(cc)
 }
 
 # Internal #####
@@ -748,213 +645,6 @@ pad_peaks <- function(peaks, n) {
     } else {
         c(peaks, rep(peaks[1L], n - length(peaks)))
     }
-}
-
-# Needleman-Wunsch alignment #####
-
-#' @export
-#' @rdname alignment_funs
-#'
-#' @title Pairwise Needleman-Wunsch snap of peak lists onto a reference
-#'
-#' @description
-#' [metabodecon::snap_nw()] is a drop-in alternative to
-#' [metabodecon::snap_to_ref()] that aligns each spectrum's peak list to
-#' the reference's peak list by global pairwise Needleman-Wunsch on `x0`
-#' (chemical shift, ppm). For each spectrum, matched peaks inherit the
-#' reference's `cs` column index as their `pcisn`; unmatched peaks get
-#' `pcisn = NA`. The match cost is `|x0_spec - x0_ref|` and the gap cost is
-#' a constant `gap_tol` (ppm), so a match is rejected in favour of two gaps
-#' whenever its position difference exceeds `2 * gap_tol`.
-#'
-#' Unlike [metabodecon::snap_to_ref()], which is a per-peak nearest-neighbour
-#' lookup (greedy, many-to-one), `snap_nw` enforces 1-to-1 pairing via the
-#' Needleman-Wunsch DP. This avoids the failure mode where two adjacent
-#' spectrum peaks both collapse onto a single reference column.
-#'
-#' The DP runs in C (`align_dp_c` in `src/align_dp.c`); the R wrapper
-#' builds the cost matrix via [base::outer] and dispatches one `.Call`
-#' per spectrum.
-#'
-#' @param x A `decons2` / `aligns` object.
-#' @param ref Reference. Either an `aligns`/`decons2` *spectrum* with an
-#'   `lcpar` element (in which case `lcpar$x0` is the alignment target), or
-#'   the consensus list returned by [metabodecon::build_consensus()] (which
-#'   carries the same `lcpar` shape). If `NULL`, picked via
-#'   [metabodecon::find_ref()] on `x`.
-#' @param gap_tol Numeric scalar. Matching tolerance in ppm. Default 0.02.
-#' @param pos_field Which `lcpar` column on `x` to use as the peak position
-#'   for alignment. `"x0"` (default) is the raw deconvolution position;
-#'   `"x0al"` is the post-CluPA aligned position. The reference is always
-#'   matched against on its `lcpar$x0`, so callers building a reference
-#'   from aligned data should store the aligned positions in its `x0`
-#'   column (which is what [metabodecon::build_consensus()] does when
-#'   given `pos_field="x0al"`).
-#' @param ... Ignored (signature compatibility with `snap_to_ref`).
-#'
-#' @return An `aligns` object with `pcisn` and `x0sn` set on each spectrum's
-#'   `lcpar`. `sit$supal` is cleared (the snap output is no longer
-#'   Lorentz-compatible until rebuilt downstream).
-#'
-#' @author 2026 Tobias Schmidt: initial version.
-snap_nw <- function(x, ref=NULL, gap_tol=0.02, pos_field="x0", w_A=0, ...) {
-    stopifnot(inherits(x, "decons2"), is_num(gap_tol, 1), gap_tol >= 0,
-              is_num(w_A, 1), w_A >= 0)
-    if (gap_tol == 0) return(x)
-    cs <- ensure_shared_cs(x)
-    ref <- ref %||% find_ref(x)
-    if (is.null(ref$lcpar$pcide)) {
-        ref$lcpar$pcide <- pci_on_cs(ref$lcpar$x0, ref$cs %||% cs)
-    }
-    ro   <- order(ref$lcpar$x0)
-    rx0  <- as.numeric(ref$lcpar$x0[ro])
-    rcol <- as.integer(ref$lcpar$pcide[ro])
-    rA   <- if (w_A > 0) normalize_A(as.numeric(ref$lcpar$A[ro])) else NULL
-    for (s in seq_along(x)) {
-        x[[s]]$lcpar <- snap_nw_lcpar(x[[s]]$lcpar, rx0, rcol, cs, gap_tol,
-                                       pos_field=pos_field, w_A=w_A, rA=rA)
-        x[[s]]$sit$supal <- NULL
-        class(x[[s]]) <- c("align", "decon2", "spectrum")
-    }
-    class(x) <- c("aligns", "decons2", "spectra")
-    x
-}
-
-normalize_A <- function(A) {
-    if (length(A) == 0L) return(A)
-    pos <- A[A > 0]
-    if (length(pos) == 0L) return(A)
-    A / stats::median(pos)
-}
-
-snap_nw_lcpar <- function(lcpar, rx0, rcol, cs, gap_tol, pos_field="x0",
-                           w_A=0, rA=NULL) {
-    n <- nrow(lcpar)
-    lcpar$pcisn <- rep(NA_integer_, n)
-    lcpar$x0sn  <- rep(NA_real_,    n)
-    if (n == 0L || length(rcol) == 0L) return(lcpar)
-    pos <- lcpar[[pos_field]] %||% lcpar$x0
-    o   <- order(pos)
-    sx0 <- as.numeric(pos[o])
-    M   <- abs(outer(sx0, rx0, "-"))
-    if (w_A > 0 && !is.null(rA) && !is.null(lcpar$A)) {
-        sA <- normalize_A(as.numeric(lcpar$A[o]))
-        eps <- 1e-12
-        ratio <- outer(pmax(sA, eps), pmax(rA, eps), "/")
-        M_amp <- abs(log(ratio))
-        M <- M + w_A * gap_tol * M_amp
-    }
-    storage.mode(M) <- "double"
-    gp  <- rep_len(as.double(gap_tol), length(sx0))
-    gq  <- rep_len(as.double(gap_tol), length(rx0))
-    ans <- .Call(align_dp_c, M, gp, gq)
-    al  <- ans$alignment
-    mt  <- !is.na(al[, 1]) & !is.na(al[, 2])
-    if (any(mt)) {
-        si <- o[al[mt, 1]]
-        ci <- rcol[al[mt, 2]]
-        lcpar$pcisn[si] <- ci
-        lcpar$x0sn[si]  <- cs[ci]
-    }
-    lcpar
-}
-
-#' @export
-#'
-#' @title Build a consensus peak-list reference for NW snapping
-#'
-#' @description
-#' Constructs a single consensus peak list to be used as the alignment
-#' target by [metabodecon::snap_nw()]. The consensus represents the union
-#' of training-set peak positions, deduplicated within `gap_tol` ppm so
-#' near-coincident peaks collapse to a single column.
-#'
-#' When `y` is supplied, the consensus is class-aware: one
-#' [metabodecon::find_ref()] is picked per level of `y`, the per-class
-#' references are merged into a seed consensus (so class-specific peaks
-#' are present from the start), and every training spectrum is then
-#' NW-snapped to this seed; their `x0` values contribute additional
-#' consensus positions wherever they did not match the seed. The final
-#' consensus is again deduplicated within `gap_tol`.
-#'
-#' The returned object is shaped like an aligned spectrum
-#' (`list(cs, lcpar, ...)`) so it can be passed directly as `ref` to
-#' [metabodecon::snap_nw()] at prediction time.
-#'
-#' @param x A `decons2` (or `aligns`) object.
-#' @param y Optional factor of class labels (length == `length(x)`). If
-#'   supplied, the seed consensus is built per-class.
-#' @param gap_tol Numeric scalar. Tolerance in ppm for both the per-spectrum
-#'   NW snap and for deduplicating consensus positions. Default 0.02.
-#' @param pos_field Which `lcpar` column to use as the peak position.
-#'   `"x0"` (default) for raw deconvolution positions; `"x0al"` to build
-#'   the consensus from CluPA-aligned positions (then the consensus lives
-#'   in aligned space and should be snapped against using `pos_field="x0al"`).
-#'
-#' @return A list with components `cs`, `lcpar` (data frame with `x0`,
-#'   `A`, `lambda`, `pcide`), plus the class attributes
-#'   `c("consensus", "align", "decon2", "spectrum")` so it behaves like a
-#'   single-spectrum reference for downstream code.
-#'
-#' @author 2026 Tobias Schmidt: initial version.
-build_consensus <- function(x, y=NULL, gap_tol=0.02, pos_field="x0") {
-    stopifnot(inherits(x, "decons2"), is_num(gap_tol, 1), gap_tol > 0)
-    cs <- ensure_shared_cs(x)
-
-    swap_field <- function(xx, fld) {
-        if (fld == "x0") return(xx)
-        for (s in seq_along(xx)) {
-            lc <- xx[[s]]$lcpar
-            xx[[s]]$lcpar$x0 <- lc[[fld]] %||% lc$x0
-        }
-        xx
-    }
-    x_pos <- swap_field(x, pos_field)
-
-    if (is.null(y)) {
-        seed <- find_ref(x_pos)
-    } else {
-        stopifnot(is.factor(y), length(y) == length(x_pos))
-        lvs <- levels(y)
-        reps <- lapply(lvs, function(lv) {
-            ix <- which(y == lv)
-            if (length(ix) == 0L) return(NULL)
-            find_ref(x_pos[ix])
-        })
-        reps <- reps[!vapply(reps, is.null, logical(1))]
-        seed_x0  <- unlist(lapply(reps, function(r) r$lcpar$x0))
-        seed_A   <- unlist(lapply(reps, function(r) r$lcpar$A))
-        seed_lam <- unlist(lapply(reps, function(r) r$lcpar$lambda))
-        seed_lcpar <- data.frame(x0=seed_x0, A=seed_A, lambda=seed_lam)
-        seed_lcpar <- dedupe_peaks(seed_lcpar, gap_tol)
-        seed <- list(cs=cs, lcpar=seed_lcpar)
-    }
-    if (is.null(seed$lcpar$pcide)) {
-        seed$lcpar$pcide <- pci_on_cs(seed$lcpar$x0, cs)
-    }
-
-    snapped <- snap_nw(x_pos, ref=seed, gap_tol=gap_tol)
-    extra_x0  <- c(); extra_A <- c(); extra_lam <- c()
-    for (s in seq_along(snapped)) {
-        lc <- snapped[[s]]$lcpar
-        un <- is.na(lc$pcisn)
-        if (any(un)) {
-            extra_x0  <- c(extra_x0,  lc$x0[un])
-            extra_A   <- c(extra_A,   lc$A[un])
-            extra_lam <- c(extra_lam, lc$lambda[un])
-        }
-    }
-    full_lcpar <- data.frame(
-        x0=c(seed$lcpar$x0, extra_x0),
-        A=c(seed$lcpar$A,   extra_A),
-        lambda=c(seed$lcpar$lambda, extra_lam)
-    )
-    full_lcpar <- dedupe_peaks(full_lcpar, gap_tol)
-    full_lcpar$pcide <- pci_on_cs(full_lcpar$x0, cs)
-    structure(
-        list(cs=cs, lcpar=full_lcpar),
-        class=c("consensus", "align", "decon2", "spectrum")
-    )
 }
 
 # Deduplicate a peak list: peaks within `gap_tol` ppm of each other are

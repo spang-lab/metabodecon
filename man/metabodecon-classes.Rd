@@ -6,7 +6,6 @@
 \alias{spectra}
 \alias{decon2}
 \alias{decons2}
-\alias{align}
 \alias{aligns}
 \alias{is_spectrum}
 \alias{is_spectra}

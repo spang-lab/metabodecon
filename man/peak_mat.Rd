@@ -11,6 +11,9 @@ peak_mat(x, igrs = list(), peakPos = NULL, ...)
 
 \item{igrs}{List of two-element ppm intervals to ignore.}
 
+\item{peakPos}{Optional integer column indices, forwarded to
+\code{\link[=si_mat]{si_mat()}} for predict mode.}
+
 \item{...}{Ignored. Accepted so \code{peak_mat} and \code{\link[=bin]{bin()}}
 share a single \code{feat_fun(x, maxCombine, igrs)} protocol;
 \code{peak_mat} ignores \code{maxCombine} because snapping happens upstream

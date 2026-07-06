@@ -10,7 +10,6 @@
 #   update_sap()     # regenerates data/sap.rda and inst/example_datasets/bruker/sap
 #   update_sim()     # regenerates data/sim.rda and inst/example_datasets/bruker/sim
 #   update_sim2()    # regenerates data/sim2.rda
-#   update_sap2()    # regenerates data/sap2.rda
 #   update_aki()     # downloads MTBLS24, copies to inst/example_datasets/bruker/aki
 #   update_example_datasets()  # rebuilds misc/example_datasets.zip
 
@@ -186,79 +185,6 @@ update_sim2 <- function() {
     sim2 <- make_sim2()
     usethis::use_data(sim2, overwrite = TRUE)
     invisible(sim2)
-}
-
-# Sap2 #####
-
-#' @noRd
-#' @author 2026 Tobias Schmidt: initial version.
-#' @description
-#' Builds the `sap2` mini classification dataset: 18 simulated 1D NMR spectra
-#' (128 datapoints each) split into two groups (A and B, 9 each). Each
-#' spectrum has 4 peaks; one of them differs systematically between groups
-#' by 10% in area. The dataset is small enough that the full feature matrix
-#' produced by [metabodecon::si_mat()] can be plotted in its entirety, which
-#' makes it useful for didactic purposes.
-#'
-#' Peak shape sampling matches [metabodecon::sim2] (~6-9 datapoints per
-#' half-width) so deconvolution behaves analogously, but the ppm/datapoint
-#' resolution is coarser (`0.0012 ppm/dp` vs. `0.00015 ppm/dp` in sim2) so
-#' that 4 well-separated peaks fit into 128 datapoints. Per-peak jitter
-#' (~1 dp) and per-spectrum global shifts (~4 dp) are chosen so alignment is
-#' visibly necessary on the 128-point grid.
-#'
-#' Metadata layout mirrors sim2: each `meta$simpar` carries `base_x0`, `dx0`,
-#' `gx0` and `diff_AB`; the dataset carries `attr(., "group")` and
-#' `attr(., "true_x0")`.
-make_sap2 <- function() {
-    set.seed(42)
-    n <- 18   # number of spectra
-    npk <- 4  # number of peaks
-    cs <- seq(from = 3.59, length.out = 128, by = -0.0012)
-    base_x0 <- c(3.555, 3.525, 3.495, 3.465)
-    base_A <- stats::rlnorm(npk, meanlog = log(2500), sdlog = 1)
-    base_lam <- stats::runif(npk, 0.0072, 0.0108) # ~6-9 dp per half-width
-    group <- factor(rep(c("A", "B"), each = n/2))
-    diff_AB <- 2L # one discriminating peak
-    spectra <- vector("list", n)
-    for (i in seq_len(n)) {
-        dx0 <- stats::rnorm(npk, sd = 0.0012) # within-group per-peak jitter
-        gx0 <- stats::rnorm(1, sd = 0.0048)   # per-spectrum global ppm shift
-        x0 <- base_x0 + dx0 + gx0
-        A <- base_A * stats::runif(npk, 0.4, 1.6)
-        lam <- base_lam * stats::runif(npk, 0.9, 1.1)
-        if (group[i] == "A") A[diff_AB] <- A[diff_AB] * 1.1
-        spec <- simulate_spectrum(
-            name = sprintf("sap2_%02d", i), cs = cs,
-            x0 = x0, A = A, lambda = lam,
-            noise = stats::rnorm(length(cs), sd = 1500)
-        )
-        spec$meta$simpar$base_x0 <- base_x0
-        spec$meta$simpar$dx0 <- dx0
-        spec$meta$simpar$gx0 <- gx0
-        spec$meta$simpar$diff_AB <- diff_AB
-        spectra[[i]] <- spec
-    }
-    names(spectra) <- vapply(spectra, function(s) s$meta$name, character(1))
-    class(spectra) <- "spectra"
-    names(group) <- names(spectra)
-    attr(spectra, "group") <- group
-    # The simulated global shift `gx0` has mean 0, so post-alignment ppm is
-    # approximately `base_x0[diff_AB]`. Use it directly here: at this scale
-    # (4 peaks / 128 dp) the default deconvolution sfr/delta heuristics are
-    # not robust enough to be run during dataset construction.
-    attr(spectra, "true_x0") <- base_x0[diff_AB]
-    spectra
-}
-
-#' @noRd
-#' @author 2026 Tobias Schmidt: initial version.
-update_sap2 <- function() {
-    logf("Updating data/sap2.rda")
-    if (!get_yn_input("Continue?")) return(invisible())
-    sap2 <- make_sap2()
-    usethis::use_data(sap2, overwrite = TRUE)
-    invisible(sap2)
 }
 
 #' @noRd

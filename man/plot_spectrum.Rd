@@ -132,8 +132,8 @@ multi-figure configuration as created when setting  \code{mfrow}  or  \code{mfco
 \examples{
 ## 1. Prepare a deconvoluted spectrum as input
 
-spec <- read_spectrum(metabodecon_file("sim/sim_01"))
-decon <- generate_lorentz_curves_sim(spec)
+spec <- sim[[1]]
+decon <- deconvolute(sim[1], sfr = c(3.55, 3.35))
 
 ## 2.1. Plot the full (non-deconvoluted) spectrum
 ## 2.2. Remove connecting lines, and focus on a specific region specified in ppm

@@ -4,363 +4,116 @@
 \alias{mdm}
 \alias{fit_mdm}
 \alias{benchmark}
-\alias{identity2}
-\alias{identity_snap}
-\alias{snap_nw_blind}
-\alias{fit_lasso}
-\alias{predict_lasso}
-\alias{fit_ranger}
-\alias{predict_ranger}
 \title{Metabodecon Models}
 \usage{
 fit_mdm(
   x,
   y,
-  decon_fun = deconvolute_spectra,
-  align_fun = clupa,
-  snap_fun = snap_to_ref,
-  feat_fun = peak_mat,
-  fit_fun = fit_lasso,
-  predict_fun = predict_lasso,
+  model = c("lasso", "ranger"),
   npmax = -1L,
   maxShift = -1L,
   maxCombine = 10L,
-  deg = NULL,
-  sfr = NULL,
-  igrs = list(),
-  use_rust = 0,
-  nworkers = 1,
-  verbosity = 1,
-  seed = 1,
-  check = TRUE
+  nworkers = 1L,
+  seed = 1L,
+  verbosity = 1L,
+  ...
 )
 
 benchmark(
   x,
   y,
-  decon_fun = deconvolute,
-  align_fun = clupa,
-  snap_fun = snap_to_ref,
-  feat_fun = peak_mat,
-  fit_fun = fit_lasso,
-  predict_fun = predict_lasso,
+  model = c("lasso", "ranger"),
   npmax = -1L,
   maxShift = -1L,
   maxCombine = 10L,
-  deg = NULL,
-  sfr = NULL,
-  igrs = list(),
-  use_rust = 0,
-  nworkers = 1,
-  verbosity = 2,
-  seed = 1,
-  k = 3,
-  check = TRUE
+  nworkers = 1L,
+  seed = 1L,
+  verbosity = 2L,
+  k = 3L,
+  ...
 )
-
-identity2(x, ...)
-
-identity_snap(x, ref = NULL, maxCombine = 0L, ...)
-
-snap_nw_blind(x, ref = NULL, maxCombine = 20, w_A = 0, ...)
-
-fit_lasso(X, y, seed = 1, nworkers = 1L, nreps = 5L)
-
-predict_lasso(model, newx)
-
-fit_ranger(X, y, seed = 1, nworkers = 1L, num.trees = 5000L)
-
-predict_ranger(model, newx)
 }
 \arguments{
-\item{x}{A \code{decons2} / \code{aligns} object.}
+\item{x}{Spectra object.}
 
-\item{y}{Factor with two levels.}
+\item{y}{Factor vector with class labels for each spectrum.}
 
-\item{decon_fun}{Function
-\verb{(x, sfr, igrs, verbose, use_rust, npmax, nworkers) -> decons2}.
-Built-ins: \code{\link[=deconvolute]{deconvolute()}} (default),
-\code{\link[=identity2]{identity2()}}. The underlying
-\verb{(nfit, smit, smws, delta)} tuple is no longer a \code{fit_mdm()}
-argument — it is picked from each spectrum's \verb{$deg} cache via
-\code{npmax}.}
+\item{model}{Classification backend. One of \code{"lasso"} (default,
+L1-penalised logistic regression via \code{glmnet}) or \code{"ranger"}
+(probability random forest).}
 
-\item{align_fun}{Function
-\verb{(x, ref, maxShift, verbose, nworkers, full, ...) -> aligns}
-(or pass-through). Built-ins: \code{\link[=clupa]{clupa()}} (default),
-\code{\link[=identity_align]{identity_align()}}.}
+\item{npmax}{Max peaks per spectrum. Integer in \verb{\{-2, -1, 0, 1, ...\}},
+scalar or vector. \code{-1} (default) selects the median per-spectrum
+Kneedle elbow; \code{-2} selects each spectrum's own elbow.}
 
-\item{snap_fun}{Function \verb{(x, ref=NULL, maxCombine, ...) -> aligns}
-with the per-peak \code{pcisn} / \code{x0sn} columns populated. Built-ins:
-\code{\link[=snap_to_ref]{snap_to_ref()}} (default),
-\code{\link[=combine_peaks]{combine_peaks()}}, \code{\link[=snap_nw_blind]{snap_nw_blind()}},
-\code{\link[=identity_snap]{identity_snap()}}. Pass \code{identity2} / \code{identity_align}
-/ \code{identity_snap} to skip a stage and fit baselines (e.g. a binning
-model) directly on raw spectra.}
+\item{maxShift}{Max CluPA shift in datapoints. Integer >= -1, scalar or
+vector. \code{-1} (default) means auto (sweep to the alignment-correlation
+dip).}
 
-\item{feat_fun}{Function
-\verb{(x, maxCombine, igrs, peakPos=NULL, ...) -> matrix} with one row
-per spectrum. With \code{peakPos=NULL} (training), filters all-zero
-columns and attaches the kept indices on \code{attr(., "peakPos")};
-with \verb{peakPos=<int>} (predict), subsets to those columns.
-Built-ins: \code{\link[=peak_mat]{peak_mat()}} (default),
-\code{\link[=si_mat]{si_mat()}}, \code{\link[=bin]{bin()}}.}
+\item{maxCombine}{RefPA snap window in datapoints. Integer, scalar or
+vector. Default 10.}
 
-\item{fit_fun}{Function
-\verb{(X, y, seed, nworkers) -> list(model, acc, auc, acc_se, auc_se)}.
-The acc/auc scalars are generalization estimates in \verb{[0, 1]}; use
-\code{NA_real_} for SEs when the backend produces a single point estimate.
-Must call \code{requireNamespace("<backend>")} so it works after a fresh
-\code{readRDS()}. Built-ins: \code{\link[=fit_lasso]{fit_lasso()}} (default,
-repeated \code{cv.glmnet} OOF), \code{\link[=fit_ranger]{fit_ranger()}} (OOB).}
+\item{nworkers}{Number of workers for deconvolution, alignment and the
+inner fitter.}
 
-\item{predict_fun}{Function \verb{(model, newx) -> numeric} of
-positive-class probabilities. Must call
-\code{requireNamespace("<backend>")}. Built-ins:
-\code{\link[=predict_lasso]{predict_lasso()}}, \code{\link[=predict_ranger]{predict_ranger()}}.}
-
-\item{npmax}{Max peaks per spectrum. Integer in \verb{\{-2, -1, 0, 1, ...\}}, scalar or vector. Drives selection of the underlying
-\verb{(nfit, smit, smws, delta)} row from each spectrum's \verb{$deg}
-cache. See \emph{Automatic selection sentinels}.}
-
-\item{maxShift}{Max CluPA shift in datapoints. Integer >= -1, scalar
-or vector. \code{-1} means auto. Default \code{-1}.}
-
-\item{maxCombine}{Snap window in shared-grid columns. Translated to
-\code{gap_tol = maxCombine * median(diff(cs))} (in ppm).}
-
-\item{deg}{Deconvolution-parameter grid forwarded to
-\code{\link[=grid_deconvolute_spectra]{grid_deconvolute_spectra()}}. When \code{NULL} (default),
-the default grid built into
-\code{\link[=grid_deconvolute_spectra]{grid_deconvolute_spectra()}} is used.}
-
-\item{sfr}{Signal-free region. See \code{\link[=deconvolute]{deconvolute()}}.}
-
-\item{igrs}{Ignore regions in ppm.}
-
-\item{use_rust}{Use the Rust backend?}
-
-\item{nworkers}{Forwarded to \code{ranger::ranger(num.threads=...)} for
-per-tree parallelism.}
+\item{seed}{Random seed. Forwarded to the fitter; also used for
+stratified fold assignment inside \code{\link[=benchmark]{benchmark()}}. May be a
+vector for repeated CV.}
 
 \item{verbosity}{Verbosity level.}
 
-\item{seed}{Random seed for ranger.}
-
-\item{check}{Validate inputs at function entry?}
+\item{...}{Further arguments passed on to the internal engine
+(\code{metabodecon:::fit_mdm_internal()} /
+\code{metabodecon:::benchmark_internal()}), e.g. \code{sfr}, \code{igrs}, \code{deg},
+\code{use_rust}. Rarely needed.}
 
 \item{k}{Number of outer folds for \code{\link[=benchmark]{benchmark()}}.}
-
-\item{...}{Ignored (signature compatibility).}
-
-\item{ref}{Optional pre-built consensus (used at predict time). When
-\code{NULL}, \code{\link[=build_consensus]{build_consensus()}} is called on \code{x} with
-\code{y=NULL}.}
-
-\item{X}{Numeric feature matrix.}
-
-\item{nreps}{Number of \code{cv.glmnet} repetitions used to estimate the
-reported acc/AUC. Default 5.}
-
-\item{model}{Object returned in the \code{model} slot of \code{\link[=fit_ranger]{fit_ranger()}}.}
-
-\item{newx}{Numeric feature matrix.}
-
-\item{num.trees}{Number of ranger trees. Default 5000.}
 }
 \value{
-\code{\link[=fit_mdm]{fit_mdm()}} returns an object of class \code{mdm} with
-elements \code{model} (trained backend model of the best grid row),
-\code{ref} (a list \code{list(align, snap)} for prediction-time replay —
-both elements are \code{attr(., "ref")} of the corresponding stage
-output), \code{params} (resolved scalar pipeline parameters of the best
-row plus the pluggable functions, \code{lvs}, \code{peakPos}, \code{sfr}, \code{igrs},
-\code{use_rust}), the scalar performance of the best row (\code{acc}, \code{auc},
-\code{acc_se}, \code{auc_se}), and \code{mog} (the augmented grid with per-row
-\code{acc}, \code{auc}, \code{acc_se}, \code{auc_se}).
+\code{\link[=fit_mdm]{fit_mdm()}} returns an object of class \code{mdm} with elements
+\code{model} (trained backend model of the best grid row), \code{ref} (a list
+\code{list(align, snap)} for prediction-time replay), \code{params} (resolved
+pipeline parameters of the best row), the scalar performance of the best
+row (\code{acc}, \code{auc}, \code{acc_se}, \code{auc_se}), and \code{mog} (the augmented grid
+with per-row performance).
 
-\code{\link[=benchmark]{benchmark()}} returns a list with elements:
-\itemize{
-\item \code{models}: list of fitted models, one per outer fold.
-\item \code{predictions}: data frame with columns \code{fold}, \code{true}, \code{link},
-\code{prob}, \code{pred}.
-\item \code{performance}: data frame with per-fold \code{acc} and \code{auc}.
-\item \code{overall}: list with pooled \code{acc} and \code{auc}.
-}
-
-\code{x}, unchanged.
-
-\code{x}, unchanged.
-
-An \code{aligns} object with \code{pcisn} / \code{x0sn} populated and
-\code{attr(., "ref")} set to the consensus used.
-
-A list with \code{model} (a \code{cv.glmnet} object whose \code{lambda.min}
-has been overwritten with the ACC-maximizing (AUC-tiebroken)
-\verb{lambda*}), \code{acc}, \code{auc}, \code{acc_se}, \code{auc_se}.
-
-Numeric vector of length \code{nrow(newx)}.
-
-A list with \code{model} (a \code{ranger} object with the trained
-levels stashed on \code{model$lvs} for the predict path), \code{acc}, \code{auc}.
-\code{acc_se} and \code{auc_se} are \code{NA} because OOB produces a single point
-estimate.
-
-Numeric vector of length \code{nrow(newx)}.
+\code{\link[=benchmark]{benchmark()}} returns a list with elements \code{models} (one
+fitted model per outer fold), \code{predictions} (per-spectrum out-of-fold
+predictions), \code{performance} (per-fold \code{acc} / \code{auc}) and \code{overall}
+(pooled \code{acc} / \code{auc}).
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 
-\strong{WARNING: These functions are experimental and must not be used in
-production. Their API is very likely to change in non-backwards-compatible
-ways over the next few weeks.}
+Fit (\code{\link[=fit_mdm]{fit_mdm()}}) or cross-validate
+(\code{\link[=benchmark]{benchmark()}}) a binary classification model built on a
+set of NMR spectra. Both run the full deconvolute -> align -> snap ->
+featurize -> fit pipeline with sensible defaults and expose only the
+parameters a typical user tunes; the classification backend is chosen
+via \code{model}. Power users who need to swap individual pipeline stages
+can call the internal engines \code{metabodecon:::fit_mdm_internal()} /
+\code{metabodecon:::benchmark_internal()}, which take pluggable \code{decon_fun}
+/ \code{align_fun} / \code{snap_fun} / \code{feat_fun} / \code{fit_fun} / \code{predict_fun}
+arguments.
 
-Fit and benchmark binary classification models built on NMR spectra
-through a pluggable five-stage pipeline (deconvolute, align, snap,
-featurize, fit). \code{\link[=fit_mdm]{fit_mdm()}} runs the pipeline once, or
-iterates over the cartesian product of \code{npmax}/\code{maxShift}/\code{maxCombine}
-when any is a vector and returns the row with the highest \code{acc}
-(ties broken by \code{auc}).
-\code{\link[=benchmark]{benchmark()}} wraps \code{\link[=fit_mdm]{fit_mdm()}} in outer
-k-fold cross-validation to estimate end-to-end performance on
+\code{\link[=fit_mdm]{fit_mdm()}} runs the pipeline once, or iterates over the
+cartesian product of \code{npmax} / \code{maxShift} / \code{maxCombine} when any is a
+vector and returns the row with the highest \code{acc} (ties broken by
+\code{auc}). \code{\link[=benchmark]{benchmark()}} wraps \code{\link[=fit_mdm]{fit_mdm()}} in
+outer k-fold cross-validation to estimate end-to-end performance on
 held-out spectra.
-
-No-op replacement for the \code{decon_fun} argument of
-\code{\link[=fit_mdm]{fit_mdm()}} / \code{\link[=benchmark]{benchmark()}}. Returns its
-first argument unchanged and ignores all other arguments. Use this to
-skip the deconvolution stage of the pipeline (e.g. for binning
-baselines).
-
-No-op replacement for the \code{snap_fun} argument of
-\code{\link[=fit_mdm]{fit_mdm()}}. Returns its first argument unchanged so the
-feature-matrix stage operates on whatever the alignment stage
-produced (without an extra snap-to-reference step).
-
-Thin wrapper around \code{\link[=build_consensus]{build_consensus()}} +
-\code{\link[=snap_nw]{snap_nw()}} that drops into the \code{snap_fun} slot of
-\code{\link[=fit_mdm]{fit_mdm()}}. The consensus is built label-blind
-(\code{y = NULL}) so cross-method comparisons (NW vs.
-\code{\link[=snap_to_ref]{snap_to_ref()}}) and the OOB / repeated-CV scores
-reported by \code{fit_fun} stay honest.
-
-The \code{maxCombine} window (in shared-grid columns) is translated into a
-ppm \code{gap_tol} via the median spacing of \code{x[[1]]$cs}. The translation
-is deterministic, so \link{predict.mdm} just re-derives \code{gap_tol} from the
-stored \code{maxCombine}. The consensus used at training time is stashed
-on \code{attr(out, "ref")} and replayed at predict time.
-
-Fits an L1-penalised binomial logistic regression via repeated
-\code{\link[glmnet:cv.glmnet]{glmnet::cv.glmnet()}} (default \code{nreps=5}, internal \code{nfolds=10},
-\code{keep=TRUE}). All reps share the lambda path discovered by the first
-rep so per-rep out-of-fold (OOF) predictions are directly comparable
-lambda-by-lambda. For each lambda the per-rep OOF accuracy and AUC
-are averaged across reps; the lambda that maximizes the averaged
-accuracy (with averaged AUC as tiebreaker) is reported as
-\verb{lambda*} and used at predict time. Averaging the per-lambda
-performance curve \emph{before} optimizing over lambda keeps \verb{lambda*}
-stable across reps and the reported acc/AUC reflects model
-variance rather than the noise of lambda-pick instability across
-reps. \code{acc_se} / \code{auc_se} are the SE across reps at \verb{lambda*}. The
-model object is the last rep's \code{cv.glmnet}; its \code{lambda.min} is
-overwritten with \verb{lambda*} so \code{\link[=predict_lasso]{predict_lasso()}} picks
-the right lambda by default.
-
-Companion of \code{\link[=fit_lasso]{fit_lasso()}}. Returns the positive-class
-probability at \code{lambda.min} for each row of \code{newx}.
-
-Fits a probability random forest with \code{num.trees} trees via
-\code{\link[ranger:ranger]{ranger::ranger()}} and reads off the OOB acc/AUC for the positive
-class. OOB is an unbiased estimate of generalization performance and
-converges as \code{num.trees} grows. The default \code{num.trees=5000} is
-chosen high enough that OOB acc/AUC has converged for the sample
-sizes mdm typically targets (50-500); a cheap convergence check is to
-double \code{num.trees} and confirm OOB AUC does not move beyond its
-standard error.
-
-Companion of \code{\link[=fit_ranger]{fit_ranger()}}. Returns the positive-class
-probability for each row of \code{newx}.
-}
-\details{
-\subsection{Pipeline}{
-
-\if{html}{\out{<div class="sourceCode">}}\preformatted{d <- decon_fun(x, npmax, ...)
-a <- align_fun(d, maxShift, ...)
-s <- snap_fun(a, maxCombine, ...)
-X <- feat_fun(s, maxCombine, ...)
-m <- fit_fun(X, y, ...)
-}\if{html}{\out{</div>}}
-}
-
-\subsection{Automatic selection sentinels}{
-\itemize{
-\item \code{npmax = -1} (default) — median per-spectrum Kneedle elbow on \verb{$deg}.
-\item \code{npmax = -2} — each spectrum's own Kneedle elbow ("intrinsic");
-parameter-free at the cohort level.
-\item \code{maxShift = -1} (default) — sweep CluPA shifts at powers of 2 and
-stop one step before the alignment-correlation dip. Requires a
-CluPA-compatible \code{align_fun} (must populate \code{sit$supal}).
-}
-}
-
-\subsection{Caching and parallelism}{
-
-Grid rows are sorted by \verb{(npmax, maxShift, maxCombine)} so the most
-recent deconvolution and alignment are reused across rows.
-\code{\link[=fit_mdm]{fit_mdm()}} runs an idempotent
-\code{\link[=grid_deconvolute_spectra]{grid_deconvolute_spectra()}} up front to attach \verb{$deg}
-to each spectrum (pre-enriched spectra skip the slow step).
-\code{\link[=benchmark]{benchmark()}} runs outer folds sequentially; all
-parallelism is delegated to \code{fit_fun} via \code{nworkers}.
-}
 }
 \examples{
 \dontrun{
-  # Original examples on a private AKI dataset.
-  aki <- read_aki_data()
-  x <- aki$spectra
-  y <- aki$meta$type; names(y) <- aki$meta$sid
-  m <- fit_mdm(x, y)
-  bm <- benchmark(x, y, k=5)
-  mrf <- fit_mdm(x, y, fit_fun=fit_ranger, predict_fun=predict_ranger)
-  mnw <- fit_mdm(
-      x, y, snap_fun=snap_nw_blind,
-      fit_fun=fit_ranger, predict_fun=predict_ranger
-  )
-
-  # The 3.4-real-perf benchmarks reproduced on the public sim2
-  # dataset. Still slow (deconvolution + grid search across outer
-  # folds), but much quicker than the AKI version above.
   x <- sim2
   y <- attr(sim2, "group")
-
-  # (a) Binning baseline: ranger on raw spectra binned to fixed
-  # ppm columns (no deconvolution, no alignment, no snap). The
-  # `maxCombine` sweep selects the bin width (in datapoints).
-  bm_bin <- benchmark(
-      x, y,
-      decon_fun=identity2, align_fun=identity_align,
-      snap_fun=identity_snap, feat_fun=bin,
-      fit_fun=fit_ranger, predict_fun=predict_ranger,
-      maxCombine=c(5L, 10L, 20L, 40L), k=5L, nworkers=4L
-  )
-
-  # (b) Full metabodecon pipeline (deconvolute -> CluPA -> RefPA
-  # -> peak_mat -> ranger), sweeping (maxShift, maxCombine).
-  bm_mdm <- benchmark(
-      x, y,
-      fit_fun=fit_ranger, predict_fun=predict_ranger,
-      npmax=25L, maxShift=c(0L, 1L, 2L, 4L, 8L, 16L),
-      maxCombine=c(0L, 1L, 2L, 4L, 8L), k=5L, nworkers=4L
-  )
-
-  # (c) Final model trained on the full sim2 dataset across the
-  # same grid; `$mog` carries the per-row (acc, auc) heatmap and
-  # the ACC-best row (ties broken by AUC) is auto-selected.
+  m  <- fit_mdm(x, y)                     # lasso, full pipeline
+  mr <- fit_mdm(x, y, model="ranger")     # random forest
+  bm <- benchmark(x, y, k=5)              # 5-fold CV
   fm <- fit_mdm(
-      x, y,
-      fit_fun=fit_ranger, predict_fun=predict_ranger,
-      npmax=25L, maxShift=c(0L, 1L, 2L, 4L, 8L, 16L),
-      maxCombine=c(0L, 1L, 2L, 4L, 8L), nworkers=4L
+      x, y, model="ranger",
+      npmax=25L, maxShift=c(0L, 1L, 2L, 4L, 8L),
+      maxCombine=c(0L, 1L, 2L, 4L), nworkers=4L
   )
 }
 

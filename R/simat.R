@@ -22,6 +22,11 @@
 #' @param drop_zero Drop columns whose entries are all zero?
 #' @param igrs List of two-element ppm intervals to zero out before
 #'   returning.
+#' @param peakPos Optional integer column indices. When supplied (predict
+#'   mode) the matrix is subset to those columns; when `NULL` and used as
+#'   a `feat_fun` the non-zero columns are kept and attached as
+#'   `attr(., "peakPos")`.
+#' @param ... Ignored (protocol compatibility with other `feat_fun`s).
 #'
 #' @return A numeric matrix with one row per spectrum and
 #'   `length(x[[1]]$cs)` columns (the full cs grid). Column names are
@@ -94,28 +99,6 @@ lcpar_idx <- function(lcpar, cs) {
 }
 
 #' @export
-#' @title Extract matrix of aligned signal intensities
-#'
-#' @description
-#' `r lifecycle::badge("deprecated")`
-#'
-#' Deprecated in favour of [metabodecon::si_mat()], which returns the
-#' same data with spectra in rows and features (chemical shifts) in
-#' columns.
-#'
-#' @inheritParams si_mat
-#'
-#' @return
-#' A numeric matrix with chemical shifts as rownames and spectrum names
-#' as colnames (the transpose of [metabodecon::si_mat()]).
-#'
-#' @author 2024-2025 Tobias Schmidt: initial version.
-get_si_mat <- function(x, drop_zero=FALSE) {
-    lifecycle::deprecate_warn("2.0.0", "get_si_mat()", "si_mat()")
-    t(si_mat(x, drop_zero=drop_zero))
-}
-
-#' @export
 #' @title Peak feature matrix
 #'
 #' @description
@@ -126,6 +109,8 @@ get_si_mat <- function(x, drop_zero=FALSE) {
 #'
 #' @param x An `aligns` object (or `decons2`).
 #' @param igrs List of two-element ppm intervals to ignore.
+#' @param peakPos Optional integer column indices, forwarded to
+#'   [metabodecon::si_mat()] for predict mode.
 #' @param ... Ignored. Accepted so `peak_mat` and [metabodecon::bin()]
 #'   share a single `feat_fun(x, maxCombine, igrs)` protocol;
 #'   `peak_mat` ignores `maxCombine` because snapping happens upstream
@@ -161,6 +146,8 @@ peak_mat <- function(x, igrs=list(), peakPos=NULL, ...) {
 #' @param x A `spectra`, `decons2` or `aligns` object.
 #' @param maxCombine Bin width in chemical-shift columns.
 #' @param igrs List of two-element ppm intervals to ignore.
+#' @param peakPos Optional integer column indices for predict mode; when
+#'   `NULL` the non-zero bins are kept and attached as `attr(., "peakPos")`.
 #' @param ... Ignored (protocol compatibility with peak_mat).
 #'
 #' @return A numeric matrix with one row per spectrum and one column per

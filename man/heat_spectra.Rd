@@ -69,6 +69,9 @@ a sparse feature matrix from \code{\link[=si_mat]{si_mat()}}.}
 \item{true_tol}{Numeric tolerance in ppm for matching columns to \code{true_x0}. Defaults to
 half the median column spacing.}
 
+\item{scale_cols}{If \code{TRUE}, scale each column (chemical shift) to a symmetric range
+before mapping to colours, so per-feature contrasts are comparable.}
+
 \item{cex_names}{Character expansion factor for the spectrum name labels drawn on the
 right side of the heatmap. Defaults to \code{0.8}.}
 

@@ -13,6 +13,9 @@ bin(x, maxCombine = 128, igrs = list(), peakPos = NULL, ...)
 
 \item{igrs}{List of two-element ppm intervals to ignore.}
 
+\item{peakPos}{Optional integer column indices for predict mode; when
+\code{NULL} the non-zero bins are kept and attached as \code{attr(., "peakPos")}.}
+
 \item{...}{Ignored (protocol compatibility with peak_mat).}
 }
 \value{

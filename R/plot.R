@@ -238,6 +238,9 @@ plot_spectra <- function(
 #' The value at a peak column is the Lorentzian peak height `A / lambda`;
 #' collisions on the same column are summed. Ignored when `objs` is a
 #' matrix.
+#' @param scale_cols
+#' If `TRUE`, scale each column (chemical shift) to a symmetric range
+#' before mapping to colours, so per-feature contrasts are comparable.
 #'
 #' @return
 #' NULL. Called for side effect of plotting.
@@ -618,8 +621,8 @@ as_heatmap_matrix <- function(objs, what=NULL) {
 #' @examples
 #' ## 1. Prepare a deconvoluted spectrum as input
 #'
-#' spec <- read_spectrum(metabodecon_file("sim/sim_01"))
-#' decon <- generate_lorentz_curves_sim(spec)
+#' spec <- sim[[1]]
+#' decon <- deconvolute(sim[1], sfr = c(3.55, 3.35))
 #'
 #' ## 2.1. Plot the full (non-deconvoluted) spectrum
 #' ## 2.2. Remove connecting lines, and focus on a specific region specified in ppm
@@ -1128,8 +1131,8 @@ test_plot_spectrum <- function(figs = 1:6, store = FALSE) {
     n <- length(figs)
     nr <- ceiling(sqrt(n))
     nc <- if ((nr - 1) * nr >= n) nr - 1 else nr
-    spec <- read_spectrum(metabodecon_file("sim/sim_01"))
-    decon <- generate_lorentz_curves_sim(spec)
+    spec <- sim[[1]]
+    decon <- deconvolute(sim[1], sfr = c(3.55, 3.35))
     local_par(mfrow = c(nr, nc))
 
     # Plot the full (non-deconvoluted) spectrum

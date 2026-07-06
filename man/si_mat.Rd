@@ -13,6 +13,13 @@ si_mat(x, drop_zero = FALSE, igrs = list(), peakPos = NULL, ...)
 
 \item{igrs}{List of two-element ppm intervals to zero out before
 returning.}
+
+\item{peakPos}{Optional integer column indices. When supplied (predict
+mode) the matrix is subset to those columns; when \code{NULL} and used as
+a \code{feat_fun} the non-zero columns are kept and attached as
+\code{attr(., "peakPos")}.}
+
+\item{...}{Ignored (protocol compatibility with other \code{feat_fun}s).}
 }
 \value{
 A numeric matrix with one row per spectrum and

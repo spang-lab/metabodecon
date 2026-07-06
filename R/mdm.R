@@ -10,6 +10,117 @@
 #' @description
 #' `r lifecycle::badge("experimental")`
 #'
+#' Fit ([metabodecon::fit_mdm()]) or cross-validate
+#' ([metabodecon::benchmark()]) a binary classification model built on a
+#' set of NMR spectra. Both run the full deconvolute -> align -> snap ->
+#' featurize -> fit pipeline with sensible defaults and expose only the
+#' parameters a typical user tunes; the classification backend is chosen
+#' via `model`. Power users who need to swap individual pipeline stages
+#' can call the internal engines `metabodecon:::fit_mdm_internal()` /
+#' `metabodecon:::benchmark_internal()`, which take pluggable `decon_fun`
+#' / `align_fun` / `snap_fun` / `feat_fun` / `fit_fun` / `predict_fun`
+#' arguments.
+#'
+#' [metabodecon::fit_mdm()] runs the pipeline once, or iterates over the
+#' cartesian product of `npmax` / `maxShift` / `maxCombine` when any is a
+#' vector and returns the row with the highest `acc` (ties broken by
+#' `auc`). [metabodecon::benchmark()] wraps [metabodecon::fit_mdm()] in
+#' outer k-fold cross-validation to estimate end-to-end performance on
+#' held-out spectra.
+#'
+#' @param x Spectra object.
+#' @param y Factor vector with class labels for each spectrum.
+#' @param model Classification backend. One of `"lasso"` (default,
+#'   L1-penalised logistic regression via `glmnet`) or `"ranger"`
+#'   (probability random forest).
+#' @param npmax Max peaks per spectrum. Integer in `{-2, -1, 0, 1, ...}`,
+#'   scalar or vector. `-1` (default) selects the median per-spectrum
+#'   Kneedle elbow; `-2` selects each spectrum's own elbow.
+#' @param maxShift Max CluPA shift in datapoints. Integer >= -1, scalar or
+#'   vector. `-1` (default) means auto (sweep to the alignment-correlation
+#'   dip).
+#' @param maxCombine RefPA snap window in datapoints. Integer, scalar or
+#'   vector. Default 10.
+#' @param nworkers Number of workers for deconvolution, alignment and the
+#'   inner fitter.
+#' @param seed Random seed. Forwarded to the fitter; also used for
+#'   stratified fold assignment inside [metabodecon::benchmark()]. May be a
+#'   vector for repeated CV.
+#' @param verbosity Verbosity level.
+#' @param k Number of outer folds for [metabodecon::benchmark()].
+#' @param ... Further arguments passed on to the internal engine
+#'   (`metabodecon:::fit_mdm_internal()` /
+#'   `metabodecon:::benchmark_internal()`), e.g. `sfr`, `igrs`, `deg`,
+#'   `use_rust`. Rarely needed.
+#'
+#' @return
+#' [metabodecon::fit_mdm()] returns an object of class `mdm` with elements
+#' `model` (trained backend model of the best grid row), `ref` (a list
+#' `list(align, snap)` for prediction-time replay), `params` (resolved
+#' pipeline parameters of the best row), the scalar performance of the best
+#' row (`acc`, `auc`, `acc_se`, `auc_se`), and `mog` (the augmented grid
+#' with per-row performance).
+#'
+#' [metabodecon::benchmark()] returns a list with elements `models` (one
+#' fitted model per outer fold), `predictions` (per-spectrum out-of-fold
+#' predictions), `performance` (per-fold `acc` / `auc`) and `overall`
+#' (pooled `acc` / `auc`).
+#'
+#' @examples
+#' \dontrun{
+#'   x <- sim2
+#'   y <- attr(sim2, "group")
+#'   m  <- fit_mdm(x, y)                     # lasso, full pipeline
+#'   mr <- fit_mdm(x, y, model="ranger")     # random forest
+#'   bm <- benchmark(x, y, k=5)              # 5-fold CV
+#'   fm <- fit_mdm(
+#'       x, y, model="ranger",
+#'       npmax=25L, maxShift=c(0L, 1L, 2L, 4L, 8L),
+#'       maxCombine=c(0L, 1L, 2L, 4L), nworkers=4L
+#'   )
+#' }
+#'
+fit_mdm <- function(
+    x, y, model=c("lasso", "ranger"),
+    npmax=-1L, maxShift=-1L, maxCombine=10L,
+    nworkers=1L, seed=1L, verbosity=1L, ...
+) {
+    model <- match.arg(model)
+    fit_fun <- if (model == "ranger") fit_ranger else fit_lasso
+    predict_fun <- if (model == "ranger") predict_ranger else predict_lasso
+    fit_mdm_internal(
+        x=x, y=y, fit_fun=fit_fun, predict_fun=predict_fun,
+        npmax=npmax, maxShift=maxShift, maxCombine=maxCombine,
+        nworkers=nworkers, seed=seed, verbosity=verbosity, ...
+    )
+}
+
+#' @export
+#' @rdname mdm
+benchmark <- function(
+    x, y, model=c("lasso", "ranger"),
+    npmax=-1L, maxShift=-1L, maxCombine=10L,
+    nworkers=1L, seed=1L, verbosity=2L, k=3L, ...
+) {
+    model <- match.arg(model)
+    fit_fun <- if (model == "ranger") fit_ranger else fit_lasso
+    predict_fun <- if (model == "ranger") predict_ranger else predict_lasso
+    benchmark_internal(
+        x=x, y=y, fit_fun=fit_fun, predict_fun=predict_fun,
+        npmax=npmax, maxShift=maxShift, maxCombine=maxCombine,
+        nworkers=nworkers, seed=seed, verbosity=verbosity, k=k, ...
+    )
+}
+
+# Engine (private) #####
+
+#' @noRd
+#'
+#' @title Metabodecon Models (internal pluggable engine)
+#'
+#' @description
+#' `r lifecycle::badge("experimental")`
+#'
 #' **WARNING: These functions are experimental and must not be used in
 #' production. Their API is very likely to change in non-backwards-compatible
 #' ways over the next few weeks.**
@@ -186,7 +297,7 @@
 #'   )
 #' }
 #'
-fit_mdm <- function(
+fit_mdm_internal <- function(
     x, y,
     decon_fun=deconvolute_spectra, align_fun=clupa, snap_fun=snap_to_ref,
     feat_fun=peak_mat, fit_fun=fit_lasso, predict_fun=predict_lasso,
@@ -277,9 +388,8 @@ fit_mdm <- function(
     structure(ret, class="mdm")
 }
 
-#' @export
-#' @rdname mdm
-benchmark <- function(
+#' @noRd
+benchmark_internal <- function(
     x, y,
     decon_fun=deconvolute,  align_fun=clupa,    snap_fun=snap_to_ref,
     feat_fun=peak_mat,      fit_fun=fit_lasso,  predict_fun=predict_lasso,
@@ -336,7 +446,7 @@ benchmark <- function(
         s <- attr(te, "seed") %||% seed
         f <- attr(te, "fold") %||% i
         tr <- setdiff(seq_along(x), te)
-        m <- fit_mdm(
+        m <- fit_mdm_internal(
             x=x[tr], y=y[tr],
             decon_fun=decon_fun, align_fun=align_fun, snap_fun=snap_fun,
             feat_fun=feat_fun, fit_fun=fit_fun, predict_fun=predict_fun,
@@ -386,8 +496,7 @@ benchmark <- function(
     )
 }
 
-#' @export
-#' @rdname mdm
+#' @noRd
 #' @title Identity decon function for fit_mdm
 #' @description
 #' No-op replacement for the `decon_fun` argument of
@@ -398,8 +507,7 @@ benchmark <- function(
 #' @return `x`, unchanged.
 identity2 <- function(x, ...) x
 
-#' @export
-#' @rdname mdm
+#' @noRd
 #' @title Identity snap function for fit_mdm
 #' @description
 #' No-op replacement for the `snap_fun` argument of
@@ -409,56 +517,7 @@ identity2 <- function(x, ...) x
 #' @return `x`, unchanged.
 identity_snap <- function(x, ref=NULL, maxCombine=0L, ...) x
 
-#' @export
-#' @rdname mdm
-#'
-#' @title Label-blind Needleman-Wunsch snap for fit_mdm
-#'
-#' @description
-#' Thin wrapper around [metabodecon::build_consensus()] +
-#' [metabodecon::snap_nw()] that drops into the `snap_fun` slot of
-#' [metabodecon::fit_mdm()]. The consensus is built label-blind
-#' (`y = NULL`) so cross-method comparisons (NW vs.
-#' [metabodecon::snap_to_ref()]) and the OOB / repeated-CV scores
-#' reported by `fit_fun` stay honest.
-#'
-#' The `maxCombine` window (in shared-grid columns) is translated into a
-#' ppm `gap_tol` via the median spacing of `x[[1]]$cs`. The translation
-#' is deterministic, so [predict.mdm] just re-derives `gap_tol` from the
-#' stored `maxCombine`. The consensus used at training time is stashed
-#' on `attr(out, "ref")` and replayed at predict time.
-#'
-#' @param x A `decons2` / `aligns` object.
-#' @param ref Optional pre-built consensus (used at predict time). When
-#'   `NULL`, [metabodecon::build_consensus()] is called on `x` with
-#'   `y=NULL`.
-#' @param maxCombine Snap window in shared-grid columns. Translated to
-#'   `gap_tol = maxCombine * median(diff(cs))` (in ppm).
-#' @param ... Ignored (signature compatibility).
-#'
-#' @return An `aligns` object with `pcisn` / `x0sn` populated and
-#'   `attr(., "ref")` set to the consensus used.
-#'
-snap_nw_blind <- function(x, ref=NULL, maxCombine=20, w_A=0, ...) {
-    stopifnot(inherits(x, "decons2"))
-    cs <- ensure_shared_cs(x)
-    spacing <- abs(stats::median(diff(cs)))
-    gap_tol <- max(spacing, as.numeric(maxCombine) * spacing)
-    pos_field <- if (!is.null(x[[1]]$lcpar$x0al)) "x0al" else "x0"
-    if (is.null(ref)) {
-        ref <- build_consensus(
-            x, y=NULL, gap_tol=gap_tol, pos_field=pos_field
-        )
-    }
-    out <- snap_nw(
-        x, ref=ref, gap_tol=gap_tol, pos_field=pos_field, w_A=w_A
-    )
-    attr(out, "ref") <- ref
-    out
-}
-
-#' @export
-#' @rdname mdm
+#' @noRd
 #' @title Lasso fitter for fit_mdm
 #' @description
 #' Fits an L1-penalised binomial logistic regression via repeated
@@ -546,8 +605,7 @@ fit_lasso <- function(X, y, seed=1, nworkers=1L, nreps=5L) {
     )
 }
 
-#' @export
-#' @rdname mdm
+#' @noRd
 #' @title Lasso predictor for fit_mdm
 #' @description
 #' Companion of [metabodecon::fit_lasso()]. Returns the positive-class
@@ -561,8 +619,7 @@ predict_lasso <- function(model, newx) {
     as.numeric(stats::predict(model, newx=newx, s="lambda.min", type="response"))
 }
 
-#' @export
-#' @rdname mdm
+#' @noRd
 #' @title Random-forest fitter for fit_mdm
 #' @description
 #' Fits a probability random forest with `num.trees` trees via
@@ -611,8 +668,7 @@ fit_ranger <- function(
     list(model=rf, acc=acc, auc=auc, acc_se=NA_real_, auc_se=NA_real_)
 }
 
-#' @export
-#' @rdname mdm
+#' @noRd
 #' @title Random-forest predictor for fit_mdm
 #' @description
 #' Companion of [metabodecon::fit_ranger()]. Returns the positive-class
@@ -787,7 +843,7 @@ mdm_eval <- function(y, prob, lvs) {
 fmt_pct_se <- function(m, s) {
     if (is.na(m)) return("NA")
     if (is.na(s)) return(sprintf("%.1f%%", m * 100))
-    sprintf("%.1f(±%.1f)%%", m * 100, s * 100)
+    sprintf("%.1f(\u00b1%.1f)%%", m * 100, s * 100)
 }
 
 # Format a fraction as "nn.n%". NA -> "NA".
