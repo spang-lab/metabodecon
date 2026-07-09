@@ -48,8 +48,17 @@ jobs:
       - name: Set up R Dependencies
         uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::rcmdcheck, mdrb=?ignore-before-r=4.2.0
+          extra-packages: any::rcmdcheck
           needs: check
+
+      # The Rust backend 'mdrb' is optional. R-Universe ships pre-built
+      # binaries only for the two most recent R releases; on older R or
+      # platforms without a binary (e.g. Windows) it is unavailable and the
+      # Rust-backend tests skip themselves. This step is best-effort so a
+      # failed/absent install never fails the job.
+      - name: Install optional Rust backend (mdrb, best-effort)
+        continue-on-error: true
+        run: Rscript -e 'if (getRversion() >= "4.2") try(install.packages("mdrb", repos = "https://spang-lab.r-universe.dev"))'
 
       - name: Install MacOS System Dependencies
         if: runner.os == 'macOS'

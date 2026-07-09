@@ -134,7 +134,18 @@ check_mdrb_deps <- function(verbose = FALSE) {
 #' Installs metabodecon's Rust backend [mdrb](https://github.com/spang-lab/mdrb)
 #' from [R-Universe](https://spang-lab.r-universe.dev/mdrb).
 #'
-#' lifecycle::badge("experimental")
+#' `r lifecycle::badge("experimental")`
+#'
+#' The Rust backend is entirely optional; metabodecon's pure-R backend is the
+#' default and always available. R-Universe provides pre-built `mdrb` binaries
+#' only for the **two most recent R releases**. On those, installation is a
+#' plain binary download and requires no toolchain. On older R versions
+#' (still `>= 4.2`) or platforms without a pre-built binary, `mdrb` must be
+#' built from source, which requires a Rust toolchain (`cargo` and `rustc`
+#' `>= 1.80`; check with [metabodecon::check_mdrb_deps()]). If automatic
+#' installation fails, `install_mdrb()` does not error: it prints guidance and
+#' returns `FALSE`, pointing to <https://github.com/spang-lab/mdrb> for manual
+#' installation.
 #'
 #' @param ask
 #' Whether to ask for confirmation before attempting installation. Default is
@@ -144,7 +155,8 @@ check_mdrb_deps <- function(verbose = FALSE) {
 #' Additional arguments to pass to [install.packages()] when attempting
 #' installation of mdrb.
 #'
-#' @return NULL. Called for side effect of installing the Rust backend.
+#' @return Invisibly returns `TRUE` if `mdrb` is available after the call, else
+#' `FALSE`. Called mainly for the side effect of installing the Rust backend.
 #'
 #' @author 2024-2025 Tobias Schmidt: initial version.
 #'
@@ -155,8 +167,27 @@ install_mdrb <- function(ask = TRUE, ...) {
         stop("installation of mdrb requires R version 4.2 or greater", call. = FALSE)
     }
     msg <- "Proceeding will install package 'mdrb'. Continue?"
-    if (isTRUE(ask) && isFALSE(get_yn_input(msg))) return()
-    invisible(install.packages("mdrb", repos = "https://spang-lab.r-universe.dev", ...))
+    if (isTRUE(ask) && isFALSE(get_yn_input(msg))) return(invisible(FALSE))
+    tryCatch(
+        suppressWarnings(install.packages(
+            "mdrb", repos = "https://spang-lab.r-universe.dev", ...
+        )),
+        error = function(e) NULL
+    )
+    ok <- requireNamespace("mdrb", quietly = TRUE)
+    if (!ok) {
+        message(
+            "Could not install 'mdrb' automatically.\n",
+            "R-Universe provides pre-built 'mdrb' binaries only for the two ",
+            "most recent R releases. On older R versions (>= 4.2) or platforms ",
+            "without a pre-built binary, 'mdrb' must be built from source, ",
+            "which requires a Rust toolchain (cargo and rustc >= 1.80). Verify ",
+            "the requirements with check_mdrb_deps() and see ",
+            "https://github.com/spang-lab/mdrb for manual installation ",
+            "instructions."
+        )
+    }
+    invisible(ok)
 }
 
 # Internal #####

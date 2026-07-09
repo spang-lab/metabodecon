@@ -359,6 +359,19 @@ skip_if_slow_tests_disabled <- function() {
     }
 }
 
+# Skip a test that needs the ~75 MB `example_datasets.zip` release asset when
+# that download is unavailable (offline CI runners, GitHub rate limits, or a
+# truncated download). Returns invisibly on success so the caller proceeds.
+skip_if_no_example_datasets <- function() {
+    ok <- tryCatch(
+        isTRUE(file.size(cache_example_datasets(
+            persistent = FALSE, extract = FALSE, silent = TRUE
+        )) == xds$zip_size),
+        error = function(e) FALSE
+    )
+    if (!ok) testthat::skip("example_datasets.zip download unavailable")
+}
+
 #' @noRd
 #' @author 2024-2025 Tobias Schmidt: initial version.
 skip_if_not_in_globenv <- function() {

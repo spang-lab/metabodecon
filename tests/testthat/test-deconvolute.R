@@ -67,16 +67,12 @@ test_wrong_sfr <- test_that("deconvolute works when no peaks are filtered out", 
 skip_on_cran()
 skip_if(getRversion() < numeric_version("4.2"))
 
-mdrb <- test_that("Package mdrb must be available if not on CRAN and R >= 4.2", {
-    expect_true(mdrb_available)
-})
-
-skip_if_not(mdrb_available) # (1)
-# (1) If we reach this point, we're not on CRAN and our R version is greater
-# equal 4.2. I.e., mdrb should be available. If it is not, the "MDRB is
-# available" check from above will fail and that's enough for us to see that
-# something is wrong. I.e, in such as scenario, there is no need to execute the
-# following tests and spam the log file.
+# The Rust backend 'mdrb' is optional. R-Universe ships pre-built binaries only
+# for the two most recent R releases; on older R or unsupported platforms it is
+# absent. When it is missing, deconvolute(use_rust=TRUE) errors with an
+# informative message (exercised via the mocked "mm" case below when mdrb IS
+# present), and the Rust-backend tests are skipped here.
+skip_if_not(mdrb_available, "mdrb (optional Rust backend) not installed")
 
 rust_backend <- test_that("deconvolute works with rust backend", {
 

@@ -32,7 +32,7 @@ test_that("install_mdrb works", {
         output = "captured",
         message = "captured",
         expr = {
-            x <- try(install_mdrb(ask = FALSE, keep_outputs = TRUE))
+            x <- try(install_mdrb(ask = FALSE))
             unlink("mdrb.out") # If executed by testthat
             unlink("tests/testthat/mdrb.out") # If executed interactively
         }
@@ -40,16 +40,16 @@ test_that("install_mdrb works", {
     mdrb_available <- check_mdrb()
     if (getRversion() <  numeric_version("4.2")) {
         expect_true(inherits(x, "try-error"))
-        expect_equal(obj$message, "Error : installation of mdrb requires R version 4.2 or greater")
+        expect_match(paste(obj$message, collapse = "\n"),
+                     "requires R version 4.2 or greater")
         expect_false(mdrb_available)
     } else {
-        if (inherits(x, "try-error")) {
-            message("\nCaptured messages:")
-            message(paste("|", obj$message, collapse = "\n"))
-            message("Captured output:")
-            message(paste("|", obj$output, collapse = "\n"))
-        }
-        expect_true(is.null(x))
-        expect_true(mdrb_available)
+        # install_mdrb() no longer errors when no pre-built binary is available
+        # (older R / unsupported platform): it prints guidance and returns
+        # FALSE. When a binary IS available it installs mdrb and returns TRUE.
+        # Either way the return value reflects mdrb's availability afterwards.
+        expect_false(inherits(x, "try-error"))
+        expect_type(x, "logical")
+        expect_equal(x, mdrb_available)
     }
 })
