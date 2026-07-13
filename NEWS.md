@@ -13,6 +13,10 @@
     * Download-dependent tests skip gracefully (new internal
       `skip_if_no_example_datasets()` helper) when the ~75 MB
       `example_datasets.zip` release asset cannot be downloaded.
+    * CI: `RUN_SLOW_TESTS` is no longer set at the job level in
+      `R-CMD-check.yaml`; it is enabled only for the `all`/`nobioc` steps. The
+      `fast` jobs (macOS/Windows/older R) now genuinely skip the slow,
+      network-dependent tests instead of running and flaking on them.
 
 # metabodecon 1.7.0
 
