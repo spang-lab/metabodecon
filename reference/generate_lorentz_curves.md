@@ -168,6 +168,7 @@ repeatedly in examples, this function is provided to deconvolute the
 ## Examples
 
 ``` r
+
 ## Define the paths to the example datasets we want to deconvolute:
 ## `sim_dir`: directory containing 16 simulated spectra
 ## `sim_01`: path to the first spectrum in the `sim` directory

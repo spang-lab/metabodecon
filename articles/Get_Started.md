@@ -25,6 +25,7 @@ and then call
 as follows:
 
 ``` r
+
 sim_dir <- metabodecon::metabodecon_file("bruker/sim")
 sim <- metabodecon::read_spectra(sim_dir)
 deconvoluted_spectra <- metabodecon::deconvolute(
@@ -56,9 +57,9 @@ spectra individually.
 Questions three and four are accompanied by two plots, shown in [Figure
 1](#fig-deconvolute), which help you to verify the accuracy of the
 selected signal-free region (SFR) and water signal half-width (WSHW)
-[¹](#fn1). In this case, the provided parameters are already fine, so
-you can answer both questions with `y`. If adjustments are needed, you
-can respond with `n` and input the correct values.
+[^1]. In this case, the provided parameters are already fine, so you can
+answer both questions with `y`. If adjustments are needed, you can
+respond with `n` and input the correct values.
 
 ![\<strong\>Figure 1.\</strong\> The first spectrum of the Sim dataset.
 The x-Axis gives the chemical shift of each datapoint in parts per
@@ -89,7 +90,7 @@ this case, the rectangle collapses to a vertical line.
 When using the function in scripts, where interactive user input is not
 desired, you can disable the interactive prompting by setting parameter
 `ask` to `FALSE`. In this case, the provided parameters will be used for
-the deconvolution of all spectra automatically. [²](#fn2)
+the deconvolution of all spectra automatically. [^2]
 
 ## Visualize deconvoluted spectra
 
@@ -99,6 +100,7 @@ extracted signals using
 to assess the quality of the deconvolution.
 
 ``` r
+
 # Visualize the first spectrum.
 metabodecon::plot_spectrum(deconvoluted_spectra[[1]])
 
@@ -159,6 +161,7 @@ To visualize the data before and after the alignment, you can use
 [`plot_spectra()`](https://spang-lab.github.io/metabodecon/reference/plot_spectra.md):
 
 ``` r
+
 # Plot spectra before alignment. Only show spectra 1-8 for clarity.
 metabodecon::plot_spectra(deconvoluted_spectra[1:8], lgd = FALSE)
 
@@ -202,12 +205,10 @@ x-Axis gives the chemical shift of each datapoint in parts per million
 arbitrary units (au). All specta are pretty similar to each other except
 for Spectrum 2, which got shifted approx. 0.01 ppm to the right.
 
-------------------------------------------------------------------------
-
-1.  Since the used dataset was simulated based on actual measurements in
-    the range of approx. 3.6 to 3.3 ppm, it doesn’t contain a water
+[^1]: Since the used dataset was simulated based on actual measurements
+    in the range of approx. 3.6 to 3.3 ppm, it doesn’t contain a water
     signal. Therefore, the water signal half width was set to zero.
 
-2.  In this case it may be useful to set `ask = TRUE` for the first run
-    to determine the optimal parameters interactively and then set
+[^2]: In this case it may be useful to set `ask = TRUE` for the first
+    run to determine the optimal parameters interactively and then set
     `ask = FALSE` for subsequent runs.

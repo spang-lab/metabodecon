@@ -27,12 +27,14 @@ behaviour and point out added features in `metabodecon` (v1.x).
 ### Load package
 
 ``` r
+
 library(MetaboDecon1D)
 ```
 
 ### Deconvolute one spectrum in Bruker format
 
 ``` r
+
 result <- MetaboDecon1D(
     filepath = "load_example_path",
     filename = "example_human_urine_spectrum",
@@ -45,6 +47,7 @@ result <- MetaboDecon1D(
 ### Visualize results and store plots as png
 
 ``` r
+
 str(result)
 plot_triplets(result)
 plot_lorentz_curves_save_as_png(result)
@@ -58,6 +61,7 @@ plot_spectrum_superposition_save_as_png(result)
 ### Deconvolute one spectrum in jcampdx format
 
 ``` r
+
 result <- MetaboDecon1D(
     filepath = "load_example_path",
     filename = "example_human_urine_spectrum.dx",
@@ -71,6 +75,7 @@ str(result)
 ### Deconvolute multiple spectra in Bruker format
 
 ``` r
+
 result <- MetaboDecon1D(
     filepath = "load_example_path",
     file_format = "bruker"
@@ -83,6 +88,7 @@ str(result)
 ### Deconvolute multiple spectra in jcampdx format
 
 ``` r
+
 jcamp_results <- MetaboDecon1D(
     filepath = "load_example_path",
     file_format = "jcampdx"

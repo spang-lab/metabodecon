@@ -19,6 +19,7 @@ To install the **stable version** from
 following commands in a running R session (e.g. in RStudio):
 
 ``` r
+
 install.packages("pak")
 pak::pkg_install("metabodecon")
 ```
@@ -28,6 +29,7 @@ Alternatively, if you prefer installing via the traditional
 function, you can do so by running the following commands:
 
 ``` r
+
 # Install Bioconductor dependencies
 install.packages("BiocManager")
 BiocManager::install(c("MassSpecWavelet", "impute"))
@@ -40,6 +42,7 @@ To install the **development version** from
 [GitHub](https://github.com/spang-lab/metabodecon/) use:
 
 ``` r
+
 install.packages("pak")
 pak::pkg_install("spang-lab/metabodecon")
 ```

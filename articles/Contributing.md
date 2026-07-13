@@ -33,6 +33,7 @@ Whenever you update any of those things, you should run the below
 commands to check that everything is still working as expected:
 
 ``` r
+
 devtools::document() # Build files in man folder
 devtools::spell_check() # Check spelling (add false positives to inst/WORDLIST)
 urlchecker::url_check() # Check URLs
@@ -61,6 +62,7 @@ package to CRAN, they should:
     release it to CRAN
 
 ``` r
+
 # Check spelling and URLs. False positive findings of spell check should be
 # added to inst/WORDLIST.
 devtools::spell_check()

@@ -63,21 +63,21 @@ check_mdrb()
 # depending on your system, might involve updating or installing
 # Rust toolchain components.
 check_mdrb_deps(verbose = TRUE)
-#> 2026-04-10 07:15:44.83 Checking R version...
-#> 2026-04-10 07:15:44.83 Checking if buildtools exist...
+#> 2026-07-13 18:21:22.63 Checking R version...
+#> 2026-07-13 18:21:22.63 Checking if buildtools exist...
 #> Trying to compile a simple C file
-#> Running /opt/R/4.5.3/lib/R/bin/R CMD SHLIB foo.c
+#> Running /opt/R/4.6.1/lib/R/bin/R CMD SHLIB foo.c
 #> using C compiler: ‘gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0’
-#> gcc -std=gnu2x -I"/opt/R/4.5.3/lib/R/include" -DNDEBUG -DR_NO_REMAP  -I/usr/local/include    -fpic  -g -O2  -c foo.c -o foo.o
-#> gcc -std=gnu2x -shared -L/opt/R/4.5.3/lib/R/lib -L/usr/local/lib -o foo.so foo.o -L/opt/R/4.5.3/lib/R/lib -lR
+#> gcc -std=gnu2x -I"/opt/R/4.6.1/lib/R/include" -DNDEBUG -DR_NO_REMAP  -I/usr/local/include    -fpic  -g -O2  -c foo.c -o foo.o
+#> gcc -std=gnu2x -shared -L/opt/R/4.6.1/lib/R/lib -L/usr/local/lib -o foo.so foo.o -L/opt/R/4.6.1/lib/R/lib -lR
 #> 
-#> 2026-04-10 07:15:45.01 Checking cargo version...
-#> 2026-04-10 07:15:45.07 Checking rustc version...
-#> 2026-04-10 07:15:45.18 Done
+#> 2026-07-13 18:21:22.81 Checking cargo version...
+#> 2026-07-13 18:21:22.82 Checking rustc version...
+#> 2026-07-13 18:21:22.83 Done
 #>                check passed                                      comment
-#> r           R >= 4.2   TRUE                             Current: R 4.5.3
+#> r           R >= 4.2   TRUE                             Current: R 4.6.1
 #> rtools  Rtools exist   TRUE        Testcall: pkgbuild::has_build_tools()
-#> cargo  cargo >= 1.80   TRUE Current: cargo 1.94.1 (29ea6fb6a 2026-03-24)
-#> rustc  rustc >= 1.80   TRUE Current: rustc 1.94.1 (e408947bf 2026-03-25)
+#> cargo  cargo >= 1.80   TRUE Current: cargo 1.96.1 (356927216 2026-06-26)
+#> rustc  rustc >= 1.80   TRUE Current: rustc 1.96.1 (31fca3adb 2026-06-26)
 # }
 ```

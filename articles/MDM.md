@@ -18,6 +18,7 @@ areas between samples. Five of these peaks carry subtle group
 information: their areas differ by +/- 5% between groups A and B.
 
 ``` r
+
 library(metabodecon)
 set.seed(42)
 
@@ -63,6 +64,7 @@ The following figure shows four spectra from each group overlaid on top
 of each other. The subtle area differences are hard to spot visually.
 
 ``` r
+
 idx_A <- which(group == "A")[1:4]
 idx_B <- which(group == "B")[1:4]
 plot_spectra(spectra[c(idx_A, idx_B)])
@@ -75,6 +77,7 @@ plot_spectra(spectra[c(idx_A, idx_B)])
 We use two thirds of the data for training and one third for testing.
 
 ``` r
+
 set.seed(1)
 n_train <- round(2 / 3 * n)
 train_idx <- sort(sample(n, n_train))
@@ -96,6 +99,7 @@ a lasso model via `cv.glmnet()`. Here we use the default deconvolution
 parameters:
 
 ``` r
+
 mdm_default <- fit_mdm(
     spectra_tr, y_tr,
     nfit = 3, smit = 2, smws = 5, delta = 6.4, npmax = 0,
@@ -124,6 +128,7 @@ fixed fold assignment, and records the held-out accuracy and AUC at
 build time short:
 
 ``` r
+
 pgrid <- expand.grid(
     smit = 2,
     smws = c(3, 5),
@@ -147,6 +152,7 @@ mdm_tuned <- cv_mdm(
 The performance grid shows how each parameter combination scored:
 
 ``` r
+
 pg <- mdm_tuned$pgrid
 pg <- pg[order(-pg$auc), ]
 knitr::kable(
@@ -164,7 +170,7 @@ knitr::kable(
 |    2 |    5 |     4 |    5 |     0 |      100 |         30 | 0.556 | 0.6333 |
 |    2 |    5 |     6 |    5 |     0 |      100 |         30 | 0.556 | 0.6333 |
 
-Top 10 parameter combinations by AUC.
+Top 10 parameter combinations by AUC. {.table}
 
 ## Compare deconvolution results
 
@@ -172,6 +178,7 @@ Let us compare the deconvolution of the first training spectrum using
 the default parameters and the best parameters found by the grid search:
 
 ``` r
+
 # Deconvolute first two training spectra with default and tuned parameters
 pair <- spectra_tr[1:2]
 class(pair) <- "spectra"
@@ -199,6 +206,7 @@ The non-zero coefficients of the lasso model reveal which chemical shift
 positions are most important for distinguishing the two groups:
 
 ``` r
+
 cf <- coef(mdm_tuned)
 cf_nz <- cf[cf[, 1] != 0, , drop = FALSE]
 knitr::kable(
@@ -224,7 +232,7 @@ knitr::kable(
 | 3.3774      |     -0.0004 |
 | 3.3735      |     -0.0002 |
 
-Non-zero lasso coefficients at lambda.min.
+Non-zero lasso coefficients at lambda.min. {.table}
 
 ## Predict test samples
 
@@ -234,14 +242,16 @@ to classify the held-out test spectra. This internally deconvolutes and
 aligns them against the reference spectrum stored in the model:
 
 ``` r
+
 preds <- predict(mdm_tuned, spectra_te, type = "all", verbosity = 0)
 ```
 
-    ## 2026-04-10 07:16:17.52 Deconvoluting 13 spectra with 1 nworkers
-    ## 2026-04-10 07:16:17.63 Aligning spectra with 1 nworkers
-    ## 2026-04-10 07:16:17.70 Predicting with s=lambda.min
+    ## 2026-07-13 18:21:54.02 Deconvoluting 13 spectra with 1 nworkers
+    ## 2026-07-13 18:21:54.12 Aligning spectra with 1 nworkers
+    ## 2026-07-13 18:21:54.19 Predicting with s=lambda.min
 
 ``` r
+
 results <- data.frame(
     sample = get_names(spectra_te),
     true = y_te,
@@ -251,6 +261,7 @@ results <- data.frame(
 ```
 
 ``` r
+
 acc <- mean(preds$class == y_te)
 auc <- metabodecon:::AUC(y_te, preds$prob)
 cat(sprintf("Test accuracy: %.1f%%\n", acc * 100))
@@ -259,12 +270,14 @@ cat(sprintf("Test accuracy: %.1f%%\n", acc * 100))
     ## Test accuracy: 76.9%
 
 ``` r
+
 cat(sprintf("Test AUC:      %.4f\n", auc))
 ```
 
     ## Test AUC:      0.7750
 
 ``` r
+
 knitr::kable(
     table(True = y_te, Predicted = preds$class),
     caption = "Confusion matrix on test set."
@@ -276,7 +289,7 @@ knitr::kable(
 | A   |   6 |   2 |
 | B   |   1 |   4 |
 
-Confusion matrix on test set.
+Confusion matrix on test set. {.table}
 
 ## Benchmark with nested cross-validation
 
@@ -291,6 +304,7 @@ are honest estimates.
 A typical call looks like this:
 
 ``` r
+
 bm <- benchmark_mdm(
     spectra_tr, y_tr,
     pgrid = pgrid,

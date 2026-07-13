@@ -47,10 +47,10 @@ the [blood](#blood) dataset:
 2.  Extract Lorentz curve parameters for all peaks between 3.52 and 3.37
     ppm
 3.  Generate 2048 equidistant chemical shift values between 3.59 and
-    3.28 ppm[¹](#fn1)
+    3.28 ppm[^1]
 4.  Calculate the signal intensity at each chemical shift as
     superposition of Lorentz curves
-5.  Add random noise to the simulated spectrum [²](#fn2)
+5.  Add random noise to the simulated spectrum [^2]
 
 The first two of the 16 simulated spectra are plotted
 [below](#fig-simulated-datasets). For further details about the
@@ -91,6 +91,7 @@ must be explicitly downloaded afterwards. This can be done via command
 [`download_example_datasets()`](https://spang-lab.github.io/metabodecon/reference/download_example_datasets.md):
 
 ``` r
+
 library(metabodecon)
 # Set persistent = TRUE to store the files at a persistent location. This way,
 # the next time you call `download_example_datasets()`, the files will not be
@@ -106,12 +107,10 @@ separate download, are:
 - The two spectra from the [urine](#urine) dataset in Bruker format
 - The first spectrum from the [urine](#urine) dataset in jcamp-dx format
 
-------------------------------------------------------------------------
-
-1.  The blood spectra have 131072 datapoints per 20 ppm (14.8 ppm to
+[^1]: The blood spectra have 131072 datapoints per 20 ppm (14.8 ppm to
     -5.2), i.e. ≈ 2000 datapoints per 0.3 ppm. The Sim spectra also have
     ≈ 2000 datapoints per 0.3 ppm, i.e., the resolution between the two
     datasets is kept constant.
 
-2.  The standard deviation (SD) of the noise was calculated as SD of
+[^2]: The standard deviation (SD) of the noise was calculated as SD of
     signal intensities from the signal free region.

@@ -87,5 +87,6 @@ tree(metabodecon_dir, max.level = 1)
 #> ├── INDEX
 #> ├── NAMESPACE
 #> ├── NEWS.md
+#> ├── SHA256
 #> └── WORDLIST
 ```

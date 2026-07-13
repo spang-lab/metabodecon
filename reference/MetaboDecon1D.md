@@ -122,6 +122,7 @@ https://doi.org/10.3390/metabo11070452
 ## Examples
 
 ``` r
+
 ## ATTENTION: using MetaboDecon1D() for deconvolution is deprecated. Please use
 ## deconvolute() instead.
 
