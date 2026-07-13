@@ -29,6 +29,10 @@ skip_if_slow_tests_disabled()
 skip_on_os("linux")
 
 test_that("datadir works if datadir_persistent=filled", {
+    # datadir() auto-selects the persistent directory only when the persistent
+    # example-datasets zip is present with the correct size, which requires the
+    # ~75 MB release asset to download successfully. Skip when it cannot.
+    skip_if_no_example_datasets()
     evalwith(datadir_persistent = "filled", {
         x <- datadir()
         y <- datadir(persistent = TRUE)

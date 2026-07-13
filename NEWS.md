@@ -1,3 +1,19 @@
+# metabodecon 1.7.1
+
+* Fixed `R CMD check` failures on CI configurations where the optional Rust
+  backend [mdrb](https://github.com/spang-lab/mdrb) has no pre-built binary
+  (older R releases such as `oldrel-4`, and Windows). The Rust backend is now
+  treated as truly optional:
+    * `install_mdrb()` no longer errors when no binary is available. It prints
+      guidance (a source build needs `cargo`/`rustc >= 1.80`) and invisibly
+      returns `TRUE`/`FALSE` to reflect whether `mdrb` is available afterwards.
+    * CI installs `mdrb` in a separate best-effort step, so an absent or failed
+      install no longer fails the job; the Rust-backend tests skip themselves
+      when `mdrb` is missing.
+    * Download-dependent tests skip gracefully (new internal
+      `skip_if_no_example_datasets()` helper) when the ~75 MB
+      `example_datasets.zip` release asset cannot be downloaded.
+
 # metabodecon 1.7.0
 
 * `deconvolute()` gained `npmax`, `igrs`, and `cachedir` parameters for limiting

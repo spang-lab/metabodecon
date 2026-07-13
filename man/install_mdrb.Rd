@@ -14,13 +14,25 @@ TRUE.}
 installation of mdrb.}
 }
 \value{
-NULL. Called for side effect of installing the Rust backend.
+Invisibly returns \code{TRUE} if \code{mdrb} is available after the call, else
+\code{FALSE}. Called mainly for the side effect of installing the Rust backend.
 }
 \description{
 Installs metabodecon's Rust backend \href{https://github.com/spang-lab/mdrb}{mdrb}
 from \href{https://spang-lab.r-universe.dev/mdrb}{R-Universe}.
 
-lifecycle::badge("experimental")
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+
+The Rust backend is entirely optional; metabodecon's pure-R backend is the
+default and always available. R-Universe provides pre-built \code{mdrb} binaries
+only for the \strong{two most recent R releases}. On those, installation is a
+plain binary download and requires no toolchain. On older R versions
+(still \verb{>= 4.2}) or platforms without a pre-built binary, \code{mdrb} must be
+built from source, which requires a Rust toolchain (\code{cargo} and \code{rustc}
+\verb{>= 1.80}; check with \code{\link[=check_mdrb_deps]{check_mdrb_deps()}}). If automatic
+installation fails, \code{install_mdrb()} does not error: it prints guidance and
+returns \code{FALSE}, pointing to \url{https://github.com/spang-lab/mdrb} for manual
+installation.
 }
 \examples{
 if (interactive()) try(install_mdrb())
