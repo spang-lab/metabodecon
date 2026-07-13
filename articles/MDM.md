@@ -246,9 +246,9 @@ aligns them against the reference spectrum stored in the model:
 preds <- predict(mdm_tuned, spectra_te, type = "all", verbosity = 0)
 ```
 
-    ## 2026-07-13 18:21:54.02 Deconvoluting 13 spectra with 1 nworkers
-    ## 2026-07-13 18:21:54.12 Aligning spectra with 1 nworkers
-    ## 2026-07-13 18:21:54.19 Predicting with s=lambda.min
+    ## 2026-07-13 19:23:43.80 Deconvoluting 13 spectra with 1 nworkers
+    ## 2026-07-13 19:23:43.90 Aligning spectra with 1 nworkers
+    ## 2026-07-13 19:23:43.97 Predicting with s=lambda.min
 
 ``` r
 

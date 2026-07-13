@@ -84,9 +84,9 @@ if (all(deps_installed)) {
     )
     str(hclObj, 1)
 }
-#> 2026-07-13 18:21:24.94 Running dohCluster with maxShift = 100 on 2 spectra
-#> 2026-07-13 18:21:24.94 Aligning spectrum 1/2
-#> 2026-07-13 18:21:24.95 Finished dohCluster in 0.0 s
+#> 2026-07-13 19:23:14.47 Running dohCluster with maxShift = 100 on 2 spectra
+#> 2026-07-13 19:23:14.47 Aligning spectrum 1/2
+#> 2026-07-13 19:23:14.48 Finished dohCluster in 0.0 s
 #> List of 2
 #>  $ Y           : num [1:2, 1:2048] 0.0122 0.0105 0.0122 0.0106 0.0122 ...
 #>  $ new_peakList:List of 2

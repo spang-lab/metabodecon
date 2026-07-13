@@ -113,9 +113,9 @@ if (all(deps_installed)) {
     M <- speaq_align(feat, maxShift, spectrum_data, show = TRUE)
     str(M)
 }
-#> 2026-07-13 18:21:35.39 Running dohCluster with maxShift = 200 on 2 spectra
-#> 2026-07-13 18:21:35.39 Aligning spectrum 1/2
-#> 2026-07-13 18:21:35.40 Finished dohCluster in 0.0 s
+#> 2026-07-13 19:23:25.42 Running dohCluster with maxShift = 200 on 2 spectra
+#> 2026-07-13 19:23:25.42 Aligning spectrum 1/2
+#> 2026-07-13 19:23:25.43 Finished dohCluster in 0.0 s
 
 #>  num [1:2, 1:2048] NA NA NA NA NA NA NA NA NA NA ...
 #>  - attr(*, "dimnames")=List of 2
