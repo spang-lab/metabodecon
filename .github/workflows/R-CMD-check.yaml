@@ -25,10 +25,13 @@ jobs:
           - {os: macos-latest,   r: 'release',  test: 'fast'}
           - {os: windows-latest, r: 'release',  test: 'fast'}
           - {os: windows-latest, r: 'oldrel-4', test: 'fast'}
+    # NB: RUN_SLOW_TESTS is intentionally NOT set at the job level. The
+    # per-step configuration below enables it only for the `all` and `nobioc`
+    # runs, so the `fast` jobs (macOS/Windows/older R) skip the slow, network-
+    # dependent tests (75 MB example-datasets download, etc.).
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
-      RUN_SLOW_TESTS: "TRUE"
     steps:
 
       - name: Checkout repository
