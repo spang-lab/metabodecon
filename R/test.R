@@ -286,7 +286,21 @@ get_datadir_mock <- function(type = "temp", state = "default") {
     p <- norm_path(file.path(mockdir(), "datadir", type, state))
     if (state %in% c("missing", "empty")) unlink(p, recursive = TRUE, force = TRUE)
     if (state == "empty") mkdirs(p)
-    if (state == "filled") download_example_datasets(dst_dir = p, silent = TRUE)
+    if (state == "filled") {
+        download_example_datasets(dst_dir = p, silent = TRUE)
+        # datadir() auto-selects the persistent dir via
+        # `file.size(zip_persistent()) == xds$zip_size`. The copy step inside
+        # download_example_datasets() is conditional and left the zip
+        # absent/short on macOS/Windows CI, so datadir() fell back to temp and
+        # this mock's `datadir()` == `datadir(persistent=TRUE)` assertion
+        # failed. Copy the already-validated cached zip to the mocked
+        # persistent zip path so the auto-selection is deterministic on all OSes.
+        zp <- file.path(p, "example_datasets.zip")
+        if (!isTRUE(file.size(zp) == xds$zip_size)) {
+            src <- cache_example_datasets(persistent = FALSE, extract = FALSE, silent = TRUE)
+            file.copy(src, zp, overwrite = TRUE)
+        }
+    }
     function() p
 }
 
