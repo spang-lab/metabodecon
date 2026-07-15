@@ -22,13 +22,17 @@ jobs:
           - {os: ubuntu-latest,  r: 'oldrel-2', test: 'fast'}
           - {os: ubuntu-latest,  r: 'oldrel-3', test: 'fast'}
           - {os: ubuntu-latest,  r: 'oldrel-4', test: 'fast'}
-          - {os: macos-latest,   r: 'release',  test: 'fast'}
-          - {os: windows-latest, r: 'release',  test: 'fast'}
+          - {os: macos-latest,   r: 'release',  test: 'all'}
+          - {os: windows-latest, r: 'release',  test: 'all'}
           - {os: windows-latest, r: 'oldrel-4', test: 'fast'}
-    # NB: RUN_SLOW_TESTS is intentionally NOT set at the job level. The
-    # per-step configuration below enables it only for the `all` and `nobioc`
-    # runs, so the `fast` jobs (macOS/Windows/older R) skip the slow, network-
-    # dependent tests (75 MB example-datasets download, etc.).
+    # NB: RUN_SLOW_TESTS is intentionally NOT set at the job level; the
+    # per-step config below enables it only for the `all`/`nobioc` runs. The
+    # slow, network-dependent tests (75 MB example-datasets download, etc.) are
+    # thus exercised on at least one runner per OS -- ubuntu (all + nobioc),
+    # macOS (release, all) and windows (release, all) -- while the remaining
+    # `fast` jobs (ubuntu devel/oldrel, windows oldrel-4) skip them. Download
+    # failures skip gracefully via skip_if_no_example_datasets(), so the slow
+    # jobs do not flake on transient network errors.
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
