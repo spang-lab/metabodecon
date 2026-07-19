@@ -20,6 +20,9 @@ jobs:
           - {os: ubuntu-latest,  r: 'devel',    test: 'fast'}
           - {os: ubuntu-latest,  r: 'oldrel-1', test: 'fast'}
           - {os: ubuntu-latest,  r: 'oldrel-2', test: 'fast'}
+          # oldrel-3 / oldrel-4 (R 4.3 / 4.2): Posit's binary mirror archived their
+          # Bioconductor release (<= 3.16), so these rows set R_BIOC_MIRROR (see
+          # env below) to bioconductor.org, which retains every archived release.
           - {os: ubuntu-latest,  r: 'oldrel-3', test: 'fast'}
           - {os: ubuntu-latest,  r: 'oldrel-4', test: 'fast'}
           - {os: macos-latest,   r: 'release',  test: 'all'}
@@ -36,6 +39,10 @@ jobs:
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
+      # oldrel-3/4 (R 4.3/4.2) pull Bioconductor from bioconductor.org, which
+      # keeps every archived release; Posit's binary mirror dropped BioC <= 3.16
+      # so its impute/MassSpecWavelet 404. Other jobs keep Posit's mirror.
+      R_BIOC_MIRROR: ${{ (matrix.config.r == 'oldrel-3' || matrix.config.r == 'oldrel-4') && 'https://bioconductor.org' || 'https://bioconductor.posit.co' }}
     steps:
 
       - name: Checkout repository
