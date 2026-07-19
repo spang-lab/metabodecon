@@ -17,9 +17,16 @@
     `skip_if_no_example_datasets()` helper) when the ~75 MB
     `example_datasets.zip` release asset cannot be downloaded.
   - CI: `RUN_SLOW_TESTS` is no longer set at the job level in
-    `R-CMD-check.yaml`; it is enabled only for the `all`/`nobioc` steps.
-    The `fast` jobs (macOS/Windows/older R) now genuinely skip the slow,
-    network-dependent tests instead of running and flaking on them.
+    `R-CMD-check.yaml`; it is enabled per-step for the `all`/`nobioc`
+    runs. The slow, network-dependent tests are exercised on at least
+    one runner per OS – ubuntu (`all` + `nobioc`), macOS (`release`,
+    `all`) and windows (`release`, `all`) – so the OS-specific slow
+    tests (e.g. the persistent
+    [`datadir()`](https://spang-lab.github.io/metabodecon/reference/datadir.md)
+    test, which is `skip_on_os("linux")`) keep their coverage, while the
+    remaining `fast` jobs (older R, windows `oldrel-4`) skip them.
+    Download failures skip gracefully, so the slow jobs no longer flake
+    on transient network errors.
 
 ## metabodecon 1.7.0
 
