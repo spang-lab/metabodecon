@@ -15,12 +15,16 @@ jobs:
       matrix:            # Examples with CPU (user + system) or elapsed time > 5s
         config:                                 #             user system elapsed
           - {os: windows-latest, r: 'release'}  # check_mdrb  0.05   0.05    9.33
+          # windows oldrel-4: Posit archived BioC 3.16; R_BIOC_MIRROR (env below)
+          # resolves BioC from bioconductor.org.
           - {os: windows-latest, r: 'oldrel-4'} # check_mdrb     0   0.01    5.16
           - {os: ubuntu-latest,  r: 'oldrel-1'} # check_mdrb 0.283  0.837  15.525
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
       RUN_SLOW_TESTS: "TRUE"
+      # oldrel-4 pulls Bioconductor from bioconductor.org (Posit archived <= 3.16).
+      R_BIOC_MIRROR: ${{ (matrix.config.r == 'oldrel-3' || matrix.config.r == 'oldrel-4') && 'https://bioconductor.org' || 'https://bioconductor.posit.co' }}
     steps:
 
       - name: Checkout repository
