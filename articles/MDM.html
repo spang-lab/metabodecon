@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metabodecon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.7.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.7.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -70,7 +70,7 @@
       <img src="../logo.svg" class="logo" alt=""><h1>Metabodecon Models</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/v1.7.0/vignettes/MDM.Rmd" class="external-link"><code>vignettes/MDM.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/spang-lab/metabodecon/blob/v1.7.1/vignettes/MDM.Rmd" class="external-link"><code>vignettes/MDM.Rmd</code></a></small>
       <div class="d-none name"><code>MDM.Rmd</code></div>
     </div>
 
@@ -378,9 +378,9 @@ spectra. This internally deconvolutes and aligns them against the
 reference spectrum stored in the model:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">preds</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">mdm_tuned</span>, <span class="va">spectra_te</span>, type <span class="op">=</span> <span class="st">"all"</span>, verbosity <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## 2026-07-22 11:51:15.90 Deconvoluting 13 spectra with 1 nworkers</span></span>
-<span><span class="co">## 2026-07-22 11:51:16.00 Aligning spectra with 1 nworkers</span></span>
-<span><span class="co">## 2026-07-22 11:51:16.06 Predicting with s=lambda.min</span></span></code></pre>
+<pre><code><span><span class="co">## 2026-07-22 11:54:41.17 Deconvoluting 13 spectra with 1 nworkers</span></span>
+<span><span class="co">## 2026-07-22 11:54:41.28 Aligning spectra with 1 nworkers</span></span>
+<span><span class="co">## 2026-07-22 11:54:41.34 Predicting with s=lambda.min</span></span></code></pre>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>    sample <span class="op">=</span> <span class="fu"><a href="../reference/get_names.html">get_names</a></span><span class="op">(</span><span class="va">spectra_te</span><span class="op">)</span>,</span>

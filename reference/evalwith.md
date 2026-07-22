@@ -171,7 +171,7 @@ x1 <- evalwith(output = "captured", cat("Helloworld\n"))
 str(x1)
 #> List of 7
 #>  $ rv     : NULL
-#>  $ runtime: num 0
+#>  $ runtime: num 0.001
 #>  $ output : chr "Helloworld"
 #>  $ message: chr(0) 
 #>  $ plot   : NULL
@@ -179,10 +179,10 @@ str(x1)
 #>  $ inputs : chr(0) 
 
 x2 <- evalwith(datadir_persistent = "missing", message = "captured", datadir())
-#> Warning: /tmp/RtmpfEg17x/metabodecon/data does not exist. Please call `download_example_datasets()` first.
+#> Warning: /tmp/Rtmp4k99dS/metabodecon/data does not exist. Please call `download_example_datasets()` first.
 str(x2)
 #> List of 7
-#>  $ rv     : chr "/tmp/RtmpfEg17x/metabodecon/data"
+#>  $ rv     : chr "/tmp/Rtmp4k99dS/metabodecon/data"
 #>  $ runtime: num 0.001
 #>  $ output : chr(0) 
 #>  $ message: chr(0) 
