@@ -148,6 +148,16 @@ skip_if_slow_tests_disabled()
 
 test_that("align can install its dependencies", {
 
+    # NOT RUNNABLE ON WINDOWS: this test unloads the compiled Bioconductor
+    # packages `impute` and `MassSpecWavelet`, swaps `.libPaths()` and then
+    # reloads them from a fresh library. On Windows, `unloadNamespace()` does
+    # not unload the package DLL and the file stays locked, so re-registering
+    # the native routines from the newly installed copy crashes the R session
+    # with an access violation (exit code -1073741819 / 0xC0000005) rather than
+    # failing an expectation. The auto-installation logic under test is
+    # OS-independent and stays covered by the ubuntu and macOS runners.
+    skip_on_os("windows")
+
     # TEST PURPOSE: If `metabodecon` or `speaq` is installed via
     # `install.packages()`, the dependencies `impute` and `MassSpecWavelet`
     # may not be installed. In this case, the missing dependencies should be
