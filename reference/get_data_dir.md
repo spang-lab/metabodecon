@@ -47,11 +47,11 @@ Path to the directory storing the example files.
 
 ``` r
 x <- get_data_dir("urine")                     # Deprecated
-#> Warning: /tmp/RtmpOD0ElT/metabodecon/data does not exist. Please call `download_example_datasets()` first.
-#> Warning: /tmp/RtmpOD0ElT/metabodecon/data/example_datasets/bruker/urine does not exist. Please call `download_example_datasets(extract = TRUE)` first.
+#> Warning: /tmp/Rtmp6HeRbr/metabodecon/data does not exist. Please call `download_example_datasets()` first.
+#> Warning: /tmp/Rtmp6HeRbr/metabodecon/data/example_datasets/bruker/urine does not exist. Please call `download_example_datasets(extract = TRUE)` first.
 y <- datadir("example_datasets/bruker/urine")  # Preferred
-#> Warning: /tmp/RtmpOD0ElT/metabodecon/data/example_datasets/bruker/urine does not exist. Please call `download_example_datasets()` first.
+#> Warning: /tmp/Rtmp6HeRbr/metabodecon/data/example_datasets/bruker/urine does not exist. Please call `download_example_datasets()` first.
 cat(x, y, sep = "\n")
-#> /tmp/RtmpOD0ElT/metabodecon/data/example_datasets/bruker/urine
-#> /tmp/RtmpOD0ElT/metabodecon/data/example_datasets/bruker/urine
+#> /tmp/Rtmp6HeRbr/metabodecon/data/example_datasets/bruker/urine
+#> /tmp/Rtmp6HeRbr/metabodecon/data/example_datasets/bruker/urine
 ```

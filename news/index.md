@@ -27,6 +27,15 @@
     remaining `fast` jobs (older R, windows `oldrel-4`) skip them.
     Download failures skip gracefully, so the slow jobs no longer flake
     on transient network errors.
+  - The slow test `"align can install its dependencies"` is now
+    `skip_on_os("windows")`. It unloads and reinstalls the compiled
+    Bioconductor packages `impute`/`MassSpecWavelet` across a swapped
+    [`.libPaths()`](https://rdrr.io/r/base/libPaths.html), which crashes
+    the R session on Windows because the package DLLs stay loaded and
+    locked after
+    [`unloadNamespace()`](https://rdrr.io/r/base/ns-load.html). The
+    logic under test is OS-independent and remains covered on ubuntu and
+    macOS.
 
 ## metabodecon 1.7.0
 
