@@ -1,42 +1,5 @@
 # Changelog
 
-## metabodecon 1.7.1
-
-- Fixed `R CMD check` failures on CI configurations where the optional
-  Rust backend [mdrb](https://github.com/spang-lab/mdrb) has no
-  pre-built binary (older R releases such as `oldrel-4`, and Windows).
-  The Rust backend is now treated as truly optional:
-  - [`install_mdrb()`](https://spang-lab.github.io/metabodecon/reference/install_mdrb.md)
-    no longer errors when no binary is available. It prints guidance (a
-    source build needs `cargo`/`rustc >= 1.80`) and invisibly returns
-    `TRUE`/`FALSE` to reflect whether `mdrb` is available afterwards.
-  - CI installs `mdrb` in a separate best-effort step, so an absent or
-    failed install no longer fails the job; the Rust-backend tests skip
-    themselves when `mdrb` is missing.
-  - Download-dependent tests skip gracefully (new internal
-    `skip_if_no_example_datasets()` helper) when the ~75 MB
-    `example_datasets.zip` release asset cannot be downloaded.
-  - CI: `RUN_SLOW_TESTS` is no longer set at the job level in
-    `R-CMD-check.yaml`; it is enabled per-step for the `all`/`nobioc`
-    runs. The slow, network-dependent tests are exercised on at least
-    one runner per OS – ubuntu (`all` + `nobioc`), macOS (`release`,
-    `all`) and windows (`release`, `all`) – so the OS-specific slow
-    tests (e.g. the persistent
-    [`datadir()`](https://spang-lab.github.io/metabodecon/reference/datadir.md)
-    test, which is `skip_on_os("linux")`) keep their coverage, while the
-    remaining `fast` jobs (older R, windows `oldrel-4`) skip them.
-    Download failures skip gracefully, so the slow jobs no longer flake
-    on transient network errors.
-  - The slow test `"align can install its dependencies"` is now
-    `skip_on_os("windows")`. It unloads and reinstalls the compiled
-    Bioconductor packages `impute`/`MassSpecWavelet` across a swapped
-    [`.libPaths()`](https://rdrr.io/r/base/libPaths.html), which crashes
-    the R session on Windows because the package DLLs stay loaded and
-    locked after
-    [`unloadNamespace()`](https://rdrr.io/r/base/ns-load.html). The
-    logic under test is OS-independent and remains covered on ubuntu and
-    macOS.
-
 ## metabodecon 1.7.0
 
 - [`deconvolute()`](https://spang-lab.github.io/metabodecon/reference/deconvolute.md)

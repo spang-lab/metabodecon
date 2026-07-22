@@ -72,8 +72,8 @@ plot_spectrum_superposition_save_as_png(sim_decon, out_dir = png_dir, ask = FALS
 #> Plot superposition of sim_01
 #> Plot superposition of sim_02
 dir(png_dir, full.names = TRUE)
-#> [1] "/tmp/Rtmp6HeRbr/metabodecon/sim_decon/pngs/sim_01_lorentz_curves.png"    
-#> [2] "/tmp/Rtmp6HeRbr/metabodecon/sim_decon/pngs/sim_01_sum_lorentz_curves.png"
-#> [3] "/tmp/Rtmp6HeRbr/metabodecon/sim_decon/pngs/sim_02_lorentz_curves.png"    
-#> [4] "/tmp/Rtmp6HeRbr/metabodecon/sim_decon/pngs/sim_02_sum_lorentz_curves.png"
+#> [1] "/tmp/RtmpfEg17x/metabodecon/sim_decon/pngs/sim_01_lorentz_curves.png"    
+#> [2] "/tmp/RtmpfEg17x/metabodecon/sim_decon/pngs/sim_01_sum_lorentz_curves.png"
+#> [3] "/tmp/RtmpfEg17x/metabodecon/sim_decon/pngs/sim_02_lorentz_curves.png"    
+#> [4] "/tmp/RtmpfEg17x/metabodecon/sim_decon/pngs/sim_02_sum_lorentz_curves.png"
 ```

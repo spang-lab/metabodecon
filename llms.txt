@@ -173,7 +173,7 @@ y values for a given lorentz curve.
 - [`headtail()`](https://spang-lab.github.io/metabodecon/reference/headtail.md)
   : Show head and tail rows of a matrix-like object
 - [`install_mdrb()`](https://spang-lab.github.io/metabodecon/reference/install_mdrb.md)
-  **\[experimental\]** : Install Rust Backend
+  : Install Rust Backend
 - [`is_spectrum()`](https://spang-lab.github.io/metabodecon/reference/is_metabodecon_class.md)
   [`is_decon0()`](https://spang-lab.github.io/metabodecon/reference/is_metabodecon_class.md)
   [`is_decon1()`](https://spang-lab.github.io/metabodecon/reference/is_metabodecon_class.md)

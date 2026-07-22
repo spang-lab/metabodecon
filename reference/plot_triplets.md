@@ -73,10 +73,10 @@ plot_triplets(sim_decon, out_dir = png_dir, ask = FALSE)
 #> Plot triplets of sim_01
 #> Plot triplets of sim_02
 dir(png_dir, full.names = TRUE)
-#> [1] "/tmp/Rtmp6HeRbr/metabodecon/sim_decon/pngs/sim_01_lorentz_curves.png"    
-#> [2] "/tmp/Rtmp6HeRbr/metabodecon/sim_decon/pngs/sim_01_peak_triplets.png"     
-#> [3] "/tmp/Rtmp6HeRbr/metabodecon/sim_decon/pngs/sim_01_sum_lorentz_curves.png"
-#> [4] "/tmp/Rtmp6HeRbr/metabodecon/sim_decon/pngs/sim_02_lorentz_curves.png"    
-#> [5] "/tmp/Rtmp6HeRbr/metabodecon/sim_decon/pngs/sim_02_peak_triplets.png"     
-#> [6] "/tmp/Rtmp6HeRbr/metabodecon/sim_decon/pngs/sim_02_sum_lorentz_curves.png"
+#> [1] "/tmp/RtmpfEg17x/metabodecon/sim_decon/pngs/sim_01_lorentz_curves.png"    
+#> [2] "/tmp/RtmpfEg17x/metabodecon/sim_decon/pngs/sim_01_peak_triplets.png"     
+#> [3] "/tmp/RtmpfEg17x/metabodecon/sim_decon/pngs/sim_01_sum_lorentz_curves.png"
+#> [4] "/tmp/RtmpfEg17x/metabodecon/sim_decon/pngs/sim_02_lorentz_curves.png"    
+#> [5] "/tmp/RtmpfEg17x/metabodecon/sim_decon/pngs/sim_02_peak_triplets.png"     
+#> [6] "/tmp/RtmpfEg17x/metabodecon/sim_decon/pngs/sim_02_sum_lorentz_curves.png"
 ```
